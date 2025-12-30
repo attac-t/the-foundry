@@ -117,56 +117,7 @@ troubleshoot-*     Debug hooks and skills
 
 Templates live in `skills/meta/`.
 
----
-
-## Self-Development
-
-The plugin uses itself to develop itself.
-
-### Reflexive Architecture
-
-```
-craftsman/
-├── .claude/                      Plugin's own development setup
-│   ├── config.json              Self-referential plugin config
-│   ├── plugins/
-│   │   └── laravel-craftsman/   Symlink to ../.. (this repo)
-│   └── memory/
-│       └── working.md           Plugin development context
-├── .claude-plugin/              Plugin definition
-│   └── plugin.json
-└── skills/meta/                 Self-extension skills
-    ├── craft-skill/             Creates new skills
-    ├── craft-agent/             Creates new agents
-    ├── craft-command/           Creates new commands
-    └── craft-hook/              Creates new hooks
-```
-
-### How It Works
-
-1. **Symlink Resolution**: `.claude/plugins/laravel-craftsman` → repo root
-2. **Plugin Discovery**: Claude Code loads `.claude-plugin/plugin.json`
-3. **Self-Extension**: Meta-skills guide plugin development
-4. **Context Preservation**: `.claude/memory/working.md` maintains development goals
-5. **Hook Validation**: Plugin's own hooks monitor development process
-
-### The Meta-Programming Loop
-
-```
-Developer request: "Add a new skill for X"
-    ↓
-Architect agent activates craft-skill
-    ↓
-Template selected (decide/craft/ground-*)
-    ↓
-New SKILL.md created with atomic principles
-    ↓
-Registration guidance provided
-    ↓
-Plugin extends itself using its own architecture
-```
-
-**Why This Matters**: The plugin doesn't just *teach* meta-programming—it *practices* it. Every feature is built using the OS's own capabilities.
+**Self-Development**: The plugin uses itself to develop itself. `.claude/plugins/laravel-craftsman` → symlink to repo root. See [INSTALL.md](INSTALL.md).
 
 ---
 

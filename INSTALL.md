@@ -131,75 +131,21 @@ You should see:
 
 ## For Plugin Developers
 
-If you're developing the Laravel Craftsman plugin itself, set up self-referential loading:
-
-### Self-Development Setup
+To use the plugin to develop itself:
 
 ```bash
-# 1. Create .claude directory structure
 mkdir -p .claude/plugins .claude/memory
+cd .claude/plugins && ln -s ../.. laravel-craftsman && cd ../..
 
-# 2. Create symlink to self-reference the plugin
-cd .claude/plugins
-ln -s ../.. laravel-craftsman
-cd ../..
-
-# 3. Create config.json
 cat > .claude/config.json << 'EOF'
 {
-  "plugins": [
-    {
-      "name": "laravel-craftsman",
-      "path": "./plugins/laravel-craftsman"
-    }
-  ],
-  "settings": {
-    "model": "claude-opus-4-5-20251101",
-    "context-preservation": true
-  }
+  "plugins": [{"name": "laravel-craftsman", "path": "./plugins/laravel-craftsman"}],
+  "settings": {"model": "claude-opus-4-5-20251101"}
 }
 EOF
-
-# 4. Working memory is already created at .claude/memory/working.md
 ```
 
-### Verify Self-Referential Setup
-
-```bash
-# Check symlink
-ls -la .claude/plugins/laravel-craftsman
-# Should show: laravel-craftsman -> ../..
-
-# Open Claude Code in plugin repository
-claude
-# The plugin should load itself via the symlink
-# All meta-skills, agents, commands, and hooks should be active
-```
-
-### Meta-Programming Workflow
-
-When developing the plugin:
-
-1. **Use meta-skills** to create new components
-   - `craft-skill` creates new skills
-   - `craft-agent` creates new agents
-   - `craft-command` creates slash commands
-   - `craft-hook` creates lifecycle hooks
-
-2. **Update working memory** at `.claude/memory/working.md`
-   - Track development goals
-   - Preserve architectural decisions
-   - Document failures and learnings
-
-3. **Test immediately**
-   - Changes to skills/agents/commands are live
-   - Hooks require reload
-   - Use `/evaluate` to verify behavior
-
-4. **Commit with context**
-   - Working memory preserves "why"
-   - ADRs document architectural choices
-   - Plugin validates itself
+Meta-skills guide the plugin's own extension.
 
 ---
 
