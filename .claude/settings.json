@@ -1,93 +1,57 @@
 {
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
   "plugins": [
     {
       "name": "laravel-craftsman",
       "path": "./plugins/laravel-craftsman"
     }
   ],
-  "settings": {
-    "model": "claude-opus-4-5-20251101",
-    "context-preservation": true
-  },
   "hooks": {
     "SessionStart": [
       {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash /home/user/craftsman/hooks/remember.sh"
-          }
-        ]
+        "type": "command",
+        "command": "bash /home/user/craftsman/hooks/remember.sh"
       },
       {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash /home/user/craftsman/hooks/ground.sh"
-          }
-        ]
+        "type": "command",
+        "command": "bash /home/user/craftsman/hooks/ground.sh"
       }
     ],
     "UserPromptSubmit": [
       {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash /home/user/craftsman/hooks/evaluate.sh"
-          }
-        ]
+        "type": "command",
+        "command": "bash /home/user/craftsman/hooks/evaluate.sh"
       }
     ],
     "Stop": [
       {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash /home/user/craftsman/hooks/anchor.sh"
-          }
-        ]
+        "type": "command",
+        "command": "bash /home/user/craftsman/hooks/anchor.sh"
       },
       {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash /home/user/craftsman/hooks/recite.sh"
-          }
-        ]
+        "type": "command",
+        "command": "bash /home/user/craftsman/hooks/recite.sh"
       }
     ],
     "PreCompact": [
       {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "echo 'PRESERVE: Session Objective, ADR constraints, Failures learned.'"
-          }
-        ]
+        "type": "command",
+        "command": "echo 'PRESERVE: Session Objective, ADR constraints, Failures learned.'"
       }
     ],
     "PostToolUse": [
       {
         "matcher": "Write|Edit|NotebookEdit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash /home/user/craftsman/hooks/consider.sh"
-          }
-        ]
+        "type": "command",
+        "command": "bash /home/user/craftsman/hooks/consider.sh"
       }
     ],
     "PreToolUse": [
       {
         "matcher": ".*\\.env.*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "echo 'WARNING: No secrets in commits.'"
-          }
-        ]
+        "type": "command",
+        "command": "echo 'WARNING: No secrets in commits.'"
       }
     ]
-  },
-  "outputStyle": "craftsman"
+  }
 }
