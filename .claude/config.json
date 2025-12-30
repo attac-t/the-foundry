@@ -1,0 +1,12 @@
+{
+  "plugins": [
+    {
+      "name": "laravel-craftsman",
+      "path": "./plugins/laravel-craftsman"
+    }
+  ],
+  "settings": {
+    "model": "claude-opus-4-5-20251101",
+    "context-preservation": true
+  }
+}
