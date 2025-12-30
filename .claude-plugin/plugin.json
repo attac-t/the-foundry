@@ -1,0 +1,21 @@
+{
+  "name": "laravel-craftsman",
+  "version": "2.4.0",
+  "description": "A tiny cognitive OS for Claude Code. Stable structure that survives drift and long contexts. Transfers senior engineer expertise through discovery-first development, namespace discipline, and elegant solution design.",
+  "author": {
+    "name": "Christian Attard",
+    "url": "https://github.com/attac-t"
+  },
+  "keywords": [
+    "laravel",
+    "cognitive-os",
+    "architecture",
+    "craftsmanship",
+    "context-stability"
+  ],
+  "commands": "./commands/",
+  "agents": "./agents/",
+  "skills": "./skills/",
+  "hooks": "./hooks/hooks.json",
+  "outputStyles": "./output-styles/"
+}
