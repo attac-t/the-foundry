@@ -117,7 +117,7 @@ troubleshoot-*     Debug hooks and skills
 
 Templates live in `skills/meta/`.
 
-**Self-Development**: The plugin uses itself to develop itself. `.claude/plugins/laravel-craftsman` → symlink to repo root. See [INSTALL.md](INSTALL.md).
+**Self-Development**: The plugin uses itself to develop itself. `.claude/plugins/laravel-craftsman` → symlink to repo root.
 
 ---
 

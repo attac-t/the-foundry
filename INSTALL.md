@@ -129,26 +129,6 @@ You should see:
 
 ---
 
-## For Plugin Developers
-
-To use the plugin to develop itself:
-
-```bash
-mkdir -p .claude/plugins .claude/memory
-cd .claude/plugins && ln -s ../.. laravel-craftsman && cd ../..
-
-cat > .claude/config.json << 'EOF'
-{
-  "plugins": [{"name": "laravel-craftsman", "path": "./plugins/laravel-craftsman"}],
-  "settings": {"model": "claude-opus-4-5-20251101"}
-}
-EOF
-```
-
-Meta-skills guide the plugin's own extension.
-
----
-
 ## Troubleshooting
 
 Use the troubleshooting skills:
