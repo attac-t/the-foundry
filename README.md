@@ -6,8 +6,8 @@ A carefully curated collection of Claude Code plugins.
 
 ## Plugins
 
-| Plugin                                   | Purpose                                                                     |
-|------------------------------------------|-----------------------------------------------------------------------------|
+| Plugin                                   | Purpose                                                       |
+|------------------------------------------|---------------------------------------------------------------|
 | [craftsman](plugins/craftsman/README.md) | Stop re-explaining. No drift. A cognitive OS for Claude Code. |
 
 ---
