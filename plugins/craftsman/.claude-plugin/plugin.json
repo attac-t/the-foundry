@@ -15,7 +15,6 @@
   ],
   "commands": "./commands/",
   "agents": ["./agents/architect.md", "./agents/reviewer.md"],
-  "hooks": "./hooks/hooks.json",
   "skills": "./skills/",
   "outputStyles": "./output-styles/"
 }
