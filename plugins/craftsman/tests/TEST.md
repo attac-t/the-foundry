@@ -1,18 +1,33 @@
-# Self-Development Test
+# Plugin Self-Test
 
-Manual verification that the plugin uses itself during development.
-
----
-
-## Known Limitation
-
-Plugin hooks don't pass stdout to Claude ([#12151](https://github.com/anthropics/claude-code/issues/12151)).
-
-**Workaround:** Run `setup.sh` to write hooks to `.claude/settings.json`.
+Verify the plugin works by using it.
 
 ---
 
-## Prerequisites
+## Limitations
+
+### Plugin Hooks
+
+Hooks don't pass stdout to Claude ([#12151](https://github.com/anthropics/claude-code/issues/12151)).
+
+**Fix:** Run `setup.sh` → writes hooks to `.claude/settings.json`.
+
+### Stop Hook Output
+
+Stop hooks execute but don't surface to conversation. By design.
+
+| Event            | Visible        |
+|------------------|----------------|
+| SessionStart     | ✅              |
+| UserPromptSubmit | ✅              |
+| Stop             | ❌ verbose only |
+| PostToolUse      | ❌ verbose only |
+
+`anchor.sh` and `recite.sh` run silently. Use `Ctrl+O` to confirm.
+
+---
+
+## Setup
 
 ```bash
 cd /path/to/the-foundry
@@ -20,7 +35,6 @@ cd /path/to/the-foundry
 claude
 ```
 
-Then in Claude Code:
 ```
 /plugin marketplace add .
 /plugin install craftsman@the-foundry
@@ -31,107 +45,97 @@ Then in Claude Code:
 ## Phase 1: Infrastructure
 
 ```bash
-# Marketplace registered
-/plugin marketplace list
-
-# Plugin installed
-/plugin list
-
-# Hooks in settings.json
+/plugin marketplace list    # → the-foundry
+/plugin list                # → craftsman@the-foundry
 cat .claude/settings.json | grep -A5 '"hooks"'
 ```
 
-- [ ] Marketplace shows `the-foundry`
-- [ ] Plugin shows `craftsman@the-foundry`
-- [ ] settings.json contains hooks with absolute paths
+- [ ] Marketplace registered
+- [ ] Plugin installed
+- [ ] Hooks configured
 
 ---
 
-## Phase 2: Hook Execution
+## Phase 2: Hooks
 
-Start a new session. Ask: "What did the session start hooks tell you?"
+New session. Ask: *"What did the session start hooks tell you?"*
 
-| Event | Hook | Verification |
-|-------|------|--------------|
-| SessionStart | `remember.sh` | Working memory loads |
-| SessionStart | `ground.sh` | 8 ground principles |
-| UserPromptSubmit | `evaluate.sh` | Skill evaluation |
-| Stop | `anchor.sh` | Goal echoed |
-| Stop | `recite.sh` | Memory update prompt |
-| PostToolUse | `consider.sh` | ADR prompt on Write/Edit |
+| Hook          | Event            | Visible | Expect           |
+|---------------|------------------|---------|------------------|
+| `remember.sh` | SessionStart     | ✅       | Working memory   |
+| `ground.sh`   | SessionStart     | ✅       | 8 principles     |
+| `evaluate.sh` | UserPromptSubmit | ✅       | Skill evaluation |
+| `anchor.sh`   | Stop             | ❌       | Goal echo        |
+| `recite.sh`   | Stop             | ❌       | Memory prompt    |
+| `consider.sh` | PostToolUse      | ❌       | ADR prompt       |
 
-- [ ] ground.sh output received
-- [ ] evaluate.sh fires on prompt
-- [ ] anchor.sh fires on stop
-- [ ] recite.sh fires on stop
-- [ ] consider.sh fires on Write/Edit
+- [ ] ground.sh fires
+- [ ] evaluate.sh fires
+- [ ] Stop hooks run (verify: `Ctrl+O` or run manually)
 
 ---
 
-## Phase 3: Skill Activation
+## Phase 3: Skills
 
-**Prompt:** `Help me create a new Action class for user registration`
+Prompt: `Help me create a new Action class for user registration`
 
-- [ ] Skills evaluated (craft-action, ground-discovery)
-- [ ] Skills influence response
+- [ ] Skills evaluated
+- [ ] Response shaped by skill
 
 ---
 
-## Phase 4: Agent Spawning
+## Phase 4: Agents
 
-**Test:** `/refine`
+Run `/refine`
 
 - [ ] Reviewer spawns
-- [ ] Craftsman voice active
+- [ ] Craftsman voice
 
 ---
 
 ## Phase 5: Commands
 
-| Command | Expected |
-|---------|----------|
-| `/evaluate` | OS verification |
-| `/design` | Interview flow |
-| `/blueprint` | Load implementation plan |
-| `/refine` | Reviewer mode |
+| Command      | Result              |
+|--------------|---------------------|
+| `/evaluate`  | Plugin verification |
+| `/design`    | Interview flow      |
+| `/blueprint` | Load roadmap        |
+| `/refine`    | Reviewer mode       |
 
-- [ ] /evaluate
-- [ ] /design
-- [ ] /blueprint
-- [ ] /refine
+- [ ] All four work
 
 ---
 
 ## Phase 6: Self-Extension
 
-The plugin extends itself.
+The plugin builds itself.
 
-### New Skill
+### Skill
 
 ```
 Create ground skill "ground-patience" for deliberate response timing.
 ```
 
-- [ ] Consults existing patterns
-- [ ] Creates `plugins/craftsman/skills/ground/patience/SKILL.md`
+- [ ] Follows existing patterns
+- [ ] Creates `skills/ground/patience/SKILL.md`
 
-### New Hook
+### Hook
 
 ```
 Create hook for NotebookEdit → data validation reminder.
 ```
 
-- [ ] Creates script in `plugins/craftsman/hooks/`
-- [ ] Updates `.claude/settings.json`
+- [ ] Creates script in `hooks/`
+- [ ] Updates settings.json
 
-### New Command
+### Command
 
 ```
 Create /checkpoint to save progress to working memory.
 ```
 
-- [ ] Creates `plugins/craftsman/commands/checkpoint.md`
-- [ ] Available immediately
+- [ ] Creates `commands/checkpoint.md`
+- [ ] Works immediately
 
 ---
 
@@ -139,19 +143,25 @@ Create /checkpoint to save progress to working memory.
 
 1. Set goal in working memory
 2. 5-6 exchanges
-3. Verify drift prevention
+3. Check for drift
 
-- [ ] Goal echoed after responses
-- [ ] Memory prompts appear
+Stop hooks are silent. Context stability comes from:
+- SessionStart loading memory
+- UserPromptSubmit enforcing evaluation
+- Discipline
+
+- [ ] Memory loads on start
+- [ ] Goal persists across restarts
 
 ---
 
-## Success Criteria
+## Pass Criteria
 
-All capabilities functional during self-development:
-
-- ✅ Skills
-- ✅ Agents
-- ✅ Commands
-- ✅ OutputStyles
-- ⚠️ Hooks (via settings.json workaround)
+| Layer                                 | Status    |
+|---------------------------------------|-----------|
+| Skills                                | ✅         |
+| Agents                                | ✅         |
+| Commands                              | ✅         |
+| OutputStyles                          | ✅         |
+| Hooks (SessionStart/UserPromptSubmit) | ✅         |
+| Hooks (Stop/PostToolUse)              | ⚠️ silent |
