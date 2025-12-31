@@ -1,0 +1,19 @@
+{
+  "name": "the-foundry",
+  "owner": {
+    "name": "Christian Attard",
+    "url": "https://github.com/attac-t"
+  },
+  "metadata": {
+    "description": "A carefully curated collection of Claude Code plugins.",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "craftsman",
+      "source": "./plugins/craftsman",
+      "description": "A cognitive OS for Claude Code. Stable structure that survives drift and long contexts.",
+      "version": "2.4.0"
+    }
+  ]
+}

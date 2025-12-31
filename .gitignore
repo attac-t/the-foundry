@@ -1,6 +1,13 @@
 # Session-specific working memory (developers create their own)
 .claude/memory/
 
+# Generated settings with local paths (run ./setup.sh to create)
+.claude/settings.json
+.claude/settings.local.json
+
+# Self-development symlink (created during plugin development)
+.claude/plugins/
+
 # IDE and editor files
 .vscode/
 .idea/
