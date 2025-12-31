@@ -10,7 +10,7 @@ MEMORY_DIR="${CLAUDE_MEMORY_DIR:-.claude/memory}"
 MEMORY="$MEMORY_DIR/working.md"
 
 if [ -f "$MEMORY" ]; then
-    goal=$(grep '^\*\*Goal\*\*:' "$MEMORY" | sed 's/\*\*Goal\*\*: //')
+    goal=$(grep '^\*\*Objective\*\*:' "$MEMORY" | sed 's/\*\*Objective\*\*: //')
     if [ -n "$goal" ] && [ "$goal" != "[What are we building/fixing?]" ]; then
         echo "📎 $goal"
     fi
