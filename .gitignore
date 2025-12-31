@@ -1,8 +1,7 @@
 # Session-specific working memory (developers create their own)
 .claude/memory/
 
-# Generated settings with local paths (run ./setup.sh to create)
-.claude/settings.json
+# Local settings overrides (use .claude/settings.local.json for local-only config)
 .claude/settings.local.json
 
 # Self-development symlink (created during plugin development)

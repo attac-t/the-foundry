@@ -1,0 +1,59 @@
+{
+  "extraKnownMarketplaces": {
+    "the-foundry": {
+      "source": "github",
+      "repo": "attac-t/the-foundry"
+    }
+  },
+  "enabledPlugins": {
+    "craftsman@the-foundry": true
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash $CLAUDE_PLUGIN_craftsman_the_foundry/hooks/remember.sh"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash $CLAUDE_PLUGIN_craftsman_the_foundry/hooks/ground.sh"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash $CLAUDE_PLUGIN_craftsman_the_foundry/hooks/evaluate.sh"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash $CLAUDE_PLUGIN_craftsman_the_foundry/hooks/anchor.sh"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash $CLAUDE_PLUGIN_craftsman_the_foundry/hooks/recite.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
