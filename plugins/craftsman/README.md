@@ -20,7 +20,7 @@ Claude is agreeable—it implements whatever you ask, even when it shouldn't. Th
 No orientation commands    Claude already knows your project
 No skill invocations       Patterns activate automatically
 No context anxiety         Objectives survive compaction
-No drift                   Your goal echoes after every response
+No drift                   Your goal echoes before every prompt
 ```
 
 ---
@@ -122,23 +122,27 @@ Templates live in `skills/meta/`.
 ## Lifecycle
 
 ```
-COLD START
+COLD START (SessionStart)
     │
-    ├── remember   Load working.md (READ)
-    └── ground     Load philosophy (READ)
-    │
-    ▼
-PROMPT → RESPONSE
-    │
-    ├── evaluate   Force skill YES/NO
-    ├── consider   Prompt ADR check (on Write/Edit only)
-    ├── anchor     Echo objective (READ)
-    └── recite     Prompt: "UPDATE working.md" (PROMPT)
+    ├── remember   Load working.md
+    └── ground     Load philosophy
     │
     ▼
-CONTEXT PRESSURE
+PROMPT (UserPromptSubmit)              ← Anchor past → Reflect → Act
     │
-    └── PreCompact: remind to preserve objective, constraints, failures
+    ├── anchor     Echo objective       "Here's your goal"
+    ├── recite     Prompt memory update "Did you make progress?"
+    └── evaluate   Force skill YES/NO   "What skills apply NOW?"
+    │
+    ▼
+RESPONSE (PostToolUse)
+    │
+    └── consider   Prompt ADR check (skips tests, config, docs)
+    │
+    ▼
+CONTEXT PRESSURE (PreCompact)
+    │
+    └── preserve   Extract objective, constraints, failures from memory
     │
     ▼
 NEXT SESSION
@@ -146,7 +150,7 @@ NEXT SESSION
     └── Memory persists IF updated during session
 ```
 
-**Note:** `recite` prompts Claude to update memory—it doesn't force it. Persistence depends on Claude following through.
+**Flow:** Every prompt reinforces the objective (Manus pattern). Memory updates are prompted conditionally—Claude evaluates whether progress occurred.
 
 **Working Memory:** Template at `templates/working.md`. Rewrite sections, don't append. Blank on new goal. See `ground-recitation` skill for guidelines.
 
@@ -158,7 +162,7 @@ NEXT SESSION
 
 Goals fade after 50+ tool calls. Early instructions become invisible.
 
-**Solution:** `anchor` echoes your objective after every response. `recite` prompts memory updates.
+**Solution:** `anchor` echoes your objective before every prompt. `recite` prompts memory updates. Both fire on `UserPromptSubmit`—the Manus pattern of constant reinforcement.
 
 ### Cold Start
 
@@ -206,6 +210,20 @@ Context fills with irrelevant history.
 /refine      Spawn reviewer
 /evaluate    Verify the OS
 ```
+
+---
+
+## Output Style
+
+Set in `.claude/settings.json`:
+
+```json
+{
+  "outputStyle": "craftsman:craftsman"
+}
+```
+
+This applies the Craftsman voice: direct, opinionated, elegant. No hedging.
 
 ---
 
