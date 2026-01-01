@@ -20,4 +20,4 @@ for skill in "$PLUGIN_DIR"/skills/ground-*/SKILL.md; do
 done
 
 echo ""
-echo "Consult: \`skills/ground/\`"
+echo "Consult: \`skills/ground-*/\`"
