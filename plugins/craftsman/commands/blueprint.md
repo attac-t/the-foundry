@@ -1,7 +1,11 @@
 ---
 description: Loads the project roadmap (Spec + Working Memory).
 argument-hint: [optional focus]
-allowed-tools: Read, Glob, Grep, WebFetch
+allowed-tools: Read
 ---
 
-/project spec.md working.md "$ARGUMENTS"
+Read `.claude/memory/spec.md` and `.claude/memory/working.md`.
+
+Display the current objective and progress.
+
+$ARGUMENTS

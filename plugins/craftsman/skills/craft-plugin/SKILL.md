@@ -16,7 +16,7 @@ This is not a "plugin". It is a **Cognitive Operating System**.
     *   **Guards**: Use `PostToolUse` to validate architecture (e.g., "Support cannot import Domain.").
     *   **Memory**: Use `SessionStart` to inject the `working.md` context.
 
-*   **The Brain (Memory)**: `$CLAUDE_MEMORY_DIR/working.md` (default: `.claude/memory/`). Mutable Context.
+*   **The Brain (Memory)**: `.claude/memory/working.md`. Mutable Context.
 *   **The Muscles (Agents)**: `agents/`. (Execution Roles).
 *   **The Voice (Commands)**: `commands/`. (Triggers).
 *   **The Knowledge (Skills)**: `skills/`. (Atomic Components).

@@ -9,6 +9,6 @@ Execute the `ground-interview` skill protocol for:
 
 "$ARGUMENTS"
 
-Write spec to `$CLAUDE_MEMORY_DIR/spec.md` using `templates/spec.md`.
+Write spec to `.claude/memory/spec.md` using `templates/spec.md`.
 
 When complete: "**Spec complete.** Start a NEW session to execute."

@@ -9,9 +9,7 @@ description: Objective anchoring. Solves context drift.
 
 ## The File
 
-`$CLAUDE_MEMORY_DIR/working.md` — your cognitive RAM.
-
-Default: `.claude/memory/working.md`
+`.claude/memory/working.md` — your cognitive RAM.
 Template: `templates/working.md` (in plugin)
 
 ## When to Blank
