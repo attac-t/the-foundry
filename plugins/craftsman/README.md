@@ -76,6 +76,8 @@ test           Pest tests
 collection     Custom collections
 support        Cross-cutting concerns
 adr            Architecture Decision Records
+map            Elegant directory trees
+flow           ASCII flowcharts
 ```
 
 ---
@@ -209,6 +211,8 @@ Context fills with irrelevant history.
 /blueprint   Load roadmap
 /refine      Spawn reviewer
 /evaluate    Verify the OS
+/map         Elegant directory tree
+/flow        ASCII flowchart
 ```
 
 ---

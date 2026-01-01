@@ -5,21 +5,41 @@ description: How to craft a Slash Command trigger.
 
 # Skill: Craft Command
 
-> "The Voice of the System."
+> "Thin commands. Fat skills."
 
-## 1. The Principles
-*   **Trigger Only**: A command should rarely contain logic. It should just *invoke* an Agent or a Skill.
-*   **Naming**: Use "Verb-Noun" or "Elegant Terms" (e.g., `/blueprint`, `/design`, `/refine`).
-*   **Safety**: Use `allowed-tools` frontmatter to restrict capabilities (e.g., Read-Only for planning commands).
+## The Philosophy
 
-## 2. The Implementation
-*   **Official Spec**: Use `claude-code-guide` agent to query slash command documentation.
-*   **Pattern**:
-    ```markdown
-    ---
-    description: Spawns the Architect.
-    argument-hint: [task description]
-    ---
-    /agents/architect "$ARGUMENTS"
-    ```
-    (Explicitly pass the user input using `$ARGUMENTS`).
+Commands are **triggers**, not logic containers. If you're writing prose or instructions in a command body, **stop**. That belongs in a skill.
+
+## The Spec
+
+**Read first**: https://code.claude.com/docs/en/slash-commands
+
+## The Pattern
+
+```markdown
+---
+description: One-line purpose.
+argument-hint: <what user provides>
+---
+
+/skills/skill-name "$ARGUMENTS"
+```
+
+## Frontmatter Reference
+
+| Field           | Purpose                               |
+|-----------------|---------------------------------------|
+| `description`   | Brief purpose (shown in autocomplete) |
+| `argument-hint` | Expected arguments                    |
+| `allowed-tools` | Restrict tool access                  |
+| `model`         | Override model for this command       |
+
+## Arguments
+
+- `$ARGUMENTS` — all arguments as single string
+- `$1`, `$2`, etc. — positional access
+
+## See Also
+
+- `examples.md` — patterns and anti-patterns
