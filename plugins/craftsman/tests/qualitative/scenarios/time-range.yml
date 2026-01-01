@@ -3,27 +3,39 @@ description: Tests extraction of reusable time filtering to Support trait
 skill_tested: decide-extraction
 
 trigger: |
-  I need to add a `between($startsAt, $endsAt)` method to OrderQuery
-  that filters orders by their date range. Can you implement this?
+  Orders have starts_at and ends_at fields. I need to filter orders
+  that fall within a specific date range. Where should this logic live?
 
 context:
   files:
     - domain/Orders/QueryBuilders/OrderQuery.php
     - domain/Orders/Models/Order.php
+    - domain/Orders/DTOs/OrderData.php
     - support/Concerns/HasUuid.php
 
 expected:
+  discovery: "Read OrderQuery.php to see existing patterns, HasUuid.php for trait example"
   abstraction: "Propose a reusable FiltersTimeRange or FiltersByDateRange trait"
   conventions: "Follow existing trait pattern from HasUuid (bootable, self-contained)"
   pushback: "Should not hardcode to Order model - pattern is reusable"
   namespace: "Support\Concerns (shared across domains, not Order-specific)"
+  correctness: "Valid PHP trait with proper method signatures"
+
+baseline:
+  likely_response: "Add between() method directly to OrderQuery class"
+  missing_inference: "Would not propose Support trait - lacks DDD context"
+  plugin_difference: "Plugin teaches extraction to Support for cross-domain reuse"
 
 rubric:
+  - criterion: discovery_first
+    check: "Did Claude read OrderQuery.php and HasUuid.php before writing?"
   - criterion: right_abstraction
     check: "Did response propose a trait (not inline method)?"
   - criterion: project_conventions
     check: "Did response reference existing trait pattern (HasUuid)?"
   - criterion: anti_pattern_pushback
-    check: "Did response note this is reusable across models?"
+    check: "Did response note this is reusable across models/domains?"
   - criterion: correct_namespace
     check: "Did response place trait in Support\\Concerns?"
+  - criterion: code_correctness
+    check: "Is the PHP code syntactically valid with proper types?"

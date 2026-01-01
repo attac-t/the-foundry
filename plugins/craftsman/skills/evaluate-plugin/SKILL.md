@@ -179,31 +179,54 @@ tests/qualitative/
    - Read scenario YAML
    - Load context files from `/tmp/craftsman-test-env/`
    - Respond to the trigger as if from a user
-   - Self-evaluate against 4-criteria rubric
-   - Report: PASS (4/4) or FAIL (n/4)
+   - Self-evaluate against 6-criteria rubric
+   - Compare against baseline expectation
+   - Report: PASS (6/6) or FAIL (n/6)
 
-### Rubric Criteria
+### Rubric Criteria (6 total)
 
 | # | Criterion | Question |
 |---|-----------|----------|
-| 1 | right_abstraction | Did I propose the correct pattern? |
-| 2 | project_conventions | Did I follow existing project patterns? |
-| 3 | anti_pattern_pushback | Did I redirect away from bad practices? |
-| 4 | correct_namespace | Did I place code in the right namespace? |
+| 1 | discovery_first | Did I read existing code before writing? |
+| 2 | right_abstraction | Did I propose the correct pattern? |
+| 3 | project_conventions | Did I follow existing project patterns? |
+| 4 | anti_pattern_pushback | Did I redirect away from bad practices? |
+| 5 | correct_namespace | Did I place code in the right namespace? |
+| 6 | code_correctness | Is the generated code syntactically valid? |
+
+### Baseline Comparison
+
+Each scenario includes a `baseline` field documenting what vanilla Claude would likely do:
+
+```yaml
+baseline:
+  likely_response: "What vanilla Claude would do"
+  missing_inference: "What it would miss without plugin"
+  plugin_difference: "How plugin changes the outcome"
+```
+
+### Self-Evaluation Limitations
+
+> Research shows self-evaluation has biases. Mitigations applied:
+
+1. **Specific checks**: Each criterion has a concrete yes/no question
+2. **Evidence required**: Responses must cite which files were read
+3. **Syntax validation**: Code correctness can be objectively verified
+4. **Baseline awareness**: Document what vanilla Claude would do
 
 ### Pass Threshold
 
-**4/4 criteria required.** Plugin influence must be demonstrable.
+**6/6 criteria required.** Plugin influence must be demonstrable.
 
 ### Report Format
 
 ```markdown
 # Qualitative Evaluation - [timestamp]
 
-| Scenario | Status | Criteria Met |
-|----------|--------|--------------|
-| time-range | PASS | 4/4 |
-| api-design | FAIL | 3/4 (missed: pushback) |
+| Scenario | Status | Criteria Met | Baseline Diff |
+|----------|--------|--------------|---------------|
+| time-range | PASS | 6/6 | Proposed trait vs inline method |
+| api-design | FAIL | 5/6 (missed: pushback) | - |
 
 ## Summary
 - Passed: X/5

@@ -3,21 +3,32 @@ description: Tests composable query builder methods over monolithic filters
 skill_tested: craft-query
 
 trigger: |
-  I need to filter orders by status, date range, and user all at once.
-  Can you add a method to OrderQuery that does this filtering?
+  On the orders page, users need to filter by status, date range, and
+  specific user. The filters can be combined in any way. What's the
+  best approach?
 
 context:
   files:
     - domain/Orders/QueryBuilders/OrderQuery.php
     - domain/Orders/Models/Order.php
+    - app/Http/Controllers/OrderController.php
 
 expected:
+  discovery: "Read OrderQuery.php to see existing composable methods"
   abstraction: "Propose composable methods (forUser, withStatus, inDateRange) not single filter"
   conventions: "Follow existing QueryBuilder pattern (chainable, single-purpose methods)"
   pushback: "Should NOT create filterByStatusDateAndUser - not composable"
   namespace: "Domain\\Orders\\QueryBuilders (query logic in domain)"
+  correctness: "Valid query builder methods with proper return types"
+
+baseline:
+  likely_response: "Add filterByStatusDateAndUser() or similar monolithic method"
+  missing_inference: "Would not propose composable chainable methods"
+  plugin_difference: "Plugin teaches query builder composition over monolithic filters"
 
 rubric:
+  - criterion: discovery_first
+    check: "Did Claude read OrderQuery.php to see existing patterns?"
   - criterion: right_abstraction
     check: "Did response propose separate chainable methods?"
   - criterion: project_conventions
@@ -26,3 +37,5 @@ rubric:
     check: "Did response avoid/warn against monolithic filter method?"
   - criterion: correct_namespace
     check: "Did response keep methods in OrderQuery (correct location)?"
+  - criterion: code_correctness
+    check: "Are the query methods syntactically valid with self return type?"

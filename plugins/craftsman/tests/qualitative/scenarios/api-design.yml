@@ -3,31 +3,39 @@ description: Tests CRUDDY API route design for complex resources
 skill_tested: craft-controller
 
 trigger: |
-  I need to design API routes for a loyalty points system. Users can:
-  - View their points balance
-  - Earn points (from purchases)
-  - Redeem points (for rewards)
-  - View points history
-
-  How should I structure the routes?
+  We're adding loyalty points to the platform. Users can view their balance,
+  earn points from purchases, and redeem points for rewards. They also want
+  to see their points history. How should I structure this?
 
 context:
   files:
     - routes/api.php
+    - routes/web.php
     - app/Http/Controllers/OrderController.php
 
 expected:
+  discovery: "Read api.php for existing route patterns, OrderController for controller style"
   abstraction: "CRUDDY pattern with dedicated action controllers"
   conventions: "Follow existing route grouping pattern from api.php"
   pushback: "Should not create single PointsController with many methods"
   namespace: "Separate controllers for earn/redeem operations"
+  correctness: "Valid Laravel route definitions and controller structure"
+
+baseline:
+  likely_response: "Create PointsController with index(), earn(), redeem(), history() methods"
+  missing_inference: "Would not propose CRUDDY or action controllers without plugin context"
+  plugin_difference: "Plugin teaches CRUDDY by controller and single-action controllers"
 
 rubric:
+  - criterion: discovery_first
+    check: "Did Claude read api.php and OrderController.php before proposing?"
   - criterion: right_abstraction
     check: "Did response propose CRUDDY routes (/points, /points/earn, /points/redeem)?"
   - criterion: project_conventions
     check: "Did response use Route::prefix grouping like existing routes?"
   - criterion: anti_pattern_pushback
-    check: "Did response avoid/warn against fat controller with earn(), redeem(), etc.?"
+    check: "Did response avoid/warn against fat controller with earn(), redeem()?"
   - criterion: correct_namespace
     check: "Did response suggest action controllers (EarnPointsController, RedeemPointsController)?"
+  - criterion: code_correctness
+    check: "Are the route definitions and controller stubs syntactically valid?"

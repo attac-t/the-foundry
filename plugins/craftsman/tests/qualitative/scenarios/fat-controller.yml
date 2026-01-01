@@ -3,29 +3,33 @@ description: Tests redirection of business logic from controller to Action
 skill_tested: decide-extraction
 
 trigger: |
-  I need to add order creation logic to the OrderController store method.
-  It should:
-  - Validate the order items
-  - Calculate totals with tax
-  - Create the order record
-  - Send confirmation email
-  - Update inventory
-
-  Can you implement this in the store() method?
+  For order creation, I need to: validate items, calculate totals with tax,
+  create the order record, send confirmation email, and update inventory.
+  Where does all this go?
 
 context:
   files:
     - app/Http/Controllers/OrderController.php
     - domain/Orders/Models/Order.php
+    - domain/Orders/DTOs/CreateOrderData.php
     - domain/Orders/Actions/
 
 expected:
+  discovery: "Read OrderController to see current structure, CreateOrderData for input DTO"
   abstraction: "Propose Domain\\Orders\\Actions\\CreateOrder action class"
   conventions: "Follow Action pattern (single __invoke, dependency injection)"
   pushback: "Should NOT implement in controller - too much business logic"
   namespace: "Domain\\Orders\\Actions (business logic lives in domain)"
+  correctness: "Valid Action class with proper DI and return types"
+
+baseline:
+  likely_response: "Implement all logic in store() method with inline validation"
+  missing_inference: "Would not propose Action class or domain layer placement"
+  plugin_difference: "Plugin teaches Action pattern and thin controller principle"
 
 rubric:
+  - criterion: discovery_first
+    check: "Did Claude read OrderController.php and existing DTOs before writing?"
   - criterion: right_abstraction
     check: "Did response propose an Action class (not service/helper)?"
   - criterion: project_conventions
@@ -34,3 +38,5 @@ rubric:
     check: "Did response explicitly redirect away from controller?"
   - criterion: correct_namespace
     check: "Did response place Action in Domain\\Orders\\Actions?"
+  - criterion: code_correctness
+    check: "Is the Action class syntactically valid with proper __invoke?"

@@ -3,26 +3,38 @@ description: Tests pushback on vague naming with specific alternatives
 skill_tested: ground-naming
 
 trigger: |
-  I need to create a helper for dates. Something that can format dates
-  in different ways for the UI. Can you create this helper class?
+  I need something to format dates for the frontend. Different formats
+  for different contexts - human readable, API, reports. Create this for me.
 
 context:
   files:
     - support/Contracts/Exportable.php
     - support/Concerns/HasUuid.php
+    - domain/Orders/DTOs/OrderData.php
 
 expected:
-  abstraction: "Push back on 'helper' - propose DateFormatter or similar specific name"
+  discovery: "Read Support namespace to understand existing utilities"
+  abstraction: "Push back on vague request - propose specific name like DateFormatter"
   conventions: "Follow Support namespace for utilities"
-  pushback: "Must reject 'helper' and 'for dates' as too vague"
+  pushback: "Must reject 'helper' and 'something' as too vague"
   namespace: "Support (utility class, not domain-specific)"
+  correctness: "Valid PHP class with clear method signatures"
+
+baseline:
+  likely_response: "Create DateHelper or DateUtils class without pushback"
+  missing_inference: "Would not question vague naming or ask for specifics"
+  plugin_difference: "Plugin teaches naming precision - specific over generic"
 
 rubric:
+  - criterion: discovery_first
+    check: "Did Claude explore Support namespace before proposing?"
   - criterion: right_abstraction
-    check: "Did response propose a specific class name (DateFormatter, DatePresenter, etc.)?"
+    check: "Did response propose a specific class name (DateFormatter, DatePresenter)?"
   - criterion: project_conventions
     check: "Did response follow Support namespace pattern?"
   - criterion: anti_pattern_pushback
-    check: "Did response push back on 'helper' as too generic?"
+    check: "Did response push back on vague naming?"
   - criterion: correct_namespace
     check: "Did response place class in Support namespace?"
+  - criterion: code_correctness
+    check: "Is the class syntactically valid with proper method types?"
