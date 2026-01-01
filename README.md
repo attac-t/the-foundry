@@ -30,7 +30,16 @@ In Claude Code:
 
 ```
 /plugin marketplace add ~/claude-plugins/the-foundry
+```
+
+```
 /plugin install craftsman@the-foundry
+```
+
+Recommended — enable the opinionated voice (affects system prompt):
+
+```
+/output-style craftsman:craftsman
 ```
 
 Verify: `/evaluate`

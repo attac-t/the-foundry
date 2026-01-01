@@ -1,21 +1,25 @@
 #!/bin/bash
-# PostToolUse: Prompts ADR consideration after architectural changes
+# PostToolUse: Prompts ADR consideration after file modifications
 #
-# Implements: craft-adr skill
+# Thin hook → points to craft-adr skill
 #
-# Purpose: Architectural decisions must be recorded.
+# Purpose: Remind that architectural decisions should be recorded.
 
 INPUT=$(cat)
 FILE=$(echo "$INPUT" | jq -r '.tool_input.file_path // .tool_input.pathInProject // ""')
 
-if echo "$FILE" | grep -qE '^(domain|support)/'; then
-    cat <<'EOF'
----
-**Consider** (craft-adr check)
-You modified architectural code. Record if:
-- Pattern choice → ADR
-- Package choice → ADR
-- Schema design → ADR
-Location: `docs/{domain}/ADR/`
-EOF
+# Skip non-architectural files
+if echo "$FILE" | grep -qE '(^tests?/|\.test\.|\.spec\.|\.md$|\.json$|\.ya?ml$|\.env)'; then
+    exit 0
 fi
+
+cat <<'EOF'
+---
+**Consider** (craft-adr)
+You modified code. If this involved:
+→ Pattern choice → ADR
+→ Package choice → ADR
+→ Schema design → ADR
+See: craft-adr skill
+---
+EOF

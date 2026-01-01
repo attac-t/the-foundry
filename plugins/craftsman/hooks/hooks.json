@@ -23,16 +23,6 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/evaluate.sh"
-          }
-        ]
-      }
-    ],
-    "Stop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
             "command": "${CLAUDE_PLUGIN_ROOT}/hooks/anchor.sh"
           }
         ]
@@ -44,6 +34,14 @@
             "command": "${CLAUDE_PLUGIN_ROOT}/hooks/recite.sh"
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/evaluate.sh"
+          }
+        ]
       }
     ],
     "PreCompact": [
@@ -51,7 +49,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "echo 'PRESERVE: Session Objective, ADR constraints, Failures learned.'"
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/preserve.sh"
           }
         ]
       }
