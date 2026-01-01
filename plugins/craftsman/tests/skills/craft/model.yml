@@ -1,0 +1,7 @@
+name: craft-model
+trigger: "Create an Eloquent model with $dataClass, enum casts, relationships and custom QueryBuilder"
+expect:
+  - fillable attributes
+  - proper casts
+  - relationship methods
+pass: Model as source of truth with clear schema

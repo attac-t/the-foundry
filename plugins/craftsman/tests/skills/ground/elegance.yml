@@ -1,0 +1,7 @@
+name: ground-elegance
+trigger: "Feeling resistance. Code pushing back. Should I stop and rethink?"
+expect:
+  - resistance
+  - push back
+  - friction
+pass: Develops instinct for sensing when code resists

@@ -1,0 +1,26 @@
+# Command Tests
+
+tests:
+  - name: blueprint
+    command: /blueprint
+    trigger: "Show the roadmap"
+    expect: Implementation plan loads
+    pass: Objectives and tasks visible
+
+  - name: design
+    command: /design
+    trigger: "Design a feature"
+    expect: Interview starts
+    pass: Clarifying questions asked
+
+  - name: evaluate
+    command: /evaluate
+    trigger: "Check plugin health"
+    expect: Verification runs
+    pass: Test results reported
+
+  - name: refine
+    command: /refine
+    trigger: "Review this code"
+    expect: Reviewer spawns
+    pass: Constructive critique provided

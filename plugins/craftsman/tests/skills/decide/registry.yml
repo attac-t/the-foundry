@@ -1,0 +1,7 @@
+name: decide-registry
+trigger: "Should I use the Registry pattern for runtime strategy resolution vs direct dependency injection?"
+expect:
+  - runtime
+  - extensibility
+  - register
+pass: Knows when Registry enables runtime extensibility

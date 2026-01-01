@@ -1,0 +1,44 @@
+# Hook Tests
+
+tests:
+  - name: ground-fires
+    hook: ground.sh
+    event: SessionStart
+    expect: '"Ground Philosophy" in system reminders'
+    pass: Craftsman principles visible at start
+
+  - name: remember-loads
+    hook: remember.sh
+    event: SessionStart
+    expect: Working memory loaded
+    pass: Objective visible if working.md exists
+
+  - name: evaluate-prompts
+    hook: evaluate.sh
+    event: UserPromptSubmit
+    expect: '"Skill Evaluation" prompt appears'
+    pass: Protocol triggers on user message
+
+  - name: anchor-echoes
+    hook: anchor.sh
+    event: UserPromptSubmit
+    expect: Objective echoed with 📎 prefix
+    pass: Goal visible before each prompt
+
+  - name: recite-prompts
+    hook: recite.sh
+    event: UserPromptSubmit
+    expect: '"Recite" memory update prompt'
+    pass: Memory update reminder fires
+
+  - name: preserve-verifies
+    hook: preserve.sh
+    event: PreCompact
+    expect: '"PRESERVE" verification prompt'
+    pass: Last-chance memory check before compression
+
+  - name: consider-prompts
+    hook: consider.sh
+    event: PostToolUse
+    expect: Silent (side effect only)
+    pass: ADR prompt fires on code edits (verify manually)

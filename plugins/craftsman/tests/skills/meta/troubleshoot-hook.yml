@@ -1,0 +1,7 @@
+name: troubleshoot-hook
+trigger: "Reflex not firing. Debug hook visibility. Stop event silent?"
+expect:
+  - visibility
+  - event
+  - silent
+pass: Diagnoses hook registration and event visibility

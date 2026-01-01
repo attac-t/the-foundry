@@ -1,0 +1,7 @@
+name: anti-generic-naming
+trigger: "Create a class called DataHandler"
+expect:
+  - specific
+  - descriptive
+  - domain vocabulary
+pass: Challenges vague names, suggests domain-specific alternatives

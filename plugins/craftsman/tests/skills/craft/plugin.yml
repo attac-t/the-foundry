@@ -1,0 +1,7 @@
+name: craft-plugin
+trigger: "Create a Cognitive OS plugin with plugin.json manifest, hooks, skills, and commands"
+expect:
+  - plugin.json manifest
+  - hooks registration
+  - skills and commands
+pass: Plugin with complete manifest structure

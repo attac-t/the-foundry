@@ -1,0 +1,7 @@
+name: decide-events
+trigger: "Should I use Laravel Events and Listeners vs direct method calls for decoupling side effects?"
+expect:
+  - decouple
+  - listener
+  - event
+pass: Decides when Events beat direct method calls

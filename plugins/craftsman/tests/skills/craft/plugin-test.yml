@@ -1,0 +1,9 @@
+name: craft-plugin-test
+trigger: "Create a YAML test for the craft-action skill with domain vocabulary trigger"
+expect:
+  - name
+  - trigger
+  - expect
+  - pass
+  - domain vocabulary
+pass: Plugin test YAML with proper format and domain-specific trigger

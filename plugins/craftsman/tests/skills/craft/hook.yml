@@ -1,0 +1,7 @@
+name: craft-hook
+trigger: "Create a Cognitive OS hook/reflex in hooks.json with regex matcher and event binding"
+expect:
+  - hooks/ directory
+  - event binding
+  - priority ordering
+pass: Hook responds to system events correctly

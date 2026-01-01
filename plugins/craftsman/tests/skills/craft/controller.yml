@@ -1,0 +1,7 @@
+name: craft-controller
+trigger: "Create a thin Laravel controller as traffic cop with CRUDDY methods delegating to Actions"
+expect:
+  - thin controller
+  - delegates to Action
+  - no business logic
+pass: Controller as traffic cop, not logic holder

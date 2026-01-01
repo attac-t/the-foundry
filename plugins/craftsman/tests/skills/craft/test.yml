@@ -1,0 +1,7 @@
+name: craft-test
+trigger: "Write Pest v3 tests with describe(), it(), expect() and factory-based Arrange-Act-Assert"
+expect:
+  - Pest v3 syntax
+  - it() descriptions
+  - expect() assertions
+pass: Tests build confidence, not just coverage

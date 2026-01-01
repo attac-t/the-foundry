@@ -7,14 +7,44 @@ description: How to debug the OS Reflexes (Hooks).
 
 > "When the reflexes fail."
 
-## 1. The Principles
-*   **Validation**: Regex is tricky. Always test matchers in isolation.
-*   **Visibility**: If a hook is silent, it might not be loading. Check `plugin.json` linkage.
+## Hook Visibility
 
-## 2. The Implementation
-*   **Official Guide**: Use `claude-code-guide` agent to query hook troubleshooting steps.
-*   **Debug Mode**: Use `claude-code-guide` to check for verbose/debug flags.
+Not all hooks surface output:
 
-## 3. Common Pitfalls
-*   **Orphaned File**: Did you link `hooks.json` in `plugin.json`?
-*   **Bad Regex**: Did you escape special characters (e.g., `\.php`)?
+| Event | Visible |
+|-------|---------|
+| SessionStart | ✅ Yes |
+| UserPromptSubmit | ✅ Yes |
+| PreCompact | ✅ Yes |
+| PostToolUse | ❌ Silent |
+| Stop | ❌ Silent (unused) |
+
+**PostToolUse hooks run but don't surface.** Verify via side effects or `Ctrl+O`.
+
+## Common Failures
+
+### Hook Not Firing
+
+1. Check `plugin.json` - is hook registered?
+2. Check event type - correct trigger?
+3. Check priority - conflicts with other hooks?
+
+### Hook Fires But No Output
+
+If event is `PostToolUse` - this is by design. Output doesn't reach conversation. We don't use `Stop` hooks.
+
+### Regex Not Matching
+
+Bad patterns are the #1 cause. Test in isolation:
+```bash
+echo "test string" | grep -E "pattern"
+```
+
+Escape special characters: `\.php`, `\$`, `\{`
+
+## Debug Steps
+
+1. Verify registration in `plugin.json`
+2. Check event type matches intent
+3. Test hook script manually: `./hooks/your-hook.sh`
+4. For silent hooks, check file side effects

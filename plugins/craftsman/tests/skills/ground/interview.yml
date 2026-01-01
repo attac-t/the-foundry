@@ -1,0 +1,7 @@
+name: ground-interview
+trigger: "Refine spec via AskUserQuestion. Extract requirements before implementing."
+expect:
+  - AskUserQuestion
+  - spec
+  - requirements
+pass: Teaches spec refinement via targeted questions

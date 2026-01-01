@@ -1,0 +1,7 @@
+name: ground-delegation
+trigger: "Multi-domain refactor. Should I lead or code? Task tool for sub-agent?"
+expect:
+  - sub-agent
+  - Task tool
+  - lead vs code
+pass: Guides when to spawn sub-agents vs code directly

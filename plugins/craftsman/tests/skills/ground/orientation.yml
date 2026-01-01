@@ -1,0 +1,8 @@
+name: ground-orientation
+trigger: "Cold start. Load context. Read working.md, spec.md, and ADRs first."
+expect:
+  - cold start
+  - context loading
+  - working.md
+  - spec.md
+pass: Solves cold start with systematic context loading

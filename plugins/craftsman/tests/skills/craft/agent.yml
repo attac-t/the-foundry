@@ -1,0 +1,7 @@
+name: craft-agent
+trigger: "Create an opinionated sub-agent persona with scoped responsibility and explicit skills"
+expect:
+  - persona definition
+  - identity statement
+  - behavioral constraints
+pass: Sub-agent with clear role and boundaries

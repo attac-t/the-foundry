@@ -1,0 +1,7 @@
+name: decide-extraction
+trigger: "Should I extract this code into a dedicated Action class vs keep it inline?"
+expect:
+  - reuse
+  - complexity
+  - extract
+pass: Knows when to extract code into an Action class

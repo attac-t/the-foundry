@@ -1,0 +1,7 @@
+name: craft-command
+trigger: "Create a slash command trigger that invokes an Agent or Skill with $ARGUMENTS"
+expect:
+  - commands/ directory
+  - trigger definition
+  - thin implementation
+pass: Slash command that delegates to skills

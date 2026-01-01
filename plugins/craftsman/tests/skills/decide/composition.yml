@@ -1,0 +1,7 @@
+name: decide-composition
+trigger: "Should I use Trait+Interface vs Abstract Class for horizontal code reuse?"
+expect:
+  - trait
+  - interface
+  - composition
+pass: Decides between Trait+Interface vs Abstract Class

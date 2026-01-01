@@ -1,0 +1,7 @@
+name: troubleshoot-skill
+trigger: "Skill not discovered. Check flat directory structure. Reinstall plugin."
+expect:
+  - flat
+  - discovery
+  - reinstall
+pass: Diagnoses skill discovery with flat directory requirement

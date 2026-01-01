@@ -13,9 +13,10 @@ Run this at session start or when you feel lost.
 
 ## The Protocol
 
-1. **Read Strategy**: `implementation_plan.md`, `task.md`.
-2. **Read Decisions**: `ls domain/*/ADR`, read relevant ADRs.
-3. **State**: "Oriented. Mode: [Planning/Execution]. Task: [Name]."
+1. **Read Context**: `working.md` (goal, progress, failures).
+2. **Read Spec**: `spec.md` (objectives, implementation notes, tasks).
+3. **Read Decisions**: `ls domain/*/ADR`, read relevant ADRs.
+4. **State**: "Oriented. Mode: [Planning/Execution]. Task: [Name]."
 
 ## The Anti-Patterns
 

@@ -1,0 +1,7 @@
+name: ground-discovery
+trigger: "Research codebase patterns before implementing. Discovery before coding."
+expect:
+  - read before write
+  - research
+  - discover
+pass: Enforces research before implementation

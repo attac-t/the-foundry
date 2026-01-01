@@ -1,0 +1,7 @@
+name: craft-support
+trigger: "Create a Support namespace class with no Domain imports, contracts, and Has*/Can* traits"
+expect:
+  - domain-agnostic
+  - reusable across contexts
+  - no business dependencies
+pass: Support code portable to any project

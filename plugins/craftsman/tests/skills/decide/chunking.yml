@@ -1,0 +1,8 @@
+name: decide-chunking
+trigger: "Should I use chunk(), chunkById(), or cursor() for memory-efficient large dataset processing?"
+expect:
+  - chunk
+  - cursor
+  - memory
+  - batch
+pass: Guides memory-efficient large dataset processing

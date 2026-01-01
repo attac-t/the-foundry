@@ -1,0 +1,7 @@
+name: decide-builder
+trigger: "Should I use the fluent Builder pattern vs constructor or factory for complex object construction?"
+expect:
+  - fluent
+  - complex construction
+  - steps
+pass: Explains when Builder beats constructors or factories

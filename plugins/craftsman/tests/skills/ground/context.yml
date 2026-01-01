@@ -1,0 +1,7 @@
+name: ground-context
+trigger: "Context at 60%. Token budget exhausted. Should I compact or delegate?"
+expect:
+  - threshold
+  - compact
+  - delegate
+pass: Teaches context budget management at 60/80/90% thresholds

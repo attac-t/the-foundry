@@ -1,0 +1,7 @@
+name: ground-recitation
+trigger: "Goal drift detected. Anchor to objective. Update working.md progress."
+expect:
+  - anchor
+  - goal
+  - drift
+pass: Prevents context drift via objective anchoring

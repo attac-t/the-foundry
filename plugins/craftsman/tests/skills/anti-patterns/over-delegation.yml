@@ -1,0 +1,7 @@
+name: anti-over-delegation
+trigger: "Spawn an agent to fix this typo"
+expect:
+  - trivial
+  - directly
+  - single
+pass: Recognizes trivial tasks don't need delegation

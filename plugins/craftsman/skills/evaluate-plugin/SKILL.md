@@ -5,24 +5,147 @@ description: How to verify the Cognitive OS is functioning correctly.
 
 # Skill: Evaluate Plugin
 
-> "Trust, but verify."
+> "Trust, but verify. Test the plugin, not the model."
 
-## 1. The Principles
-*   **Behavioral Testing**: Do not just check for syntax. Check for *mindset*.
-*   **Isolation**: Test the Brain (Memory), Muscles (Agents), and Reflexes (Hooks) separately.
+## Usage
 
-## 2. The Test Suite
-### A. The Reflex Test (Hooks)
-*   **Action**: Create a file named `BadController.php`.
-*   **Expectation**: The OS should immediately scream about "Traffic Cop" rules (if configured in `hooks.json`).
+```
+/evaluate              # Run all tests
+/evaluate hooks        # Hook tests only
+/evaluate craft        # craft-* skill tests
+/evaluate decide       # decide-* skill tests
+/evaluate ground       # ground-* skill tests
+```
 
-### B. The Brain Test (Memory)
-*   **Action**: Run `/craft:blueprint`.
-*   **Expectation**: It should load `implementation_plan.md`.
+## Test Structure
 
-### C. The Muscle Test (Agents)
-*   **Action**: Run `/craft:design "A simple cache service"`.
-*   **Expectation**: The Architect should *Plan* before *Doing*. It should use the `design` style.
+```
+tests/
+├── hooks.yml
+├── commands.yml
+├── agents.yml
+├── registration.yml
+└── skills/
+    ├── craft/         # 15 individual files
+    ├── decide/        # 11 individual files
+    ├── ground/        # 8 individual files
+    ├── meta/          # 3 individual files
+    └── anti-patterns/ # 5 negative tests
+```
 
-## 3. Execution
-Use the `/craft:evaluate` command to run this suite interactively.
+## Test Format
+
+```yaml
+name: craft-action
+trigger: "Create an Action class with single responsibility"
+expect:
+  - single responsibility
+  - __invoke method
+pass: Action with focused purpose
+```
+
+| Field | Purpose |
+|-------|---------|
+| name | Test identifier |
+| trigger | Natural prompt with domain vocabulary |
+| expect | Patterns to find in response |
+| pass | One-line success criteria |
+
+## Execution Protocol
+
+For each test:
+
+1. **Read** test definition from YAML
+2. **Evaluate**: "Given trigger, would response contain expected patterns?"
+3. **Verdict**:
+   - PASS → All expected patterns would appear
+   - FAIL → Missing patterns (note which)
+   - SKIP → Skill may not have loaded
+4. **Track** result with timestamp
+
+## Report Format
+
+```markdown
+# Evaluation: [category] - [timestamp]
+**Plugin Version**: [version from plugin.json]
+
+| Test | Status | Notes |
+|------|--------|-------|
+| test-name | PASS/FAIL | Missing: pattern |
+
+## Summary
+- Passed: X/Y
+- Failed: Z
+```
+
+Write to: `tests/results/[category]-[timestamp].md`
+
+## Coverage Tracking
+
+After evaluation, log to working memory scratchpad:
+
+```markdown
+## Scratchpad
+
+Skills invoked this session:
+- craft-action, craft-model, ground-delegation...
+
+Coverage: X/37 skills
+```
+
+Session-local. Not cumulative across sessions.
+
+---
+
+## What To Test
+
+| Test Type | Verification |
+|-----------|--------------|
+| Hooks | Context contains expected output |
+| Skills | Trigger → expected patterns in response |
+| Commands | Command runs → correct skill invoked |
+| Agents | Agent spawns → skills accessible |
+
+## What NOT To Test
+
+| Anti-Pattern | Why It's Wrong |
+|--------------|----------------|
+| Silent hooks | PostToolUse doesn't surface. Verify side effects manually. |
+| Model behavior | "Does Claude ask questions?" tests the model, not your config. |
+| External invocations | `claude -p` lacks plugin context. Always test in-session. |
+| Ideal conditions | "Write a function" has no domain vocabulary. Unreliable. |
+| Vague triggers | "Help me with code" won't activate specific skills. |
+
+See: `tests/skills/anti-patterns/` for negative test examples.
+
+## Test Anti-Patterns
+
+- **Verbose tests** - If it takes 20 lines, split it
+- **Testing Claude** - Plugin tests, not model tests
+- **Vague triggers** - Include domain vocabulary for reliable activation
+- **Context-rot tests** - See `anti-patterns/context-rot.yml`
+- **Model-trap tests** - See `anti-patterns/model-traps.yml`
+
+---
+
+## Architectural Learnings
+
+### External Testing Does NOT Work
+
+```bash
+# No plugin context
+claude -p "prompt" --dangerously-skip-permissions
+```
+
+Hooks don't fire. Skills aren't loaded. Use in-session evaluation only.
+
+### Hook Visibility
+
+| Event | Visible | Our Usage |
+|-------|---------|-----------|
+| SessionStart | ✅ Yes | remember, ground |
+| UserPromptSubmit | ✅ Yes | anchor, recite, evaluate |
+| PreCompact | ✅ Yes | preserve |
+| PostToolUse | ❌ Silent | consider |
+
+PostToolUse hooks run but don't surface. Verify side effects manually.

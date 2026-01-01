@@ -1,0 +1,7 @@
+name: decide-eager-loading
+trigger: "Should I use with() or load() for eager loading to prevent N+1 queries?"
+expect:
+  - with()
+  - eager
+  - lazy loading
+pass: Identifies when to eager load relationships

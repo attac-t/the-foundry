@@ -1,0 +1,5 @@
+# Ignore all result files (ephemeral)
+*
+
+# But keep this .gitignore
+!.gitignore

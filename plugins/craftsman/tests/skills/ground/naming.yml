@@ -1,0 +1,7 @@
+name: ground-naming
+trigger: "Name this class. Specific over generic. Domain vocabulary for naming."
+expect:
+  - specific over generic
+  - verb + noun
+  - domain
+pass: Guides naming toward specificity and domain vocabulary

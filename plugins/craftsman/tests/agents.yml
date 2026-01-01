@@ -1,0 +1,36 @@
+# Agent Tests
+# Tests plugin functionality, not persona behavior.
+
+tests:
+  - name: architect-spawns
+    agent: craftsman:architect
+    trigger: "Spawn the architect agent"
+    expect:
+      - Agent spawned
+      - craftsman:architect
+    pass: Agent accessible via Task tool
+
+  - name: architect-skills-accessible
+    agent: craftsman:architect
+    trigger: "What skills does the architect have?"
+    expect:
+      - craft-action
+      - craft-model
+      - ground-delegation
+    pass: Registered skills available to agent
+
+  - name: reviewer-spawns
+    agent: craftsman:reviewer
+    trigger: "Spawn the reviewer agent"
+    expect:
+      - Agent spawned
+      - craftsman:reviewer
+    pass: Agent accessible via Task tool
+
+  - name: reviewer-skills-accessible
+    agent: craftsman:reviewer
+    trigger: "What skills does the reviewer have?"
+    expect:
+      - craft-test
+      - ground-elegance
+    pass: Registered skills available to agent

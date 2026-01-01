@@ -1,0 +1,7 @@
+name: craft-dto
+trigger: "Create a Spatie Laravel Data v4 DTO with readonly properties and immutable ->with()"
+expect:
+  - Spatie Laravel Data
+  - readonly properties
+  - strict typing
+pass: Immutable data container with validation

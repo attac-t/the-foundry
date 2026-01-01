@@ -1,0 +1,7 @@
+name: decide-casts
+trigger: "Should I use Eloquent Cast vs Accessor for this value object transformation?"
+expect:
+  - cast
+  - accessor
+  - value object
+pass: Clarifies when to use Eloquent Cast vs Accessor

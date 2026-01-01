@@ -28,14 +28,14 @@ Reset working.md to the template when:
 
 From Manus: **Rewrite, don't append.**
 
-| Section | Update Strategy |
-|---------|-----------------|
-| Goal | Rewrite when objective changes |
-| Constraints | Add/remove as ADRs are made |
-| Focus | Rewrite each session |
-| Progress | Rewrite with current steps, not history |
-| Failures | Append new failures. Remove when lesson is internalized. |
-| Scratchpad | Clear freely. Temporary by design. |
+| Section     | Update Strategy                                          |
+|-------------|----------------------------------------------------------|
+| Goal        | Rewrite when objective changes                           |
+| Constraints | Add/remove as ADRs are made                              |
+| Focus       | Rewrite each session                                     |
+| Progress    | Rewrite with current steps, not history                  |
+| Failures    | Append new failures. Remove when lesson is internalized. |
+| Scratchpad  | Clear freely. Temporary by design.                       |
 
 **The key insight:** Progress should show **current steps**, not a history of completed work. Completed steps disappear. Only what remains matters.
 

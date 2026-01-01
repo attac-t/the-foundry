@@ -1,0 +1,35 @@
+# Registration Tests
+# Verifies skills are discovered and registered correctly.
+
+tests:
+  - name: skills-flat-structure
+    trigger: "List available craftsman skills"
+    expect:
+      - craft-action
+      - craft-model
+      - ground-delegation
+    pass: Skills discovered from flat directory structure
+
+  - name: skills-in-available-skills
+    trigger: "What skills are in <available_skills>?"
+    expect:
+      - craftsman:craft-action
+      - craftsman:design
+      - craftsman:evaluate
+    pass: Skills registered in system prompt
+
+  - name: commands-registered
+    trigger: "What /commands are available?"
+    expect:
+      - /design
+      - /evaluate
+      - /refine
+      - /blueprint
+    pass: Commands listed as invokable skills
+
+  - name: agents-registered
+    trigger: "What agents can be spawned?"
+    expect:
+      - craftsman:architect
+      - craftsman:reviewer
+    pass: Agents available via Task tool

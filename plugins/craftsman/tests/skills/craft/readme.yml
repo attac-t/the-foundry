@@ -1,0 +1,7 @@
+name: craft-readme
+trigger: "Write a README with direct language, minimal prose, and usage-focused code examples"
+expect:
+  - direct language
+  - minimal prose
+  - usage-focused examples
+pass: README answers "how do I use this?" fast

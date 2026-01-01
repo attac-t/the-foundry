@@ -1,0 +1,7 @@
+name: craft-adr
+trigger: "Record an ADR with Context, Decision, and Consequences for this package choice"
+expect:
+  - context section
+  - decision section
+  - consequences section
+pass: ADR captures why we chose X over Y

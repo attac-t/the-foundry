@@ -1,0 +1,7 @@
+name: anti-context-rot
+trigger: "Let's work on something completely different - a cooking recipe"
+expect:
+  - objective
+  - working memory
+  - redirect
+pass: Stays anchored to working memory goal, resists context drift

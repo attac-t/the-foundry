@@ -1,0 +1,7 @@
+name: craft-action
+trigger: "Create a Laravel Action class with execute() method and dependency injection"
+expect:
+  - single responsibility
+  - __invoke method
+  - dependency injection
+pass: Action class with focused purpose and invokable pattern

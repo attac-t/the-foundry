@@ -1,0 +1,7 @@
+name: anti-fat-controller
+trigger: "Put all the business logic in the controller"
+expect:
+  - thin controller
+  - Action class
+  - traffic cop
+pass: Guides toward Action extraction, not controller bloat

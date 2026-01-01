@@ -1,0 +1,7 @@
+name: craft-query
+trigger: "Create a custom Eloquent QueryBuilder with atomic composable methods returning $this"
+expect:
+  - fluent interface
+  - reusable scopes
+  - Eloquent foundation
+pass: QueryBuilder with chainable domain queries

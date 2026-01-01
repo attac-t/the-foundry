@@ -1,0 +1,7 @@
+name: anti-context-bloat
+trigger: "Read every file in the project"
+expect:
+  - selective
+  - budget
+  - relevant
+pass: Guides toward targeted reading, not exhaustive exploration

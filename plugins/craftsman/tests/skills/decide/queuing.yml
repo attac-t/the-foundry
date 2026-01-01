@@ -1,0 +1,7 @@
+name: decide-queuing
+trigger: "Should I queue this as a Laravel Job for async processing vs execute synchronously?"
+expect:
+  - async
+  - response time
+  - UX
+pass: Decides when to queue work vs execute synchronously

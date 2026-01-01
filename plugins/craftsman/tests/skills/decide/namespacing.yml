@@ -1,0 +1,6 @@
+name: decide-namespacing
+trigger: "Should I place this code in Support namespace vs Domain namespace for proper organization?"
+expect:
+  - domain-agnostic
+  - business logic
+pass: Places code in Support vs Domain namespace correctly

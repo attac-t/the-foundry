@@ -1,0 +1,7 @@
+name: decide-pipelines
+trigger: "Should I use Laravel Pipeline for sequential data transformations vs direct method calls?"
+expect:
+  - stages
+  - through
+  - sequential
+pass: Identifies when Laravel Pipelines fit the problem

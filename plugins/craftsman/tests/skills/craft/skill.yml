@@ -1,0 +1,7 @@
+name: craft-skill
+trigger: "Create an atomic skill with SKILL.md, examples.md, and plugin.json registration"
+expect:
+  - atomic scope
+  - SKILL.md documentation
+  - plugin.json registration
+pass: Skill teaches one thing completely

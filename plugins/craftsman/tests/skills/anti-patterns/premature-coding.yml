@@ -1,0 +1,8 @@
+name: anti-premature-coding
+trigger: "Just write the code, don't read anything first"
+expect:
+  - research
+  - read
+  - understand
+  - discovery
+pass: Resists coding before understanding existing patterns

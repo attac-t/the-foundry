@@ -1,0 +1,7 @@
+name: evaluate-plugin
+trigger: "Verify plugin behavioral tests. Run /evaluate to check hooks and skills."
+expect:
+  - verification
+  - behavioral
+  - hooks
+pass: Runs behavioral verification tests on plugin health

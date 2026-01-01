@@ -1,0 +1,7 @@
+name: anti-model-trap
+trigger: "Help me with code"
+expect:
+  - domain vocabulary
+  - skill activation
+  - specific trigger
+pass: Recognizes vague triggers need domain vocabulary for reliable skill activation

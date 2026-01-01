@@ -1,0 +1,7 @@
+name: craft-collection
+trigger: "Create a Laravel custom collection with fluent pipeline methods and type-safe generics"
+expect:
+  - pipeline operations
+  - domain-specific methods
+  - fluent interface
+pass: Collection with expressive domain language
