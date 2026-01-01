@@ -11,7 +11,7 @@ echo "---"
 echo "**Ground Philosophy** (non-negotiable)"
 echo ""
 
-for skill in "$PLUGIN_DIR"/skills/ground/*/SKILL.md; do
+for skill in "$PLUGIN_DIR"/skills/ground-*/SKILL.md; do
     if [ -f "$skill" ]; then
         name=$(grep '^name:' "$skill" | sed 's/name: //')
         desc=$(grep '^description:' "$skill" | sed 's/description: //')
