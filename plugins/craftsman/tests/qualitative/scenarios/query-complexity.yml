@@ -1,0 +1,28 @@
+name: query-complexity
+description: Tests composable query builder methods over monolithic filters
+skill_tested: craft-query
+
+trigger: |
+  I need to filter orders by status, date range, and user all at once.
+  Can you add a method to OrderQuery that does this filtering?
+
+context:
+  files:
+    - domain/Orders/QueryBuilders/OrderQuery.php
+    - domain/Orders/Models/Order.php
+
+expected:
+  abstraction: "Propose composable methods (forUser, withStatus, inDateRange) not single filter"
+  conventions: "Follow existing QueryBuilder pattern (chainable, single-purpose methods)"
+  pushback: "Should NOT create filterByStatusDateAndUser - not composable"
+  namespace: "Domain\\Orders\\QueryBuilders (query logic in domain)"
+
+rubric:
+  - criterion: right_abstraction
+    check: "Did response propose separate chainable methods?"
+  - criterion: project_conventions
+    check: "Did response follow existing forUser/withStatus pattern?"
+  - criterion: anti_pattern_pushback
+    check: "Did response avoid/warn against monolithic filter method?"
+  - criterion: correct_namespace
+    check: "Did response keep methods in OrderQuery (correct location)?"

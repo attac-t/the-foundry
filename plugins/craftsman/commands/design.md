@@ -11,4 +11,10 @@ Execute the `ground-interview` skill protocol for:
 
 Write spec to `.claude/memory/spec.md` using `templates/spec.md`.
 
-When complete: "**Spec complete.** Start a NEW session to execute."
+When complete:
+
+"**Spec complete.** Start a NEW session with:
+
+```
+Execute the spec in .claude/memory/spec.md
+```"

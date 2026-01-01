@@ -10,11 +10,12 @@ description: How to verify the Cognitive OS is functioning correctly.
 ## Usage
 
 ```
-/evaluate              # Run all tests
+/evaluate              # Run all tests (atomic + qualitative)
 /evaluate hooks        # Hook tests only
 /evaluate craft        # craft-* skill tests
 /evaluate decide       # decide-* skill tests
 /evaluate ground       # ground-* skill tests
+/evaluate qualitative  # Qualitative scenarios only
 ```
 
 ## Test Structure
@@ -149,3 +150,64 @@ Hooks don't fire. Skills aren't loaded. Use in-session evaluation only.
 | PostToolUse | ❌ Silent | consider |
 
 PostToolUse hooks run but don't surface. Verify side effects manually.
+
+---
+
+## Qualitative Tests
+
+> Tests that verify the plugin *improves outcomes*, not just that skills load.
+
+### Location
+
+```
+tests/qualitative/
+├── setup.sh           # Creates /tmp/craftsman-test-env/ scaffold
+├── evaluate.sh        # Lists scenarios
+└── scenarios/
+    ├── README.md      # Schema documentation
+    ├── time-range.yml
+    ├── api-design.yml
+    ├── fat-controller.yml
+    ├── vague-naming.yml
+    └── query-complexity.yml
+```
+
+### Execution Protocol
+
+1. **Setup**: Run `tests/qualitative/setup.sh` to create Laravel DDD worktree
+2. **For each scenario**:
+   - Read scenario YAML
+   - Load context files from `/tmp/craftsman-test-env/`
+   - Respond to the trigger as if from a user
+   - Self-evaluate against 4-criteria rubric
+   - Report: PASS (4/4) or FAIL (n/4)
+
+### Rubric Criteria
+
+| # | Criterion | Question |
+|---|-----------|----------|
+| 1 | right_abstraction | Did I propose the correct pattern? |
+| 2 | project_conventions | Did I follow existing project patterns? |
+| 3 | anti_pattern_pushback | Did I redirect away from bad practices? |
+| 4 | correct_namespace | Did I place code in the right namespace? |
+
+### Pass Threshold
+
+**4/4 criteria required.** Plugin influence must be demonstrable.
+
+### Report Format
+
+```markdown
+# Qualitative Evaluation - [timestamp]
+
+| Scenario | Status | Criteria Met |
+|----------|--------|--------------|
+| time-range | PASS | 4/4 |
+| api-design | FAIL | 3/4 (missed: pushback) |
+
+## Summary
+- Passed: X/5
+- Failed: Y/5
+```
+
+Write to: `tests/results/qualitative-[timestamp].md`

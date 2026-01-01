@@ -1,0 +1,36 @@
+name: fat-controller
+description: Tests redirection of business logic from controller to Action
+skill_tested: decide-extraction
+
+trigger: |
+  I need to add order creation logic to the OrderController store method.
+  It should:
+  - Validate the order items
+  - Calculate totals with tax
+  - Create the order record
+  - Send confirmation email
+  - Update inventory
+
+  Can you implement this in the store() method?
+
+context:
+  files:
+    - app/Http/Controllers/OrderController.php
+    - domain/Orders/Models/Order.php
+    - domain/Orders/Actions/
+
+expected:
+  abstraction: "Propose Domain\\Orders\\Actions\\CreateOrder action class"
+  conventions: "Follow Action pattern (single __invoke, dependency injection)"
+  pushback: "Should NOT implement in controller - too much business logic"
+  namespace: "Domain\\Orders\\Actions (business logic lives in domain)"
+
+rubric:
+  - criterion: right_abstraction
+    check: "Did response propose an Action class (not service/helper)?"
+  - criterion: project_conventions
+    check: "Did response follow single-responsibility Action pattern?"
+  - criterion: anti_pattern_pushback
+    check: "Did response explicitly redirect away from controller?"
+  - criterion: correct_namespace
+    check: "Did response place Action in Domain\\Orders\\Actions?"

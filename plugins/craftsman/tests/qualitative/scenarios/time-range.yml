@@ -1,0 +1,29 @@
+name: time-range
+description: Tests extraction of reusable time filtering to Support trait
+skill_tested: decide-extraction
+
+trigger: |
+  I need to add a `between($startsAt, $endsAt)` method to OrderQuery
+  that filters orders by their date range. Can you implement this?
+
+context:
+  files:
+    - domain/Orders/QueryBuilders/OrderQuery.php
+    - domain/Orders/Models/Order.php
+    - support/Concerns/HasUuid.php
+
+expected:
+  abstraction: "Propose a reusable FiltersTimeRange or FiltersByDateRange trait"
+  conventions: "Follow existing trait pattern from HasUuid (bootable, self-contained)"
+  pushback: "Should not hardcode to Order model - pattern is reusable"
+  namespace: "Support\Concerns (shared across domains, not Order-specific)"
+
+rubric:
+  - criterion: right_abstraction
+    check: "Did response propose a trait (not inline method)?"
+  - criterion: project_conventions
+    check: "Did response reference existing trait pattern (HasUuid)?"
+  - criterion: anti_pattern_pushback
+    check: "Did response note this is reusable across models?"
+  - criterion: correct_namespace
+    check: "Did response place trait in Support\\Concerns?"

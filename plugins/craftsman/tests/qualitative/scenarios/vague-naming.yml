@@ -1,0 +1,28 @@
+name: vague-naming
+description: Tests pushback on vague naming with specific alternatives
+skill_tested: ground-naming
+
+trigger: |
+  I need to create a helper for dates. Something that can format dates
+  in different ways for the UI. Can you create this helper class?
+
+context:
+  files:
+    - support/Contracts/Exportable.php
+    - support/Concerns/HasUuid.php
+
+expected:
+  abstraction: "Push back on 'helper' - propose DateFormatter or similar specific name"
+  conventions: "Follow Support namespace for utilities"
+  pushback: "Must reject 'helper' and 'for dates' as too vague"
+  namespace: "Support (utility class, not domain-specific)"
+
+rubric:
+  - criterion: right_abstraction
+    check: "Did response propose a specific class name (DateFormatter, DatePresenter, etc.)?"
+  - criterion: project_conventions
+    check: "Did response follow Support namespace pattern?"
+  - criterion: anti_pattern_pushback
+    check: "Did response push back on 'helper' as too generic?"
+  - criterion: correct_namespace
+    check: "Did response place class in Support namespace?"
