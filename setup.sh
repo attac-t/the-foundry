@@ -16,11 +16,15 @@ HOOKS=$(cat << EOF
       {"hooks": [{"type": "command", "command": "$PLUGIN_DIR/hooks/ground.sh"}]}
     ],
     "UserPromptSubmit": [
+      {"hooks": [{"type": "command", "command": "$PLUGIN_DIR/hooks/anchor.sh"}]},
+      {"hooks": [{"type": "command", "command": "$PLUGIN_DIR/hooks/recite.sh"}]},
       {"hooks": [{"type": "command", "command": "$PLUGIN_DIR/hooks/evaluate.sh"}]}
     ],
-    "Stop": [
-      {"hooks": [{"type": "command", "command": "$PLUGIN_DIR/hooks/anchor.sh"}]},
-      {"hooks": [{"type": "command", "command": "$PLUGIN_DIR/hooks/recite.sh"}]}
+    "PostToolUse": [
+      {"matcher": "Write|Edit|NotebookEdit", "hooks": [{"type": "command", "command": "$PLUGIN_DIR/hooks/consider.sh"}]}
+    ],
+    "PreCompact": [
+      {"hooks": [{"type": "command", "command": "$PLUGIN_DIR/hooks/preserve.sh"}]}
     ]
   }
 }
