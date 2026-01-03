@@ -8,4 +8,4 @@
 echo "---"
 echo "**REQUIRED**: Run \`/craftsman:ground\` now. No exceptions. If not found, say so and STOP."
 echo ""
-echo "⛔ BLOCKING: Do not respond to user until grounded."
+echo "⛔ **BLOCKING**: Do not respond to user until grounded."

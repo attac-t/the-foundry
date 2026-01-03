@@ -18,4 +18,6 @@ For each YES → call `Skill(skill-name)` NOW.
 
 **Step 3 - IMPLEMENT:**
 Only after activation, proceed with the task.
+
+⛔ **BLOCKING**: Do not implement until skills evaluated and activated.
 EOF

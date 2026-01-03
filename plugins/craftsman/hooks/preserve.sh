@@ -18,5 +18,6 @@ Context compression imminent.
   - Constraints (active decisions)
   - Failures (lessons learned)
 → If missing, update NOW. See: ground-recitation
----
+
+⛔ **BLOCKING**: Do not proceed with compaction until verified.
 EOF
