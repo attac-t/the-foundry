@@ -6,4 +6,4 @@
 # Purpose: Establish the philosophy before any work begins.
 
 echo "---"
-echo "**REQUIRED**: Run \`/craftsman:ground\` now. No exceptions."
+echo "**REQUIRED**: Run \`/craftsman:ground\` now. No exceptions. If not found, say so and STOP."
