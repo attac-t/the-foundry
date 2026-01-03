@@ -5,19 +5,5 @@
 #
 # Purpose: Establish the philosophy before any work begins.
 
-PLUGIN_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-
 echo "---"
-echo "**Ground Philosophy** (non-negotiable)"
-echo ""
-
-for skill in "$PLUGIN_DIR"/skills/ground-*/SKILL.md; do
-    if [ -f "$skill" ]; then
-        name=$(grep '^name:' "$skill" | sed 's/name: //')
-        desc=$(grep '^description:' "$skill" | sed 's/description: //')
-        echo "- **$name**: $desc"
-    fi
-done
-
-echo ""
-echo "Use the Skill tool to internalize each skill."
+echo "**REQUIRED**: Run \`/craftsman:ground\` now. No exceptions."
