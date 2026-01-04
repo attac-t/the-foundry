@@ -1,17 +1,18 @@
 #!/bin/bash
-# Stop: Echoes the current objective (anchoring)
-#
-# "Constantly rewriting todo lists pushes the global plan
-#  into recent attention span." — Manus
-#
-# Purpose: Keep the goal visible. Prevent drift.
+# UserPromptSubmit: Echoes context and checks alignment
+# Branch-aware via lib/resolve-memory.sh
 
-MEMORY_DIR="${CLAUDE_MEMORY_DIR:-.claude/memory}"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+MEMORY_DIR=$("$SCRIPT_DIR/lib/resolve-memory.sh")
 MEMORY="$MEMORY_DIR/working.md"
 
-if [ -f "$MEMORY" ]; then
-    goal=$(grep '^\*\*Objective\*\*:' "$MEMORY" | sed 's/\*\*Objective\*\*: //')
-    if [ -n "$goal" ] && [ "$goal" != "[What are we building/fixing?]" ]; then
-        echo "📎 $goal"
-    fi
-fi
+[ ! -f "$MEMORY" ] && exit 0
+
+goal=$(grep '^\*\*Objective\*\*:' "$MEMORY" | sed 's/\*\*Objective\*\*: //')
+[ -z "$goal" ] && exit 0
+[ "$goal" = "[What are we building/fixing?]" ] && exit 0
+
+# Extract branch from memory path (last component)
+branch=$(echo "$MEMORY_DIR" | sed 's|.*/||')
+
+echo "📎 [$branch] $goal — ⛔ Misaligned? STOP."

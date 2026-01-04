@@ -1,13 +1,9 @@
 #!/bin/bash
 # SessionStart: Loads cognitive RAM (working memory)
-#
-# "Context is RAM. Filesystem is external memory." — Manus
-#
-# Purpose: Remember where we left off.
+# Branch-aware via lib/resolve-memory.sh
 
-MEMORY_DIR="${CLAUDE_MEMORY_DIR:-.claude/memory}"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+MEMORY_DIR=$("$SCRIPT_DIR/lib/resolve-memory.sh")
 MEMORY="$MEMORY_DIR/working.md"
 
-if [ -f "$MEMORY" ]; then
-    cat "$MEMORY"
-fi
+[ -f "$MEMORY" ] && cat "$MEMORY"

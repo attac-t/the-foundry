@@ -1,13 +1,9 @@
 #!/bin/bash
 # PreCompact: Prompts verification before context compression
-#
-# Distinct from recite.sh:
-#   recite  = WRITE prompt ("update if progress")
-#   preserve = VERIFY prompt ("confirm memory is complete")
-#
-# Purpose: Last chance to verify, not to write.
+# Branch-aware via lib/resolve-memory.sh
 
-MEMORY_DIR="${CLAUDE_MEMORY_DIR:-.claude/memory}"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+MEMORY_DIR=$("$SCRIPT_DIR/lib/resolve-memory.sh")
 
 cat <<EOF
 ---
