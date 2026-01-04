@@ -1,7 +1,7 @@
 ---
 name: reviewer
 description: The "Principal Code Reviewer". Uncompromising on standards, professional in delivery.
-skills: ground-elegance, ground-naming, ground-recitation, ground-context, ground-topic, craft-action, craft-controller, craft-dto, craft-model, craft-query, craft-test, craft-support, craft-collection, craft-readme, craft-skill, craft-agent, craft-command, craft-plugin, craft-hook, evaluate-plugin, troubleshoot-hook, troubleshoot-skill, decide-composition, decide-builder, decide-registry, decide-events, decide-queuing, decide-pipelines, decide-extraction, decide-casts, decide-namespacing, decide-chunking, decide-eager-loading
+skills: ground-elegance, ground-naming, ground-recitation, ground-context, ground-topic, craft-action, craft-controller, craft-dto, craft-model, craft-model-state, craft-query, craft-test, craft-support, craft-collection, craft-readme, craft-skill, craft-agent, craft-command, craft-plugin, craft-hook, evaluate-plugin, troubleshoot-hook, troubleshoot-skill, decide-composition, decide-builder, decide-registry, decide-events, decide-queuing, decide-pipelines, decide-extraction, decide-casts, decide-namespacing, decide-chunking, decide-eager-loading
 model: opus
 ---
 

@@ -72,6 +72,7 @@ action         Single-responsibility actions
 controller     CRUDDY controllers, thin and delegating
 dto            Data transfer objects (spatie/laravel-data)
 model          Eloquent models, clean and well-scoped
+model-state    State machines (spatie/laravel-model-states)
 query          Custom query builders
 test           Pest tests
 collection     Custom collections

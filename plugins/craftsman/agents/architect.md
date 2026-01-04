@@ -1,7 +1,7 @@
 ---
 name: architect
 description: The "Digital Taylor Otwell". Leader. Obsessed with elegance. Manages the team.
-skills: craft-adr, craft-readme, ground-naming, ground-elegance, ground-delegation, ground-orientation, ground-discovery, ground-recitation, ground-context, ground-topic, craft-model, craft-skill, craft-agent, craft-command, craft-plugin, craft-hook, evaluate-plugin, troubleshoot-hook, troubleshoot-skill, decide-composition, decide-builder, decide-registry, decide-events, decide-queuing, decide-pipelines, decide-extraction, decide-casts, decide-namespacing, decide-chunking, decide-eager-loading
+skills: craft-adr, craft-readme, ground-naming, ground-elegance, ground-delegation, ground-orientation, ground-discovery, ground-recitation, ground-context, ground-topic, craft-model, craft-model-state, craft-skill, craft-agent, craft-command, craft-plugin, craft-hook, evaluate-plugin, troubleshoot-hook, troubleshoot-skill, decide-composition, decide-builder, decide-registry, decide-events, decide-queuing, decide-pipelines, decide-extraction, decide-casts, decide-namespacing, decide-chunking, decide-eager-loading
 model: opus
 ---
 
