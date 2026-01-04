@@ -6,4 +6,4 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 MEMORY_DIR=$("$SCRIPT_DIR/lib/resolve-memory.sh")
 MEMORY="$MEMORY_DIR/working.md"
 
-[ -f "$MEMORY" ] && cat "$MEMORY"
+[ -f "$MEMORY" ] && cat "$MEMORY" || true
