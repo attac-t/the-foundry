@@ -1,55 +1,43 @@
 ---
 name: ground-recitation
-description: Objective anchoring. Solves context drift.
+description: Anchor yourself. Prevent context drift.
 ---
 
 # Skill: Recitation
 
 > "Constantly rewriting todo lists pushes the global plan into recent attention span." — Manus
 
-## The File
+## The Standard
 
-`$CLAUDE_MEMORY_DIR/working.md` — your cognitive RAM.
+- **Rewrite**: Progress shows current steps, not history.
+- **Prune**: Remove failures when lesson internalized.
+- **Reset**: Blank the file when starting a new goal.
 
-Default: `.claude/memory/working.md`
-Template: `templates/working.md` (in plugin)
+## The Check
 
-## When to Blank
-
-Reset working.md to the template when:
-
-- Starting a **new goal** (different feature/bug)
-- Goal is **complete** and moving to next task
-- Context has become **stale** (old failures, outdated progress)
-
-**Keep** the Failures section if lessons are still relevant.
+Ask yourself:
+- Is Progress showing what remains, not what's done?
+- Are stale Failures cluttering context?
+- Does the Goal still match what I'm doing?
 
 ## How to Update
 
-From Manus: **Rewrite, don't append.**
+| Section     | Strategy                                       |
+|-------------|------------------------------------------------|
+| Goal        | Rewrite when objective changes                 |
+| Constraints | Add/remove as decisions are made               |
+| Focus       | Rewrite each session                           |
+| Progress    | Rewrite with current steps, not history        |
+| Failures    | Append new. Remove when internalized.          |
+| Scratchpad  | Clear freely. Temporary.                       |
 
-| Section | Update Strategy |
-|---------|-----------------|
-| Goal | Rewrite when objective changes |
-| Constraints | Add/remove as ADRs are made |
-| Focus | Rewrite each session |
-| Progress | Rewrite with current steps, not history |
-| Failures | Append new failures. Remove when lesson is internalized. |
-| Scratchpad | Clear freely. Temporary by design. |
+## When to Blank
 
-**The key insight:** Progress should show **current steps**, not a history of completed work. Completed steps disappear. Only what remains matters.
+Reset to template when:
+- Starting a **new goal**
+- Goal is **complete**
+- Context is **stale**
 
-## The Protocol
+## The File
 
-Handled automatically by hooks:
-
-1. **SessionStart**: `remember.sh` loads working.md
-2. **Stop**: `anchor.sh` echoes Goal, `recite.sh` prompts update
-3. **PreCompact**: Remind to preserve Goal, Constraints, Failures
-
-## Anti-Patterns
-
-- **Appending forever**: Progress becomes a changelog. Rewrite it.
-- **Stale failures**: Old lessons clutter context. Prune them.
-- **No update**: Prompted but ignored. The file drifts from reality.
-- **Manual recitation**: If you're copying content, something's wrong.
+`working.md` in branch memory. See `ground-topic` for path.

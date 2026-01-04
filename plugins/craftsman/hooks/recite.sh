@@ -1,11 +1,9 @@
 #!/bin/bash
-# Stop: Prompts working memory update (recitation protocol)
-#
-# Implements: ground-recitation skill
-#
-# Purpose: Enforce the WRITE step. Memory must be updated.
+# UserPromptSubmit: Prompts working memory update
+# Branch-aware via lib/resolve-memory.sh
 
-MEMORY_DIR="${CLAUDE_MEMORY_DIR:-.claude/memory}"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+MEMORY_DIR=$("$SCRIPT_DIR/lib/resolve-memory.sh")
 
 cat <<EOF
 ---
