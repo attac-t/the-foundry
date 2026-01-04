@@ -15,7 +15,7 @@ Run at session start. Ensures memory isolation per topic.
 
 1. **Detect** current git branch
 2. **Resolve** memory path → `.claude/memory/<branch>/`
-3. **On main/master/develop?** Prompt to create topic branch
+3. **On main/master/develop?** ⛔ Prompt to create a topic branch before implementation
 4. **No memory?** Prompt to scaffold from templates
 
 ## The Anti-Patterns
