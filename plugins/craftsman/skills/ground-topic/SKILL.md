@@ -9,14 +9,13 @@ description: Isolate yourself. One branch, one memory.
 
 ## When
 
-Run at session start. Ensures memory isolation per topic.
+Run at session start. Referenced by recite hook on protected branches.
 
 ## The Protocol
 
 1. **Detect** current git branch
 2. **Resolve** memory path → `.claude/memory/<branch>/`
-3. **On main/master/develop?** ⛔ Prompt to create a topic branch before implementation
-4. **No memory?** Prompt to scaffold from templates
+3. **No memory?** Prompt to scaffold from templates
 
 ## The Anti-Patterns
 
@@ -25,4 +24,14 @@ Run at session start. Ensures memory isolation per topic.
 
 ## The Output
 
-State: "Topic: `<branch>`. Memory: `.claude/memory/<branch>/`"
+**Feature branch:**
+```
+Topic: `<branch>`. Memory: `.claude/memory/<branch>/`
+```
+
+**Protected branch:**
+```
+Topic: `<branch>`. (Protected — branch before implementing)
+```
+
+When implementation is requested on a protected branch, prompt for topic branch. Otherwise, exploration is fine.
