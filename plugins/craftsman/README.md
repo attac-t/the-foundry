@@ -42,6 +42,7 @@ recitation     Anchor objectives. Solve drift.
 orientation    Load context. Solve cold start.
 delegation     Know when to code and when to lead.
 interview      Extract requirements via questions.
+topic          Isolate memory per branch. One topic, one branch.
 ```
 
 ### Decide — When to Use What
@@ -233,27 +234,20 @@ This applies the Craftsman voice: direct, opinionated, elegant. No hedging.
 
 ## Working Memory
 
-Optional, but recommended. Create `.claude/memory/working.md`:
+Branch-aware. Each topic gets its own memory.
 
-```bash
-mkdir -p .claude/memory
-cp templates/working.md .claude/memory/
 ```
-
-Or write your own:
-
-```markdown
-# Working Memory
-
-**Goal**: [What are we building?]
-
-**Context**: [Key constraints, decisions]
-
-**Progress**:
-- [ ] Step 1
-
-**Failures**:
-- None yet
+.claude/memory/
+├── main/
+│   ├── working.md
+│   ├── spec.md
+│   └── adr/
+├── feat/auth/
+│   ├── working.md
+│   ├── spec.md
+│   └── adr/
+└── fix/bug-123/
+    └── working.md
 ```
 
 ---
