@@ -28,8 +28,9 @@
 
 ## Progress
 
-- [ ] [Next step]
-- [ ] [Following step]
+See `blueprint.md` for task tracking.
+
+Currently: [Active task description]
 
 ---
 
