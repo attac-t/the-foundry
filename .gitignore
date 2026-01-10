@@ -1,7 +1,7 @@
 # Session-specific working memory (developers create their own)
 .claude/memory/
 
-# Generated settings with local paths (run ./setup.sh to create)
+# Local settings (may contain local paths)
 .claude/settings.json
 .claude/settings.local.json
 
