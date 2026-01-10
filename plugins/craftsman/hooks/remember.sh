@@ -10,4 +10,4 @@ MEMORY="$MEMORY_DIR/working.md"
 
 # Load blueprint (task tracker)
 BLUEPRINT="$MEMORY_DIR/blueprint.md"
-[ -f "$BLUEPRINT" ] && echo "" && cat "$BLUEPRINT"
+[ -f "$BLUEPRINT" ] && echo "" && cat "$BLUEPRINT" || true
