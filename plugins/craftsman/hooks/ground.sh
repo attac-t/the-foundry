@@ -1,8 +1,9 @@
 #!/bin/bash
 # SessionStart: Loads ground philosophy (foundational principles)
 #
-# Fires on: new session, compacted session
-# Purpose: Establish philosophy before any work begins.
+# These are non-negotiable. They shape every decision.
+#
+# Purpose: Establish the philosophy before any work begins.
 
 cat <<'EOF'
 ---
