@@ -5,7 +5,13 @@
 #
 # Purpose: Establish the philosophy before any work begins.
 
-echo "---"
-echo "**REQUIRED**: Run \`/craftsman:ground\` now. No exceptions. If not found, say so and STOP."
-echo ""
-echo "⛔ **BLOCKING**: Do not respond to user until grounded."
+cat <<'EOF'
+---
+🚨🚨🚨 **GROUND NOW** 🚨🚨🚨
+
+⛔ Run `/craftsman:ground` immediately.
+
+- ❌ Do not ask.
+- ❌ Do not skip.
+- ❌ Do not respond to user until complete.
+EOF
