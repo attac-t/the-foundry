@@ -19,4 +19,9 @@ cat <<EOF
 **Recite** (ground-recitation protocol)
 If you made progress or encountered failures:
 → UPDATE \`$MEMORY_DIR/working.md\`
+
+**Blueprint Protocol**:
+→ Confirm task completion with user before marking done.
+→ Move deferred tasks to Deferred section with reason.
+→ Record scope changes in Changes section.
 EOF

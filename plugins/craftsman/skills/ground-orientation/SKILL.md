@@ -13,8 +13,8 @@ Run this at session start or when you feel lost.
 
 ## The Protocol
 
-1. **Read Strategy**: `implementation_plan.md`, `task.md`.
-2. **Read Decisions**: `ls domain/*/ADR`, read relevant ADRs.
+1. **Read Memory**: `$MEMORY_DIR/working.md`, `$MEMORY_DIR/blueprint.md`.
+2. **Read Decisions**: `ls docs/*/ADR`, read relevant ADRs.
 3. **State**: "Oriented. Mode: [Planning/Execution]. Task: [Name]."
 
 ## The Anti-Patterns

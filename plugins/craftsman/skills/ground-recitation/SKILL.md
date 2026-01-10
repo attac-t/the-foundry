@@ -9,16 +9,17 @@ description: Anchor yourself. Prevent context drift.
 
 ## The Standard
 
-- **Rewrite**: Progress shows current steps, not history.
+- **Rewrite**: Goal, Focus, Scratchpad — current state, not history.
 - **Prune**: Remove failures when lesson internalized.
 - **Reset**: Blank the file when starting a new goal.
 
 ## The Check
 
 Ask yourself:
-- Is Progress showing what remains, not what's done?
+- Does Goal still match what I'm doing?
+- Is Focus pointing to the right domain/files?
 - Are stale Failures cluttering context?
-- Does the Goal still match what I'm doing?
+- Is Progress synced with blueprint's Current task?
 
 ## How to Update
 
@@ -27,9 +28,23 @@ Ask yourself:
 | Goal        | Rewrite when objective changes                 |
 | Constraints | Add/remove as decisions are made               |
 | Focus       | Rewrite each session                           |
-| Progress    | Rewrite with current steps, not history        |
+| Progress    | Pointer to blueprint + active task             |
 | Failures    | Append new. Remove when internalized.          |
 | Scratchpad  | Clear freely. Temporary.                       |
+
+## Progress Section
+
+Progress is a **pointer**, not a list. The list lives in `blueprint.md`.
+
+```markdown
+## Progress
+
+See `blueprint.md` for task tracking.
+
+Currently: [active task description]
+```
+
+Do not duplicate task checkboxes here. The blueprint is the plan.
 
 ## When to Blank
 
