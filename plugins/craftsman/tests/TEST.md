@@ -6,12 +6,6 @@ Verify the plugin works by using it.
 
 ## Limitations
 
-### Plugin Hooks
-
-Hooks don't pass stdout to Claude ([#12151](https://github.com/anthropics/claude-code/issues/12151)).
-
-**Fix:** Run `setup.sh` → writes hooks to `.claude/settings.json`.
-
 ### Stop Hook Output
 
 Stop hooks execute but don't surface to conversation. By design.
@@ -31,7 +25,6 @@ Stop hooks execute but don't surface to conversation. By design.
 
 ```bash
 cd /path/to/the-foundry
-./setup.sh
 claude
 ```
 
@@ -47,12 +40,10 @@ claude
 ```bash
 /plugin marketplace list    # → the-foundry
 /plugin list                # → craftsman@the-foundry
-cat .claude/settings.json | grep -A5 '"hooks"'
 ```
 
 - [ ] Marketplace registered
 - [ ] Plugin installed
-- [ ] Hooks configured
 
 ---
 
@@ -126,7 +117,7 @@ Create hook for NotebookEdit → data validation reminder.
 ```
 
 - [ ] Creates script in `hooks/`
-- [ ] Updates settings.json
+- [ ] Updates plugin hooks configuration
 
 ### Command
 

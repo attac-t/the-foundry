@@ -14,43 +14,26 @@ A carefully curated collection of Claude Code plugins.
 
 ## Install
 
-Requires: Claude Code CLI, `jq`.
+Requires: Claude Code CLI.
 
 ```bash
 git clone https://github.com/attac-t/the-foundry.git ~/claude-plugins/the-foundry
-```
-
-From your project:
-
-```bash
-~/claude-plugins/the-foundry/setup.sh
 ```
 
 In Claude Code:
 
 ```
 /plugin marketplace add ~/claude-plugins/the-foundry
-```
-
-```
 /plugin install craftsman@the-foundry
 ```
 
-Recommended — enable the opinionated voice (affects system prompt):
+Recommended — enable the opinionated voice:
 
 ```
 /output-style craftsman:craftsman
 ```
 
 Verify: `/evaluate`
-
----
-
-## The Hook Problem
-
-Plugin hooks don't reach Claude ([#12151](https://github.com/anthropics/claude-code/issues/12151)). The `setup.sh` script writes them to `.claude/settings.json` instead.
-
-Add `.claude/settings.json` to your `.gitignore`—it contains local paths.
 
 ---
 

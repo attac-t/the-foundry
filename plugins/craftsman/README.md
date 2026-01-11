@@ -263,8 +263,7 @@ Skills not activating? Hooks silent?
 
 Check:
 - Scripts executable? `chmod +x hooks/*.sh`
-- `jq` installed?
-- Hooks in `.claude/settings.json`?
+- Plugin installed? `/plugin list`
 
 Use: `troubleshoot-hook`, `troubleshoot-skill`.
 
