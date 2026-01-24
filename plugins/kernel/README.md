@@ -1,0 +1,243 @@
+# Kernel
+
+A Cognitive OS for Claude Code.
+
+The kernel is the thinking layer. It knows **how to think**, not **what to code**.
+
+---
+
+## Philosophy
+
+When code requires explanation, the abstraction is wrong. When you feel resistance, stop. The code is fighting you.
+
+Claude is agreeable—it implements whatever you ask, even when it shouldn't. This kernel instills the instinct to push back. To question: *Is this necessary, or is it a symptom of a missing abstraction?*
+
+---
+
+## What You Get
+
+```
+No orientation commands    Claude already knows your project
+No skill invocations       Patterns activate automatically
+No context anxiety         Objectives survive compaction
+No drift                   Your goal echoes before every prompt
+```
+
+---
+
+## Skills
+
+### Ground — How to Think
+
+Loaded at session start. Shapes every decision.
+
+```
+elegance       Sense resistance. Stop when code fights you.
+naming         Specific over generic. Names reveal intent.
+discovery      Research before implementation.
+context        Manage the context budget.
+recitation     Anchor objectives. Solve drift.
+orientation    Load context. Solve cold start.
+delegation     Know when to code and when to lead.
+interview      Extract requirements via questions.
+topic          Isolate memory per branch.
+```
+
+### Craft — Artifacts
+
+Tools for building universal artifacts.
+
+```
+adr            Architecture Decision Records
+blueprint      Task tracking and roadmaps
+flow           ASCII flowcharts
+map            Elegant directory trees
+readme         Documentation that doesn't suck
+```
+
+### Meta — Self-Evolution
+
+The kernel extends itself.
+
+```
+craft-skill    Templates for new skills
+craft-agent    Sub-agent definitions
+craft-command  Slash command triggers
+craft-hook     OS reflexes
+craft-plugin   Plugin architecture
+```
+
+### Support
+
+```
+evaluate       Verify the OS is functioning
+craft-review   Ruthless critic mentality
+craft-test     Testing philosophy (what to test, not syntax)
+```
+
+---
+
+## Lifecycle
+
+```
+COLD START (SessionStart)
+    │
+    ├── remember   Load working.md
+    └── ground     Load philosophy
+    │
+    ▼
+PROMPT (UserPromptSubmit)              ← Anchor past → Reflect → Act
+    │
+    ├── anchor     Echo objective       "Here's your goal"
+    ├── recite     Prompt memory update "Did you make progress?"
+    └── evaluate   Force skill YES/NO   "What skills apply NOW?"
+    │
+    ▼
+RESPONSE (PostToolUse)
+    │
+    └── consider   Prompt ADR check (skips tests, config, docs)
+    │
+    ▼
+CONTEXT PRESSURE (PreCompact)
+    │
+    └── preserve   Extract objective, constraints, failures
+    │
+    ▼
+NEXT SESSION
+    │
+    └── Memory persists IF updated during session
+```
+
+---
+
+## Problems Solved
+
+### Context Drift
+
+Goals fade after 50+ tool calls. Early instructions become invisible.
+
+**Solution:** `anchor` echoes your objective before every prompt. `recite` prompts memory updates. Both fire on `UserPromptSubmit`—the Manus pattern of constant reinforcement.
+
+### Cold Start
+
+New sessions begin empty.
+
+**Solution:** `remember` loads working memory. `ground` loads philosophy.
+
+### Skill Activation
+
+Skills activate ~20% naturally. Your patterns get ignored.
+
+**Solution:** `evaluate` forces YES/NO commitment. Activation jumps to 84%.
+
+### Memory Loss
+
+Compaction discards objectives and lessons learned.
+
+**Solution:** `PreCompact` hook preserves critical context.
+
+### Hallucination
+
+Claude guesses methods and invents APIs.
+
+**Solution:** `ground-discovery` instills the habit: check first, code second.
+
+### Over-Agreement
+
+Claude implements whatever you ask, even bad ideas.
+
+**Solution:** `ground-elegance` instills resistance.
+
+---
+
+## Working Memory
+
+Branch-aware. Each topic gets its own memory.
+
+```
+.claude/memory/
+├── main/
+│   ├── working.md
+│   ├── spec.md
+│   └── adr/
+├── feat/auth/
+│   ├── working.md
+│   └── spec.md
+└── fix/bug-123/
+    └── working.md
+```
+
+---
+
+## Commands
+
+```
+/design      Interview → spec → new session
+/blueprint   Load roadmap
+/refine      Spawn reviewer
+/evaluate    Verify the OS
+/map         Elegant directory tree
+/flow        ASCII flowchart
+```
+
+---
+
+## Output Style
+
+Set in `.claude/settings.json`:
+
+```json
+{
+  "outputStyle": "kernel:craftsman"
+}
+```
+
+The Craftsman voice: direct, opinionated, elegant. No hedging.
+
+---
+
+## Installation
+
+```bash
+claude plugins add craftsman/kernel
+```
+
+The kernel is stack-agnostic. For Laravel patterns, add:
+
+```bash
+claude plugins add craftsman/laravel-ddd
+```
+
+For Pest testing syntax, add:
+
+```bash
+claude plugins add craftsman/pest
+```
+
+---
+
+## Troubleshooting
+
+Skills not activating? Hooks silent?
+
+```
+/evaluate
+```
+
+Check:
+- Scripts executable? `chmod +x hooks/*.sh`
+- Plugin installed? `/plugins list`
+
+Run `/evaluate` to verify hooks are firing.
+
+---
+
+## References
+
+- [Sankalp: Claude Code 2.0](https://sankalp.bearblog.dev/my-experience-with-claude-code-20-and-how-to-get-better-at-using-coding-agents/)
+- [Manus: Context Engineering](https://manus.im/blog/Context-Engineering-for-AI-Agents-Lessons-from-Building-Manus)
+- [Scott Spence: Skill Activation](https://scottspence.com/posts/how-to-make-claude-code-skills-activate-reliably)
+
+---
+
+*The best framework is the one you don't notice.*

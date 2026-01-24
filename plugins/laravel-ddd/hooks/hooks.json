@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": ".*\\.env.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo 'WARNING: No secrets in commits. Check for .env files.'"
+          }
+        ]
+      }
+    ]
+  }
+}

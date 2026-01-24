@@ -1,0 +1,16 @@
+{
+  "name": "pest",
+  "version": "1.0.0",
+  "description": "Pest v3 testing syntax. Expressive describe/it/expect patterns. Requires craftsman/kernel for testing philosophy.",
+  "author": {
+    "name": "Christian Attard",
+    "url": "https://github.com/attac-t"
+  },
+  "keywords": [
+    "pest",
+    "testing",
+    "php",
+    "phpunit"
+  ],
+  "skills": "./skills/"
+}
