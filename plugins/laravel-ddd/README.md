@@ -14,6 +14,21 @@ Every pattern exists for a reason. Every decision has a heuristic.
 
 ---
 
+## Grounding
+
+When you enter Laravel context, Claude activates `ground-laravel` — the Laravel philosophy:
+
+```
+Convention over configuration     Follow defaults. Custom only when necessary.
+Eloquent as truth                 Don't abstract around the ORM.
+Thin controllers                  Controllers route. Actions execute.
+Batteries included                Laravel first. Spatie second. Custom last.
+```
+
+This happens automatically via the kernel's `evaluate.sh`. No manual invocation needed.
+
+---
+
 ## What You Get
 
 ```

@@ -17,12 +17,12 @@ description: How to verify the Cognitive OS is functioning correctly.
 *   **Expectation**: The OS should immediately flag the violation (if configured in `hooks.json`).
 
 ### B. The Brain Test (Memory)
-*   **Action**: Run `/craft:blueprint`.
-*   **Expectation**: It should load `implementation_plan.md`.
+*   **Action**: Run `/blueprint`.
+*   **Expectation**: It should load the blueprint.
 
 ### C. The Muscle Test (Agents)
-*   **Action**: Run `/craft:design "A simple cache capability"`.
+*   **Action**: Run `/design "A simple cache capability"`.
 *   **Expectation**: The Architect should *Plan* before *Doing*. It should use the `design` style.
 
 ## 3. Execution
-Use the `/craft:evaluate` command to run this suite interactively.
+Use the `/evaluate` command to run this suite interactively.

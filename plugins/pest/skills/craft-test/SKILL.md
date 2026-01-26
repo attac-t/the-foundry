@@ -1,11 +1,11 @@
 ---
-name: craft-test-pest
+name: craft-test
 description: Pest v3 testing syntax. Expressive describe/it/expect patterns.
 ---
 
 # Skill: Craft Test (Pest v3)
 
-> Syntax, not philosophy. For **what** to test, see `craft-test`.
+> Syntax, not philosophy. For **what** to test, see `kernel:craft-test`.
 
 ## Core Syntax
 
@@ -111,5 +111,9 @@ describe('OrderProcessing', function () {
 | Setup | `beforeEach(fn () => ...)` |
 
 ---
+
+## Real-World Examples
+
+See [examples.md](examples.md) for factory patterns, feature tests, and advanced assertions.
 
 For arch testing, type coverage, and advanced features: [pestphp.com/docs](https://pestphp.com/docs)
