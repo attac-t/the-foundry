@@ -9,14 +9,14 @@ Patterns for elegant ASCII flowcharts.
 ```
 COLD START (SessionStart)
     │
-    ├── recite        load working.md
+    ├── remember      load working.md
     └── ground        load philosophy
     │
     ▼
 PROMPT (UserPromptSubmit)         ← main loop
     │
     ├── anchor        echo objective
-    ├── remember      prompt memory update
+    ├── recite        prompt memory update
     └── evaluate      force skill check
     │
     ▼
@@ -25,9 +25,9 @@ RESPONSE (PostToolUse)
     └── consider      prompt ADR check
     │
     ▼
-CONTEXT PRESSURE (PreCompact)
+STOP (Stop)
     │
-    └── preserve      extract to memory
+    └── verify        check incomplete tasks
 ```
 
 **Flow:** Start → Prompt → Response → Repeat.

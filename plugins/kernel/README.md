@@ -95,14 +95,9 @@ RESPONSE (PostToolUse)
     └── consider   Prompt ADR check (skips tests, config, docs)
     │
     ▼
-CONTEXT PRESSURE (PreCompact)
+STOP (Stop)
     │
-    └── preserve   Extract objective, constraints, failures
-    │
-    ▼
-NEXT SESSION
-    │
-    └── Memory persists IF updated during session
+    └── verify     Check for incomplete tasks
 ```
 
 ---
@@ -131,7 +126,7 @@ Skills activate ~20% naturally. Your patterns get ignored.
 
 Compaction discards objectives and lessons learned.
 
-**Solution:** `PreCompact` hook preserves critical context.
+**Solution:** `working.md` persists outside context. `recite` prompts updates. Memory survives compaction if you write it down.
 
 ### Hallucination
 
