@@ -5,14 +5,14 @@ description: Crafting Value Objects. Immutable, serialization-safe.
 
 # Skill: Craft Value Object
 
-> "A value object is defined by its attributes, not its identity."
+> "Invalid objects should be impossible to create."
 
 ## The Standard
 
-1. **Immutable**: `readonly class`. No setters. Clone to modify.
-2. **Self-Validating**: Throw on invalid construction.
-3. **Serializable**: Must survive queue serialization. No closures.
-4. **Equality by Value**: Two VOs with same attributes are equal.
+1. **Self-Validating**: Validate in constructor. Invalid state throws immediately.
+2. **Immutable**: `readonly class`. No setters. Clone to modify.
+3. **Defensive Construction**: Private constructor + named factories for controlled creation.
+4. **Serializable**: Must survive queue serialization. No closures, no resources.
 
 ## The Anti-Patterns
 
@@ -25,4 +25,4 @@ description: Crafting Value Objects. Immutable, serialization-safe.
 
 ## Real-World Examples
 
-See [examples.md](examples.md).
+See [examples/](examples/).

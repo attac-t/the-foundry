@@ -25,4 +25,4 @@ description: Crafting Result Objects. Rich outcomes beyond success/failure.
 
 ## Real-World Examples
 
-See [examples.md](examples.md).
+See [examples/](examples/).

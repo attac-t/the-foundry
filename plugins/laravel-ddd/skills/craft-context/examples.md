@@ -6,8 +6,8 @@ Patterns for parameter encapsulation.
 
 ## The Pattern
 
-### ✅ Named Constructors for Scenarios
-**Why?** Intent is explicit. Each scenario has its own entry point.
+### ✅ Private Constructor + Invariant Validation
+**Why?** Invalid context impossible. Intent explicit.
 ```php
 readonly class SyncSalesContext
 {
@@ -17,7 +17,17 @@ readonly class SyncSalesContext
         public Carbon $endDate,
         public bool $dryRun,
         public ?int $batchId,
-    ) {}
+    ) {
+        // Invariant: dates must be valid range
+        if ($startDate->isAfter($endDate)) {
+            throw new InvalidArgumentException('Start date must be before end date');
+        }
+
+        // Invariant: provider must be supported
+        if (! in_array($provider, ['xero', 'myob', 'quickbooks'])) {
+            throw new InvalidArgumentException("Unsupported provider: {$provider}");
+        }
+    }
 
     public static function forProvider(
         string $provider,

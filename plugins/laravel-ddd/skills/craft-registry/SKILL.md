@@ -25,4 +25,4 @@ description: Crafting Registries. Multi-provider handler dispatch.
 
 ## Real-World Examples
 
-See [examples.md](examples.md).
+See [examples/](examples/).

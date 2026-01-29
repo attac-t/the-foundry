@@ -9,10 +9,10 @@ description: Crafting Context Objects. Parameter encapsulation for complex opera
 
 ## The Standard
 
-1. **Named Constructors**: `::forProvider()`, `::forBatch()`. Intent in the name.
-2. **Encapsulate Configuration**: Dates, flags, identifiers—grouped, typed.
-3. **Immutable**: Set once, read many. No setters.
-4. **Passed Through Chains**: Context flows through action composition.
+1. **Private Constructor**: Direct instantiation blocked. Forces use of named factories.
+2. **Named Factories**: `::forProvider()`, `::forBatch()`. Intent in the name.
+3. **Self-Validating**: Validate in constructor. Invalid context throws immediately.
+4. **Immutable**: `readonly class`. Set once, read many. No setters.
 
 ## The Anti-Patterns
 

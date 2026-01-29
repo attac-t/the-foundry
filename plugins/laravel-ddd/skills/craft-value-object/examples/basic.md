@@ -1,6 +1,6 @@
-# Value Object: Examples
+# Value Object: Basic Patterns
 
-Patterns for immutable, queue-safe value objects.
+Core value object implementation.
 
 ---
 
@@ -103,59 +103,4 @@ readonly class Email
         return explode('@', $this->value)[1];
     }
 }
-```
-
----
-
-## Queue Serialization
-
-### ✅ Safe in Jobs
-```php
-class ProcessBatchJob implements ShouldQueue
-{
-    public function __construct(
-        public BatchIdentifier $batch,  // Serializes cleanly
-    ) {}
-
-    public function handle(): void
-    {
-        Log::info("Processing {$this->batch->toString()}");
-    }
-}
-```
-
-### ❌ Won't Serialize
-```php
-readonly class BadValueObject
-{
-    public function __construct(
-        public Closure $callback,  // Can't serialize
-        public PDO $connection,    // Resource, can't serialize
-    ) {}
-}
-```
-
----
-
-## Eloquent Integration
-
-### ✅ Cast to Value Object
-```php
-class MoneyCast implements CastsAttributes
-{
-    public function get($model, $key, $value, $attrs): Money
-    {
-        return new Money((int) $value);
-    }
-
-    public function set($model, $key, $value, $attrs): int
-    {
-        return $value->cents;
-    }
-}
-
-// In model
-protected $casts = [
-    'price' => MoneyCast::class,
-];
 ```

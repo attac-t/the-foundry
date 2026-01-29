@@ -25,4 +25,4 @@ description: Crafting an Action. The heart of business logic.
 
 ## Real-World Examples
 
-See [examples.md](examples.md).
+See [examples/](examples/).
