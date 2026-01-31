@@ -5,7 +5,7 @@ description: Anchor yourself. Prevent context drift.
 
 # Skill: Recitation
 
-> "Constantly rewriting todo lists pushes the global plan into recent attention span." -- Manus
+> "Constantly rewriting todo lists pushes the global plan into recent attention span." — Manus
 
 ## The Standard
 
@@ -52,6 +52,29 @@ Reset to template when:
 - Starting a **new goal**
 - Goal is **complete**
 - Context is **stale**
+
+## Artifact Hierarchy
+
+Memory has layers. Each artifact serves a distinct purpose.
+
+| Artifact            | Lifespan     | Purpose        | When                     |
+|---------------------|--------------|----------------|--------------------------|
+| `working.md`        | Session      | Cognitive RAM  | Always active            |
+| `blueprint.md`      | Goal         | Task tracking  | Multi-step work          |
+| `spec.md`           | Goal         | Requirements   | New features             |
+| `adr/*.md`          | Permanent    | Decisions      | Architecture choices     |
+| `handoffs/*.md`     | Transitional | State transfer | Manual: `/handoff`       |
+| `observations/*.md` | Permanent    | Learnings      | Manual: `/observe`       |
+
+### Clarifying Overlaps
+
+**Failures (working.md) vs Observations**:
+- `Failures` = temporary. Remove when lesson internalized.
+- `observations/` = permanent. Worth reading again later.
+
+> Rule: If a failure taught you something worth remembering, create an observation. Then remove the failure.
+
+Don't wait to be asked. If the work warrants an artifact, create it proactively.
 
 ## The File
 

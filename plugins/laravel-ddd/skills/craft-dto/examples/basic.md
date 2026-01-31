@@ -1,6 +1,6 @@
-# DTO: Examples
+# DTO: Basic Patterns
 
-Patterns from Spatie Laravel Data v4.
+Two types of DTOs with Spatie Laravel Data v4.
 
 ---
 
@@ -61,19 +61,6 @@ $items = $data->all();  // Returns array of typed items
 ```php
 #[AutoWhenLoadedLazy]
 public Collection $comments,
-```
-
----
-
-## Immutability
-
-### ✅ Mutate via with()
-```php
-// ❌ Don't mutate directly
-$data->status = 'paid';
-
-// ✅ Create new instance
-$data = $data->with(status: 'paid');
 ```
 
 ---

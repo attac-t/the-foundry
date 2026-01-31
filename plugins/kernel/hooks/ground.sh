@@ -9,7 +9,7 @@ cat <<'EOF'
 ---
 🚨🚨🚨 **GROUND NOW** 🚨🚨🚨
 
-⛔ Run `/kernel:ground` immediately.
+⛔ Invoke `Skill(kernel:ground)` immediately.
 
 - ❌ Do not ask.
 - ❌ Do not skip.

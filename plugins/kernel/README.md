@@ -10,7 +10,7 @@ The kernel is the thinking layer. It knows **how to think**, not **what to code*
 
 When code requires explanation, the abstraction is wrong. When you feel resistance, stop. The code is fighting you.
 
-Claude is agreeable—it implements whatever you ask, even when it shouldn't. This kernel instills the instinct to push back. To question: *Is this necessary, or is it a symptom of a missing abstraction?*
+Claude is agreeable—it implements whatever you ask, even when it shouldn't. This kernel instills the instinct to push back.
 
 ---
 
@@ -27,7 +27,7 @@ No drift                   Your goal echoes before every prompt
 
 ## Skills
 
-### Ground — How to Think
+### Ground — Philosophy
 
 Loaded at session start. Shapes every decision.
 
@@ -43,36 +43,36 @@ interview      Extract requirements via questions.
 topic          Isolate memory per branch.
 ```
 
-### Craft — Artifacts
+### Craft — Building
 
-Tools for building universal artifacts.
+The craftsman's way to do X.
 
+**Artifacts**
 ```
 adr            Architecture Decision Records
 blueprint      Task tracking and roadmaps
 flow           ASCII flowcharts
+handoff        State transfer between sessions
 map            Elegant directory trees
+observation    Record learnings and discoveries
 readme         Documentation that doesn't suck
 ```
 
-### Meta — Self-Evolution
-
-The kernel extends itself.
-
+**OS Extension**
 ```
-craft-skill    Templates for new skills
-craft-agent    Sub-agent definitions
-craft-command  Slash command triggers
-craft-hook     OS reflexes
-craft-plugin   Plugin architecture
+skill          Templates for new skills
+agent          Sub-agent definitions
+command        Slash command triggers
+hook           OS reflexes
+plugin         Plugin architecture
 ```
 
-### Support
-
+**Quality**
 ```
-evaluate       Verify the OS is functioning
-craft-review   Ruthless critic mentality
-craft-test     Testing philosophy (what to test, not syntax)
+review          Ruthless critic mentality
+test            Testing philosophy (what to test, not syntax)
+evaluate        Verify the OS is functioning
+evaluate-plugin Verify plugin structure
 ```
 
 ---
@@ -98,14 +98,9 @@ RESPONSE (PostToolUse)
     └── consider   Prompt ADR check (skips tests, config, docs)
     │
     ▼
-CONTEXT PRESSURE (PreCompact)
+STOP (Stop)
     │
-    └── preserve   Extract objective, constraints, failures
-    │
-    ▼
-NEXT SESSION
-    │
-    └── Memory persists IF updated during session
+    └── verify     Check for incomplete tasks
 ```
 
 ---
@@ -134,7 +129,7 @@ Skills activate ~20% naturally. Your patterns get ignored.
 
 Compaction discards objectives and lessons learned.
 
-**Solution:** `PreCompact` hook preserves critical context.
+**Solution:** `working.md` persists outside context. `recite` prompts updates. Memory survives compaction if you write it down.
 
 ### Hallucination
 
@@ -178,6 +173,8 @@ Branch-aware. Each topic gets its own memory.
 /evaluate    Verify the OS
 /map         Elegant directory tree
 /flow        ASCII flowchart
+/handoff     Create state transfer document
+/observe     Record a learning or discovery
 ```
 
 ---
@@ -198,21 +195,71 @@ The Craftsman voice: direct, opinionated, elegant. No hedging.
 
 ## Installation
 
-```bash
-claude plugins add craftsman/kernel
+```
+/plugin install kernel@the-foundry
 ```
 
 The kernel is stack-agnostic. For Laravel patterns, add:
 
-```bash
-claude plugins add craftsman/laravel-ddd
+```
+/plugin install laravel-ddd@the-foundry
 ```
 
 For Pest testing syntax, add:
 
-```bash
-claude plugins add craftsman/pest
 ```
+/plugin install pest@the-foundry
+```
+
+---
+
+## Stack Plugin Pattern
+
+The kernel is stack-agnostic. Stack plugins extend it with domain-specific philosophy.
+
+### Stack Grounding
+
+Stack plugins provide `ground-*` skills that establish framework philosophy.
+
+The kernel's `evaluate.sh` evaluates ALL skills from ALL plugins on every prompt. When Claude detects a task requires Laravel context, it activates `ground-laravel`. Vue context? `ground-vue`.
+
+No new hooks needed. No detection scripts. The machinery exists.
+
+### Anatomy of a Stack Plugin
+
+```
+plugins/my-stack/
+├── .claude-plugin/plugin.json
+├── skills/
+│   ├── ground-my-stack/      # Philosophy (recommended)
+│   │   └── SKILL.md
+│   ├── craft-*/              # How to build
+│   └── decide-*/             # When to use what
+└── README.md
+```
+
+### Skill Types
+
+| Prefix | Purpose | When Activated |
+|--------|---------|----------------|
+| `ground-*` | Philosophy, mindset | Task enters stack context |
+| `craft-*` | How to build | Implementation needed |
+| `decide-*` | When to use what | Architectural choice |
+
+### Writing a ground-* Skill
+
+The description signals when to activate:
+
+```yaml
+---
+name: ground-my-stack
+description: My-Stack philosophy. [Core tenet]. Invoke ONCE when entering My-Stack context.
+---
+```
+
+The "ONCE" hint tells Claude not to re-invoke on every prompt.
+
+The body establishes mindset — not instructions. Philosophy, not patterns.
 
 ---
 

@@ -12,9 +12,9 @@ This is not a "plugin". It is a **Cognitive Operating System**.
 
 3.  **The Reflexes (Hooks)** (`hooks/hooks.json`):
     *   **Concept**: The Subconscious. These run automatically.
-    *   **JIT Learning**: Use `PreToolUse` to inject advice *before* a file is touched (e.g., "Entry points must be thin.").
-    *   **Guards**: Use `PostToolUse` to validate architecture (e.g., "Support cannot import Domain.").
+    *   **Context Injection**: Only `SessionStart`, `UserPromptSubmit`, and `Setup` inject stdout to Claude. Other hooks need JSON output.
     *   **Memory**: Use `SessionStart` to inject the `working.md` context.
+    *   **Details**: See `craft-hook` for injection rules and patterns.
 
 *   **The Brain (Memory)**: `$CLAUDE_MEMORY_DIR/working.md` (default: `.claude/memory/`). Mutable Context.
 *   **The Muscles (Agents)**: `agents/`. (Execution Roles).

@@ -69,3 +69,78 @@ class Payment extends Model
     ];
 }
 ```
+
+---
+
+## State-Specific Behavior
+
+### ✅ Behavior Lives in State
+**Why?** State knows what it can do. Model doesn't need conditionals.
+```php
+abstract class InvoiceState extends State
+{
+    abstract public function canBePaid(): bool;
+    abstract public function color(): string;
+}
+
+class PendingInvoiceState extends InvoiceState
+{
+    public function canBePaid(): bool
+    {
+        // State has access to model via $this->getModel()
+        return $this->getModel()->total_price > 0;
+    }
+
+    public function color(): string
+    {
+        return 'yellow';
+    }
+}
+
+class PaidInvoiceState extends InvoiceState
+{
+    public function canBePaid(): bool
+    {
+        return false;  // Already paid
+    }
+
+    public function color(): string
+    {
+        return 'green';
+    }
+}
+```
+
+### ✅ Usage in Views/Controllers
+```php
+// No conditionals needed
+<span class="badge bg-{{ $invoice->state->color() }}">
+    {{ $invoice->state::$name }}
+</span>
+
+// Guard behavior
+if ($invoice->state->canBePaid()) {
+    $invoice->state->transitionTo(PaidInvoiceState::class);
+}
+```
+
+### ✅ Transition with Side Effects
+```php
+class PendingToPaidTransition extends Transition
+{
+    public function handle(): Invoice
+    {
+        $invoice = $this->getModel();
+
+        $invoice->state = new PaidInvoiceState($invoice);
+        $invoice->paid_at = now();
+        $invoice->save();
+
+        // Side effects
+        InvoicePaid::dispatch($invoice);
+        History::log($invoice, 'Marked as paid');
+
+        return $invoice;
+    }
+}
+```

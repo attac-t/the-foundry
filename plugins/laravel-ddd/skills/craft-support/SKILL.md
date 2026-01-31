@@ -25,7 +25,7 @@ description: Crafting Support namespace code. Reusable, domain-agnostic.
 
 ## When to Use
 
-See [decide-namespacing](../../decide/namespacing/SKILL.md) for Support vs Domain decision.
+See [decide-namespacing](../decide-namespacing/SKILL.md) for Support vs Domain decision.
 
 ## Real-World Examples
 

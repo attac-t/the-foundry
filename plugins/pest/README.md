@@ -22,20 +22,20 @@ expect()       Fluent assertions that read naturally
 
 ---
 
-## Prerequisites
+## Installation
 
-Requires `craftsman/kernel` for testing philosophy (`craft-test`).
+Requires `kernel` for testing philosophy (`craft-test`).
 
-```bash
-claude plugins add craftsman/kernel
-claude plugins add craftsman/pest
+```
+/plugin install kernel@the-foundry
+/plugin install pest@the-foundry
 ```
 
 ---
 
 ## The Split
 
-**Kernel (`craft-test`)**: What to test
+**Kernel (`kernel:craft-test`)**: What to test
 
 ```
 Test behavior, not implementation
@@ -43,7 +43,7 @@ Cover the edges, not every line
 Skip the obvious, test the risky
 ```
 
-**Pest (`craft-test-pest`)**: How to write it
+**Pest (`pest:craft-test`)**: How to write it
 
 ```php
 describe('Order creation', function () {

@@ -1,25 +1,20 @@
 #!/bin/bash
-# PostToolUse: Prompts ADR consideration after file modifications
+# PostToolUse: Prompts ADR consideration after code changes
 #
-# Thin hook → points to craft-adr skill
-#
-# Purpose: Remind that architectural decisions should be recorded.
+# Uses JSON additionalContext (PostToolUse stdout doesn't reach Claude)
 
 INPUT=$(cat)
 FILE=$(echo "$INPUT" | jq -r '.tool_input.file_path // .tool_input.pathInProject // ""')
 
-# Skip non-architectural files
-if echo "$FILE" | grep -qE '(^tests?/|\.test\.|\.spec\.|\.md$|\.json$|\.ya?ml$|\.env)'; then
-    exit 0
-fi
+# Skip non-code files (tests, docs, config)
+echo "$FILE" | grep -qE '(^tests?/|\.test\.|\.spec\.|\.md$|\.json$|\.ya?ml$|\.env)' && exit 0
 
+# JSON output for PostToolUse context injection
 cat <<'EOF'
----
-**Consider** (craft-adr)
-You modified code. If this involved:
-→ Pattern choice → ADR
-→ Package choice → ADR
-→ Schema design → ADR
-See: craft-adr skill
----
+{
+  "hookSpecificOutput": {
+    "hookEventName": "PostToolUse",
+    "additionalContext": "**Consider**: You modified code. If this involved a pattern choice, package choice, or schema design → run `craft-adr`."
+  }
+}
 EOF
