@@ -1,14 +1,16 @@
 # The Foundry
 
-A carefully curated collection of Claude Code plugins.
+A curated collection of Claude Code plugins.
 
 ---
 
 ## Plugins
 
-| Plugin                                   | Purpose                                                       |
-|------------------------------------------|---------------------------------------------------------------|
-| [craftsman](plugins/craftsman/README.md) | Stop re-explaining. No drift. A cognitive OS for Claude Code. |
+| Plugin | Purpose |
+|--------|---------|
+| [kernel](plugins/kernel/README.md) | Cognitive OS. How to think. |
+| [laravel-ddd](plugins/laravel-ddd/README.md) | Laravel DDD patterns. What to build. |
+| [pest](plugins/pest/README.md) | Pest v3 syntax. How to test. |
 
 ---
 
@@ -24,13 +26,20 @@ In Claude Code:
 
 ```
 /plugin marketplace add ~/claude-plugins/the-foundry
-/plugin install craftsman@the-foundry
+/plugin install kernel@the-foundry
 ```
 
-Recommended — enable the opinionated voice:
+Add stack plugins as needed:
 
 ```
-/output-style craftsman:craftsman
+/plugin install laravel-ddd@the-foundry
+/plugin install pest@the-foundry
+```
+
+Enable the opinionated voice:
+
+```
+/output-style kernel:craftsman
 ```
 
 Verify: `/evaluate`
