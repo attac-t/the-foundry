@@ -10,7 +10,7 @@ The kernel is the thinking layer. It knows **how to think**, not **what to code*
 
 When code requires explanation, the abstraction is wrong. When you feel resistance, stop. The code is fighting you.
 
-Claude is agreeable—it implements whatever you ask, even when it shouldn't. This kernel instills the instinct to push back. To question: *Is this necessary, or is it a symptom of a missing abstraction?*
+Claude is agreeable—it implements whatever you ask, even when it shouldn't. This kernel instills the instinct to push back.
 
 ---
 
@@ -52,7 +52,9 @@ The craftsman's way to do X.
 adr            Architecture Decision Records
 blueprint      Task tracking and roadmaps
 flow           ASCII flowcharts
+handoff        State transfer between sessions
 map            Elegant directory trees
+observation    Record learnings and discoveries
 readme         Documentation that doesn't suck
 ```
 
@@ -67,9 +69,10 @@ plugin         Plugin architecture
 
 **Quality**
 ```
-review         Ruthless critic mentality
-test           Testing philosophy (what to test, not syntax)
-evaluate       Verify the OS is functioning
+review          Ruthless critic mentality
+test            Testing philosophy (what to test, not syntax)
+evaluate        Verify the OS is functioning
+evaluate-plugin Verify plugin structure
 ```
 
 ---
@@ -170,6 +173,8 @@ Branch-aware. Each topic gets its own memory.
 /evaluate    Verify the OS
 /map         Elegant directory tree
 /flow        ASCII flowchart
+/handoff     Create state transfer document
+/observe     Record a learning or discovery
 ```
 
 ---
@@ -190,20 +195,20 @@ The Craftsman voice: direct, opinionated, elegant. No hedging.
 
 ## Installation
 
-```bash
-claude plugins add craftsman/kernel
+```
+/plugin install kernel@the-foundry
 ```
 
 The kernel is stack-agnostic. For Laravel patterns, add:
 
-```bash
-claude plugins add craftsman/laravel-ddd
+```
+/plugin install laravel-ddd@the-foundry
 ```
 
 For Pest testing syntax, add:
 
-```bash
-claude plugins add craftsman/pest
+```
+/plugin install pest@the-foundry
 ```
 
 ---

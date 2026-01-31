@@ -18,13 +18,13 @@ From `output-styles/craftsman.md`:
 
 ## The Anti-Patterns
 
-| Don't | Do |
-|-------|-------|
-| "This is a belief system—a conviction that..." | State what it does. |
-| "We don't build features. We craft solutions." | Show the solution. |
-| "The patient, deliberate pursuit of excellence" | Be excellent. Don't say it. |
-| Walls of text explaining why | Short paragraph + code example |
-| Tables for everything | Code blocks for lists |
+| Don't                                           | Do                             |
+|-------------------------------------------------|--------------------------------|
+| "This is a belief system—a conviction that..."  | State what it does.            |
+| "We don't build features. We craft solutions."  | Show the solution.             |
+| "The patient, deliberate pursuit of excellence" | Be excellent. Don't say it.    |
+| Walls of text explaining why                    | Short paragraph + code example |
+| Tables for everything                           | Code blocks for lists          |
 
 ## The Check
 
@@ -36,10 +36,10 @@ Before finishing:
 
 ## Templates
 
-| Template | Use When |
-|----------|----------|
+| Template                               | Use When                 |
+|----------------------------------------|--------------------------|
 | [namespace.md](templates/namespace.md) | domain or support README |
-| [plugin.md](templates/plugin.md) | Plugin README |
+| [plugin.md](templates/plugin.md)       | Plugin README            |
 
 ## Registration
 

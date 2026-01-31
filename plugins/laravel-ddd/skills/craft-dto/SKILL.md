@@ -30,4 +30,4 @@ description: Crafting DTOs with Spatie Laravel Data v4.
 
 ## Real-World Examples
 
-See [examples.md](examples.md).
+See [examples/](examples/).

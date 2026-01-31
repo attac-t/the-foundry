@@ -1,6 +1,6 @@
-# Action: Examples
+# Action: Basic Patterns
 
-Patterns for single-unit business logic.
+Single-unit business logic with chainable steps.
 
 ---
 
@@ -34,36 +34,13 @@ class ActivatePriceListAction
     private function markAsActive(): self
     {
         $this->priceList->activate();
-
         return $this;
     }
 
     private function notify(): self
     {
         PriceListActivated::dispatch($this->priceList);
-
         return $this;
-    }
-}
-```
-
-### ✅ Another Example
-```php
-class CreateOrderAction
-{
-    protected Order $order;
-
-    public function execute(CreateOrderData $data): Order
-    {
-        $this->order = Order::create($data->all());
-
-        $this
-            ->ensureAvailability()
-            ->calculateTotals()
-            ->applyDiscounts()
-            ->notify();
-
-        return $this->order;
     }
 }
 ```
@@ -73,8 +50,8 @@ class CreateOrderAction
 ## Single Responsibility
 
 ### ✅ One Thing Well
+**Why?** Each private method: one step, returns `$this`.
 ```php
-// Each private method: one step, returns $this
 private function ensureAvailability(): self { ... return $this; }
 private function calculateTotals(): self { ... return $this; }
 private function applyDiscounts(): self { ... return $this; }

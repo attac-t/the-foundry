@@ -22,3 +22,8 @@ Thumbs.db
 # Temporary files
 *.tmp
 *.bak
+
+# Reference materials (PDFs, extracted books)
+references/
+laravel-beyond-crud/
+laravel-event-sourcing/
