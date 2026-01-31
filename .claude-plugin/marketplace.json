@@ -10,10 +10,22 @@
   },
   "plugins": [
     {
-      "name": "craftsman",
-      "source": "./plugins/craftsman",
-      "description": "A cognitive OS for Claude Code. Stable structure that survives drift and long contexts.",
-      "version": "2.4.0"
+      "name": "kernel",
+      "source": "./plugins/kernel",
+      "description": "Universal cognitive kernel. Stack-agnostic thinking patterns, memory management, and planning tools.",
+      "version": "1.0.0"
+    },
+    {
+      "name": "laravel-ddd",
+      "source": "./plugins/laravel-ddd",
+      "description": "Domain-driven design patterns for Laravel. Requires kernel.",
+      "version": "1.0.0"
+    },
+    {
+      "name": "pest",
+      "source": "./plugins/pest",
+      "description": "Pest v3 testing syntax and patterns. Requires kernel.",
+      "version": "1.0.0"
     }
   ]
 }
