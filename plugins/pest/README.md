@@ -22,13 +22,13 @@ expect()       Fluent assertions that read naturally
 
 ---
 
-## Prerequisites
+## Installation
 
-Requires `craftsman/kernel` for testing philosophy (`craft-test`).
+Requires `kernel` for testing philosophy (`craft-test`).
 
-```bash
-claude plugins add craftsman/kernel
-claude plugins add craftsman/pest
+```
+/plugin install kernel@the-foundry
+/plugin install pest@the-foundry
 ```
 
 ---
