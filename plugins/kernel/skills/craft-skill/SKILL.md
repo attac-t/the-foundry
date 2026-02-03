@@ -25,10 +25,16 @@ description: How to craft an atomic skill. Includes templates and registration.
 ## The Structure
 
 ```
-skills/{category}/{name}/
+plugins/{plugin-name}/skills/{skill-name}/
 ├── SKILL.md        # The skill definition
 └── examples.md     # Concrete code examples (if needed)
 ```
+
+**Naming**: Flat directories with prefix. `ground-vue/` not `ground/vue/`.
+
+**Path**: Skills live at `plugins/{plugin}/skills/`, not `.claude-plugin/skills/`.
+
+**plugin.json**: Uses `"skills": "./skills/"` (resolved relative to plugin root).
 
 ## Official Spec
 
