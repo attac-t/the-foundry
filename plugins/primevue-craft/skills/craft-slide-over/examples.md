@@ -6,9 +6,9 @@
 
 ```
 components/molecules/overlays/
-└── twn-slide-over/
-    ├── TwnSlideOver.vue
-    └── TwnSlideOver.types.ts
+└── app-slide-over/
+    ├── AppSlideOver.vue
+    └── AppSlideOver.types.ts
 ```
 
 ---
@@ -19,7 +19,7 @@ components/molecules/overlays/
 <template>
   <Button label="Open" @click="showSlideOver = true" />
 
-  <TwnSlideOver
+  <AppSlideOver
     v-model:visible="showSlideOver"
     title="Invoice Details"
     subtitle="INV-2024-001"
@@ -30,7 +30,7 @@ components/molecules/overlays/
       <Button label="Cancel" severity="secondary" @click="close" />
       <Button label="Save" @click="save" />
     </template>
-  </TwnSlideOver>
+  </AppSlideOver>
 </template>
 
 <script setup lang="ts">
@@ -44,14 +44,14 @@ const close = () => { showSlideOver.value = false }
 ## With Header Actions
 
 ```vue
-<TwnSlideOver v-model:visible="visible" title="Edit Product">
+<AppSlideOver v-model:visible="visible" title="Edit Product">
   <template #header-actions>
     <Button icon="pi pi-trash" severity="danger" text @click="confirmDelete" />
     <Button icon="pi pi-copy" text @click="duplicate" />
   </template>
 
   <!-- Content -->
-</TwnSlideOver>
+</AppSlideOver>
 ```
 
 ---
@@ -60,10 +60,10 @@ const close = () => { showSlideOver.value = false }
 
 ```vue
 <!-- Medium (default): w-1/3 on desktop -->
-<TwnSlideOver size="md" />
+<AppSlideOver size="md" />
 
 <!-- Large: w-1/2 on desktop -->
-<TwnSlideOver size="lg" />
+<AppSlideOver size="lg" />
 
 <!-- Both: 90% height on mobile -->
 ```
@@ -93,7 +93,7 @@ const sizeStyle = computed(() => {
 ## Lifecycle Events
 
 ```vue
-<TwnSlideOver
+<AppSlideOver
   @show="handleShow"
   @before-hide="handleBeforeHide"
   @hide="handleHide"

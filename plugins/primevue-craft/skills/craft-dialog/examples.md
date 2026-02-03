@@ -6,8 +6,8 @@
 
 ```
 components/
-├── atoms/prime/dialog/twn-dialog/
-│   └── TwnDialog.vue
+├── atoms/prime/dialog/app-dialog/
+│   └── AppDialog.vue
 └── molecules/modals/
     ├── modal/Modal.vue
     └── confirmation-modal/ConfirmationModal.vue
@@ -15,11 +15,11 @@ components/
 
 ---
 
-## TwnDialog Basic Usage
+## AppDialog Basic Usage
 
 ```vue
 <template>
-  <TwnDialog v-model:visible="showDialog" :style="{ width: '450px' }">
+  <AppDialog v-model:visible="showDialog" :style="{ width: '450px' }">
     <template #header>
       Edit Invoice
     </template>
@@ -30,7 +30,7 @@ components/
       <Button label="Cancel" severity="secondary" @click="showDialog = false" />
       <Button label="Save" @click="save" />
     </template>
-  </TwnDialog>
+  </AppDialog>
 </template>
 
 <script setup lang="ts">
@@ -82,7 +82,7 @@ const showDialog = ref(false)
 
 ---
 
-## TwnDialog Implementation
+## AppDialog Implementation
 
 ```vue
 <template>

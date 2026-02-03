@@ -6,9 +6,9 @@
 
 ```
 components/atoms/prime/panel/
-└── twn-panel/
-    ├── TwnPanel.vue
-    └── TwnPanel.types.ts
+└── app-panel/
+    ├── AppPanel.vue
+    └── AppPanel.types.ts
 ```
 
 ---
@@ -17,9 +17,9 @@ components/atoms/prime/panel/
 
 ```vue
 <template>
-  <TwnPanel header="Invoice Details">
+  <AppPanel header="Invoice Details">
     <InvoiceForm v-model="form" />
-  </TwnPanel>
+  </AppPanel>
 </template>
 ```
 
@@ -29,12 +29,12 @@ components/atoms/prime/panel/
 
 ```vue
 <template>
-  <TwnPanel
+  <AppPanel
     v-model:collapsed="isDetailsCollapsed"
     header="Additional Details"
   >
     <AdditionalDetailsForm v-model="details" />
-  </TwnPanel>
+  </AppPanel>
 </template>
 
 <script setup lang="ts">
@@ -47,12 +47,12 @@ const isDetailsCollapsed = ref(true)  // Start collapsed
 ## With Badge
 
 ```vue
-<TwnPanel
+<AppPanel
   header="Validation Errors"
   :badge="{ value: errorCount, severity: 'danger' }"
 >
   <ErrorList :errors="errors" />
-</TwnPanel>
+</AppPanel>
 ```
 
 ---
@@ -60,12 +60,12 @@ const isDetailsCollapsed = ref(true)  // Start collapsed
 ## Disabled State
 
 ```vue
-<TwnPanel
+<AppPanel
   header="Locked Section"
   :disabled="!canEdit"
 >
   <!-- Content -->
-</TwnPanel>
+</AppPanel>
 ```
 
 ---
@@ -86,7 +86,7 @@ const isDetailsCollapsed = ref(true)  // Start collapsed
           <span>{{ header }}</span>
         </div>
 
-        <TwnTag
+        <AppTag
           v-if="badge"
           :value="badge.value"
           :severity="badge.severity"
@@ -137,7 +137,7 @@ const panelPt = {
 ## Type Definitions
 
 ```typescript
-interface TwnPanelProps {
+interface AppPanelProps {
   header: string
   collapsed?: boolean
   disabled?: boolean
@@ -147,7 +147,7 @@ interface TwnPanelProps {
   }
 }
 
-interface TwnPanelEmits {
+interface AppPanelEmits {
   'update:collapsed': [value: boolean]
 }
 ```
@@ -159,14 +159,14 @@ interface TwnPanelEmits {
 ```vue
 <template>
   <div class="space-y-4">
-    <TwnPanel
+    <AppPanel
       v-for="section in sections"
       :key="section.id"
       :header="section.title"
       v-model:collapsed="section.collapsed"
     >
       <component :is="section.component" />
-    </TwnPanel>
+    </AppPanel>
   </div>
 </template>
 ```

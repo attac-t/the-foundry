@@ -21,11 +21,11 @@
 
 ## The Add Button Pattern
 
-Footer slot contains optional `TwnAddBtn` for adding new options:
+Footer slot contains optional `AddButton` for adding new options:
 
 ```vue
 <template #footer>
-  <TwnAddBtn v-if="allowAdd" @click="emit('add')" />
+  <AddButton v-if="allowAdd" @click="emit('add')" />
 </template>
 ```
 

@@ -13,7 +13,7 @@
 ## The Architecture
 
 ```
-Component Wrapper (TwnDataTable, TwnDialog)
+Component Wrapper (AppDataTable, AppDialog)
 ├── defineModel for each two-way state
 ├── Props for configuration
 ├── Slot forwarding loop
@@ -24,7 +24,7 @@ Component Wrapper (TwnDataTable, TwnDialog)
 
 | Don't                              | Do                                       |
 |------------------------------------|------------------------------------------|
-| Use raw PrimeVue in domain code    | Use project wrapper (Twn prefix)         |
+| Use raw PrimeVue in domain code    | Use project wrapper (App prefix)         |
 | Duplicate validation styling       | Standardize in InputLabelMessageGroup    |
 | Manual v-model for multiple states | Separate defineModel per state           |
 | Hardcode field names               | Generate with uniqueId()                 |

@@ -4,10 +4,10 @@
 
 ## The Pattern
 
-`TwnDialog` wraps PrimeVue Dialog with semantic slots and sensible defaults.
+`AppDialog` wraps PrimeVue Dialog with semantic slots and sensible defaults.
 
 ```vue
-<TwnDialog v-model:visible="showDialog">
+<AppDialog v-model:visible="showDialog">
   <template #header>Title</template>
 
   Content goes here
@@ -16,7 +16,7 @@
     <Button label="Cancel" @click="showDialog = false" />
     <Button label="Save" @click="save" />
   </template>
-</TwnDialog>
+</AppDialog>
 ```
 
 ## The Defaults
@@ -32,7 +32,7 @@
 
 ## The Variants
 
-### TwnDialog (Simple Wrapper)
+### AppDialog (Simple Wrapper)
 - Two-way visible binding
 - Three slots: header, default, footer
 - Passes through all attrs
@@ -54,7 +54,7 @@
 
 | Don't                               | Do                                   |
 |-------------------------------------|--------------------------------------|
-| Create inline modal structure       | Use TwnDialog or ConfirmationModal   |
+| Create inline modal structure       | Use AppDialog or ConfirmationModal   |
 | Forget processing state             | Disable submit when processing       |
 | Manual escape key handling          | Let wrapper handle it                |
 | Mix visible logic in child          | Parent controls visibility           |

@@ -6,9 +6,9 @@
 
 ```
 components/molecules/prime/table/
-└── twn-data-table/
-    ├── TwnDataTable.vue
-    └── TwnDataTable.types.ts
+└── app-data-table/
+    ├── AppDataTable.vue
+    └── AppDataTable.types.ts
 ```
 
 ---
@@ -17,7 +17,7 @@ components/molecules/prime/table/
 
 ```vue
 <template>
-  <TwnDataTable
+  <AppDataTable
     v-model:selection="selectedInvoices"
     v-model:first="pagination.first"
     v-model:rows="pagination.rows"
@@ -26,11 +26,11 @@ components/molecules/prime/table/
     title="Invoices"
   >
     <template #status="{ data }">
-      <TwnTag :severity="getStatusSeverity(data.status)">
+      <AppTag :severity="getStatusSeverity(data.status)">
         {{ data.status }}
-      </TwnTag>
+      </AppTag>
     </template>
-  </TwnDataTable>
+  </AppDataTable>
 </template>
 ```
 
@@ -44,8 +44,8 @@ const columns = [
   { field: 'customer.name', header: 'Customer', sortable: true },
   { field: 'total', header: 'Total', sortable: true },
   { field: 'status', header: 'Status' },
-  TWN_DATA_TABLE_COL_PRESETS.VIEW,
-  TWN_DATA_TABLE_COL_PRESETS.FROZEN_ACTIONS
+  DATA_TABLE_COL_PRESETS.VIEW,
+  DATA_TABLE_COL_PRESETS.FROZEN_ACTIONS
 ]
 ```
 
@@ -55,14 +55,14 @@ const columns = [
 
 ```typescript
 // Import and use presets for common columns
-import { TWN_DATA_TABLE_COL_PRESETS } from '@/components/molecules/prime/table/twn-data-table'
+import { DATA_TABLE_COL_PRESETS } from '@/components/molecules/prime/table/app-data-table'
 
 const columns = [
   // ... data columns
-  TWN_DATA_TABLE_COL_PRESETS.VIEW,           // w-10, frozen right
-  TWN_DATA_TABLE_COL_PRESETS.EXPORT,         // w-10, frozen right
-  TWN_DATA_TABLE_COL_PRESETS.FROZEN_ACTIONS, // w-16, frozen right
-  TWN_DATA_TABLE_COL_PRESETS.FROZEN_ACTIONS_WIDE // w-24, frozen right
+  DATA_TABLE_COL_PRESETS.VIEW,           // w-10, frozen right
+  DATA_TABLE_COL_PRESETS.EXPORT,         // w-10, frozen right
+  DATA_TABLE_COL_PRESETS.FROZEN_ACTIONS, // w-16, frozen right
+  DATA_TABLE_COL_PRESETS.FROZEN_ACTIONS_WIDE // w-24, frozen right
 ]
 ```
 
@@ -71,7 +71,7 @@ const columns = [
 ## Multiple State Bindings
 
 ```vue
-<TwnDataTable
+<AppDataTable
   v-model:first="first"
   v-model:rows="rows"
   v-model:sortField="sortField"
@@ -106,7 +106,7 @@ const columns = [
 
     <!-- Empty state -->
     <template #empty>
-      <LazyTwnInfoState variant="featured" />
+      <LazyInfoState variant="featured" />
     </template>
   </DataTable>
 </template>
@@ -129,7 +129,7 @@ const hasSlot = (name: string) => !!slots[name]
 ## Type Definitions
 
 ```typescript
-interface TwnDataTableProps<T> {
+interface AppDataTableProps<T> {
   value: T[]
   columns: ColumnConfig[]
   title?: string

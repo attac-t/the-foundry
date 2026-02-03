@@ -17,8 +17,8 @@ Layout component only?       → Raw PrimeVue
 Ask: "Will this pattern repeat?"
 
 - **Yes, in forms** → Use Input*Group wrapper
-- **Yes, in tables** → Use TwnDataTable wrapper
-- **Yes, in overlays** → Use TwnDialog/TwnSlideOver
+- **Yes, in tables** → Use AppDataTable wrapper
+- **Yes, in overlays** → Use AppDialog/AppSlideOver
 - **No, one-off** → Raw PrimeVue is fine
 - **No, layout only** → Raw PrimeVue (no validation needed)
 
@@ -27,10 +27,10 @@ Ask: "Will this pattern repeat?"
 | Wrapper                        | When to Use                               |
 |--------------------------------|-------------------------------------------|
 | Input*Group                    | Any form input needing validation         |
-| TwnDataTable                   | Tables with selection, sorting, pagination|
-| TwnDialog                      | Modals with semantic structure            |
-| TwnSlideOver                   | Side panels with responsive behavior      |
-| TwnPanel                       | Collapsible sections with lazy content    |
+| AppDataTable                   | Tables with selection, sorting, pagination|
+| AppDialog                      | Modals with semantic structure            |
+| AppSlideOver                   | Side panels with responsive behavior      |
+| AppPanel                       | Collapsible sections with lazy content    |
 
 | Raw PrimeVue                   | When to Use                               |
 |--------------------------------|-------------------------------------------|
@@ -66,7 +66,7 @@ Ask: "Will this pattern repeat?"
 />
 
 <!-- Table - needs consistent column handling -->
-<TwnDataTable
+<AppDataTable
   v-model:selection="selected"
   :value="items"
   :columns="columns"

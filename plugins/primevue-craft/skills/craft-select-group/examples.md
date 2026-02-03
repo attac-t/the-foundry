@@ -90,7 +90,7 @@ const statusOptions = [
       <!-- Footer with add button -->
       <template #footer>
         <slot name="footer">
-          <TwnAddBtn v-if="allowAdd" @click="emit('add')" />
+          <AddButton v-if="allowAdd" @click="emit('add')" />
         </slot>
       </template>
     </Select>

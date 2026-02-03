@@ -35,7 +35,7 @@
 
 ```vue
 <!-- Use wrapper for consistent behavior -->
-<TwnDataTable
+<AppDataTable
   v-model:selection="selected"
   v-model:first="pagination.first"
   :value="invoices"
@@ -68,9 +68,9 @@
 
 ```vue
 <!-- Use wrapper for consistent structure -->
-<TwnSlideOver v-model:visible="showEdit" title="Edit Invoice">
+<AppSlideOver v-model:visible="showEdit" title="Edit Invoice">
   <InvoiceForm v-model="form" />
-</TwnSlideOver>
+</AppSlideOver>
 
 <!-- NOT raw Drawer with manual responsive handling -->
 ```
@@ -98,7 +98,7 @@ Is it a form input?
 │         └── Adds validation, label, message
 └── No → Does it need consistent multi-state binding?
          ├── Yes → Check for existing wrapper
-         │         └── TwnDataTable, TwnSlideOver, etc.
+         │         └── AppDataTable, AppSlideOver, etc.
          └── No → Is it display-only?
                   ├── Yes → Raw PrimeVue
                   └── No → Evaluate case-by-case

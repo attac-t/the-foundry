@@ -4,7 +4,7 @@
 
 ## The Pattern
 
-`TwnDataTable` wraps PrimeVue DataTable with multi-state defineModel and column presets.
+`AppDataTable` wraps PrimeVue DataTable with multi-state defineModel and column presets.
 
 ```typescript
 // Multiple defineModel for each two-way state
@@ -21,7 +21,7 @@ const editingRows = defineModel<T[]>('editingRows')
 ## Column Presets
 
 ```typescript
-const TWN_DATA_TABLE_COL_PRESETS = {
+const DATA_TABLE_COL_PRESETS = {
   VIEW: { field: 'view', frozen: true, alignFrozen: 'right', class: 'w-10' },
   EXPORT: { field: 'export', frozen: true, alignFrozen: 'right', class: 'w-10' },
   FROZEN_ACTIONS: { field: 'actions', frozen: true, alignFrozen: 'right', class: 'w-16' },
@@ -35,14 +35,14 @@ const TWN_DATA_TABLE_COL_PRESETS = {
 2. **Column presets**: Use presets for common frozen columns
 3. **Slot forwarding**: Forward all non-column slots to DataTable
 4. **Column slots match field**: Slot name matches column field for overrides
-5. **Lazy empty state**: Use LazyTwnInfoState for "no data" with featured variant
+5. **Lazy empty state**: Use LazyInfoState for "no data" with featured variant
 6. **Field flexibility**: Handle both string and function field types
 
 ## The Anti-Patterns
 
 | Don't                               | Do                                    |
 |-------------------------------------|---------------------------------------|
-| Manual v-model:selection/etc        | Use TwnDataTable defineModel states   |
-| Hardcode frozen column configs      | Use TWN_DATA_TABLE_COL_PRESETS        |
-| Inline empty state                  | Lazy load TwnInfoState component      |
+| Manual v-model:selection/etc        | Use AppDataTable defineModel states   |
+| Hardcode frozen column configs      | Use DATA_TABLE_COL_PRESETS        |
+| Inline empty state                  | Lazy load InfoState component      |
 | Skip slot forwarding                | Forward all $slots to DataTable       |

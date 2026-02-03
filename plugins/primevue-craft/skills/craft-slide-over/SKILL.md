@@ -4,7 +4,7 @@
 
 ## The Pattern
 
-`TwnSlideOver` wraps PrimeVue Drawer with responsive positioning.
+`AppSlideOver` wraps PrimeVue Drawer with responsive positioning.
 
 ```typescript
 const position = computed(() =>
@@ -27,7 +27,7 @@ const size = computed(() => {
 ## The Structure
 
 ```vue
-<TwnSlideOver v-model:visible="showSlideOver" title="Edit Invoice" size="lg">
+<AppSlideOver v-model:visible="showSlideOver" title="Edit Invoice" size="lg">
   <template #header-actions>
     <Button icon="pi pi-save" @click="save" />
   </template>
@@ -38,7 +38,7 @@ const size = computed(() => {
   <template #footer>
     <Button label="Cancel" @click="showSlideOver = false" />
   </template>
-</TwnSlideOver>
+</AppSlideOver>
 ```
 
 ## The Rules
@@ -54,6 +54,6 @@ const size = computed(() => {
 | Don't                               | Do                                    |
 |-------------------------------------|---------------------------------------|
 | Hardcode drawer position            | Use responsive positioning            |
-| Manual scroll blocking              | Let TwnSlideOver handle it            |
+| Manual scroll blocking              | Let AppSlideOver handle it            |
 | Inline close button in footer       | Close button in header (default)      |
 | Forget mobile height                | 90% height on mobile always           |

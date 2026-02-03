@@ -30,13 +30,13 @@ Three-state validation    true (valid), false (invalid), null (neutral)
 ## What You Get
 
 ```
-TwnDataTable          Multi-state defineModel, column presets, lazy empty
-TwnDialog             Minimal wrapper with header/default/footer slots
-TwnSlideOver          Responsive Drawer (right on desktop, bottom on mobile)
+AppDataTable          Multi-state defineModel, column presets, lazy empty
+AppDialog             Minimal wrapper with header/default/footer slots
+AppSlideOver          Responsive Drawer (right on desktop, bottom on mobile)
 InputSelectGroup      Form group with add button pattern
 InputAutocompleteGroup Dual search fields (label + searchableText)
 InputTreeSelectGroup  Memoized selection with consolidation
-TwnPanel              Lazy content, clickable header, badge support
+AppPanel              Lazy content, clickable header, badge support
 ```
 
 ---

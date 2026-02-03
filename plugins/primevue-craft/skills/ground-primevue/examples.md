@@ -6,7 +6,7 @@
 
 ```vue
 <!-- Domain code uses wrapper -->
-<TwnDataTable
+<AppDataTable
   v-model:selection="selectedInvoices"
   :value="invoices"
   :columns="columns"
@@ -26,7 +26,7 @@
 ## Good: defineModel for Multiple States
 
 ```typescript
-// TwnDataTable.vue
+// AppDataTable.vue
 const first = defineModel<number>('first', { default: 0 })
 const rows = defineModel<number>('rows', { default: 10 })
 const sortField = defineModel<string>('sortField')

@@ -4,16 +4,16 @@
 
 ## The Pattern
 
-`TwnPanel` wraps PrimeVue Panel with enhanced interaction and lazy rendering.
+`AppPanel` wraps PrimeVue Panel with enhanced interaction and lazy rendering.
 
 ```vue
-<TwnPanel
+<AppPanel
   v-model:collapsed="isCollapsed"
   header="Invoice Details"
   :badge="{ value: 3, severity: 'danger' }"
 >
   <!-- Content only renders when expanded -->
-</TwnPanel>
+</AppPanel>
 ```
 
 ## The Enhancements
