@@ -1,0 +1,17 @@
+{
+  "name": "vue-inertia",
+  "version": "0.1.0",
+  "description": "Inertia.js patterns for Vue 3. Form agents, entity notifications, CRUD operations with dual variants. Requires kernel.",
+  "author": {
+    "name": "Christian Attard",
+    "url": "https://github.com/attac-t"
+  },
+  "keywords": [
+    "inertia",
+    "vue3",
+    "form-handling",
+    "spa",
+    "crud"
+  ],
+  "skills": "./skills/"
+}
