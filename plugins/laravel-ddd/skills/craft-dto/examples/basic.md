@@ -54,14 +54,26 @@ $items = $data->all();  // Returns array of typed items
 
 ---
 
-## Lazy Loading
+## Lazy Loading (Non-Negotiable)
 
-### ✅ AutoWhenLoadedLazy
-**Why?** Only serialize if relation was loaded on model.
+### ✅ AutoWhenLoadedLazy on Every Relation
+**Why?** Prevents N+1. Only serializes if relation was explicitly loaded.
 ```php
+// ✅ Always use on relations
 #[AutoWhenLoadedLazy]
 public Collection $comments,
+
+#[AutoWhenLoadedLazy]
+public ?AuthorData $author,
 ```
+
+### ❌ Never Omit
+```php
+// ❌ Triggers N+1 on every serialization
+public Collection $comments,
+```
+
+> If it's a relation, it gets `#[AutoWhenLoadedLazy]`. No exceptions.
 
 ---
 

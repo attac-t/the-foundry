@@ -1,6 +1,42 @@
 # DTO: Advanced Patterns
 
-Immutability, optional fields, and validation.
+Immutability, optional fields, upsert pattern, and validation.
+
+---
+
+## Upsert Pattern
+
+### ✅ Optional ID for Create/Update
+**Why?** Single DTO handles both create (no id) and update (has id).
+```php
+use Spatie\LaravelData\Attributes\FromRouteParameterProperty;
+use Spatie\LaravelData\Optional;
+
+class UpsertFeeDTO extends Data
+{
+    public function __construct(
+        #[FromRouteParameterProperty('fee', 'id')]
+        public readonly int|Optional $id,
+
+        #[Max(255)]
+        public readonly string $name,
+
+        #[Min(0)]
+        public readonly int $amount,
+    ) {}
+}
+```
+
+### ✅ Action Handles Optional
+```php
+// In UpsertFeeAction
+Fee::updateOrCreate(
+    attributes: ['id' => $dto->id instanceof Optional ? null : $dto->id],
+    values: $dto->all(),  // ✅ Not ->except('id')->toArray()
+);
+```
+
+> The DTO carries the data. The action decides how to use it.
 
 ---
 
@@ -74,3 +110,30 @@ public int $team_id,
 #[Rule(new CustomRule())]
 public string $code,
 ```
+
+---
+
+## Casting Pitfalls
+
+### ❌ WithCast on $dataClass DTO
+**Why?** `#[WithCast]` only applies when DTO is hydrated from request. Ignored when DTO is used as `$dataClass` for a collection.
+```php
+// ❌ This cast is ignored when FeeData is a collection item
+#[WithCast(SomeCaster::class)]
+class FeeData extends Data { ... }
+
+// In parent DTO:
+#[DataCollectionOf(FeeData::class)]
+public Collection $fees;  // FeeData's WithCast ignored here
+```
+
+### ✅ Cast at Property Level
+```php
+class OrderData extends Data
+{
+    #[WithCast(MoneyCast::class)]
+    public Money $total,  // ✅ Cast applied here
+}
+```
+
+> Rule: `#[WithCast]` belongs on the property receiving the data, not the DTO class itself.

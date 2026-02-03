@@ -78,3 +78,36 @@ public function handle(): void
     $this->activatePriceList->execute($this->priceList);
 }
 ```
+
+---
+
+## Upsert Pattern
+
+### ✅ Single Action for Create/Update
+**Why?** One action, one DTO. The `Optional` type distinguishes create from update.
+```php
+use Spatie\LaravelData\Optional;
+
+final readonly class UpsertFeeAction
+{
+    public function execute(UpsertFeeDTO $dto): Fee
+    {
+        return Fee::updateOrCreate(
+            attributes: ['id' => $dto->id instanceof Optional ? null : $dto->id],
+            values: $dto->all(),
+        );
+    }
+}
+```
+
+### ❌ Don't
+```php
+// Over-engineered
+$dto->except('id')->toArray()
+
+// Wrong: separate Create/Update actions for simple CRUD
+class CreateFeeAction { ... }
+class UpdateFeeAction { ... }
+```
+
+> When create and update share logic, upsert is cleaner.
