@@ -1,5 +1,7 @@
 # Examples: Inertia vs API
 
+---
+
 ## Inertia: Simple Create
 
 ```typescript
@@ -13,6 +15,8 @@ createDraft(form, {
 })
 ```
 
+---
+
 ## Inertia: Simple Update
 
 ```typescript
@@ -25,6 +29,8 @@ updateDraft(params, form, {
   }
 })
 ```
+
+---
 
 ## API: Save Then Issue
 
@@ -45,6 +51,8 @@ const saveAndIssue = async () => {
 }
 ```
 
+---
+
 ## API: Conditional Flow
 
 ```typescript
@@ -64,6 +72,8 @@ const submitIfValid = async () => {
 }
 ```
 
+---
+
 ## Mixed: API Check, Inertia Action
 
 ```typescript
@@ -77,6 +87,8 @@ if (canIssue) {
   showBlockingErrors()
 }
 ```
+
+---
 
 ## Decision Tree
 
@@ -92,4 +104,28 @@ Operation complete in one step?
                   ├── Yes → API for check
                   │         └── Inertia for action
                   └── No → Inertia variant
+```
+
+---
+
+## Quick Reference
+
+```
+Simple CRUD          → Inertia (form.post/put/delete)
+Save + another op    → API variant + router.reload()
+Validation before    → API check + Inertia action
+Multiple sequential  → API variants + router.reload()
+```
+
+---
+
+## Anti-Pattern: Mixing Unnecessarily
+
+```typescript
+// Bad: Using API when Inertia is simpler
+const result = await api.create(data)
+if (result) router.visit('/invoices/' + result.id)
+
+// Good: Let Inertia handle redirect
+form.post(route('invoices.store'))
 ```

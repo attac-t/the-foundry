@@ -1,10 +1,18 @@
 # Examples: Inertia Form
 
-## Basic Form
+---
+
+## Import
 
 ```typescript
 import { useForm } from '@inertiajs/vue3'
+```
 
+---
+
+## Basic Form
+
+```typescript
 const form = useForm({
   name: '',
   email: '',
@@ -19,6 +27,8 @@ const submit = () => {
   })
 }
 ```
+
+---
 
 ## Template Binding
 
@@ -38,6 +48,8 @@ const submit = () => {
 </template>
 ```
 
+---
+
 ## Update Pattern
 
 ```typescript
@@ -56,6 +68,8 @@ const submit = () => {
 }
 ```
 
+---
+
 ## With useFormAgent
 
 ```typescript
@@ -69,6 +83,8 @@ state.value.total = calculateTotal()
 form.post(route('invoices.store'))
 ```
 
+---
+
 ## Processing State for UI
 
 ```typescript
@@ -81,6 +97,8 @@ form.post(route('invoices.store'))
 // Conditional text
 {{ form.processing ? 'Saving...' : 'Save' }}
 ```
+
+---
 
 ## Error Handling
 
@@ -98,4 +116,33 @@ form.clearErrors('email')
 
 // Clear all errors
 form.clearErrors()
+```
+
+---
+
+## Properties Reference
+
+```typescript
+form.data()          // Current form data as object
+form.errors          // Validation errors by field
+form.processing      // Request in progress (boolean)
+form.isDirty         // Data changed since last reset
+form.wasSuccessful   // Last request succeeded
+form.recentlySuccessful  // Success within last 2 seconds
+```
+
+---
+
+## Methods Reference
+
+```typescript
+form.post(url, opts)    // Submit via POST
+form.put(url, opts)     // Submit via PUT
+form.patch(url, opts)   // Submit via PATCH
+form.delete(url, opts)  // Submit via DELETE
+form.reset()            // Reset to initial values
+form.reset('email')     // Reset specific field
+form.defaults()         // Set new defaults
+form.clearErrors()      // Clear all validation errors
+form.clearErrors('email') // Clear specific error
 ```

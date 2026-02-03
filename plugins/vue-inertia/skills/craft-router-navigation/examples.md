@@ -1,10 +1,18 @@
 # Examples: Router Navigation
 
-## Basic Navigation
+---
+
+## Import
 
 ```typescript
 import { router } from '@inertiajs/vue3'
+```
 
+---
+
+## Basic Navigation
+
+```typescript
 // Navigate to list
 router.get(route('admin.invoices.index'))
 
@@ -17,6 +25,8 @@ router.get(route('admin.invoices.index'), {
   status: 'draft'
 })
 ```
+
+---
 
 ## State-Changing Actions
 
@@ -31,12 +41,14 @@ router.post(
   }
 )
 
-// Void invoice
+// Void invoice with data
 router.post(
   route('admin.invoices.void', { invoice: invoiceId }),
   { reason: voidReason }
 )
 ```
+
+---
 
 ## Deletion with Redirect
 
@@ -53,6 +65,8 @@ router.delete(
 )
 ```
 
+---
+
 ## Partial Reload
 
 ```typescript
@@ -66,6 +80,8 @@ router.reload({ only: ['invoice', 'lineItems', 'totals'] })
 await updateDraftApi(params, data)
 router.reload({ only: ['invoice'] })
 ```
+
+---
 
 ## Callbacks Pattern
 
@@ -85,5 +101,38 @@ router.post(route('invoices.archive', { invoice: id }), {}, {
   onFinish: () => {
     isProcessing.value = false
   }
+})
+```
+
+---
+
+## Methods Reference
+
+```typescript
+router.get(url)              // GET - navigation
+router.visit(url)            // GET - explicit navigation
+router.post(url, data, opts) // POST - state-changing
+router.put(url, data, opts)  // PUT - update
+router.delete(url, opts)     // DELETE - removal
+router.reload(opts)          // Refresh current page props
+```
+
+---
+
+## Trust Defaults
+
+```typescript
+// Don't do this - unnecessary
+router.post(url, data, {
+  preserveState: true,
+  preserveScroll: true
+})
+
+// Do this - Inertia handles it
+router.post(url, data)
+
+// Only override when you need different behavior
+router.post(url, data, {
+  preserveState: false  // Force state reset
 })
 ```

@@ -84,6 +84,13 @@ lodash-es            Deep merge for form defaults
 
 ---
 
+## Documentation
+
+- [Inertia.js Official Docs](https://inertiajs.com/)
+- [Inertia.js Vue 3 Adapter](https://inertiajs.com/client-side-setup)
+
+---
+
 ## Related
 
 - `vue-craft` — Vue 3 Composition API patterns (required)

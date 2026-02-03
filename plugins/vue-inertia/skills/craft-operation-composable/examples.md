@@ -1,5 +1,22 @@
 # Examples: Operation Composable
 
+---
+
+## Directory Structure
+
+```
+domains/invoices/composables/
+└── use-invoice-operation/
+    ├── use-create/useCreateInvoice.ts
+    ├── use-update/useUpdateInvoice.ts
+    ├── use-delete/useDeleteInvoice.ts
+    ├── use-issue/useIssueInvoice.ts
+    ├── use-void/useVoidInvoice.ts
+    └── useInvoiceOperation.types.ts
+```
+
+---
+
 ## Create Operation
 
 ```typescript
@@ -32,7 +49,9 @@ export const useCreateInvoice = () => {
 }
 ```
 
-## Update with API Variant
+---
+
+## Update with Dual Variants
 
 ```typescript
 export const useUpdateInvoice = () => {
@@ -99,6 +118,8 @@ export const useUpdateInvoice = () => {
 }
 ```
 
+---
+
 ## Delete with Navigation
 
 ```typescript
@@ -140,11 +161,14 @@ export const useDeleteInvoice = () => {
 }
 ```
 
+---
+
 ## Silent Failure Check
 
 ```typescript
-// CRITICAL: Check form.processing in onFinish
+// CRITICAL: Check processing state in onFinish
 // If still true, neither onSuccess nor onError fired
+
 form.put(route('invoices.update', { invoice: id }), {
   onSuccess: () => {
     notification.onSuccess()
@@ -164,6 +188,8 @@ form.put(route('invoices.update', { invoice: id }), {
 })
 ```
 
+---
+
 ## Type Definitions
 
 ```typescript
@@ -176,5 +202,22 @@ interface InvoiceOperationParams {
 interface InvoiceOperationOptions {
   onSuccess?: () => void
   onError?: () => void
+}
+```
+
+---
+
+## Chaining API Variants
+
+```typescript
+// Save + Issue flow using API variants
+const saveAndIssue = async () => {
+  const saved = await updateDraftApi(params, form.data())
+  if (!saved) return
+
+  const issued = await issueDraftApi(params)
+  if (!issued) return
+
+  router.reload()  // Refresh with issued state
 }
 ```

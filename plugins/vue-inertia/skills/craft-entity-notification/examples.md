@@ -1,5 +1,18 @@
 # Examples: Entity Notification
 
+---
+
+## Directory Structure
+
+```
+composables/
+└── use-entity-notification/
+    ├── useEntityNotification.ts
+    └── useEntityNotification.types.ts
+```
+
+---
+
 ## Basic Usage
 
 ```typescript
@@ -19,6 +32,8 @@ form.post(route('invoices.store'), {
 })
 ```
 
+---
+
 ## With Entity Identifier
 
 ```typescript
@@ -27,6 +42,8 @@ const notification = useEntityNotification({
   entityName: `invoice ${displayNumber}`  // "invoice INV-001"
 })
 ```
+
+---
 
 ## Type Definition
 
@@ -44,6 +61,8 @@ interface EntityNotificationHandlers {
 }
 ```
 
+---
+
 ## Toast Messages
 
 ```typescript
@@ -59,6 +78,8 @@ interface EntityNotificationHandlers {
 // onError - base verb form
 { severity: 'error', detail: 'Failed to create invoice' }
 ```
+
+---
 
 ## Verb Transformations
 
@@ -80,6 +101,8 @@ interface EntityNotificationHandlers {
 // capitalize(entity)  - for success messages
 ```
 
+---
+
 ## The onFinish Catch-All
 
 ```typescript
@@ -94,4 +117,19 @@ const onFinish = () => {
     toastStore.add({ severity: 'error', ... })
   }
 }
+```
+
+---
+
+## Same Toast ID (Update-in-Place)
+
+```typescript
+// All operations use the same operationId
+// Toast updates in-place instead of spawning new toasts
+
+const operationId = generateComplexId()
+
+startOperation() → toastStore.add({ id: operationId, ... })
+onSuccess()      → toastStore.add({ id: operationId, ... })  // Updates same toast
+onError()        → toastStore.add({ id: operationId, ... })  // Updates same toast
 ```

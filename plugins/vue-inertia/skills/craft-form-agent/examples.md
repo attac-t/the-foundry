@@ -1,5 +1,18 @@
 # Examples: Form Agent
 
+---
+
+## Directory Structure
+
+```
+composables/
+└── use-form/
+    ├── useFormAgent.ts
+    └── useFormAgent.types.ts
+```
+
+---
+
 ## Basic Usage
 
 ```typescript
@@ -15,7 +28,7 @@ const defaultInvoice: CreateInvoiceRequest = {
 // Props come from Inertia page, may be partial
 const { state, form } = useFormAgent(props.invoice, defaultInvoice)
 
-// Reactive access
+// Reactive access - state is the source of truth
 const customerName = computed(() =>
   customers.value.find(c => c.id === state.value.customer_id)?.name
 )
@@ -25,6 +38,8 @@ const save = () => {
   form.post(route('invoices.store'))
 }
 ```
+
+---
 
 ## Array Handling
 
@@ -37,6 +52,8 @@ const { state, form } = useFormAgent(props.items, defaultItems)
 // Add item - watcher syncs to form
 state.value.push({ product_id: 1, quantity: 1, price: 100 })
 ```
+
+---
 
 ## Type Definition
 
@@ -52,6 +69,8 @@ const useFormAgent = <T extends Record<string, unknown> | unknown[]>(
 ): UseFormAgentReturn<T>
 ```
 
+---
+
 ## Prohibited Keys
 
 ```typescript
@@ -63,4 +82,22 @@ const useFormAgent = <T extends Record<string, unknown> | unknown[]>(
 
 // After sync to form:
 { name: 'Invoice', slug: undefined, total: 100 }
+```
+
+---
+
+## Merge Behavior
+
+```typescript
+// Defaults
+{ customer_id: null, notes: '', items: [] }
+
+// Initial (from props, partial)
+{ customer_id: 42, items: [{ id: 1 }] }
+
+// Merged result
+{ customer_id: 42, notes: '', items: [{ id: 1 }] }
+
+// Order: merge({}, defaults, initial)
+// Defaults provide shape, initial overwrites values
 ```
