@@ -22,13 +22,13 @@ Do not assume. Verify.
 
 ## The Anti-Patterns
 
-| Don't                              | Do                                  |
-|------------------------------------|-------------------------------------|
-| Use raw PrimeVue in domain code    | Use project wrapper                 |
-| Duplicate validation styling       | Standardize in InputLabelMessageGroup |
-| Manual v-model for multiple states | Separate defineModel per state      |
-| Hardcode field names               | Generate with uniqueId()            |
-| Assume API unchanged               | Check docs for current version      |
+| Don't                              | Do                                        |
+|------------------------------------|-------------------------------------------|
+| Use raw PrimeVue in domain code    | Use project wrapper                       |
+| Duplicate validation styling       | Standardize in InputLabelMessageGroup     |
+| Manual v-model for multiple states | Separate defineModel per state            |
+| Hardcode field names               | Generate with uniqueId()                  |
+| Assume API unchanged               | Check docs for current version            |
 
 ## The Check
 

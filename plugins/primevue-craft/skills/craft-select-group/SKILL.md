@@ -39,9 +39,9 @@ Footer slot contains optional `AddButton` for adding new options:
 
 ## The Anti-Patterns
 
-| Don't                               | Do                                    |
-|-------------------------------------|---------------------------------------|
-| Inline add button logic             | Use allowAdd prop + @add emit         |
-| Manual slot forwarding              | Loop over $slots                      |
-| Forget loading state                | Support loading prop                  |
-| Skip showClear for nullable         | Add showClear when null is valid      |
+| Don't                       | Do                               |
+|-----------------------------|----------------------------------|
+| Inline add button logic     | Use allowAdd prop + @add emit    |
+| Manual slot forwarding      | Loop over $slots                 |
+| Forget loading state        | Support loading prop             |
+| Skip showClear for nullable | Add showClear when null is valid |

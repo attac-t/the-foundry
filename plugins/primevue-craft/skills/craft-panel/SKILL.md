@@ -18,13 +18,13 @@
 
 ## The Enhancements
 
-| Feature | Implementation |
-|---------|----------------|
-| Clickable header | Entire header toggles, not just chevron |
-| Custom chevron | pi-chevron-right (collapsed) / pi-chevron-down |
-| Badge support | Optional badge in top-right corner |
-| Lazy content | Slot only renders when expanded |
-| Disabled state | Prevents toggling, dims header |
+| Feature          | Implementation                              |
+|------------------|---------------------------------------------|
+| Clickable header | Entire header toggles, not just chevron     |
+| Custom chevron   | pi-chevron-right (collapsed) / pi-chevron-down |
+| Badge support    | Optional badge in top-right corner          |
+| Lazy content     | Slot only renders when expanded             |
+| Disabled state   | Prevents toggling, dims header              |
 
 ## The Rules
 
@@ -36,9 +36,9 @@
 
 ## The Anti-Patterns
 
-| Don't                               | Do                                    |
-|-------------------------------------|---------------------------------------|
-| Only chevron clickable              | Make entire header clickable          |
-| Always render content               | Lazy render with v-if                 |
-| Skip disabled visual                | Add opacity-50 when disabled          |
-| Inline badge styling                | Use severity prop for consistency     |
+| Don't                  | Do                               |
+|------------------------|----------------------------------|
+| Only chevron clickable | Make entire header clickable     |
+| Always render content  | Lazy render with v-if            |
+| Skip disabled visual   | Add opacity-50 when disabled     |
+| Inline badge styling   | Use severity prop for consistency |

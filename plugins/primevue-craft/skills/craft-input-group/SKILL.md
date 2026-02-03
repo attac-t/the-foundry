@@ -43,9 +43,9 @@ The actual input with:
 
 ## The Anti-Patterns
 
-| Don't                               | Do                                    |
-|-------------------------------------|---------------------------------------|
-| Duplicate validation styling        | Use InputLabelMessageGroup            |
-| Conditional import for label types  | Use IftaOrFloatLabel abstraction      |
-| Manual placeholder handling         | Use placeholder proxy pattern         |
-| Hardcode field names                | Generate with uniqueId()              |
+| Don't                              | Do                                 |
+|------------------------------------|------------------------------------|
+| Duplicate validation styling       | Use InputLabelMessageGroup         |
+| Conditional import for label types | Use IftaOrFloatLabel abstraction   |
+| Manual placeholder handling        | Use placeholder proxy pattern      |
+| Hardcode field names               | Generate with uniqueId()           |

@@ -24,21 +24,21 @@ Ask: "Will this pattern repeat?"
 
 ## The Comparison
 
-| Wrapper                        | When to Use                               |
-|--------------------------------|-------------------------------------------|
-| Input*Group                    | Any form input needing validation         |
-| AppDataTable                   | Tables with selection, sorting, pagination|
-| AppDialog                      | Modals with semantic structure            |
-| AppSlideOver                   | Side panels with responsive behavior      |
-| AppPanel                       | Collapsible sections with lazy content    |
+| Wrapper      | When to Use                                |
+|--------------|--------------------------------------------|
+| Input*Group  | Any form input needing validation          |
+| AppDataTable | Tables with selection, sorting, pagination |
+| AppDialog    | Modals with semantic structure             |
+| AppSlideOver | Side panels with responsive behavior       |
+| AppPanel     | Collapsible sections with lazy content     |
 
-| Raw PrimeVue                   | When to Use                               |
-|--------------------------------|-------------------------------------------|
-| Button                         | Standalone, no wrapper needed             |
-| Tag                            | Simple display, no validation             |
-| ProgressBar                    | Display-only, no form integration         |
-| Menu/Menubar                   | Navigation, no form validation            |
-| Toast                          | Global notification, managed by store     |
+| Raw PrimeVue | When to Use                            |
+|--------------|----------------------------------------|
+| Button       | Standalone, no wrapper needed          |
+| Tag          | Simple display, no validation          |
+| ProgressBar  | Display-only, no form integration      |
+| Menu/Menubar | Navigation, no form validation         |
+| Toast        | Global notification, managed by store  |
 
 ## When Raw is Fine
 
@@ -75,9 +75,9 @@ Ask: "Will this pattern repeat?"
 
 ## The Anti-Patterns
 
-| Don't                                    | Do                               |
-|------------------------------------------|----------------------------------|
-| Wrap every PrimeVue component            | Wrap only when adding value      |
-| Use raw inputs in forms                  | Use Input*Group for consistency  |
-| Create wrapper without clear benefit     | Document why wrapper exists      |
-| Mix raw and wrapped in same form         | Be consistent within form        |
+| Don't                                | Do                              |
+|--------------------------------------|---------------------------------|
+| Wrap every PrimeVue component        | Wrap only when adding value     |
+| Use raw inputs in forms              | Use Input*Group for consistency |
+| Create wrapper without clear benefit | Document why wrapper exists     |
+| Mix raw and wrapped in same form     | Be consistent within form       |

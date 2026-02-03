@@ -40,9 +40,9 @@ const DATA_TABLE_COL_PRESETS = {
 
 ## The Anti-Patterns
 
-| Don't                               | Do                                    |
-|-------------------------------------|---------------------------------------|
-| Manual v-model:selection/etc        | Use AppDataTable defineModel states   |
-| Hardcode frozen column configs      | Use DATA_TABLE_COL_PRESETS        |
-| Inline empty state                  | Lazy load InfoState component      |
-| Skip slot forwarding                | Forward all $slots to DataTable       |
+| Don't                          | Do                                  |
+|--------------------------------|-------------------------------------|
+| Manual v-model:selection/etc   | Use AppDataTable defineModel states |
+| Hardcode frozen column configs | Use DATA_TABLE_COL_PRESETS          |
+| Inline empty state             | Lazy load InfoState component       |
+| Skip slot forwarding           | Forward all $slots to DataTable     |

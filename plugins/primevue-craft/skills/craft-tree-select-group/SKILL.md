@@ -15,10 +15,10 @@ const treeMap = new Map<string, string>()             // child → parent
 
 ## The Selection Modes
 
-| Mode | v-model Type | Description |
-|------|--------------|-------------|
-| Single | `string` | One selection |
-| Multiple | `{ [key]: true }` | Multiple selections |
+| Mode     | v-model Type                                | Description         |
+|----------|---------------------------------------------|---------------------|
+| Single   | `string`                                    | One selection       |
+| Multiple | `{ [key]: true }`                           | Multiple selections |
 | Checkbox | `{ checked: {...}, partialChecked: {...} }` | With partial states |
 
 ## The Consolidation Logic
@@ -45,9 +45,9 @@ When child unselected, expand parent to siblings:
 
 ## The Anti-Patterns
 
-| Don't                               | Do                                    |
-|-------------------------------------|---------------------------------------|
-| Traverse tree on every render       | Build memoization caches              |
-| Keep all children in selection      | Consolidate to parent                 |
-| Re-compute descendants              | Cache in descendantKeysCache          |
-| Manual parent tracking              | Use treeMap for child→parent          |
+| Don't                         | Do                             |
+|-------------------------------|--------------------------------|
+| Traverse tree on every render | Build memoization caches       |
+| Keep all children in selection | Consolidate to parent          |
+| Re-compute descendants        | Cache in descendantKeysCache   |
+| Manual parent tracking        | Use treeMap for child→parent   |

@@ -27,9 +27,9 @@ const search = (event: AutoCompleteCompleteEvent) => {
 
 ## The Dual Search
 
-| Field | Purpose |
-|-------|---------|
-| `optionLabel` | Display text (product name) |
+| Field            | Purpose                                 |
+|------------------|-----------------------------------------|
+| `optionLabel`    | Display text (product name)             |
 | `searchableText` | Additional search content (SKU, barcode) |
 
 ## The Workarounds
@@ -60,9 +60,9 @@ PrimeVue fluid prop doesn't apply width: 100%:
 
 ## The Anti-Patterns
 
-| Don't                               | Do                                    |
-|-------------------------------------|---------------------------------------|
-| Single field search                 | Search label + searchableText         |
-| Computed for filtered options       | Use ref (allows mutation)             |
-| Skip spread on empty query          | Always spread to trigger watcher      |
-| Assume fluid works                  | Add :deep style workaround            |
+| Don't                         | Do                               |
+|-------------------------------|----------------------------------|
+| Single field search           | Search label + searchableText    |
+| Computed for filtered options | Use ref (allows mutation)        |
+| Skip spread on empty query    | Always spread to trigger watcher |
+| Assume fluid works            | Add :deep style workaround       |

@@ -19,8 +19,8 @@ const size = computed(() => {
 
 ## The Sizes
 
-| Size | Desktop (xl+) | Mobile |
-|------|---------------|--------|
+| Size | Desktop (xl+) | Mobile     |
+|------|---------------|------------|
 | `md` | w-1/3         | 90% height |
 | `lg` | w-1/2         | 90% height |
 
@@ -51,9 +51,9 @@ const size = computed(() => {
 
 ## The Anti-Patterns
 
-| Don't                               | Do                                    |
-|-------------------------------------|---------------------------------------|
-| Hardcode drawer position            | Use responsive positioning            |
-| Manual scroll blocking              | Let AppSlideOver handle it            |
-| Inline close button in footer       | Close button in header (default)      |
-| Forget mobile height                | 90% height on mobile always           |
+| Don't                         | Do                               |
+|-------------------------------|----------------------------------|
+| Hardcode drawer position      | Use responsive positioning       |
+| Manual scroll blocking        | Let AppSlideOver handle it       |
+| Inline close button in footer | Close button in header (default) |
+| Forget mobile height          | 90% height on mobile always      |

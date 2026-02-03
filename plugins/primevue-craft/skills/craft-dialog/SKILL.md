@@ -52,9 +52,9 @@
 
 ## The Anti-Patterns
 
-| Don't                               | Do                                   |
-|-------------------------------------|--------------------------------------|
-| Create inline modal structure       | Use AppDialog or ConfirmationModal   |
-| Forget processing state             | Disable submit when processing       |
-| Manual escape key handling          | Let wrapper handle it                |
-| Mix visible logic in child          | Parent controls visibility           |
+| Don't                         | Do                                 |
+|-------------------------------|------------------------------------|
+| Create inline modal structure | Use AppDialog or ConfirmationModal |
+| Forget processing state       | Disable submit when processing     |
+| Manual escape key handling    | Let wrapper handle it              |
+| Mix visible logic in child    | Parent controls visibility         |
