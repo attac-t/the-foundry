@@ -1,0 +1,17 @@
+{
+  "name": "primevue-craft",
+  "version": "0.1.0",
+  "description": "PrimeVue component patterns for Vue 3. Wrappers, form groups, DataTable, overlays. Requires kernel.",
+  "author": {
+    "name": "Christian Attard",
+    "url": "https://github.com/attac-t"
+  },
+  "keywords": [
+    "primevue",
+    "vue3",
+    "components",
+    "datatable",
+    "forms"
+  ],
+  "skills": "./skills/"
+}
