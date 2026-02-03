@@ -1,0 +1,19 @@
+{
+  "name": "vue-craft",
+  "version": "0.1.0",
+  "description": "Vue 3 Composition API patterns. Opinionated domain-driven frontend with composables, Pinia stores, and Zod validation. Requires craftsman/kernel.",
+  "author": {
+    "name": "Christian Attard",
+    "url": "https://github.com/attac-t"
+  },
+  "keywords": [
+    "vue3",
+    "composition-api",
+    "pinia",
+    "zod",
+    "typescript",
+    "composables",
+    "domain-driven"
+  ],
+  "skills": "./skills/"
+}
