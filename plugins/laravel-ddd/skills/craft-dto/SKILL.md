@@ -23,10 +23,10 @@ description: Crafting DTOs with Spatie Laravel Data v4.
 
 | ❌ Don't | ✅ Do | Why |
 |----------|-------|-----|
-| `DataCollection` | Native `Collection` | v4 preferred. Always. |
+| `DataCollection` | Native `Collection` | v4 preferred for basic nesting. |
 | `$dto->except('id')->toArray()` | `$dto->all()` | Cleaner. Handle Optional in action. |
 | Omit `#[AutoWhenLoadedLazy]` | Always use on relations | Avoids triggering lazy loads. |
-| `#[WithCast]` on `$dataClass` DTO | Only on request DTOs | Ignored when DTO is collection item. |
+| `#[WithCast]` on output DTO | Only on request DTOs | Casts are for input direction only. |
 | Guess API | Read docs + namespace | Avoid hallucination. |
 | Direct mutation | `->with()` | Immutability. |
 

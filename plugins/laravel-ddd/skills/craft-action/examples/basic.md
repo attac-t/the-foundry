@@ -104,10 +104,10 @@ final readonly class UpsertFeeAction
 ```php
 // Over-engineered
 $dto->except('id')->toArray()
-
-// Wrong: separate Create/Update actions for simple CRUD
-class CreateFeeAction { ... }
-class UpdateFeeAction { ... }
 ```
 
-> When create and update share logic, upsert is cleaner.
+### Consider Upsert When
+- Create and update share the same logic
+- No distinct business rules per operation
+
+> Separate actions are valid when create/update have different behaviors.

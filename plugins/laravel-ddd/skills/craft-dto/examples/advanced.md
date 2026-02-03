@@ -115,25 +115,32 @@ public string $code,
 
 ## Casting Pitfalls
 
-### ❌ WithCast on $dataClass DTO
-**Why?** `#[WithCast]` only applies when DTO is hydrated from request. Ignored when DTO is used as `$dataClass` for a collection.
+### ❌ WithCast on Output-Only DTO
+**Why?** `#[WithCast]` is for the input direction (request → DTO). If a DTO is only used for output (model → DTO), casts are never triggered.
 ```php
-// ❌ This cast is ignored when FeeData is a collection item
-#[WithCast(SomeCaster::class)]
-class FeeData extends Data { ... }
+// FeeData used only as output (nested in parent DTO)
+class FeeData extends Data
+{
+    #[WithCast(MoneyCast::class)]  // ❌ Never triggered
+    public Money $amount,
+}
 
-// In parent DTO:
-#[DataCollectionOf(FeeData::class)]
-public Collection $fees;  // FeeData's WithCast ignored here
-```
-
-### ✅ Cast at Property Level
-```php
+// Parent output DTO:
 class OrderData extends Data
 {
-    #[WithCast(MoneyCast::class)]
-    public Money $total,  // ✅ Cast applied here
+    #[DataCollectionOf(FeeData::class)]
+    public Collection $fees,  // FeeData created from model, not request
 }
 ```
 
-> Rule: `#[WithCast]` belongs on the property receiving the data, not the DTO class itself.
+### ✅ Casts on Request DTOs
+```php
+// Input DTO — casts apply here
+class CreateOrderData extends Data
+{
+    #[WithCast(MoneyCast::class)]
+    public Money $total,  // ✅ Cast triggered on request hydration
+}
+```
+
+> Rule: `#[WithCast]` is for input. If the DTO is output-only, casts are dead code.
