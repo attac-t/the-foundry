@@ -53,11 +53,31 @@ interface EntityNotificationHandlers {
 // startOperation
 { severity: 'info', detail: 'Creating invoice...' }
 
-// onSuccess
+// onSuccess - capitalize entity, past tense verb
 { severity: 'success', detail: 'Invoice created successfully' }
 
-// onError
+// onError - base verb form
 { severity: 'error', detail: 'Failed to create invoice' }
+```
+
+## Verb Transformations
+
+```typescript
+// Action verbs follow consistent transformation:
+// Present participle → past tense (success)
+// Present participle → base verb (error)
+
+'Creating'  → 'created'  / 'create'
+'Updating'  → 'updated'  / 'update'
+'Deleting'  → 'deleted'  / 'delete'
+'Issuing'   → 'issued'   / 'issue'
+'Voiding'   → 'voided'   / 'void'
+'Saving'    → 'saved'    / 'save'
+
+// These are handled by utility functions:
+// toPastTense(action) - for success messages
+// toBaseVerb(action)  - for error messages
+// capitalize(entity)  - for success messages
 ```
 
 ## The onFinish Catch-All
