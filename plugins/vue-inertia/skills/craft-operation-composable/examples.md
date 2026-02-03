@@ -140,12 +140,37 @@ export const useDeleteInvoice = () => {
 }
 ```
 
+## Silent Failure Check
+
+```typescript
+// CRITICAL: Check form.processing in onFinish
+// If still true, neither onSuccess nor onError fired
+form.put(route('invoices.update', { invoice: id }), {
+  onSuccess: () => {
+    notification.onSuccess()
+    options?.onSuccess?.()
+  },
+  onError: () => {
+    notification.onError()
+    options?.onError?.()
+  },
+  onFinish: () => {
+    notification.onFinish()
+    // Silent failure detection
+    if (form.processing) {
+      options?.onError?.()
+    }
+  }
+})
+```
+
 ## Type Definitions
 
 ```typescript
+// Params are readonly - prevent mutation within operations
 interface InvoiceOperationParams {
-  invoiceId: number
-  displayNumber: string
+  readonly invoiceId: number | string
+  readonly displayNumber: string
 }
 
 interface InvoiceOperationOptions {

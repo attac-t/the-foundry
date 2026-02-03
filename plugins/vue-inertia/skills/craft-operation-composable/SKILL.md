@@ -60,17 +60,22 @@ use-invoice-operation/
 
 ## The Rules
 
-1. **Processing state**: Track with `isProcessing` ref
+1. **Processing state**: Track with `isProcessing` ref for UI feedback
 2. **Notification lifecycle**: Always use `useEntityNotification`
 3. **Options passthrough**: Chain user callbacks after notification
 4. **Delete navigates away**: Use `router.visit()` after successful delete
 5. **API variant returns boolean**: `true` for success, `false` for error
+6. **Silent failure check**: In `onFinish`, check processing state — if still true, trigger error
+7. **Reload after Inertia update**: Call `router.reload()` in onSuccess for fresh server state
+8. **Readonly params**: Mark operation params as `readonly` to prevent mutation
 
 ## The Anti-Patterns
 
-| Don't                              | Do                                    |
-|------------------------------------|---------------------------------------|
-| Skip notification composable       | Always use `useEntityNotification`    |
-| Mix page reload with chaining      | Pick variant based on flow            |
-| Forget processing state            | Track with ref for UI feedback        |
-| Stay on page after delete          | Navigate to index                     |
+| Don't                              | Do                                      |
+|------------------------------------|-----------------------------------------|
+| Skip notification composable       | Always use `useEntityNotification`      |
+| Mix page reload with chaining      | Pick variant based on flow              |
+| Forget processing state            | Track with ref for UI feedback          |
+| Stay on page after delete          | Navigate to index                       |
+| Skip `form.processing` check       | Check in onFinish for silent failures   |
+| Manual page refresh                | `router.reload()` preserves Inertia     |
