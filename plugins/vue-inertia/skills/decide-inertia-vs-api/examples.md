@@ -62,13 +62,12 @@ const { validateApi } = useValidateInvoice()
 const submitIfValid = async () => {
   const isValid = await validateApi(params, form.data())
 
-  if (isValid) {
-    // Now use Inertia for the actual submit
-    form.post(route('invoices.store'))
-  } else {
-    // Show validation errors, don't submit
+  if (!isValid) {
     showErrors()
+    return
   }
+
+  form.post(route('invoices.store'))
 }
 ```
 
@@ -80,12 +79,12 @@ const submitIfValid = async () => {
 // Check if can proceed, then do Inertia action
 const canIssue = await checkCanIssueApi(params)
 
-if (canIssue) {
-  // Simple action - use Inertia
-  router.post(route('invoices.issue', { invoice: id }))
-} else {
+if (!canIssue) {
   showBlockingErrors()
+  return
 }
+
+router.post(route('invoices.issue', { invoice: id }))
 ```
 
 ---
