@@ -27,10 +27,10 @@ const search = (event: AutoCompleteCompleteEvent) => {
 
 ## The Dual Search
 
-| Field            | Purpose                                 |
-|------------------|-----------------------------------------|
-| `optionLabel`    | Display text (product name)             |
-| `searchableText` | Additional search content (SKU, barcode) |
+| Field            | Purpose                                    |
+|------------------|--------------------------------------------|
+| `optionLabel`    | Display text (product name)                |
+| `searchableText` | Additional search content (SKU, barcode)   |
 
 ## The Workarounds
 

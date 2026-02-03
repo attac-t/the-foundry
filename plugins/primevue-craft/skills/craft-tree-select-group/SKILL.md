@@ -45,9 +45,9 @@ When child unselected, expand parent to siblings:
 
 ## The Anti-Patterns
 
-| Don't                         | Do                             |
-|-------------------------------|--------------------------------|
-| Traverse tree on every render | Build memoization caches       |
+| Don't                          | Do                             |
+|--------------------------------|--------------------------------|
+| Traverse tree on every render  | Build memoization caches       |
 | Keep all children in selection | Consolidate to parent          |
-| Re-compute descendants        | Cache in descendantKeysCache   |
-| Manual parent tracking        | Use treeMap for child→parent   |
+| Re-compute descendants         | Cache in descendantKeysCache   |
+| Manual parent tracking         | Use treeMap for child→parent   |
