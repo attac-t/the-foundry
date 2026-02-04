@@ -44,6 +44,14 @@
             "command": "${CLAUDE_PLUGIN_ROOT}/hooks/evaluate.sh"
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/delegate.sh"
+          }
+        ]
       }
     ],
     "PostToolUse": [
