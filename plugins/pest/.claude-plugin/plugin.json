@@ -1,7 +1,7 @@
 {
   "name": "pest",
-  "version": "1.0.0",
-  "description": "Pest v3 testing syntax. Expressive describe/it/expect patterns. Requires craftsman/kernel for testing philosophy.",
+  "version": "2.0.0",
+  "description": "Pest testing suite skills. Philosophy, organization, factories, datasets, arch testing, mocking decisions.",
   "author": {
     "name": "Christian Attard",
     "url": "https://github.com/attac-t"
