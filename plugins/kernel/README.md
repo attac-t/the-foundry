@@ -90,7 +90,8 @@ PROMPT (UserPromptSubmit)              ← Anchor past → Reflect → Act
     │
     ├── anchor     Echo objective       "Here's your goal"
     ├── recite     Prompt memory update "Did you make progress?"
-    └── evaluate   Force skill YES/NO   "What skills apply NOW?"
+    ├── evaluate   Force skill YES/NO   "What skills apply NOW?"
+    └── delegate   Prompt task assessment (when blueprint active)
     │
     ▼
 RESPONSE (PostToolUse)
@@ -168,6 +169,7 @@ Branch-aware. Each topic gets its own memory.
 
 ```
 /design      Interview → spec → new session
+/rfc         Interview → design proposal
 /blueprint   Load roadmap
 /refine      Spawn reviewer
 /evaluate    Verify the OS
