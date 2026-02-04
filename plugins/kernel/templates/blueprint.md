@@ -16,9 +16,9 @@
 
 > Sourced from spec.md Low-Level Tasks. Owner assessed via `ground-delegation` criteria.
 
-| # | Task | Owner | Status | Confirmed |
-|---|------|-------|--------|-----------|
-| 1 | [Description] | self | pending | - |
+| # | Task          | Owner | Status  | Confirmed |
+|---|---------------|-------|---------|-----------|
+| 1 | [Description] | self  | pending | -         |
 
 **Owner**: `self` (architect does it) | `agent` (delegated to sub-agent)
 
@@ -49,7 +49,7 @@
 
 | # | Task | Agent | Started | Status |
 |---|------|-------|---------|--------|
-| - | - | - | - | - |
+| - | -    | -     | -       | -      |
 
 ---
 
@@ -59,7 +59,7 @@
 
 | # | Task | Reason | Date |
 |---|------|--------|------|
-| - | - | - | - |
+| - | -    | -      | -    |
 
 ---
 
@@ -67,9 +67,9 @@
 
 > Plan mutations. Why the blueprint evolved.
 
-| Date | Change | Reason |
-|------|--------|--------|
-| - | Initial blueprint | - |
+| Date | Change            | Reason |
+|------|-------------------|--------|
+| -    | Initial blueprint | -      |
 
 ---
 
