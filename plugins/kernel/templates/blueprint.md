@@ -14,13 +14,18 @@
 
 ## Tasks
 
-> Sourced from spec.md Low-Level Tasks. Status requires user confirmation.
+> Sourced from spec.md Low-Level Tasks. Owner assessed via `ground-delegation` criteria.
 
-| # | Task          | Status  | Confirmed |
-|---|---------------|---------|-----------|
-| 1 | [Description] | pending | -         |
+| # | Task          | Owner | Status  | Confirmed |
+|---|---------------|-------|---------|-----------|
+| 1 | [Description] | self  | pending | -         |
 
-**Status**: `pending` | `in-progress` | `done` | `deferred`
+**Owner**: `self` (architect does it) | `agent` (delegated to sub-agent)
+
+**Status**:
+- `self` tasks: `pending` → `in-progress` → `done`
+- `agent` tasks: `pending` → `delegated` → `in-review` → `done`
+- Any task: `deferred`
 
 **Confirmed**: User confirmation + date (e.g., `2026-01-10`) or `-`
 
@@ -28,13 +33,23 @@
 
 ## Current
 
-> Single active task. Synced to working.md Focus.
+> Single active task (self) or multiple delegated tasks (agent). Synced to working.md Focus.
 
 **Task**: #[N] - [Description]
 
 **Started**: [Date]
 
 **Blockers**: None
+
+---
+
+## Delegated
+
+> Active agent tasks. Max 3 parallel. See `ground-delegation` for briefing format.
+
+| # | Task | Agent | Started | Status |
+|---|------|-------|---------|--------|
+| - | -    | -     | -       | -      |
 
 ---
 
