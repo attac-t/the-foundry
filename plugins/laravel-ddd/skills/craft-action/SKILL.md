@@ -13,7 +13,7 @@ description: Crafting an Action. The heart of business logic.
 2. **Return Type**: Model or void. Never DTO or Response.
 3. **Inject Actions**: Use `__construct` for dependencies.
 4. **Accept Data**: DTOs or primitives in `execute()`.
-5. **Stateful Execution**: Store input on `$this` and chain private methods. Actions are short-lived objects — statefulness during a single `execute()` call is the intended design. Do NOT pass parameters between private methods.
+5. **Fluent Chaining**: Store input on `$this`, chain private methods. Never pass params between them.
 
 ## The Anti-Patterns
 

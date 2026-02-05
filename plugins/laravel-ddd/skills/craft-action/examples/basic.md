@@ -62,7 +62,6 @@ class ActivatePriceListAction
     private function notify(PriceList $priceList): void { ... }
 }
 ```
-> Actions are short-lived objects — store input on `$this` in `execute()`, then chain private methods that return `$this`. This is the intended design.
 
 ---
 
