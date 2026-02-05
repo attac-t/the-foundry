@@ -1,0 +1,5 @@
+# Code Owners for the-foundry
+# These users will be requested for review when PRs touch matching paths
+
+# Default: all files
+* @attac-t
