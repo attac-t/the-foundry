@@ -45,35 +45,12 @@ class ActivatePriceListAction
 }
 ```
 
-### ❌ Don't Pass Params Between Private Methods
-**Why not?** Bloated signatures, no fluency, harder to read.
+### ❌ Don't
 ```php
-class ActivatePriceListAction
-{
-    public function execute(PriceList $priceList): void
-    {
-        $this->guardAlreadyActive($priceList);
-        $this->markAsActive($priceList);
-        $this->notify($priceList);
-    }
-
-    private function guardAlreadyActive(PriceList $priceList): void { ... }
-    private function markAsActive(PriceList $priceList): void { ... }
-    private function notify(PriceList $priceList): void { ... }
-}
-```
-
----
-
-## Single Responsibility
-
-### ✅ One Thing Well
-**Why?** Each private method: one step, returns `$this`.
-```php
-private function ensureAvailability(): self { ... return $this; }
-private function calculateTotals(): self { ... return $this; }
-private function applyDiscounts(): self { ... return $this; }
-private function notify(): self { ... return $this; }
+// Passing params between private methods kills fluency
+private function guardAlreadyActive(PriceList $priceList): void { ... }
+private function markAsActive(PriceList $priceList): void { ... }
+private function notify(PriceList $priceList): void { ... }
 ```
 
 ---
@@ -102,7 +79,7 @@ public function handle(): void
 ## Upsert Pattern
 
 ### ✅ Single Action for Create/Update
-**Why?** One action, one DTO. The `Optional` type distinguishes create from update.
+**Why?** One action, one DTO. `Optional` distinguishes create from update.
 ```php
 use Spatie\LaravelData\Optional;
 
@@ -124,8 +101,4 @@ final readonly class UpsertFeeAction
 $dto->except('id')->toArray()
 ```
 
-### Consider Upsert When
-- Create and update share the same logic
-- No distinct business rules per operation
-
-> Separate actions are valid when create/update have different behaviors.
+> Separate actions when create/update have different business rules.
