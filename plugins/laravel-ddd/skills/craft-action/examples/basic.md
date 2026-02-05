@@ -45,6 +45,25 @@ class ActivatePriceListAction
 }
 ```
 
+### ❌ Don't Pass Params Between Private Methods
+**Why not?** Bloated signatures, no fluency, harder to read.
+```php
+class ActivatePriceListAction
+{
+    public function execute(PriceList $priceList): void
+    {
+        $this->guardAlreadyActive($priceList);
+        $this->markAsActive($priceList);
+        $this->notify($priceList);
+    }
+
+    private function guardAlreadyActive(PriceList $priceList): void { ... }
+    private function markAsActive(PriceList $priceList): void { ... }
+    private function notify(PriceList $priceList): void { ... }
+}
+```
+> Actions are short-lived objects — store input on `$this` in `execute()`, then chain private methods that return `$this`. This is the intended design.
+
 ---
 
 ## Single Responsibility
