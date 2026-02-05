@@ -1,6 +1,7 @@
 ---
 name: craft-memory
 description: Crafting effective CLAUDE.md files. Project memory that Claude won't ignore.
+user-invocable: false
 ---
 
 # Skill: Craft Memory
