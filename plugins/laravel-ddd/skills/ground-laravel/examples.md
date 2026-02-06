@@ -75,7 +75,10 @@ class OrderRepository
 ### ✅ Use Laravel Features First
 ```php
 // Good: Built-in authorization
-Gate::define('edit-post', fn (User $user, Post $post) => $user->id === $post->user_id);
+Gate::define(
+    ability: 'edit-post',
+    callback: fn (User $user, Post $post) => $user->id === $post->user_id,
+);
 
 // Bad: Custom authorization layer
 class CustomAuthorizer
@@ -102,6 +105,28 @@ class CustomStateMachine
 {
     // 200 lines of untested code...
 }
+```
+
+---
+
+## Named Parameters
+
+### ✅ Name Arguments for 2+ Parameters
+**Why?** Positional args hide intent. Named args are self-documenting.
+```php
+// Good: Intent is clear — even inside closures
+Cache::remember(key: 'users', ttl: 60, callback: fn () => User::all());
+
+$action->execute(data: $dto, notify: true);
+
+$orders->each(fn (Order $order) => ProcessOrder::dispatch(
+    order: $order,
+    priority: Priority::High,
+));
+
+// Bad: What does 60 mean? What's the second bool?
+Cache::remember('users', 60, fn () => User::all());
+$action->execute($dto, true);
 ```
 
 ---

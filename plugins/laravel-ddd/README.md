@@ -23,6 +23,7 @@ Convention over configuration     Follow defaults. Custom only when necessary.
 Eloquent as truth                 Don't abstract around the ORM.
 Thin controllers                  Controllers route. Actions execute.
 Batteries included                Laravel first. Spatie second. Custom last.
+Named parameters                  2+ args? Name them. Closures too.
 ```
 
 This happens automatically via the kernel's `evaluate.sh`. No manual invocation needed.

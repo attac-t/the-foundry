@@ -13,6 +13,7 @@ description: Laravel philosophy. Convention over config. Eloquent as truth. Invo
 - **Eloquent as Truth**: Models own their domain. Don't abstract around the ORM.
 - **Thin Controllers**: Controllers route and orchestrate. Actions execute business logic.
 - **Batteries Included**: Use Laravel features before packages before custom code.
+- **Named Parameters**: Use named arguments for all calls with 2+ parameters. Closures included. Positional args obscure intent.
 
 ## The Check
 
@@ -22,6 +23,7 @@ Stop and reconsider if:
 - Creating custom solutions for things Laravel provides (gates, policies, events)
 - Bypassing Eloquent "for performance" without measuring
 - Building a "service layer" that just calls model methods
+- Using positional arguments for calls with 2+ parameters
 
 ## The Protocol
 
