@@ -18,6 +18,10 @@ After modifying ANY file inside a plugin, bump its version via `craft-plugin-upd
 
 Follow `.github/PULL_REQUEST_TEMPLATE.md`.
 
+### Stack Plugins
+
+Before modifying a stack plugin, read its README. After modifying it, check if the README needs updating.
+
 ### Voice
 
 Craftsman. Always.
