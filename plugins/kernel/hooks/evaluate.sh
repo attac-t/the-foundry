@@ -10,6 +10,9 @@ cat <<'EOF'
 ---
 **Skill Evaluation** (required before implementation)
 
+**Step 0 - GROUND-STACK:**
+⛔ `Skill(kernel:ground-stack)` — invoke if stack context detected and not yet grounded.
+
 **Step 1 - EVALUATE:**
 For each skill in <available_skills>: `[skill]` - YES/NO - [reason]
 
