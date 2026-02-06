@@ -45,11 +45,11 @@ Defensive code        Fail fast, guard clauses, null objects
 
 ## Skills
 
-44 skills. Three types.
+45 skills. Three types.
 
 ```
 ground-*     Philosophy and mindset (7 skills)
-craft-*      How to build (21 skills)
+craft-*      How to build (22 skills)
 decide-*     When to use what (16 skills)
 ```
 
@@ -57,6 +57,7 @@ decide-*     When to use what (16 skills)
 
 ```
 craft-action         Single-purpose Actions, not service sprawl
+craft-concern        Thin traits — delegate to builders, collections, actions
 craft-dto            Spatie Laravel Data v4 value objects
 craft-model-state    Explicit states over boolean flags
 craft-guard-clause   Handle bad cases first
