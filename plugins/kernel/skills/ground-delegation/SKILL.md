@@ -14,8 +14,6 @@ description: Strategic delegation. When to lead, delegate, or collaborate.
 
 ## The Primitives
 
-Three delegation modes. Choose the right one.
-
 | Primitive | Communication | Best For |
 |-----------|--------------|----------|
 | **Self** | — | Judgment-heavy, context-dependent, architectural |
@@ -39,8 +37,8 @@ All yes → `sub-agent`. Any no → check if `team` fits.
 
 | Signal | Example |
 |--------|---------|
-| **Competing hypotheses** | "We don't know the root cause — investigate in parallel" |
-| **Cross-layer coordination** | Frontend, backend, and tests need to move together |
+| **Competing hypotheses** | Investigate the root cause in parallel |
+| **Cross-layer coordination** | Frontend, backend, and tests move together |
 | **Research with challenge** | Findings should be questioned, not just collected |
 | **Peer review** | Multiple lenses on the same artifact |
 
@@ -50,14 +48,14 @@ If none → `self`.
 
 > Every delegation narrows scope. Never widens it.
 
-**Sub-agents** receive **less** authority than the parent. Scope the briefing to the minimum:
+**Sub-agents** receive **less** authority than the parent:
 - Only the files they need
 - Only the conventions that apply
 - Only the tools the task requires
 
-Broad access means the task isn't bounded. Decompose further.
+Broad access → task isn't bounded. Decompose further.
 
-**Teammates** inherit full project context but are scoped by **task boundaries**. Each teammate owns a distinct set of files. Two teammates editing the same file leads to overwrites.
+**Teammates** inherit full project context. Scope via **task boundaries** — each teammate owns distinct files.
 
 ## Authority Gradient
 
@@ -68,9 +66,9 @@ A flawed brief produces flawed output. No resistance, no warning.
 Include in every sub-agent briefing:
 > "Flag anything in this brief that seems inconsistent, incomplete, or wrong."
 
-A false flag costs nothing. Silent compliance on a bad brief wastes the run.
+A false flag costs nothing. Silent compliance wastes the run.
 
-**Agent teams partially solve this.** Teammates challenge each other's findings by design. Use adversarial investigation when the authority gradient is a concern.
+Teams solve this structurally — teammates challenge each other by design.
 
 ## The Sub-agent Briefing
 
@@ -84,12 +82,10 @@ Challenge: "Flag anything in this brief that seems wrong."
 
 ## The Team Briefing
 
-Describe the task, the team structure, and each role's distinct focus. Key principles:
 - **Separate file ownership** — no two teammates edit the same file
 - **Distinct lenses** — each role sees the problem differently
 - **Explicit deliverables** — what each teammate produces
-
-Use **delegate mode** (Shift+Tab) when the lead should orchestrate, not implement.
+- **Delegate mode** — lead orchestrates, not implements
 
 ## The Workflow
 
@@ -101,17 +97,17 @@ Use **delegate mode** (Shift+Tab) when the lead should orchestrate, not implemen
 ## Parallel Execution
 
 - **Sub-agents**: Up to 3 simultaneously (soft limit).
-- **Agent teams**: Size to the task. 5-6 tasks per teammate keeps everyone productive.
-- Only delegate tasks with no dependencies on other in-flight work.
+- **Agent teams**: 5-6 tasks per teammate keeps everyone productive.
+- No dependencies between in-flight work.
 - Track all delegated tasks in blueprint.
 
 ## The Anti-Patterns
 
 - **Over-delegating**: Spawning agents for trivial single-file changes.
 - **Under-delegating**: Drowning in mechanical work instead of leading.
-- **Vague briefs**: Delegating without clear success criteria.
-- **Fire and forget**: Not reviewing agent output before committing.
-- **Scope inflation**: Giving agents broader access than the task requires.
-- **Blind obedience**: Agents executing flawed briefs without questioning. The `Challenge` line exists to prevent this.
-- **Wrong primitive**: Using sub-agents when teammates need to talk. Using teams when a single agent would suffice.
-- **File collisions**: Two teammates editing the same file. Split the work.
+- **Vague briefs**: No clear success criteria.
+- **Fire and forget**: Not reviewing output before committing.
+- **Scope inflation**: Broader access than the task requires.
+- **Blind obedience**: Executing flawed briefs without questioning. The `Challenge` line prevents this.
+- **Wrong primitive**: Sub-agents when teammates need to talk. Teams when a single agent suffices.
+- **File collisions**: Two teammates, same file. Split the work.
