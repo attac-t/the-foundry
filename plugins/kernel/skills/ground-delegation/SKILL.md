@@ -14,11 +14,11 @@ description: Strategic delegation. When to lead, delegate, or collaborate.
 
 ## The Primitives
 
-| Primitive | Communication | Best For |
-|-----------|--------------|----------|
-| **Self** | — | Judgment-heavy, context-dependent, architectural |
-| **Sub-agent** | Reports back only | Bounded, mechanical, verifiable |
-| **Agent team** | Peer-to-peer | Research, competing hypotheses, cross-layer work |
+| Primitive      | Communication    | Best For                                          |
+|----------------|------------------|---------------------------------------------------|
+| **Self**       | —                | Judgment-heavy, context-dependent, architectural  |
+| **Sub-agent**  | Reports back only | Bounded, mechanical, verifiable                  |
+| **Agent team** | Peer-to-peer     | Research, competing hypotheses, cross-layer work  |
 
 ## The Criteria
 
@@ -35,12 +35,12 @@ All yes → `sub-agent`. Any no → check if `team` fits.
 
 ### Agent team — when the work needs dialogue:
 
-| Signal | Example |
-|--------|---------|
-| **Competing hypotheses** | Investigate the root cause in parallel |
-| **Cross-layer coordination** | Frontend, backend, and tests move together |
-| **Research with challenge** | Findings should be questioned, not just collected |
-| **Peer review** | Multiple lenses on the same artifact |
+| Signal                       | Example                                           |
+|------------------------------|---------------------------------------------------|
+| **Competing hypotheses**     | Investigate the root cause in parallel             |
+| **Cross-layer coordination** | Frontend, backend, and tests move together         |
+| **Research with challenge**  | Findings should be questioned, not just collected  |
+| **Peer review**              | Multiple lenses on the same artifact               |
 
 If none → `self`.
 

@@ -19,11 +19,11 @@ Before implementing any feature that involves:
 
 > Match friction to stakes. Flow for the trivial. Rigor for the irreversible.
 
-| Criticality | Reversibility | Depth | Examples |
-|-------------|---------------|-------|----------|
-| Low | High | **Minimal** (2-5 Qs) | Rename, add field, config change |
-| Medium | Medium | **Focused** (5-15 Qs) | New endpoint, refactor module |
-| High | Low | **Thorough** (15-40+ Qs) | Auth system, payment flow, migration |
+| Criticality | Reversibility | Depth                  | Examples                              |
+|-------------|---------------|------------------------|---------------------------------------|
+| Low         | High          | **Minimal** (2-5 Qs)  | Rename, add field, config change      |
+| Medium      | Medium        | **Focused** (5-15 Qs) | New endpoint, refactor module         |
+| High        | Low           | **Thorough** (15-40+) | Auth system, payment flow, migration  |
 
 ## The Protocol
 
