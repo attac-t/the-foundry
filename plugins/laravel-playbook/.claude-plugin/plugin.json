@@ -1,0 +1,17 @@
+{
+  "name": "laravel-playbook",
+  "version": "2.1.0",
+  "description": "The package author's playbook. Ecosystem-wide patterns for crafting, shipping, and sustaining pinnacle Laravel packages.",
+  "author": {
+    "name": "Christian Attard",
+    "url": "https://github.com/attac-t"
+  },
+  "keywords": [
+    "laravel",
+    "package",
+    "open-source",
+    "dx",
+    "ecosystem"
+  ],
+  "skills": "./skills/"
+}
