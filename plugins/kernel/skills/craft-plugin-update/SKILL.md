@@ -1,3 +1,8 @@
+---
+name: craft-plugin-update
+description: Bump plugin version, update changelog, commit. Use when releasing a new plugin version.
+---
+
 # Skill: Craft Plugin Update
 
 > "Bump, commit, push. In that order."
