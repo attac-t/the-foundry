@@ -31,6 +31,8 @@ description: Crafting macros. Runtime extension of Laravel core classes.
 | Skip IDE annotations                   | Add `@method` docblocks         | Discoverability is DX                |
 | Subclass framework classes             | Use macros                      | Framework resolves its own classes   |
 
+**See also:** craft-extension-point (Macroable as one of nine extension mechanisms).
+
 ## Real-World Examples
 
 See [examples.md](examples.md).

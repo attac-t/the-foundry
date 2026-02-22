@@ -1,30 +1,30 @@
 # API: Examples
 
-Patterns from the framework and production packages.
+Patterns from the framework and production code.
 
 ---
 
 ## The Pattern
 
-### Trait-Based Entry Point (Spatie)
+### Trait-Based Entry Point
 **Why?** Integrate where developers already work -- on the model.
 
 ```php
-$model->addMedia($file)           // returns FileAdder
-    ->usingName('avatar')          // returns FileAdder
-    ->withCustomProperties([...])  // returns FileAdder
-    ->toMediaCollection('photos'); // TERMINAL -- returns Media
+$model->addMedia($file)
+    ->usingName('avatar')
+    ->withCustomProperties([...])
+    ->toMediaCollection('photos'); // terminal
 ```
 
-### Static Factory Entry Point (Spatie)
+### Static Factory Entry Point
 **Why?** One obvious starting point. No constructor, no container lookup.
 
 ```php
-QueryBuilder::for(User::class)    // factory -- returns QueryBuilder
-    ->allowedFilters([...])        // returns QueryBuilder
-    ->allowedSorts([...])          // returns QueryBuilder
-    ->allowedIncludes([...])       // returns QueryBuilder
-    ->get();                       // TERMINAL -- Eloquent result
+QueryBuilder::for(User::class)
+    ->allowedFilters([...])
+    ->allowedSorts([...])
+    ->allowedIncludes([...])
+    ->get(); // terminal
 ```
 
 ### ::make() Schema Builder (Filament)
@@ -44,23 +44,21 @@ TextInput::make('name')
 **Why?** Multi-implementation service with default driver delegation.
 
 ```php
-// Facade delegates to manager's default driver
-Scout::search('query')         // delegates to EngineManager->driver()->search()
-Feature::active('new-ui')     // delegates to FeatureManager->driver()->active()
+Scout::search('query')          // delegates to EngineManager->driver()->search()
+Feature::active('new-ui')      // delegates to FeatureManager->driver()->active()
 
-// Explicit driver selection
-Scout::driver('meilisearch')->search('query')
+Scout::driver('meilisearch')->search('query') // explicit driver
 ```
 
-### Helper Function Entry Point (Spatie)
-**Why?** Universal utility. Used everywhere. Shortest path to action.
+### Helper Function Entry Point
+**Why?** Universal utility. Shortest path to action.
 
 ```php
-activity()                         // returns ActivityLogger
-    ->performedOn($model)          // returns ActivityLogger
-    ->causedBy($user)              // returns ActivityLogger
-    ->withProperties([...])        // returns ActivityLogger
-    ->log('description');          // TERMINAL -- returns ?Activity
+activity()
+    ->performedOn($model)
+    ->causedBy($user)
+    ->withProperties([...])
+    ->log('description'); // terminal
 ```
 
 ---
@@ -68,7 +66,7 @@ activity()                         // returns ActivityLogger
 ## Common Scenarios
 
 ### Named Constructors
-Every common case gets its own factory. Users pick from the menu.
+**Why?** Every common case gets its own factory. Users pick from the menu.
 
 ```php
 AllowedFilter::exact('status')
@@ -79,36 +77,24 @@ AllowedFilter::callback('search', fn ($query, $value) => ...)
 LogOptions::defaults()
     ->logOnly(['name', 'email'])
     ->logOnlyDirty()
-    ->dontSubmitEmptyLogs()
 ```
 
 ### Conditionable Trait
-Fluent conditional logic without breaking method chains.
+**Why?** Fluent conditional logic without breaking method chains.
 
 ```php
-use Illuminate\Support\Traits\Conditionable;
-
-class ReportBuilder
-{
-    use Conditionable;
-
-    // ...
-}
-
-// Usage -- no manual if/else in the chain
 $report = ReportBuilder::for($team)
     ->when($request->has('start_date'), fn ($r) => $r->from($request->start_date))
-    ->when($request->has('end_date'), fn ($r) => $r->until($request->end_date))
     ->unless($user->isAdmin(), fn ($r) => $r->onlyPublic())
     ->generate();
 ```
 
+Any class using `Conditionable` gets `when()` and `unless()` for free.
+
 ### Tappable Trait
-Inspection and side-effects without breaking the chain.
+**Why?** Inspection and side-effects without breaking the chain.
 
 ```php
-use Illuminate\Support\Traits\Tappable;
-
 $model->addMedia($file)
     ->usingName('avatar')
     ->tap(fn ($adder) => Log::info('Adding media', ['name' => $adder->name]))
@@ -116,7 +102,7 @@ $model->addMedia($file)
 ```
 
 ### Type-Rich Signatures
-Accept everything reasonable. Meet developers where they are.
+**Why?** Accept everything reasonable. Meet developers where they are.
 
 ```php
 public function hasPermissionTo(string|int|Permission|BackedEnum $permission): bool
@@ -125,45 +111,83 @@ public static function findById(int|string $id, ?string $guardName = null): self
 ```
 
 ### Closure-Based Configuration (Filament)
-Every configuration method accepts a literal value OR a closure. Dynamic behavior without subclassing.
+**Why?** Every config method accepts a literal value OR a closure. Dynamic behavior without subclassing.
 
 ```php
 TextInput::make('name')
     ->label(fn () => auth()->user()->isAdmin() ? 'Admin Name' : 'Name')
     ->hidden(fn (Get $get): bool => $get('role') !== 'staff')
     ->required(fn (string $operation): bool => $operation === 'create')
-    ->default(fn (): string => auth()->user()->name)
 ```
 
 ### configureUsing() for Global Defaults (Filament)
-Set defaults for all instances of a component. Individual instances override.
+**Why?** Set defaults for all instances of a component. Individual instances override.
 
 ```php
-// In a service provider's boot()
 Section::configureUsing(function (Section $section): void {
     $section->columns(2);
 });
-
-TextInput::configureUsing(function (TextInput $input): void {
-    $input->maxLength(255);
-});
 ```
 
-### Progressive Disclosure in Action
+### Named Middleware Parameters (Tim MacDonald)
+**Why?** Middleware arguments as named parameters. Type-safe, IDE-friendly, skip optional params.
+
+```php
+// String API (positional, fragile)
+Route::middleware('throttle:120,1');
+
+// Named parameter API (explicit, skippable)
+Route::middleware(ThrottleRequests::with(maxAttempts: 120));
+
+// Variadic via ::in()
+Route::middleware(EnsureState::in([PostState::DRAFT, PostState::UNDER_REVIEW]));
+```
+
+This pattern was adopted into Laravel's first-party middleware. The package proved the API, the framework absorbed it.
+
+### Progressive Disclosure in Action (Jess Archer -- Laravel Prompts)
+**Why?** Four layers of complexity. Each function starts simple. Named arguments unlock power.
+
+```php
+// Layer 1 -- One-liner (80%)
+$name = text('What is your name?');
+
+// Layer 2 -- Validation and hints (15%)
+$email = text(
+    label: 'Email address',
+    placeholder: 'taylor@example.com',
+    required: true,
+    validate: ['email' => 'email:rfc'],
+);
+
+// Layer 3 -- Dynamic search with closure (4%)
+$userId = search(
+    label: 'Find a user',
+    options: fn (string $value) => strlen($value) > 0
+        ? User::whereLike('name', "%{$value}%")->pluck('name', 'id')->all()
+        : [],
+);
+
+// Layer 4 -- Composable form (1%)
+$responses = form()
+    ->text('Name', required: true, name: 'name')
+    ->password('Password', validate: ['password' => 'min:8'], name: 'password')
+    ->confirm('Accept terms?')
+    ->submit();
+```
+
+### Progressive Disclosure in Action (Permission)
 
 ```php
 // Layer 1 -- Zero-config
 $user->assignRole('admin');
 
 // Layer 2 -- Common customization
-$user->assignRole('admin', 'editor');
 $user->hasPermissionTo('edit articles', 'web');
 
 // Layer 3 -- Power user
 AllowedFilter::custom('search', new FullTextSearchFilter());
-LogBatch::withinBatch(function () { /* ... */ });
 
 // Layer 4 -- Framework extension
 class CustomPermission extends Permission implements PermissionContract { /* ... */ }
-class CustomFilter implements Filter { public function __invoke(...) { /* ... */ } }
 ```

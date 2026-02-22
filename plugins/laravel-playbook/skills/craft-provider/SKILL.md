@@ -44,6 +44,10 @@ description: Crafting a service provider. The declarative heart of every Laravel
 
 8. **Publishing Groups**: Namespace publish tags as `{package}-{type}`: `cashier-config`, `cashier-migrations`, `cashier-views`. Consumers publish only what they need.
 
+9. **Deferred Service Providers**: Implement `DeferrableProvider` and define `provides()` to return the container bindings your provider registers. The provider only boots when one of those bindings is resolved. Use for packages whose services aren't needed on every request -- the performance gain is free.
+
+10. **Octane Safety**: Stateful singletons leak between requests under Octane. Listen for `RequestReceived` and `TaskReceived` events to flush caches and reset state. Use `scoped()` bindings for request-scoped state. Test under Octane before shipping.
+
 ## The Anti-Patterns
 
 | Don't                                               | Do                                                       | Why                                    |
@@ -54,6 +58,8 @@ description: Crafting a service provider. The declarative heart of every Laravel
 | Skip `->name()` or use a bare name                  | Always `->name('laravel-{slug}')` with Spatie tools      | Consistent publish tags and namespaces |
 | One giant boot method                               | Private methods per concern                              | Readable, maintainable                 |
 | Forget `callAfterResolving()` for optional services | Defer registration until the dependency is resolved      | Avoids boot-order issues               |
+| Eager-load services used on few requests            | `DeferrableProvider` + `provides()`                      | Free performance for rarely-used bindings |
+| Stateful singletons without Octane reset            | Flush state on `RequestReceived` / `TaskReceived`        | Leaked state causes cross-request bugs |
 
 ## Real-World Examples
 

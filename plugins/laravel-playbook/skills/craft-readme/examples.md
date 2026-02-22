@@ -1,6 +1,6 @@
 # README: Examples
 
-Patterns from the framework and production packages.
+Patterns from the framework and production code.
 
 ---
 
@@ -38,14 +38,10 @@ Casual confidence. No ceremony.
 **Why?** Dark mode users are half your audience.
 
 ```html
-<div align="left">
-  <a href="https://yourorg.com/open-source?utm_source=github&utm_medium=banner&utm_campaign=package-name">
-    <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="art/banner-dark.webp">
-      <img alt="Package Name" src="art/banner-light.webp">
-    </picture>
-  </a>
-</div>
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="art/banner-dark.webp">
+  <img alt="Package Name" src="art/banner-light.webp">
+</picture>
 ```
 
 ---
@@ -54,7 +50,7 @@ Casual confidence. No ceremony.
 
 ### Alternatives Section
 
-Listing competitors is a confidence move:
+**Why?** Listing competitors is a confidence move.
 
 ```markdown
 ## Alternatives
@@ -65,7 +61,7 @@ Listing competitors is a confidence move:
 
 ### Section Order (Full Template)
 
-```
+```text
 1. Header image (dark/light responsive via <picture>)
 2. H1 slogan (benefit statement)
 3. Badges

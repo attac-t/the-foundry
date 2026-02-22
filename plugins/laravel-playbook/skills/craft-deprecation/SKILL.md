@@ -36,6 +36,8 @@ description: Crafting deprecations. Sunset gracefully, remove confidently.
 | Deprecate and remove in the same major | At least one minor version window               | Consumers need time to migrate        |
 | Manual-only migration for renames      | Ship Rector rules for structural changes        | Automation scales, humans don't       |
 
+**See also:** craft-docs (UPGRADING.md structure and versioned docs), craft-release (version support policy).
+
 ## Real-World Examples
 
 See [examples.md](examples.md).

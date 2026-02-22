@@ -1,6 +1,6 @@
 # Trait: Examples
 
-Patterns from the framework and production packages.
+Patterns from the framework and production code.
 
 ---
 
@@ -44,7 +44,7 @@ public function initializeHasTranslations(): void
 ## Common Scenarios
 
 ### Relationships via Traits
-Traits define Eloquent relationships. Always type the return.
+**Why?** Traits define Eloquent relationships. Always type the return.
 
 ```php
 public function roles(): BelongsToMany
@@ -59,6 +59,7 @@ public function media(): MorphMany
 ```
 
 ### Query Scopes
+**Why?** Encapsulate query logic in the trait, not scattered across controllers.
 
 ```php
 public function scopeRole(Builder $query, string|BackedEnum $role): Builder
@@ -68,7 +69,7 @@ public function scopeRole(Builder $query, string|BackedEnum $role): Builder
 ```
 
 ### Configuration via Abstract Methods
-The trait defines the contract. The model fulfills it.
+**Why?** The trait defines the contract. The model fulfills it.
 
 ```php
 // Trait declares:
@@ -82,7 +83,7 @@ public function getActivitylogOptions(): LogOptions
 ```
 
 ### Optional Overrides
-Default (empty) implementations. Override only when needed.
+**Why?** Default (empty) implementations. Override only when needed.
 
 ```php
 public function registerMediaConversions(?Media $media = null): void {}
@@ -90,7 +91,7 @@ public function registerMediaCollections(): void {}
 ```
 
 ### Accessor/Mutator Interception
-Transparent behavior. Call `parent::` for non-intercepted attributes.
+**Why?** Transparent behavior. Call `parent::` for non-intercepted attributes.
 
 ```php
 public function getAttributeValue($key)
@@ -104,7 +105,7 @@ public function getAttributeValue($key)
 ```
 
 ### Trait Naming Convention (Taylor)
-Two patterns. Choose based on semantics.
+**Why?** Two patterns. Choose based on semantics.
 
 ```php
 // Adjective -- describes what the model becomes
@@ -121,68 +122,52 @@ class User extends Model
 }
 ```
 
-### Concerns Decomposition (Taylor / Cashier)
-Split large traits into focused concerns. Compose into one user-facing trait.
+### Component Traits (Caleb Porzio / Livewire)
+**Why?** `use Thing` works beyond models. Livewire traits compose component capabilities.
 
 ```php
-// src/Concerns/ -- each concern is focused
-trait HandlesTaxes { /* ... */ }
-trait ManagesCustomer { /* ... */ }
-trait ManagesInvoices { /* ... */ }
-trait ManagesPaymentMethods { /* ... */ }
-trait ManagesSubscriptions { /* ... */ }
-trait PerformsCharges { /* ... */ }
+class UserDirectory extends Component
+{
+    use WithPagination, WithFileUploads;
 
-// src/Billable.php -- the user-facing trait composes them
+    public function updatedSearch(): void { $this->resetPage(); }        // From WithPagination
+    public function save(): void { $this->photo->store('avatars'); }     // From WithFileUploads
+}
+```
+
+Package authors: if your package enhances a component (Livewire, Filament, or custom), ship a trait.
+
+### Concerns Decomposition (Taylor / Cashier)
+**Why?** Split large traits into focused concerns. Compose into one user-facing trait.
+
+```php
+// src/Concerns/ — each concern is focused
+trait HandlesTaxes { /* ... */ }
+trait ManagesSubscriptions { /* ... */ }
+// ... ManagesCustomer, ManagesInvoices, PerformsCharges
+
+// src/Billable.php — the user-facing trait composes them
 trait Billable
 {
-    use HandlesTaxes;
-    use ManagesCustomer;
-    use ManagesInvoices;
-    use ManagesPaymentMethods;
-    use ManagesSubscriptions;
-    use PerformsCharges;
-}
-
-// Consumer adds one trait
-class User extends Model
-{
-    use Billable;
+    use HandlesTaxes, ManagesCustomer, ManagesInvoices;
+    use ManagesPaymentMethods, ManagesSubscriptions, PerformsCharges;
 }
 ```
 
 ### Utility Traits from Laravel Core
-Beyond model traits. Any class can use these.
+**Why?** Beyond models. Any class can use these.
 
 ```php
-use Illuminate\Support\Traits\Conditionable;
-use Illuminate\Support\Traits\Tappable;
-use Illuminate\Support\Traits\Macroable;
-
 class ReportBuilder
 {
-    use Conditionable; // Adds when(), unless()
-    use Tappable;      // Adds tap()
-    use Macroable;     // Adds macro(), mixin()
+    use Conditionable; // when(), unless()
+    use Tappable;      // tap()
+    use Macroable;     // macro(), mixin()
 }
-```
 
-### Conditionable in Action
+// Conditionable
+$query->when($request->has('sort'), fn ($q) => $q->orderBy('name'));
 
-```php
-$query->when($request->has('sort'), function ($q) {
-    return $q->orderBy('name');
-});
-```
-
-### Macroable in Action
-
-```php
-// Single method
-Collection::macro('toUpper', function () {
-    return $this->map(fn ($value) => strtoupper($value));
-});
-
-// Bulk registration from a class
-Collection::mixin(new CollectionMixin);
+// Macroable
+Collection::macro('toUpper', fn () => $this->map(fn ($v) => strtoupper($v)));
 ```

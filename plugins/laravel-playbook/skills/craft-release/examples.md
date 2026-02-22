@@ -1,6 +1,6 @@
 # Release: Examples
 
-Patterns from production packages.
+Patterns from the framework and production code.
 
 ---
 
@@ -65,7 +65,7 @@ jobs:
 
 ### The Full Pipeline
 
-```
+```text
 1. Merge PRs to main
 2. CI validates (tests, PHPStan, style)
 3. Create GitHub release with auto-generated notes

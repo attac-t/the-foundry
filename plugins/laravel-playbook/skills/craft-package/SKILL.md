@@ -48,6 +48,8 @@ description: Crafting a package skeleton. The starting template for every Larave
 | Require optional dependencies            | Use suggest with helpful messages          | Minimal dependency surface                        |
 | Skip workbench/ for complex packages     | Add a Testbench dev environment            | Taylor's convention, accelerates development      |
 
+**See also:** craft-provider (service provider patterns), craft-ci (CI pipeline setup).
+
 ## Real-World Examples
 
 See [examples.md](examples.md).

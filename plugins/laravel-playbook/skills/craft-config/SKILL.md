@@ -27,6 +27,10 @@ description: Crafting a config file. The self-documenting contract between packa
 
 9. **Table and Model Customization**: Always expose table names and model classes. Users will want to extend your models or change table names. Make it easy.
 
+10. **No Closures in Config Files**: Never use closures in config files. `php artisan config:cache` serializes config with `var_export()`, which cannot serialize closures. The app throws "Your configuration files are not serializable." Use class references, invokable classes, or method-based configuration instead. This applies to YOUR config file and any values consumers might set.
+
+11. **Config Validation at Boot**: When a config value references a class (model, strategy, renderer), validate it implements the expected interface at boot time. Fail early with a clear message, not late with a cryptic container error.
+
 ## The Anti-Patterns
 
 | Don't                                        | Do                                     | Why                                               |
@@ -38,6 +42,8 @@ description: Crafting a config file. The self-documenting contract between packa
 | Flat config past 15 keys                     | Nest by concern                        | Flat configs become unreadable at scale           |
 | Group config by type                         | Group by concern                       | Developers think in features, not data types      |
 | 100+ granular rules with no shortcut         | Offer presets with granular overrides  | One word beats one hundred lines                  |
+| Closures in config files                     | Class references or invokable classes  | Breaks `config:cache` -- not serializable         |
+| Silently accept invalid class config         | Validate interfaces at boot time       | Fail early with a clear message                   |
 
 ## Real-World Examples
 

@@ -19,7 +19,7 @@ description: When to use Facade vs Trait vs Static Factory vs Helper vs Manager.
 - Behavior attaches to models (`HasRoles`, `InteractsWithMedia`, `Searchable`, `Billable`)
 - Integration at the Eloquent level
 - Developer expects `$model->doSomething()`
-- The most natural entry point across the ecosystem -- Spatie, Taylor, and community packages all reach for traits when behavior belongs on a model
+- The most natural entry point across the ecosystem -- traits are the standard when behavior belongs on a model
 
 **Static factory when:**
 - Builder-style API: `QueryBuilder::for(Model::class)`

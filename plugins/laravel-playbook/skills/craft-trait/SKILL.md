@@ -27,7 +27,7 @@ description: Crafting model traits. The trait-first integration pattern for Lara
    - **Adjective**: `Searchable`, `Billable` -- describes what the model becomes.
    - **Has{Thing}**: `HasApiTokens`, `HasFeatures` -- describes what the model gains.
 
-9. **Concerns Decomposition**: When a trait grows large, split into a `Concerns/` directory and compose them into one user-facing trait. Cashier's `Billable` composes 7 concern traits. Each concern is focused. The user adds one trait.
+9. **Concerns Decomposition**: When a trait grows large, split into a `Concerns/` directory and compose them into one user-facing trait. Cashier's `Billable` composes 6 concern traits. Each concern is focused. The user adds one trait.
 
 10. **Utility Traits**: Beyond model traits, consider `Conditionable` (adds `when()`/`unless()` to builders), `Tappable` (adds `tap()` for inspection), and `Macroable` (adds runtime extension via `macro()`/`mixin()`). These are foundational Laravel traits that any class can use.
 

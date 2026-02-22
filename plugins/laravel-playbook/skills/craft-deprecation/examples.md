@@ -1,13 +1,13 @@
 # Deprecation: Examples
 
-Patterns from Symfony, Taylor, Filament, and PHP 8.4.
+Patterns from the framework and production code.
 
 ---
 
 ## The Pattern
 
 ### PHP 8.4 Attribute (Native)
-**Why?** Zero-dependency deprecation. IDE strikethrough, static analysis, and `E_USER_DEPRECATED` at runtime — all from one attribute.
+**Why?** Zero-dependency deprecation. IDE strikethrough, static analysis, and `E_USER_DEPRECATED` at runtime.
 
 ```php
 #[\Deprecated(message: 'Use newMethod() instead', since: '2.3')]
@@ -21,35 +21,27 @@ public function oldMethod(): void
 **Why?** The attribute is ignored on older PHP. `trigger_deprecation()` fills the gap.
 
 ```php
-use function Symfony\Component\Deprecation\trigger_deprecation;
-
 #[\Deprecated(message: 'Use newMethod() instead', since: '2.3')]
 public function oldMethod(): void
 {
-    trigger_deprecation(
-        'vendor/package',
-        '2.3',
+    trigger_deprecation('vendor/package', '2.3',
         'Method "%s::oldMethod()" is deprecated, use "newMethod()" instead.',
-        static::class,
-    );
+        static::class);
 
     $this->newMethod();
 }
 ```
 
 ### trigger_deprecation() (Symfony convention)
-**Why?** The standard for runtime deprecation notices. Caught by error handlers, surfaced by PHPUnit/Pest, invisible to end users in production.
+**Why?** The standard for runtime deprecation notices. Caught by error handlers, surfaced by PHPUnit/Pest.
 
 ```php
-// composer require symfony/deprecation-contracts
 use function Symfony\Component\Deprecation\trigger_deprecation;
 
 trigger_deprecation(
-    'vendor/package',  // Package that owns the deprecation
-    '2.3',             // Version where it was deprecated
+    'vendor/package', '2.3',
     'The "%s" class is deprecated, use "%s" instead.',
-    OldClass::class,
-    NewClass::class,
+    OldClass::class, NewClass::class,
 );
 ```
 
@@ -57,19 +49,10 @@ trigger_deprecation(
 
 ## Common Scenarios
 
-### Class Deprecation — Extend and Redirect
+### Class Deprecation -- Extend and Redirect
 
 ```php
-// src/NewProcessor.php — the replacement
-class NewProcessor
-{
-    public function process(): Result { /* ... */ }
-}
-
-// src/OldProcessor.php — deprecated, proxies to new
-/**
- * @deprecated since 2.3, use NewProcessor instead.
- */
+/** @deprecated since 2.3, use NewProcessor instead. */
 class OldProcessor extends NewProcessor
 {
     public function __construct()
@@ -83,24 +66,20 @@ class OldProcessor extends NewProcessor
 }
 ```
 
-### Method Deprecation — One-Line Proxy
+### Method Deprecation -- One-Line Proxy
 
 ```php
-/**
- * @deprecated since 3.1, use calculateTotal() instead.
- */
+/** @deprecated since 3.1, use calculateTotal() instead. */
 #[\Deprecated(message: 'Use calculateTotal() instead', since: '3.1')]
 public function getTotal(): Money
 {
-    trigger_deprecation('vendor/package', '3.1',
-        'Method "%s::getTotal()" is deprecated, use "calculateTotal()" instead.',
-        static::class);
+    trigger_deprecation('vendor/package', '3.1', /* ... */);
 
     return $this->calculateTotal();
 }
 ```
 
-### Package Deprecation — composer.json
+### Package Deprecation -- composer.json
 
 ```json
 {
@@ -112,7 +91,7 @@ public function getTotal(): Money
 
 ### UPGRADING.md Entry (Symfony-Style)
 
-```markdown
+````markdown
 ## UPGRADING FROM 2.x to 3.0
 
 ### High Impact
@@ -121,7 +100,6 @@ public function getTotal(): Money
 **Likelihood of Impact: High**
 
 The `OldProcessor` class, deprecated in 2.3, has been removed.
-Use `NewProcessor` instead.
 
 Before:
 ```php
@@ -132,38 +110,36 @@ After:
 ```php
 $processor = new NewProcessor();
 ```
+````
 
-### Medium Impact
-
-#### `getTotal()` Removed
-**Likelihood of Impact: Medium**
-
-The `getTotal()` method, deprecated in 2.5, has been removed.
-Use `calculateTotal()` instead.
-```
-
-### Rector Rule for Automated Migration (Filament-Style)
+### rector-laravel -- Automated Upgrades (Jason McCreary / Driftingly)
+**Why?** Ship Rector rules so consumers can automate their upgrade.
 
 ```php
-// rector.php — shipped with the package upgrade command
-use Rector\Config\RectorConfig;
-use Rector\Renaming\Rector\Name\RenameClassRector;
-use Rector\Renaming\Rector\MethodCall\RenameMethodRector;
-
+// rector.php -- consumer runs this to upgrade
 return RectorConfig::configure()
-    ->withRules([
-        RenameClassRector::class,
-        RenameMethodRector::class,
-    ])
+    ->withSetProviders(LaravelSetProvider::class)
+    ->withComposerBased(laravel: true);
+```
+
+For package-specific upgrades, ship a custom set:
+
+```php
+return RectorConfig::configure()
+    ->withSets([LaravelLevelSetList::UP_TO_LARAVEL_110]);
+```
+
+Deprecate in v2, ship Rector rules alongside v3, consumers run one command.
+
+### Rector Rule for Automated Migration
+
+```php
+return RectorConfig::configure()
     ->withConfiguredRule(RenameClassRector::class, [
         'Vendor\Package\OldProcessor' => 'Vendor\Package\NewProcessor',
     ])
     ->withConfiguredRule(RenameMethodRector::class, [
-        new \Rector\Renaming\ValueObject\MethodCallRename(
-            'Vendor\Package\Calculator',
-            'getTotal',
-            'calculateTotal',
-        ),
+        new MethodCallRename('Vendor\Package\Calculator', 'getTotal', 'calculateTotal'),
     ]);
 ```
 
@@ -173,6 +149,7 @@ return RectorConfig::configure()
 ## 2.3.0
 
 ### Deprecated
+
 - `OldProcessor` is deprecated, use `NewProcessor` instead (#142)
 - `Calculator::getTotal()` is deprecated, use `calculateTotal()` instead (#143)
 ```

@@ -38,7 +38,7 @@ description: Crafting a documentation site. Progressive depth, not progressive c
 
 **Filament's versioned docs**: Every major version gets its own branch and docs. Automated upgrade scripts (`filament/upgrade`) rewrite application code for breaking changes. This dramatically lowers the cost of major versions.
 
-**Spatie's docs-as-website**: The `docs/` directory feeds the `spatie.be` docs renderer. Frontmatter carries version, slogan, and repo metadata. Each package version gets its own docs set.
+**Docs-as-website**: The `docs/` directory feeds a docs renderer. Frontmatter carries version, slogan, and repo metadata. Each package version gets its own docs set.
 
 ## The Anti-Patterns
 
@@ -51,6 +51,8 @@ description: Crafting a documentation site. Progressive depth, not progressive c
 | Hide config until after publish      | Show full config in installation docs           | No surprises -- informed decisions before commitment    |
 | Upgrade guide as a wall of text      | Impact-rated changes: High/Medium/Low           | Developers triage -- help them prioritize               |
 | Skip automated migration guidance    | Include Rector rules or codemods where possible | Automation beats manual find-and-replace                |
+
+**See also:** decide-docs-site (when to build a docs site vs README-only), craft-deprecation (UPGRADING.md patterns).
 
 ## Real-World Examples
 

@@ -38,3 +38,9 @@ If yes, move depth to a docs site. Keep the README as a landing page + quick sta
 | Multiple distinct usage patterns?              | Yes    | Docs site   |
 | Does the README scroll past 3 screens?         | Yes    | Docs site   |
 | Is upgrade documentation needed?               | Yes    | Docs site   |
+
+**See also:** craft-docs (how to structure a docs site once you decide to build one), craft-readme (keeping the README tight as a landing page).
+
+## Real-World Examples
+
+See [examples.md](examples.md).

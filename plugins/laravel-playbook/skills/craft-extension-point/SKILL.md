@@ -59,6 +59,8 @@ Start with config binding for simple swaps. Use the Manager pattern for driver-b
 | Reinventing the driver pattern           | Extend `Illuminate\Support\Manager`                       | The wheel is already round                |
 | One extension mechanism for everything   | Match the mechanism to the scope                          | Different problems need different tools   |
 
+**See also:** ground-extensibility (when and why to extend), craft-macro (deep dive on Macroable).
+
 ## Real-World Examples
 
 See [examples.md](examples.md).

@@ -26,6 +26,8 @@ Ask yourself:
 - Does every meaningful behavior have a seam?
 - Are you adding config options when a model swap would solve it?
 
+**See also:** craft-extension-point (implementation patterns for each mechanism).
+
 ## Real-World Examples
 
 See [examples.md](examples.md).

@@ -21,6 +21,8 @@ description: Crafting a CI pipeline. Five workflows, zero manual gates.
 5. **Dependabot**: Weekly Composer + GitHub Actions updates. Auto-merge minor and patch versions.
 6. **Concurrency**: `cancel-in-progress: true` on every workflow. New pushes kill stale CI runs. No wasted compute.
 7. **Single branch**: `main` only. No `develop`, no release branches. Feature branches merge to `main`. Major version branches only for legacy backports.
+8. **Dependency audit**: `composer audit` in CI. Free security scanning -- exits non-zero when vulnerabilities exist. Use `--locked` to audit without installing. Add as a standalone step in `run-tests.yml` or a dedicated workflow.
+9. **Coverage thresholds**: Enforce minimum test coverage with `--coverage --min=80` (or your team's threshold). Enforce type coverage with `--type-coverage --min=100`. CI fails when coverage drops. No regressions.
 
 ## The Anti-Patterns
 
@@ -34,6 +36,8 @@ description: Crafting a CI pipeline. Five workflows, zero manual gates.
 | PHPStan without baseline       | Baseline file from day one              | Adopt incrementally, fix progressively       |
 | `develop` + `main` branches    | `main` only                             | One branch. One truth. Less ceremony         |
 | Missing PR template            | Ship `.github/PULL_REQUEST_TEMPLATE.md` | Structure the conversation around changes    |
+| No dependency auditing         | `composer audit` in CI                  | Free vulnerability scanning, zero effort     |
+| No coverage enforcement        | `--coverage --min=80` in CI             | Coverage only matters if it can't regress    |
 
 ## Real-World Examples
 

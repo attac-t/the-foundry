@@ -30,9 +30,14 @@ Exception hierarchy     Contextual messages, one class per failure mode
 Extension points        Manager/driver, adapters, plugins, config binding, events
 README patterns         Benefit-first H1, badge trio, show code immediately
 Documentation           docs/ structure, upgrade guides, progressive depth
+Model traits            Boot/initialize conventions, concerns decomposition
 Testing setup           Pest + Testbench, arch tests, ::fake(), ::test()
 CI/CD pipeline          GitHub Actions workflows, matrix testing, auto-fix
+Branding                Package identity, social cards, badge trio, first impressions
 Deprecation             Sunset lifecycle, trigger_deprecation(), Rector migration
+Middleware              Route middleware, conditional registration, parameter parsing
+Views                   Blade components, view publishing, render hooks
+Extraction workflow     Identifying extractable code, competitive analysis, shipping
 Release pipeline        GitHub releases, auto-changelog, Packagist auto-publish
 ```
 
@@ -40,12 +45,12 @@ Release pipeline        GitHub releases, auto-changelog, Packagist auto-publish
 
 ## Skills
 
-25 skills. Three types.
+29 skills. Three types.
 
 ```
 ground-*     Philosophy and mindset (3 skills)
-craft-*      How to build (18 skills)
-decide-*     When to use what (4 skills)
+craft-*      How to build (19 skills)
+decide-*     When to use what (7 skills)
 ```
 
 ### Highlights
@@ -58,6 +63,8 @@ craft-generator      Generators — install commands as onboarding UX
 craft-fake           Fakes — ::fake() convention for testable packages
 craft-test-suite     Testing — Pest, Testbench, arch tests, ::test()
 decide-agnostic      Framework-agnostic core vs Laravel-only
+decide-extraction    Extracting internal code to a standalone package
+decide-positioning   Evaluating the landscape before building
 ```
 
 Run `/skills laravel-playbook` to see all.
@@ -73,7 +80,12 @@ Taylor Otwell        Cashier, Sanctum, Scout, Horizon, Pennant, Pulse
 Nuno Maduro          Pest, Collision, Termwind, Pint, Laravel Prompts
 Dan Harrin           Filament panels, Forms, Tables, Notifications
 Frank de Jonge       Flysystem, EventSauce, league/csv
-Caleb Porzio         Livewire, Alpine.js
+Caleb Porzio         Livewire, Alpine.js, Flux
+Jess Archer          Laravel Prompts, Laravel core
+Barry vd. Heuvel     Debugbar, IDE Helper
+Tim MacDonald        callable-fake, log-fake, has-parameters
+Jason McCreary       Laravel Shift, rector-laravel
+Marcel Pociot        BeyondCode, package auto-discovery
 Tighten / Shift      Laravel Shift, Blueprint, Ziggy, Duster
 Spatie               laravel-permission, medialibrary, laravel-data, and more
 ```

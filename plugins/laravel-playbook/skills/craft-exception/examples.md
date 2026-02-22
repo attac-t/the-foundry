@@ -1,6 +1,6 @@
 # Exceptions: Examples
 
-Patterns from the framework and production packages.
+Patterns from the framework and production code.
 
 ---
 
@@ -8,21 +8,19 @@ Patterns from the framework and production packages.
 
 ### Exception Hierarchy
 
-**Why?** Organized by failure category. The base class enables catch-all, subclasses enable precision.
+**Why?** Organized by failure category. Base class enables catch-all, subclasses enable precision.
 
-```
+```text
 FileCannotBeAdded (abstract)
 ├── FileIsTooBig
 ├── MimeTypeNotAllowed
 ├── FileNameNotAllowed
-├── InvalidBase64Data
 └── UnreachableUrl
 
 InvalidQuery (abstract, extends HttpException)
 ├── InvalidFilterQuery
 ├── InvalidSortQuery
-├── InvalidIncludeQuery
-└── InvalidAppendQuery
+└── InvalidIncludeQuery
 ```
 
 ### Named Constructors with Context
@@ -37,12 +35,14 @@ class FileIsTooBig extends FileCannotBeAdded
         $fileSize = File::getHumanReadableSize($size ?: filesize($path));
         $maxSize = File::getHumanReadableSize(config('media-library.max_file_size'));
 
-        return new static(
-            "File `{$path}` has a size of {$fileSize} which is greater than the maximum allowed {$maxSize}"
-        );
+        return new static("File `{$path}` has a size of {$fileSize} which is greater than the maximum allowed {$maxSize}");
     }
 }
+```
 
+Multiple named constructors per exception for different failure contexts:
+
+```php
 class UnauthorizedException extends HttpException
 {
     public static function forRoles(array $roles): self { /* ... */ }
@@ -58,15 +58,13 @@ class UnauthorizedException extends HttpException
 ### Messages That Teach
 
 ```php
-// Good -- teaches the developer
+// Good -- teaches the fix
 "Requested filter(s) `status, type` are not allowed. Allowed filter(s) are `name, email`."
 "File has a mime type of application/pdf, while only image/jpeg, image/png are allowed."
-"There is no permission named `edit articles` for guard `web`."
 
 // Bad -- tells you nothing
 "Invalid input"
 "Permission error"
-"File too large"
 ```
 
 ### Precise Catch Blocks
@@ -76,56 +74,48 @@ try {
     $model->addMedia($file)->toMediaCollection();
 } catch (FileIsTooBig $e) {
     // handle size limit
-} catch (MimeTypeNotAllowed $e) {
-    // handle wrong type
 } catch (FileCannotBeAdded $e) {
     // catch-all for file issues
 }
 ```
 
 ### Configurable Verbosity
-
-Security-sensitive packages control context exposure:
+**Why?** Security-sensitive packages control context exposure.
 
 ```php
-class UnauthorizedException extends HttpException
+public static function forRoles(array $roles): self
 {
-    public static function forRoles(array $roles): self
-    {
-        $message = 'User does not have the right roles.';
+    $message = 'User does not have the right roles.';
 
-        if (config('permission.display_role_in_exception')) {
-            $message .= ' Necessary roles are '.implode(', ', $roles).'.';
-        }
-
-        return new static(403, $message);
+    if (config('permission.display_role_in_exception')) {
+        $message .= ' Necessary roles are '.implode(', ', $roles).'.';
     }
+
+    return new static(403, $message);
 }
 ```
 
 ### Wrapping Vendor Exceptions (Cashier Pattern)
-
-When your package wraps a third-party service, catch vendor exceptions and re-throw as your own:
+**Why?** Consumers catch your exceptions, not the vendor's. Your hierarchy is the contract.
 
 ```php
-class PaymentFailedException extends CashierException
+class IncompletePayment extends CashierException
 {
-    public static function fromStripe(StripeException $e): self
+    public Stripe\PaymentIntent $payment;
+
+    public static function create(Stripe\PaymentIntent $payment): self
     {
-        return new static(
-            "Payment failed: {$e->getMessage()}",
-            $e->getCode(),
-            $e
-        );
+        $exception = new static("The payment attempt for subscription failed.");
+        $exception->payment = $payment;
+
+        return $exception;
     }
 }
 
 // In your service class
 try {
-    $stripe->charges->create($params);
+    $stripeSubscription = $user->createStripeSubscription($params);
 } catch (StripeException $e) {
-    throw PaymentFailedException::fromStripe($e);
+    throw IncompletePayment::create($stripeSubscription->latestPayment());
 }
 ```
-
-Consumers catch `PaymentFailedException`, not `StripeException`. Your exception hierarchy is the contract.

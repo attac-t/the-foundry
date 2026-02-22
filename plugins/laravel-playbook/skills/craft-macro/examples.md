@@ -1,6 +1,6 @@
 # Macro: Examples
 
-Patterns from the framework and production packages.
+Patterns from the framework and production code.
 
 ---
 
@@ -9,19 +9,15 @@ Patterns from the framework and production packages.
 ### Single Macro Registration
 **Why?** Adds one method to a class you don't own.
 ```php
-use Illuminate\Support\Collection;
-
-// In your service provider's boot() method
 Collection::macro('toUpper', function () {
     return $this->map(fn ($value) => strtoupper($value));
 });
 
-// Usage
 collect(['hello', 'world'])->toUpper(); // ['HELLO', 'WORLD']
 ```
 
 ### The Mixin Pattern (Grouped Macros)
-**Why?** Registers multiple related macros from a single class.
+**Why?** Double-closure: reflection invokes the outer, the inner becomes the macro bound to the target instance.
 ```php
 class CollectionMixin
 {
@@ -32,133 +28,56 @@ class CollectionMixin
         };
     }
 
-    public function toLower()
-    {
-        return function () {
-            return $this->map(fn ($v) => strtolower($v));
-        };
-    }
+    // toLower(), toTitle(), etc.
 }
 
-// Register all methods at once
 Collection::mixin(new CollectionMixin);
 ```
-The double-closure pattern: the mixin method is invoked by reflection. Its return value (the inner closure) becomes the macro, bound to the target instance.
 
 ---
 
 ## Common Scenarios
 
 ### Request Macros
+**Why?** Domain-specific accessors on the request object.
 ```php
-use Illuminate\Http\Request;
-
-Request::macro('isApiRequest', function () {
-    return $this->is('api/*');
-});
-
 Request::macro('tenantId', function () {
     return $this->header('X-Tenant-ID');
 });
 ```
 
 ### Builder Macros
+**Why?** Reusable query shortcuts across all models.
 ```php
-use Illuminate\Database\Eloquent\Builder;
-
 Builder::macro('whereLike', function (string $column, string $value) {
     return $this->where($column, 'like', "%{$value}%");
 });
 
-// Usage
 User::whereLike('name', 'john')->get();
 ```
 
-### Route Macros (Spatie Permission)
+### Route Macros
+**Why?** Fluent route-level middleware registration.
 ```php
-// Spatie registers route macros in packageBooted()
 Route::macro('role', function ($roles) {
     $this->middleware("role:{$roles}");
     return $this;
 });
 
-Route::macro('permission', function ($permissions) {
-    $this->middleware("permission:{$permissions}");
-    return $this;
-});
-
-// Usage
 Route::get('/admin', AdminController::class)->role('admin');
 ```
 
-### The Macroable Trait Internals
-```php
-trait Macroable
-{
-    protected static $macros = [];
-
-    public static function macro($name, $macro)
-    {
-        static::$macros[$name] = $macro;
-    }
-
-    public static function mixin($mixin, $replace = true)
-    {
-        $methods = (new ReflectionClass($mixin))->getMethods(
-            ReflectionMethod::IS_PUBLIC | ReflectionMethod::IS_PROTECTED
-        );
-
-        foreach ($methods as $method) {
-            if ($replace || ! static::hasMacro($method->name)) {
-                static::macro($method->name, $method->invoke($mixin));
-            }
-        }
-    }
-
-    public function __call($method, $parameters)
-    {
-        if (! static::hasMacro($method)) {
-            throw new BadMethodCallException("Method {$method} does not exist.");
-        }
-
-        $macro = static::$macros[$method];
-
-        if ($macro instanceof Closure) {
-            $macro = $macro->bindTo($this, static::class);
-        }
-
-        return $macro(...$parameters);
-    }
-}
-```
-Key: `macro()` stores closures. `mixin()` extracts methods via reflection. `__call()` binds the closure to the calling instance so `$this` refers to the target object, not the mixin.
-
 ### Macroable Classes in Laravel
-```php
-// Classes that use the Macroable trait (partial list):
-Illuminate\Support\Collection
-Illuminate\Database\Eloquent\Builder
-Illuminate\Database\Query\Builder
-Illuminate\Http\Request
-Illuminate\Http\Response
-Illuminate\Routing\Router
-Illuminate\Support\Str
-Illuminate\Support\Arr
-Illuminate\Routing\ResponseFactory
-Laravel\Pennant\Decorator
+**Why?** Check for `Macroable` before reaching for inheritance.
+```text
+Collection, Builder (Eloquent + Query), Request, Response,
+Router, Str, Arr, ResponseFactory, Pennant\Decorator
 ```
-Any class using `Macroable` is extensible at runtime. Check if the class uses the trait before reaching for inheritance.
 
 ### Conditionable and Tappable (Related Traits)
+**Why?** Complement Macroable to form the runtime extension toolkit.
 ```php
-// Conditionable — fluent conditional logic
-$query->when($request->has('sort'), function ($q) {
-    return $q->orderBy('name');
-});
+$query->when($request->has('sort'), fn ($q) => $q->orderBy('name'));
 
-// Tappable — side effects without breaking the chain
-$user->tap(function ($user) {
-    Log::info("Processing user: {$user->id}");
-})->save();
+$user->tap(fn ($u) => Log::info("Processing: {$u->id}"))->save();
 ```
-These traits complement Macroable. `Conditionable` adds `when()`/`unless()`. `Tappable` adds `tap()`. Together with macros, they form the runtime extension toolkit for Laravel classes.

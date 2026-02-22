@@ -1,232 +1,14 @@
 # Extensibility: Examples
 
-Patterns and anti-patterns from across the Laravel ecosystem.
+When and why to make code flexible. For full implementation patterns, see craft-extension-point.
 
 ---
 
-## Manager/Driver Pattern (Taylor)
+## The Decision Framework
 
-### Scout's EngineManager
-**Why?** Multiple search backends, one interface.
-```php
-class EngineManager extends Manager
-{
-    public function createAlgoliaDriver() { /* ... */ }
-    public function createMeilisearchDriver() { /* ... */ }
-    public function createDatabaseDriver() { /* ... */ }
-    public function createCollectionDriver() { /* ... */ }
-    public function createNullDriver() { /* ... */ }
+Every extension point answers one question: *"Can a consumer customize this without forking?"*
 
-    public function getDefaultDriver()
-    {
-        return config('scout.driver') ?? 'null';
-    }
-}
-
-// User extends with a custom engine
-Scout::extend('elasticsearch', function ($app) {
-    return new ElasticsearchEngine(
-        $app['config']['scout.elasticsearch']
-    );
-});
-```
-
-### Pennant's Custom Manager
-**Why?** Manager pattern without extending the base class, with decorator wrapping.
-```php
-class FeatureManager
-{
-    protected $stores = [];
-    protected $customCreators = [];
-
-    public function extend($driver, Closure $callback)
-    {
-        $this->customCreators[$driver] = $callback->bindTo($this, $this);
-        return $this;
-    }
-}
-
-// Every driver is wrapped in a Decorator for cross-cutting concerns
-Feature::extend('redis', function ($app, $config) {
-    return new RedisDriver($app['redis'], $config);
-});
-```
-
----
-
-## Adapter Pattern (League)
-
-### Flysystem's FilesystemAdapter
-**Why?** The interface is the extension point.
-```php
-interface FilesystemAdapter
-{
-    public function write(string $path, string $contents, Config $config): void;
-    public function read(string $path): string;
-    public function delete(string $path): void;
-    // ... 14 more methods
-}
-
-// Any backend implements the interface
-class DropboxAdapter implements FilesystemAdapter
-{
-    public function write(string $path, string $contents, Config $config): void
-    {
-        $this->client->upload($path, $contents);
-    }
-    // ... implement remaining methods
-}
-
-// No registration needed — pass to Filesystem, done
-$filesystem = new Filesystem(new DropboxAdapter($client));
-```
-
----
-
-## Plugin System (Filament)
-
-### The Plugin Contract
-**Why?** Three methods. That's the entire contract.
-```php
-class BlogPlugin implements Plugin
-{
-    public function getId(): string
-    {
-        return 'blog';
-    }
-
-    public function register(Panel $panel): void
-    {
-        $panel->resources([
-            PostResource::class,
-            CategoryResource::class,
-        ]);
-    }
-
-    public function boot(Panel $panel): void {}
-}
-
-// Registration
-$panel->plugin(BlogPlugin::make());
-
-// Runtime access
-filament('blog')->hasAuthorResource();
-```
-
----
-
-## Config-Driven Bindings (Spatie)
-
-### Model Customization via Config
-**Why?** One config key replaces dozens of individual options.
-```php
-// config/permission.php
-'models' => ['role' => App\Models\Role::class]
-
-// Service provider
-$this->app->bind(RoleContract::class,
-    fn ($app) => $app->make($app->config['permission.models.role']));
-```
-The user extends the model, overrides what they need, registers it in config.
-
-### Strategy Swap via Config
-**Why?** Swap the entire implementation with one line.
-```php
-// config/responsecache.php
-'cache_profile' => CacheAllSuccessfulGetRequests::class,
-
-// User swaps to custom profile
-'cache_profile' => App\CacheProfiles\CacheAuthenticatedRequests::class,
-```
-
----
-
-## Static Callback Customization (Taylor)
-
-### Sanctum Token Retrieval
-**Why?** One closure customizes a critical behavior.
-```php
-Sanctum::getAccessTokenFromRequestUsing(function ($request) {
-    return $request->cookie('api_token');
-});
-```
-
-### Cashier Currency Formatting
-```php
-Cashier::formatCurrencyUsing(function ($amount, $currency) {
-    return '$' . number_format($amount / 100, 2);
-});
-```
-
-### The use{Model}() Pattern
-```php
-// In AppServiceProvider::boot()
-Cashier::useCustomerModel(Team::class);
-Cashier::useSubscriptionModel(TeamSubscription::class);
-Sanctum::usePersonalAccessTokenModel(CustomToken::class);
-```
-The package references `static::$customerModel` instead of hardcoding. Users swap internal classes without forking.
-
----
-
-## Events (Cross-Ecosystem)
-
-### Taylor's Packages
-```php
-// Pennant
-Laravel\Pennant\Events\FeatureResolved::class
-Laravel\Pennant\Events\FeatureUpdated::class
-
-// Cashier
-Laravel\Cashier\Events\WebhookReceived::class
-Laravel\Cashier\Events\WebhookHandled::class
-```
-
-### Spatie's Packages
-```php
-// Permission
-RoleAttachedEvent::dispatch($model, $rolesOrIds);
-PermissionDetachedEvent::dispatch($model, $permissionsOrIds);
-
-// Translatable
-TranslationHasBeenSetEvent::dispatch($model, $key, $locale, $old, $new);
-```
-
----
-
-## Macroable (Taylor)
-
-### Adding Methods at Runtime
-```php
-Collection::macro('toUpper', function () {
-    return $this->map(fn ($value) => strtoupper($value));
-});
-
-Request::macro('isApiRequest', function () {
-    return $this->is('api/*');
-});
-```
-
-### Mixin for Bulk Registration
-```php
-class CollectionMixin
-{
-    public function toUpper()
-    {
-        return function () {
-            return $this->map(fn ($v) => strtoupper($v));
-        };
-    }
-}
-
-Collection::mixin(new CollectionMixin);
-```
-
----
-
-## The Extensibility Hierarchy
-
-When to use which pattern:
+### Match Mechanism to Scale
 
 | Scale              | Pattern           | Example                                     |
 |--------------------|-------------------|---------------------------------------------|
@@ -237,3 +19,56 @@ When to use which pattern:
 | Framework-agnostic | Adapter/Interface | Flysystem, EventSauce                       |
 | Platform hosting   | Plugin system     | Filament panels                             |
 | Decoupled reaction | Events            | Webhook handling, state changes             |
+
+Start with the lightest mechanism that solves the problem. Escalate only when needed.
+
+---
+
+## The Seam Principle
+
+Every meaningful behavior needs a seam — a point where consumers can intercept, replace, or extend.
+
+### Where Seams Come From
+
+```php
+// Config seam — swap a class
+'models' => ['role' => App\Models\Role::class]
+
+// Callback seam — customize a behavior
+Cashier::formatCurrencyUsing(fn ($amount, $currency) => /* ... */);
+
+// Interface seam — implement a contract
+class DropboxAdapter implements FilesystemAdapter { /* ... */ }
+
+// Event seam — react without coupling
+RoleAttachedEvent::dispatch($model, $rolesOrIds);
+```
+
+Each seam type has a different cost and flexibility trade-off. Config is cheapest. Interfaces are most powerful. Events are most decoupled.
+
+---
+
+## Protected Over Private
+
+```php
+// Closed — consumer cannot customize
+private function resolveNotificationChannel(): string { /* ... */ }
+
+// Open — consumer can override in subclass
+protected function resolveNotificationChannel(): string { /* ... */ }
+```
+
+Every `private` method is a feature request waiting to happen. Default to `protected`. Use `private` only for true implementation details that must never change.
+
+---
+
+## The Escalation Pattern
+
+Real packages evolve their extension points:
+
+1. **v1**: Config-driven binding (simple swap)
+2. **v2**: Add static callbacks for fine-grained customization
+3. **v3**: Introduce Manager/Driver when multiple implementations emerge
+4. **v4**: Ship a plugin system when third parties build on top
+
+Scout started with a single driver. Now it has a full EngineManager with `extend()`. Pennant started config-driven. Now it supports custom feature stores. Don't over-engineer day one — but design so you can escalate.

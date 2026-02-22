@@ -102,6 +102,34 @@ protected function ensureAlgoliaClientIsInstalled()
 
 ## IDE Experience
 
+### Barry vd. Heuvel — IDE Helper Generation
+**Why?** Three commands generate complete IDE metadata. No manual PHPDoc maintenance. Run once, autocompletion everywhere.
+
+```bash
+# Generate PHPDoc for all Facades → _ide_helper.php
+php artisan ide-helper:generate
+
+# Generate PHPDoc for Eloquent models (columns, relations, scopes)
+php artisan ide-helper:models --write
+
+# Generate PhpStorm meta for container resolution
+php artisan ide-helper:meta
+```
+
+The `@mixin` approach lets models inherit QueryBuilder autocompletion:
+
+```php
+/**
+ * @mixin \Eloquent
+ * @property int $id
+ * @property string $name
+ * @method static \Illuminate\Database\Eloquent\Builder|User whereEmail(string $value)
+ */
+class User extends Model {}
+```
+
+Package authors: ship `@mixin` and `@method` annotations so consumers get autocompletion without installing IDE Helper.
+
 ### Spatie — Generic Types on Core Classes
 **Why?** Autocomplete preserves model specificity.
 ```php
@@ -137,6 +165,21 @@ class Http extends Facade { /* ... */ }
 }
 ```
 
+### Jess Archer — Laravel Prompts as DX Philosophy
+**Why?** Beautiful CLI UX from plain functions. No classes, no configuration, no Symfony console ceremony.
+
+```php
+use function Laravel\Prompts\text;
+use function Laravel\Prompts\select;
+use function Laravel\Prompts\confirm;
+
+$name = text('What is your name?');
+$role = select('Role?', ['Member', 'Admin', 'Owner']);
+$confirmed = confirm('Proceed?');
+```
+
+Functions over classes. The simplest possible surface for the most common interaction.
+
 ---
 
 ## Migration Path
@@ -151,7 +194,7 @@ Handles namespace changes, method renames, and configuration restructuring autom
 
 ### Spatie — Additive Migrations
 **Why?** Never alter, always extend.
-```
+```text
 database/migrations/
   create_activity_log_table.php.stub
   add_event_column_to_activity_log_table.php.stub

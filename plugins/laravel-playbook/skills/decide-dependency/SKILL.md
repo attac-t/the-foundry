@@ -12,7 +12,7 @@ description: When to depend, suggest, vendor, or own. Dependency strategy for La
 **Depend (require) when:**
 - Core functionality depends on it
 - Cherry-pick illuminate components: `illuminate/database`, `illuminate/support`
-- Recommended for declarative providers: `spatie/laravel-package-tools` reduces boilerplate significantly
+- Recommended for declarative providers: `laravel-package-tools` reduces boilerplate significantly
 - Keep it minimal: 3-5 production deps for simple packages
 
 **Suggest when:**
@@ -28,7 +28,7 @@ description: When to depend, suggest, vendor, or own. Dependency strategy for La
 
 **Own (build yourself) when:**
 - Critical path functionality -- you must control it
-- Pattern across the ecosystem: Spatie owns `spatie/image`, `spatie/db-dumper`, `spatie/temporary-directory` for their critical paths
+- Ecosystem pattern: own your critical-path libraries (`image`, `db-dumper`, `temporary-directory`)
 - Dependency quality or maintenance is uncertain
 - You can build it better for your specific use case
 
@@ -42,7 +42,7 @@ description: When to depend, suggest, vendor, or own. Dependency strategy for La
 
 **League's agnostic approach:** Minimal dependencies, PSR interfaces, framework bridges. The core depends on nothing framework-specific. Adapters are separate packages.
 
-**Spatie's pragmatic approach:** Cherry-pick illuminate components, own the critical path, use `spatie/laravel-package-tools` for provider boilerplate.
+**The pragmatic approach:** Cherry-pick illuminate components, own the critical path, use `laravel-package-tools` for provider boilerplate.
 
 ## The Heuristic
 

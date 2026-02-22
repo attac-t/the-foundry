@@ -57,15 +57,17 @@ description: Crafting API surfaces. Entry points, fluent builders, progressive d
 
 ## The Anti-Patterns
 
-| Don't                                              | Do                                    | Why                                              |                                |
-|----------------------------------------------------|---------------------------------------|--------------------------------------------------|--------------------------------|
-| Two equally-valid entry points                     | One obvious path                      | Ambiguity erodes confidence                      |                                |
-| Builder methods that execute                       | Separate configuration from execution | Side effects in configuration are invisible bugs |                                |
-| Return `void` from fluent methods                  | Return `$this` or `static`            | Breaks method chaining                           |                                |
-| Missing return type annotations                    | Explicit types on every method        | IDE and static analysis depend on it             |                                |
-| Inconsistent verb prefixes                         | Follow the naming table above         | Predictability is the API contract               |                                |
-| Accept only `string` when `BackedEnum` makes sense | Union types: `string\                 | BackedEnum`                                      | Meet developers where they are |
-| Manual conditional logic in chains                 | Use `Conditionable` trait             | `when()` and `unless()` are cleaner              |                                |
+| Don't                                              | Do                                          | Why                                              |
+|----------------------------------------------------|---------------------------------------------|--------------------------------------------------|
+| Two equally-valid entry points                     | One obvious path                            | Ambiguity erodes confidence                      |
+| Builder methods that execute                       | Separate configuration from execution       | Side effects in configuration are invisible bugs |
+| Return `void` from fluent methods                  | Return `$this` or `static`                  | Breaks method chaining                           |
+| Missing return type annotations                    | Explicit types on every method              | IDE and static analysis depend on it             |
+| Inconsistent verb prefixes                         | Follow the naming table above               | Predictability is the API contract               |
+| Accept only `string` when `BackedEnum` makes sense | Union types: `string` or `BackedEnum`       | Meet developers where they are                   |
+| Manual conditional logic in chains                 | Use `Conditionable` trait                   | `when()` and `unless()` are cleaner              |
+
+**See also:** craft-trait (trait-based entry points), decide-facade (choosing the right entry point pattern).
 
 ## Real-World Examples
 

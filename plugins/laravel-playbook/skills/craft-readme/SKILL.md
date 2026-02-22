@@ -43,6 +43,8 @@ description: Crafting a README. The landing page for your package.
 | Skip the alternatives section  | List competitors openly                    | Confidence move -- it signals maturity                                           |
 | Omit PR template guidance      | Include `.github/PULL_REQUEST_TEMPLATE.md` | Contributor experience starts before the first PR                                |
 
+**See also:** craft-branding (banner assets and visual identity), decide-docs-site (when to move depth out of README).
+
 ## Real-World Examples
 
 See [examples.md](examples.md).

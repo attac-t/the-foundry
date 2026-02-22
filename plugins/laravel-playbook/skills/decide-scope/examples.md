@@ -1,15 +1,13 @@
 # Package Scope: Examples
 
-Real-world examples from the framework and production packages.
+Real-world examples from the framework and production code.
 
 ---
 
 ## Framework Examples
 
 ### Micro: laravel-translatable
-
-**Why?** One concept: translatable model attributes. No configuration file needed. Add the trait, declare `$translatable`, done.
-
+**Why?** One concept: translatable model attributes. Add the trait, declare `$translatable`, done.
 ```php
 class Post extends Model
 {
@@ -20,22 +18,18 @@ class Post extends Model
 ```
 
 ### Macro: laravel-medialibrary
-
-**Why?** Upload, conversion, and responsive images are tightly coupled. Splitting would force users to install three packages for basic file handling.
-
-```
+**Why?** Upload, conversion, and responsive images are tightly coupled. Splitting would force three packages for basic file handling.
+```text
 medialibrary
 ├── File upload + association
-├── Image conversions (thumbnails, crops)
-├── Responsive images (srcset generation)
-└── Collections (named groups with constraints)
+├── Image conversions
+├── Responsive images
+└── Collections
 ```
 
 ### Macro: laravel-backup
-
-**Why?** Sources, destinations, notifications, and cleanup are all required for a functional backup. No single piece works alone.
-
-```
+**Why?** Sources, destinations, notifications, and cleanup are all required. No single piece works alone.
+```text
 backup
 ├── Sources (files + databases)
 ├── Destinations (disks + cloud)
@@ -45,48 +39,31 @@ backup
 ```
 
 ### Platform: Filament
-
 **Why?** Composable packages that work independently but integrate into a host platform.
-
+```text
+Foundation:  support, schemas, query-builder
+Features:    forms, tables, actions, notifications, widgets
+Integration: panels (the host)
 ```
-Foundation Layer
-├── support       -> Core utilities
-├── schemas       -> Data structures
-└── query-builder -> Eloquent utilities
-
-Feature Layer
-├── forms         -> Form field components
-├── tables        -> Data table system
-├── actions       -> Modal and action system
-├── notifications -> Toast system
-└── widgets       -> Dashboard widgets
-
-Integration Layer
-└── panels        -> Admin panel (the host)
-```
-
-Each package is installable independently. `panels` aggregates them all. Third-party plugins extend the platform.
+Each package installable independently. `panels` aggregates them. Third-party plugins extend the platform.
 
 ---
 
 ## Production Patterns
 
 ### The Graduation Path
-
-Packages that proved concepts worthy of framework adoption:
-
-- `nunomaduro/pint` -> `laravel/pint` (absorbed as official tooling)
-- `nunomaduro/prompts` -> `laravel/prompts` (absorbed as official tooling)
-- `tightenco/collect` -> `illuminate/collections` (Laravel extracted it officially)
-
-The best micro packages sometimes make themselves obsolete by proving the concept belongs in the framework.
+```text
+nunomaduro/pint       -> laravel/pint
+nunomaduro/prompts    -> laravel/prompts
+tightenco/collect     -> illuminate/collections
+```
+The best micro packages prove the concept belongs in the framework.
 
 ### When Micro Grows to Macro
 
-Signs your micro package needs macro scope:
-
+Signals:
 1. Users keep asking for the same companion feature
-2. You find yourself building a second package that depends on the first
+2. You build a second package that depends on the first
 3. The second package has no use case without the first
 4. Installation instructions say "also install X for full functionality"
 
