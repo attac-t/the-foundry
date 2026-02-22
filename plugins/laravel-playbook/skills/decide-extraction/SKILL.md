@@ -31,15 +31,15 @@ PHP problems are extractable. Project problems are not.
 
 ## The Quick Test
 
-| Ask | Answer | Action |
-|-----|--------|--------|
-| Have you copy-pasted this across projects? | Yes | Strong extraction signal |
-| Does it depend on your domain models? | Yes | Decouple first, then reassess |
-| Do existing packages solve this well? | Yes | Contribute upstream instead |
-| Can you replace all `App\` refs with generics? | Yes | Clean boundary -- extract |
-| Would other Laravel developers use this? | No | Keep it internal |
-| Is the existing solution abandoned or has poor DX? | Yes | Extract with better DX |
-| Can you explain what it does in one sentence? | Yes | Right scope for a package |
+| Ask                                                | Answer | Action                        |
+|----------------------------------------------------|--------|-------------------------------|
+| Have you copy-pasted this across projects?         | Yes    | Strong extraction signal      |
+| Does it depend on your domain models?              | Yes    | Decouple first, then reassess |
+| Do existing packages solve this well?              | Yes    | Contribute upstream instead   |
+| Can you replace all `App\` refs with generics?     | Yes    | Clean boundary -- extract     |
+| Would other Laravel developers use this?           | No     | Keep it internal              |
+| Is the existing solution abandoned or has poor DX? | Yes    | Extract with better DX        |
+| Can you explain what it does in one sentence?      | Yes    | Right scope for a package     |
 
 ## Real-World Examples
 

@@ -64,16 +64,16 @@ description: Crafting package views. Blade components, view publishing, and the 
 
 ## The Anti-Patterns
 
-| Don't | Do | Why |
-|-------|-----|-----|
-| Skip view namespace | Always `loadViewsFrom()` with a namespace | Collisions with other packages are silent |
-| Change published view structure in minor versions | Treat published views as a major-version contract | Breaks every consumer who customized them |
-| Hardcode CSS frameworks in views | Ship framework-agnostic markup or configurable themes | Forces consumers into your CSS choices |
-| Bundle views and config in one publish tag | Separate publish groups: `{package}-views`, `{package}-config` | Consumers publish only what they need |
-| Register Livewire components without namespace | Use `package::component` naming | Collisions with app components |
-| Ship complex logic in Blade templates | Extract to Blade components or view models | Blade is for presentation, not logic |
-| Publish every view | Only publish views consumers will customize | Less surface area to maintain |
-| Forget view override documentation | Document which views are safe to override | Consumers need to know what's stable |
+| Don't                                             | Do                                                             | Why                                       |
+|---------------------------------------------------|----------------------------------------------------------------|-------------------------------------------|
+| Skip view namespace                               | Always `loadViewsFrom()` with a namespace                      | Collisions with other packages are silent |
+| Change published view structure in minor versions | Treat published views as a major-version contract              | Breaks every consumer who customized them |
+| Hardcode CSS frameworks in views                  | Ship framework-agnostic markup or configurable themes          | Forces consumers into your CSS choices    |
+| Bundle views and config in one publish tag        | Separate publish groups: `{package}-views`, `{package}-config` | Consumers publish only what they need     |
+| Register Livewire components without namespace    | Use `package::component` naming                                | Collisions with app components            |
+| Ship complex logic in Blade templates             | Extract to Blade components or view models                     | Blade is for presentation, not logic      |
+| Publish every view                                | Only publish views consumers will customize                    | Less surface area to maintain             |
+| Forget view override documentation                | Document which views are safe to override                      | Consumers need to know what's stable      |
 
 ## Real-World Examples
 

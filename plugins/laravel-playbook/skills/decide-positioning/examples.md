@@ -65,12 +65,12 @@ Kept the engine. Better DX was undeniable, not arguable.
 
 ### Platform Play: Filament vs Nova vs Backpack
 
-| Dimension | Nova | Backpack | Filament |
-|-----------|------|----------|----------|
-| License | Commercial | Commercial | MIT |
-| Components standalone | No | No | Yes |
-| Rendering | Vue SPA | Blade | Livewire |
-| First-touch DX | Install + license | Install + license | `composer require` |
+| Dimension             | Nova              | Backpack          | Filament           |
+|-----------------------|-------------------|-------------------|--------------------|
+| License               | Commercial        | Commercial        | MIT                |
+| Components standalone | No                | No                | Yes                |
+| Rendering             | Vue SPA           | Blade             | Livewire           |
+| First-touch DX        | Install + license | Install + license | `composer require` |
 
 Zero-cost entry + standalone components + Livewire alignment.
 
