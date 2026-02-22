@@ -11,25 +11,25 @@ description: Crafting model traits. The trait-first integration pattern for Lara
 
 1. **Boot Methods**: `boot{TraitName}()` hooks into the Eloquent lifecycle. Static method. Register `creating`, `deleting`, `updating` listeners here. Nothing else.
 
-1. **Initialize Methods**: `initialize{TraitName}()` runs on every model instance. Property setup only -- `mergeCasts`, `$fillable` additions, attribute defaults.
+2. **Initialize Methods**: `initialize{TraitName}()` runs on every model instance. Property setup only -- `mergeCasts`, `$fillable` additions, attribute defaults.
 
-1. **Relationships**: Traits define Eloquent relationships that become available on the model. Use `morphToMany` or `morphMany` for polymorphic packages. Always type the return.
+3. **Relationships**: Traits define Eloquent relationships that become available on the model. Use `morphToMany` or `morphMany` for polymorphic packages. Always type the return.
 
-1. **Query Scopes**: `scope{Name}()` methods for filtering. Accept the query builder as the first argument, parameters after.
+4. **Query Scopes**: `scope{Name}()` methods for filtering. Accept the query builder as the first argument, parameters after.
 
-1. **Configuration via Abstract Methods**: Require the model to provide its own configuration. The trait defines the contract, the model fulfills it.
+5. **Configuration via Abstract Methods**: Require the model to provide its own configuration. The trait defines the contract, the model fulfills it.
 
-1. **Optional Overrides**: Provide default (usually empty) implementations for optional configuration. Override only when needed.
+6. **Optional Overrides**: Provide default (usually empty) implementations for optional configuration. Override only when needed.
 
-1. **Accessor/Mutator Interception**: Override `getAttributeValue()` and `setAttribute()` for transparent behavior. Call `parent::` for non-intercepted attributes.
+7. **Accessor/Mutator Interception**: Override `getAttributeValue()` and `setAttribute()` for transparent behavior. Call `parent::` for non-intercepted attributes.
 
-1. **Trait Naming Convention**: Two patterns from Taylor's first-party packages:
+8. **Trait Naming Convention**: Two patterns from Taylor's first-party packages:
    - **Adjective**: `Searchable`, `Billable` -- describes what the model becomes.
    - **Has{Thing}**: `HasApiTokens`, `HasFeatures` -- describes what the model gains.
 
-1. **Concerns Decomposition**: When a trait grows large, split into a `Concerns/` directory and compose them into one user-facing trait. Cashier's `Billable` composes 7 concern traits. Each concern is focused. The user adds one trait.
+9. **Concerns Decomposition**: When a trait grows large, split into a `Concerns/` directory and compose them into one user-facing trait. Cashier's `Billable` composes 7 concern traits. Each concern is focused. The user adds one trait.
 
-1. **Utility Traits**: Beyond model traits, consider `Conditionable` (adds `when()`/`unless()` to builders), `Tappable` (adds `tap()` for inspection), and `Macroable` (adds runtime extension via `macro()`/`mixin()`). These are foundational Laravel traits that any class can use.
+10. **Utility Traits**: Beyond model traits, consider `Conditionable` (adds `when()`/`unless()` to builders), `Tappable` (adds `tap()` for inspection), and `Macroable` (adds runtime extension via `macro()`/`mixin()`). These are foundational Laravel traits that any class can use.
 
 ## The Anti-Patterns
 

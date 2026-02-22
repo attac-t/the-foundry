@@ -86,8 +86,8 @@ The best micro packages sometimes make themselves obsolete by proving the concep
 Signs your micro package needs macro scope:
 
 1. Users keep asking for the same companion feature
-1. You find yourself building a second package that depends on the first
-1. The second package has no use case without the first
-1. Installation instructions say "also install X for full functionality"
+2. You find yourself building a second package that depends on the first
+3. The second package has no use case without the first
+4. Installation instructions say "also install X for full functionality"
 
 When this happens, merge. One package, one install, one docs site.

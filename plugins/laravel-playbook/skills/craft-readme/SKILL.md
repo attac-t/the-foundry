@@ -11,17 +11,17 @@ description: Crafting a README. The landing page for your package.
 
 1. **H1 is a benefit statement**: Not the package name. "Associate users with permissions and roles" -- not "laravel-permission." The H1 sells what the package does. The name lives in `composer.json`.
 
-1. **Show code in the first screenful**: A working example within the first scroll. No boilerplate, no `use` statements unless critical. Simple to complex progression. Casual confidence. No ceremony.
+2. **Show code in the first screenful**: A working example within the first scroll. No boilerplate, no `use` statements unless critical. Simple to complex progression. Casual confidence. No ceremony.
 
-1. **Badge trio**: Version + Tests + Downloads. Always `?style=flat-square`. Three to four badges max -- more is noise.
+3. **Badge trio**: Version + Tests + Downloads. Always `?style=flat-square`. Three to four badges max -- more is noise.
 
-1. **Section order**: Header image (dark/light responsive) -> H1 slogan -> Badges -> Brief description + code example -> Documentation link (if docs site exists) -> Installation (abbreviated) -> Testing -> Changelog -> Contributing -> Security Vulnerabilities -> Credits -> Alternatives (optional) -> License.
+4. **Section order**: Header image (dark/light responsive) -> H1 slogan -> Badges -> Brief description + code example -> Documentation link (if docs site exists) -> Installation (abbreviated) -> Testing -> Changelog -> Contributing -> Security Vulnerabilities -> Credits -> Alternatives (optional) -> License.
 
-1. **README is a landing page, not documentation**: Keep it tight. One to five examples, then link to the docs site for depth. If your README needs a table of contents, you have too much README.
+5. **README is a landing page, not documentation**: Keep it tight. One to five examples, then link to the docs site for depth. If your README needs a table of contents, you have too much README.
 
-1. **No hype language**: No "amazing," "incredible," "revolutionary." Concrete, specific, casual confidence. The code speaks. If you need adjectives to sell your package, the package is not selling itself.
+6. **No hype language**: No "amazing," "incredible," "revolutionary." Concrete, specific, casual confidence. The code speaks. If you need adjectives to sell your package, the package is not selling itself.
 
-1. **List alternatives**: Listing competitors signals trust and maturity. A developer who sees alternatives listed knows you are confident in your offering.
+7. **List alternatives**: Listing competitors signals trust and maturity. A developer who sees alternatives listed knows you are confident in your offering.
 
 ## The Approaches
 

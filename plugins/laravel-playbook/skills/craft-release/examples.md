@@ -67,11 +67,11 @@ jobs:
 
 ```
 1. Merge PRs to main
-1. CI validates (tests, PHPStan, style)
-1. Create GitHub release with auto-generated notes
-1. update-changelog.yml fires -> CHANGELOG.md updated -> committed to main
-1. Packagist webhook fires -> package version published
-1. Dependabot handles downstream updates for consumers
+2. CI validates (tests, PHPStan, style)
+3. Create GitHub release with auto-generated notes
+4. update-changelog.yml fires -> CHANGELOG.md updated -> committed to main
+5. Packagist webhook fires -> package version published
+6. Dependabot handles downstream updates for consumers
 ```
 
 One human action: step 3. Everything else is automated.

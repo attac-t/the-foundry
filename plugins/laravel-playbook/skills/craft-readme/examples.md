@@ -67,18 +67,18 @@ Listing competitors is a confidence move:
 
 ```
 1. Header image (dark/light responsive via <picture>)
-1. H1 slogan (benefit statement)
-1. Badges
-1. Brief description + code example
-1. Documentation link (if docs site exists)
-1. Installation (abbreviated)
-1. Testing
-1. Changelog
-1. Contributing
-1. Security Vulnerabilities
-1. Credits
-1. Alternatives (optional, but a confidence move)
-1. License
+2. H1 slogan (benefit statement)
+3. Badges
+4. Brief description + code example
+5. Documentation link (if docs site exists)
+6. Installation (abbreviated)
+7. Testing
+8. Changelog
+9. Contributing
+10. Security Vulnerabilities
+11. Credits
+12. Alternatives (optional, but a confidence move)
+13. License
 ```
 
 ### Taylor's Minimal README Style

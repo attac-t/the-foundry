@@ -15,12 +15,12 @@ description: Crafting a CI pipeline. Five workflows, zero manual gates.
    - `fix-php-code-style-issues.yml` -- Laravel Pint auto-fix + auto-commit. No manual style reviews.
    - `update-changelog.yml` -- Auto-update CHANGELOG.md on release publish.
    - `dependabot-auto-merge.yml` -- Auto-merge minor/patch dependency updates.
-1. **Matrix strategy**: PHP versions x Laravel versions x stability (`prefer-lowest`, `prefer-stable`). Map Testbench versions via `include`. `fail-fast: false`. `timeout-minutes: 5`.
-1. **PHPStan level 5**: With Larastan, baseline file, `checkOctaneCompatibility: true`, `checkModelProperties: true`. The baseline file means existing codebases can adopt PHPStan without fixing everything first. Level 5 is the sweet spot -- strict enough to catch real bugs, lenient enough not to fight you on every line.
-1. **Laravel Pint auto-fix**: CI fixes style and commits directly. No developer ever sees a failing style check. No PR review for formatting.
-1. **Dependabot**: Weekly Composer + GitHub Actions updates. Auto-merge minor and patch versions.
-1. **Concurrency**: `cancel-in-progress: true` on every workflow. New pushes kill stale CI runs. No wasted compute.
-1. **Single branch**: `main` only. No `develop`, no release branches. Feature branches merge to `main`. Major version branches only for legacy backports.
+2. **Matrix strategy**: PHP versions x Laravel versions x stability (`prefer-lowest`, `prefer-stable`). Map Testbench versions via `include`. `fail-fast: false`. `timeout-minutes: 5`.
+3. **PHPStan level 5**: With Larastan, baseline file, `checkOctaneCompatibility: true`, `checkModelProperties: true`. The baseline file means existing codebases can adopt PHPStan without fixing everything first. Level 5 is the sweet spot -- strict enough to catch real bugs, lenient enough not to fight you on every line.
+4. **Laravel Pint auto-fix**: CI fixes style and commits directly. No developer ever sees a failing style check. No PR review for formatting.
+5. **Dependabot**: Weekly Composer + GitHub Actions updates. Auto-merge minor and patch versions.
+6. **Concurrency**: `cancel-in-progress: true` on every workflow. New pushes kill stale CI runs. No wasted compute.
+7. **Single branch**: `main` only. No `develop`, no release branches. Feature branches merge to `main`. Major version branches only for legacy backports.
 
 ## The Anti-Patterns
 

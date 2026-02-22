@@ -33,9 +33,9 @@ description: When to keep a package small (micro) vs let it grow (macro). The sc
 Packages graduate through scope tiers:
 
 1. **Micro** -- Solve one problem well. Ship it.
-1. **Macro** -- Tightly-coupled concerns grow organically. Embrace it when splitting would confuse users.
-1. **Graduate to core** -- If the community builds the same feature repeatedly, it belongs in the framework. Tim MacDonald's principle: the best packages make themselves obsolete by proving a concept worthy of framework adoption.
-1. **Platform** -- Rare. The package becomes the foundation others build on.
+2. **Macro** -- Tightly-coupled concerns grow organically. Embrace it when splitting would confuse users.
+3. **Graduate to core** -- If the community builds the same feature repeatedly, it belongs in the framework. Tim MacDonald's principle: the best packages make themselves obsolete by proving a concept worthy of framework adoption.
+4. **Platform** -- Rare. The package becomes the foundation others build on.
 
 ## The Heuristic
 

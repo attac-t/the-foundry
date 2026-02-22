@@ -10,22 +10,22 @@ description: Crafting a release pipeline. One action, full pipeline.
 ## The Standard
 
 1. **GitHub Release triggers everything**: Create a release on GitHub. The changelog updates. Packagist picks up the tag. One action, full pipeline.
-1. **Semver strictly followed**: Major for breaking changes. Minor for new features. Patch for fixes. No exceptions, no "we'll bump major just in case."
-1. **No `v` prefix on tags**: `7.1.0`, not `v7.1.0`. This is the Packagist convention. Follow it.
-1. **CHANGELOG.md auto-updated**: The `update-changelog.yml` workflow uses `stefanzweifel/changelog-updater-action` + `git-auto-commit-action`. Commits directly to `main`. No manual changelog edits.
-1. **GitHub auto-generated release notes**: PR-based entries, contributor attribution, compare links. Low maintenance, high value.
-1. **Packagist webhook**: Configure once on the GitHub repo. Tag creation triggers package update automatically. No manual publishing.
+2. **Semver strictly followed**: Major for breaking changes. Minor for new features. Patch for fixes. No exceptions, no "we'll bump major just in case."
+3. **No `v` prefix on tags**: `7.1.0`, not `v7.1.0`. This is the Packagist convention. Follow it.
+4. **CHANGELOG.md auto-updated**: The `update-changelog.yml` workflow uses `stefanzweifel/changelog-updater-action` + `git-auto-commit-action`. Commits directly to `main`. No manual changelog edits.
+5. **GitHub auto-generated release notes**: PR-based entries, contributor attribution, compare links. Low maintenance, high value.
+6. **Packagist webhook**: Configure once on the GitHub repo. Tag creation triggers package update automatically. No manual publishing.
 
 ## The Pipeline
 
 One human action: create the GitHub release. Everything else is automated.
 
 1. Merge PRs to main
-1. CI validates (tests, PHPStan, style)
-1. Create GitHub release with auto-generated notes
-1. `update-changelog.yml` fires -- CHANGELOG.md updated, committed to main
-1. Packagist webhook fires -- package version published
-1. Dependabot handles downstream updates for consumers
+2. CI validates (tests, PHPStan, style)
+3. Create GitHub release with auto-generated notes
+4. `update-changelog.yml` fires -- CHANGELOG.md updated, committed to main
+5. Packagist webhook fires -- package version published
+6. Dependabot handles downstream updates for consumers
 
 ## Version Support Policy
 
