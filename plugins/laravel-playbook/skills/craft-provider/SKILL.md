@@ -19,14 +19,14 @@ description: Crafting a service provider. The declarative heart of every Laravel
 
 Spatie's `PackageServiceProvider` is recommended for most packages. It eliminates boilerplate. Use a raw `ServiceProvider` when you need full control or want zero external dependencies (Taylor's first-party pattern). Use `PanelProvider` only for Filament panel packages.
 
-2. **The Declarative Core**: Whether using `configurePackage()` or manual registration, the provider declares what the package ships. One glance reveals everything.
+1. **The Declarative Core**: Whether using `configurePackage()` or manual registration, the provider declares what the package ships. One glance reveals everything.
 
-3. **Lifecycle Separation**: Two phases. No ambiguity.
+1. **Lifecycle Separation**: Two phases. No ambiguity.
 
 - **Register phase** -- Container bindings. Singletons, scoped services, interface-to-implementation bindings. No side effects.
 - **Boot phase** -- Side effects. Events, observers, macros, gates, Blade directives, route registration.
 
-4. **Binding Patterns**: Three patterns, each with a clear purpose.
+1. **Binding Patterns**: Three patterns, each with a clear purpose.
 
 | Pattern   | Scope           | When                                              |
 |-----------|-----------------|---------------------------------------------------|
@@ -36,13 +36,13 @@ Spatie's `PackageServiceProvider` is recommended for most packages. It eliminate
 
 Config-driven binding is the dominant pattern. Read the implementation class from config, bind to an interface. Users swap behavior by editing a config file.
 
-5. **Manager Pattern Registration**: For packages with multiple drivers/implementations, register a Manager as a singleton and bind the default driver interface.
+1. **Manager Pattern Registration**: For packages with multiple drivers/implementations, register a Manager as a singleton and bind the default driver interface.
 
-6. **Private Method Decomposition**: Separate concerns into private methods within the provider. Taylor's first-party pattern: `registerRoutes()`, `registerResources()`, `registerPublishing()`, `registerCommands()`. Each concern gets its own method.
+1. **Private Method Decomposition**: Separate concerns into private methods within the provider. Taylor's first-party pattern: `registerRoutes()`, `registerResources()`, `registerPublishing()`, `registerCommands()`. Each concern gets its own method.
 
-7. **Package Name**: When using Spatie tools, always `->name('laravel-{slug}')`. The `shortName()` strips the prefix automatically for config keys, view namespaces, and publish tags.
+1. **Package Name**: When using Spatie tools, always `->name('laravel-{slug}')`. The `shortName()` strips the prefix automatically for config keys, view namespaces, and publish tags.
 
-8. **Publishing Groups**: Namespace publish tags as `{package}-{type}`: `cashier-config`, `cashier-migrations`, `cashier-views`. Consumers publish only what they need.
+1. **Publishing Groups**: Namespace publish tags as `{package}-{type}`: `cashier-config`, `cashier-migrations`, `cashier-views`. Consumers publish only what they need.
 
 ## The Anti-Patterns
 

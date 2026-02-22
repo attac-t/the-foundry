@@ -11,21 +11,21 @@ description: Crafting a config file. The self-documenting contract between packa
 
 1. **Naming**: The config file matches the package slug. `config/{package-slug}.php`. Registered via `->hasConfigFile()` in the service provider or `$this->mergeConfigFrom()` for raw providers.
 
-2. **Every Key Has a Docblock Comment**: The config file IS the documentation. Multi-line comments explaining purpose, defaults, and trade-offs.
+1. **Every Key Has a Docblock Comment**: The config file IS the documentation. Multi-line comments explaining purpose, defaults, and trade-offs.
 
-3. **`env()` for Runtime Toggles Only**: Deployment-sensitive values that change between environments. Enabled flags, cache drivers, disk names, queue connections. Never use `env()` for model classes or table names -- those are structural, not environmental.
+1. **`env()` for Runtime Toggles Only**: Deployment-sensitive values that change between environments. Enabled flags, cache drivers, disk names, queue connections. Never use `env()` for model classes or table names -- those are structural, not environmental.
 
-4. **Class References for Strategy Swapping**: Let users replace implementations via config. Bind the config value to an interface in the service provider. The dominant pattern across all authors.
+1. **Class References for Strategy Swapping**: Let users replace implementations via config. Bind the config value to an interface in the service provider. The dominant pattern across all authors.
 
-5. **Zero-Config Defaults**: Everything works out of the box with no changes. Publishing is optional. Every key has a sensible default.
+1. **Zero-Config Defaults**: Everything works out of the box with no changes. Publishing is optional. Every key has a sensible default.
 
-6. **Preset-Based Configuration**: For tools with many granular options, offer semantic presets that replace hundreds of individual settings with a single word. Override individual rules on top of the preset.
+1. **Preset-Based Configuration**: For tools with many granular options, offer semantic presets that replace hundreds of individual settings with a single word. Override individual rules on top of the preset.
 
-7. **Closure-Based Config Values**: Accept closures alongside literal values for dynamic configuration. Filament's pattern: every configuration method accepts a value OR a closure, evaluated at runtime with injected context.
+1. **Closure-Based Config Values**: Accept closures alongside literal values for dynamic configuration. Filament's pattern: every configuration method accepts a value OR a closure, evaluated at runtime with injected context.
 
-8. **Complexity Matches the Problem Space**: Simple packages get flat configs with 0-12 keys. Complex packages use nested grouping by concern, not by type. Group by concern when you pass 15 keys.
+1. **Complexity Matches the Problem Space**: Simple packages get flat configs with 0-12 keys. Complex packages use nested grouping by concern, not by type. Group by concern when you pass 15 keys.
 
-9. **Table and Model Customization**: Always expose table names and model classes. Users will want to extend your models or change table names. Make it easy.
+1. **Table and Model Customization**: Always expose table names and model classes. Users will want to extend your models or change table names. Make it easy.
 
 ## The Anti-Patterns
 
