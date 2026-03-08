@@ -69,6 +69,7 @@ plugin         Plugin architecture
 
 **Quality**
 ```
+polish          Deep code polish (seven-pass protocol)
 review          Ruthless critic mentality
 test            Testing philosophy (what to test, not syntax)
 evaluate        Verify the OS is functioning
@@ -171,6 +172,7 @@ Branch-aware. Each topic gets its own memory.
 /design      Interview → spec → new session
 /rfc         Interview → design proposal
 /blueprint   Load roadmap
+/polish      Deep code polish
 /refine      Spawn reviewer
 /evaluate    Verify the OS
 /map         Elegant directory tree

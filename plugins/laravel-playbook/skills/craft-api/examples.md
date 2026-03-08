@@ -10,7 +10,8 @@ Patterns from the framework and production code.
 **Why?** Integrate where developers already work -- on the model.
 
 ```php
-$model->addMedia($file)
+$model
+    ->addMedia($file)
     ->usingName('avatar')
     ->withCustomProperties([...])
     ->toMediaCollection('photos'); // terminal
@@ -95,7 +96,8 @@ Any class using `Conditionable` gets `when()` and `unless()` for free.
 **Why?** Inspection and side-effects without breaking the chain.
 
 ```php
-$model->addMedia($file)
+$model
+    ->addMedia($file)
     ->usingName('avatar')
     ->tap(fn ($adder) => Log::info('Adding media', ['name' => $adder->name]))
     ->toMediaCollection('photos');
