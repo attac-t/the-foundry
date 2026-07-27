@@ -1,0 +1,57 @@
+name: Bug report
+description: Something doesn't work.
+labels: [bug]
+body:
+  - type: dropdown
+    id: plugin
+    attributes:
+      label: Plugin
+      options:
+        - kernel
+        - laravel-ddd
+        - laravel-playbook
+        - pest
+        - marketplace / repo
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Plugin version
+      description: From `claude plugin list`.
+      placeholder: kernel 1.8.0
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What should have happened?
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: What happened instead?
+      description: Paste the output. Redact anything private.
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Run `/polish app/Actions`
+        2. ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: validate
+    attributes:
+      label: Output of ./.github/validate.sh
+      description: Optional, but it often names the problem outright.
+      render: text

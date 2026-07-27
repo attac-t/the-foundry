@@ -1,0 +1,40 @@
+name: Validate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: validate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Plugins
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # The claude CLI does manifest, frontmatter, and hooks.json validation.
+      # Local schema checks only — no credentials required.
+      - name: Install claude CLI
+        run: npm install -g @anthropic-ai/claude-code
+
+      # validate.sh skips ShellCheck when it is missing, which is right for a
+      # laptop and wrong for CI: SECURITY.md promises every hook is linted. The
+      # runner image preinstalls it, so assert that rather than trust it.
+      - name: Assert ShellCheck is available
+        run: shellcheck --version
+
+      # Same script contributors run locally. One source of truth for the rules.
+      - name: Validate
+        run: ./.github/validate.sh

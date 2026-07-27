@@ -1,0 +1,58 @@
+name: Skill proposal
+description: Propose a new skill.
+labels: [skill]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        A skill encodes judgment, not syntax. If the framework docs already answer
+        it, it isn't a skill.
+
+  - type: dropdown
+    id: plugin
+    attributes:
+      label: Which plugin?
+      options:
+        - kernel
+        - laravel-ddd
+        - laravel-playbook
+        - pest
+        - a new plugin
+    validations:
+      required: true
+
+  - type: input
+    id: name
+    attributes:
+      label: Proposed name
+      description: "Prefix it: `ground-` for mindset, `craft-` for building, `decide-` for a choice."
+      placeholder: decide-cache-layer
+    validations:
+      required: true
+
+  - type: textarea
+    id: position
+    attributes:
+      label: What position does it take?
+      description: One or two sentences. A skill that won't commit to an answer isn't one.
+      placeholder: Cache at the query layer, not the view layer, because ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Where has this bitten you?
+      description: >
+        The best skills come from production scars. What went wrong, and what
+        would this skill have prevented?
+    validations:
+      required: true
+
+  - type: textarea
+    id: overlap
+    attributes:
+      label: Why doesn't an existing skill cover it?
+      description: Name the closest one and say what it misses.
+    validations:
+      required: true
