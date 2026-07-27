@@ -28,6 +28,8 @@ class SendInvoiceMailAction
 
 ## Usage
 
+`onQueue()` is an instance method. Inject the action, or resolve it.
+
 ### ✅ Sync (Default)
 ```php
 $action->execute($invoice);
@@ -35,22 +37,40 @@ $action->execute($invoice);
 
 ### ✅ Async (Queued)
 ```php
-SendInvoiceMailAction::onQueue()->execute($invoice);
+$action->onQueue()->execute($invoice);
 ```
 
-### ✅ With Queue Options
+### ✅ Named Queue
 ```php
-SendInvoiceMailAction::onQueue('emails')
-    ->delay(now()->addMinutes(5))
+// The queue name is the argument. onQueue() returns a proxy whose only
+// public method is execute() — nothing else chains onto it.
+$action->onQueue('emails')->execute($invoice);
+```
+
+### ✅ Resolved from the Container
+```php
+app(SendInvoiceMailAction::class)
+    ->onQueue('emails')
     ->execute($invoice);
 ```
 
-### ✅ On Specific Connection
+### ✅ Connection, Delay, Retries
+Configured on the action, not chained onto the call:
 ```php
-SendInvoiceMailAction::onQueue()
-    ->onConnection('redis')
-    ->onQueue('high')
-    ->execute($invoice);
+class SendInvoiceMailAction
+{
+    use QueueableAction;
+
+    public string $connection = 'redis';
+    public int $tries = 3;
+
+    public function backoff(): array
+    {
+        return [10, 60, 300];
+    }
+
+    public function execute(Invoice $invoice): void { /* ... */ }
+}
 ```
 
 ---
@@ -60,22 +80,22 @@ SendInvoiceMailAction::onQueue()
 ### ✅ Good Candidates
 ```php
 // Email sending
-SendWelcomeEmailAction::onQueue()->execute($user);
+$sendWelcomeEmail->onQueue()->execute($user);
 
 // PDF generation
-GenerateInvoicePdfAction::onQueue()->execute($invoice);
+$generateInvoicePdf->onQueue()->execute($invoice);
 
 // External API calls
-SyncToXeroAction::onQueue()->execute($payment);
+$syncToXero->onQueue()->execute($payment);
 ```
 
 ### ❌ Poor Candidates
 ```php
-// Needs immediate result
-$total = CalculateTotalsAction::onQueue()->execute($cart);  // Won't work!
+// Needs immediate result — a queued action returns nothing useful
+$total = $calculateTotals->onQueue()->execute($cart);  // Won't work!
 
 // Simple CRUD
-CreateUserAction::onQueue()->execute($data);  // Overkill
+$createUser->onQueue()->execute($data);  // Overkill
 ```
 
 ---
@@ -98,5 +118,5 @@ dispatch(new SendInvoiceMailJob($invoice));
 
 ### ✅ Do: Queueable Action
 ```php
-SendInvoiceMailAction::onQueue()->execute($invoice);
+$sendInvoiceMail->onQueue()->execute($invoice);
 ```

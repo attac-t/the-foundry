@@ -1,6 +1,6 @@
 # Pest
 
-Pest v3 testing. This plugin knows **how to write the test**.
+Pest testing. This plugin knows **how to write the test**.
 
 11 skills. `kernel:craft-test` decides *what* deserves a test; this decides how it
 reads.

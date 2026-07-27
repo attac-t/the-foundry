@@ -19,7 +19,7 @@ description: Crafting Jobs. Queue orchestration, not business logic.
 | ❌ Don't                     | ✅ Do                              | Why                          |
 |-----------------------------|-----------------------------------|------------------------------|
 | Business logic in `handle()` | Call `Action->execute()`          | Jobs aren't domain code      |
-| One job per action          | `Action::onQueue()->execute()`    | Eliminates boilerplate       |
+| One job per action          | `$action->onQueue()->execute()`   | Eliminates boilerplate       |
 | Complex job chains          | Orchestrator action               | Testable, debuggable         |
 | Domain namespace            | App\Jobs namespace                | Respects layer boundary      |
 

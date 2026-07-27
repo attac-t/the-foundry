@@ -34,15 +34,14 @@ class SendInvoiceMailJob implements ShouldQueue
 // Instead of:
 dispatch(new SendInvoiceMailJob($invoice));
 
-// Use:
-SendInvoiceMailAction::onQueue()->execute($invoice);
+// Use ($sendInvoiceMail is injected):
+$sendInvoiceMail->onQueue()->execute($invoice);
 ```
 
-### ✅ With Queue Options
+### ✅ Named Queue
 ```php
-SendInvoiceMailAction::onQueue('emails')
-    ->delay(now()->addMinutes(5))
-    ->execute($invoice);
+// onQueue() is an instance method; the queue name is its argument.
+$sendInvoiceMail->onQueue('emails')->execute($invoice);
 ```
 
 ---
@@ -56,7 +55,7 @@ public function store(CreateInvoiceData $data): RedirectResponse
     $invoice = $this->createInvoice->execute($data);
 
     // Async notification
-    SendInvoiceMailAction::onQueue()->execute($invoice);
+    $this->sendInvoiceMail->onQueue()->execute($invoice);
 
     return redirect()->route('invoices.show', $invoice);
 }

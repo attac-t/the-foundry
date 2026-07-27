@@ -63,7 +63,7 @@ When a method returns a fluent chain, `return` stands on its own line. The chain
 | `!empty($x) && $x->method()` | `$x?->method()` (nullsafe)                        |
 | `$val = $val ?? $default`    | `$val ??= $default`                               |
 | `config('key') ?? default`   | `config('key', $default)`                         |
-| `in_array($val, [...])`      | `collect([...])->contains($val)` or enum `->in()` |
+| `in_array($val, [...])`      | `collect([...])->contains($val)`                  |
 | `if ($cond) { $cb(); }`      | `when($cond, $cb)` if available                   |
 | `function ($x) use ($y) {…}` | `fn ($x) => …` when single-expression              |
 
