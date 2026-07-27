@@ -1,79 +1,70 @@
 # Laravel Playbook
 
-The package author's playbook. Ecosystem-wide patterns for crafting, shipping, and sustaining pinnacle Laravel packages.
+The package author's playbook. This plugin knows **how to ship** — skeleton to
+release pipeline.
 
-This plugin knows **how to build packages** — from skeleton to release pipeline. The kernel knows how to think. `laravel-ddd` knows how to code Laravel. This knows how to ship Laravel packages that developers love.
+29 skills, distilled from the packages the Laravel ecosystem actually depends on.
+
+---
+
+## Install
+
+```
+/plugin install laravel-playbook@the-foundry
+```
+
+Pulls in [`kernel`](../kernel/README.md) automatically.
 
 ---
 
 ## Philosophy
 
-DX is the north star. Every decision — API shape, config design, error messages, documentation structure — is evaluated through one lens: how does the developer experience this?
+DX is the north star. API shape, config design, error messages, docs structure —
+each judged by one question: how does this feel to the developer using it?
 
-Zero-config defaults. Progressive disclosure. Errors that teach. Code that autocompletes.
+Zero-config defaults. Progressive disclosure. Errors that teach. Code that
+autocompletes.
 
-Study the best. Then surpass them.
-
----
-
-## What You Get
-
-```
-Package skeleton        Directory layout, composer.json, auto-discovery
-Service providers       Declarative providers, lifecycle hooks, bindings
-Config design           Self-documenting, env() toggles, zero-config defaults
-API design              Fluent builders, progressive disclosure, named constructors
-Generators              Install commands, stub publishing, make: commands
-Macros                  Macroable, mixins, runtime extension
-Fakes                   ::fake() convention for testable package interactions
-Exception hierarchy     Contextual messages, one class per failure mode
-Extension points        Manager/driver, adapters, plugins, config binding, events
-README patterns         Benefit-first H1, badge trio, show code immediately
-Documentation           docs/ structure, upgrade guides, progressive depth
-Model traits            Boot/initialize conventions, concerns decomposition
-Testing setup           Pest + Testbench, arch tests, ::fake(), ::test()
-CI/CD pipeline          GitHub Actions workflows, matrix testing, auto-fix
-Branding                Package identity, social cards, badge trio, first impressions
-Deprecation             Sunset lifecycle, trigger_deprecation(), Rector migration
-Middleware              Route middleware, conditional registration, parameter parsing
-Views                   Blade components, view publishing, render hooks
-Extraction workflow     Identifying extractable code, competitive analysis, shipping
-Release pipeline        GitHub releases, auto-changelog, Packagist auto-publish
-```
+Study the best, then surpass them.
 
 ---
 
 ## Skills
 
-29 skills. Three types.
-
 ```
-ground-*     Philosophy and mindset (3 skills)
-craft-*      How to build (19 skills)
-decide-*     When to use what (7 skills)
+ground-*     Philosophy and mindset     3
+craft-*      How to build              19
+decide-*     When to use what           7
 ```
 
-### Highlights
+Worth knowing about:
 
 ```
-ground-playbook      Core philosophy — DX as the north star
-craft-provider       Service providers — three approaches, declarative core
-craft-api            API design — fluent builders, progressive disclosure
-craft-generator      Generators — install commands as onboarding UX
-craft-fake           Fakes — ::fake() convention for testable packages
-craft-test-suite     Testing — Pest, Testbench, arch tests, ::test()
-decide-agnostic      Framework-agnostic core vs Laravel-only
-decide-extraction    Extracting internal code to a standalone package
-decide-positioning   Evaluating the landscape before building
+ground-playbook      DX as the north star
+craft-provider       Service providers — declarative core, lifecycle hooks
+craft-api            Fluent builders, progressive disclosure, named constructors
+craft-generator      Install commands as onboarding UX
+craft-fake           The ::fake() convention, so consumers can test you
+craft-exception      One class per failure mode, messages that teach
+craft-test-suite     Pest + Testbench, arch tests, ::test()
+craft-ci             GitHub Actions matrices, auto-fix workflows
+craft-deprecation    Sunset lifecycle, trigger_deprecation(), Rector migrations
+decide-agnostic      Framework-agnostic core versus Laravel-only
+decide-extraction    When internal code has earned its own package
+decide-positioning   Read the landscape before you build
 ```
 
-Run `/skills laravel-playbook` to see all.
+The full set covers skeleton and composer.json, config design, macros, model
+traits, middleware, views, README patterns, docs structure, branding, and the
+release pipeline.
+
+Browse them in [`skills/`](skills/).
 
 ---
 
 ## Sources
 
-Patterns distilled from the Laravel ecosystem's best authors:
+Patterns read out of the ecosystem's best work:
 
 ```
 Taylor Otwell        Cashier, Sanctum, Scout, Horizon, Pennant, Pulse
@@ -86,23 +77,12 @@ Barry vd. Heuvel     Debugbar, IDE Helper
 Tim MacDonald        callable-fake, log-fake, has-parameters
 Jason McCreary       Laravel Shift, rector-laravel
 Marcel Pociot        BeyondCode, package auto-discovery
-Tighten / Shift      Laravel Shift, Blueprint, Ziggy, Duster
-Spatie               laravel-permission, medialibrary, laravel-data, and more
-```
-
----
-
-## Installation
-
-Requires `kernel` for cognitive patterns.
-
-```
-/plugin install kernel@the-foundry
-/plugin install laravel-playbook@the-foundry
+Tighten / Shift      Blueprint, Ziggy, Duster
+Spatie               laravel-permission, medialibrary, laravel-data
 ```
 
 ---
 
 ## License
 
-MIT
+[MIT](../../LICENSE)

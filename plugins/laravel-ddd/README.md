@@ -1,32 +1,38 @@
 # Laravel DDD
 
-Opinionated Laravel patterns for domain-driven design.
+Domain-driven design for Laravel. This plugin knows **what to build** and **when
+to use it**.
 
-This plugin knows **what to build** and **when to use it**. The kernel knows how to think. This knows how to code Laravel.
+46 skills, extracted from production and from *Laravel Beyond CRUD*.
+
+---
+
+## Install
+
+```
+/plugin install laravel-ddd@the-foundry
+```
+
+Pulls in [`kernel`](../kernel/README.md) automatically.
 
 ---
 
 ## Philosophy
 
-Controllers don't do work. Actions do. Models own their behavior. DTOs carry data. Fail fast at boundaries.
+Controllers don't do work — Actions do. Models own their behavior. DTOs carry
+data. Fail fast at the boundary.
 
-Every pattern exists for a reason. Every decision has a heuristic.
+Every pattern earns its place. Every choice has a heuristic behind it.
 
----
-
-## Grounding
-
-When you enter Laravel context, Claude activates `ground-laravel` — the Laravel philosophy:
+When a task enters Laravel context, `ground-laravel` activates on its own:
 
 ```
-Convention over configuration     Follow defaults. Custom only when necessary.
+Convention over configuration     Follow defaults. Customize only with cause.
 Eloquent as truth                 Don't abstract around the ORM.
 Thin controllers                  Controllers route. Actions execute.
 Batteries included                Laravel first. Spatie second. Custom last.
 Named parameters                  2+ args? Name them. Closures too.
 ```
-
-This happens automatically via the kernel's `evaluate.sh`. No manual invocation needed.
 
 ---
 
@@ -36,61 +42,53 @@ This happens automatically via the kernel's `evaluate.sh`. No manual invocation 
 Thin controllers      Traffic cops, not business logic
 Pure actions          One public method, one responsibility
 Typed DTOs            Spatie Laravel Data v4
-Smart models          Eloquent as source of truth
-Clean queries         QueryBuilder classes over scopes
-Defensive code        Fail fast, guard clauses, null objects
+Smart models          Eloquent as the source of truth
+Clean queries         QueryBuilder classes over scope soup
+Defensive code        Guard clauses, null objects, fail fast
 ```
 
 ---
 
 ## Skills
 
-46 skills. Three types.
-
 ```
-ground-*     Philosophy and mindset (7 skills)
-craft-*      How to build (22 skills)
-decide-*     When to use what (16 skills)
+ground-*     Philosophy and mindset    7
+craft-*      How to build             22
+decide-*     When to use what         16
+polish       Laravel polish passes     1
 ```
 
-### Highlights
+Worth knowing about:
 
 ```
 craft-action         Single-purpose Actions, not service sprawl
 craft-concern        Thin traits — delegate to builders, collections, actions
 craft-dto            Spatie Laravel Data v4 value objects
 craft-model-state    Explicit states over boolean flags
-craft-guard-clause   Handle bad cases first
-decide-extraction    When to extract to Action class
-decide-events        Events vs direct calls
+craft-guard-clause   Handle the bad case first, then return
+decide-extraction    When code earns its own Action class
+decide-events        Events versus a direct call
+decide-dto-vs-array  Where the type-safety line sits
 ```
 
-Run `/skills laravel-ddd` to see all.
+Browse all of them in [`skills/`](skills/).
 
 ---
 
-## Installation
+## Assumed Packages
 
-Requires `kernel` for cognitive patterns.
-
-```
-/plugin install kernel@the-foundry
-/plugin install laravel-ddd@the-foundry
-```
-
----
-
-## Recommended Packages
-
-The skills assume these are installed:
+The skills are written against these:
 
 ```
 spatie/laravel-data           DTOs
 spatie/laravel-model-states   State machines
 ```
 
+Neither is required to install the plugin — only to follow the patterns that use
+them.
+
 ---
 
 ## License
 
-MIT
+[MIT](../../LICENSE)

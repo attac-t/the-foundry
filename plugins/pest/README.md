@@ -1,41 +1,32 @@
 # Pest
 
-Pest v3 testing syntax.
+Pest v3 testing. This plugin knows **how to write the test**.
 
-The kernel tells you **what to test**. This tells you **how to write it**.
+11 skills. `kernel:craft-test` decides *what* deserves a test; this decides how it
+reads.
+
+---
+
+## Install
+
+```
+/plugin install pest@the-foundry
+```
+
+Pulls in [`kernel`](../kernel/README.md) automatically.
 
 ---
 
 ## Philosophy
 
-Tests should read like specifications. If you need to read the implementation to understand the test, the test failed.
-
----
-
-## What You Get
-
-```
-describe()     Group related tests by behavior
-it()           Expressive test names in plain English
-expect()       Fluent assertions that read naturally
-```
-
----
-
-## Installation
-
-Requires `kernel` for testing philosophy (`craft-test`).
-
-```
-/plugin install kernel@the-foundry
-/plugin install pest@the-foundry
-```
+A test is a specification. If you have to read the implementation to understand
+the test, the test failed.
 
 ---
 
 ## The Split
 
-**Kernel (`kernel:craft-test`)**: What to test
+**`kernel:craft-test`** — what to test:
 
 ```
 Test behavior, not implementation
@@ -43,7 +34,7 @@ Cover the edges, not every line
 Skip the obvious, test the risky
 ```
 
-**Pest (`pest:craft-test`)**: How to write it
+**`pest:craft-test`** — how to write it:
 
 ```php
 describe('Order creation', function () {
@@ -68,6 +59,26 @@ describe('Order creation', function () {
 
 ---
 
+## Skills
+
+```
+ground-suite            What to test, what to skip
+ground-prose            Tests that read like specifications
+craft-test              The unit of specification
+craft-organization      File layout for a large suite
+craft-dataset           Same test, different inputs
+craft-factory-state     A DSL for building test state
+craft-expectation-chain Fluent assertions without the traps
+craft-custom-expectation When to extract your own, and how
+craft-arch              Structure as code
+decide-mock             Real dependency or fake
+polish                  Test-specific polish passes
+```
+
+Browse them in [`skills/`](skills/).
+
+---
+
 ## License
 
-MIT
+[MIT](../../LICENSE)

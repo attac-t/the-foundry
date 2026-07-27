@@ -1,20 +1,22 @@
 # Kernel
 
-A Cognitive OS for Claude Code.
+A cognitive OS for Claude Code. It knows **how to think**, not **what to code**.
 
-The kernel is the thinking layer. It knows **how to think**, not **what to code**.
-
----
-
-## Philosophy
-
-When code requires explanation, the abstraction is wrong. When you feel resistance, stop. The code is fighting you.
-
-Claude is agreeable—it implements whatever you ask, even when it shouldn't. This kernel instills the instinct to push back.
+Stack-agnostic. Every other plugin in The Foundry builds on it.
 
 ---
 
-## What You Get
+## Install
+
+```
+/plugin install kernel@the-foundry
+```
+
+Verify with `/evaluate`.
+
+---
+
+## What Changes
 
 ```
 No orientation commands    Claude already knows your project
@@ -25,144 +27,75 @@ No drift                   Your goal echoes before every prompt
 
 ---
 
-## Skills
+## The Problems
 
-### Ground — Philosophy
+| Problem | Why it happens | The fix |
+|---|---|---|
+| **Drift** | Goals fade after 50+ tool calls. Early instructions go invisible. | `anchor` reprints your objective every prompt. |
+| **Cold start** | New sessions begin empty. | `remember` loads working memory; `ground` loads philosophy. |
+| **Dead skills** | Skills in a directory activate ~20% of the time. | `evaluate` forces a yes/no on each one — 84% in [Spence's measurements][spence]. |
+| **Amnesia** | Compaction discards the objective. | `working.md` lives outside the context window. |
+| **Hallucination** | Claude invents methods and config keys. | `ground-discovery`: read the source, then write. |
+| **Over-agreement** | Claude implements your worst idea, well. | `ground-elegance`: resistance means the abstraction is wrong. |
 
-Loaded at session start. Shapes every decision.
+---
+
+## Lifecycle
+
+Eight hooks. All read-only — they read git state and memory files, then print text.
 
 ```
-elegance       Sense resistance. Stop when code fights you.
+COLD START (SessionStart)
+    ├── remember   Load working.md
+    └── ground     Load philosophy
+    │
+    ▼
+PROMPT (UserPromptSubmit)              ← Anchor → Reflect → Act
+    ├── anchor     Echo the objective        "Here's your goal"
+    ├── recite     Prompt a memory update    "Did you make progress?"
+    ├── evaluate   Force a skill yes/no      "What applies NOW?"
+    └── delegate   Prompt task assessment    (when a blueprint is active)
+    │
+    ▼
+AFTER AN EDIT (PostToolUse)
+    └── consider   Prompt an ADR check       (skips tests, config, docs)
+    │
+    ▼
+STOP (Stop)
+    └── verify     Flag incomplete tasks
+```
+
+Read them yourself — [`hooks/`](hooks/). None is longer than a screen.
+
+---
+
+## Skills
+
+**Ground** — philosophy. Loaded at session start, shapes every decision.
+
+```
+elegance       Sense resistance. Stop when the code fights you.
 naming         Specific over generic. Names reveal intent.
 discovery      Research before implementation.
 context        Manage the context budget.
 recitation     Anchor objectives. Solve drift.
 orientation    Load context. Solve cold start.
 delegation     Know when to code and when to lead.
-interview      Extract requirements via questions.
+interview      Extract requirements before building.
 topic          Isolate memory per branch.
+stack          Ground the right framework philosophy.
 ```
 
-### Craft — Building
-
-The craftsman's way to do X.
-
-**Artifacts**
-```
-adr            Architecture Decision Records
-blueprint      Task tracking and roadmaps
-flow           ASCII flowcharts
-handoff        State transfer between sessions
-map            Elegant directory trees
-observation    Record learnings and discoveries
-readme         Documentation that doesn't suck
-```
-
-**OS Extension**
-```
-skill          Templates for new skills
-agent          Sub-agent definitions
-command        Slash command triggers
-hook           OS reflexes
-plugin         Plugin architecture
-```
-
-**Quality**
-```
-polish          Deep code polish (seven-pass protocol)
-review          Ruthless critic mentality
-test            Testing philosophy (what to test, not syntax)
-evaluate        Verify the OS is functioning
-evaluate-plugin Verify plugin structure
-```
-
----
-
-## Lifecycle
+**Craft** — how to build a thing well.
 
 ```
-COLD START (SessionStart)
-    │
-    ├── remember   Load working.md
-    └── ground     Load philosophy
-    │
-    ▼
-PROMPT (UserPromptSubmit)              ← Anchor past → Reflect → Act
-    │
-    ├── anchor     Echo objective       "Here's your goal"
-    ├── recite     Prompt memory update "Did you make progress?"
-    ├── evaluate   Force skill YES/NO   "What skills apply NOW?"
-    └── delegate   Prompt task assessment (when blueprint active)
-    │
-    ▼
-RESPONSE (PostToolUse)
-    │
-    └── consider   Prompt ADR check (skips tests, config, docs)
-    │
-    ▼
-STOP (Stop)
-    │
-    └── verify     Check for incomplete tasks
+Artifacts       adr, blueprint, flow, handoff, map, memory,
+                observation, readme, rfc
+OS extension    skill, agent, command, hook, plugin, plugin-update
+Quality         review, test, polish, evaluate-plugin
 ```
 
----
-
-## Problems Solved
-
-### Context Drift
-
-Goals fade after 50+ tool calls. Early instructions become invisible.
-
-**Solution:** `anchor` echoes your objective before every prompt. `recite` prompts memory updates. Both fire on `UserPromptSubmit`—the Manus pattern of constant reinforcement.
-
-### Cold Start
-
-New sessions begin empty.
-
-**Solution:** `remember` loads working memory. `ground` loads philosophy.
-
-### Skill Activation
-
-Skills activate ~20% naturally. Your patterns get ignored.
-
-**Solution:** `evaluate` forces YES/NO commitment. Activation jumps to 84%.
-
-### Memory Loss
-
-Compaction discards objectives and lessons learned.
-
-**Solution:** `working.md` persists outside context. `recite` prompts updates. Memory survives compaction if you write it down.
-
-### Hallucination
-
-Claude guesses methods and invents APIs.
-
-**Solution:** `ground-discovery` instills the habit: check first, code second.
-
-### Over-Agreement
-
-Claude implements whatever you ask, even bad ideas.
-
-**Solution:** `ground-elegance` instills resistance.
-
----
-
-## Working Memory
-
-Branch-aware. Each topic gets its own memory.
-
-```
-.claude/memory/
-├── main/
-│   ├── working.md
-│   ├── spec.md
-│   └── adr/
-├── feat/auth/
-│   ├── working.md
-│   └── spec.md
-└── fix/bug-123/
-    └── working.md
-```
+Browse them all in [`skills/`](skills/), or run `claude plugin list`.
 
 ---
 
@@ -171,21 +104,48 @@ Branch-aware. Each topic gets its own memory.
 ```
 /design      Interview → spec → new session
 /rfc         Interview → design proposal
-/blueprint   Load roadmap
-/polish      Deep code polish
-/refine      Spawn reviewer
-/evaluate    Verify the OS
-/map         Elegant directory tree
+/blueprint   Load the task ledger
+/polish      Seven-pass code polish
+/refine      Spawn a ruthless reviewer
+/evaluate    Verify the OS is live
+/map         Annotated directory tree
 /flow        ASCII flowchart
-/handoff     Create state transfer document
-/observe     Record a learning or discovery
+/handoff     Write a state-transfer document
+/observe     Record a learning
+/claude-md   Generate a CLAUDE.md by interview
 ```
+
+---
+
+## Memory
+
+Branch-scoped. One topic, one memory, no cross-contamination.
+
+```
+.claude/memory/
+├── main/
+│   ├── working.md      Goal, constraints, focus, failures
+│   ├── blueprint.md    Task ledger
+│   └── adr/            Decisions, and why
+├── feat/auth/
+│   ├── working.md
+│   └── spec.md
+└── fix/bug-123/
+    └── working.md
+```
+
+`working.md` is cognitive RAM: rewritten, not appended. The filesystem is
+unlimited; the context window is not.
 
 ---
 
 ## Output Style
 
-Set in `.claude/settings.json`:
+```
+/output-style kernel:craftsman
+```
+
+Direct, opinionated, no hedging. Set it permanently in `.claude/settings.json`:
 
 ```json
 {
@@ -193,101 +153,47 @@ Set in `.claude/settings.json`:
 }
 ```
 
-The Craftsman voice: direct, opinionated, elegant. No hedging.
-
 ---
 
-## Installation
+## Extending
 
-```
-/plugin install kernel@the-foundry
-```
+Writing a stack plugin? See [Authoring a stack plugin](docs/authoring-stack-plugins.md).
 
-The kernel is stack-agnostic. For Laravel patterns, add:
-
-```
-/plugin install laravel-ddd@the-foundry
-```
-
-For Pest testing syntax, add:
-
-```
-/plugin install pest@the-foundry
-```
-
----
-
-## Stack Plugin Pattern
-
-The kernel is stack-agnostic. Stack plugins extend it with domain-specific philosophy.
-
-### Stack Grounding
-
-Stack plugins provide `ground-*` skills that establish framework philosophy.
-
-The kernel's `evaluate.sh` evaluates ALL skills from ALL plugins on every prompt. When Claude detects a task requires Laravel context, it activates `ground-laravel`. Vue context? `ground-vue`.
-
-No new hooks needed. No detection scripts. The machinery exists.
-
-### Anatomy of a Stack Plugin
-
-```
-plugins/my-stack/
-├── .claude-plugin/plugin.json
-├── skills/
-│   ├── ground-my-stack/      # Philosophy (recommended)
-│   │   └── SKILL.md
-│   ├── craft-*/              # How to build
-│   └── decide-*/             # When to use what
-└── README.md
-```
-
-### Skill Types
-
-| Prefix | Purpose | When Activated |
-|--------|---------|----------------|
-| `ground-*` | Philosophy, mindset | Task enters stack context |
-| `craft-*` | How to build | Implementation needed |
-| `decide-*` | When to use what | Architectural choice |
-
-### Writing a ground-* Skill
-
-The description signals when to activate:
-
-```yaml
----
-name: ground-my-stack
-description: My-Stack philosophy. [Core tenet]. Invoke ONCE when entering My-Stack context.
----
-```
-
-The "ONCE" hint tells Claude not to re-invoke on every prompt.
-
-The body establishes mindset — not instructions. Philosophy, not patterns.
+The short version: ship `ground-*` skills for philosophy, `craft-*` for building,
+`decide-*` for choices. The kernel's `evaluate` hook already sees every skill from
+every installed plugin. No new hooks required.
 
 ---
 
 ## Troubleshooting
 
-Skills not activating? Hooks silent?
-
 ```
 /evaluate
 ```
 
-Check:
-- Scripts executable? `chmod +x hooks/*.sh`
-- Plugin installed? `/plugins list`
+If hooks are silent:
 
-Run `/evaluate` to verify hooks are firing.
+| Check | Fix |
+|---|---|
+| Scripts executable? | `chmod +x hooks/*.sh` |
+| Plugin installed? | `claude plugin list` |
+| Manifest valid? | `claude plugin validate ./plugins/kernel --strict` |
 
 ---
 
 ## References
 
+- [Manus: Context Engineering](https://manus.im/blog/Context-Engineering-for-AI-Agents-Lessons-from-Building-Manus) — recitation, filesystem as memory
+- [Scott Spence: Skill Activation][spence] — the 20% and 84% figures
+
+[spence]: https://scottspence.com/posts/how-to-make-claude-code-skills-activate-reliably
 - [Sankalp: Claude Code 2.0](https://sankalp.bearblog.dev/my-experience-with-claude-code-20-and-how-to-get-better-at-using-coding-agents/)
-- [Manus: Context Engineering](https://manus.im/blog/Context-Engineering-for-AI-Agents-Lessons-from-Building-Manus)
-- [Scott Spence: Skill Activation](https://scottspence.com/posts/how-to-make-claude-code-skills-activate-reliably)
+
+---
+
+## License
+
+[MIT](../../LICENSE)
 
 ---
 
