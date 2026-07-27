@@ -16,7 +16,7 @@ IN_PROGRESS=$(grep -c '| in-progress |' "$BLUEPRINT" 2>/dev/null) || IN_PROGRESS
 # No in-progress tasks? Allow stop.
 [ "$IN_PROGRESS" -eq 0 ] && exit 0
 
-# Warn about incomplete tasks (don't block, just warn)
+# Block the stop. Claude must finish, defer, or hand off first.
 cat <<EOF
 {
   "decision": "block",

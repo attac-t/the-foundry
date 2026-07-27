@@ -36,23 +36,40 @@ The `kernel` plugin registers shell hooks that Claude Code runs automatically:
 | `evaluate.sh`   | Every prompt       | Prints a skill-evaluation prompt   |
 | `delegate.sh`   | Every prompt       | Prints a delegation reminder       |
 | `consider.sh`   | After a file edit  | Prints an ADR reminder             |
-| `verify.sh`     | Session stop       | Reads the blueprint, prints status |
+| `verify.sh`     | Session stop       | Reads the blueprint. **Can block the stop** — see below |
 
-All eight are read-only. They read your git branch and files under
-`.claude/memory/`, then write text to stdout. They make no network calls and write
-no files.
+Two shared helpers sit in `hooks/lib/` and are called by the hooks above rather
+than by Claude Code: `resolve-memory.sh` (works out the branch memory path) and
+`extract-objective.sh` (pulls the goal line out of `working.md`). Ten shell files
+in total.
 
-The only programs they invoke are `git` and standard POSIX utilities — `cat`,
-`grep`, `sed`, `sort`, `head`, `find`, `basename` — plus [`jq`][jq] in
-`consider.sh`. If `jq` is absent, that one hook exits quietly rather than guess.
+All ten are read-only. They read your git branch and files under
+`.claude/memory/`, then write to stdout. They make no network calls and write no
+files.
+
+`verify.sh` is the one hook that does more than print. If your blueprint lists
+in-progress tasks, it emits `{"decision": "block"}`, which tells Claude Code not to
+end the turn until you finish, defer, or hand off. It changes control flow, not
+your filesystem.
+
+The programs they invoke are `git` and standard POSIX utilities — `cat`, `grep`,
+`sed`, `sort`, `head`, `find`, `basename`, `dirname`, `pwd`, `command` — plus
+[`jq`][jq] in `consider.sh`. If `jq` is absent, that hook exits quietly rather
+than guess.
 
 [jq]: https://jqlang.github.io/jq/
 
 Read them yourself — they are short:
 [`plugins/kernel/hooks/`](plugins/kernel/hooks/)
 
-CI enforces this. Every pull request runs ShellCheck over every hook, and a
-network-call check that fails the build if a hook gains `curl`, `wget`, or `nc`.
+CI guards this on every pull request: ShellCheck over all ten files, and a check
+that fails the build if a hook gains `curl`, `wget`, `nc`, `ssh`, `scp`, `rsync`,
+an interpreter (`python`, `perl`, `ruby`, `osascript`), or `/dev/tcp`.
+
+That check is a regression guard, not a sandbox — a determined script could still
+reach the network some other way. The real assurance is that these files are short
+enough to read in a sitting, which is why they are linked above rather than
+summarised.
 
 The other three plugins ship skills only — markdown, no executable code.
 
