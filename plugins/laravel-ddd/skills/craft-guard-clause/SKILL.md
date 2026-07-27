@@ -15,7 +15,7 @@ description: Crafting Guard Clauses. Early returns for preconditions.
 
 ## The Anti-Patterns
 
-| ❌ Don't                     | ✅ Do                          | Why                           |
+| Don't                       | Do                            | Why                           |
 |-----------------------------|-------------------------------|-------------------------------|
 | Nested if/else trees        | Guard clauses                 | Readability, maintainability  |
 | Check then continue         | Check then exit               | Happy path stays clear        |

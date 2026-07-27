@@ -9,7 +9,7 @@
 ```
 User: Execute the spec
 
-Claude: *reads $MEMORY_DIR/spec.md*
+Claude: *reads .claude/memory/<branch>/spec.md*
 
 Creating blueprint.
 
@@ -89,7 +89,7 @@ Claude: Deferring Task #4.
 ```
 User: Where were we?
 
-Claude: *reads $MEMORY_DIR/blueprint.md*
+Claude: *reads .claude/memory/<branch>/blueprint.md*
 
 Resumed.
 - Phase: Implementation

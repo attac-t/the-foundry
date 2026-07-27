@@ -1,7 +1,7 @@
 ---
 name: craft-flow
-trigger: flowchart, lifecycle, process diagram, system flow
 description: Generate elegant ASCII flowcharts.
+when_to_use: flowchart, lifecycle, process diagram, system flow
 ---
 
 # Skill: Craft Flow

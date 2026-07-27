@@ -16,7 +16,7 @@ description: Crafting ViewModels. Data transformation for views.
 
 ## The Anti-Patterns
 
-| ❌ Don't               | ✅ Do                      | Why                         |
+| Don't                 | Do                        | Why                         |
 |-----------------------|---------------------------|-----------------------------|
 | View Composers        | ViewModel in controller   | Explicit > implicit         |
 | Duplicate create/edit | One ViewModel, optional model | DRY, single source of truth |

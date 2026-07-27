@@ -21,7 +21,7 @@ description: Crafting DTOs with Spatie Laravel Data v4.
 
 ## The Anti-Patterns
 
-| ❌ Don't | ✅ Do | Why |
+| Don't   | Do   | Why |
 |----------|-------|-----|
 | `DataCollection` | Native `Collection` | v4 preferred for basic nesting. |
 | `$dto->except('id')->toArray()` | `$dto->all()` | Cleaner. Handle Optional in action. |

@@ -16,7 +16,7 @@ description: Crafting Shared Domain. Cross-cutting concerns namespace.
 
 ## The Anti-Patterns
 
-| ❌ Don't                    | ✅ Do                        | Why                          |
+| Don't                      | Do                          | Why                          |
 |----------------------------|-----------------------------|-----------------------------|
 | Dump "common" code         | Place in owning domain      | Someone owns it             |
 | Business logic in Shared   | Keep in specific domain     | Business != shared          |

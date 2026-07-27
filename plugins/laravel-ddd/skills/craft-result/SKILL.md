@@ -16,7 +16,7 @@ description: Crafting Result Objects. Rich outcomes beyond success/failure.
 
 ## The Anti-Patterns
 
-| ❌ Don't                | ✅ Do                        | Why                          |
+| Don't                  | Do                          | Why                          |
 |------------------------|-----------------------------|-----------------------------|
 | Return bool            | Return Result object        | No context on failure        |
 | Throw on expected fail | Return `Result::failed()`   | Expected != exceptional      |

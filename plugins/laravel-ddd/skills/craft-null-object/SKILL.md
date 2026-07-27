@@ -15,7 +15,7 @@ description: Crafting Null Objects. Safe defaults instead of null checks.
 
 ## The Anti-Patterns
 
-| ❌ Don't                           | ✅ Do                            | Why                           |
+| Don't                             | Do                              | Why                           |
 |-----------------------------------|----------------------------------|-------------------------------|
 | `$user ? $user->name : 'Guest'`   | `$user->name` with null object   | Eliminate null checks         |
 | Null checks in every template     | `withDefault()` on relationship  | Single source of truth        |

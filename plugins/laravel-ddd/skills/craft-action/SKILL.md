@@ -17,7 +17,7 @@ description: Crafting an Action. The heart of business logic.
 
 ## The Anti-Patterns
 
-| ❌ Don't                       | ✅ Do                          | Why                       |
+| Don't                         | Do                            | Why                       |
 |-------------------------------|-------------------------------|---------------------------|
 | `DB::transaction()` in Action | Transaction in Controller     | Prevents composition      |
 | Validate in Action            | Validate in FormRequest       | Single responsibility     |

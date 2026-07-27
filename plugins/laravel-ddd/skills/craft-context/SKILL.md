@@ -16,7 +16,7 @@ description: Crafting Context Objects. Parameter encapsulation for complex opera
 
 ## The Anti-Patterns
 
-| ❌ Don't                     | ✅ Do                          | Why                           |
+| Don't                       | Do                            | Why                           |
 |-----------------------------|-------------------------------|-------------------------------|
 | 5+ action parameters        | Context object                | Clarity, maintainability      |
 | Generic constructor         | Named constructors            | Intent is explicit            |

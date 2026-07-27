@@ -16,7 +16,7 @@ description: Crafting Value Objects. Immutable, serialization-safe.
 
 ## The Anti-Patterns
 
-| ❌ Don't               | ✅ Do                        | Why                         |
+| Don't                 | Do                          | Why                         |
 |-----------------------|-----------------------------|-----------------------------|
 | Mutable properties    | `readonly` class            | VOs don't change            |
 | Skip validation       | Validate in constructor     | Invalid VOs shouldn't exist |

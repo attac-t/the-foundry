@@ -16,7 +16,7 @@ This is not a "plugin". It is a **Cognitive Operating System**.
     *   **Memory**: Use `SessionStart` to inject the `working.md` context.
     *   **Details**: See `craft-hook` for injection rules and patterns.
 
-*   **The Brain (Memory)**: `$CLAUDE_MEMORY_DIR/working.md` (default: `.claude/memory/`). Mutable Context.
+*   **The Brain (Memory)**: `.claude/memory/<branch>/working.md`. Mutable context. `CLAUDE_MEMORY_DIR` overrides the `.claude/memory` base; the branch segment is always appended.
 *   **The Muscles (Agents)**: `agents/`. (Execution Roles).
 *   **The Voice (Commands)**: `commands/`. (Triggers).
 *   **The Knowledge (Skills)**: `skills/`. (Atomic Components).

@@ -16,7 +16,7 @@ description: Crafting Event-Driven Models. Side effects via observers.
 
 ## The Anti-Patterns
 
-| ❌ Don't                  | ✅ Do                          | Why                        |
+| Don't                    | Do                            | Why                        |
 |--------------------------|-------------------------------|----------------------------|
 | Logic in `boot()`        | Event + Subscriber            | Testable, traceable        |
 | Direct method calls      | Dispatch event                | Loose coupling             |

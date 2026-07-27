@@ -16,7 +16,7 @@ description: Crafting Registries. Multi-provider handler dispatch.
 
 ## The Anti-Patterns
 
-| ❌ Don't              | ✅ Do                       | Why                        |
+| Don't                | Do                         | Why                        |
 |----------------------|----------------------------|----------------------------|
 | Switch statements    | Registry lookup            | Open for extension         |
 | Return null          | Throw on missing           | Fail fast, debug easy      |

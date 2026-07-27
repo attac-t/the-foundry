@@ -13,8 +13,8 @@ Run this at session start or when you feel lost.
 
 ## The Protocol
 
-1. **Read Memory**: `$MEMORY_DIR/working.md`, `$MEMORY_DIR/blueprint.md`.
-2. **Read Decisions**: `ls docs/*/ADR`, read relevant ADRs.
+1. **Read Memory**: `.claude/memory/<branch>/working.md`, `.claude/memory/<branch>/blueprint.md`.
+2. **Read Decisions**: `ls docs/adr/`, read relevant ADRs.
 3. **State**: "Oriented. Mode: [Planning/Execution]. Task: [Name]."
 
 ## The Anti-Patterns

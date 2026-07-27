@@ -43,4 +43,4 @@ Ask: *"Will I access this relationship in a loop?"*
 
 ## Real-World Examples
 
-For concrete examples from this codebase, see [examples.md](examples.md).
+See [examples.md](examples.md).

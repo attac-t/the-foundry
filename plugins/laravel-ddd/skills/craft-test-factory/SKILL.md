@@ -16,7 +16,7 @@ description: Crafting Test Factories. Beyond Laravel defaults.
 
 ## The Anti-Patterns
 
-| ❌ Don't                | ✅ Do                        | Why                        |
+| Don't                  | Do                          | Why                        |
 |------------------------|-----------------------------|-----------------------------|
 | Mutable state          | Clone on every modifier     | Prevents test pollution     |
 | Random unique values   | Static incrementing counter | Deterministic, debuggable   |

@@ -19,7 +19,7 @@ description: Crafting Queueable Actions. Skip job boilerplate.
 
 ## The Anti-Patterns
 
-| ❌ Don't                          | ✅ Do                              | Why                       |
+| Don't                            | Do                                | Why                       |
 |----------------------------------|-----------------------------------|---------------------------|
 | Job class per action             | `$action->onQueue()`              | Eliminates boilerplate    |
 | `Action::onQueue()` statically   | Resolve, then call                | It is an instance method  |

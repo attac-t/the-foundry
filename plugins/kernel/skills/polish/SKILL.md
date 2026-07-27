@@ -98,7 +98,7 @@ Re-read every changed file. The **vertical scan test**: open the file, scan 3 se
 
 ### Phase 5: Report
 
-Produce a report at `$CLAUDE_MEMORY_DIR/reviews/{NNN}-polish-{scope}.md`.
+Produce a report at `.claude/memory/<branch>/reviews/{NNN}-polish-{scope}.md`.
 
 See [examples.md](examples.md) for the report template.
 
@@ -117,7 +117,7 @@ For large codebases (50+ files), partition by namespace or directory.
 
 ### Agent Protocol
 
-Each agent follows Phases 1-5 independently within their partition. After completion, they produce a report at `$CLAUDE_MEMORY_DIR/reviews/{NNN}-polish-{partition}.md`.
+Each agent follows Phases 1-5 independently within their partition. After completion, they produce a report at `.claude/memory/<branch>/reviews/{NNN}-polish-{partition}.md`.
 
 ### Lead Protocol
 
@@ -125,7 +125,7 @@ Each agent follows Phases 1-5 independently within their partition. After comple
 2. Wait for all agents to complete
 3. Read all agent reports
 4. Run the **full test suite** one final time
-5. Merge into a master report at `$CLAUDE_MEMORY_DIR/reviews/{NNN}-polish-master.md`
+5. Merge into a master report at `.claude/memory/<branch>/reviews/{NNN}-polish-master.md`
 
 ### Cross-Partition Rule
 

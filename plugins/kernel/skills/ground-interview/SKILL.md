@@ -58,7 +58,7 @@ Before implementing any feature that involves:
 
 ## The Output
 
-Write to `$CLAUDE_MEMORY_DIR/spec.md`:
+Write to `.claude/memory/<branch>/spec.md`:
 - High-level objective
 - Mid-level objectives
 - Implementation notes

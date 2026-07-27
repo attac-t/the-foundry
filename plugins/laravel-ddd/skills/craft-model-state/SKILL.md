@@ -16,7 +16,7 @@ description: Crafting model states. Explicit state machines.
 
 ## The Anti-Patterns
 
-| ❌ Don't | ✅ Do | Why |
+| Don't   | Do   | Why |
 |----------|-------|-----|
 | Enum for stateful behavior | State classes | Behavior belongs with state |
 | Transitions in model | Custom transition classes | Single responsibility |

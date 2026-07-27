@@ -16,7 +16,7 @@ description: Crafting Jobs. Queue orchestration, not business logic.
 
 ## The Anti-Patterns
 
-| ❌ Don't                     | ✅ Do                              | Why                          |
+| Don't                       | Do                                | Why                          |
 |-----------------------------|-----------------------------------|------------------------------|
 | Business logic in `handle()` | Call `Action->execute()`          | Jobs aren't domain code      |
 | One job per action          | `$action->onQueue()->execute()`   | Eliminates boilerplate       |

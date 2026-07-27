@@ -25,7 +25,8 @@ Ask yourself:
 ## The Protocol
 
 1. **Start Simple**: One action, one task.
-2. **Extract When Repeated**: Second time you need logic, consider extraction.
+2. **Extract On The Third**: Copy-paste the second occurrence and note it. The rule
+   of three decides — see `decide-abstraction-timing`.
 3. **Compose Don't Inherit**: Actions call actions, not extend them.
 4. **Flatten When Deep**: If chain > 4 levels, rethink the design.
 

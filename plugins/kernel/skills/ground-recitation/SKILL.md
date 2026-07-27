@@ -57,14 +57,18 @@ Reset to template when:
 
 Memory has layers. Each artifact serves a distinct purpose.
 
-| Artifact            | Lifespan     | Purpose        | When                     |
-|---------------------|--------------|----------------|--------------------------|
-| `working.md`        | Session      | Cognitive RAM  | Always active            |
-| `blueprint.md`      | Goal         | Task tracking  | Multi-step work          |
-| `spec.md`           | Goal         | Requirements   | New features             |
-| `adr/*.md`          | Permanent    | Decisions      | Architecture choices     |
-| `handoffs/*.md`     | Transitional | State transfer | Manual: `/handoff`       |
-| `observations/*.md` | Permanent    | Learnings      | Manual: `/observe`       |
+Everything under `.claude/memory/` is gitignored, so anything that must outlive the
+branch gets promoted out of it.
+
+| Artifact                    | Lifespan     | Purpose        | When                 |
+|-----------------------------|--------------|----------------|----------------------|
+| `working.md`                | Session      | Cognitive RAM  | Always active        |
+| `blueprint.md`              | Goal         | Task tracking  | Multi-step work      |
+| `spec.md`                   | Goal         | Requirements   | New features         |
+| `adr/*.md`                  | Draft        | Decisions      | While still arguing  |
+| `handoffs/*.md`             | Transitional | State transfer | Manual: `/handoff`   |
+| `observations/*.md`         | Branch       | Learnings      | Manual: `/observe`   |
+| `docs/adr/*.md` *(committed)* | Permanent  | Decisions      | Promoted on merge    |
 
 ### Clarifying Overlaps
 

@@ -9,7 +9,7 @@ Plugins version independently. Each entry names the plugin it belongs to.
 
 ## Unreleased
 
-### kernel 1.8.0
+### kernel 1.9.0
 
 **Fixed**
 
@@ -50,6 +50,53 @@ in skill content the first pass never opened:
 - The `plugins` badge was advertised and unenforced; skill counts derived from
   bare directories rather than `SKILL.md` files; only the first count claim per
   README was checked.
+
+**Added**
+
+- `evolve` and `retrospect`, two scheduled upkeep skills, plus `/evolve` and
+  `/retrospect`. `retrospect` runs in your project and mines PR reviews, session
+  transcripts, and git history for corrections that should have become memory.
+  `evolve` runs in a plugin repo and audits it against a moving ecosystem using
+  three adversarial roles.
+- [ADR-002](docs/adr/ADR-002-skill-budgets.md): every plugin declares a skill budget
+  the build enforces, and all four ship at their cap. A scheduled improvement loop
+  would otherwise only ever grow, so an addition must now name what it replaces.
+
+**Accuracy pass over all 118 skills**
+
+Every defect below was verified against the source or the official docs before
+changing anything.
+
+- **Memory paths were wrong in five skills.** `$MEMORY_DIR` is a local variable
+  inside the hooks and does not exist for Claude. `CLAUDE_MEMORY_DIR` is real but
+  names the *base* — `resolve-memory.sh` appends the branch — so
+  `$CLAUDE_MEMORY_DIR/spec.md` silently dropped the branch segment. All now use the
+  literal `.claude/memory/<branch>/` that `ground-topic` establishes.
+- **ADRs had three different homes**: `docs/{domain}/ADR/` in `craft-adr`,
+  `docs/*/ADR` in `ground-orientation`, and branch memory in `ground-recitation` —
+  which also called them *Permanent* while pointing at a gitignored directory. One
+  answer now: draft in branch memory, promote to `docs/adr/` in the PR that needs
+  them.
+- **`evaluate-plugin` could not fail.** "Run `/blueprint`. Expectation: it should
+  load the blueprint" is circular, and "if configured in hooks.json" is an escape
+  hatch. Rewritten so every check names its failure signal, including a two-sided
+  test for `consider.sh` — firing on everything is as broken as never firing.
+- **`ground-action-composition` contradicted itself**: its Standard said "Copy-Paste
+  Is OK", its Protocol said extract on the second occurrence. It now defers to
+  `decide-abstraction-timing`, which owns the rule of three.
+- **`trigger:` is not a frontmatter field** (2 skills). Replaced with the documented
+  `when_to_use`, which does exactly that job.
+- **`[!CRITICAL]` is not a GitHub alert type** and rendered as a plain blockquote.
+- **Two "examples from this codebase" leaks** — these ship to strangers.
+- **Emoji register split.** `laravel-ddd` used `❌ Don't / ✅ Do` headers in 21
+  skills; the other three plugins and the `craft-skill` templates use neither.
+  Brought into line with the template, alignment preserved.
+
+Declined, with reasons: the `decide-*` structure of Decision → Heuristic → Quick
+Test is the documented template applied consistently — three views of one decision
+for three moments, not repetition. `craft-job` and `craft-queueable-action` were
+reported as duplicating a rule verbatim; they share one row, which is the seam
+between them.
 
 ### laravel-ddd 1.3.0 · laravel-playbook 2.4.0 · pest 2.2.0
 
@@ -100,8 +147,9 @@ in skill content the first pass never opened:
 
 **Changed**
 
-- `SECURITY.md` documents what all eight hooks do and states they are read-only
-  and offline. CI enforces the offline half.
+- `SECURITY.md` documents all ten shell files, names every program they invoke, and
+  flags that `verify.sh` can block a stop rather than merely print. CI guards the
+  offline claim as a regression check, not as a sandbox — the document says so.
 - `plugins/kernel/README.md` dropped from 294 lines to 198; the stack-plugin
   authoring guide moved to `plugins/kernel/docs/authoring-stack-plugins.md`.
 - Every README's install block is one command now that `dependencies` pulls in the

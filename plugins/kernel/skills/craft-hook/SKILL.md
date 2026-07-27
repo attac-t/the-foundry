@@ -9,7 +9,7 @@ description: How to create a new Reflex (Hook) for the OS.
 
 ## 0. Read The Docs First
 
-> [!CRITICAL]
+> [!WARNING]
 > **Before writing any hook, read the official guide:**
 > https://code.claude.com/docs/en/hooks
 >

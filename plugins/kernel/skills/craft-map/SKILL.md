@@ -1,7 +1,7 @@
 ---
 name: craft-map
-trigger: directory visualization, tree listing, codebase overview
 description: Generate elegant, annotated directory trees.
+when_to_use: directory visualization, tree listing, codebase overview
 ---
 
 # Skill: Craft Map

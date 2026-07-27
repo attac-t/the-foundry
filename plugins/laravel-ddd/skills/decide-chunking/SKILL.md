@@ -43,4 +43,4 @@ Ask: *"Am I modifying records during iteration?"*
 
 ## Real-World Examples
 
-For concrete examples from this codebase, see [examples.md](examples.md).
+See [examples.md](examples.md).
