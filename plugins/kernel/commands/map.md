@@ -3,4 +3,4 @@ description: Generate an elegant, annotated directory tree.
 argument-hint: "<path> [depth]"
 ---
 
-/skills/craft-map "$ARGUMENTS"
+Invoke the `kernel:craft-map` skill for: $ARGUMENTS

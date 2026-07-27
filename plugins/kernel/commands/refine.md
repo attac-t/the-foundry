@@ -3,4 +3,4 @@ description: Activates the ruthless critic to critique and refine code.
 argument-hint: "[file path]"
 ---
 
-/skills/craft-review "$ARGUMENTS"
+Invoke the `kernel:craft-review` skill and review: $ARGUMENTS

@@ -3,4 +3,4 @@ description: Generate an elegant ASCII flowchart.
 argument-hint: "<topic or file>"
 ---
 
-/skills/craft-flow "$ARGUMENTS"
+Invoke the `kernel:craft-flow` skill to chart: $ARGUMENTS

@@ -2,6 +2,7 @@
 description: Run verification tests to ensure the kernel cognitive patterns are active.
 ---
 
-# Evaluate
+Invoke the `kernel:evaluate-plugin` skill and work through its protocol, verifying
+every layer of the OS in order. Report each check as pass or fail with evidence.
 
-/agents/architect "Please execute the 'evaluate-plugin' skill protocol. Systematic verification of all OS layers." "$ARGUMENTS"
+Focus, if given: $ARGUMENTS
