@@ -88,15 +88,13 @@ Deep code goes in `examples.md` next to `SKILL.md`, never inline.
 
 Each plugin versions independently. `plugin.json` is the only place a version
 lives — never duplicate it into `marketplace.json`, because `plugin.json` wins at
-install time and the copy just rots.
+install time and the copy just rots. See
+[ADR-001](docs/adr/ADR-001-plugin-version-single-source.md).
 
-| Change            | Bump  |
-|-------------------|-------|
-| Typo, docs        | Patch |
-| Skill refinement  | Patch |
-| New skill         | Minor |
-| Renamed skill     | Major |
-| Removed skill     | Major |
+Which digit to move is decided by one table, in
+[`craft-plugin-update`](plugins/kernel/skills/craft-plugin-update/SKILL.md#the-versioning).
+It is not repeated here for the same reason the version isn't: two copies of a
+rule disagree eventually.
 
 Renames and removals are breaking. Someone has that name in muscle memory.
 

@@ -95,7 +95,7 @@ OS extension    skill, agent, command, hook, plugin, plugin-update
 Quality         review, test, polish, evaluate-plugin
 ```
 
-Browse them all in [`skills/`](skills/), or run `claude plugin list`.
+Browse them all in [`skills/`](skills/), or type `/` in a session.
 
 ---
 
@@ -185,9 +185,9 @@ If hooks are silent:
 
 - [Manus: Context Engineering](https://manus.im/blog/Context-Engineering-for-AI-Agents-Lessons-from-Building-Manus) — recitation, filesystem as memory
 - [Scott Spence: Skill Activation][spence] — the 20% and 84% figures
+- [Sankalp: Claude Code 2.0](https://sankalp.bearblog.dev/my-experience-with-claude-code-20-and-how-to-get-better-at-using-coding-agents/)
 
 [spence]: https://scottspence.com/posts/how-to-make-claude-code-skills-activate-reliably
-- [Sankalp: Claude Code 2.0](https://sankalp.bearblog.dev/my-experience-with-claude-code-20-and-how-to-get-better-at-using-coding-agents/)
 
 ---
 

@@ -1,0 +1,6 @@
+# Normalise line endings on the way in.
+* text=auto
+
+# The hooks are executed, not read. One CRLF from a Windows checkout turns every
+# one of them into `bash\r: no such file or directory`.
+*.sh text eol=lf
