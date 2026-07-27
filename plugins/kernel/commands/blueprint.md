@@ -1,5 +1,4 @@
 ---
-name: blueprint
 description: Loads the project blueprint (execution ledger).
 argument-hint: "[optional focus area]"
 allowed-tools:

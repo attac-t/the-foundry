@@ -3,6 +3,10 @@
 #
 # Uses JSON additionalContext (PostToolUse stdout doesn't reach Claude)
 
+# Without jq we cannot read the filename, so we cannot skip tests, docs, or
+# config. Firing on everything is worse than staying quiet.
+command -v jq >/dev/null 2>&1 || exit 0
+
 INPUT=$(cat)
 FILE=$(echo "$INPUT" | jq -r '.tool_input.file_path // .tool_input.pathInProject // ""')
 

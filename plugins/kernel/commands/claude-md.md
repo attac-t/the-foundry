@@ -1,6 +1,6 @@
 ---
 description: Generate effective CLAUDE.md via interview.
-argument-hint: [project description]
+argument-hint: "[project description]"
 ---
 
 /skills/craft-memory "$ARGUMENTS"

@@ -1,6 +1,6 @@
 ---
 description: Interview-driven design. Extracts requirements, writes spec, suggests new session.
-argument-hint: [feature description]
+argument-hint: "[feature description]"
 ---
 
 # Design Interview
