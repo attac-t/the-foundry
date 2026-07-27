@@ -1,31 +1,39 @@
 {
+  "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
   "name": "the-foundry",
+  "description": "Opinionated Claude Code plugins. How to think, what to build, how to ship, how to test.",
   "owner": {
     "name": "Christian Attard",
     "url": "https://github.com/attac-t"
-  },
-  "metadata": {
-    "description": "A carefully curated collection of Claude Code plugins.",
-    "version": "1.0.0"
   },
   "plugins": [
     {
       "name": "kernel",
       "source": "./plugins/kernel",
-      "description": "Universal cognitive kernel. Stack-agnostic thinking patterns, memory management, and planning tools.",
-      "version": "1.0.0"
+      "description": "Cognitive OS. Thinking patterns, branch-scoped memory, and objectives that survive compaction.",
+      "category": "workflow",
+      "tags": ["cognitive-os", "memory", "planning", "context-engineering"]
     },
     {
       "name": "laravel-ddd",
       "source": "./plugins/laravel-ddd",
-      "description": "Domain-driven design patterns for Laravel. Requires kernel.",
-      "version": "1.0.0"
+      "description": "Domain-driven design for Laravel. Actions, DTOs, query builders, and the decisions between them.",
+      "category": "framework",
+      "tags": ["laravel", "php", "ddd", "architecture"]
+    },
+    {
+      "name": "laravel-playbook",
+      "source": "./plugins/laravel-playbook",
+      "description": "The package author's playbook. Craft, ship, and sustain a Laravel package.",
+      "category": "framework",
+      "tags": ["laravel", "php", "package", "open-source", "dx"]
     },
     {
       "name": "pest",
       "source": "./plugins/pest",
-      "description": "Pest v3 testing syntax and patterns. Requires kernel.",
-      "version": "1.0.0"
+      "description": "Pest testing. Suite philosophy, datasets, factories, arch tests, and when to mock.",
+      "category": "testing",
+      "tags": ["pest", "php", "testing"]
     }
   ]
 }
