@@ -163,6 +163,54 @@ else
     [ $orphan = 0 ] && pass "$count skills: every companion file is linked"
 fi
 
+# ── Skill budgets ────────────────────────────────────────────────────────────
+# Every skill is a recurring context tax: evaluate.sh makes Claude judge all of them
+# on every prompt. `evolve` runs on a schedule and would otherwise only ever add.
+# The cap is the wall that makes growth a trade. See docs/adr/ADR-002-skill-budgets.md.
+#
+# Raising a budget is fine — in a commit that argues for it, where a reviewer sees it.
+budget_for() {
+    case "$1" in
+    kernel) echo 32 ;;
+    laravel-ddd) echo 46 ;;
+    laravel-playbook) echo 29 ;;
+    pest) echo 11 ;;
+    *) echo "" ;;
+    esac
+}
+
+group "Skill budgets"
+
+over=0
+
+for dir in $PLUGINS; do
+    name=$(basename "$dir")
+    cap=$(budget_for "$name")
+    n=$(find "$dir/skills" -mindepth 2 -maxdepth 2 -name SKILL.md 2>/dev/null |
+        wc -l | tr -d ' ')
+
+    if [ -z "$cap" ]; then
+        fail "$name has no declared budget" \
+            "Add it to budget_for() in this script, and say why in the commit."
+        over=1
+    elif [ "$n" -gt "$cap" ]; then
+        fail "$name is over budget: $n skills, cap $cap" \
+            "Delete one, or raise the cap in a commit that argues for it."
+        over=1
+    fi
+done
+
+if [ $over = 0 ]; then
+    line=""
+    for dir in $PLUGINS; do
+        name=$(basename "$dir")
+        n=$(find "$dir/skills" -mindepth 2 -maxdepth 2 -name SKILL.md 2>/dev/null |
+            wc -l | tr -d ' ')
+        line="$line $name $n/$(budget_for "$name") ·"
+    done
+    pass "within budget:${line% ·}"
+fi
+
 # ── Documented counts ────────────────────────────────────────────────────────
 # READMEs advertise skill counts, and a badge advertises the total. Numbers in
 # prose rot silently, so the build owns them.

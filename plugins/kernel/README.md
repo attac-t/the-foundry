@@ -93,6 +93,7 @@ Artifacts       adr, blueprint, flow, handoff, map, memory,
                 observation, readme, rfc
 OS extension    skill, agent, command, hook, plugin, plugin-update
 Quality         review, test, polish, evaluate-plugin
+Upkeep          evolve, retrospect
 ```
 
 Browse them all in [`skills/`](skills/), or type `/` in a session.
@@ -112,6 +113,8 @@ Browse them all in [`skills/`](skills/), or type `/` in a session.
 /flow        ASCII flowchart
 /handoff     Write a state-transfer document
 /observe     Record a learning
+/retrospect  Mine PRs and past sessions for lessons you never wrote down
+/evolve      Audit the plugin against a moving ecosystem
 /claude-md   Generate a CLAUDE.md by interview
 ```
 
@@ -152,6 +155,29 @@ Direct, opinionated, no hedging. Set it permanently in `.claude/settings.json`:
   "outputStyle": "kernel:craftsman"
 }
 ```
+
+---
+
+## Staying Current
+
+Two skills run on a schedule, in opposite directions.
+
+| Skill                                     | Runs in           | Asks                                        |
+|-------------------------------------------|-------------------|---------------------------------------------|
+| [`retrospect`](skills/retrospect/SKILL.md) | Your project      | What have my PRs and sessions been teaching me? |
+| [`evolve`](skills/evolve/SKILL.md)        | A plugin repo     | What has the ecosystem changed under us?     |
+
+`retrospect` reads pull request reviews, your transcripts, and git history, then
+writes the corrections you would otherwise keep repeating.
+
+`evolve` is the risky one: a recurring "what should we add?" loop only grows. So the
+brake is structural rather than advisory — every plugin ships at a skill budget the
+build enforces, and an addition has to name what it replaces
+([ADR-002](../../docs/adr/ADR-002-skill-budgets.md)). `0 additions` is the expected
+monthly result.
+
+Weekly for `retrospect`, monthly for `evolve`. Not `/loop` — that is session-scoped
+and expires after seven days. See each skill's `scheduling.md`.
 
 ---
 

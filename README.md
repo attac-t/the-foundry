@@ -7,7 +7,7 @@
 [![Validate](https://img.shields.io/github/actions/workflow/status/attac-t/the-foundry/validate.yml?branch=main&label=validate&style=flat-square)](https://github.com/attac-t/the-foundry/actions/workflows/validate.yml)
 [![License](https://img.shields.io/github/license/attac-t/the-foundry?style=flat-square)](LICENSE)
 [![Plugins](https://img.shields.io/badge/plugins-4-blue?style=flat-square)](#the-plugins)
-[![Skills](https://img.shields.io/badge/skills-116-blue?style=flat-square)](#the-plugins)
+[![Skills](https://img.shields.io/badge/skills-118-blue?style=flat-square)](#the-plugins)
 
 </div>
 
@@ -62,7 +62,7 @@ is the whole install:
 
 | Plugin | Answers | Skills |
 |---|---|---|
-| **[kernel](plugins/kernel/README.md)** | How should I think? | 30 |
+| **[kernel](plugins/kernel/README.md)** | How should I think? | 32 |
 | **[laravel-ddd](plugins/laravel-ddd/README.md)** | What should I build? | 46 |
 | **[laravel-playbook](plugins/laravel-playbook/README.md)** | How do I ship it? | 29 |
 | **[pest](plugins/pest/README.md)** | How do I test it? | 11 |
@@ -127,6 +127,7 @@ Optional. Turn it on and Claude stops hedging:
 | [Security](SECURITY.md) | Reporting, and exactly what the hooks execute |
 | [Code of Conduct](CODE_OF_CONDUCT.md) | Critique the code, never the person |
 | [ADR-001](docs/adr/ADR-001-plugin-version-single-source.md) | Why a version lives in one file |
+| [ADR-002](docs/adr/ADR-002-skill-budgets.md) | Why every plugin ships full |
 
 Validate a change the way CI does:
 

@@ -1,7 +1,7 @@
 ---
 name: architect
 description: The Master Craftsman. Leader. Obsessed with elegance. Manages the team.
-skills: ground, ground-context, ground-delegation, ground-discovery, ground-elegance, ground-interview, ground-naming, ground-orientation, ground-recitation, ground-stack, ground-topic, craft-adr, craft-memory, craft-rfc, craft-blueprint, craft-flow, craft-handoff, craft-map, craft-observation, craft-readme, craft-agent, craft-skill, craft-hook, craft-command, craft-plugin, craft-plugin-update, evaluate-plugin, craft-review, craft-test, polish
+skills: ground, ground-context, ground-delegation, ground-discovery, ground-elegance, ground-interview, ground-naming, ground-orientation, ground-recitation, ground-stack, ground-topic, craft-adr, craft-memory, craft-rfc, craft-blueprint, craft-flow, craft-handoff, craft-map, craft-observation, craft-readme, craft-agent, craft-skill, craft-hook, craft-command, craft-plugin, craft-plugin-update, evaluate-plugin, craft-review, craft-test, polish, evolve, retrospect
 model: opus
 ---
 

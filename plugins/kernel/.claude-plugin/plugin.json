@@ -2,7 +2,7 @@
   "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "kernel",
   "displayName": "Kernel",
-  "version": "1.8.0",
+  "version": "1.9.0",
   "description": "Cognitive OS. Thinking patterns, branch-scoped memory, and objectives that survive compaction.",
   "author": {
     "name": "Christian Attard",
@@ -20,7 +20,9 @@
     "craftsmanship"
   ],
   "commands": "./commands/",
-  "agents": ["./agents/architect.md"],
+  "agents": [
+    "./agents/architect.md"
+  ],
   "skills": "./skills/",
   "outputStyles": "./output-styles/"
 }
