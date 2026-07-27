@@ -1,16 +1,22 @@
 {
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "pest",
-  "version": "2.1.0",
-  "description": "Pest testing suite skills. Philosophy, organization, factories, datasets, arch testing, mocking decisions.",
+  "displayName": "Pest",
+  "version": "2.2.0",
+  "description": "Pest testing. Suite philosophy, datasets, factories, arch tests, and when to mock.",
   "author": {
     "name": "Christian Attard",
     "url": "https://github.com/attac-t"
   },
+  "homepage": "https://github.com/attac-t/the-foundry/tree/main/plugins/pest",
+  "repository": "https://github.com/attac-t/the-foundry",
+  "license": "MIT",
   "keywords": [
     "pest",
-    "testing",
     "php",
+    "testing",
     "phpunit"
   ],
+  "dependencies": ["kernel"],
   "skills": "./skills/"
 }

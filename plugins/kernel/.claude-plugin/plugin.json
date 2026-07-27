@@ -1,18 +1,23 @@
 {
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "kernel",
-  "version": "1.7.0",
-  "description": "Universal cognitive kernel. Stack-agnostic thinking patterns, memory management, and planning tools. The foundation for all Craftsman plugins.",
+  "displayName": "Kernel",
+  "version": "1.8.0",
+  "description": "Cognitive OS. Thinking patterns, branch-scoped memory, and objectives that survive compaction.",
   "author": {
     "name": "Christian Attard",
     "url": "https://github.com/attac-t"
   },
+  "homepage": "https://github.com/attac-t/the-foundry/tree/main/plugins/kernel",
+  "repository": "https://github.com/attac-t/the-foundry",
+  "license": "MIT",
   "keywords": [
     "cognitive-os",
-    "architecture",
-    "craftsmanship",
-    "context-stability",
+    "context-engineering",
+    "memory",
     "planning",
-    "memory"
+    "architecture",
+    "craftsmanship"
   ],
   "commands": "./commands/",
   "agents": ["./agents/architect.md"],

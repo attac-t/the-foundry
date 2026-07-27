@@ -1,18 +1,24 @@
 {
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "laravel-ddd",
-  "version": "1.2.0",
-  "description": "Laravel DDD patterns. Opinionated domain-driven design with Actions, DTOs, QueryBuilders, and decision heuristics. Requires craftsman/kernel.",
+  "displayName": "Laravel DDD",
+  "version": "1.3.0",
+  "description": "Domain-driven design for Laravel. Actions, DTOs, query builders, and the decisions between them.",
   "author": {
     "name": "Christian Attard",
     "url": "https://github.com/attac-t"
   },
+  "homepage": "https://github.com/attac-t/the-foundry/tree/main/plugins/laravel-ddd",
+  "repository": "https://github.com/attac-t/the-foundry",
+  "license": "MIT",
   "keywords": [
     "laravel",
+    "php",
     "ddd",
     "domain-driven-design",
     "actions",
-    "eloquent",
-    "spatie"
+    "eloquent"
   ],
+  "dependencies": ["kernel"],
   "skills": "./skills/"
 }

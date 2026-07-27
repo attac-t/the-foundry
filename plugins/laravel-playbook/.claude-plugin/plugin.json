@@ -1,17 +1,24 @@
 {
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "laravel-playbook",
-  "version": "2.3.1",
-  "description": "The package author's playbook. Ecosystem-wide patterns for crafting, shipping, and sustaining pinnacle Laravel packages.",
+  "displayName": "Laravel Playbook",
+  "version": "2.4.0",
+  "description": "The package author's playbook. Craft, ship, and sustain a Laravel package.",
   "author": {
     "name": "Christian Attard",
     "url": "https://github.com/attac-t"
   },
+  "homepage": "https://github.com/attac-t/the-foundry/tree/main/plugins/laravel-playbook",
+  "repository": "https://github.com/attac-t/the-foundry",
+  "license": "MIT",
   "keywords": [
     "laravel",
+    "php",
     "package",
     "open-source",
     "dx",
     "ecosystem"
   ],
+  "dependencies": ["kernel"],
   "skills": "./skills/"
 }
