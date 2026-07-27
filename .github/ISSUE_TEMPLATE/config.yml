@@ -1,8 +1,8 @@
+# Blank issues stay open on purpose: a question or an idea is welcome as an issue.
+# Discussions is deliberately off — an empty tab reads as a dead project, and
+# issues carry the volume fine at this size.
 blank_issues_enabled: true
 contact_links:
   - name: Security vulnerability
     url: https://github.com/attac-t/the-foundry/security/advisories/new
     about: Report privately. Please don't open a public issue.
-  - name: Question or idea
-    url: https://github.com/attac-t/the-foundry/discussions
-    about: For anything that isn't a bug or a concrete proposal.
