@@ -111,3 +111,7 @@ Challenge: "Flag anything in this brief that seems wrong."
 - **Blind obedience**: Executing flawed briefs without questioning. The `Challenge` line prevents this.
 - **Wrong primitive**: Sub-agents when teammates need to talk. Teams when a single agent suffices.
 - **File collisions**: Two teammates, same file. Split the work.
+
+## Real-World Examples
+
+See [examples.md](examples.md).

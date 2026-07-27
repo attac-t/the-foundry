@@ -40,3 +40,7 @@ Trust these conventions:
 - Config: `config()` over `env()` in application code
 - Structure: Follow Laravel's file structure unless documented otherwise
 - Packages: Spatie packages are battle-tested — prefer them over custom solutions
+
+## Real-World Examples
+
+See [examples.md](examples.md).
