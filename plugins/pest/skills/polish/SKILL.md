@@ -7,7 +7,9 @@ description: Pest polish. Test-specific standards for each polish pass. Invoke w
 
 > "Tests are specifications. Polish them like production code."
 
-This extends `kernel:polish` with Pest-specific standards. Primarily Pass 7, but all passes apply to test files.
+Tests are production code. They earn all seven passes — 1. Docblocks · 2. Names · 3. Methods · 4. Framework internals · 5. Whitespace · 6. Conditionals · 7. Tests — plus the test-specific standards below. One concern per pass, in order. Zero behavior change.
+
+Pairs with `kernel:polish` for the wider protocol — enumeration, reporting, team mode.
 
 ## Pass 7: Tests — Specification Grade
 

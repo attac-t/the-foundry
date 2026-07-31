@@ -12,10 +12,9 @@ Two types of DTOs with Spatie Laravel Data v4.
 class CreatePostData extends Data
 {
     public function __construct(
-        #[Required, Max(255)]
+        #[Max(255)]
         public string $title,
-        #[Required]
-        public string $body,
+        public string $body,  // Non-nullable, no default — already required
     ) {}
 }
 ```
