@@ -88,19 +88,22 @@ if (! $data->title instanceof Optional) {
 ## Validation Attributes
 
 ### ✅ Built-in Validation
+**Why?** The type declares required-ness. Attributes add only what the type can't express.
 ```php
 class CreateUserData extends Data
 {
     public function __construct(
-        #[Required, Max(255)]
+        #[Max(255)]
         public string $name,
-        #[Required, Email, Unique('users', 'email')]
+        #[Email, Unique('users', 'email')]
         public string $email,
-        #[Required, Min(8)]
+        #[Min(8)]
         public string $password,
     ) {}
 }
 ```
+
+> `#[Required]` is redundant in v4. Non-nullable with no default is already required.
 
 ### ✅ Custom Rules
 ```php

@@ -13,19 +13,25 @@
       "name": "kernel",
       "source": "./plugins/kernel",
       "description": "Universal cognitive kernel. Stack-agnostic thinking patterns, memory management, and planning tools.",
-      "version": "1.0.0"
+      "version": "1.7.0"
     },
     {
       "name": "laravel-ddd",
       "source": "./plugins/laravel-ddd",
-      "description": "Domain-driven design patterns for Laravel. Requires kernel.",
-      "version": "1.0.0"
+      "description": "Domain-driven design patterns for Laravel. Standalone; pairs well with kernel.",
+      "version": "1.3.0"
+    },
+    {
+      "name": "laravel-playbook",
+      "source": "./plugins/laravel-playbook",
+      "description": "The package author's playbook. Ecosystem-wide patterns for crafting, shipping, and sustaining pinnacle Laravel packages.",
+      "version": "2.3.1"
     },
     {
       "name": "pest",
       "source": "./plugins/pest",
-      "description": "Pest v3 testing syntax and patterns. Requires kernel.",
-      "version": "1.0.0"
+      "description": "Pest v3 testing syntax and patterns. Standalone; pairs well with kernel.",
+      "version": "2.1.1"
     }
   ]
 }

@@ -71,11 +71,16 @@ Run `/skills laravel-ddd` to see all.
 
 ## Installation
 
-Requires `kernel` for cognitive patterns.
+Standalone.
+
+```
+/plugin install laravel-ddd@the-foundry
+```
+
+Pairs well with `kernel` for cognitive patterns — optional, not required.
 
 ```
 /plugin install kernel@the-foundry
-/plugin install laravel-ddd@the-foundry
 ```
 
 ---

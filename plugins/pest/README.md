@@ -24,18 +24,23 @@ expect()       Fluent assertions that read naturally
 
 ## Installation
 
-Requires `kernel` for testing philosophy (`craft-test`).
+Standalone.
+
+```
+/plugin install pest@the-foundry
+```
+
+Pairs well with `kernel` for testing philosophy (`craft-test`) — optional, not required.
 
 ```
 /plugin install kernel@the-foundry
-/plugin install pest@the-foundry
 ```
 
 ---
 
 ## The Split
 
-**Kernel (`kernel:craft-test`)**: What to test
+**What to test** — `pest:ground-suite` (`kernel:craft-test` goes deeper, when installed)
 
 ```
 Test behavior, not implementation
@@ -43,7 +48,7 @@ Cover the edges, not every line
 Skip the obvious, test the risky
 ```
 
-**Pest (`pest:craft-test`)**: How to write it
+**How to write it** — `pest:craft-test`
 
 ```php
 describe('Order creation', function () {

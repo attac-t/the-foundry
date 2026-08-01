@@ -7,7 +7,11 @@ description: Laravel polish. PHP/Laravel standards for each polish pass. Invoke 
 
 > "Laravel code should read like the framework wrote it."
 
-This extends `kernel:polish` with PHP and Laravel-specific standards for each of the seven passes.
+Seven passes. One concern each, in order — a naming issue spotted during the whitespace pass gets noted, then fixed in the naming pass. **Zero behavior change**: every test that passed before passes after. You are a copyeditor, not an author.
+
+1. Docblocks · 2. Names · 3. Methods · 4. Framework internals · 5. Whitespace · 6. Conditionals · 7. Tests
+
+Pairs with `kernel:polish` for the wider protocol — enumeration, reporting, team mode.
 
 ## Pass 1: Docblocks — The Craftsman Voice
 
