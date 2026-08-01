@@ -124,3 +124,33 @@ Product::cursor()->each(fn ($p) => $p->update([...]));
 // Good: chunkById for updates
 Product::chunkById(100, fn ($chunk) => $chunk->each->update([...]));
 ```
+
+### Breaking a Chain "for Memory"
+
+Isolated process, PHP 8.4 CLI, Laravel 10.48 Collections, 500k elements,
+`map → filter → values → sum`. Peak memory above baseline:
+
+| Variant                          | Peak        |
+|----------------------------------|-------------|
+| Un-chained, one temp per stage   | **33.60 MB** |
+| Chained pipeline                 | 25.59 MB    |
+| Reassign to the same variable    | 25.59 MB    |
+| `LazyCollection`                 | 9.71 MB     |
+| Eloquent builder chain           | **0.00 MB** |
+
+```php
+// Worst: +31% over the chain. Every temp stays pinned for the scope's lifetime.
+$mapped   = $items->map($fn);
+$filtered = $mapped->filter($predicate);
+$values   = $filtered->values();
+$total    = $values->sum();
+
+// Same memory as the chain, if you want the names.
+$items = $items->map($fn);
+$items = $items->filter($predicate);
+
+// The actual lever. Syntax was never it.
+$total = $items->lazy()->map($fn)->filter($predicate)->sum();
+```
+
+An Eloquent builder chain allocates nothing per call — it mutates one builder.

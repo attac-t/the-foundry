@@ -22,7 +22,7 @@ public function register(): void
     });
 
     $this->app->tag([
-        XeroSyncHandler::class,
+        SageSyncHandler::class,
         QuickBooksSyncHandler::class,
     ], 'sync.handlers');
 }
@@ -33,7 +33,7 @@ public function register(): void
 // config/sync.php
 return [
     'handlers' => [
-        'xero' => XeroSyncHandler::class,
+        'sage' => SageSyncHandler::class,
         'quickbooks' => QuickBooksSyncHandler::class,
     ],
 ];
@@ -77,7 +77,7 @@ class SyncSalesAction
 public function sync(string $provider): void
 {
     match ($provider) {
-        'xero' => $this->syncXero(),
+        'sage' => $this->syncSage(),
         'quickbooks' => $this->syncQuickBooks(),
         default => throw new Exception("Unknown: {$provider}"),
     };

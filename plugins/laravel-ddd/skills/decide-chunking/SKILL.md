@@ -41,6 +41,14 @@ Ask: *"Am I modifying records during iteration?"*
 | Export to file             | `cursor()`    |
 | Memory-critical streaming  | `lazyById()`  |
 
+## The Anti-Patterns
+
+| ❌ Don't                                | ✅ Do                              | Why                                              |
+|----------------------------------------|-----------------------------------|--------------------------------------------------|
+| Break a chain into a temp per stage "for memory" | Break a chain only for readability | Every temp stays pinned for the scope's lifetime — measurably the *worst* variant, not the fix |
+
+Break a chain for readability, never for memory. The memory lever is eager-vs-lazy — `lazy()`, `cursor()`, a builder chain — not syntax.
+
 ## Real-World Examples
 
 For concrete examples from this codebase, see [examples.md](examples.md).

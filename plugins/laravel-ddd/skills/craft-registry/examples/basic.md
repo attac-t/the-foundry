@@ -44,16 +44,16 @@ class SyncHandlerRegistry
 
 ### ✅ Concrete Handlers
 ```php
-class XeroSyncHandler implements SyncHandler
+class SageSyncHandler implements SyncHandler
 {
     public function supports(string $provider): bool
     {
-        return $provider === 'xero';
+        return $provider === 'sage';
     }
 
     public function sync(SyncContext $context): SyncResult
     {
-        $client = app(XeroClient::class);
+        $client = app(SageClient::class);
         $invoices = $client->getInvoices($context->dateRange);
 
         return SyncResult::success(count($invoices));

@@ -94,6 +94,25 @@ public function hasPendingRefund(): bool
 
 ## Pass 4: Framework Internals
 
+### The Substitution Table
+
+| Instead Of                   | Use                                               |
+|------------------------------|---------------------------------------------------|
+| `foreach` + accumulator      | `Collection::sum()`, `reduce()`, `mapWithKeys()`  |
+| `foreach` + filter           | `Collection::filter()`, `reject()`, `where()`     |
+| `foreach` + first match      | `Collection::first()`, `sole()`, `firstWhere()`   |
+| `foreach` + group            | `Collection::groupBy()`, `mapToGroups()`          |
+| `foreach` + transform        | `Collection::map()`, `flatMap()`, `pluck()`       |
+| Assign-then-return           | `tap($thing, fn ($t) => $t->save())`              |
+| Create-modify-return         | `tap(new Thing, fn ($t) => ...)`                  |
+| `array_map(fn..., $arr)`     | `collect($arr)->map(fn...)`                       |
+| `!empty($x) && $x->method()` | `$x?->method()` (nullsafe)                        |
+| `$val = $val ?? $default`    | `$val ??= $default`                               |
+| `config('key') ?? default`   | `config('key', $default)`                         |
+| `in_array($val, [...])`      | `collect([...])->contains($val)` or enum `->in()` |
+| `if ($cond) { $cb(); }`      | `when($cond, $cb)` if available                   |
+| `function ($x) use ($y) {…}` | `fn ($x) => …` when single-expression              |
+
 ### Collection Pipeline Over Foreach
 **Why?** Same result. Half the lines. Declarative.
 

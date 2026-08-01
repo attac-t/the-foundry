@@ -70,7 +70,7 @@ src/Domain/Shared/
 ### Support (Infrastructure Layer)
 ```
 src/Support/
-├── Xero/XeroClient.php       # Integration
+├── Sage/SageClient.php       # Integration
 ├── Pdf/PdfGenerator.php      # Utility
 └── Mail/MailBuilder.php      # Infrastructure
 ```
