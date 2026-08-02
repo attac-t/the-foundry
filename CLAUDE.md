@@ -16,7 +16,9 @@ After modifying ANY file inside a plugin, bump its version via `craft-plugin-upd
 
 ### Pull Requests
 
-Follow `.github/PULL_REQUEST_TEMPLATE.md`.
+Read `.github/PULL_REQUEST_TEMPLATE.md` before writing the body — `gh pr create --body` bypasses it.
+
+Three sections, no others. Under 30 lines. No verification logs, no process notes.
 
 ### Stack Plugins
 
