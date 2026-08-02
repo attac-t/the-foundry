@@ -1,23 +1,11 @@
 <!--
-Three sections. No others. Under 30 lines.
-The diff shows what changed. This shows why it matters.
+Why does this change exist?
+
+A paragraph or two, for whoever lands here from git blame in a year.
+They can already see the diff — that's how they got here. Don't restate it.
+
+No headings. No file tables. No verification logs.
 -->
-
-## The Problem
-
-<!-- What's broken, missing, or wrong? Two sentences. -->
-
-## The Solution
-
-<!-- What did you do about it? Why this approach? Two sentences. -->
-
-## What Changed
-
-<!-- One table. One row per file. No verification logs, no process notes. -->
-
-| Thing | Purpose |
-|-------|---------|
-|       |         |
 
 ---
 

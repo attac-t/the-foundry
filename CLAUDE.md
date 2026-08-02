@@ -18,7 +18,9 @@ After modifying ANY file inside a plugin, bump its version via `craft-plugin-upd
 
 Read `.github/PULL_REQUEST_TEMPLATE.md` before writing the body — `gh pr create --body` bypasses it.
 
-Three sections, no others. Under 30 lines. No verification logs, no process notes.
+Answer one question: why does this change exist? A paragraph or two. No headings, no file
+tables, no verification logs — the diff covers what changed, and nobody reviews these. The
+reader is you in a year, arriving from `git blame`.
 
 ### Stack Plugins
 
