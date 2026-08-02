@@ -70,7 +70,7 @@ src/Domain/Shared/
 ### Support (Infrastructure Layer)
 ```
 src/Support/
-├── Sage/SageClient.php       # Integration
+├── Ledger/LedgerClient.php       # Integration
 ├── Pdf/PdfGenerator.php      # Utility
 └── Mail/MailBuilder.php      # Infrastructure
 ```

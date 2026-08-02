@@ -24,7 +24,7 @@ readonly class SyncSalesContext
         }
 
         // Invariant: provider must be supported
-        if (! in_array($provider, ['sage', 'myob', 'quickbooks'])) {
+        if (! in_array($provider, ['ledger', 'warehouse', 'spreadsheet'])) {
             throw new InvalidArgumentException("Unsupported provider: {$provider}");
         }
     }
