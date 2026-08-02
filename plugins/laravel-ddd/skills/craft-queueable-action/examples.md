@@ -66,7 +66,7 @@ SendWelcomeEmailAction::onQueue()->execute($user);
 GenerateInvoicePdfAction::onQueue()->execute($invoice);
 
 // External API calls
-SyncToXeroAction::onQueue()->execute($payment);
+SyncToLedgerAction::onQueue()->execute($payment);
 ```
 
 ### ❌ Poor Candidates

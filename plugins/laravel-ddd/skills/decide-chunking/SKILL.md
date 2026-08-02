@@ -9,20 +9,12 @@ description: When and how to process large datasets. Memory-efficient iteration.
 
 ## The Decision
 
-**Use `chunk()` when:**
-- Processing large datasets that won't fit in memory
-- Callback doesn't modify records being iterated
-- Order doesn't matter or you're ordering by non-modified column
-
-**Use `chunkById()` when:**
-- Callback modifies records (updates/deletes)
-- Need consistent ordering during iteration
-- Avoiding offset performance issues
-
-**Use `cursor()` / `lazy()` when:**
-- Read-only iteration
-- Need generator-style streaming
-- Memory is critical (exports, reports)
+| Method             | Use when                                        | Because                                            |
+|--------------------|-------------------------------------------------|----------------------------------------------------|
+| `chunk()`          | Read and process in a callback, no writes       | Offsets stay stable while the rows do              |
+| `chunkById()`      | The callback updates or deletes the rows        | Offset paging skips rows the moment you mutate them |
+| `cursor()`/`lazy()`| Read-only streaming — exports, reports          | One row in memory, no callback                     |
+| `lazyById()`       | Streaming *and* mutating                        | Lazy iteration with the `chunkById()` guarantee    |
 
 ## The Heuristic
 
@@ -32,14 +24,13 @@ Ask: *"Am I modifying records during iteration?"*
 - **No, need callback** → `chunk()`
 - **No, just streaming** → `cursor()`
 
-## The Quick Test
+## The Anti-Patterns
 
-| Scenario                   | Method        |
-|----------------------------|---------------|
-| Batch update/delete        | `chunkById()` |
-| Read + process in callback | `chunk()`     |
-| Export to file             | `cursor()`    |
-| Memory-critical streaming  | `lazyById()`  |
+| ❌ Don't                                | ✅ Do                              | Why                                              |
+|----------------------------------------|-----------------------------------|--------------------------------------------------|
+| Break a chain into a temp per stage "for memory" | Break a chain only for readability | Every temp stays pinned for the scope's lifetime — measurably the *worst* variant, not the fix |
+
+Break a chain for readability, never for memory. The memory lever is eager-vs-lazy — `lazy()`, `cursor()`, a builder chain — not syntax.
 
 ## Real-World Examples
 

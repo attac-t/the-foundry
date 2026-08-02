@@ -44,32 +44,32 @@ class SyncHandlerRegistry
 
 ### ✅ Concrete Handlers
 ```php
-class XeroSyncHandler implements SyncHandler
+class LedgerSyncHandler implements SyncHandler
 {
     public function supports(string $provider): bool
     {
-        return $provider === 'xero';
+        return $provider === 'ledger';
     }
 
     public function sync(SyncContext $context): SyncResult
     {
-        $client = app(XeroClient::class);
+        $client = app(LedgerClient::class);
         $invoices = $client->getInvoices($context->dateRange);
 
         return SyncResult::success(count($invoices));
     }
 }
 
-class QuickBooksSyncHandler implements SyncHandler
+class SpreadsheetSyncHandler implements SyncHandler
 {
     public function supports(string $provider): bool
     {
-        return $provider === 'quickbooks';
+        return $provider === 'spreadsheet';
     }
 
     public function sync(SyncContext $context): SyncResult
     {
-        // QuickBooks-specific logic
+        // Spreadsheet-specific logic
     }
 }
 ```

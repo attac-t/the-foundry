@@ -45,10 +45,10 @@ Defensive code        Fail fast, guard clauses, null objects
 
 ## Skills
 
-46 skills. Three types.
+47 skills. Three types.
 
 ```
-ground-*     Philosophy and mindset (7 skills)
+ground-*     Philosophy and mindset (8 skills)
 craft-*      How to build (22 skills)
 decide-*     When to use what (16 skills)
 ```

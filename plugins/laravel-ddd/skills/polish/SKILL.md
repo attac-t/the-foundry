@@ -32,17 +32,21 @@ Pairs with `kernel:polish` for the wider protocol — enumeration, reporting, te
 
 **Craftsman voice**: one line, present tense, verb-first. "Determine if...", "Resolve the...", "Build a...". Never "This method will...".
 
+**The shape**: a comment block is one line or three. Never two, never four. Measured across 1,284 Laravel framework files — 74.7% of blocks are exactly 3 lines, 25% exactly 1, three exceptions in the entire framework. Comments are also rare: 0.6 blocks per file.
+
+**Never cite a design document by section number.** `// See §7.9` rots the moment the document is renumbered, and it is a shape the framework never produces.
+
 ## Pass 2: Names — Zero Javaism
 
 | Smell                              | Fix                                                                  |
 |------------------------------------|----------------------------------------------------------------------|
 | `get*()`/`set*()`                  | `lineAmount()` not `getLineAmount()`                                 |
-| `*Manager`/`*Handler`/`*Processor` | What does it DO? `SyncsPayments`? `BuildsPayload`?                   |
+| `*Manager`/`*Handler`/`*Processor` | What does it DO? `RefundsOrders`? `BuildsPayload`?                   |
 | `*Helper`/`*Utility`               | Decompose into named methods or a trait with identity                |
 | `*Interface` suffix                | `SyncableStore` — PHP doesn't need it                                |
 | Over-qualified                     | In `Billing\Aggregation\`, just `BuildResult` — the namespace qualifies |
-| Stuttering                         | `$config->mode` not `$syncConfig->syncMode`                          |
-| Acronym casing                     | `XeroApi`, `HttpClient` — follow Laravel's `Http` convention         |
+| Stuttering                         | `$config->mode` not `$exportConfig->exportMode`                      |
+| Acronym casing                     | `HttpClient`, `XmlParser` — follow Laravel's `Http` convention       |
 
 **Variables**: nouns, short, obvious. `$order`, `$transaction`, `$coverage`. No abbreviations (`$pmTotal` → `$paymentTotal`). `$item` is fine in a short closure.
 
@@ -52,24 +56,11 @@ When a method returns a fluent chain, `return` stands on its own line. The chain
 
 **Extract when**: a blank line appears instinctively between "two things." That blank line is a method boundary.
 
+**A condition is a named predicate**: what sits inside an `if` must read as a sentence. If it needs deciphering, it is a missing method. `if ($order->isRefundable())` — never `if ($order->status === Status::Paid && $order->paid_at !== null && ! $order->refunded_at)`. This adds a line and is still correct: the line buys a clearer call-site. See `ground-consumer-first`.
+
 ## Pass 4: Framework Internals
 
-| Instead Of                   | Use                                               |
-|------------------------------|---------------------------------------------------|
-| `foreach` + accumulator      | `Collection::sum()`, `reduce()`, `mapWithKeys()`  |
-| `foreach` + filter           | `Collection::filter()`, `reject()`, `where()`     |
-| `foreach` + first match      | `Collection::first()`, `sole()`, `firstWhere()`   |
-| `foreach` + group            | `Collection::groupBy()`, `mapToGroups()`          |
-| `foreach` + transform        | `Collection::map()`, `flatMap()`, `pluck()`       |
-| Assign-then-return           | `tap($thing, fn ($t) => $t->save())`              |
-| Create-modify-return         | `tap(new Thing, fn ($t) => ...)`                  |
-| `array_map(fn..., $arr)`     | `collect($arr)->map(fn...)`                       |
-| `!empty($x) && $x->method()` | `$x?->method()` (nullsafe)                        |
-| `$val = $val ?? $default`    | `$val ??= $default`                               |
-| `config('key') ?? default`   | `config('key', $default)`                         |
-| `in_array($val, [...])`      | `collect([...])->contains($val)` or enum `->in()` |
-| `if ($cond) { $cb(); }`      | `when($cond, $cb)` if available                   |
-| `function ($x) use ($y) {…}` | `fn ($x) => …` when single-expression              |
+Reach for the framework before writing the loop. Every `foreach` that accumulates, filters, finds, groups, or transforms is a `Collection` method. Assign-then-return and create-modify-return are `tap()`. Null handling is `?->`, `??=`, and `config($key, $default)`. The full substitution table is in [examples.md](examples.md).
 
 **QueryBuilders over scopes**: dedicated builder classes, not model scopes. Each method is one clause. They compose through chaining. The model stays lean — `newEloquentBuilder()` and nothing else.
 
