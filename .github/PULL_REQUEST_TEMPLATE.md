@@ -1,23 +1,14 @@
 <!--
-Three sections. No others. Under 30 lines.
-The diff shows what changed. This shows why it matters.
+Why does this change exist?
+
+For whoever lands here from git blame in a year. They already see the diff.
+Give them the reason, and anything that will surprise them later.
+
+Record it, don't argue it. Cut any sentence that would not change what the
+reader does. Don't write a second paragraph to balance the first.
+
+@see — related PRs, issues, prior discussion.
 -->
-
-## The Problem
-
-<!-- What's broken, missing, or wrong? Two sentences. -->
-
-## The Solution
-
-<!-- What did you do about it? Why this approach? Two sentences. -->
-
-## What Changed
-
-<!-- One table. One row per file. No verification logs, no process notes. -->
-
-| Thing | Purpose |
-|-------|---------|
-|       |         |
 
 ---
 
