@@ -17,18 +17,7 @@ Pairs with `kernel:polish` for the wider protocol — enumeration, reporting, te
 
 **The trial**: read the method signature. Name, parameters with type-hints, return type. Does the signature tell the full story? If yes — delete the docblock.
 
-**Survivors earn their place when they**:
-- Refine types PHP can't express: `@param Collection<int, Order> $orders`
-- Warn the caller: `@throws UnsupportedStateException`
-- Link external docs: `@see https://stripe.com/docs/api/...`
-- Clarify non-obvious constraints in one sentence
-
-**Delete when they**:
-- Restate `@param` types already in the signature
-- Restate `@return` types already declared
-- Say "Create a new instance" on constructors
-- Narrate what the one-line body already shows
-- Are longer than the method body
+A docblock survives only by doing what the signature cannot — refining a type PHP can't express, warning of a throw, or linking an external spec. It dies for restating the signature, narrating a one-line body, or running longer than the method. [examples.md](examples.md) has both lists in full.
 
 **Craftsman voice**: one line, present tense, verb-first. "Determine if...", "Resolve the...", "Build a...". Never "This method will...".
 
@@ -38,25 +27,13 @@ Pairs with `kernel:polish` for the wider protocol — enumeration, reporting, te
 
 ## Pass 2: Names — Zero Javaism
 
-| Smell                              | Fix                                                                  |
-|------------------------------------|----------------------------------------------------------------------|
-| `get*()`/`set*()`                  | `lineAmount()` not `getLineAmount()`                                 |
-| `*Manager`/`*Handler`/`*Processor` | What does it DO? `RefundsOrders`? `BuildsPayload`?                   |
-| `*Helper`/`*Utility`               | Decompose into named methods or a trait with identity                |
-| `*Interface` suffix                | `SyncableStore` — PHP doesn't need it                                |
-| Over-qualified                     | In `Billing\Aggregation\`, just `BuildResult` — the namespace qualifies |
-| Stuttering                         | `$config->mode` not `$exportConfig->exportMode`                      |
-| Acronym casing                     | `HttpClient`, `XmlParser` — follow Laravel's `Http` convention       |
+PHP is not Java. No `get*()`/`set*()` — `lineAmount()`. No `*Manager`/`*Handler`/`*Helper` — say what it does. No `*Interface` suffix. Don't repeat the namespace in the class or the class in the property. Acronyms follow Laravel: `HttpClient`, not `HTTPClient`. The smell-to-fix table is in [examples.md](examples.md).
 
 **Variables**: nouns, short, obvious. `$order`, `$transaction`, `$coverage`. No abbreviations (`$pmTotal` → `$paymentTotal`). `$item` is fine in a short closure.
 
 ## Pass 3: Methods — Return Stands Alone
 
 When a method returns a fluent chain, `return` stands on its own line. The chain begins on the next line, reading top-to-bottom like a sentence.
-
-**Extract when**: a blank line appears instinctively between "two things." That blank line is a method boundary.
-
-**A condition is a named predicate**: what sits inside an `if` must read as a sentence. If it needs deciphering, it is a missing method. `if ($order->isRefundable())` — never `if ($order->status === Status::Paid && $order->paid_at !== null && ! $order->refunded_at)`. This adds a line and is still correct: the line buys a clearer call-site. See `ground-consumer-first`.
 
 ## Pass 4: Framework Internals
 
@@ -70,7 +47,7 @@ Reach for the framework before writing the loop. Every `foreach` that accumulate
 
 Imports grouped logically: PHP classes, then Laravel classes, then domain classes. Blank line between groups. Alphabetical within each group. No inline FQCNs — if a class appears in the body, it belongs in the imports.
 
-Classes breathe: properties, constructor, public methods, protected methods, private methods — each group separated.
+Class body order: properties, constructor, public methods, protected methods, private methods — each group separated.
 
 ## Pass 6: Conditionals
 
@@ -79,6 +56,8 @@ Classes breathe: properties, constructor, public methods, protected methods, pri
 - No `!== null` / `!== false` when truthiness suffices.
 - Nullsafe `?->` over null checks.
 
+**A condition is a named predicate**: what sits inside an `if` must read as a sentence. If it needs deciphering, it is a missing method. `if ($order->isRefundable())` — never `if ($order->status === Status::Paid && $order->paid_at !== null && ! $order->refunded_at)`. This adds a line and is still correct: the line buys a clearer call-site. See `ground-consumer-first`.
+
 ## Pass 7: Tests
 
 Defer to `pest:polish` for Pest-specific standards.
@@ -86,7 +65,3 @@ Defer to `pest:polish` for Pest-specific standards.
 ## Linter
 
 Run `./vendor/bin/pint` on each file after editing. Pint handles formatting. You handle meaning.
-
----
-
-See [examples.md](examples.md) for concrete before/after patterns.

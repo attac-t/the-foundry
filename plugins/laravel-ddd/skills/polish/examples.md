@@ -6,6 +6,21 @@ Concrete before/after patterns for each pass.
 
 ## Pass 1: Docblocks
 
+### The Trial — Full Lists
+
+**Survivors earn their place when they**:
+- Refine types PHP can't express: `@param Collection<int, Order> $orders`
+- Warn the caller: `@throws UnsupportedStateException`
+- Link external docs: `@see https://stripe.com/docs/api/...`
+- Clarify non-obvious constraints in one sentence
+
+**Delete when they**:
+- Restate `@param` types already in the signature
+- Restate `@return` types already declared
+- Say "Create a new instance" on constructors
+- Narrate what the one-line body already shows
+- Are longer than the method body
+
 ### Craftsman Voice
 **Why?** One sentence. Verb-first. Present tense.
 
@@ -74,7 +89,27 @@ public function isPaid(): bool
 
 ---
 
+## Pass 2: Names
+
+### The Smell Table
+
+| Smell                              | Fix                                                                  |
+|------------------------------------|----------------------------------------------------------------------|
+| `get*()`/`set*()`                  | `lineAmount()` not `getLineAmount()`                                 |
+| `*Manager`/`*Handler`/`*Processor` | What does it DO? `RefundsOrders`? `BuildsPayload`?                   |
+| `*Helper`/`*Utility`               | Decompose into named methods or a trait with identity                |
+| `*Interface` suffix                | `SyncableStore` — PHP doesn't need it                                |
+| Over-qualified                     | In `Billing\Aggregation\`, just `BuildResult` — the namespace qualifies |
+| Stuttering                         | `$config->mode` not `$exportConfig->exportMode`                      |
+| Acronym casing                     | `HttpClient`, `XmlParser` — follow Laravel's `Http` convention       |
+
+---
+
 ## Pass 3: Methods
+
+### The Blank-Line Boundary
+
+**Why?** When a blank line appears instinctively between "two things," that blank line is a method boundary. Extract there.
 
 ### Return Stands Alone
 **Why?** The eye gets a clear anchor before the chain unfolds.
