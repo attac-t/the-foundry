@@ -16,6 +16,12 @@
       "version": "1.8.1"
     },
     {
+      "name": "panel",
+      "source": "./plugins/panel",
+      "description": "Adversarial agent teams. Verification that cannot be self-issued. Standalone; pairs well with kernel.",
+      "version": "0.4.0"
+    },
+    {
       "name": "laravel-ddd",
       "source": "./plugins/laravel-ddd",
       "description": "Domain-driven design patterns for Laravel. Standalone; pairs well with kernel.",

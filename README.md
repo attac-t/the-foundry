@@ -9,6 +9,7 @@ A curated collection of Claude Code plugins.
 | Plugin | Purpose |
 |--------|---------|
 | [kernel](plugins/kernel/README.md) | Cognitive OS. How to think. |
+| [panel](plugins/panel/README.md) | Adversarial agent teams. How to verify. |
 | [laravel-ddd](plugins/laravel-ddd/README.md) | Laravel DDD patterns. What to build. |
 | [laravel-playbook](plugins/laravel-playbook/README.md) | Package author's playbook. How to ship. |
 | [pest](plugins/pest/README.md) | Pest v3 syntax. How to test. |
