@@ -31,16 +31,16 @@ investment. `panel:adversary` judges gate 1; `panel:newcomer` judges gate 2.
 
 **Walking this alone is a different thing, and legitimate** — the eleven steps are worth following
 without a panel. There the gates degrade to self-checks: gate 1 by writing client code from three
-callers, gate 2 cold after a deliberate gap. Say in writing that you did. A weak gate that declares
-itself is honest.
+callers, gate 2 cold after a deliberate gap. Record the weakening — `craft-charter`, *When Gates Are
+Weakened*.
 
 But a solo walk is **not a panel run**, and must not be recorded as one. Law 1 admits no degradation
-inside a panel; that is the whole of what a panel is.
+inside a panel.
 
 ## The Walk
 
 The numbering is the **order the artifacts depend on each other**, not an execution sequence.
-Discovery runs upward in practice, and looping is expected — see *Re-entry*.
+See *Re-entry*.
 
 | # | Step | Act | Done when |
 |---|------|-----|-----------|

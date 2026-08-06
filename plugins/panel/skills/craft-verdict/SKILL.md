@@ -25,7 +25,7 @@ A failing oracle blocks regardless. Two oracles disagreeing is a **stop** — es
 | C | craft-spec:30 | ":30 forbids self-run gates, :34 shows how | scope it to solo walks | Law 1 |
 ```
 
-`Where` is `file:line`. Everything else is one clause. A row cannot sprawl; that is why it is a row.
+`Where` is `file:line`. Everything else is one clause.
 
 **Risk is not a column.** Severity carries it — a Critical *is* "this breaks." Add one only when
 severity fails to convey it: *"passes single-threaded, fails under load."*
