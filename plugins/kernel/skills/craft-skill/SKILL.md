@@ -40,13 +40,24 @@ plugins/{plugin-name}/skills/{skill-name}/
 
 Use `claude-code-guide` agent to query Claude Code skill documentation.
 
-## Registration (CRITICAL)
+## Preloading
 
 > [!IMPORTANT]
-> **Sub-agents do not inherit skills.**
+> **`skills:` is a preload list, not an allowlist.**
 
-After creating `SKILL.md`, add `{skill_name}` to `skills:` in:
-- `agents/architect.md`
-- Any other agents that need the skill
+An agent's `skills:` frontmatter injects the **full skill content** into its context at startup.
+Omitting a skill does not deny it — sub-agents can still invoke any project, user, or plugin skill
+through the `Skill` tool at runtime.
 
-**Unregistered skills do not exist.**
+So register deliberately, not defensively:
+
+| Preload it | Leave it out |
+|------------|--------------|
+| The agent needs it on **every** run | The agent needs it occasionally |
+| Fetching it late would change the output | A `Skill` call at the right moment is fine |
+| It defines the agent's standards or vocabulary | It is reference material |
+
+Every preloaded skill is startup context the agent pays for whether or not it uses it. A long
+`skills:` list is a cost, not a safety net.
+
+**Add to `agents/architect.md`** when the architect genuinely needs it loaded — not as a formality.
