@@ -51,7 +51,7 @@ argument is readable a year later from `git blame`.
 
 ```markdown
 ## Verdict: REVISE            # REVISE | APPROVE | DEADLOCK
-Reviewed: feat/gift-cards @ a1b2c3d4e5
+Reviewed: feat/gift-cards @ a1b2c3d4e5     # stamped by /verdict, not the judge
 
 ### What's Good
 ### Critical    — blocks

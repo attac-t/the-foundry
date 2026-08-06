@@ -30,6 +30,14 @@ approving what it judges.
 8. A judgment that recurs becomes an oracle.
 ```
 
+**Laws 1 and 4 are one idea, twice.** Law 1 is the principle — nobody approves their own work.
+Law 4 is the mechanism that makes it structural rather than polite: a judge that cannot write what
+it judges cannot have written what it approves. Read together, not separately.
+
+**Law 1's "leader included" is aspiration in 0.1.0.** Judges are held structurally by an allowlist.
+The parent's own write scope is not constrained yet — see Enforcement. The most strongly worded law
+is currently the least enforced, and it would be dishonest to state it without saying so.
+
 Law 8 is why this gets cheaper. The first time a judge argues about dependency direction it costs a
 review round. Once promoted to a forbidden-import check, it costs an exit code — forever.
 
