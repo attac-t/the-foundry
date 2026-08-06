@@ -12,6 +12,14 @@ description: Strategic delegation. When to lead, delegate, or collaborate.
 1. **At blueprint creation**: Assess each task and assign Owner (`self`, `sub-agent`, or `team`).
 2. **Before each task**: Re-assess. Context may have changed.
 
+## Mechanism First
+
+The epigraph says "when to code" — but that is not a delegation choice. `ground-mechanism` decides
+the executor **kind** (code or model). This skill decides the executor **context** (self, sub-agent,
+team).
+
+Ask mechanism first. If the answer is code, there is nobody to delegate to.
+
 ## The Primitives
 
 | Primitive      | Communication    | Best For                                          |

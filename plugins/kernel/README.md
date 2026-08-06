@@ -38,6 +38,7 @@ discovery      Research before implementation.
 context        Manage the context budget.
 recitation     Anchor objectives. Solve drift.
 orientation    Load context. Solve cold start.
+mechanism      Code or model. What must be deterministic.
 delegation     Know when to code and when to lead.
 interview      Extract requirements via questions.
 topic          Isolate memory per branch.
@@ -173,7 +174,7 @@ Branch-aware. Each topic gets its own memory.
 /rfc         Interview → design proposal
 /blueprint   Load roadmap
 /polish      Deep code polish
-/refine      Spawn reviewer
+/refine      Activate the ruthless critic
 /evaluate    Verify the OS
 /map         Elegant directory tree
 /flow        ASCII flowchart
