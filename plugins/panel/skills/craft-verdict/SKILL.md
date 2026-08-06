@@ -102,6 +102,6 @@ Name which fired. Deadlocking out of category early is cheap; burning six rounds
 | "This could be better" | Sev · Where · Issue · Change · Principle |
 | Everything Critical | Use the floor |
 | New nitpicks in round three | Ratchet |
-| Approve silently | Record residual risks |
+| Approve without recording risks | Record them |
 | "Recording what held…", "That is the point:", "Worth noting" | Delete. Meta-narration. |
 | Restate the table in prose below it | The table said it |

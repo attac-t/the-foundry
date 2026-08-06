@@ -73,7 +73,7 @@ record it**:
 
 ```markdown
 ## Gates weakened
-Gate 1 self-run — no adversary available. Self-assessment of this kind runs near 29% accuracy.
+Gate 1 self-run — no adversary available. See `craft-spec` for what that costs.
 ```
 
 A weak gate that declares itself is honest. A self-run gate that stays silent is the failure this

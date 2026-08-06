@@ -117,7 +117,7 @@ Looping is expected. An unrecorded loop is not.
 | Don't | Do | Why |
 |-------|----|-----|
 | Start writing bodies | Draft signatures first | Empty drafts are free to throw away |
-| Judge your own draft | Three callers, or a second agent | 29% accuracy, at peak investment |
+| Judge your own draft | Three callers, or a second agent | Least reliable at peak investment |
 | One `ensure` per test | One contract, ≥1 test | Boundary values are one dataset, not three tests |
 | A primitive that adds assertions | Delete assertions | If count rises, it is a wrapper |
 | Test a rule at three altitudes | Lowest one still about behaviour | Triplication reads as thoroughness |

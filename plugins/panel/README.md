@@ -156,7 +156,7 @@ Most of the time.
 
 A panel is at minimum three contexts, multiplied by loop iterations. Convene when the work is
 **high criticality and low reversibility**, or unattended — and **only when the task has real
-oracles.** A task with no mechanical checks gets taste ping-pong wearing a protocol.
+oracles.** With no mechanical checks, the loop degenerates into taste ping-pong on a schedule.
 
 Its ceiling is the quality of its gates.
 

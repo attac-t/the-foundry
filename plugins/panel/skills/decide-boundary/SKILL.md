@@ -1,6 +1,6 @@
 ---
 name: decide-boundary
-description: Is this one thing, or several wearing one name? Fires at charter, authoring, and verdict.
+description: Is this one project or several? Fires at charter, authoring, and verdict.
 ---
 
 # Skill: Decide Boundary
