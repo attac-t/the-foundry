@@ -6,17 +6,17 @@ on:
     branches: [main]
 
 jobs:
-  no-duplicate-prose:
+  no-repeats:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      # Scoped to panel, which is clean. The rest of the repo currently has 18 duplications;
+      # Scoped to panel, which is clean. The rest of the repo currently has 18 repeats;
       # widening this gate means fixing those first. A gate that declares its scope is honest —
       # a gate quietly narrowed to stay green is not.
       - name: No sentence appears twice
         run: |
-          bash bin/no-duplicate-prose.sh \
+          bash bin/no-repeats.sh \
             plugins/panel/README.md \
             plugins/panel/skills/*/SKILL.md \
             plugins/panel/skills/*/examples.md \
