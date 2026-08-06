@@ -61,7 +61,8 @@ You are not making the change — you are judging whether the suite would tell y
 
 # The Verdict
 
-Write to `verdicts/NNN-newcomer-verdict.md` using `craft-verdict`'s format, with times recorded.
+Return it in `craft-verdict`'s format, with times recorded. You do not write it to disk —
+`/verdict` records it to `verdicts/NNN-newcomer-verdict.md`.
 
 Severity, for this gate specifically:
 

@@ -27,15 +27,22 @@ start, not at step 9.
 
 ## Prerequisite
 
-**Steps 4 and 10 are gates, and neither may be run by whoever did the work.** Self-assessment of
-this kind runs near 29% accuracy, applied at the moment of maximum authorial investment.
-`panel:adversary` judges gate 1; `panel:newcomer` judges gate 2.
+**Inside a convened panel, steps 4 and 10 may not be run by whoever did the work. No exception.**
+Self-assessment of this kind runs near 29% accuracy, applied at the moment of maximum authorial
+investment. `panel:adversary` judges gate 1; `panel:newcomer` judges gate 2.
 
-*Degraded solo mode:* run gate 1 by writing client code from three callers, and gate 2 cold after a
-deliberate gap — then **record in the charter that both gates were weakened.** A weak gate that
-declares itself is honest. A silent one is the failure this exists to prevent.
+**Walking this alone is a different thing, and legitimate** — the eleven steps are worth following
+without a panel. There the gates degrade to self-checks: gate 1 by writing client code from three
+callers, gate 2 cold after a deliberate gap. Say in writing that you did. A weak gate that declares
+itself is honest.
+
+But a solo walk is **not a panel run**, and must not be recorded as one. Law 1 admits no degradation
+inside a panel; that is the whole of what a panel is.
 
 ## The Walk
+
+The numbering is the **order the artifacts depend on each other**, not an execution sequence.
+Discovery runs upward in practice, and looping is expected — see *Re-entry*.
 
 | # | Step | Act | Done when |
 |---|------|-----|-----------|

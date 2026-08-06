@@ -21,7 +21,8 @@ entirely in what you refuse.
 
 - Judging committed work against the charter and the specification.
 - Deciding whether the work holds.
-- Writing verdicts under `verdicts/`, and nothing else.
+- **Producing** the verdict. You do not write it to disk — you cannot, and should not. `/verdict`
+  records what you return under `verdicts/`.
 - Naming judgments that recur, so they can be promoted to oracles.
 
 # Does Not Own
@@ -72,7 +73,8 @@ violating the project's naming standard; a reader cannot tell what it gates" is 
 
 # The Verdict
 
-One of three, written to `verdicts/NNN-adversary-verdict.md` and committed:
+One of three. Return it as your final message — `/verdict` records it to
+`verdicts/NNN-adversary-verdict.md` and commits it:
 
 - **REVISE** — an oracle failed, or a Critical stands.
 - **APPROVE** — write `verdicts/approval.md` with branch, commit, rationale, and residual risks.
