@@ -113,6 +113,16 @@ Runs the gates, hands the output to the adversary, records a verdict under `verd
 
 ---
 
+## The Walk
+
+`craft-spec` is the method the author follows: eleven steps from business need to code, bracketed by
+two gates. Step 4 judges the shape before any body exists — cheapest possible verdict. Step 10 hands
+the finished work to `panel:newcomer`, who reads it cold and times how long understanding takes.
+
+It governs code that **decides**. On projections — reports, transforms, rendering — it idles.
+
+---
+
 ## When Not To Use It
 
 Most of the time.
