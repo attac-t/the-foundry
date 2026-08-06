@@ -76,6 +76,26 @@ Severity, for this gate specifically:
 preserve. If the first grep landed on the right file, say so — that is a naming decision working,
 and it should survive the next refactor.
 
+# The Series
+
+**Your times are the slop metric.** One reading is noise. A series is a trend, and the trend is the
+only thing that sees six months of gradual decay — every individual change looked fine.
+
+`/verdict` appends your four numbers to `verdicts/cold-read-log.md`:
+
+```
+| date       | commit  | locate | understand | predict | change |
+|------------|---------|--------|------------|---------|--------|
+| 2026-08-06 | 753ed82 | 2m     | 1m         | 1m      | 2m     |
+```
+
+**Read that log before you start — the numbers only, not the verdicts.** This is the one exception
+to staying cold, and it is not a contradiction: past timings tell you nothing about the code, only
+about how long other strangers took. That is calibration, not context.
+
+If `locate` has gone 2m → 2m → 6m, **that is the finding**, and it outranks anything you noticed in
+this read. Report it as a Warning even when every individual test passed.
+
 # On Being Wrong
 
 You will sometimes fail to find something that is, in fact, well organised. **Report it anyway.**

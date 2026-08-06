@@ -26,6 +26,22 @@ description: The committed verdict. Severity, the four fields, and how the loop 
 A failing oracle command blocks regardless of severity. Two oracles contradicting each other is a
 **stop** — escalate, do not pick one.
 
+## Before You Judge — read the history
+
+**Prior verdicts are input, not archive.** Read `verdicts/` before forming a finding.
+
+Three things to look for:
+
+- **A finding you are about to raise that has been raised before.** Count it. Three occurrences is a
+  promotion candidate — put it in `### Promote` rather than raising it a fourth time.
+- **A residual risk that keeps reappearing.** A risk approved over three times has stopped being
+  residual; it is *accumulating*. Raise the accumulation, not the instance.
+- **A finding already approved over.** Do not re-raise it unless it got worse. Re-raising settled
+  findings is how a judge becomes noise, and noise is how gates get overridden.
+
+Without this every run is amnesiac. **Slop is invisible in any single diff and obvious across
+forty** — a judge that cannot see the forty cannot see slop at all, however good its taste.
+
 ## The Four Fields
 
 - **Issue** — what is wrong
@@ -43,8 +59,13 @@ than where it came from.
 verdicts/
 ├── 001-adversary-verdict.md
 ├── 002-adversary-verdict.md
-└── approval.md              branch · commit · rationale · residual risks
+├── approval.md              branch · commit · rationale · residual risks
+└── cold-read-log.md         gate-2 timings, one row per run — the slop metric
 ```
+
+`cold-read-log.md` is a series, not a document. `/verdict` appends `panel:newcomer`'s four timings
+to it. A single reading is noise; the column is the only instrument that sees gradual decay, because
+**every individual change looked fine at the time.**
 
 Sequence-numbered, prefixed by role when a panel has more than one judge. Committed, so the whole
 argument is readable a year later from `git blame`.
@@ -75,8 +96,22 @@ Three rules keep it terminating:
    Warnings or Nitpicks after round one. A new **Critical** is always admissible.
 3. **Approval licence** — an approval with residual risks recorded is a successful review.
 
-On cap exhaustion: **DEADLOCK**. Name the disagreement precisely and escalate. Conceding to end the
-loop is worse than deadlocking.
+## DEADLOCK has two triggers
+
+**Exhausted** — the iteration cap ran out and disagreement stands.
+**Out of category** — the disagreement needs a fact the team does not hold.
+
+The discriminator is not confidence. It is *what kind of fact settles the argument*:
+
+| Settled by | Then |
+|------------|------|
+| Code, spec, oracle output, a past verdict | **The team decides.** Do not escalate. |
+| Business intent, priority, risk appetite, what the customer meant | **Escalate.** |
+
+Conflating these is why teams either escalate everything or bluff. Name which trigger fired.
+
+Deadlocking out of category early is correct and cheap. Burning six rounds to arrive there is not.
+Conceding to end the loop is worse than either.
 
 ## The Anti-Patterns
 

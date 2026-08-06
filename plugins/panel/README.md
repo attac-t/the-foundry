@@ -131,6 +131,17 @@ It governs code that **decides**. On projections — reports, transforms, render
 
 ---
 
+## Memory
+
+Judges read `verdicts/` before forming a finding. Raised three times, it becomes a promotion
+candidate instead of a fourth finding. Approved over three times, a residual risk has stopped being
+residual.
+
+Gate 2's timings append to `verdicts/cold-read-log.md`. **Slop is invisible in any single diff and
+obvious across forty** — that column is the only instrument that sees it.
+
+---
+
 ## When Not To Use It
 
 Most of the time.

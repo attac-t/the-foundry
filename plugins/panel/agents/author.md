@@ -39,6 +39,12 @@ this whole arrangement exists to catch.
 would fail for a plausible wrong implementation**. A test that passes against any implementation is
 decoration.
 
+**Decide what you can; escalate what you cannot.** The test is not how confident you feel — it is
+*what kind of fact settles the question*. If code, the spec, an oracle, or a past verdict settles
+it, decide and move on; asking a human is waste. If it needs business intent, priority, risk
+appetite, or what the customer actually meant, **stop and ask** — no amount of reasoning produces a
+fact you do not have, and guessing is how a run ships confident, wrong work.
+
 **Reproduce before changing.** No fix lands on an unreproduced failure.
 
 **Run the gates before handing off.** Whatever `panel.yml` declares — tests, types, lint. A
