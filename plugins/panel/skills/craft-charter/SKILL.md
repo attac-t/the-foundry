@@ -30,6 +30,25 @@ Drive toward three answers:
 3. **What is out of scope?** Explicitly. Scope drift is the most common way a run produces confident,
    unwanted work.
 
+## Is This One Charter?
+
+A brief often holds several projects wearing one name. *"Certificates and audits"* turned out to be
+**versionable, custom-fields, meta, measurement** — four generic capabilities plus the domain work
+that surfaced them. Three became reusable packages.
+
+**The test: would this piece make sense if the request had never existed?**
+
+| Piece | Survives alone | Then |
+|-------|----------------|------|
+| versioning revisions | yes | own charter — likely a package |
+| issuing a certificate | no | this charter |
+
+Two more signals: **needed twice already** in the work in front of you, and **cost asymmetry** —
+extracting now is nearly free, extracting once both callers exist is not.
+
+This gate refuses *unclear* goals. It also refuses **mis-sized** ones. Name the pieces and let the
+human choose the split; never silently build four things under one name.
+
 ## The Artifact
 
 `.claude/panel/charter.md`, committed:

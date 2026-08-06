@@ -7,11 +7,9 @@ description: From business need to code, in order. Eleven steps, two gates.
 
 > "Specification work cannot be removed. Only moved."
 
-Moving it up front, into artifacts that outlive the session, is cheaper than discovering it in
-production. That is the whole claim.
-
-An opinionated composition of Evans' aggregates, Meyer's contracts, and Cockburn's ports —
-sequenced. None of those three says what order to do them in. **The order is the contribution.**
+Moved up front, into artifacts that outlive the session, it costs less than discovered in production.
+Evans' aggregates, Meyer's contracts, Cockburn's ports — sequenced. **The order is the
+contribution.**
 
 ## The Boundary
 
@@ -92,23 +90,11 @@ order is a real dependency or an invented one, and whether a step throws or retu
 
 ## Gate 2 — the cold read
 
-A program is a **theory** held by the people who built it; the text is its shadow. A newcomer does
-not read the theory, they rebuild it. Four timed tests, run by someone who wasn't here:
+A program is a **theory** held by those who built it; the text is its shadow. A newcomer rebuilds it
+rather than reads it. Four timed tests — **locate, understand, predict, change** — run by someone who
+wasn't here. `panel:newcomer` carries them in full.
 
-```
-locate      Given a need in business words, find the code.
-            Failure means the business term is not an identifier.
-
-understand  From the draft and contracts only — no bodies — say what this does
-            and one thing that would break it.
-
-predict     Shown only the draft: what happens when a guard fails?
-            If they cannot say whether it throws, the chain hides its failure mode.
-
-change      Make a small change and know whether it broke something.
-```
-
-Record the numbers. **A regression in time-to-understand is a finding**, the same as a failing test.
+**A regression in time-to-understand is a finding**, the same as a failing test.
 
 > **If this step requires writing new documentation, the walk leaked.** Steps 0–5 already produced
 > the theory. Step 10 mostly publishes what exists.
