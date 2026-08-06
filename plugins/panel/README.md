@@ -66,6 +66,12 @@ charter ──▶ [ APPROVED BY A HUMAN ]
                        the boundary was wrong
 ```
 
+**SPLIT is the judgement the gates cannot make.** Every oracle can pass and every acceptance clause
+be met while the charter still held three projects. `decide-boundary` carries the tells — the same
+shape a third time, one file with two unrelated reasons to change, a test needing setup from a
+concern it doesn't test. All three roles load it, because the tells fire at different times: the
+charter gate sees none of them, the author sees them first, the judge sees them last and dearest.
+
 ---
 
 ## Enforcement
@@ -152,7 +158,7 @@ A panel is at minimum three contexts, multiplied by loop iterations. Convene whe
 **high criticality and low reversibility**, or unattended — and **only when the task has real
 oracles.** A task with no mechanical checks gets taste ping-pong wearing a protocol.
 
-Panel is worth exactly what its oracles are worth.
+Its ceiling is the quality of its gates.
 
 ---
 

@@ -32,36 +32,11 @@ Drive toward three answers:
 
 ## Is This One Charter?
 
-A brief often holds several projects wearing one name. *"Let users comment on posts"* is threading,
-moderation, rate limiting, and notifications — four capabilities with nothing to do with comments —
-plus the small domain piece that surfaced them. Most such pieces outlive the request; some become
-packages.
-
-**The test: would this piece make sense if the request had never existed?**
-
-| Piece | Survives alone | Then |
-|-------|----------------|------|
-| ordering replies under a parent | yes | own charter — likely a package |
-| holding an item for review before it is public | yes | own charter |
-| a comment belongs to a post | no | this charter |
-
-Two more signals: **needed twice already** in the work in front of you, and **cost asymmetry** —
-extracting now is nearly free, extracting once both callers exist is not.
-
-**Surviving alone is necessary, not sufficient.** A piece can be perfectly coherent alone and still
-be wrong to extract, if standing alone quietly breaks a guarantee it only holds in company — a
-review method separated from the thing that supplies its reviewer still runs, and now grades its own
-work. Ask both: *does it survive alone*, and *does it stay correct alone?*
-
-A piece can also belong **elsewhere** rather than alone:
-
-| Tell | Move |
-|------|------|
-| it fires more often than its host | extract upward, into whatever is always on |
-| it activates differently — always-on vs deliberately invoked | a different home, not a sub-part |
+One name routinely covers several projects. Run `decide-boundary` before approving —
+**would this piece make sense if the request had never existed?**
 
 This gate refuses *unclear* goals. It also refuses **mis-sized** ones. Name the pieces and let the
-human choose the split; never silently build four things under one name.
+human choose the split.
 
 ## The Artifact
 
