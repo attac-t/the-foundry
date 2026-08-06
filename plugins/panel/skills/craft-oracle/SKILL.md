@@ -54,6 +54,20 @@ the same words.
 Record candidates in the verdict's `### Promote` section. Promotion is authored work like any
 other — a judge cannot write the check, and it should not arrive as a surprise commit.
 
+## A Green Gate Can Be Empty
+
+Passing is not covering. Two ways a gate exits 0 while certifying nothing:
+
+| Failure | Tell |
+|---|---|
+| the inputs dodge the failure mode | the data was chosen by whoever wrote the code |
+| the harness passes vacuously | zero cases executed, still exit 0 |
+
+A charter demanding exact money, tested only on values binary floating point happens to represent
+exactly, has a gate certifying the author's choice of examples.
+
+**Audit a gate by breaking the code on purpose.** If it stays green, it was never a gate.
+
 ## The Coverage Rule
 
 **Panel is worth exactly what its oracles are worth.** A task with four independent gates gets a
