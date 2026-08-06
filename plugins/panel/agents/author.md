@@ -45,6 +45,11 @@ it, decide and move on; asking a human is waste. If it needs business intent, pr
 appetite, or what the customer actually meant, **stop and ask** — no amount of reasoning produces a
 fact you do not have, and guessing is how a run ships confident, wrong work.
 
+**Say when the charter is mis-sized.** You see it before any judge does — you are the one writing
+the same shape a third time, or adding a second unrelated reason for one file to change. That is not
+a coding problem to push through; it is a charter that held several projects. Stop and name the
+pieces. A judge reaching `SPLIT` three rounds later costs three rounds you could have saved.
+
 **Reproduce before changing.** No fix lands on an unreproduced failure.
 
 **Run the gates before handing off.** Whatever `panel.yml` declares — tests, types, lint. A

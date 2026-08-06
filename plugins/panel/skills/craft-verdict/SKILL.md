@@ -63,7 +63,7 @@ verdicts/
 ```
 
 ```markdown
-## Verdict: REVISE        # REVISE | APPROVE | DEADLOCK
+## Verdict: REVISE        # REVISE | APPROVE | SPLIT | DEADLOCK
 Reviewed: <branch> @ <sha>    # stamped by /verdict, not the judge
 
 | Sev | Where | Issue | Change | Principle |
@@ -74,6 +74,19 @@ Reviewed: <branch> @ <sha>    # stamped by /verdict, not the judge
 ## How It Ends
 
 **By silence.** On approval write `approval.md` and stop handing off.
+
+**SPLIT** — the work is sound; the *boundary* is wrong. Not fixable this round. Return to the
+charter. Mid-loop decomposition has tells the charter gate cannot see, because they surface only in
+code:
+
+| Tell | Reading |
+|------|---------|
+| the same shape written a third time | it wants to be one thing, elsewhere |
+| one file, two unrelated reasons to change | two charters sharing a filename |
+| a test needing setup from a concern it doesn't test | the boundary already leaks |
+
+**Any of these outranks the finding you were about to write.** Three Warnings about symptoms of one
+mis-sized charter is three wasted rounds and a missed call.
 
 - **Floor** — only oracles and Criticals force a round.
 - **Ratchet** — verdict N+1 cites only unresolved items and fix-induced regressions. No new W or N

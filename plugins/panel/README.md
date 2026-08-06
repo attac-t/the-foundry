@@ -58,10 +58,12 @@ charter ──▶ [ APPROVED BY A HUMAN ]
                   ▼
              adversary ──── tools: Read, Glob, Grep. Nothing else.
                   │
-          ┌───────┴───────┐
-          ▼               ▼
-       REVISE          APPROVE ──▶ ■ silence
-                       residual risks recorded
+          ┌───────┼───────────┐
+          ▼       ▼           ▼
+       REVISE   SPLIT      APPROVE ──▶ ■ silence
+                  │                 residual risks recorded
+                  └──▶ back to the charter — the work was fine,
+                       the boundary was wrong
 ```
 
 ---

@@ -32,16 +32,18 @@ Drive toward three answers:
 
 ## Is This One Charter?
 
-A brief often holds several projects wearing one name. *"Certificates and audits"* turned out to be
-**versionable, custom-fields, meta, measurement** — four generic capabilities plus the domain work
-that surfaced them. Three became reusable packages.
+A brief often holds several projects wearing one name. *"Let users comment on posts"* is threading,
+moderation, rate limiting, and notifications — four capabilities with nothing to do with comments —
+plus the small domain piece that surfaced them. Most such pieces outlive the request; some become
+packages.
 
 **The test: would this piece make sense if the request had never existed?**
 
 | Piece | Survives alone | Then |
 |-------|----------------|------|
-| versioning revisions | yes | own charter — likely a package |
-| issuing a certificate | no | this charter |
+| ordering replies under a parent | yes | own charter — likely a package |
+| holding an item for review before it is public | yes | own charter |
+| a comment belongs to a post | no | this charter |
 
 Two more signals: **needed twice already** in the work in front of you, and **cost asymmetry** —
 extracting now is nearly free, extracting once both callers exist is not.
