@@ -1,0 +1,17 @@
+{
+  "name": "panel",
+  "version": "0.1.0",
+  "description": "Adversarial agent teams. Verification that cannot be self-issued. Standalone; pairs well with kernel.",
+  "author": {
+    "name": "Christian Attard",
+    "url": "https://github.com/attac-t"
+  },
+  "keywords": [
+    "adversarial-review",
+    "verification",
+    "agent-teams",
+    "quality-gates",
+    "oracles"
+  ],
+  "skills": "./skills/"
+}

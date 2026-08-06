@@ -1,0 +1,141 @@
+# Panel
+
+Adversarial agent teams. Verification that cannot be self-issued.
+
+**It is not a system that builds systems. It is a system that refuses to build the wrong one.**
+
+---
+
+## Philosophy
+
+A single agent writes the work and decides it is done. The blind spot that writes the bug writes
+the test that misses it.
+
+Instructing an agent to critique its own work is one context wearing a different hat, and a hat is
+not a second opinion. Panel supplies the second context — and makes it structurally incapable of
+approving what it judges.
+
+---
+
+## The Laws
+
+```
+1. No agent approves its own work — the leader included.
+2. Mechanical claims reduce to a command. Judgments carry severity.
+3. Only failing commands and Criticals block.
+4. A judge never writes what it judges.
+5. Verdicts are committed artifacts in the branch under review.
+6. Nothing starts until the charter is approved.
+7. Verdicts may only narrow. The loop ends in silence.
+8. A judgment that recurs becomes an oracle.
+```
+
+Law 8 is why this gets cheaper. The first time a judge argues about dependency direction it costs a
+review round. Once promoted to a forbidden-import check, it costs an exit code — forever.
+
+---
+
+## The Loop
+
+```
+charter ──▶ [ APPROVED BY A HUMAN ]
+                  │
+                  ▼
+               author ──── writes src/ + tests/
+                  │
+                  │ commit
+                  ▼
+           /verdict ──── runs the gates; the harness reads exit codes
+                  │
+                  ▼
+             adversary ──── tools: Read, Glob, Grep. Nothing else.
+                  │
+          ┌───────┴───────┐
+          ▼               ▼
+       REVISE          APPROVE ──▶ ■ silence
+                       residual risks recorded
+```
+
+---
+
+## Enforcement
+
+```
+Structural     tools: Read, Glob, Grep on judges.
+               No escape found under adversarial probing.
+
+Architectural  /verdict runs oracles in the parent session.
+               Exit codes are harness-observed, never model-reported.
+
+Not shipped    The parent's own write scope is unconstrained in 0.1.0.
+               Author restraint from verdicts/ is convention, not enforcement.
+```
+
+---
+
+## Install
+
+Standalone.
+
+```
+/plugin install panel@the-foundry
+```
+
+---
+
+## Use
+
+```
+/panel add gift card redemption at checkout
+```
+
+Answers questions until the goal is gradeable, writes `.claude/panel/charter.md`, and waits for
+you to approve it. Declare the gates:
+
+```yaml
+# panel.yml
+judges:
+  - panel:adversary
+gates:
+  - name: tests
+    command: composer test
+  - name: types
+    command: vendor/bin/phpstan analyse
+```
+
+Then:
+
+```
+/verdict
+```
+
+Runs the gates, hands the output to the adversary, records a verdict under `verdicts/`.
+
+---
+
+## When Not To Use It
+
+Most of the time.
+
+A panel is at minimum three contexts, multiplied by loop iterations. Convene when the work is
+**high criticality and low reversibility**, or unattended — and **only when the task has real
+oracles.** A task with no mechanical checks gets taste ping-pong wearing a protocol.
+
+Panel is worth exactly what its oracles are worth.
+
+---
+
+## The Kill Criterion
+
+This plugin's premise is unproven: nobody has shown an adversarial panel beats disciplined
+self-review per token on a solo developer's workload.
+
+Verdicts are committed data. Instrument them — iterations to approval, oracle-caught versus
+judge-caught, promotions per run. **If ten runs show no catches that self-review would have missed,
+delete the plugin and keep `craft-oracle`.** That part has unconditional value.
+
+---
+
+## License
+
+MIT
