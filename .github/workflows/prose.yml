@@ -6,7 +6,7 @@ on:
     branches: [main]
 
 jobs:
-  no-repeats:
+  repeats:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -16,7 +16,7 @@ jobs:
       # a gate quietly narrowed to stay green is not.
       - name: No sentence appears twice
         run: |
-          bash bin/no-repeats.sh \
+          bash bin/repeats.sh \
             plugins/panel/README.md \
             plugins/panel/skills/*/SKILL.md \
             plugins/panel/skills/*/examples.md \

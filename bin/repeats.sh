@@ -5,7 +5,7 @@
 # Promoted from a judgement that recurred six times in a single review. A judgement costs a review
 # round. An oracle costs an exit code and never gets tired.
 #
-# Usage: bin/no-repeats.sh [files...]   (defaults to every tracked markdown file)
+# Usage: bin/repeats.sh [files...]   (defaults to every tracked markdown file)
 
 set -euo pipefail
 
