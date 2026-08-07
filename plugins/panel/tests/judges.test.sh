@@ -49,7 +49,7 @@ it "seats pest's judge"                              0 "$FIXTURES/pest-critic.md
 # The pin, the merge, and the fence — none of which the first seven fixtures could see.
 it "will not resolve a pin to another plugin's agent" 1 "$FIXTURES/wrong-plugin.md"
 it "keeps every judge when a gate is listed twice"    1 "$FIXTURES/repeated-label.md"
-it "parses the section, not the fenced example"       1 "$FIXTURES/fenced-decoy.md"
+it "parses the section, not the fenced example"       1 "$FIXTURES/fenced-decoy.md" "$LOCAL"
 
 # Eligibility must not depend on another plugin's agent names.
 it "rejects an unrestricted local agent"             1 "$FIXTURES/local-writer.md" "$LOCAL"

@@ -11,4 +11,4 @@ gate 1:  panel:adversary
 ## Panel
 
 author:  `panel:author`
-gate 1:  `kernel:architect`
+gate 1:  `writer`

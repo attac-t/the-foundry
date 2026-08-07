@@ -19,7 +19,10 @@ files=("$@")
 if [ "$#" -eq 0 ]; then
   while IFS= read -r line; do
     files+=("$line")
-  done < <(git ls-files '*.md' | grep -v -e '^\.claude/' -e 'PULL_REQUEST_TEMPLATE')
+  # -co: tracked AND untracked. Tracked-only reads none of the work under review, which is exactly
+  # when this gate is run — it reported PASS over 36 files having opened none of them.
+  done < <(git ls-files -co --exclude-standard '*.md' \
+             | grep -v -e '^\.claude/' -e 'PULL_REQUEST_TEMPLATE')
 fi
 [ "${#files[@]}" -gt 0 ] || { echo "No files to check."; exit 0; }
 

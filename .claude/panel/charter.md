@@ -132,16 +132,25 @@ fixture shape, and that shape omitted the fence, the second `## Panel`, and the 
 so a *total* parse failure still scored 7/7. It now carries the constructs a real charter has.
 
 Fixtures carry no prose; `repeats.sh` scans them, and that is the oracle correctly forcing them
-minimal. Negative cases resolve against `tests/agents/`, so panel's gate does not break when another
-plugin renames an agent.
+minimal.
+
+**Three fixtures resolve against `tests/agents/`, not all of them.** `local-writer`, `local-reader`
+and `fenced-decoy` are rename-proof. `judge-can-write` still names `kernel:architect` deliberately —
+something must prove the pin resolves against the real tree — and it carries the cost: if kernel
+renames that agent, the fixture keeps asserting `1` through the *unresolved* branch rather than
+Law 4, and degrades without saying so. Recorded as a residual risk rather than claimed as coverage.
 
 ### The judge speaks its own plugin
 
-- [ ] it argues from pest's laws, not panel's —
-      `bash bin/repeats.sh $(git ls-files -co --exclude-standard 'plugins/panel/*.md' 'plugins/pest/*.md')` **zero**
+- [x] it argues from pest's laws, not panel's —
+      `bash bin/repeats.sh $(git ls-files -co --exclude-standard 'plugins/panel/*.md' 'plugins/pest/*.md')` → **0**, 53 files
 
 A standing gate doing double duty. It is what old gate 4's `grep -q '^skills:'` was reaching for and
 could not express.
+
+**`-co` is load-bearing, not a flourish.** Invoked as plain `git ls-files` this gate reported PASS
+over 36 files having opened none of the work under review — every file this charter produced was
+untracked at the time, `critic.md` included. A gate is run precisely when its subject is new.
 
 ### Moments, not a flat roster
 
@@ -164,12 +173,12 @@ Its eligibility is certified by the `pest-critic` fixture, and it is exercised t
 charter runs against a project that has a suite. **Shipped-but-unexercised is a real gap** — it is
 recorded rather than dressed up as coverage.
 
-- [ ] Judged: `panel:adversary` approves, with residual risks recorded
+- [x] Judged: `panel:adversary` approves, with residual risks recorded — verdict 003 @ `8f67d1a`
 
 ### Standing
 
 Exit zero at base and must still exit zero at the end. `repeats` is scoped to the two clean plugins;
-unscoped it fails on 16 pre-existing hits elsewhere, and a gate red for unrelated reasons is one
+unscoped it fails on 18 pre-existing hits elsewhere, and a gate red for unrelated reasons is one
 nobody trusts.
 
 - [x] `bash bin/frontmatter.sh`

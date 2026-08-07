@@ -51,7 +51,7 @@ Verify the install: `/evaluate`
 
 ## Contributing
 
-Three gates run on every pull request. Run them before you open one:
+Five gates. Run them before you open a pull request — see below for why that is not a formality:
 
 ```bash
 bash bin/frontmatter.sh && bash bin/versions.sh && bash bin/repeats.sh $(git ls-files -co --exclude-standard 'plugins/panel/*.md' 'plugins/pest/*.md') && bash plugins/panel/tests/judges.test.sh && bash plugins/panel/bin/judges.sh
