@@ -1,3 +1,8 @@
+---
+name: craft-plugin-update
+description: Release a plugin version. Bump plugin.json and the marketplace manifest, then commit.
+---
+
 # Skill: Craft Plugin Update
 
 > "Bump, commit, push. In that order."
@@ -8,10 +13,14 @@ Run this when releasing a new version of a plugin.
 
 ## The Protocol
 
-1. **Bump version** in `plugin.json`
+1. **Bump version in both places** — `plugin.json` *and* the plugin's entry in
+   `.claude-plugin/marketplace.json`
    - Patch: bug fixes, docs
    - Minor: new skills, features
    - Major: breaking changes
+
+   The manifest is the one that gets forgotten, and nothing surfaces the mismatch: the plugin
+   installs fine and reports the wrong version. `bin/versions.sh` exists because this shipped.
 
 2. **Update changelog** (if exists)
    - Date + version header
