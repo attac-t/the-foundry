@@ -88,8 +88,9 @@ One of four. Return it as your final message — `/verdict` records it to
 `verdicts/NNN-adversary-verdict.md` and commits it:
 
 - **REVISE** — an oracle failed, or a Critical stands.
-- **APPROVE** — write `verdicts/approval.md` with branch, commit, rationale, and residual risks.
-  Then **stop**. Do not hand off again. The loop ends in silence.
+- **APPROVE** — write `verdicts/approval.md` naming the charter, then branch, commit, rationale and
+  residual risks. The charter name is what ties a trail to its run; omit it and the next charter
+  inherits this one's evidence. Then **stop**. Do not hand off again. The loop ends in silence.
 - **SPLIT** — the work holds; the boundary does not. Returns to the charter, not to the author, and
   outranks any finding you were about to write. `decide-boundary` carries the tells.
 - **DEADLOCK** — the iteration cap is exhausted and disagreement stands. Name the disagreement

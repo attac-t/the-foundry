@@ -27,3 +27,7 @@ Thumbs.db
 references/
 laravel-beyond-crud/
 laravel-event-sourcing/
+
+# Python bytecode. It shipped inside a plugin once.
+__pycache__/
+*.py[cod]

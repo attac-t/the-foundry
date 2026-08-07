@@ -1,5 +1,6 @@
 # Verdict 004 — adversary — REVISE
 
+Charter: an approval proves its own review
 Reviewed: `feat/verdicts-on-disk` @ **eba3ab8**. Round one for *an approval proves its own review*.
 Recorded by the parent. 001 judged the sub-team model, 002/003 judged *judges are peers*; no
 unresolved item from those survives against this deliverable, so **the ratchet does not bind**.

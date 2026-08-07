@@ -20,11 +20,27 @@ readonly LOCAL=plugins/panel/tests/agents
 pass=0 fail=0
 
 # it <behaviour> <expected exit> <fixture> [agent path]
+# The one row whose fixture is meant to be absent. Everything else must exist: a fixture git never
+# tracked makes its assertion pass on a fresh clone for the wrong reason, and exempting every
+# `want=2` row would unguard two that do exist.
+absent() {
+  local behaviour="$1" want="$2" fixture="$3" got
+  if [ -e "$fixture" ]; then
+    fail=$((fail + 1)); printf '  FAIL  %s — %s exists; the row tests nothing\n' "$behaviour" "$fixture"
+    return 0
+  fi
+  bash "$JUDGES" "$fixture" >/dev/null 2>&1
+  got=$?
+  if [ "$got" = "$want" ]; then
+    pass=$((pass + 1)); printf '  ok    %s\n' "$behaviour"
+    return 0
+  fi
+  fail=$((fail + 1)); printf '  FAIL  %s — wanted %s, got %s\n' "$behaviour" "$want" "$got"
+}
+
 it() {
   local behaviour="$1" want="$2" fixture="$3" agents="${4:-}" got
-  # A fixture git never tracked makes its assertion pass on a fresh clone for the wrong reason.
-  # The `no-charter` directory was empty, so git carried nothing and the check met a missing path.
-  if [ ! -e "$fixture" ] && [ "$want" != 2 ]; then
+  if [ ! -e "$fixture" ]; then
     fail=$((fail + 1)); printf '  FAIL  %s — no fixture at %s\n' "$behaviour" "$fixture"
     return 0
   fi
@@ -68,7 +84,7 @@ it "accepts a restricted local agent"                0 "$FIXTURES/local-reader.m
 # Usage is a third outcome, not a flavour of failure.
 it "refuses a charter with no panel section"         2 "$FIXTURES/no-panel-section.md"
 it "refuses a charter with two panel sections"       2 "$FIXTURES/two-panel-sections.md"
-it "refuses a charter that is not there"             2 "$FIXTURES/nothing-of-this-name.md"
+absent "refuses a charter that is not there"         2 "$FIXTURES/nothing-of-this-name.md"
 
 echo
 total=$((pass + fail))

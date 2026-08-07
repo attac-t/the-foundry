@@ -46,20 +46,26 @@ def roster(section):
     return judges
 
 
-def recorded(verdicts):
-    """The live trail only. `iterdir` does not descend, so an archived run cannot discharge."""
+def recorded(verdicts, name):
+    """Roles whose verdict names this charter.
+
+    The join is the text, not the directory. Archiving a closed run is then housekeeping rather
+    than correctness — move half of it, or none of it, and last run's verdicts still discharge
+    nobody. A positional rule needs a human to perform it, and this gate exists because one didn't.
+    """
     if not verdicts.is_dir():
         return set()
     return {found.group("role")
             for entry in verdicts.iterdir()
-            for found in [VERDICT.match(entry.name)] if found}
+            for found in [VERDICT.match(entry.name)]
+            if found and name in read(entry)}
 
 
 def refuse_foreign(approval, name):
     die(FAILED, f"FAIL — {approval.as_posix()} does not name this charter.", "",
         f"  Expected it to mention: {name}", "",
-        "  A closed run's approval left in place discharges the next run for free. Archive it to",
-        "  `verdicts/<slug>/` so the charter in flight starts with an empty trail.")
+        "  A closed run's approval left in place discharges the next run for free. Archive the",
+        "  whole run — the approval and every `NNN-<role>-verdict.md` — to `verdicts/<slug>/`.")
 
 
 def refuse_unanchored(approval):
@@ -70,7 +76,7 @@ def refuse_unanchored(approval):
 
 def refuse_empty(approval, verdicts):
     die(FAILED, f"FAIL — {approval.as_posix()} claims a review with no verdict beside it.", "",
-        f"  {verdicts.as_posix()} holds no `NNN-<role>-verdict.md`.", "",
+        f"  {verdicts.as_posix()} holds no `NNN-<role>-verdict.md` naming this charter.", "",
         "  Law 5. A verdict that was never written is a review that did not happen — the history",
         "  a later judge reads, and the promotion counter, both operate on nothing.")
 
@@ -105,7 +111,7 @@ def main(panel_dir):
     if not COMMIT.search(claimed):
         refuse_unanchored(approval)
 
-    on_record = recorded(verdicts)
+    on_record = recorded(verdicts, name)
     if not on_record:
         refuse_empty(approval, verdicts)
 

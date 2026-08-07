@@ -57,13 +57,19 @@ Slop is invisible in one diff and obvious across forty. A judge that can't see f
 
 ```
 verdicts/
-├── NNN-<role>-verdict.md
-├── approval.md          branch · commit · rationale · residual risks
-└── cold-read-log.md     gate-2 timings, one row per run — the slop metric
+├── NNN-<role>-verdict.md      names the charter it judges
+├── approval.md                charter · branch · commit · rationale · residual risks
+├── cold-read-log.md           gate-2 timings, one row per run — the slop metric
+└── <closed-charter-slug>/     a finished run, moved whole
 ```
+
+**Name the charter in both.** Not decoration — it is what scopes a trail to its run. Without it,
+last charter's verdicts discharge this charter's roster, and a repo that has ever filed one verdict
+is green forever. `bin/verdicts.sh` reads it.
 
 ```markdown
 ## Verdict: REVISE        # REVISE | APPROVE | SPLIT | DEADLOCK
+Charter: <name>               # which run this belongs to
 Reviewed: <branch> @ <sha>    # stamped by /verdict, not the judge
 
 | Sev | Where | Issue | Change | Principle |
