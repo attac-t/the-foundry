@@ -3,5 +3,5 @@
 ## Panel
 
 author:  `panel:author`
-gate 1:  `panel:adversary`, `pest:critic`
+gate 1:  `panel:adversary`, `panel:newcomer`
 gate 2:  `panel:newcomer` ×4

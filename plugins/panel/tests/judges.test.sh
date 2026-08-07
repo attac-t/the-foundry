@@ -44,7 +44,11 @@ it "rejects a writer seated on a later gate"         1 "$FIXTURES/writer-on-gate
 it "rejects a charter that seats only an author"     1 "$FIXTURES/no-judges.md"
 it "rejects a judge that does not exist"             1 "$FIXTURES/ghost-judge.md"
 it "seats several gates, and one judge repeatedly"   0 "$FIXTURES/two-gates.md"
-it "seats pest's judge"                              0 "$FIXTURES/pest-critic.md"
+
+# Nothing here may assert 0 while naming an agent from another plugin. Panel installs standalone,
+# so a suite that needs pest present is a suite that fails for most of the people who run it.
+# `pest-critic.md` ships as a fixture and is asserted by the *repo's* gate chain instead: that a
+# stack plugin seats an eligible judge is a fact about this monorepo, not about panel.
 
 # The pin, the merge, and the fence — none of which the first seven fixtures could see.
 it "will not resolve a pin to another plugin's agent" 1 "$FIXTURES/wrong-plugin.md"

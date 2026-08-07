@@ -34,6 +34,19 @@ approved SHA:
 3. ~~`README:54` claims three gates above a five-row table~~ — corrected.
 4. ~~`charter:135-136` overstates which fixtures are rename-proof~~ — narrowed to the three that are.
 
+Found after approval, by the human, not by any gate or judge:
+
+4b. **Panel's shipped suite required pest to be installed.** `pest-critic` and `two-gates` both
+    asserted `0` while naming `pest:critic`, so the suite failed for a panel-only install — which is
+    what panel's README and `plugin.json` promise. Verified by copying `plugins/panel` alone into an
+    empty root: 2 of 15 assertions failed. Now 14 self-contained assertions, passing standalone, with
+    "a stack plugin seats an eligible judge" moved to the **repo's** gate chain where it belongs.
+
+    This is the *absence* half of 003's W1; the *rename* half was fixed and this one was not seen.
+    The judgement error was letting the monorepo define the boundary when the plugin's own README
+    declares it — `decide-boundary`'s second question, *does it stay correct alone?*, applied to the
+    charter's scope and never to the fixtures.
+
 Standing:
 
 5. **`judge-can-write.md` names `kernel:architect` deliberately** — something must prove the pin

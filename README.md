@@ -54,7 +54,7 @@ Verify the install: `/evaluate`
 Five gates. Run them before you open a pull request — see below for why that is not a formality:
 
 ```bash
-bash bin/frontmatter.sh && bash bin/versions.sh && bash bin/repeats.sh $(git ls-files -co --exclude-standard 'plugins/panel/*.md' 'plugins/pest/*.md') && bash plugins/panel/tests/judges.test.sh && bash plugins/panel/bin/judges.sh
+bash bin/frontmatter.sh && bash bin/versions.sh && bash bin/repeats.sh $(git ls-files -co --exclude-standard 'plugins/panel/*.md' 'plugins/pest/*.md') && bash plugins/panel/tests/judges.test.sh && bash plugins/panel/bin/judges.sh && bash plugins/panel/bin/judges.sh plugins/panel/tests/fixtures/pest-critic.md
 ```
 
 | Gate | Fails when |
@@ -64,6 +64,11 @@ bash bin/frontmatter.sh && bash bin/versions.sh && bash bin/repeats.sh $(git ls-
 | `repeats` | a sentence appears verbatim in two files — scoped to `panel` and `pest` |
 | `judges.test` | `judges.sh` stops rejecting a judge it should reject |
 | `judges` | this repo's own charter seats an agent that can write what it judges |
+| `judges` (pest) | `pest:critic` stops being seatable as a judge |
+
+**The last one is deliberately not in panel's own suite.** Panel installs standalone, so nothing
+shipped inside it may assert that another plugin is present. That a stack plugin seats an eligible
+judge is a fact about *this monorepo*, and it is checked here.
 
 **What they do not check:** that a plugin still loads, that hook paths resolve, that shell scripts
 are valid, or anything at all about `kernel`, `laravel-ddd` and `laravel-playbook` beyond their
