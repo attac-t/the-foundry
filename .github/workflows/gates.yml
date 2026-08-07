@@ -1,0 +1,32 @@
+name: gates
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  gates:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Ordered by what reaches a user. A component whose frontmatter is wrong registers
+      # wrong for everyone who installs it, and it does so silently — the harness falls back
+      # to the directory name and scrapes a description from the first blockquote.
+      - name: Every component carries registering frontmatter
+        run: bash bin/frontmatter.sh
+
+      - name: The manifest agrees with every plugin
+        run: bash bin/versions.sh
+
+      # Enforced on the two plugins that are clean. kernel, laravel-ddd and laravel-playbook
+      # carry 16 repeats between them; widening this gate means fixing those first. A gate
+      # that declares its scope is honest — a gate quietly narrowed to stay green is not.
+      #
+      # This blocks verbatim duplication, which is the *precondition* of drift, not drift
+      # itself. Once two statements of a rule differ by one word, separating intentional
+      # variation from drift needs semantics, and no exit code can do it.
+      - name: No sentence appears twice
+        run: bash bin/repeats.sh $(git ls-files 'plugins/panel/*.md' 'plugins/pest/*.md')
