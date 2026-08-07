@@ -80,11 +80,23 @@ charter gate sees none of them, the author sees them first, the judge sees them 
 Structural     tools: Read, Glob, Grep on judges.
                No escape found under adversarial probing.
 
+Checked        bin/judges.sh reads the charter and resolves every seated judge.
+               Exit 0 eligible · 1 ineligible or unnamed · 2 usage.
+
 Architectural  /verdict runs oracles in the parent session.
                Exit codes are harness-observed, never model-reported.
 
-Not shipped    The parent's own write scope is unconstrained in 0.1.0.
+Not shipped    The parent's own write scope is unconstrained.
                Author restraint from verdicts/ is convention, not enforcement.
+```
+
+**An omitted `tools:` is the failure mode.** A subagent *"inherits every tool available to
+subagents if omitted"* — so an agent that simply never declared a restriction holds `Write` and
+`Agent`, and seating it as a judge voids Law 4 without anything looking wrong. Eligibility is a
+join between the charter and the agent, which is why a per-agent view cannot decide it:
+
+```bash
+bash plugins/panel/bin/judges.sh .claude/panel/charter.md
 ```
 
 ---
@@ -106,7 +118,21 @@ Standalone.
 ```
 
 Answers questions until the goal is gradeable, writes `.claude/panel/charter.md`, and waits for
-you to approve it. Declare the gates:
+you to approve it. The charter names judges **by moment**, so a run's mandates are decided with the
+goal rather than reconstructed afterwards:
+
+```markdown
+## Panel
+author:  panel:author
+gate 1:  panel:adversary, pest:critic
+gate 2:  panel:newcomer ×4
+```
+
+Judges sharing a gate share a mandate and must agree. Judges on different gates accumulate — a run
+closes when every gate has approved and nothing is left unresolved, where an accepted residual risk
+counts as resolved and only you may accept one.
+
+Declare the gates:
 
 ```yaml
 # panel.yml

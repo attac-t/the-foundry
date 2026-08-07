@@ -13,7 +13,8 @@ description: The goal gate. Nothing runs until the charter is approved.
   not pass on its own.
 - **It states what "done" means in gradeable terms.** Without that, the adversary has nothing to
   judge against and the review degenerates into taste.
-- **It names the panel.** Who judges is decided with the goal, not inferred later.
+- **It names the panel by moment.** Which gate a judge holds is decided with the goal, not inferred
+  later — and never reconstructed afterwards in the approval.
 - **Refusing is not self-approval.** Anyone may refuse an unclear charter. Only the human approves.
 
 ## The Interview
@@ -57,11 +58,36 @@ One paragraph. What must become true, stated so it could be false.
 Named explicitly.
 
 ## Panel
-author, adversary
+author:  panel:author
+gate 1:  panel:adversary
+gate 2:  panel:newcomer
 
 ## Approved
 <human> — YYYY-MM-DD
 ```
+
+## A Gate Is A Mandate
+
+**Name the moment, not the roster.** A gate says what is being certified; the agents on it say who
+certifies. Google requires three approvals per change — correctness, ownership, style — and lets one
+person hold all three. The shape is the same here.
+
+| Consequence | |
+|---|---|
+| two judges on **one** gate | same mandate — they must agree |
+| two judges on **different** gates | different mandates — they accumulate independently |
+| the same judge listed `×4` | four fresh readings of one mandate; a series, not a quorum |
+
+A stack plugin's judge joins an existing gate or opens its own. Neither adds a rule.
+
+**Availability is not eligibility.** An agent that declares no `tools:` inherits every one of them,
+Write included, and cannot hold a gate. Check it rather than trusting it:
+
+```bash
+bash plugins/panel/bin/judges.sh .claude/panel/charter.md
+```
+
+The author is exempt by name — authoring is the one seat that must write.
 
 **Unapproved means unstarted.** An `Approved` line filled in by anything other than a person is the
 plugin lying to itself.
@@ -86,5 +112,6 @@ plugin exists to remove.
 | Start while the goal is fuzzy | Keep asking | Ambiguity resolved by guessing ships wrong work |
 | "Make it better" | A statement that could be false | Nothing to judge against |
 | Infer the panel | Name it at approval | A model choosing its own reviewers is not review |
+| List judges flat | Give each a gate | Otherwise the mandate gets reconstructed after the run |
 | Approve your own charter | A human approves | The one gate a model may not pass |
 | Leave scope open | Name what's excluded | Scope drift is the common failure |

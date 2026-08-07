@@ -48,6 +48,15 @@ Cover the edges, not every line
 Skip the obvious, test the risky
 ```
 
+**Whether it would catch anything** — `pest:critic`
+
+A read-only judge for suites it did not write. One question: *if this code were wrong, would this
+suite say so?* It argues from `ground-suite` and `ground-prose` with line numbers, never from taste,
+and it cannot repair what it reads.
+
+Standalone, like everything else here. Convened by `panel` if you have it; usable on its own if you
+don't.
+
 **How to write it** — `pest:craft-test`
 
 ```php

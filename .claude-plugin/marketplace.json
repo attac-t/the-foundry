@@ -19,7 +19,7 @@
       "name": "panel",
       "source": "./plugins/panel",
       "description": "Adversarial agent teams. Verification that cannot be self-issued. Standalone; pairs well with kernel.",
-      "version": "0.6.2"
+      "version": "0.7.0"
     },
     {
       "name": "laravel-ddd",
@@ -37,7 +37,7 @@
       "name": "pest",
       "source": "./plugins/pest",
       "description": "Pest v3 testing syntax and patterns. Standalone; pairs well with kernel.",
-      "version": "2.1.1"
+      "version": "2.2.0"
     }
   ]
 }

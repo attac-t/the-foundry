@@ -54,7 +54,7 @@ Verify the install: `/evaluate`
 Three gates run on every pull request. Run them before you open one:
 
 ```bash
-bash bin/frontmatter.sh && bash bin/versions.sh && bash bin/repeats.sh $(git ls-files 'plugins/panel/*.md' 'plugins/pest/*.md')
+bash bin/frontmatter.sh && bash bin/versions.sh && bash bin/repeats.sh $(git ls-files -co --exclude-standard 'plugins/panel/*.md' 'plugins/pest/*.md') && bash plugins/panel/tests/judges.test.sh && bash plugins/panel/bin/judges.sh
 ```
 
 | Gate | Fails when |
@@ -62,10 +62,15 @@ bash bin/frontmatter.sh && bash bin/versions.sh && bash bin/repeats.sh $(git ls-
 | `frontmatter` | a skill, agent or command is missing the frontmatter that registers it |
 | `versions` | `marketplace.json` and a `plugin.json` disagree on a version |
 | `repeats` | a sentence appears verbatim in two files — scoped to `panel` and `pest` |
+| `judges.test` | `judges.sh` stops rejecting a judge it should reject |
+| `judges` | this repo's own charter seats an agent that can write what it judges |
 
 **What they do not check:** that a plugin still loads, that hook paths resolve, that shell scripts
 are valid, or anything at all about `kernel`, `laravel-ddd` and `laravel-playbook` beyond their
-manifests. Green means those three gates passed. It does not mean the change works.
+manifests. Green means those gates passed. It does not mean the change works.
+
+**And they do not run in CI.** GitHub Actions is billing-locked on this account — no workflow can
+obtain a runner, so every result is one machine, once. Run them yourself and say so.
 
 Bump the version in **both** `plugin.json` and `.claude-plugin/marketplace.json` — the manifest is
 the one that gets forgotten. Commits use [Commitizen](https://commitizen-tools.github.io/commitizen/)

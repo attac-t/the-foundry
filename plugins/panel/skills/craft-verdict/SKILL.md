@@ -84,6 +84,12 @@ to write**.
   after round one. A new **C** is always admissible.
 - **Licence** — an approval with residual risks recorded is a successful review.
 
+**More than one gate.** A run closes when every gate has approved *and* nothing is left unresolved.
+**Resolution is not agreement** — a finding resolves by being fixed, withdrawn, or accepted as
+recorded residual risk, and only the human accepts. Two judges on one gate must reach the same
+answer; on different gates they never had to. Name any gate still outstanding at close, with its
+terminus and what would reopen it.
+
 **DEADLOCK has two triggers.** *Exhausted* — rounds ran out. *Out of category* — the argument needs
 a fact the team doesn't hold. The discriminator is not confidence but what settles it:
 
