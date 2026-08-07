@@ -1,4 +1,4 @@
-# Charter: empty-verdicts
+# Charter: foreign-approval
 
 ## Panel
 

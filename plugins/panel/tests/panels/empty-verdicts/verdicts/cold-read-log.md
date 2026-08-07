@@ -1,3 +1,3 @@
 # note
 
-not a verdict
+appended series, not a verdict

@@ -22,6 +22,12 @@ pass=0 fail=0
 # it <behaviour> <expected exit> <fixture> [agent path]
 it() {
   local behaviour="$1" want="$2" fixture="$3" agents="${4:-}" got
+  # A fixture git never tracked makes its assertion pass on a fresh clone for the wrong reason.
+  # The `no-charter` directory was empty, so git carried nothing and the check met a missing path.
+  if [ ! -e "$fixture" ] && [ "$want" != 2 ]; then
+    fail=$((fail + 1)); printf '  FAIL  %s — no fixture at %s\n' "$behaviour" "$fixture"
+    return 0
+  fi
   if [ -n "$agents" ]; then
     PANEL_AGENT_PATH="$agents" bash "$JUDGES" "$fixture" >/dev/null 2>&1
   else

@@ -16,6 +16,10 @@ pass=0 fail=0
 
 it() {
   local behaviour="$1" want="$2" panel="$3" got
+  if [ ! -d "$panel" ]; then
+    fail=$((fail + 1)); printf '  FAIL  %s — no fixture at %s\n' "$behaviour" "$panel"
+    return 0
+  fi
   bash "$VERDICTS" "$panel" >/dev/null 2>&1
   got=$?
   if [ "$got" = "$want" ]; then
@@ -33,6 +37,15 @@ it "accepts a run still in flight"                  0 "$PANELS/in-progress"
 it "rejects an approval with an empty trail"        1 "$PANELS/empty-verdicts"
 it "rejects a gate that filed nothing"              1 "$PANELS/partial"
 it "rejects an approval anchored to no commit"      1 "$PANELS/no-commit"
+
+# A closed run's approval left in place discharges the next run for free — the defect this gate
+# exists to catch, surviving inside it.
+it "rejects an approval naming another charter"     1 "$PANELS/foreign-approval"
+
+# `defaced` is seven characters of valid hex. Without the digit lookahead it reads as a commit.
+it "rejects prose that merely looks like a commit"  1 "$PANELS/defaced"
+
+it "refuses two seats sharing one role name"        2 "$PANELS/stem-collision"
 it "refuses a directory holding no charter"         2 "$PANELS/no-charter"
 
 echo

@@ -51,7 +51,8 @@ Verify the install: `/evaluate`
 
 ## Contributing
 
-Five gates. Run them before you open a pull request — see below for why that is not a formality:
+**This line is the gate definition.** Run it before you open a pull request — see below for why that
+is not a formality. `.github/workflows/gates.yml` mirrors it and has never run.
 
 ```bash
 bash bin/frontmatter.sh && bash bin/versions.sh && bash bin/repeats.sh $(git ls-files -co --exclude-standard 'plugins/panel/*.md' 'plugins/pest/*.md') && bash plugins/panel/tests/judges.test.sh && bash plugins/panel/tests/verdicts.test.sh && bash plugins/panel/bin/judges.sh && bash plugins/panel/bin/verdicts.sh && bash plugins/panel/bin/judges.sh plugins/panel/tests/fixtures/pest-critic.md
@@ -78,6 +79,11 @@ manifests. Green means those gates passed. It does not mean the change works.
 
 **And they do not run in CI.** GitHub Actions is billing-locked on this account — no workflow can
 obtain a runner, so every result is one machine, once. Run them yourself and say so.
+
+That is now true of **five** workflow steps added across two charters, none of which has ever
+executed. Treat `gates.yml` as a copy of the line above rather than as the thing that enforces it,
+and do not add a step there without adding it here. Whether `python` even resolves on
+`ubuntu-latest` is unverified, because nothing has ever tried.
 
 Bump the version in **both** `plugin.json` and `.claude-plugin/marketplace.json` — the manifest is
 the one that gets forgotten. Commits use [Commitizen](https://commitizen-tools.github.io/commitizen/)

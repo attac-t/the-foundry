@@ -11,6 +11,7 @@ import sys
 USAGE, FAILED = 2, 1
 
 ROLE = re.compile(r"^\s*([A-Za-z][A-Za-z0-9 _-]{0,24})\s*:\s*(\S.*)$")
+TITLE = re.compile(r"^#\s+Charter:\s*(\S.*?)\s*$", re.MULTILINE)
 REPEAT = re.compile(r"\s*[x×]\s*\d+\s*$", re.IGNORECASE)
 SECTION = re.compile(r"^##\s+Panel\s*$(.*?)(?=^##\s|\Z)", re.MULTILINE | re.DOTALL)
 FENCE = re.compile(r"^[ \t]*```.*?^[ \t]*```", re.MULTILINE | re.DOTALL)
@@ -42,6 +43,14 @@ def panel_section(path):
         die(USAGE, f"USAGE — {charter.as_posix()} has {len(found)} `## Panel` sections; "
                    "which one governs is not decidable.")
     return found[0]
+
+
+def title(path):
+    """What this charter is called. An approval that cannot name it is not this run's."""
+    found = TITLE.search(read(path))
+    if not found:
+        die(USAGE, f"USAGE — {pathlib.Path(path).as_posix()} has no `# Charter: <name>` heading.")
+    return found.group(1)
 
 
 def _names(field):

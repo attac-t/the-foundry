@@ -1,4 +1,4 @@
-# fixture
+# Charter: complete
 
 ## Panel
 

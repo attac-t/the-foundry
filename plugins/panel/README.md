@@ -83,6 +83,9 @@ Structural     tools: Read, Glob, Grep on judges.
 Checked        bin/judges.sh reads the charter and resolves every seated judge.
                Exit 0 eligible · 1 ineligible or unnamed · 2 usage.
 
+               bin/verdicts.sh reads the approval and looks for the trail behind it.
+               Exit 0 complete or in flight · 1 unproven · 2 usage.
+
 Architectural  /verdict runs oracles in the parent session.
                Exit codes are harness-observed, never model-reported.
 
@@ -173,6 +176,11 @@ residual.
 
 Gate 2's timings append to `verdicts/cold-read-log.md`. **Slop is invisible in any single diff and
 obvious across forty** — that column is the only instrument that sees it.
+
+None of that works if the verdicts are never written, and on the first production run they weren't:
+four rounds, two gates, eight judgements, nothing on disk. `bin/verdicts.sh` refuses an `approval.md`
+with no trail behind it. **The trail is scoped to its run** — close a charter and archive it to
+`verdicts/<slug>/`, or a single old verdict discharges every run that follows.
 
 ---
 

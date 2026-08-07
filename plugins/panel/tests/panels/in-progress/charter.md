@@ -1,4 +1,4 @@
-# fixture
+# Charter: in-progress
 
 ## Panel
 
