@@ -54,7 +54,7 @@ Verify the install: `/evaluate`
 Five gates. Run them before you open a pull request — see below for why that is not a formality:
 
 ```bash
-bash bin/frontmatter.sh && bash bin/versions.sh && bash bin/repeats.sh $(git ls-files -co --exclude-standard 'plugins/panel/*.md' 'plugins/pest/*.md') && bash plugins/panel/tests/judges.test.sh && bash plugins/panel/bin/judges.sh && bash plugins/panel/bin/judges.sh plugins/panel/tests/fixtures/pest-critic.md
+bash bin/frontmatter.sh && bash bin/versions.sh && bash bin/repeats.sh $(git ls-files -co --exclude-standard 'plugins/panel/*.md' 'plugins/pest/*.md') && bash plugins/panel/tests/judges.test.sh && bash plugins/panel/tests/verdicts.test.sh && bash plugins/panel/bin/judges.sh && bash plugins/panel/bin/verdicts.sh && bash plugins/panel/bin/judges.sh plugins/panel/tests/fixtures/pest-critic.md
 ```
 
 | Gate | Fails when |
@@ -63,7 +63,9 @@ bash bin/frontmatter.sh && bash bin/versions.sh && bash bin/repeats.sh $(git ls-
 | `versions` | `marketplace.json` and a `plugin.json` disagree on a version |
 | `repeats` | a sentence appears verbatim in two files — scoped to `panel` and `pest` |
 | `judges.test` | `judges.sh` stops rejecting a judge it should reject |
+| `verdicts.test` | `verdicts.sh` stops rejecting an approval it should reject |
 | `judges` | this repo's own charter seats an agent that can write what it judges |
+| `verdicts` | an `approval.md` here cannot show the verdicts it claims |
 | `judges` (pest) | `pest:critic` stops being seatable as a judge |
 
 **The last one is deliberately not in panel's own suite.** Panel installs standalone, so nothing

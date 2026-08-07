@@ -38,8 +38,16 @@ jobs:
       - name: judges.sh still rejects what it should reject
         run: bash plugins/panel/tests/judges.test.sh
 
+      - name: verdicts.sh still rejects an approval it should reject
+        run: bash plugins/panel/tests/verdicts.test.sh
+
       - name: This repo's charter seats no judge that can write
         run: bash plugins/panel/bin/judges.sh
+
+      # An approval nobody can check is a review that did not happen. bulibeef recorded four
+      # rounds across two gates and committed none of the eight judgements.
+      - name: This repo's approval shows the verdicts it claims
+        run: bash plugins/panel/bin/verdicts.sh
 
       # Kept out of panel's own suite on purpose. Panel installs standalone, so nothing shipped
       # inside it may assert that pest is present — a suite that needs a second plugin fails for

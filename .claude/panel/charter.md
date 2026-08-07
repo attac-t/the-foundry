@@ -105,4 +105,4 @@ gate 1:  `panel:adversary`
 
 ## Approved
 
-<pending — human>
+Chris Attard — 2026-08-07
