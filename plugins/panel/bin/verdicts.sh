@@ -10,11 +10,12 @@ set -euo pipefail
 
 # No bytecode. A .pyc was committed into this plugin once; not writing them at all beats ignoring
 # them, and a gate has nothing to gain from a cache.
-# `python` is absent on stock Debian and most minimal images; `python3` is the portable spelling.
-# Resolve rather than assume, and say so plainly when neither is there.
-PYTHON=$(command -v python3 || command -v python) || {
-  echo "USAGE — needs python3 (or python) on PATH."
-  exit 2
-}
+# Probe by running, never by locating. macOS ships /usr/bin/python3 as a trampoline that prompts
+# for Xcode Command Line Tools instead of executing — `command -v` finds it and it is not Python.
+# `python` is absent on stock Debian besides.
+for candidate in python3 python; do
+  "$candidate" -c "" >/dev/null 2>&1 && PYTHON=$candidate && break
+done
+: "${PYTHON:?USAGE — needs a working python3. On macOS: xcode-select --install}"
 
 exec env PYTHONDONTWRITEBYTECODE=1 "$PYTHON" "$(dirname "$0")/verdicts.py" "$@"
