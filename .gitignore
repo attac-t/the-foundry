@@ -31,3 +31,6 @@ laravel-event-sourcing/
 # Python bytecode. It shipped inside a plugin once.
 __pycache__/
 *.py[cod]
+
+# Panel run data — charters, verdicts, approvals. Kept locally; history retains what shipped.
+.claude/panel/
