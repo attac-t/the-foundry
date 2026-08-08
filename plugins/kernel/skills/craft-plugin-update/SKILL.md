@@ -45,8 +45,9 @@ Get-ChildItem "$env:USERPROFILE\.claude\plugins\cache\<marketplace>\<plugin>\"
 Nothing verifies those commands. They are strings in a document. Run them; do not trust them.
 
 **Editing a plugin and testing it in the same session is the trap.** The files on disk changed, so
-the edit looks applied, and every agent keeps reading the copy. One project ran a full review cycle
-against `0.6.2` while its tree stood at `0.9.4` — every finding valid, none about the current code.
+the edit looks applied, and every agent keeps reading the copy — a whole review cycle can run
+against the installed version while the tree sits several ahead of it, every finding valid and none
+about the current code.
 
 ## The Protocol
 

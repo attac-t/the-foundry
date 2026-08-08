@@ -1,8 +1,8 @@
 """An approval must show the verdicts it claims.
 
 `craft-verdict` specifies the trail and `adversary.md` assigns the recording to the parent. Both are
-instructions to a model that would also have to obey them, and on the only production run in
-existence all eight judgements went unwritten.
+instructions to a model that would also have to obey them, which `ground-mechanism` calls no
+enforcement at all.
 
 The trail is scoped to its run by **text**: a verdict discharges a seat only if it names the charter.
 Archiving a closed run to `verdicts/<slug>/` is tidiness, not correctness — move half of it, or none
@@ -50,9 +50,7 @@ def roster(section):
 def recorded(verdicts, name):
     """Roles whose verdict names this charter.
 
-    The join is the text, not the directory. Archiving a closed run is then housekeeping rather
-    than correctness — move half of it, or none of it, and last run's verdicts still discharge
-    nobody. A positional rule needs a human to perform it, and this gate exists because one didn't.
+    The join is the text, not the directory, so archiving a closed run is housekeeping.
     """
     if not verdicts.is_dir():
         return set()

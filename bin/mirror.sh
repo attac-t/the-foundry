@@ -2,11 +2,8 @@
 #
 # Fails when the workflow and the README name different gate commands.
 #
-# Promoted after the same drift twice: a gate reached the README's copy-paste line and not the
-# workflow, then a widened scope reached the workflow and not the README. Both times each file read
-# correctly on its own, which is what makes a re-specified command worse than a shared one.
-#
-# The README is the definition. This checks that the copy still matches.
+# A command specified in two files drifts, and each copy reads correctly alone, so nobody compares
+# them. The README is the definition; this checks that the copy still matches.
 
 set -euo pipefail
 
@@ -21,8 +18,7 @@ tidy() {
   sed 's/^[[:space:]]*//; s/[[:space:]]*$//; s/[[:space:]][[:space:]]*/ /g' | grep -v '^$' | sort
 }
 
-# The chain is the one README line that runs the first gate. Selecting by fence order instead picks
-# the install snippet, which is how this script failed its own first run.
+# Anchor on the line that runs the first gate. Selecting by fence order picks the install snippet.
 gates_in_readme() {
   grep -m1 'bash bin/frontmatter.sh' "$README" | sed 's/ *&& */\n/g' | tidy
 }

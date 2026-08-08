@@ -61,18 +61,16 @@ it "rejects a writer seated on a later gate"          1 "$FIXTURES/writer-on-gat
 it "rejects a charter that seats only an author"      1 "$FIXTURES/no-judges.md"            "Only \`author:\` is seated"
 it "rejects a judge that does not exist"              1 "$FIXTURES/ghost-judge.md"          "no agent of that name"
 it "seats several gates, and one judge repeatedly"    0 "$FIXTURES/two-gates.md"            "2 gates"
-# Nothing here may assert 0 while naming an agent from another plugin: panel installs standalone,
-# so a suite needing pest present fails for most of the people who run it. That a stack plugin
-# seats an eligible judge is a fact about the monorepo, and the repo's own gate chain asserts it.
+# No row may assert 0 while naming another plugin's agent: panel installs standalone, so a suite
+# needing a second plugin present fails for most of the people who run it.
 
 # The pin, the merge, and the fence — none of which the first seven fixtures could see.
 it "will not resolve a pin to another plugin's agent" 1 "$FIXTURES/wrong-plugin.md"         "no agent of that name"
 it "keeps every judge when a gate is listed twice"    1 "$FIXTURES/repeated-label.md"       "declares no \`tools:\`"
 it "parses the section, not the fenced example"       1 "$FIXTURES/fenced-decoy.md"         "declares no \`tools:\`" "$LOCAL_AGENTS"
 
-# Eligibility must not depend on another plugin's agent names. judge-can-write used to name
-# kernel:architect; with kernel absent it still exited 1, through the unresolved branch rather than
-# Law 4 — a row passing for a reason it was not written to test. The reason assertion found it.
+# Local agents, so eligibility does not depend on another plugin's names. Naming a foreign agent
+# here still exits 1 when that plugin is absent — through the unresolved branch, not Law 4.
 it "accepts a restricted local agent"                 0 "$FIXTURES/local-reader.md"         "none can write"        "$LOCAL_AGENTS"
 
 # Usage is a third outcome, not a flavour of failure.

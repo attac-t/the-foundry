@@ -1,6 +1,6 @@
 {
   "name": "panel",
-  "version": "0.9.7",
+  "version": "0.9.8",
   "description": "Adversarial agent teams. Verification that cannot be self-issued. Standalone; pairs well with kernel.",
   "author": {
     "name": "Christian Attard",
