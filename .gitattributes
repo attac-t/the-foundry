@@ -1,0 +1,11 @@
+# Executables keep LF in the working tree, on every platform.
+#
+# Git converts LF to CRLF on checkout wherever `core.autocrlf=true`, which is the Windows default.
+# A shell script with CRLF does not run — bash reports `$'\r': command not found` and refuses
+# `set -o pipefail` — so a fresh clone on Windows produces a repository whose own gates cannot
+# execute. Nothing in the history is wrong; the checkout is.
+#
+# Found the first time this repository was materialised fresh on Windows rather than written in
+# place, which is late enough to be worth the comment.
+*.sh text eol=lf
+*.py text eol=lf
