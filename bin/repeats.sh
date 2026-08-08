@@ -41,9 +41,21 @@ paragraphs() {
 
 # One line per sentence, tab, the file it came from. Tagging via awk, not sed — BSD sed emits a
 # literal "t" for \t and would corrupt the delimiter without failing.
+missing=()
+for file in "${files[@]}"; do
+  [ -f "$file" ] || missing+=("$file")
+done
+
+# Skipping quietly and then reporting the argument count is a gate claiming work it did not do.
+# Under fork exhaustion on Windows this reported PASS across 80 files while subprocesses died.
+if [ "${#missing[@]}" -gt 0 ]; then
+  echo "FAIL — ${#missing[@]} of ${#files[@]} arguments cannot be read:"
+  printf '  %s\n' "${missing[@]}"
+  exit 1
+fi
+
 sentences=$(
   for file in "${files[@]}"; do
-    [ -f "$file" ] || continue
     paragraphs "$file" \
       | grep -o "[A-Z][^.!?]\{$MIN,$MAX\}[.!?]" \
       | sed 's/  */ /g; s/^ //' \
