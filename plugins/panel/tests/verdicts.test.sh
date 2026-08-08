@@ -57,6 +57,10 @@ it "rejects a trail left over from an earlier run"  1 "$PANELS/stale-trail" "no 
 # not own is a corpus that stops being evidence without telling you.
 it "rejects the shape this charter was written for" 1 "$PANELS/flat-roster" "seats no judge"
 
+# In flight outranks the empty roster: a charter with no approval owes nothing, whatever its
+# `## Panel` looks like. Swap the two branches and only this row turns red.
+it "lets a rosterless charter run before approval"  0 "$PANELS/flat-roster-in-flight"
+
 # `defaced` is seven characters of valid hex. Without the digit lookahead it reads as a commit.
 it "rejects prose that merely looks like a commit"  1 "$PANELS/defaced"
 

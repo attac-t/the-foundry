@@ -1,7 +1,9 @@
 # Charter: an approval proves its own review
 
 Follows `judges are peers`, approved and closed 2026-08-07 — see
-[approval.md](verdicts/approval.md), whose closing paragraph names this defect as the larger one.
+[its approval](verdicts/judges-are-peers/approval.md), whose closing paragraph names this defect as
+the larger one. `verdicts/approval.md` is *this* run's, and pointing at it here would resolve to a
+document about something else.
 
 ## Goal
 
@@ -58,8 +60,10 @@ Behaviours it must carry:
 | it | exit |
 |----|------|
 | passes a complete trail — every seated judge has a verdict, approval cites a SHA | 0 |
-| passes a run in progress — no `approval.md` yet | 0 |
-| fails an approval with an empty `verdicts/` — the `bulibeef` shape | 1 |
+| passes a run in progress — no `approval.md` yet, whatever the roster | 0 |
+| refuses an approval above a `## Panel` that seats nobody | 1 |
+| refuses an approval naming another charter, or a trail that does | 1 |
+| fails an approval with an empty `verdicts/` | 1 |
 | fails when one gate's judge is missing a verdict and another has one | 1 |
 | fails an approval that cites no commit | 1 |
 | refuses a panel directory with no charter | 2 |
@@ -85,7 +89,7 @@ Standing — must still exit zero at the end:
 - [x] `bash bin/repeats.sh $(git ls-files -co --exclude-standard 'plugins/panel/*.md' 'plugins/pest/*.md')`
 - [x] `bash plugins/panel/tests/judges.test.sh`
 - [x] `bash plugins/panel/bin/judges.sh`
-- [ ] Judged: `panel:adversary` approves, with residual risks recorded
+- [x] Judged: `panel:adversary` approves, with residual risks recorded — verdict 008 @ `7833007`
 
 ## Stated, ungated
 
