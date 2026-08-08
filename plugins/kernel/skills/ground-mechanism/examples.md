@@ -55,14 +55,15 @@ no discriminating field.
 
 ## The open set that would not close
 
-**Wrong.** A lint that flags presentation vocabulary leaking into domain code — `display`, `label`,
-`badge`, `formatted`, `screen`, `color`, `sortOrder`.
+**Wrong.** A lint enumerating the words presentation code uses, run against domain code.
 
-Measured on a real codebase: **30–60% false positives.** `page` is pagination. `label` is a
-first-class object in logistics. `color` *is* the domain in retail. `sortOrder` is persisted state
-whenever users define an ordering.
+It cannot work, and the reason is structural rather than a matter of tuning: the vocabulary has no
+last member. Every term the list holds is also a legitimate domain noun somewhere — retail sells
+colour, logistics ships labels — so the list must grow to stay useful and grows false positives
+faster than coverage. Measured on a real codebase, **30–60%** of its hits were wrong.
 
-The repair is not a longer list — the vocabulary is unbounded, so no list closes it.
+A longer list is a longer guess. `panel:craft-oracle` has the measured breakdown and what a gate
+that wrong does to the people who have to read it.
 
 **Right.** Narrow the *scope* until the set closes, and let judgment take the remainder.
 
@@ -74,10 +75,13 @@ The repair is not a longer list — the vocabulary is unbounded, so no list clos
 
 ## Promotion — judgment becoming code
 
-Round one, a reviewer argues that a module near the database should not be imported by a module far
-from it. Judgment: correct, expensive, and it will recur on every review forever.
+A dependency-direction argument is worth having once. Won, it changes one pull request; won again
+next month, it has cost two reviews and protected nothing the first win did not already establish.
 
-Round five, that judgment is a forbidden-import check. It costs an exit code.
+The tell is the repetition, not the difficulty. Encode it and the same rule stops consuming
+attention: identical every time, cheap enough to run on every commit, and it never gets tired at
+five o'clock. That is the whole economics of the migration — a judgment is a recurring cost, and a
+check is a fixed one.
 
 `pest:craft-arch` is this promotion already done for one stack — architecture, which sounds
 irreducibly human, has an exit code there.

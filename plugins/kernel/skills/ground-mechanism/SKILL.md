@@ -40,6 +40,33 @@ The line moves. Both ways.
 - **Promote** judgment → code when it recurs identically. It gets cheaper forever.
 - **Demote** code → judgment when rules accrete special cases faster than they generalize. A rule set growing one clause per incident is a classifier fighting to be born.
 
+## Script Or Prose
+
+The same question, one altitude down, and the one an author of skills actually faces: does this rule
+become `bin/x.sh`, or a paragraph in a `SKILL.md`?
+
+They are not two styles of writing it down. **Prose in a skill is an instruction to a model; a script
+is a fact about the repository.** A rule written as prose is followed when it is read, by a reader
+willing to follow it. That is the right arrangement for most rules and a disaster for a few.
+
+| Earns a script | Stays prose |
+|---|---|
+| one right answer, decidable from the files | a space of acceptable answers |
+| must hold when nobody is looking | applies when a human is already deciding |
+| consulted far more often than read | read once, then internalised |
+| its violation is silent | its violation is obvious the moment it happens |
+
+**The trap is a rule in prose that reads like enforcement.** A heading, an imperative, a table of
+musts — none of it runs. If a rule matters enough that you would be dismayed to find it broken in six
+months, prose is a preference with good typography.
+
+**And the reverse trap.** A script encoding taste produces false refusals, and a gate people learn to
+override is worse than no gate, because they learn it about the correct ones too.
+
+A script also arrives with a bill: it must itself be trusted, which is a second job — see
+`ground-evidence`. Prose has no such cost, and that asymmetry is the honest argument for leaving more
+rules in prose than instinct suggests.
+
 ## The Sandwich
 
 The practical shape:
