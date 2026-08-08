@@ -12,8 +12,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # First, because every step below is a copy of a line in the README and copies drift.
-      - name: The workflow and the README agree
+      # First, because every step below is a copy of one line in CONTRIBUTING.md and copies drift.
+      - name: The workflow and the contributing guide agree
         run: bash bin/mirror.sh
 
       # Ordered by what reaches a user. A component whose frontmatter is wrong registers
@@ -30,8 +30,8 @@ jobs:
       # further means fixing those first. A gate that declares its scope is honest — a gate
       # quietly narrowed to stay green is not.
       #
-      # This command must match README's gate line exactly. It has drifted from it twice; the
-      # README is the definition and this file is the copy.
+      # This command must match the gate line in CONTRIBUTING.md exactly. It has drifted twice;
+      # that file is the definition and this one is the copy.
       #
       # This blocks verbatim duplication, which is the *precondition* of drift, not drift
       # itself. Once two statements of a rule differ by one word, separating intentional
@@ -41,8 +41,8 @@ jobs:
 
       # A judge that can write what it judges may have written what it approves. These two are
       # the deliverable of the "judges are peers" charter and the promotion its own verdict
-      # asked for — reaching the README's copy-paste line and not this file left them running
-      # only when someone remembered, which is the failure the promotion exists to remove.
+      # asked for — reaching the contributing guide and not this file left them running only when
+      # someone remembered, which is the failure the promotion exists to remove.
       - name: judges.sh still rejects what it should reject
         run: bash plugins/panel/tests/judges.test.sh
 
