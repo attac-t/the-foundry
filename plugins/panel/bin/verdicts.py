@@ -104,6 +104,14 @@ def main(panel_dir):
         print(f"PASS — {panel.as_posix()} claims no approval; a run in flight owes no trail.")
         return 0
 
+    if not judges:
+        # Zero seats makes `missing` empty, so an approval claiming four rounds would pass on one
+        # file. `judges.py` refuses this same charter, and two gates disagreeing about the roster
+        # is the one thing sharing a parser was supposed to prevent.
+        die(FAILED, f"FAIL — {charter.as_posix()} seats no judge, yet {approval.name} exists.", "",
+            "  Nobody owes a verdict, so nothing can be missing, so the trail proves nothing.",
+            "  Give each judge a gate — `judges.sh` refuses this charter for the same reason.")
+
     claimed = read(approval)
 
     if name not in claimed:

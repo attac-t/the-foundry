@@ -23,7 +23,11 @@ Stated so it could be false:
 - It exits non-zero when `approval.md` cites no commit — verdict 002 established that an approval
   without a SHA cannot close, because the next judge cannot reconstruct what this one read.
 - It exits **zero** on a run in progress. A charter mid-flight has no approval and owes no trail.
-- Run against `bulibeef`'s panel directory it fails. Run against this one it passes.
+- It refuses a charter that seats **no** judge while claiming an approval — nobody owes a verdict,
+  so nothing can be missing, so the trail proves nothing. `judges.sh` refuses the same charter, and
+  two gates disagreeing about one roster is what sharing a parser exists to prevent.
+- The pre-moments shape `bulibeef` had fails, **as a fixture** — see `## Done when`. The original
+  claim named that repository directly and is withdrawn.
 
 **It reuses `judges.sh`'s `## Panel` parser.** Who is seated on which gate is exactly who owes a
 verdict, so the moments format pays a second dividend and the two gates cannot disagree about the
@@ -43,8 +47,9 @@ file each time did not. Cheapness of the write predicted survival better than an
 
 ## Done when
 
-Assertions against fixture panel directories, each asserting an exact exit code. `bulibeef` is a real
-corpus and is checked as one, read-only.
+Assertions against fixture panel directories, each asserting an exact exit code **and, where the
+reason matters, a fragment of the failure line**. An exit code alone cannot tell one refusal from
+another, and three consecutive verdicts turned on exactly that.
 
 - [x] `bash plugins/panel/tests/verdicts.test.sh` → **0**
 
