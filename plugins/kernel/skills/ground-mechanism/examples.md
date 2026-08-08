@@ -55,21 +55,24 @@ no discriminating field.
 
 ## The open set that would not close
 
-**Wrong.** A lint enumerating the words presentation code uses, run against domain code.
+**Wrong.** A rule requiring comments to explain *why* rather than *what*, enforced by a check.
 
-It cannot work, and the reason is structural rather than a matter of tuning: the vocabulary has no
-last member. Every term the list holds is also a legitimate domain noun somewhere — retail sells
-colour, logistics ships labels — so the list must grow to stay useful and grows false positives
-faster than coverage. Measured on a real codebase, **30–60%** of its hits were wrong.
+Nothing decidable separates the two. `// retry three times` restates the loop beneath it and is
+worthless; `// three retries — the upstream rate limiter forgives bursts under four` is the same
+sentence carrying a fact no reader could recover from the code. A check can count words, spot a verb
+lifted from the line below, flag a comment shorter than what it annotates — and each heuristic fails
+on some correct comment and passes some useless one, because the property is *whether a reader
+learns something*, which lives in the reader.
 
-A longer list is a longer guess. `panel:craft-oracle` has the measured breakdown and what a gate
-that wrong does to the people who have to read it.
+The vocabulary of *why* has no last member. That is the shape of an open set: not a list too short
+to have been finished, but one that cannot be finished in principle.
 
 **Right.** Narrow the *scope* until the set closes, and let judgment take the remainder.
 
-- **Code**: declared identifiers under the domain namespace, checked against a per-repo allowlist.
-- **Model**: everything else — including the leaks that have no vocabulary at all, like an endpoint
-  shaped exactly like one screen.
+- **Code**: a comment is *required* wherever a constant has no derivation in the file — a closed
+  question, decidable from the syntax tree, no taste involved.
+- **Model**: whether the comment that appears there earns its line. Judged, on review, by whoever
+  has to maintain it.
 
 ---
 

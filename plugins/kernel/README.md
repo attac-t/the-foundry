@@ -39,9 +39,12 @@ context        Manage the context budget.
 recitation     Anchor objectives. Solve drift.
 orientation    Load context. Solve cold start.
 mechanism      Code or model. What must be deterministic.
+evidence       What a green check does not prove.
 delegation     Know when to code and when to lead.
 interview      Extract requirements via questions.
 topic          Isolate memory per branch.
+stack          Load the philosophy for the stack in hand.
+ground         Load every ground-* skill at once.
 ```
 
 ### Craft — Building
@@ -57,6 +60,8 @@ handoff        State transfer between sessions
 map            Elegant directory trees
 observation    Record learnings and discoveries
 readme         Documentation that doesn't suck
+memory         CLAUDE.md that gets followed
+rfc            Propose a design before building it
 ```
 
 **OS Extension**
@@ -66,6 +71,7 @@ agent          Sub-agent definitions
 command        Slash command triggers
 hook           OS reflexes
 plugin         Plugin architecture
+plugin-update  Release a version — and why your edits aren't running
 ```
 
 **Quality**

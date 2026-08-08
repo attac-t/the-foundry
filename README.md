@@ -55,11 +55,12 @@ Verify the install: `/evaluate`
 is not a formality. `.github/workflows/gates.yml` mirrors it and has never run.
 
 ```bash
-bash bin/frontmatter.sh && bash bin/versions.sh && bash bin/repeats.sh $(git ls-files -co --exclude-standard 'plugins/panel/*.md' 'plugins/pest/*.md' 'plugins/kernel/skills/ground-evidence/*.md' 'plugins/kernel/skills/ground-mechanism/*.md' 'plugins/kernel/skills/craft-plugin-update/*.md') && bash plugins/panel/tests/judges.test.sh && bash plugins/panel/tests/verdicts.test.sh && bash plugins/panel/bin/judges.sh && bash plugins/panel/bin/verdicts.sh && bash plugins/panel/bin/judges.sh plugins/panel/tests/fixtures/pest-critic.md
+bash bin/gates-agree.sh && bash bin/frontmatter.sh && bash bin/versions.sh && bash bin/repeats.sh $(git ls-files -co --exclude-standard 'plugins/panel/*.md' 'plugins/pest/*.md' 'plugins/kernel/skills/ground-evidence/*.md' 'plugins/kernel/skills/ground-mechanism/*.md' 'plugins/kernel/skills/craft-plugin-update/*.md') && bash plugins/panel/tests/judges.test.sh && bash plugins/panel/tests/verdicts.test.sh && bash plugins/panel/bin/judges.sh && bash plugins/panel/bin/verdicts.sh && bash plugins/panel/bin/judges.sh plugins/panel/tests/fixtures/pest-critic.md
 ```
 
 | Gate | Fails when |
 |------|------------|
+| `gates-agree` | this line and `gates.yml` name different commands |
 | `frontmatter` | a skill, agent or command is missing the frontmatter that registers it |
 | `versions` | `marketplace.json` and a `plugin.json` disagree on a version |
 | `repeats` | a sentence appears verbatim in two files — `panel`, `pest`, and three `kernel` skills |
@@ -74,8 +75,9 @@ shipped inside it may assert that another plugin is present. That a stack plugin
 judge is a fact about *this monorepo*, and it is checked here.
 
 **What they do not check:** that a plugin still loads, that hook paths resolve, that shell scripts
-are valid, or anything at all about `kernel`, `laravel-ddd` and `laravel-playbook` beyond their
-manifests. Green means those gates passed. It does not mean the change works.
+are valid, that a plugin edit was accompanied by a version bump, or anything about `laravel-ddd`,
+`laravel-playbook` and most of `kernel` beyond their manifests — the prose gate reaches three kernel
+skills and no further. Green means those gates passed. It does not mean the change works.
 
 **And they do not run in CI.** GitHub Actions is billing-locked on this account — no workflow can
 obtain a runner, so every result is one machine, once. Run them yourself and say so.

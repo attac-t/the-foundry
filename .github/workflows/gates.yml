@@ -12,6 +12,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # First, because every step below is a copy of a line in the README and copies drift.
+      - name: The workflow and the README agree
+        run: bash bin/gates-agree.sh
+
       # Ordered by what reaches a user. A component whose frontmatter is wrong registers
       # wrong for everyone who installs it, and it does so silently — the harness falls back
       # to the directory name and scrapes a description from the first blockquote.
@@ -21,15 +25,19 @@ jobs:
       - name: The manifest agrees with every plugin
         run: bash bin/versions.sh
 
-      # Enforced on the two plugins that are clean. kernel, laravel-ddd and laravel-playbook
-      # carry 18 repeats between them; widening this gate means fixing those first. A gate
-      # that declares its scope is honest — a gate quietly narrowed to stay green is not.
+      # Scoped to panel, pest, and the three kernel skills a charter has cleaned. The rest of
+      # kernel plus laravel-ddd and laravel-playbook carry 18 repeats between them; widening
+      # further means fixing those first. A gate that declares its scope is honest — a gate
+      # quietly narrowed to stay green is not.
+      #
+      # This command must match README's gate line exactly. It has drifted from it twice; the
+      # README is the definition and this file is the copy.
       #
       # This blocks verbatim duplication, which is the *precondition* of drift, not drift
       # itself. Once two statements of a rule differ by one word, separating intentional
       # variation from drift needs semantics, and no exit code can do it.
       - name: No sentence appears twice
-        run: bash bin/repeats.sh $(git ls-files -co --exclude-standard 'plugins/panel/*.md' 'plugins/pest/*.md')
+        run: bash bin/repeats.sh $(git ls-files -co --exclude-standard 'plugins/panel/*.md' 'plugins/pest/*.md' 'plugins/kernel/skills/ground-evidence/*.md' 'plugins/kernel/skills/ground-mechanism/*.md' 'plugins/kernel/skills/craft-plugin-update/*.md')
 
       # A judge that can write what it judges may have written what it approves. These two are
       # the deliverable of the "judges are peers" charter and the promotion its own verdict

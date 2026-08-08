@@ -57,8 +57,18 @@ Goal gates, verified failing at this charter's base commit `d83a0bd`:
   duplication gate at all today** — the scoped invocation covers `panel` and `pest` only.
 
 - [ ] `ls plugins/kernel/skills/ground-evidence/SKILL.md`
-- [ ] `grep -q 'ground-evidence' plugins/kernel/agents/architect.md` — sub-agents do not inherit
-      skills, so an unregistered one is a skill the architect cannot reach
+- [ ] `grep -q 'ground-evidence' plugins/kernel/agents/architect.md`
+
+  **The reason first given here was false.** It said sub-agents do not inherit skills, so an
+  unregistered one is unreachable. `craft-skill:46-49` says the opposite in as many words:
+  *"`skills:` is a preload list, not an allowlist. Omitting a skill does not deny it."* The
+  architect could always have invoked it.
+
+  The gate stands on the real reason. Preloading puts the skill in context at startup, so the
+  architect weighs it while reading a result rather than having to think of reaching for it — which
+  is `craft-skill`'s own test for what belongs in the list. `craft-skill` also calls a preload added
+  as formality a cost, so this one has to earn the tokens, and a skill about believing gate output
+  earns them in an agent that quotes gate output constantly.
 
 Standing — exit zero at base and still at the end:
 

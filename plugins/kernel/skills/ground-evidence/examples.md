@@ -1,7 +1,8 @@
 # Ground Evidence — Examples
 
-Nine green results from one project, none of them measuring what its author believed. Every fix is
-in the repository's history; every one was reported as evidence before it was caught.
+Nine green results from one project, none measuring what its author believed. Each was quoted as
+evidence before it was caught. The project is the author's, not yours — take these as shapes to
+recognise rather than a record you can go and audit.
 
 ---
 
