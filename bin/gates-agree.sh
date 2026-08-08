@@ -3,10 +3,10 @@
 # Fails when the workflow and the README name different gate commands.
 #
 # Promoted after the same drift twice: a gate reached the README's copy-paste line and not the
-# workflow, then a widened scope reached the workflow and not the README. Both times the two files
-# each looked correct alone, which is what makes a re-specified command worse than a shared one.
+# workflow, then a widened scope reached the workflow and not the README. Both times each file read
+# correctly on its own, which is what makes a re-specified command worse than a shared one.
 #
-# The README is the definition. This checks the copy still matches it.
+# The README is the definition. This checks that the copy still matches.
 
 set -euo pipefail
 
@@ -15,46 +15,50 @@ cd "$(dirname "$0")/.."
 readonly WORKFLOW=.github/workflows/gates.yml
 readonly README=README.md
 
-# Commands, one per line, whitespace collapsed. The README's line is a single `&&` chain inside the
-# first bash fence; the workflow spreads the same commands over `run:` keys.
-commands() {
-  sed 's/^[[:space:]]*//; s/[[:space:]]*$//; s/[[:space:]][[:space:]]*/ /g' \
-    | grep -v '^$' | sort
+# One command per line, trimmed, inner whitespace collapsed, sorted. Sorting means a reordered
+# workflow still agrees — order is not what drifts.
+tidy() {
+  sed 's/^[[:space:]]*//; s/[[:space:]]*$//; s/[[:space:]][[:space:]]*/ /g' | grep -v '^$' | sort
 }
 
-# The gate chain is the one line that runs the first gate. Selecting by fence order picks the
-# install snippet instead, which is how this script failed its own first run.
-readme_gates() {
-  grep -m1 'bash bin/frontmatter.sh' "$README" | sed 's/ *&& */\n/g' | commands
+# The chain is the one README line that runs the first gate. Selecting by fence order instead picks
+# the install snippet, which is how this script failed its own first run.
+gates_in_readme() {
+  grep -m1 'bash bin/frontmatter.sh' "$README" | sed 's/ *&& */\n/g' | tidy
 }
 
-workflow_gates() {
-  grep -o '^ *run: bash .*' "$WORKFLOW" | sed 's/^ *run: //' | commands
+gates_in_workflow() {
+  grep -o '^ *run: bash .*' "$WORKFLOW" | sed 's/^ *run: //' | tidy
 }
 
-# Two empty selections agree with each other. Lose the README anchor and the workflow's `run:` keys
-# and this would print `PASS — 0 gate commands`, which is the failure the skill beside it is named
-# for. Refuse instead.
-if [ "$(readme_gates | wc -l)" -eq 0 ]; then
+report() {
+  local heading=$1 commands=$2
+  [ -n "$commands" ] || return 0
+  echo "  $heading"
+  printf '      %s\n' "$commands"
+  echo
+}
+
+# Two empty selections agree with each other. Lose the README anchor and this would print
+# "0 gate commands" and call it a pass — the failure `kernel:ground-evidence` is named for.
+if [ -z "$(gates_in_readme)" ]; then
   echo "FAIL — found no gate chain in $README."
   echo "  Expected one line running \`bash bin/frontmatter.sh\`. Nothing to compare against."
   exit 1
 fi
 
-missing=$(comm -23 <(readme_gates) <(workflow_gates))
-extra=$(comm -13 <(readme_gates) <(workflow_gates))
+only_in_readme=$(comm -23 <(gates_in_readme) <(gates_in_workflow))
+only_in_workflow=$(comm -13 <(gates_in_readme) <(gates_in_workflow))
 
-if [ -z "$missing" ] && [ -z "$extra" ]; then
-  echo "PASS — $(readme_gates | wc -l | tr -d ' ') gate commands; the workflow matches the README."
+if [ -z "$only_in_readme" ] && [ -z "$only_in_workflow" ]; then
+  echo "PASS — $(gates_in_readme | wc -l | tr -d ' ') gate commands; the workflow matches the README."
   exit 0
 fi
 
 echo "FAIL — $WORKFLOW and $README disagree about the gates."
 echo
-
-[ -n "$missing" ] && { echo "  In $README, not in the workflow:"; printf '      %s\n' "$missing"; echo; }
-[ -n "$extra" ]   && { echo "  In the workflow, not in $README:"; printf '      %s\n' "$extra"; echo; }
-
-echo "The README is the definition. A copy that drifts is worse than no copy — each file reads"
-echo "correctly alone, and nobody compares them."
+report "In $README, missing from the workflow:" "$only_in_readme"
+report "In the workflow, missing from $README:" "$only_in_workflow"
+echo "The README is the definition. A copy that drifts is worse than no copy, because each file"
+echo "reads correctly alone and nobody compares them."
 exit 1
