@@ -32,6 +32,15 @@ workflow_gates() {
   grep -o '^ *run: bash .*' "$WORKFLOW" | sed 's/^ *run: //' | commands
 }
 
+# Two empty selections agree with each other. Lose the README anchor and the workflow's `run:` keys
+# and this would print `PASS — 0 gate commands`, which is the failure the skill beside it is named
+# for. Refuse instead.
+if [ "$(readme_gates | wc -l)" -eq 0 ]; then
+  echo "FAIL — found no gate chain in $README."
+  echo "  Expected one line running \`bash bin/frontmatter.sh\`. Nothing to compare against."
+  exit 1
+fi
+
 missing=$(comm -23 <(readme_gates) <(workflow_gates))
 extra=$(comm -13 <(readme_gates) <(workflow_gates))
 

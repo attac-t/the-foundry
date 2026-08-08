@@ -79,7 +79,6 @@ plugin-update  Release a version — and why your edits aren't running
 polish          Deep code polish (seven-pass protocol)
 review          Ruthless critic mentality
 test            Testing philosophy (what to test, not syntax)
-evaluate        Verify the OS is functioning
 evaluate-plugin Verify plugin structure
 ```
 

@@ -82,8 +82,10 @@ skills and no further. Green means those gates passed. It does not mean the chan
 **And they do not run in CI.** GitHub Actions is billing-locked on this account — no workflow can
 obtain a runner, so every result is one machine, once. Run them yourself and say so.
 
-That is now true of **five** workflow steps added across two charters, none of which has ever
-executed. Treat `gates.yml` as a copy of the line above rather than as the thing that enforces it,
+That is true of **every** step in `gates.yml`, not some backlog of recent ones — the file has never
+run at all. Counting them here was itself a small instance of the problem: the number was written
+three times across two files and three charters, and was wrong in all three by the time anyone
+looked. Treat `gates.yml` as a copy of the line above rather than as the thing that enforces it,
 and do not add a step there without adding it here. Whether `python` even resolves on
 `ubuntu-latest` is unverified, because nothing has ever tried.
 

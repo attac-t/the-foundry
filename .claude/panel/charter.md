@@ -50,14 +50,14 @@ otherwise — `craft-oracle`, The Coverage Rule.
 
 Goal gates, verified failing at this charter's base commit `d83a0bd`:
 
-- [ ] `bash bin/repeats.sh $(git ls-files -co --exclude-standard 'plugins/panel/*.md' 'plugins/pest/*.md' 'plugins/kernel/skills/ground-evidence/*.md' 'plugins/kernel/skills/ground-mechanism/*.md' 'plugins/kernel/skills/craft-plugin-update/*.md')` → **0**
+- [x] `bash bin/repeats.sh $(git ls-files -co --exclude-standard 'plugins/panel/*.md' 'plugins/pest/*.md' 'plugins/kernel/skills/ground-evidence/*.md' 'plugins/kernel/skills/ground-mechanism/*.md' 'plugins/kernel/skills/craft-plugin-update/*.md')` → **0**
 
   Fails at base with **2** repeats: `ground-mechanism/examples.md` already shares two sentences with
   `craft-oracle`, across precisely the boundary this charter writes over. **Kernel prose has no
   duplication gate at all today** — the scoped invocation covers `panel` and `pest` only.
 
-- [ ] `ls plugins/kernel/skills/ground-evidence/SKILL.md`
-- [ ] `grep -q 'ground-evidence' plugins/kernel/agents/architect.md`
+- [x] `ls plugins/kernel/skills/ground-evidence/SKILL.md`
+- [x] `grep -q 'ground-evidence' plugins/kernel/agents/architect.md`
 
   **The reason first given here was false.** It said sub-agents do not inherit skills, so an
   unregistered one is unreachable. `craft-skill:46-49` says the opposite in as many words:
@@ -72,17 +72,17 @@ Goal gates, verified failing at this charter's base commit `d83a0bd`:
 
 Standing — exit zero at base and still at the end:
 
-- [ ] `bash bin/frontmatter.sh`
-- [ ] `bash bin/versions.sh`
-- [ ] `bash plugins/panel/tests/judges.test.sh`
-- [ ] `bash plugins/panel/tests/verdicts.test.sh`
-- [ ] `bash plugins/panel/bin/judges.sh`
-- [ ] `bash plugins/panel/bin/verdicts.sh`
+- [x] `bash bin/frontmatter.sh`
+- [x] `bash bin/versions.sh`
+- [x] `bash plugins/panel/tests/judges.test.sh`
+- [x] `bash plugins/panel/tests/verdicts.test.sh`
+- [x] `bash plugins/panel/bin/judges.sh`
+- [x] `bash plugins/panel/bin/verdicts.sh`
 
 Judged:
 
-- [ ] **Gate 1** — `panel:adversary` approves, with residual risks recorded
-- [ ] **Gate 2** — `panel:newcomer` reads `craft-plugin-update` cold and answers one question:
+- [x] **Gate 1** — `panel:adversary` approves, with residual risks recorded
+- [x] **Gate 2** — `panel:newcomer` reads `craft-plugin-update` cold and answers one question:
       *after editing a plugin, what must happen before the change is running?* Four timings appended
       to `verdicts/cold-read-log.md`
 
@@ -105,7 +105,8 @@ and exactly what the gate cannot tell apart from drift.
 ## Gates weakened
 
 **GitHub Actions is billing-locked. No workflow can obtain a runner.** Every result is self-run, one
-machine, once. Five panel steps in `gates.yml` have never executed, and whether `python` resolves on
+machine, once. **No step in `gates.yml` has ever executed** — counting them invites a stale number,
+which is what happened. Whether `python` resolves on
 `ubuntu-latest` is still unverified.
 
 ## Out of scope
