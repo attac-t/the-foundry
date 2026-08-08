@@ -45,8 +45,6 @@ Enable the opinionated voice:
 /output-style kernel:craftsman
 ```
 
-Verify the install: `/evaluate`
-
 ---
 
 ## Contributing
