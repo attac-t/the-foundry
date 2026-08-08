@@ -55,12 +55,12 @@ Verify the install: `/evaluate`
 is not a formality. `.github/workflows/gates.yml` mirrors it and has never run.
 
 ```bash
-bash bin/gates-agree.sh && bash bin/frontmatter.sh && bash bin/versions.sh && bash bin/repeats.sh $(git ls-files -co --exclude-standard 'plugins/panel/*.md' 'plugins/pest/*.md' 'plugins/kernel/skills/ground-evidence/*.md' 'plugins/kernel/skills/ground-mechanism/*.md' 'plugins/kernel/skills/craft-plugin-update/*.md') && bash plugins/panel/tests/judges.test.sh && bash plugins/panel/tests/verdicts.test.sh && bash plugins/panel/bin/judges.sh plugins/panel/tests/fixtures/pest-critic.md
+bash bin/mirror.sh && bash bin/frontmatter.sh && bash bin/versions.sh && bash bin/repeats.sh $(git ls-files -co --exclude-standard 'plugins/panel/*.md' 'plugins/pest/*.md' 'plugins/kernel/skills/ground-evidence/*.md' 'plugins/kernel/skills/ground-mechanism/*.md' 'plugins/kernel/skills/craft-plugin-update/*.md') && bash plugins/panel/tests/judges.test.sh && bash plugins/panel/tests/verdicts.test.sh && bash plugins/panel/bin/judges.sh plugins/panel/tests/fixtures/pest-critic.md
 ```
 
 | Gate | Fails when |
 |------|------------|
-| `gates-agree` | this line and `gates.yml` name different commands |
+| `mirror` | this line and `gates.yml` name different commands |
 | `frontmatter` | a skill, agent or command is missing the frontmatter that registers it |
 | `versions` | `marketplace.json` and a `plugin.json` disagree on a version |
 | `repeats` | a sentence appears verbatim in two files — `panel`, `pest`, and three `kernel` skills |

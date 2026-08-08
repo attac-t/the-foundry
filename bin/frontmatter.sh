@@ -14,7 +14,14 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-python - <<'PY'
+# `python` is absent on stock Debian and most minimal images; `python3` is the portable spelling.
+# Resolve rather than assume, and say so plainly when neither is there.
+PYTHON=$(command -v python3 || command -v python) || {
+  echo "USAGE — needs python3 (or python) on PATH."
+  exit 2
+}
+
+"$PYTHON" - <<'PY'
 import pathlib, re, sys
 
 FRONTMATTER = re.compile(r"\A---\r?\n(.*?)\r?\n---\r?\n", re.DOTALL)

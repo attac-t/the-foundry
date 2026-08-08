@@ -9,52 +9,44 @@ description: Release a plugin version, and why your edits are not running yet. B
 
 ## When
 
-Releasing a plugin version — **or when a change you just made to a plugin is not taking effect.**
-Those are the same skill because they are the same mechanism, which is not obvious until it costs
-you an afternoon.
+Releasing a plugin version — **or when a change you just made is not taking effect.** Same skill,
+because they are the same mechanism.
 
 ## What You Edit Is Not What Is Running
 
-**A session runs an installed copy, not your working tree.** Installing stages the plugin into a
-cache directory named for its version and pinned to a commit, so a skill you just rewrote keeps
-behaving exactly as it did before you touched it:
+**A session runs an installed copy.** Installing stages the plugin into a cache directory named for
+its version, so a skill you just rewrote keeps behaving exactly as it did before you touched it:
 
 ```
 ~/.claude/plugins/cache/<marketplace>/<plugin>/<version>/     ← what the session loads
 <repo>/plugins/<plugin>/                                      ← what you edited
 ```
 
-This holds even when the marketplace points at the repository itself. Pointing at a directory
-decides *where copies come from*; it does not make the copy live.
+True even when the marketplace points at the repository. That decides where copies come *from*; it
+does not make the copy live.
 
-**The version bump is what gives the update somewhere to land.** The cache directory is named by
-version, so shipping without a bump leaves the old directory in place and the old behaviour running.
-That makes the bump load-bearing rather than bookkeeping, which is not obvious from the outside.
+**The bump is what gives an update somewhere to land** — the cache directory is named by version, so
+shipping without one leaves the old directory serving. Load-bearing, not bookkeeping.
 
 ```bash
 claude plugin update <plugin>@<marketplace>
 ```
 
-Then **restart the session** — skills load at startup. To confirm it landed, look for a directory
-named after the new version. Give the path in a form your shell takes; `~` is not portable, and the
-machine you are on may not be the one the example was written on:
+Then **restart the session**; skills load at startup. Confirm by looking for a directory named after
+the new version — `~` is not portable, so spell the path for your own shell:
 
 ```bash
-ls "$HOME/.claude/plugins/cache/<marketplace>/<plugin>/"     # bash, zsh
+ls "$HOME/.claude/plugins/cache/<marketplace>/<plugin>/"          # bash, zsh
 ```
-
 ```powershell
 Get-ChildItem "$env:USERPROFILE\.claude\plugins\cache\<marketplace>\<plugin>\"
 ```
 
-**Nothing verifies that those commands are right.** They are strings in a document, unexecuted by
-anything that ships with this skill. Run them; do not trust them.
+Nothing verifies those commands. They are strings in a document. Run them; do not trust them.
 
-**Working on a plugin and testing it in the same session is the trap.** Edits look applied because
-the files on disk changed; every agent keeps reading the copy. One project ran an entire review
-cycle against version `0.6.2` while its tree stood at `0.9.4` — every finding valid, none of them
-about the current code. Take the tree as the source of truth and the loaded skills as *stale until
-reinstalled*, or verify the running version before trusting a result.
+**Editing a plugin and testing it in the same session is the trap.** The files on disk changed, so
+the edit looks applied, and every agent keeps reading the copy. One project ran a full review cycle
+against `0.6.2` while its tree stood at `0.9.4` — every finding valid, none about the current code.
 
 ## The Protocol
 

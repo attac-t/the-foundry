@@ -42,30 +42,30 @@ The line moves. Both ways.
 
 ## Script Or Prose
 
-The same question, one altitude down, and the one an author of skills actually faces: does this rule
+The same question one altitude down, and the one an author of skills actually faces: does this rule
 become `bin/x.sh`, or a paragraph in a `SKILL.md`?
 
-They are not two styles of writing it down. **Prose in a skill is an instruction to a model; a script
-is a fact about the repository.** A rule written as prose is followed when it is read, by a reader
-willing to follow it. That is the right arrangement for most rules and a disaster for a few.
+Not two styles of writing it down. **Prose in a skill is an instruction to a model; a script is a
+fact about the repository.** Prose is followed when it is read, by a reader willing to follow it —
+right for most rules, and a disaster for a few.
 
 | Earns a script | Stays prose |
 |---|---|
 | one right answer, decidable from the files | a space of acceptable answers |
-| must hold when nobody is looking | applies when a human is already deciding |
+| must hold when nobody is looking | applies while a human is already deciding |
 | consulted far more often than read | read once, then internalised |
-| its violation is silent | its violation is obvious the moment it happens |
+| its violation is silent | its violation is obvious as it happens |
 
-**The trap is a rule in prose that reads like enforcement.** A heading, an imperative, a table of
-musts — none of it runs. If a rule matters enough that you would be dismayed to find it broken in six
-months, prose is a preference with good typography.
+**The trap is prose that reads like enforcement.** A heading, an imperative, a table of musts — none
+of it runs. If you would be dismayed to find a rule broken in six months, prose is a preference with
+good typography.
 
-**And the reverse trap.** A script encoding taste produces false refusals, and a gate people learn to
-override is worse than no gate, because they learn it about the correct ones too.
+**The reverse trap:** a script encoding taste produces false refusals, and a gate people learn to
+override is worse than none, because they learn it about the correct ones too.
 
-A script also arrives with a bill: it must itself be trusted, which is a second job — see
-`ground-evidence`. Prose has no such cost, and that asymmetry is the honest argument for leaving more
-rules in prose than instinct suggests.
+A script also arrives with a bill — it must itself be trusted, which is a second job (see
+`ground-evidence`). Prose has no such cost, and that asymmetry argues for leaving more rules in prose
+than instinct suggests.
 
 ## The Sandwich
 

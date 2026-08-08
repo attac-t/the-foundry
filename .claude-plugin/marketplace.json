@@ -13,13 +13,13 @@
       "name": "kernel",
       "source": "./plugins/kernel",
       "description": "Universal cognitive kernel. Stack-agnostic thinking patterns, memory management, and planning tools.",
-      "version": "1.9.3"
+      "version": "1.9.4"
     },
     {
       "name": "panel",
       "source": "./plugins/panel",
       "description": "Adversarial agent teams. Verification that cannot be self-issued. Standalone; pairs well with kernel.",
-      "version": "0.9.5"
+      "version": "0.9.6"
     },
     {
       "name": "laravel-ddd",
