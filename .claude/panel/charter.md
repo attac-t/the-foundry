@@ -46,7 +46,7 @@ file each time did not. Cheapness of the write predicted survival better than an
 Assertions against fixture panel directories, each asserting an exact exit code. `bulibeef` is a real
 corpus and is checked as one, read-only.
 
-- [ ] `bash plugins/panel/tests/verdicts.test.sh` → **0**
+- [x] `bash plugins/panel/tests/verdicts.test.sh` → **0**
 
 Behaviours it must carry:
 
@@ -59,16 +59,27 @@ Behaviours it must carry:
 | fails an approval that cites no commit | 1 |
 | refuses a panel directory with no charter | 2 |
 
-- [ ] `bash plugins/panel/bin/verdicts.sh` → **0** against this repo's own panel directory
-- [ ] `bash plugins/panel/bin/verdicts.sh <bulibeef panel dir>` → **1**, recorded in the verdict
+- [x] `bash plugins/panel/bin/verdicts.sh` → **0** against this repo's own panel directory
+- [x] the `bulibeef` shape fails — as `panels/flat-roster`, **not** as a path into another repository
+
+**The external-corpus assertion was withdrawn, and why matters more than the fix.** The charter said
+*"run against `bulibeef`'s panel directory it fails"*. It did, once. By round three that repository
+had opened `charter-2.md` and removed `verdicts/` entirely, so the same command now returns **0** —
+correctly, for a run in flight. The gate did not change; the evidence moved.
+
+A judge asking for the failure *line* rather than the exit code is what surfaced it. `0` and `1`
+both looked like the story until someone wanted to know which refusal fired. **A corpus you do not
+own stops being evidence without telling you**, so its shape is now a fixture: flat pre-moments
+roster, an approval claiming four rounds, `cold-read-log.md` surviving because appending a row is
+cheaper than creating a file, and not one verdict.
 
 Standing — must still exit zero at the end:
 
-- [ ] `bash bin/frontmatter.sh`
-- [ ] `bash bin/versions.sh`
-- [ ] `bash bin/repeats.sh $(git ls-files -co --exclude-standard 'plugins/panel/*.md' 'plugins/pest/*.md')`
-- [ ] `bash plugins/panel/tests/judges.test.sh`
-- [ ] `bash plugins/panel/bin/judges.sh`
+- [x] `bash bin/frontmatter.sh`
+- [x] `bash bin/versions.sh`
+- [x] `bash bin/repeats.sh $(git ls-files -co --exclude-standard 'plugins/panel/*.md' 'plugins/pest/*.md')`
+- [x] `bash plugins/panel/tests/judges.test.sh`
+- [x] `bash plugins/panel/bin/judges.sh`
 - [ ] Judged: `panel:adversary` approves, with residual risks recorded
 
 ## Stated, ungated

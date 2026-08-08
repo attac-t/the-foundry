@@ -4,9 +4,10 @@
 instructions to a model that would also have to obey them, and on the only production run in
 existence all eight judgements went unwritten.
 
-The trail is scoped to its run. `verdicts/` holds the charter in flight; a closed run is archived to
-`verdicts/<slug>/`, and its files stop discharging anybody. Without that, one `001-adversary-verdict.md`
-turns the gate green forever — which is the defect it exists to catch, living inside it.
+The trail is scoped to its run by **text**: a verdict discharges a seat only if it names the charter.
+Archiving a closed run to `verdicts/<slug>/` is tidiness, not correctness — move half of it, or none
+of it, and last charter's verdicts still discharge nobody. A positional rule needs a human to
+perform it, and this gate exists because one didn't.
 
 Exit  0 trail complete, or no approval yet
       1 the approval is unproven, or belongs to another charter

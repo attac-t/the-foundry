@@ -43,6 +43,12 @@ it "rejects an approval anchored to no commit"      1 "$PANELS/no-commit"
 it "rejects an approval naming another charter"     1 "$PANELS/foreign-approval"
 it "rejects a trail left over from an earlier run"  1 "$PANELS/stale-trail"
 
+# The shape the charter was written against: a flat pre-moments roster, an approval claiming four
+# rounds, cold-read-log.md surviving because a row is cheaper to append than a file is to create,
+# and not one verdict. It lived in another repository until that repository moved; a corpus you do
+# not own is a corpus that stops being evidence without telling you.
+it "rejects the shape this charter was written for" 1 "$PANELS/flat-roster"
+
 # `defaced` is seven characters of valid hex. Without the digit lookahead it reads as a commit.
 it "rejects prose that merely looks like a commit"  1 "$PANELS/defaced"
 

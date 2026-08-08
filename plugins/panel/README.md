@@ -179,8 +179,12 @@ obvious across forty** — that column is the only instrument that sees it.
 
 None of that works if the verdicts are never written, and on the first production run they weren't:
 four rounds, two gates, eight judgements, nothing on disk. `bin/verdicts.sh` refuses an `approval.md`
-with no trail behind it. **The trail is scoped to its run** — close a charter and archive it to
-`verdicts/<slug>/`, or a single old verdict discharges every run that follows.
+with no trail behind it.
+
+**A verdict names the charter it judges, and that is what scopes it.** Last run's verdicts discharge
+nobody because they name last run's charter — not because they were moved. Archiving a closed run to
+`verdicts/<slug>/` keeps the directory readable; it is tidiness, and nothing depends on someone
+remembering to do it.
 
 ---
 
