@@ -38,9 +38,10 @@ it "rejects an approval with an empty trail"        1 "$PANELS/empty-verdicts"
 it "rejects a gate that filed nothing"              1 "$PANELS/partial"
 it "rejects an approval anchored to no commit"      1 "$PANELS/no-commit"
 
-# A closed run's approval left in place discharges the next run for free — the defect this gate
-# exists to catch, surviving inside it.
+# A closed run left in place discharges the next run for free — the defect this gate exists to
+# catch, surviving inside it. Both halves: the approval, and the verdicts behind it.
 it "rejects an approval naming another charter"     1 "$PANELS/foreign-approval"
+it "rejects a trail left over from an earlier run"  1 "$PANELS/stale-trail"
 
 # `defaced` is seven characters of valid hex. Without the digit lookahead it reads as a commit.
 it "rejects prose that merely looks like a commit"  1 "$PANELS/defaced"
