@@ -1,6 +1,6 @@
 ---
 name: craft-plugin-update
-description: Release a plugin version. Bump plugin.json and the marketplace manifest, then commit.
+description: Release a plugin version, and why your edits are not running yet. Bump plugin.json and the marketplace manifest, reinstall, then commit.
 ---
 
 # Skill: Craft Plugin Update
@@ -9,7 +9,9 @@ description: Release a plugin version. Bump plugin.json and the marketplace mani
 
 ## When
 
-Run this when releasing a new version of a plugin.
+Releasing a plugin version — **or when a change you just made to a plugin is not taking effect.**
+Those are the same skill because they are the same mechanism, which is not obvious until it costs
+you an afternoon.
 
 ## What You Edit Is Not What Is Running
 
@@ -34,11 +36,19 @@ claude plugin update <plugin>@<marketplace>
 ```
 
 Then **restart the session** — skills load at startup. To confirm it landed, look for a directory
-named after the new version:
+named after the new version. Give the path in a form your shell takes; `~` is not portable, and the
+machine you are on may not be the one the example was written on:
 
 ```bash
-ls ~/.claude/plugins/cache/<marketplace>/<plugin>/
+ls "$HOME/.claude/plugins/cache/<marketplace>/<plugin>/"     # bash, zsh
 ```
+
+```powershell
+Get-ChildItem "$env:USERPROFILE\.claude\plugins\cache\<marketplace>\<plugin>\"
+```
+
+**Nothing here verifies that those commands are right.** They are strings in a document, and the one
+gate that reads this repository's prose does not cover `kernel`. Run them; do not trust them.
 
 **Working on a plugin and testing it in the same session is the trap.** Edits look applied because
 the files on disk changed; every agent keeps reading the copy. One project ran an entire review
@@ -56,6 +66,10 @@ reinstalled*, or verify the running version before trusting a result.
 
    The manifest is the one that gets forgotten, and nothing surfaces the mismatch: the plugin
    installs fine and reports the wrong version. `bin/versions.sh` exists because this shipped.
+
+   **It checks the two files agree — not that a bump happened.** Ship a plugin edit with no bump and
+   every gate stays green while the old copy keeps serving, which is exactly the silent staleness
+   below. Unguarded, and worth knowing you are the guard.
 
 2. **Update changelog** (if exists)
    - Date + version header
