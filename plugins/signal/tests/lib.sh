@@ -10,6 +10,10 @@ ok() { passed=$((passed + 1)); printf '  ok    %s\n' "$1"; }
 # Record a failing check.
 bad() { failed=$((failed + 1)); printf '  FAIL  %s\n' "$1"; }
 
+# Note a check this platform cannot answer. Counts as neither, and says why out loud — a skip that
+# reads as a pass is how a suite ends up certifying a platform it never tested.
+skip() { printf '  skip  %s\n' "$1"; }
+
 # Assert two values match.
 is() {
   [ "$2" = "$3" ] && { ok "$1"; return; }

@@ -58,21 +58,22 @@ Verify the install: `/evaluate`
 
 ## Contributing
 
-Three gates run on every pull request. Run them before you open one:
+Four gates run on every pull request. Run them before you open one:
 
 ```bash
-bash bin/frontmatter.sh && bash bin/versions.sh && bash bin/repeats.sh $(git ls-files 'plugins/panel/*.md' 'plugins/pest/*.md')
+bash bin/frontmatter.sh && bash bin/versions.sh && bash bin/repeats.sh $(git ls-files 'plugins/panel/*.md' 'plugins/pest/*.md' 'plugins/signal/*.md') && bash plugins/signal/tests/run.sh
 ```
 
 | Gate | Fails when |
 |------|------------|
 | `frontmatter` | a skill, agent or command is missing the frontmatter that registers it |
 | `versions` | `marketplace.json` and a `plugin.json` disagree on a version |
-| `repeats` | a sentence appears verbatim in two files — scoped to `panel` and `pest` |
+| `repeats` | a sentence appears verbatim in two files — scoped to `panel`, `pest` and `signal` |
+| `signal` | the plugin does not run — checked on Linux, macOS and Windows |
 
-**What they do not check:** that a plugin still loads, that hook paths resolve, that shell scripts
-are valid, or anything at all about `kernel`, `laravel-ddd` and `laravel-playbook` beyond their
-manifests. Green means those three gates passed. It does not mean the change works.
+**What they do not check:** that `kernel`, `laravel-ddd`, `laravel-playbook`, `panel` or `pest` still
+load, that their hook paths resolve, or that their shell scripts are valid. Only `signal` is run.
+Green means those four gates passed. For the other five plugins it does not mean the change works.
 
 Bump the version in **both** `plugin.json` and `.claude-plugin/marketplace.json` — the manifest is
 the one that gets forgotten. Commits use [Commitizen](https://commitizen-tools.github.io/commitizen/)

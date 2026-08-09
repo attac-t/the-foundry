@@ -30,3 +30,30 @@ jobs:
       # variation from drift needs semantics, and no exit code can do it.
       - name: No sentence appears twice
         run: bash bin/repeats.sh $(git ls-files 'plugins/panel/*.md' 'plugins/pest/*.md' 'plugins/signal/*.md')
+
+  # The gates above read files. This one runs the plugin, on each operating system a user installs
+  # it on, because that is where signal broke last: the shipped hook was not executable, so it died
+  # before reading a word, and nothing here noticed for five releases.
+  #
+  # Three runners, not one. Ubuntu resolves `awk` to mawk and `sh` to dash; macOS ships neither, and
+  # a gate that only ever met GNU tools will keep passing a script the other half of the world
+  # cannot run. Windows runs `shell: bash`, which is the same Git Bash Claude Code starts there.
+  signal:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: The tools signal claims to need
+        run: |
+          command -v sh   && sh -c 'echo sh ok'
+          command -v awk  && echo 'a b' | awk '{ print "awk ok" }'
+
+      - name: signal runs, and its suite can still go red
+        run: bash plugins/signal/tests/run.sh

@@ -10,7 +10,10 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-python - <<'PY'
+# `python3`, never `python`. The runner image CI uses carries a `python` symlink; macOS dropped it
+# in Monterey and Debian never had it. So this gate was green in CI and "command not found" on the
+# machine of anyone told by the README to run it first.
+python3 - <<'PY'
 import json, pathlib, sys
 
 manifest = json.loads(pathlib.Path(".claude-plugin/marketplace.json").read_text())

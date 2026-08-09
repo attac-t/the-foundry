@@ -14,7 +14,8 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-python - <<'PY'
+# `python3`, never `python`. See bin/versions.sh for what the bare name cost.
+python3 - <<'PY'
 import pathlib, re, sys
 
 FRONTMATTER = re.compile(r"\A---\r?\n(.*?)\r?\n---\r?\n", re.DOTALL)
