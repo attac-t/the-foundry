@@ -1,6 +1,6 @@
 {
   "name": "signal",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Plain English harness. A Stop hook that holds an agent's replies to a budget a ten-year-old can skim.",
   "author": {
     "name": "Christian Attard",

@@ -11,9 +11,7 @@
 #
 # Table cells do not count toward the word budget, because a table is easy to skim. They do count
 # toward long words, because a hard word is hard wherever it sits.
-#
 # POSIX awk only.
-#
 
 BEGIN {
   if (long_warn   == "") long_warn   = 10
@@ -56,9 +54,7 @@ fence               { fbuf = fbuf SEP $0; next }
                                    pbuf = pbuf SEP line; next }
                                  { pbuf = pbuf " " line }
 
-#
 # Determine if a token holds a readable word.
-#
 function is_word(t) { return t != "" && t ~ /[a-z]/ }
 
 #
@@ -71,9 +67,7 @@ function is_name(raw) {
   return raw ~ /^[A-Z0-9]+$/ || raw ~ /^[A-Za-z0-9][A-Za-z0-9]*[A-Z]/
 }
 
-#
 # Determine if a token is a path, a command or a symbol.
-#
 function looks_like_path(core) {
   return core ~ /[\/\\]/ || core ~ /\.[a-z][a-z]+$/ || core ~ /[_(){}=]/
 }
@@ -127,9 +121,7 @@ function tally(chunk,   n, i, raw, core, t, c) {
   return c
 }
 
-#
 # Get the separator between reasons.
-#
 function sep() { return (reason == "") ? "" : ". " }
 
 END {

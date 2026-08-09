@@ -14,34 +14,22 @@ trap 'rm -rf "$tmp"' EXIT
 
 failed=0
 
-#
 # Record a failing audit.
-#
 bad() { failed=1; printf '  FAIL  %s\n' "$1"; }
 
-#
 # Write a broken copy of the scorer.
-#
 mutate() { sed "$2" "$root/lib/score.awk" > "$tmp/$1.awk" 2>"$tmp/$1.err"; }
 
-#
 # Determine if the mutant came out empty.
-#
 empty() { [ ! -s "$tmp/$1.awk" ]; }
 
-#
 # Determine if the mutant is unchanged.
-#
 same() { cmp -s "$tmp/$1.awk" "$root/lib/score.awk"; }
 
-#
 # Determine if the scorer suite fails against the mutant.
-#
 noticed() { ! SCORER="$tmp/$1.awk" bash "$root/tests/score.sh" >/dev/null 2>&1; }
 
-#
 # Get why sed refused.
-#
 why() { head -1 "$tmp/$1.err"; }
 
 #

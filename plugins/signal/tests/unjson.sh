@@ -14,14 +14,10 @@ tmp="${TMPDIR:-/tmp}/signal-unjson-$$"
 mkdir -p "$tmp"
 trap 'rm -rf "$tmp"' EXIT
 
-#
 # Read a key out of a JSON fixture.
-#
 value() { awk -f "$reader" -v key="$2" < "$1"; }
 
-#
 # Read a key and get the exit code instead of the value.
-#
 status() { awk -f "$reader" -v key="$2" < "$1" >/dev/null 2>&1; echo $?; }
 
 echo "unjson"

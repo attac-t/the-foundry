@@ -14,46 +14,43 @@
 # POSIX awk only.
 #
 
+BEGIN {
+  esc["n"] = "\n"
+  esc["t"] = "\t"
+  esc["r"] = ""
+  esc["b"] = " "
+  esc["f"] = " "
+}
+
 { buf = buf $0 "\n" }
 
-#
 # Read the string starting at pos, unescaped. Sets ENDPOS to its closing quote.
-#
 function readstr(pos,   out, i, c, e) {
   out = ""
   i = pos + 1
   while (i <= LEN) {
     c = substr(BUF, i, 1)
-    if (c == "\\") {
-      e = substr(BUF, i + 1, 1)
-      if      (e == "n") out = out "\n"
-      else if (e == "t") out = out "\t"
-      else if (e == "r") out = out ""
-      else if (e == "b" || e == "f") out = out " "
-      else if (e == "u") { out = out " "; i += 4 }
-      else out = out e
-      i += 2
-      continue
-    }
     if (c == "\"") { ENDPOS = i; return out }
-    out = out c
-    i++
+    if (c != "\\") { out = out c; i++; continue }
+
+    e = substr(BUF, i + 1, 1)
+    if (e == "u") { out = out " "; i += 6; continue }
+    out = out ((e in esc) ? esc[e] : e)
+    i += 2
   }
   ENDPOS = i
   return out
 }
 
-#
 # Get the position just past the object or array starting at pos.
-#
 function skipnested(pos,   d, i, c) {
   d = 0
   i = pos
   while (i <= LEN) {
     c = substr(BUF, i, 1)
-    if (c == "\"") { readstr(i); i = ENDPOS + 1; continue }
-    if (c == "{" || c == "[") d++
-    else if (c == "}" || c == "]") { d--; if (d == 0) return i + 1 }
+    if (c == "\"")             { readstr(i); i = ENDPOS + 1; continue }
+    if (c == "{" || c == "[")  { d++; i++; continue }
+    if (c == "}" || c == "]")  { d--; if (d == 0) return i + 1 }
     i++
   }
   return i
@@ -73,10 +70,9 @@ END {
   while (i <= LEN && depth > 0) {
     c = substr(BUF, i, 1)
 
-    if (c == " " || c == "\t" || c == "\n" || c == "\r" || c == "," || c == ":") { i++; continue }
-    if (c == "}") { depth--; i++; continue }
-    if (c == "]") { i++; continue }
-
+    if (c ~ /[ \t\n\r,:]/)    { i++; continue }
+    if (c == "}")             { depth--; i++; continue }
+    if (c == "]")             { i++; continue }
     if (c == "{" || c == "[") { i = skipnested(i); curkey = ""; continue }
 
     if (c == "\"") {
@@ -94,8 +90,7 @@ END {
     # implementation by POSIX, and a strict reading would close the set early.
     j = i
     while (j <= LEN && substr(BUF, j, 1) !~ /[]},  \t\n\r]/) j++
-    lit = substr(BUF, i, j - i)
-    if (depth == 1 && curkey == key) { printf "%s", lit; exit 0 }
+    if (depth == 1 && curkey == key) { printf "%s", substr(BUF, i, j - i); exit 0 }
     curkey = ""
     i = j
   }

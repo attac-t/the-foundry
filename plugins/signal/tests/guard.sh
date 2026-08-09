@@ -19,42 +19,28 @@ bad='Additionally, it is worth noting that we should leverage this comprehensive
 good='We cut it by ten. The hook reads what the agent said.'
 near='The elephant sat on a mat. My family went to the shop and got some milk today.'
 
-#
 # Build hook input from a flag, a reply, and a prompt id. Replies here carry no quotes.
-#
 payload() {
   printf '{"session_id":"%s","prompt_id":"%s","stop_hook_active":%s,"last_assistant_message":"%s","hook_event_name":"Stop"}' \
     "$session" "${3:-p1}" "$1" "$2"
 }
 
-#
 # Run the hook and get what it printed.
-#
 run() { printf '%s' "$1" | bash "$hook" 2>/dev/null; }
 
-#
 # Run the hook and get its exit code.
-#
 status() { printf '%s' "$1" | bash "$hook" >/dev/null 2>&1; echo $?; }
 
-#
 # Remove the marker.
-#
 forget() { rm -f "$mark"; }
 
-#
 # Write a prompt id into the marker.
-#
 claim() { printf '%s' "$1" > "$mark"; }
 
-#
 # Count how far the braces fail to balance.
-#
 braces() { printf '%s' "$1" | awk '{ print gsub(/{/, "{") - gsub(/}/, "}") }'; }
 
-#
 # Determine whether the quotes come in pairs. Zero means they do.
-#
 quotes() { printf '%s' "$1" | awk '{ print gsub(/"/, "\"") % 2 }'; }
 
 echo "guard"

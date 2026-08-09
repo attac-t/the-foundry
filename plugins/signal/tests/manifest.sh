@@ -17,29 +17,19 @@ market="$repo/.claude-plugin/marketplace.json"
 hooks="$root/hooks/hooks.json"
 skill="$root/skills/plain-english/SKILL.md"
 
-#
 # Read a value from a JSON manifest.
-#
 value() { awk -f "$root/lib/unjson.awk" -v key="$2" < "$1"; }
 
-#
 # Determine if a file holds the given text.
-#
 mentions() { grep -qF "$2" "$1"; }
 
-#
 # Get the version the marketplace lists for signal.
-#
 listed() { awk '/"name": "signal"/,/}/' "$market" | awk -F'"' '/"version"/ { print $4; exit }'; }
 
-#
 # Get every markdown file the plugin ships.
-#
 markdown() { find "$root" -name '*.md' | sort; }
 
-#
 # Count the example rows in a table.
-#
 rows() { awk '/^\| `/ { n++ } END { print n + 0 }' "$1"; }
 
 echo "manifest"

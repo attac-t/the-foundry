@@ -13,25 +13,19 @@ root="$(cd "$(dirname "$0")/.." && pwd)"
 
 scorer="${SCORER:-$root/lib/score.awk}"
 
-#
 # Score some text and get the exit code.
-#
 verdict() {
   printf '%s' "$1" | awk -f "$scorer" >/dev/null 2>&1
   echo $?
 }
 
-#
 # Score some text and get one field from the report.
-#
 field() {
   printf '%s' "$1" | awk -f "$scorer" 2>/dev/null \
     | awk -F= -v k="$2" '$1 == k { sub(/^[^=]*=/, ""); print; exit }'
 }
 
-#
 # Get a sentence repeated the given number of times.
-#
 repeat() {
   local out="" i=0
   while [ $i -lt "$1" ]; do out="$out $2"; i=$((i + 1)); done
