@@ -1,10 +1,13 @@
-#!/bin/bash
+#!/bin/sh
 # UserPromptSubmit: Reminds architect to assess delegation when blueprint exists
 #
 # Thin hook → points to ground-delegation skill
+#
+# `$0`, not `${BASH_SOURCE[0]}`. The array subscript is a bash extension, and every other shell
+# stops at "Bad substitution" before the hook reads a thing.
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-MEMORY_DIR=$("$SCRIPT_DIR/lib/resolve-memory.sh")
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+MEMORY_DIR=$(sh "$SCRIPT_DIR/lib/resolve-memory.sh")
 
 # Only fire if blueprint exists
 BLUEPRINT="$MEMORY_DIR/blueprint.md"

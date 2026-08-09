@@ -1,8 +1,8 @@
-#!/bin/bash
+#!/bin/sh
 # SessionStart: Loads working.md, blueprint.md, and latest handoff
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-MEMORY_DIR=$("$SCRIPT_DIR/lib/resolve-memory.sh")
+MEMORY_DIR=$(sh "$SCRIPT_DIR/lib/resolve-memory.sh")
 
 # Load working memory
 MEMORY="$MEMORY_DIR/working.md"
@@ -10,7 +10,7 @@ MEMORY="$MEMORY_DIR/working.md"
 
 # Load blueprint
 BLUEPRINT="$MEMORY_DIR/blueprint.md"
-[ -f "$BLUEPRINT" ] && echo "" && cat "$BLUEPRINT"
+[ -f "$BLUEPRINT" ] && { echo ""; cat "$BLUEPRINT"; }
 
 # Load latest handoff (if exists)
 HANDOFF_DIR="$MEMORY_DIR/handoffs"
@@ -24,3 +24,5 @@ if [ -d "$HANDOFF_DIR" ]; then
         cat "$LATEST_HANDOFF"
     fi
 fi
+
+exit 0
