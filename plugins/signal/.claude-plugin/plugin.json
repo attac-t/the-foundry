@@ -1,0 +1,17 @@
+{
+  "name": "signal",
+  "version": "0.1.0",
+  "description": "Plain English harness. A Stop hook that holds Claude's replies to a budget a ten-year-old can skim.",
+  "author": {
+    "name": "Christian Attard",
+    "url": "https://github.com/attac-t"
+  },
+  "keywords": [
+    "plain-language",
+    "readability",
+    "hooks",
+    "output-budget",
+    "signal-to-noise"
+  ],
+  "skills": "./skills/"
+}
