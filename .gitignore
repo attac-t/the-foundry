@@ -1,6 +1,9 @@
 # Session-specific working memory (developers create their own)
 .claude/memory/
 
+# Review artifacts: charters and verdicts stay local to the branch that produced them
+.claude/panel/
+
 # Local settings (may contain local paths)
 .claude/settings.json
 .claude/settings.local.json

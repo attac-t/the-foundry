@@ -10,6 +10,7 @@ A curated collection of Claude Code plugins.
 |--------|---------|
 | [kernel](plugins/kernel/README.md) | Cognitive OS. How to think. |
 | [panel](plugins/panel/README.md) | Adversarial agent teams. How to verify. |
+| [signal](plugins/signal/README.md) | Plain English harness. How to speak. |
 | [laravel-ddd](plugins/laravel-ddd/README.md) | Laravel DDD patterns. What to build. |
 | [laravel-playbook](plugins/laravel-playbook/README.md) | Package author's playbook. How to ship. |
 | [pest](plugins/pest/README.md) | Pest v3 syntax. How to test. |
@@ -37,6 +38,12 @@ Add stack plugins as needed:
 /plugin install laravel-ddd@the-foundry
 /plugin install laravel-playbook@the-foundry
 /plugin install pest@the-foundry
+```
+
+Hold every reply to plain English:
+
+```
+/plugin install signal@the-foundry
 ```
 
 Enable the opinionated voice:

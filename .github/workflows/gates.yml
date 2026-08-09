@@ -21,7 +21,7 @@ jobs:
       - name: The manifest agrees with every plugin
         run: bash bin/versions.sh
 
-      # Enforced on the two plugins that are clean. kernel, laravel-ddd and laravel-playbook
+      # Enforced on the three plugins that are clean. kernel, laravel-ddd and laravel-playbook
       # carry 16 repeats between them; widening this gate means fixing those first. A gate
       # that declares its scope is honest — a gate quietly narrowed to stay green is not.
       #
@@ -29,4 +29,4 @@ jobs:
       # itself. Once two statements of a rule differ by one word, separating intentional
       # variation from drift needs semantics, and no exit code can do it.
       - name: No sentence appears twice
-        run: bash bin/repeats.sh $(git ls-files 'plugins/panel/*.md' 'plugins/pest/*.md')
+        run: bash bin/repeats.sh $(git ls-files 'plugins/panel/*.md' 'plugins/pest/*.md' 'plugins/signal/*.md')
