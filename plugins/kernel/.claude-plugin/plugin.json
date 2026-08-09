@@ -1,6 +1,6 @@
 {
   "name": "kernel",
-  "version": "1.8.1",
+  "version": "1.8.2",
   "description": "Universal cognitive kernel. Stack-agnostic thinking patterns, memory management, and planning tools. The foundation for all Craftsman plugins.",
   "author": {
     "name": "Christian Attard",
@@ -15,7 +15,9 @@
     "memory"
   ],
   "commands": "./commands/",
-  "agents": ["./agents/architect.md"],
+  "agents": [
+    "./agents/architect.md"
+  ],
   "skills": "./skills/",
   "outputStyles": "./output-styles/"
 }
