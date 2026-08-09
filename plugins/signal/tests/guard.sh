@@ -16,7 +16,7 @@ mark="${TMPDIR:-/tmp}/signal-${session}.mark"
 trap 'rm -f "$mark"' EXIT
 
 bad='Additionally, it is worth noting that we should leverage this comprehensive functionality in order to facilitate a robust implementation.'
-good='We cut it by ten. The hook reads what Claude said.'
+good='We cut it by ten. The hook reads what the agent said.'
 near='The elephant sat on a mat. My family went to the shop and got some milk today.'
 
 #
@@ -128,7 +128,7 @@ is "output is one line"   "$(printf '%s' "$out" | wc -l | tr -d ' ')" 0
 is "braces balance"       "$(braces "$out")" 0
 is "quotes come in pairs" "$(quotes "$out")" 0
 
-# A reply full of quotes must not break the JSON. Nothing from Claude's text reaches the strings we
+# A reply full of quotes must not break the JSON. Nothing from the agent's text reaches the strings we
 # print, so this should hold by design — and "by design" is how the vacuous checks got written.
 quoted='He said \"leverage it\" and then \"facilitate that\" and \"utilise this\" comprehensively.'
 out=$(run "$(payload false "$quoted")")

@@ -1,9 +1,9 @@
 #!/bin/bash
-# Proves the hook can read Claude's text out of the hook JSON without jq.
+# Proves the hook can read the agent's text out of the hook JSON without jq.
 #
-# The case that matters: Claude writes about code, so a reply can hold the words
+# The case that matters: agents write about code, so a reply can hold the words
 # "stop_hook_active": true as plain text. A reader that grabs the first key it sees would read
-# Claude's prose as the flag and stand down when it should block. These tests aim straight at that.
+# the agent's prose as the flag and stand down when it should block. These tests aim straight at that.
 
 set -u
 root="$(cd "$(dirname "$0")/.." && pwd)"

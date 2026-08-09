@@ -47,8 +47,8 @@ awk 'BEGIN { exit 1 }' >/dev/null 2>&1
 rc=$?
 is "the suite reads exit codes truthfully" "$rc" 1
 
-clean='Claude writes too much. We cut it by ten.
-The hook reads what Claude said. It counts the words.'
+clean='Agents write too much. We cut it by ten.
+The hook reads what the agent said. It counts the words.'
 is "clean text passes" "$(verdict "$clean")" 0
 
 # --- one count past its line, two inside ---

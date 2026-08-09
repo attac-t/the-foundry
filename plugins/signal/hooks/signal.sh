@@ -1,8 +1,8 @@
 #!/bin/bash
 #
-# Stop: hold Claude's last reply to a budget a ten-year-old can skim.
+# Stop: hold the agent's last reply to a budget a ten-year-old can skim.
 #
-# Pass says nothing. Warn reaches the user and costs no turn. Block reaches Claude and costs one.
+# Pass says nothing. Warn reaches the user and costs no turn. Block reaches the agent and costs one.
 # All the judging lives in lib/score.awk.
 #
 
@@ -81,7 +81,7 @@ safe() { printf '%s' "$1" | awk -f "$root/lib/jsonsafe.awk"; }
 warn() { printf '{"systemMessage":"signal: %s"}\n' "$(safe "$1")"; }
 
 #
-# Hand the reply back to Claude to write again.
+# Hand the reply back to the agent to write again.
 #
 block() { printf '{"decision":"block","reason":"%s"}\n' "$(safe "$1")"; }
 

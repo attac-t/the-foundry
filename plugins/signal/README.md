@@ -2,7 +2,7 @@
 
 > Plain English harness. How to speak.
 
-Claude writes too much. This cuts it by ten, and holds the cut with a gate.
+Agents write too much. This cuts it by ten, and holds the cut with a gate.
 
 ---
 
@@ -13,22 +13,22 @@ An output style asks. A hook refuses.
 We tried the style first. It drifts: the voice holds for three replies, then the old habits come
 back. Nothing measures whether it worked, so nothing stops it slipping.
 
-A `Stop` hook gets Claude's finished reply and can hand it back. That is the whole idea.
+A `Stop` hook gets the agent's finished reply and can hand it back. That is the whole idea.
 
 ---
 
 ## How it works
 
-Every time Claude stops talking, the hook scores the reply and picks one of three answers.
+Every time the agent stops talking, the hook scores the reply and picks one of three answers.
 
 | Answer | What happens | Cost |
 |---|---|---|
 | pass | Nothing. You never see the hook | none |
-| warn | You get the numbers. Claude does not | none |
-| block | Claude gets the numbers and says it again | one turn |
+| warn | You get the numbers. The agent does not | none |
+| block | The agent gets the numbers and says it again | one turn |
 
-Claude gets one block per turn, not a fight. If the rewrite is still over, it ships — and you get a
-note saying so. Nothing goes wrong quietly.
+The agent gets one block per turn, not a fight. If the rewrite is still over, it ships — and you get
+a note saying so. Nothing goes wrong quietly.
 
 Knowing whose block it was needs more than the flag Claude Code provides. `stop_hook_active` says
 *some* stop hook is why the turn is still going, not which one. Any other plugin can hook `Stop` and
@@ -159,8 +159,8 @@ awk -f plugins/signal/lib/score.awk < FILE
 
 ## What it does not touch
 
-- Files Claude writes. Specs, commit messages and pull request text are out.
-- Subagent replies. Those go to Claude, not to you.
+- Files the agent writes. Specs, commit messages and pull request text are out.
+- Subagent replies. Those go back to the agent that spawned them, not to you.
 - Code, paths, commands, links.
 - Any language but English.
 

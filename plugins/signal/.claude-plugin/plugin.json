@@ -1,7 +1,7 @@
 {
   "name": "signal",
-  "version": "0.1.0",
-  "description": "Plain English harness. A Stop hook that holds Claude's replies to a budget a ten-year-old can skim.",
+  "version": "0.1.1",
+  "description": "Plain English harness. A Stop hook that holds an agent's replies to a budget a ten-year-old can skim.",
   "author": {
     "name": "Christian Attard",
     "url": "https://github.com/attac-t"

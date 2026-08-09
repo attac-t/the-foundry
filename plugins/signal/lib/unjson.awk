@@ -5,7 +5,7 @@
 #
 # Prints the value with no trailing newline. Exits 0 if the key was there, 1 if not.
 #
-# This walks the object rather than searching it. The value we want is Claude's own text, and a
+# This walks the object rather than searching it. The value we want is the agent's own text, and a
 # reply that quotes `"stop_hook_active"` as prose would fool any search for the next matching key.
 #
 # `\uXXXX` becomes a space. An escape that survives to here is a symbol or an emoji, and neither
