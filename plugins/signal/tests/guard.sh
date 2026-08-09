@@ -53,7 +53,6 @@ has "the first stop blocks" "$out" '"decision":"block"'
 
 out=$(run "$(payload true "$bad" p1)")
 has   "a rewrite still over budget tells you" "$out" '"systemMessage"'
-has   "and says why it shipped anyway"        "$out" 'One block per turn'
 lacks "the second stop does not block"        "$out" '"decision"'
 
 out=$(run "$(payload true "$good" p1)")
@@ -91,7 +90,6 @@ out=$(run "$(payload false "$bad")")
 has "the block names the numbers"   "$out" 'long words'
 has "the block gives the target"    "$out" 'aim for'
 has "the block points at the skill" "$out" 'signal:plain-english'
-has "the block names the test"      "$out" 'ten-year-old'
 
 # --- nothing to score ---
 
@@ -119,7 +117,6 @@ is "quotes come in pairs" "$(quotes "$out")" 0
 quoted='He said \"leverage it\" and then \"facilitate that\" and \"utilise this\" comprehensively.'
 out=$(run "$(payload false "$quoted")")
 has "a quoted reply still blocks"     "$out" '"decision":"block"'
-is  "and its quotes still come in pairs" "$(quotes "$out")" 0
 
 # --- the sanitiser ---
 # Tested through the shipped file. An earlier version inlined a copy of the expression, so

@@ -117,8 +117,8 @@ Files the agent writes, subagent replies, and any language but English.
 bash plugins/signal/tests/run.sh
 ```
 
-Then it breaks the scorer twelve ways, and every break has to turn the suite red. Needs a clone of
-this repo, and about two minutes.
+98 checks. Then it breaks the scorer twelve ways, and every break has to turn the suite red. Needs a
+clone of this repo, and about two minutes.
 
 ---
 

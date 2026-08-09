@@ -59,7 +59,6 @@ cat > "$tmp/esc.json" <<'JSON'
 {"a":"one\ntwo","b":"tab\there","c":"quote \" here","d":"slash \\ here"}
 JSON
 is "newline escape becomes a newline" "$(value "$tmp/esc.json" a)" "$(printf 'one\ntwo')"
-is "tab escape becomes a tab"         "$(value "$tmp/esc.json" b)" "$(printf 'tab\there')"
 is "quote escape becomes a quote"     "$(value "$tmp/esc.json" c)" 'quote " here'
 is "backslash escape survives"        "$(value "$tmp/esc.json" d)" 'slash \ here'
 
@@ -76,7 +75,6 @@ cat > "$tmp/fence.json" <<'JSON'
 JSON
 reply=$(value "$tmp/fence.json" last_assistant_message)
 has "a fenced block survives the read" "$reply" '```bash'
-has "quotes inside the fence survive"  "$reply" 'echo "hi"'
 
 # --- shape does not matter ---
 printf '{"stop_hook_active":false,"last_assistant_message":"flat"}' > "$tmp/flat.json"

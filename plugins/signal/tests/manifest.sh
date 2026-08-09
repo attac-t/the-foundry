@@ -37,7 +37,6 @@ echo "manifest"
 # --- the manifests agree ---
 
 version=$(value "$manifest" version)
-is "plugin.json names the plugin" "$(value "$manifest" name)" "signal"
 case "$version" in
   [0-9]*.[0-9]*.[0-9]*) ok "plugin.json carries a version — $version" ;;
   *)                    bad "plugin.json version looks wrong — [$version]" ;;

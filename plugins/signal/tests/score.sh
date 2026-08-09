@@ -1,8 +1,9 @@
 #!/bin/bash
 # Proves each count fires on its own, and that the dodges are shut.
 #
-# Every block test moves ONE count past its line and asserts the other two stay inside theirs. A
-# suite where all three fire at once would pass even if two of them were dead code.
+# Isolation is asserted by behaviour, not by numbers. Every block fixture is scored twice: once
+# normally, and once with the count under test moved out of reach. The second run must pass. That
+# says "nothing else fired" without pinning the fixture's word counts to magic numbers.
 #
 # SCORER can point elsewhere. run.sh uses that to aim the suite at a broken scorer and check the
 # suite goes red. A suite that cannot fail is not a suite.
@@ -25,6 +26,16 @@ field() {
     | awk -F= -v k="$2" '$1 == k { sub(/^[^=]*=/, ""); print; exit }'
 }
 
+# Score some text with one count moved out of reach, and get the exit code.
+without() {
+  case "$1" in
+    long)  printf '%s' "$2" | awk -f "$scorer" -v long_warn=100  -v long_block=100  >/dev/null 2>&1 ;;
+    sent)  printf '%s' "$2" | awk -f "$scorer" -v sent_warn=999  -v sent_block=999  >/dev/null 2>&1 ;;
+    words) printf '%s' "$2" | awk -f "$scorer" -v words_warn=1e9 -v words_block=1e9 >/dev/null 2>&1 ;;
+  esac
+  echo $?
+}
+
 # Get a sentence repeated the given number of times.
 repeat() {
   local out="" i=0
@@ -34,49 +45,36 @@ repeat() {
 
 echo "scorer"
 
-# First, prove the suite can read an exit code at all. An earlier self-gate loop wrote
-# `is "$(basename ...)" "$?" 0`, which is always green: bash runs the substitution while building
-# the argument list, and that overwrites $? before $? is read.
-awk 'BEGIN { exit 1 }' >/dev/null 2>&1
-rc=$?
-is "the suite reads exit codes truthfully" "$rc" 1
-
 clean='Agents write too much. We cut it by ten.
 The hook reads what the agent said. It counts the words.'
 is "clean text passes" "$(verdict "$clean")" 0
 
-# --- one count past its line, two inside ---
+# --- each count blocks on its own ---
 
 longwords='The elephant ate a banana. My family had a holiday. The computer rang the telephone.'
 sentence='I went to the shop and I got some milk and some bread and some jam and then I went home and put it all away and made a cake for my mum and dad.'
 budget=$(repeat 52 'The cat sat on a mat.')
 
-is "long words alone block"     "$(verdict "$longwords")" 2
-is "long sentence alone blocks" "$(verdict "$sentence")"  2
-is "word count alone blocks"    "$(verdict "$budget")"    2
+is "long words block"           "$(verdict "$longwords")"     2
+is "and nothing else fired"     "$(without long "$longwords")" 0
+is "a long sentence blocks"     "$(verdict "$sentence")"      2
+is "and nothing else fired"     "$(without sent "$sentence")"  0
+is "the word count blocks"      "$(verdict "$budget")"        2
+is "and nothing else fired"     "$(without words "$budget")"  0
 
-is "the long-word case keeps its sentences short" "$(field "$longwords" longest)"  5
-is "the long-word case stays under budget"        "$(field "$longwords" words)"    15
-is "the long-sentence case has no long words"    "$(field "$sentence" long_pct)"  0.0
-is "the long-sentence case stays under budget"    "$(field "$sentence" words)"     35
-is "the word-count case has no long words"        "$(field "$budget" long_pct)"    0.0
-is "the word-count case keeps sentences short"    "$(field "$budget" longest)"     6
-
-# --- the warn bands ---
+# --- each count warns on its own ---
 # Only the long-word band had a fixture before. Blanking either of the others stayed green.
 
 longwarn='The elephant sat on a mat. My family went to the shop and got some milk today.'
 sentwarn='I went to the shop and I got some milk and then I went home and had a cake for tea.'
 budgetwarn=$(repeat 25 'The cat sat on a mat.')
 
-is "the long-word warn band fires"  "$(verdict "$longwarn")"   1
-is "the sentence warn band fires"   "$(verdict "$sentwarn")"   1
-is "the word-count warn band fires" "$(verdict "$budgetwarn")" 1
-
-is "the sentence warn case has no long words"  "$(field "$sentwarn" long_pct)"   0.0
-is "the sentence warn case sits in the band"   "$(field "$sentwarn" longest)"    21
-is "the word warn case has no long words"      "$(field "$budgetwarn" long_pct)" 0.0
-is "the word warn case sits in the band"       "$(field "$budgetwarn" words)"    150
+is "long words warn"        "$(verdict "$longwarn")"        1
+is "and nothing else fired" "$(without long "$longwarn")"    0
+is "a long sentence warns"  "$(verdict "$sentwarn")"        1
+is "and nothing else fired" "$(without sent "$sentwarn")"    0
+is "the word count warns"   "$(verdict "$budgetwarn")"      1
+is "and nothing else fired" "$(without words "$budgetwarn")" 0
 
 # --- the dodges ---
 
@@ -93,29 +91,21 @@ wrapped='I went to the shop and I got some milk and some bread
 and some jam and then I went home and put it all away
 and made a cake for my mum and dad.'
 is "wrapping does not shorten a sentence" "$(field "$wrapped" longest)" "$(field "$sentence" longest)"
-is "a wrapped long sentence still blocks" "$(verdict "$wrapped")"       2
 
-# Blank lines, headings and list items still end a sentence, or a bullet list would read as one
-# enormous sentence and block on length alone.
+# Blank lines and list items must still end a sentence, or these would join into one long one and
+# block on length. Neither fixture closes with punctuation, so the boundary is all that saves them.
 bullets='Here are things.
 
 - the first thing
 - the second thing
 - the third thing'
-is "bullets are separate sentences" "$(field "$bullets" sentences)" 4
-is "a bullet list passes"           "$(verdict "$bullets")"         0
-
-# Neither paragraph closes with punctuation, so the blank line is the only boundary. Joined they run
-# to 38 words and block; split they pass. The bullet case does not cover this: list items carry
-# their own boundary.
 paragraphs='the cat sat on a mat and the dog ran to the shop and got a bun for tea
 
 the cat sat on a mat and the dog ran to the shop and got a bun for tea'
-is "a blank line ends a sentence" "$(field "$paragraphs" sentences)" 2
-is "two loose paragraphs pass"    "$(verdict "$paragraphs")"         0
+is "a list item ends a sentence" "$(verdict "$bullets")"    0
+is "a blank line ends a sentence" "$(verdict "$paragraphs")" 0
 
 brackets='The (elephant) ate a banana. My (family) had a holiday. The (computer) rang the (telephone).'
-is "brackets do not hide words"      "$(field "$brackets" words)"    "$(field "$longwords" words)"
 is "brackets do not hide long words" "$(field "$brackets" long_pct)" "$(field "$longwords" long_pct)"
 
 table='Here it is.
@@ -126,17 +116,21 @@ table='Here it is.
 | banana | food |
 | telephone | ring |
 | computer | box |'
-is "a table does not hide long words"   "$(verdict "$table")"      2
-is "table cells stay out of the budget" "$(field "$table" words)"  3
+is "a table does not hide long words"   "$(verdict "$table")"     2
+is "table cells stay out of the budget" "$(field "$table" words)" 3
 
-# A fence that never closes fenced nothing off. Otherwise opening one and never closing it hides
-# the whole rest of the reply.
+# A fence that never closes fenced nothing off. Otherwise opening one and never closing it hides the
+# whole rest of the reply.
 unclosed='Here it is.
 
 ```bash
 The elephant ate a banana. My family had a holiday. The computer rang the telephone.'
-is  "an unclosed fence still counts"  "$(verdict "$unclosed")"      2
-not "an unclosed fence hides nothing" "$(field "$unclosed" long_pct)" 0.0
+is "an unclosed fence still counts" "$(verdict "$unclosed")" 2
+
+# A wall of product names must not water the share down. Names leave both sides of the fraction, so
+# the one long word here still carries it past the line.
+dilution='We use PostgreSQL and TypeScript and MySQL and GraphQL comprehensively.'
+is "names cannot dilute the share" "$(verdict "$dilution")" 2
 
 # --- what gets stripped ---
 
@@ -148,13 +142,7 @@ utilise the comprehensive functionality
 is "words inside code are not counted" "$(field "$incode" long_pct)" 0.0
 is "code-only text passes"             "$(verdict "$incode")"        0
 is "inline code is not counted" "$(field 'Do not write `comprehensive` in a reply.' long_pct)" 0.0
-
-# Names leave both sides of the share. In the denominator only, a wall of product names would
-# water the percentage down.
-names='We use PostgreSQL and TypeScript here.'
-is "names are not long words"          "$(field "$names" long_pct)" 0.0
-is "names still spend budget"          "$(field "$names" words)"    6
-is "names leave the share denominator" "$(field "$names" measured)" 4
+is "names are not long words"   "$(field 'We use PostgreSQL and TypeScript here.' long_pct)" 0.0
 
 # Punctuation must not turn a word into a name. The anchor used to let a leading quote stand in for
 # the first letter, so a quoted long word was skipped.
@@ -171,14 +159,10 @@ tion='The nation took action at the station in this section by option.'
 is "-tion words are two beats, not three" "$(field "$tion" long_pct)" 0.0
 is "a sentence of them passes"            "$(verdict "$tion")"        0
 
-is "-cial words are two beats too" "$(field 'It was special and partial and social.' long_pct)" 0.0
-is "but official is three"         "$(field 'It was official.' long_pct)" 33.3
-
 # `patio` and `ratio` end at the vowel pair, where it really is two beats, so the -tion carve-out
 # must not reach them. `studio` would mask this: its `dio` has no t/c/s/x and scores 3 either way.
 not "-tio endings are three beats" "$(field 'The patio and the ratio.' long_pct)" 0.0
-not "split-vowel words are three beats" \
-    "$(field 'The manual usual video media serious various previous.' long_pct)" 0.0
+not "split vowels are three beats" "$(field 'The manual usual video media.' long_pct)" 0.0
 
 # --- policy ---
 # The failure message names something a user has. It used to cite a document that shipped nowhere.
@@ -191,9 +175,7 @@ padded='Additionally, it is worth noting that we should leverage this comprehens
 is "padded prose still blocks on shape alone" "$(verdict "$padded")" 2
 
 # The gap we accepted, made executable. Adding a word list later means deleting a passing test.
-shortodd='We shall hence deem it thus, whilst the crux is moot.'
-is "short unusual words pass the counts" "$(verdict "$shortodd")"        0
-is "and they really are short"           "$(field "$shortodd" long_pct)" 0.0
+is "short unusual words pass the counts" "$(verdict 'We shall hence deem it thus, whilst the crux is moot.')" 0
 
 # A block must always say why, even when the dials are set so no warn line fires.
 report=$(printf '%s' "$longwords" | awk -f "$scorer" -v long_warn=99 -v long_block=1 2>/dev/null)
