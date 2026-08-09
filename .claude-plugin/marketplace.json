@@ -43,7 +43,7 @@
       "name": "signal",
       "source": "./plugins/signal",
       "description": "Plain English harness. A Stop hook that holds an agent's replies to a budget a ten-year-old can skim.",
-      "version": "0.2.0"
+      "version": "0.2.1"
     }
   ]
 }

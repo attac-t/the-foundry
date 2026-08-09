@@ -41,9 +41,17 @@ wiring() {
 # Get the command wired to an event.
 command_for() { wiring | awk -F'\t' -v want="$1" '$1 == want { print $2; exit }'; }
 
+#
 # Run an event's hook exactly as Claude Code would: its own shell, its own variable, JSON on stdin.
+#
+# TMPDIR is the one thing we do hand it ourselves. signal.sh drops a marker there every time it
+# blocks, and this suite blocks on purpose more than once — under a session id no SessionEnd will
+# ever carry, so nothing ever comes back for them. They had been piling up in the real temp
+# directory since the suite was written. Pointing the hooks at the directory we already delete on the
+# way out is what keeps a test run from outliving itself.
+#
 fire() {
-  printf '%s' "$2" | CLAUDE_PLUGIN_ROOT="${3:-$root}" sh -c "$(command_for "$1")" 2>/dev/null
+  printf '%s' "$2" | TMPDIR="$tmp" CLAUDE_PLUGIN_ROOT="${3:-$root}" sh -c "$(command_for "$1")" 2>/dev/null
 }
 
 # Build a Stop payload.
