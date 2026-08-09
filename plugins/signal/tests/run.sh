@@ -33,6 +33,17 @@ noticed() { ! SCORER="$tmp/$1.awk" bash "$root/tests/score.sh" >/dev/null 2>&1; 
 why() { head -1 "$tmp/$1.err"; }
 
 #
+# List the markers a suite could have left in the real temp directory.
+#
+# Only test-owned names are read. A marker under a real session id is a live turn's lock, and a check
+# that goes red for someone else's correct behaviour is a check people learn to ignore.
+#
+strays() { ls "${TMPDIR:-/tmp}"/signal-install-*.mark "${TMPDIR:-/tmp}"/signal-signal-test-*.mark 2>/dev/null | sort; }
+
+# Count the lines in a list, treating the empty list as none.
+tally() { printf '%s\n' "$1" | grep -c . ; }
+
+#
 # Break one rule and require the suite to notice.
 #
 # Three ways a mutant proves nothing, all seen for real here: sed fails, the output is empty, or the
@@ -48,6 +59,8 @@ audit() {
 
   printf '  ok    %s\n' "$name"
 }
+
+marks_before=$(strays)
 
 for suite in score unjson guard install manifest; do
   bash "$root/tests/$suite.sh" || failed=1
@@ -129,6 +142,21 @@ wreck "a hook checked out with CRLF is caught"        crlf   crlf
 wreck "an unquoted plugin root is caught"             noquot unquote
 wreck "a lib that did not ship is caught"             nolib  unship
 wreck "hooks.json pointing at nothing is caught"      nofile rewire
+
+echo
+echo "audit — the run leaves nothing behind"
+
+#
+# Last, because everything above fires the hook and this has to see all of it.
+#
+# signal.sh drops a marker in the temp directory every time it blocks, and these suites block on
+# purpose, over and over. Nothing ever comes back for them: cleanup.sh runs at SessionEnd, and no
+# session ends under a test's id. Thirty had collected here before anyone thought to look.
+#
+marks_after=$(strays)
+[ "$marks_after" = "$marks_before" ] \
+  && printf '  ok    no suite left a marker behind\n' \
+  || bad "a suite left markers in ${TMPDIR:-/tmp} — $(tally "$marks_before") before, $(tally "$marks_after") now"
 
 echo
 [ "$failed" -eq 0 ] && echo "ALL GREEN" || echo "FAILURES ABOVE"

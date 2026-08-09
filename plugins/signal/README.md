@@ -94,6 +94,11 @@ shipped hook was not executable, so it died before it read a word. Every other s
 Each one called the hook itself, instead of reading how Claude Code is told to call it. So
 `tests/install.sh` reads the command out of `hooks/hooks.json` and hands it to a shell.
 
+Last comes a check that is neither. The suites block on purpose, and every block writes a file to
+your temp directory. Nothing ever came back for those. The cleanup hook runs when a session ends,
+and no session ends under a test's name. Thirty had collected there before anyone looked, so the run
+now counts them and says so.
+
 ---
 
 *Say less. Mean more.*
