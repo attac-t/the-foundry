@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 #
 # SessionEnd: drop the marker signal.sh writes when it blocks.
 # Losing the marker costs at most one extra rewrite, so this never fails the session.

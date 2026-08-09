@@ -36,13 +36,32 @@ paragraphs() {
   ' "$1" | tr '\n' ' '
 }
 
+# Cut the stream into sentences: from a capital to the next full stop, sized between MIN and MAX.
+#
+# awk, not `grep -o "[A-Z][^.!?]\{$MIN,$MAX\}[.!?]"` — BSD grep refuses any interval above 255 and
+# dies with "maximum repetition exceeds 255", so that gate was red on every Mac and green in CI. A
+# gate whose answer depends on which grep you have is not a gate.
+cut_up() {
+  awk -v min="$MIN" -v max="$MAX" '
+    {
+      rest = $0
+      while (match(rest, /[.!?]/)) {
+        chunk = substr(rest, 1, RSTART)
+        rest  = substr(rest, RSTART + 1)
+        sub(/^[^A-Z]*/, "", chunk)
+        if (chunk != "" && length(chunk) - 2 >= min && length(chunk) - 2 <= max) print chunk
+      }
+    }
+  '
+}
+
 # One line per sentence, tab, the file it came from. Tagging via awk, not sed — BSD sed emits a
 # literal "t" for \t and would corrupt the delimiter without failing.
 sentences=$(
   for file in "${files[@]}"; do
     [ -f "$file" ] || continue
     paragraphs "$file" \
-      | grep -o "[A-Z][^.!?]\{$MIN,$MAX\}[.!?]" \
+      | cut_up \
       | sed 's/  */ /g; s/^ //' \
       | grep -Ev "$NOISE" \
       | awk -v file="$file" '{ print $0 "\t" file }'
@@ -60,11 +79,12 @@ echo "FAIL — prose repeated. A copy carries no information; it only drifts."
 echo
 
 # One pass. Scanning the corpus once per repeat is quadratic and dies on a large repo.
-printf '%s\n' "$sentences" | awk -F'\t' -v repeated="$repeated" '
-  BEGIN {
-    total = split(repeated, list, "\n")
-    for (i = 1; i <= total; i++) if (list[i] != "") wanted[list[i]] = 1
-  }
+#
+# The repeats arrive as a file, not as `-v repeated=...`. A `-v` value holding newlines is a syntax
+# error to the awk macOS ships — "newline in string" — so this report died on the only machines
+# where it had something to report.
+printf '%s\n' "$sentences" | awk -F'\t' '
+  NR == FNR { if ($0 != "") wanted[$0] = 1; next }
   $1 in wanted && !seen[$0]++ {
     if (!($1 in found)) order[++count] = $1
     found[$1] = found[$1] "\n      " $2
@@ -73,6 +93,6 @@ printf '%s\n' "$sentences" | awk -F'\t' -v repeated="$repeated" '
     for (i = 1; i <= count; i++) printf "  \"%s\"%s\n\n", order[i], found[order[i]]
     printf "%d repeated sentences.\n", count
   }
-'
+' <(printf '%s\n' "$repeated") -
 
 exit 1

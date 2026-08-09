@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 #
 # Stop: hold the agent's last reply to a budget a ten-year-old can skim.
 #

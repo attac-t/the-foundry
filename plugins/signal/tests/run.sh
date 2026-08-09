@@ -49,7 +49,7 @@ audit() {
   printf '  ok    %s\n' "$name"
 }
 
-for suite in score unjson guard manifest; do
+for suite in score unjson guard install manifest; do
   bash "$root/tests/$suite.sh" || failed=1
   echo
 done
@@ -68,6 +68,67 @@ audit "the sh-sound exception is tested"         's@ && t !~ /\[tcsx\](ia|io)\[n
 audit "the -tio ending carve-out is tested"      's@(ia|io)\[nl\]@(ia|io)@'                            tioend
 audit "a dead blank-line boundary is caught"     's|^/\^\[ \\t\]\*\$/  *{ pbuf = pbuf SEP; next }|/^ZZZNEVER$/ { next }|' blankline
 audit "the wrap dodge staying shut is tested"    's|^                                 { pbuf = pbuf " " line }|{ if (line ~ /[A-Za-z0-9)]$/) line = line "."; pbuf = pbuf " " line }|' wrap
+
+echo
+echo "audit — break the install, the install suite must notice"
+
+#
+# The same rule one layer out, against a throwaway copy of the plugin.
+#
+# Every break below is one that actually shipped, or one line away from it. Each left the scorer,
+# the reader and the guard suites completely green, because all three call the hook themselves
+# instead of reading how Claude Code is told to call it.
+#
+
+# Copy the plugin somewhere we can ruin it.
+copy() { rm -rf "$tmp/$1" && cp -R "$root" "$tmp/$1"; }
+
+# Determine if the install suite fails against the broken copy.
+caught() { ! PLUGIN_ROOT="$tmp/$1" bash "$root/tests/install.sh" >/dev/null 2>&1; }
+
+# Rewrite a file in place.
+rewrite() { cat > "$1.new" && mv "$1.new" "$1"; }
+
+# Break one thing about the install and require the suite to notice.
+wreck() {
+  local name="$1" tag="$2" break_it="$3"
+
+  copy "$tag"      || { bad "$name — could not copy the plugin, so this proves nothing"; return; }
+  "$break_it" "$tmp/$tag" || { bad "$name — the break did not apply, so this proves nothing"; return; }
+  caught "$tag"    || { bad "$name — the suite passed against a broken install"; return; }
+
+  printf '  ok    %s\n' "$name"
+}
+
+# Determine if this filesystem records an executable bit. Windows does not — tests/install.sh says
+# why. Removing a bit that was never there mutates nothing, and a mutation that did not happen
+# cannot prove the suite would notice it.
+records_exec() {
+  probe="$tmp/exec-probe"
+  : > "$probe"
+  chmod +x "$probe" 2>/dev/null
+  [ -x "$probe" ] || return 1
+  chmod -x "$probe" 2>/dev/null
+  [ ! -x "$probe" ]
+}
+
+# The breaks.
+unhook()  { chmod -x "$1/hooks/signal.sh"; }
+crlf()    { awk '{ printf "%s\r\n", $0 }' "$1/hooks/signal.sh" | rewrite "$1/hooks/signal.sh"; }
+unquote() { sed 's/\\"//g' "$1/hooks/hooks.json" | rewrite "$1/hooks/hooks.json"; }
+unship()  { rm -f "$1/lib/score.awk"; }
+rewire()  { sed 's|hooks/signal.sh|hooks/gone.sh|' "$1/hooks/hooks.json" | rewrite "$1/hooks/hooks.json"; }
+
+if records_exec; then
+  wreck "a hook that lost its executable bit is caught" nox unhook
+else
+  printf '  skip  a hook that lost its executable bit — this filesystem records no such bit\n'
+fi
+
+wreck "a hook checked out with CRLF is caught"        crlf   crlf
+wreck "an unquoted plugin root is caught"             noquot unquote
+wreck "a lib that did not ship is caught"             nolib  unship
+wreck "hooks.json pointing at nothing is caught"      nofile rewire
 
 echo
 [ "$failed" -eq 0 ] && echo "ALL GREEN" || echo "FAILURES ABOVE"

@@ -41,13 +41,29 @@ Out of scope: files the agent writes, subagent replies, and any language but Eng
 
 ## Install
 
-Needs: Claude Code CLI, `bash`, `awk`. No Python, Node or `jq`.
+Needs: Claude Code CLI, `sh`, `awk`. No Python, Node or `jq`.
 
 ```
 /plugin install signal@the-foundry
 ```
 
 It works on the next reply. There is no style to switch on.
+
+If it cannot run, it says so at the top of the next session. A missing `awk` counts, and so does a
+file that did not survive the install. Silence means it is working.
+
+## Where it runs
+
+| Platform | Shell | awk |
+|---|---|---|
+| macOS | `sh` | the one Apple ships |
+| Debian, Ubuntu | `dash` | `mawk` |
+| Alpine | BusyBox `ash` | BusyBox |
+| Windows | the Git Bash Claude Code starts there | the `awk` Git for Windows ships |
+
+The suite is run on the first three. Windows rests on Git for Windows shipping the same two tools.
+Its own [package list](https://github.com/git-for-windows/build-extra/blob/main/make-file-list.sh)
+says it does.
 
 ## Tune it
 
@@ -70,8 +86,13 @@ them in your shell. Score a file by hand with
 bash plugins/signal/tests/run.sh
 ```
 
-98 checks, then twelve deliberate breaks that must each turn the suite red. Needs a clone of this
-repo, and about two minutes.
+114 checks, then seventeen deliberate breaks that must each turn the suite red. Needs a clone of
+this repo. Takes a few seconds.
+
+Five of those breaks target the install, not the scoring. That is where the last one hid. The
+shipped hook was not executable, so it died before it read a word. Every other suite stayed green.
+Each one called the hook itself, instead of reading how Claude Code is told to call it. So
+`tests/install.sh` reads the command out of `hooks/hooks.json` and hands it to a shell.
 
 ---
 

@@ -1,0 +1,13 @@
+# Line endings.
+#
+# Git for Windows installs with `core.autocrlf=true`, so a clone rewrites every checked-out file to
+# CRLF. A shell script that arrives that way does not run: bash reads the carriage return as part of
+# the last word on the line. A hook that dies mid-parse exits 2, and exit 2 on a `Stop` hook means
+# block, so the plugin would hand the agent a syntax error every turn instead of a score.
+#
+# `eol=lf` pins the working tree on every platform, whatever the clone is configured to do.
+
+* text=auto eol=lf
+
+*.sh  text eol=lf
+*.awk text eol=lf
