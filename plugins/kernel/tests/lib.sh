@@ -1,0 +1,47 @@
+#!/bin/bash
+# Counters and assertions shared by kernel's suites. Sourced, never run.
+#
+# signal carries a file like this one. Neither borrows from the other on purpose: a plugin is
+# installed on its own, so anything it needs to prove itself has to sit inside it. A shared helper
+# one directory up would make kernel's suite unrunnable for anyone who installed only kernel.
+
+passed=0
+failed=0
+
+# Record a passing check.
+ok() { passed=$((passed + 1)); printf '  ok    %s\n' "$1"; }
+
+# Record a failing check.
+bad() { failed=$((failed + 1)); printf '  FAIL  %s\n' "$1"; }
+
+# Note a check this platform cannot answer. Counts as neither, and says why out loud — a skip that
+# reads as a pass is how a suite ends up certifying a platform it never tested.
+skip() { printf '  skip  %s\n' "$1"; }
+
+# Assert two values match.
+is() {
+  [ "$2" = "$3" ] && { ok "$1"; return; }
+  bad "$1 — want [$3], got [$2]"
+}
+
+# Assert a string contains the given text.
+has() {
+  case "$2" in
+    *"$3"*) ok "$1" ;;
+    *)      bad "$1 — [$3] missing from [$2]" ;;
+  esac
+}
+
+# Assert a string does not contain the given text.
+lacks() {
+  case "$2" in
+    *"$3"*) bad "$1 — [$3] should not be in [$2]" ;;
+    *)      ok "$1" ;;
+  esac
+}
+
+# Report the suite's tally, and exit non-zero if anything failed.
+summary() {
+  printf '%s — %d passed, %d failed\n' "$1" "$passed" "$failed"
+  [ "$failed" -eq 0 ]
+}

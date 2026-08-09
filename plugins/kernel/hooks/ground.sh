@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 # SessionStart: Loads ground philosophy (foundational principles)
 #
 # These are non-negotiable. They shape every decision.

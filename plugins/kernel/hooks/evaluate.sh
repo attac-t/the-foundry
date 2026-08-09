@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 # UserPromptSubmit: Forces skill evaluation before work begins
 #
 # Based on Scott Spence's forced evaluation pattern

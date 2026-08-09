@@ -2,11 +2,24 @@
   "hooks": {
     "SessionStart": [
       {
+        "matcher": "startup|resume|clear",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/preflight.sh\"",
+            "shell": "bash",
+            "timeout": 10
+          }
+        ]
+      },
+      {
         "matcher": "startup|resume|clear|compact",
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/remember.sh"
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/remember.sh\"",
+            "shell": "bash",
+            "timeout": 10
           }
         ]
       },
@@ -15,7 +28,9 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/ground.sh"
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/ground.sh\"",
+            "shell": "bash",
+            "timeout": 10
           }
         ]
       }
@@ -25,7 +40,9 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/anchor.sh"
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/anchor.sh\"",
+            "shell": "bash",
+            "timeout": 10
           }
         ]
       },
@@ -33,7 +50,9 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/recite.sh"
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/recite.sh\"",
+            "shell": "bash",
+            "timeout": 10
           }
         ]
       },
@@ -41,7 +60,9 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/evaluate.sh"
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/evaluate.sh\"",
+            "shell": "bash",
+            "timeout": 10
           }
         ]
       },
@@ -49,7 +70,9 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/delegate.sh"
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/delegate.sh\"",
+            "shell": "bash",
+            "timeout": 10
           }
         ]
       }
@@ -60,7 +83,9 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/consider.sh"
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/consider.sh\"",
+            "shell": "bash",
+            "timeout": 10
           }
         ]
       }
@@ -70,7 +95,9 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/verify.sh"
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/verify.sh\"",
+            "shell": "bash",
+            "timeout": 10
           }
         ]
       }

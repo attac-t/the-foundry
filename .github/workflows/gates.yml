@@ -31,18 +31,25 @@ jobs:
       - name: No sentence appears twice
         run: bash bin/repeats.sh $(git ls-files 'plugins/panel/*.md' 'plugins/pest/*.md' 'plugins/signal/*.md')
 
-  # The gates above read files. This one runs the plugin, on each operating system a user installs
-  # it on, because that is where signal broke last: the shipped hook was not executable, so it died
-  # before reading a word, and nothing here noticed for five releases.
+  # The gates above read files. This one runs the plugins that ship code, on each operating system a
+  # user installs them on, because that is where both of them broke last: signal's hook was not
+  # executable, so it died before reading a word, and kernel's nine hooks named a bare path with no
+  # interpreter, which needs the same bit Windows does not record. Nothing here noticed either.
   #
-  # Three runners, not one. Ubuntu resolves `awk` to mawk and `sh` to dash; macOS ships neither, and
-  # a gate that only ever met GNU tools will keep passing a script the other half of the world
-  # cannot run. Windows runs `shell: bash`, which is the same Git Bash Claude Code starts there.
-  signal:
+  # Three runners, not one, and the differences between them are the point. Ubuntu resolves `awk` to
+  # mawk and `sh` to dash — it is the only runner that can fail a bashism, because `sh` on macOS and
+  # under Git Bash *is* bash and accepts `&>`, `[[ =~ ]]` and `${BASH_SOURCE[0]}` without complaint.
+  # macOS brings BSD awk. Windows runs `shell: bash`, which is the same Git Bash Claude Code starts
+  # there, and is the only runner that records no executable bit. A suite that met one of these
+  # would keep passing code the other two cannot run.
+  #
+  # Each plugin is its own job so a red square names the plugin, not just the platform.
+  runtime:
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
+        plugin: [kernel, signal]
     runs-on: ${{ matrix.os }}
     defaults:
       run:
@@ -50,10 +57,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: The tools signal claims to need
+      - name: The tools ${{ matrix.plugin }} claims to need
         run: |
           command -v sh   && sh -c 'echo sh ok'
           command -v awk  && echo 'a b' | awk '{ print "awk ok" }'
+          # Which sh this runner has, printed so a skipped bashism audit can be read back later.
+          # dash lets the output escape; bash sends it to /dev/null.
+          [ -z "$(sh -c 'echo leak &>/dev/null' 2>/dev/null)" ] \
+            && echo 'sh is bash — bashism audits will skip here' \
+            || echo 'sh is not bash — bashism audits will run here'
 
-      - name: signal runs, and its suite can still go red
-        run: bash plugins/signal/tests/run.sh
+      - name: ${{ matrix.plugin }} runs, and its suite can still go red
+        run: bash plugins/${{ matrix.plugin }}/tests/run.sh

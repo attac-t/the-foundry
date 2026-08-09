@@ -270,17 +270,37 @@ The body establishes mindset — not instructions. Philosophy, not patterns.
 
 ## Troubleshooting
 
-Skills not activating? Hooks silent?
+Every hook here is silent when it works. No memory to load, no blueprint to check, no pattern
+choice worth an ADR — each of those is a quiet turn, and so is a hook that could not start. You
+cannot tell them apart by watching.
+
+So kernel tells you. A preflight runs the shipped code against known input at the top of every
+session and prints one line when it cannot answer:
 
 ```
-/evaluate
+kernel: hooks not running — no awk on PATH. kernel needs sh and awk, nothing else.
 ```
 
-Check:
-- Scripts executable? `chmod +x hooks/*.sh`
-- Plugin installed? `/plugins list`
+Silence from the preflight means the hooks ran. If you see that line, reinstall the plugin.
 
-Run `/evaluate` to verify hooks are firing.
+Skills not activating? Run `/evaluate`.
+
+For anything else, `claude --debug` shows each event, the matchers it checked, and every hook's
+exit code — a hook that exits 0 sends its stderr to that log and nowhere else.
+
+### Running the hooks yourself
+
+```bash
+bash plugins/kernel/tests/run.sh
+```
+
+The suite reads `hooks.json` and fires each command the way Claude Code fires it, then breaks the
+plugin one rule at a time and requires itself to go red. A suite that calls the scripts directly
+proves only that the scripts work — never that the wiring does, which is where these hooks failed.
+
+**Requires `sh` and `awk`.** Nothing else. `git` is used where it is present and done without where
+it is not. There is no `bash` and no `jq`: kernel is wired through `sh`, so every script here is
+POSIX, and the one place that needed to read JSON now reads it with `awk`.
 
 ---
 
