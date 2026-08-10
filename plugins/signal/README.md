@@ -14,9 +14,12 @@ An output style asks. A `Stop` hook gets the finished reply and can hand it back
 |---|---|---|
 | pass | Nothing. You never see the hook | none |
 | warn | You get the numbers. The agent does not | none |
-| block | The agent gets the numbers and says it again | one turn |
+| block | You both get the numbers. The agent says it again | one turn |
 
 One block per turn. If the rewrite is still over, it ships and you get a note.
+
+A block hides nothing. The hook only runs once the reply is on screen. The long one stays, and the
+short one lands under it. You get both, and a note naming the one that went back.
 
 | What we count | Pass | Warn | Block |
 |---|---|---|---|
@@ -86,7 +89,7 @@ them in your shell. Score a file by hand with
 bash plugins/signal/tests/run.sh
 ```
 
-114 checks, then seventeen deliberate breaks that must each turn the suite red. Needs a clone of
+116 checks, then seventeen deliberate breaks that must each turn the suite red. Needs a clone of
 this repo. Takes a few seconds.
 
 Five of those breaks target the install, not the scoring. That is where the last one hid. The

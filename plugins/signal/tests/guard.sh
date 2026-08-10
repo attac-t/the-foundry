@@ -91,6 +91,11 @@ has "the block names the numbers"   "$out" 'long words'
 has "the block gives the target"    "$out" 'aim for'
 has "the block points at the skill" "$out" 'signal:plain-english'
 
+# The user has to be told too. A block leaves the long reply on screen with the rewrite under it, and
+# for two versions nothing said which one went back.
+has "the block reaches the user"  "$out" '"systemMessage"'
+has "the note names the reply"    "$out" 'reply above'
+
 # --- nothing to score ---
 
 is "no reply means no output"    "$(run '{"session_id":"t","stop_hook_active":false}')" ""

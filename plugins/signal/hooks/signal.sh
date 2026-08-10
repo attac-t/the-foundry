@@ -45,8 +45,17 @@ safe() { printf '%s' "$1" | awk -f "$root/lib/jsonsafe.awk"; }
 # Tell the user, and let the turn end.
 warn() { printf '{"systemMessage":"signal: %s"}\n' "$(safe "$1")"; }
 
-# Hand the reply back to the agent to write again.
-block() { printf '{"decision":"block","reason":"%s"}\n' "$(safe "$1")"; }
+#
+# Hand the reply back to the agent to write again, and tell the user it happened.
+#
+# `systemMessage` is a universal field, so it rides along with `decision`. Without it a block is the
+# one answer the user never sees: the long reply stays on screen, the rewrite lands under it, and
+# nothing says which is which.
+#
+block() {
+  printf '{"decision":"block","reason":"%s","systemMessage":"signal: sent the reply above back. %s"}\n' \
+    "$(safe "$1")" "$(safe "$2")"
+}
 
 # Get the rewrite instructions.
 advice() { printf '%s' "Keep every fact. Cut the words. For every word, ask whether a ten-year-old would use it, and whether a plainer word means the same. Read the signal:plain-english skill, which names the standard."; }
@@ -84,5 +93,5 @@ spent && { warn "rewrite still over — $why. One block per turn, so this one sh
 [ "$verdict" -eq 1 ] && { warn "$why"; exit 0; }
 
 remember
-block "Say that again in plain English. $why. $(advice)"
+block "Say that again in plain English. $why. $(advice)" "$why"
 exit 0
