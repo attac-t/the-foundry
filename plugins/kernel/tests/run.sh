@@ -186,6 +186,8 @@ unship()   { rm -f "$1/hooks/lib/unjson.awk"; }
 rewire()   { sed 's|hooks/ground.sh|hooks/gone.sh|' "$1/hooks/hooks.json" | rewrite "$1/hooks/hooks.json"; }
 unwire()   { grep -v 'consider.sh' "$1/hooks/hooks.json" | rewrite "$1/hooks/hooks.json"; }
 bashism()  { sed 's|dirname "\$0"|dirname "${BASH_SOURCE[0]}"|' "$1/hooks/delegate.sh" | rewrite "$1/hooks/delegate.sh"; }
+onecolumn(){ sed 's|column += (size > 1 && wide(code)) ? 2 : 1|column += 1|' "$1/hooks/lib/tables.awk" | rewrite "$1/hooks/lib/tables.awk"; }
+saynothing(){ sed 's|if (!same) print start|if (0) print start|' "$1/hooks/lib/tables.awk" | rewrite "$1/hooks/lib/tables.awk"; }
 
 if records_exec; then
   wreck "a hook that lost its executable bit is caught" nox unhook
@@ -200,6 +202,12 @@ wreck "a hook that declares no shell is caught"       noshel unshell
 wreck "a lib that did not ship is caught"             nolib  unship
 wreck "hooks.json pointing at nothing is caught"      nofile rewire
 wreck "a hook that ships but is never wired is caught" nowire unwire
+
+# The table reader has one job a character count cannot do, so it gets its own break. Measuring
+# every glyph as one column is the exact mistake that left eleven tables looking padded and reading
+# crooked, and it is invisible to every other check here.
+wreck "a table reader using the wrong ruler is caught"  onecol onecolumn
+wreck "a table reader that never speaks is caught"      mute   saynothing
 
 if sh_is_bash; then
   printf '  skip  a bash-only variable put back — this sh is bash, where it still resolves\n'

@@ -98,7 +98,8 @@ PROMPT (UserPromptSubmit)              ← Anchor past → Reflect → Act
     ▼
 RESPONSE (PostToolUse)
     │
-    └── consider   Prompt ADR check (skips tests, config, docs)
+    ├── consider   Prompt ADR check (skips tests, config, docs)
+    └── tables     Name a crooked markdown table (markdown only)
     │
     ▼
 STOP (Stop)

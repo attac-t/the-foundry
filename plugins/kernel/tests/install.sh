@@ -174,6 +174,33 @@ is  "consider is quiet when it cannot read a path" \
 has "content holding a decoy path does not fool it" \
     "$(fire consider.sh '{"tool_input":{"file_path":"/app/src/A.php","content":"{\"file_path\":\"/x.md\"}"}}')" "additionalContext"
 
+# --- the table nudge measures the screen, not the file ---
+#
+# `wide.md` is the check the others cannot make. Its pipes sit at the same character offset on every
+# row, so anything counting characters calls it clean. `❌` spends two columns, so the header is one
+# column wider than the rows below it and the table is crooked wherever a human reads it. A reader
+# that passes this file is measuring with the wrong ruler.
+
+printf '| a | b |\n|---|---|\n| longer | x |\n'  > "$tmp/ragged.md"
+printf '| a      | b |\n|--------|---|\n| longer | x |\n' > "$tmp/padded.md"
+printf '| \xe2\x9d\x8c A | B |\n|-----|---|\n| abc | d |\n' > "$tmp/wide.md"
+cp "$tmp/padded.md" "$tmp/notes.txt"
+
+has "tables names a crooked table" \
+    "$(fire tables.sh "{\"tool_input\":{\"file_path\":\"$tmp/ragged.md\"}}")" "additionalContext"
+has "and says which line it starts on" \
+    "$(fire tables.sh "{\"tool_input\":{\"file_path\":\"$tmp/ragged.md\"}}")" "line 1"
+is  "tables is quiet once the table lines up" \
+    "$(fire tables.sh "{\"tool_input\":{\"file_path\":\"$tmp/padded.md\"}}")" ""
+has "a wide glyph is two columns, not one" \
+    "$(fire tables.sh "{\"tool_input\":{\"file_path\":\"$tmp/wide.md\"}}")" "additionalContext"
+is  "tables is quiet on a file that is not markdown" \
+    "$(fire tables.sh "{\"tool_input\":{\"file_path\":\"$tmp/notes.txt\"}}")" ""
+is  "tables is quiet on a file that is not there" \
+    "$(fire tables.sh "{\"tool_input\":{\"file_path\":\"$tmp/gone.md\"}}")" ""
+is  "tables is quiet when it cannot read a path" \
+    "$(fire tables.sh '{"tool_input":{}}')" ""
+
 # --- a path with a space in it ---
 # `C:\Program Files\ClaudeCode\plugins` is where Windows actually puts this. An unquoted variable in
 # hooks.json splits on that space and the hook never starts.
