@@ -41,10 +41,15 @@ set -- $FOUND
 COUNT=$#
 LINES=$(printf '%s' "$FOUND" | tr '\n' ',' | sed 's/,$//; s/,/, /g')
 
+# Several is the ordinary case, so it is the wording this starts from. One table overrides it.
+SUBJECT="$COUNT tables"
+VERB="do"
+PLACE="lines $LINES"
+
 if [ "$COUNT" = 1 ]; then
-  SUBJECT="A table"; VERB="does"; PLACE="line $LINES"
-else
-  SUBJECT="$COUNT tables"; VERB="do"; PLACE="lines $LINES"
+  SUBJECT="A table"
+  VERB="does"
+  PLACE="line $LINES"
 fi
 
 # The path lands inside a JSON string, so anything that could end that string early comes out first.

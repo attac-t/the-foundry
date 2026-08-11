@@ -29,18 +29,23 @@ named = [arg for arg in argv if arg != "--fix"]
 
 # Every count below can be one, and "1 tables" reads badly in a gate about how text reads.
 def tally(n, noun):
-    return f"{n} {noun}" if n == 1 else f"{n} {noun}s"
+    if n == 1:
+        return f"{n} {noun}"
+    return f"{n} {noun}s"
 
 
-if named:
-    paths = [pathlib.Path(name) for name in named]
-    missing = [path for path in paths if not path.is_file()]
-    if missing:
+# The files to read: the ones named on the command line, or every tracked markdown file.
+def targets(named):
+    if named:
+        chosen = [pathlib.Path(name) for name in named]
+        missing = [path for path in chosen if not path.is_file()]
+        if not missing:
+            return chosen
         print(f"FAIL — {tally(len(missing), 'path')} named but not found.")
         for path in missing:
             print(f"  {path}")
         sys.exit(1)
-else:
+
     root = pathlib.Path(
         subprocess.run(
             ["git", "rev-parse", "--show-toplevel"],
@@ -51,7 +56,10 @@ else:
         ["git", "-C", root, "ls-files", "*.md"],
         capture_output=True, text=True, check=True,
     ).stdout.split()
-    paths = [root / name for name in tracked if not name.startswith(".claude/")]
+    return [root / name for name in tracked if not name.startswith(".claude/")]
+
+
+paths = targets(named)
 
 
 # A dash row, and one cell of it. Both must match for a run of rows to count as a table.
@@ -64,8 +72,14 @@ DASH_CELL = re.compile(r"\A:?-+:?\Z")
 # East Asian Width W and F are the two-column cases. Ambiguous is left at one on purpose: every
 # Ambiguous character in this repo is an arrow, an em dash or a box-drawing rule, and each takes one
 # column outside a CJK locale. Counting those as two would break the tables that are already right.
+def columns_for(char):
+    if unicodedata.east_asian_width(char) in "WF":
+        return 2
+    return 1
+
+
 def width(text):
-    return sum(2 if unicodedata.east_asian_width(char) in "WF" else 1 for char in text)
+    return sum(map(columns_for, text))
 
 
 # Where the pipes that split cells sit in a row. A backslash shields the next character, so `\|` is
@@ -77,9 +91,11 @@ def splits(row):
     for index, char in enumerate(row):
         if shielded:
             shielded = False
-        elif char == "\\":
+            continue
+        if char == "\\":
             shielded = True
-        elif char == "|":
+            continue
+        if char == "|":
             found.append(index)
     return found
 
@@ -175,7 +191,10 @@ for path in paths:
             fenced = not fenced
             scanned.append("")
             continue
-        scanned.append("" if fenced else line)
+        if fenced:
+            scanned.append("")
+            continue
+        scanned.append(line)
 
     edits = []
     for start, rows in tables(scanned):

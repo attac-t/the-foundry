@@ -48,8 +48,8 @@ BEGIN {
 function spread(spec,   parts, count, i, edges) {
   count = split(spec, parts, " ")
   for (i = 1; i <= count; i++) {
-    if (split(parts[i], edges, "-") == 2) { LO[i] = hex(edges[1]); HI[i] = hex(edges[2]) }
-    else                                  { LO[i] = hex(parts[i]); HI[i] = LO[i] }
+    if (split(parts[i], edges, "-") == 2) { LO[i] = hex(edges[1]); HI[i] = hex(edges[2]); continue }
+    LO[i] = hex(parts[i]); HI[i] = LO[i]
   }
   SPANS = count
 }
@@ -70,6 +70,29 @@ function wide(code,   i) {
   return 0
 }
 
+# Fold the continuation bytes after `pos` into the codepoint a lead byte started.
+function fold(row, pos, size, code,   k) {
+  for (k = 1; k < size; k++) code = code * 64 + ord[substr(row, pos + k, 1)] - 128
+  return code
+}
+
+# The codepoint at `pos`, setting SIZE to the bytes it spans. A byte under 192 stands alone: ASCII,
+# or a stray continuation byte that belongs to nothing.
+function decode(row, pos,   lead) {
+  lead = ord[substr(row, pos, 1)]
+  if (lead < 192) { SIZE = 1; return lead }
+  if (lead < 224) { SIZE = 2; return fold(row, pos, 2, lead - 192) }
+  if (lead < 240) { SIZE = 3; return fold(row, pos, 3, lead - 224) }
+  SIZE = 4
+  return fold(row, pos, 4, lead - 240)
+}
+
+# How many columns one codepoint spends. Single-byte characters are ASCII and always spend one.
+function screen_width(code, size) {
+  if (size > 1 && wide(code)) return 2
+  return 1
+}
+
 #
 # Walk a row once and record the screen column of every pipe that splits cells.
 #
@@ -77,30 +100,25 @@ function wide(code,   i) {
 # whether a backslash shielded it. A pipe behind a backslash is text inside a cell. Backticks shield
 # nothing — markdown splits a row inside a code span just the same.
 #
+# The cursor moves before the decision is made, so each case can bail out on its own line. `at` holds
+# where the character started, because that is what a pipe has to report.
+#
 # Fills COLS[1..n] and returns n. Pipes are ASCII, and every byte of a multi-byte character is 128
 # or above, so walking bytes can never mistake part of one character for a separator.
 #
-function pipe_columns(row,   bytes, i, k, lead, size, code, column, count, shielded) {
+function pipe_columns(row,   bytes, i, code, at, column, count, shielded) {
   bytes = length(row)
   i = 1; column = 0; count = 0; shielded = 0
 
   while (i <= bytes) {
-    lead = ord[substr(row, i, 1)]
+    code = decode(row, i)
+    at = column
+    column += screen_width(code, SIZE)
+    i += SIZE
 
-    if      (lead < 128) { size = 1; code = lead }
-    else if (lead < 192) { size = 1; code = lead }        # a stray continuation byte
-    else if (lead < 224) { size = 2; code = lead - 192 }
-    else if (lead < 240) { size = 3; code = lead - 224 }
-    else                 { size = 4; code = lead - 240 }
-
-    for (k = 1; k < size; k++) code = code * 64 + ord[substr(row, i + k, 1)] - 128
-
-    if      (shielded)     shielded = 0
-    else if (lead == 92)   shielded = 1                   # a backslash
-    else if (lead == 124)  COLS[++count] = column         # a pipe that splits
-
-    column += (size > 1 && wide(code)) ? 2 : 1
-    i += size
+    if (shielded)    { shielded = 0; continue }
+    if (code == 92)  { shielded = 1; continue }           # a backslash
+    if (code == 124) COLS[++count] = at                   # a pipe that splits
   }
   return count
 }
@@ -138,19 +156,20 @@ function trim(text) {
 
 # A run of rows is a table only when its second row is the dash row. A flowchart drawn in pipes is
 # not a table, and a lone quoted row is not one either.
-function judge(start, height,   i, first, same) {
+function judge(start, height,   i, first) {
   if (height < 2 || !dash_row(held[start + 1])) return
   first = signature(held[start])
-  same = 1
-  for (i = start + 1; i < start + height; i++) if (signature(held[i]) != first) same = 0
-  if (!same) print start
+  for (i = start + 1; i < start + height; i++) {
+    if (signature(held[i]) != first) { print start; return }
+  }
 }
 
 {
   # A fenced block shows tables as specimens, so they are none of this file's business. Blanking the
   # block rather than dropping it keeps every line number honest.
   if (trim($0) ~ /^```/) { fenced = !fenced; held[NR] = ""; next }
-  held[NR] = fenced ? "" : $0
+  if (fenced) { held[NR] = ""; next }
+  held[NR] = $0
 }
 
 END {

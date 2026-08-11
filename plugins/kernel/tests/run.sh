@@ -186,8 +186,8 @@ unship()   { rm -f "$1/hooks/lib/unjson.awk"; }
 rewire()   { sed 's|hooks/ground.sh|hooks/gone.sh|' "$1/hooks/hooks.json" | rewrite "$1/hooks/hooks.json"; }
 unwire()   { grep -v 'consider.sh' "$1/hooks/hooks.json" | rewrite "$1/hooks/hooks.json"; }
 bashism()  { sed 's|dirname "\$0"|dirname "${BASH_SOURCE[0]}"|' "$1/hooks/delegate.sh" | rewrite "$1/hooks/delegate.sh"; }
-onecolumn(){ sed 's|column += (size > 1 && wide(code)) ? 2 : 1|column += 1|' "$1/hooks/lib/tables.awk" | rewrite "$1/hooks/lib/tables.awk"; }
-saynothing(){ sed 's|if (!same) print start|if (0) print start|' "$1/hooks/lib/tables.awk" | rewrite "$1/hooks/lib/tables.awk"; }
+onecolumn(){ sed 's|if (size > 1 && wide(code)) return 2|if (0) return 2|' "$1/hooks/lib/tables.awk" | rewrite "$1/hooks/lib/tables.awk"; }
+saynothing(){ sed 's|{ print start; return }|{ return }|' "$1/hooks/lib/tables.awk" | rewrite "$1/hooks/lib/tables.awk"; }
 
 if records_exec; then
   wreck "a hook that lost its executable bit is caught" nox unhook
