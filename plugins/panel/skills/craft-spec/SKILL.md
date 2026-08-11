@@ -42,19 +42,19 @@ inside a panel.
 The numbering is the **order the artifacts depend on each other**, not an execution sequence.
 See *Re-entry*.
 
-| # | Step | Act | Done when |
-|---|------|-----|-----------|
-| 0 | Domain knowledge | Indicative facts that hold whether or not you build anything | Every term used in a need is grounded in one |
-| 1 | Needs | What must become true, stated so it could be false | Every term is an environment phenomenon, and *why* bottoms out at money, risk, time, or obligation |
-| 2 | Invariants | Negate each need; derive the obstacles | Each has a consistency boundary, and transactional-vs-eventual is decided |
-| 3 | Ports | Driving and driven | Two to four. Fifteen means adapters wearing port costumes |
-| 4 | **Gate 1** | Signature draft, empty bodies | A non-author judge approves the shape |
-| 5 | Contracts | Classify each: precondition, postcondition, class invariant, constraint | Every invariant has a terminus |
-| 6 | Assertions | Derive from the contracts and the input partition | Every contract has at least one test |
-| 7 | Primitives | Make illegal states unconstructable | Assertion count **dropped** |
-| 8 | Adapters | Wire the ports. Hooks at ports only | A different client could consume this unchanged |
-| 9 | Bodies | Implement | Every gate exits 0 |
-| 10 | **Gate 2** | Cold read | Someone who wasn't here can rebuild the theory |
+| #  | Step             | Act                                                                     | Done when                                                                                          |
+|----|------------------|-------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------|
+| 0  | Domain knowledge | Indicative facts that hold whether or not you build anything            | Every term used in a need is grounded in one                                                       |
+| 1  | Needs            | What must become true, stated so it could be false                      | Every term is an environment phenomenon, and *why* bottoms out at money, risk, time, or obligation |
+| 2  | Invariants       | Negate each need; derive the obstacles                                  | Each has a consistency boundary, and transactional-vs-eventual is decided                          |
+| 3  | Ports            | Driving and driven                                                      | Two to four. Fifteen means adapters wearing port costumes                                          |
+| 4  | **Gate 1**       | Signature draft, empty bodies                                           | A non-author judge approves the shape                                                              |
+| 5  | Contracts        | Classify each: precondition, postcondition, class invariant, constraint | Every invariant has a terminus                                                                     |
+| 6  | Assertions       | Derive from the contracts and the input partition                       | Every contract has at least one test                                                               |
+| 7  | Primitives       | Make illegal states unconstructable                                     | Assertion count **dropped**                                                                        |
+| 8  | Adapters         | Wire the ports. Hooks at ports only                                     | A different client could consume this unchanged                                                    |
+| 9  | Bodies           | Implement                                                               | Every gate exits 0                                                                                 |
+| 10 | **Gate 2**       | Cold read                                                               | Someone who wasn't here can rebuild the theory                                                     |
 
 **Blame assignment is why step 5 has four termini, not one.** A precondition violation is the
 caller's bug, a postcondition the supplier's, an invariant the class's. Collapse them and a failing
@@ -114,12 +114,12 @@ Looping is expected. An unrecorded loop is not.
 
 ## The Anti-Patterns
 
-| Don't | Do | Why |
-|-------|----|-----|
-| Start writing bodies | Draft signatures first | Empty drafts are free to throw away |
-| Judge your own draft | Three callers, or a second agent | Least reliable at peak investment |
-| One `ensure` per test | One contract, ≥1 test | Boundary values are one dataset, not three tests |
-| A primitive that adds assertions | Delete assertions | If count rises, it is a wrapper |
-| Test a rule at three altitudes | Lowest one still about behaviour | Triplication reads as thoroughness |
-| Enumerate ports as technologies | Enumerate intents | HTTP is an adapter, not a port |
-| Walk it on a projection | Golden examples plus properties | The chain idles; it does not fail loudly |
+| Don't                            | Do                               | Why                                              |
+|----------------------------------|----------------------------------|--------------------------------------------------|
+| Start writing bodies             | Draft signatures first           | Empty drafts are free to throw away              |
+| Judge your own draft             | Three callers, or a second agent | Least reliable at peak investment                |
+| One `ensure` per test            | One contract, ≥1 test            | Boundary values are one dataset, not three tests |
+| A primitive that adds assertions | Delete assertions                | If count rises, it is a wrapper                  |
+| Test a rule at three altitudes   | Lowest one still about behaviour | Triplication reads as thoroughness               |
+| Enumerate ports as technologies  | Enumerate intents                | HTTP is an adapter, not a port                   |
+| Walk it on a projection          | Golden examples plus properties  | The chain idles; it does not fail loudly         |

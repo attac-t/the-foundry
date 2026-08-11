@@ -13,11 +13,11 @@ Before context becomes a constraint. The kernel monitors automatically.
 
 ## The Thresholds
 
-| Usage | Action | Why |
-|-------|--------|-----|
-| 60% | Run `/compact` | Prevent drift before it starts |
-| 80% | Delegate to sub-agent | Preserve parent for orchestration |
-| 90% | Emergency compress | Summarize aggressively |
+| Usage | Action                | Why                               |
+|-------|-----------------------|-----------------------------------|
+| 60%   | Run `/compact`        | Prevent drift before it starts    |
+| 80%   | Delegate to sub-agent | Preserve parent for orchestration |
+| 90%   | Emergency compress    | Summarize aggressively            |
 
 ## The Protocol
 

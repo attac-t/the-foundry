@@ -31,6 +31,14 @@ jobs:
       - name: No sentence appears twice
         run: bash bin/repeats.sh $(git ls-files 'plugins/panel/*.md' 'plugins/pest/*.md' 'plugins/signal/*.md')
 
+      # Repo-wide, where `repeats` is scoped to three plugins — padding needs no corpus to be clean
+      # enough to enforce, because the fixer makes the whole repo compliant in one pass.
+      #
+      # Display width, not character count: `❌` and `✅` each spend two columns, so 11 tables were
+      # padded to the wrong ruler and drifted on screen while looking right in the source.
+      - name: Every table lines up in a plain text editor
+        run: bash bin/tables.sh
+
   # The gates above read files. This one runs the plugins that ship code, on each operating system a
   # user installs them on, because that is where both of them broke last: signal's hook was not
   # executable, so it died before reading a word, and kernel's nine hooks named a bare path with no

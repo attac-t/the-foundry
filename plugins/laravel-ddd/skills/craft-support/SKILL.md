@@ -16,7 +16,7 @@ description: Crafting Support namespace code. Reusable, domain-agnostic.
 
 ## The Anti-Patterns
 
-| ❌ Don't                  | ✅ Do              | Why                  |
+| ❌ Don't                 | ✅ Do             | Why                  |
 |--------------------------|-------------------|----------------------|
 | Import Domain            | Define Contract   | Dependency inversion |
 | Business rules           | Generic utilities | Domain-agnostic      |

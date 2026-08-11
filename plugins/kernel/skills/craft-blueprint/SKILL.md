@@ -27,9 +27,9 @@ Use blueprint when:
 
 Each task has an Owner: `self` or `agent`.
 
-| Owner | Meaning | Status Flow |
-|-------|---------|-------------|
-| `self` | Architect does it | `pending` → `in-progress` → `done` |
+| Owner   | Meaning                | Status Flow                                    |
+|---------|------------------------|------------------------------------------------|
+| `self`  | Architect does it      | `pending` → `in-progress` → `done`             |
 | `agent` | Delegated to sub-agent | `pending` → `delegated` → `in-review` → `done` |
 
 See `ground-delegation` for criteria (Bounded, Context-free, Mechanical, Verifiable).
@@ -66,15 +66,15 @@ Update Phase when transitioning. Log in Changes.
 
 ## The Anti-Patterns
 
-| Don't | Do | Why |
-|-------|-----|-----|
-| Mark done without asking | Request user confirmation | User owns completion |
-| Multiple self in-progress | Single active self task | Focus and clarity |
-| Delete inconvenient tasks | Defer with reason | Audit trail |
-| Silent plan changes | Log in Changes table | Traceability |
-| Invent tasks | Source from spec.md | Spec is the contract |
-| Skip delegation assessment | Apply criteria to each task | Lead, don't drown |
-| Auto-merge agent output | Review before commit | Quality gate |
+| Don't                      | Do                          | Why                  |
+|----------------------------|-----------------------------|----------------------|
+| Mark done without asking   | Request user confirmation   | User owns completion |
+| Multiple self in-progress  | Single active self task     | Focus and clarity    |
+| Delete inconvenient tasks  | Defer with reason           | Audit trail          |
+| Silent plan changes        | Log in Changes table        | Traceability         |
+| Invent tasks               | Source from spec.md         | Spec is the contract |
+| Skip delegation assessment | Apply criteria to each task | Lead, don't drown    |
+| Auto-merge agent output    | Review before commit        | Quality gate         |
 
 ## Real-World Examples
 

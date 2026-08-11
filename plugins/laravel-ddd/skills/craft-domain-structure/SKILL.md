@@ -16,12 +16,12 @@ description: Crafting Domain Structure. Mini-Laravel-app per domain.
 
 ## The Anti-Patterns
 
-| ❌ Don't                   | ✅ Do                         | Why                         |
-|---------------------------|------------------------------|-----------------------------|
-| Flat domain folder        | Organized subfolders         | Findable, scalable          |
-| Inconsistent structure    | Same layout everywhere       | Predictable                 |
-| Services folder           | Actions folder               | Clear naming                |
-| Global events             | Domain-specific events       | Bounded context             |
+| ❌ Don't               | ✅ Do                  | Why                |
+|------------------------|------------------------|--------------------|
+| Flat domain folder     | Organized subfolders   | Findable, scalable |
+| Inconsistent structure | Same layout everywhere | Predictable        |
+| Services folder        | Actions folder         | Clear naming       |
+| Global events          | Domain-specific events | Bounded context    |
 
 ## Real-World Examples
 

@@ -50,16 +50,16 @@ description: Crafting a service provider. The declarative heart of every Laravel
 
 ## The Anti-Patterns
 
-| Don't                                               | Do                                                       | Why                                    |
-|-----------------------------------------------------|----------------------------------------------------------|----------------------------------------|
-| Mix bindings and side effects in one method         | Register phase for bindings, boot phase for side effects | Separation of concerns                 |
-| Hardcode implementation classes                     | Config-driven class resolution                           | Users swap without forking             |
-| Register everything as singleton                    | Match the pattern to the need: singleton, scoped, bind   | Wrong scope causes subtle bugs         |
-| Skip `->name()` or use a bare name                  | Always `->name('laravel-{slug}')` with Spatie tools      | Consistent publish tags and namespaces |
-| One giant boot method                               | Private methods per concern                              | Readable, maintainable                 |
-| Forget `callAfterResolving()` for optional services | Defer registration until the dependency is resolved      | Avoids boot-order issues               |
+| Don't                                               | Do                                                       | Why                                       |
+|-----------------------------------------------------|----------------------------------------------------------|-------------------------------------------|
+| Mix bindings and side effects in one method         | Register phase for bindings, boot phase for side effects | Separation of concerns                    |
+| Hardcode implementation classes                     | Config-driven class resolution                           | Users swap without forking                |
+| Register everything as singleton                    | Match the pattern to the need: singleton, scoped, bind   | Wrong scope causes subtle bugs            |
+| Skip `->name()` or use a bare name                  | Always `->name('laravel-{slug}')` with Spatie tools      | Consistent publish tags and namespaces    |
+| One giant boot method                               | Private methods per concern                              | Readable, maintainable                    |
+| Forget `callAfterResolving()` for optional services | Defer registration until the dependency is resolved      | Avoids boot-order issues                  |
 | Eager-load services used on few requests            | `DeferrableProvider` + `provides()`                      | Free performance for rarely-used bindings |
-| Stateful singletons without Octane reset            | Flush state on `RequestReceived` / `TaskReceived`        | Leaked state causes cross-request bugs |
+| Stateful singletons without Octane reset            | Flush state on `RequestReceived` / `TaskReceived`        | Leaked state causes cross-request bugs    |
 
 ## Real-World Examples
 

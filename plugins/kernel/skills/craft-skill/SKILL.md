@@ -51,11 +51,11 @@ through the `Skill` tool at runtime.
 
 So register deliberately, not defensively:
 
-| Preload it | Leave it out |
-|------------|--------------|
-| The agent needs it on **every** run | The agent needs it occasionally |
-| Fetching it late would change the output | A `Skill` call at the right moment is fine |
-| It defines the agent's standards or vocabulary | It is reference material |
+| Preload it                                     | Leave it out                               |
+|------------------------------------------------|--------------------------------------------|
+| The agent needs it on **every** run            | The agent needs it occasionally            |
+| Fetching it late would change the output       | A `Skill` call at the right moment is fine |
+| It defines the agent's standards or vocabulary | It is reference material                   |
 
 Every preloaded skill is startup context the agent pays for whether or not it uses it. A long
 `skills:` list is a cost, not a safety net.

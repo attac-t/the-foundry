@@ -111,7 +111,7 @@ public function hasPendingRefund(): bool
 | `config('key') ?? default`   | `config('key', $default)`                         |
 | `in_array($val, [...])`      | `collect([...])->contains($val)` or enum `->in()` |
 | `if ($cond) { $cb(); }`      | `when($cond, $cb)` if available                   |
-| `function ($x) use ($y) {…}` | `fn ($x) => …` when single-expression              |
+| `function ($x) use ($y) {…}` | `fn ($x) => …` when single-expression             |
 
 ### Collection Pipeline Over Foreach
 **Why?** Same result. Half the lines. Declarative.

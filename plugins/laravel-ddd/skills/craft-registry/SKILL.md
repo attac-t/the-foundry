@@ -16,12 +16,12 @@ description: Crafting Registries. Multi-provider handler dispatch.
 
 ## The Anti-Patterns
 
-| ❌ Don't              | ✅ Do                       | Why                        |
-|----------------------|----------------------------|----------------------------|
-| Switch statements    | Registry lookup            | Open for extension         |
-| Return null          | Throw on missing           | Fail fast, debug easy      |
-| Hard-coded handlers  | Register via config/tagged | Configurable, testable     |
-| God class            | Handlers do the work       | Registry only dispatches   |
+| ❌ Don't            | ✅ Do                      | Why                      |
+|---------------------|----------------------------|--------------------------|
+| Switch statements   | Registry lookup            | Open for extension       |
+| Return null         | Throw on missing           | Fail fast, debug easy    |
+| Hard-coded handlers | Register via config/tagged | Configurable, testable   |
+| God class           | Handlers do the work       | Registry only dispatches |
 
 ## Real-World Examples
 

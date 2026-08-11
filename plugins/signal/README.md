@@ -10,19 +10,19 @@ An output style asks. A `Stop` hook gets the finished reply and can hand it back
 
 ## What it does
 
-| Answer | What happens | Cost |
-|---|---|---|
-| pass | Nothing. You never see the hook | none |
-| warn | You get the numbers. The agent does not | none |
-| block | The agent gets the numbers and says it again | one turn |
+| Answer | What happens                                 | Cost     |
+|--------|----------------------------------------------|----------|
+| pass   | Nothing. You never see the hook              | none     |
+| warn   | You get the numbers. The agent does not      | none     |
+| block  | The agent gets the numbers and says it again | one turn |
 
 One block per turn. If the rewrite is still over, it ships and you get a note.
 
-| What we count | Pass | Warn | Block |
-|---|---|---|---|
-| Long words | up to 10% | over 10%, up to 15% | over 15% |
-| Longest sentence | up to 20 words | 21 to 30 | over 30 |
-| Words in all | up to 120 | 121 to 250 | over 250 |
+| What we count    | Pass           | Warn                | Block    |
+|------------------|----------------|---------------------|----------|
+| Long words       | up to 10%      | over 10%, up to 15% | over 15% |
+| Longest sentence | up to 20 words | 21 to 30            | over 30  |
+| Words in all     | up to 120      | 121 to 250          | over 250 |
 
 **Beats** are syllables, counted by vowel groups. `use` is one, `utilise` three. **Long words** means
 three beats or more, over prose and table cells. Names and paths leave both sides of that fraction.
@@ -54,12 +54,12 @@ file that did not survive the install. Silence means it is working.
 
 ## Where it runs
 
-| Platform | Shell | awk |
-|---|---|---|
-| macOS | `sh` | the one Apple ships |
-| Debian, Ubuntu | `dash` | `mawk` |
-| Alpine | BusyBox `ash` | BusyBox |
-| Windows | the Git Bash Claude Code starts there | the `awk` Git for Windows ships |
+| Platform       | Shell                                 | awk                             |
+|----------------|---------------------------------------|---------------------------------|
+| macOS          | `sh`                                  | the one Apple ships             |
+| Debian, Ubuntu | `dash`                                | `mawk`                          |
+| Alpine         | BusyBox `ash`                         | BusyBox                         |
+| Windows        | the Git Bash Claude Code starts there | the `awk` Git for Windows ships |
 
 The suite is run on the first three. Windows rests on Git for Windows shipping the same two tools.
 Its own [package list](https://github.com/git-for-windows/build-extra/blob/main/make-file-list.sh)
@@ -67,14 +67,14 @@ says it does.
 
 ## Tune it
 
-| Variable | Ships as |
-|---|---|
-| `SIGNAL_LONG_WARN` | 10 |
-| `SIGNAL_LONG_BLOCK` | 15 |
-| `SIGNAL_SENT_WARN` | 20 |
-| `SIGNAL_SENT_BLOCK` | 30 |
-| `SIGNAL_WORDS_WARN` | 120 |
-| `SIGNAL_WORDS_BLOCK` | 250 |
+| Variable             | Ships as |
+|----------------------|----------|
+| `SIGNAL_LONG_WARN`   | 10       |
+| `SIGNAL_LONG_BLOCK`  | 15       |
+| `SIGNAL_SENT_WARN`   | 20       |
+| `SIGNAL_SENT_BLOCK`  | 30       |
+| `SIGNAL_WORDS_WARN`  | 120      |
+| `SIGNAL_WORDS_BLOCK` | 250      |
 
 Put them under `env` in `.claude/settings.json`, per project or in your home directory, or export
 them in your shell. Score a file by hand with

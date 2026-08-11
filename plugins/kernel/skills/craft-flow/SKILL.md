@@ -28,13 +28,13 @@ NEXT STAGE
 
 ## The Characters
 
-| Char | Usage |
-|------|-------|
-| `│` | Vertical flow |
+| Char  | Usage                 |
+|-------|-----------------------|
+| `│`   | Vertical flow         |
 | `├──` | Branch (more follows) |
-| `└──` | Branch (last) |
-| `▼` | Stage transition |
-| `←` | Inline annotation |
+| `└──` | Branch (last)         |
+| `▼`   | Stage transition      |
+| `←`   | Inline annotation     |
 
 ## The Rules
 

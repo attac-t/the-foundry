@@ -16,11 +16,11 @@ description: Crafting Queueable Actions. Skip job boilerplate.
 
 ## The Anti-Patterns
 
-| ❌ Don't                    | ✅ Do                           | Why                       |
-|----------------------------|--------------------------------|---------------------------|
-| Job class per action       | `Action::onQueue()`            | Eliminates boilerplate    |
-| Queue logic in action      | Chain methods before execute   | Single responsibility     |
-| Forget serialization       | Use models/primitives only     | Jobs serialize parameters |
+| ❌ Don't              | ✅ Do                        | Why                       |
+|-----------------------|------------------------------|---------------------------|
+| Job class per action  | `Action::onQueue()`          | Eliminates boilerplate    |
+| Queue logic in action | Chain methods before execute | Single responsibility     |
+| Forget serialization  | Use models/primitives only   | Jobs serialize parameters |
 
 ## Real-World Examples
 

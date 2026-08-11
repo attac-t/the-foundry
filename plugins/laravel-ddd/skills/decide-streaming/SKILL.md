@@ -30,12 +30,12 @@ Ask: *"What happens if the dataset 10x in size?"*
 
 ## The Quick Test
 
-| Ask | Answer | Use |
-|-----|--------|-----|
-| Will it always be <1K records? | Yes | Load all |
-| Processing in batches of N? | Yes | Chunk |
-| Could be millions of records? | Yes | Stream |
-| Need all data at once for calculation? | Yes | Load all |
+| Ask                                    | Answer | Use      |
+|----------------------------------------|--------|----------|
+| Will it always be <1K records?         | Yes    | Load all |
+| Processing in batches of N?            | Yes    | Chunk    |
+| Could be millions of records?          | Yes    | Stream   |
+| Need all data at once for calculation? | Yes    | Load all |
 
 ## Real-World Examples
 

@@ -78,11 +78,11 @@ No external dependencies. Everything that would be external is either owned or s
 
 ### Dependency Count by Complexity
 
-| Complexity | Prod Deps | Examples |
-|------------|-----------|----------|
-| Simple | 3-5 | laravel-permission, laravel-activitylog |
-| Moderate | 5-8 | laravel-responsecache, laravel-query-builder |
-| Complex | 10-16 | laravel-medialibrary (13), laravel-backup (16) |
+| Complexity | Prod Deps | Examples                                       |
+|------------|-----------|------------------------------------------------|
+| Simple     | 3-5       | laravel-permission, laravel-activitylog        |
+| Moderate   | 5-8       | laravel-responsecache, laravel-query-builder   |
+| Complex    | 10-16     | laravel-medialibrary (13), laravel-backup (16) |
 
 If a simple package has 10+ deps, something is wrong.
 

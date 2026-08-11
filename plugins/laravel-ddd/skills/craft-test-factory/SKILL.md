@@ -16,12 +16,12 @@ description: Crafting Test Factories. Beyond Laravel defaults.
 
 ## The Anti-Patterns
 
-| ❌ Don't                | ✅ Do                        | Why                        |
-|------------------------|-----------------------------|-----------------------------|
-| Mutable state          | Clone on every modifier     | Prevents test pollution     |
-| Random unique values   | Static incrementing counter | Deterministic, debuggable   |
-| Laravel factory only   | Custom factories too        | DTOs need factories too     |
-| Inline test setup      | Named factory states        | Self-documenting tests      |
+| ❌ Don't             | ✅ Do                       | Why                       |
+|----------------------|-----------------------------|---------------------------|
+| Mutable state        | Clone on every modifier     | Prevents test pollution   |
+| Random unique values | Static incrementing counter | Deterministic, debuggable |
+| Laravel factory only | Custom factories too        | DTOs need factories too   |
+| Inline test setup    | Named factory states        | Self-documenting tests    |
 
 ## Real-World Examples
 

@@ -15,11 +15,11 @@ description: Crafting expectation chains. Fluent assertions without traps.
 
 ## The Anti-Patterns
 
-| Don't                            | Do                    | Why              |
-|----------------------------------|-----------------------|------------------|
-| `->each->prop->each->`           | Separate expectations | Proxy limitation |
-| Multiple `expect()` for same value | Chain assertions    | Fluency          |
-| Implicit subject switches        | Use `->and()`         | Clarity          |
+| Don't                              | Do                    | Why              |
+|------------------------------------|-----------------------|------------------|
+| `->each->prop->each->`             | Separate expectations | Proxy limitation |
+| Multiple `expect()` for same value | Chain assertions      | Fluency          |
+| Implicit subject switches          | Use `->and()`         | Clarity          |
 
 ## Real-World Examples
 

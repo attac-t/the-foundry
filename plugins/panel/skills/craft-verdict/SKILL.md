@@ -9,11 +9,11 @@ description: The committed verdict. Severity, one row per finding, and how the l
 
 ## Severity
 
-| Sev | Means | Blocks |
-|-----|-------|--------|
-| `C` Critical | Correctness, security, architecture violation | **yes** |
-| `W` Warning | Debt, maintainability | no — residual risk |
-| `N` Nitpick | Style, preference | no |
+| Sev          | Means                                         | Blocks             |
+|--------------|-----------------------------------------------|--------------------|
+| `C` Critical | Correctness, security, architecture violation | **yes**            |
+| `W` Warning  | Debt, maintainability                         | no — residual risk |
+| `N` Nitpick  | Style, preference                             | no                 |
 
 A failing oracle blocks regardless. Two oracles disagreeing is a **stop** — escalate, don't pick one.
 
@@ -34,12 +34,12 @@ severity fails to convey it: *"passes single-threaded, fails under load."*
 
 ## Budget
 
-| Section | Limit |
-|---------|-------|
-| Findings | one row each |
-| What's Good | 3 bullets — only what a refactor would *lose* |
-| Promote | one line each |
-| Anything else | doesn't exist |
+| Section       | Limit                                         |
+|---------------|-----------------------------------------------|
+| Findings      | one row each                                  |
+| What's Good   | 3 bullets — only what a refactor would *lose* |
+| Promote       | one line each                                 |
+| Anything else | doesn't exist                                 |
 
 Over ~40 lines is itself a finding. **Candidate oracle:** `wc -l` against a threshold.
 
@@ -87,21 +87,21 @@ to write**.
 **DEADLOCK has two triggers.** *Exhausted* — rounds ran out. *Out of category* — the argument needs
 a fact the team doesn't hold. The discriminator is not confidence but what settles it:
 
-| Settled by | Then |
-|------------|------|
-| Code, spec, oracle, past verdict | team decides — escalating is waste |
-| Business intent, priority, risk appetite | escalate |
+| Settled by                               | Then                               |
+|------------------------------------------|------------------------------------|
+| Code, spec, oracle, past verdict         | team decides — escalating is waste |
+| Business intent, priority, risk appetite | escalate                           |
 
 Name which fired. Deadlocking out of category early is cheap; burning six rounds to get there isn't.
 
 ## The Anti-Patterns
 
-| Don't | Do |
-|-------|----|
-| Verdict in chat | Verdict in git |
-| "This could be better" | Sev · Where · Issue · Change · Principle |
-| Everything Critical | Use the floor |
-| New nitpicks in round three | Ratchet |
-| Approve without recording risks | Record them |
-| "Recording what held…", "That is the point:", "Worth noting" | Delete. Meta-narration. |
-| Restate the table in prose below it | The table said it |
+| Don't                                                        | Do                                       |
+|--------------------------------------------------------------|------------------------------------------|
+| Verdict in chat                                              | Verdict in git                           |
+| "This could be better"                                       | Sev · Where · Issue · Change · Principle |
+| Everything Critical                                          | Use the floor                            |
+| New nitpicks in round three                                  | Ratchet                                  |
+| Approve without recording risks                              | Record them                              |
+| "Recording what held…", "That is the point:", "Worth noting" | Delete. Meta-narration.                  |
+| Restate the table in prose below it                          | The table said it                        |

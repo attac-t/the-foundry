@@ -16,7 +16,7 @@ description: Crafting custom collections. Domain pipelines.
 
 ## The Anti-Patterns
 
-| ❌ Don't          | ✅ Do                   | Why                        |
+| ❌ Don't         | ✅ Do                  | Why                        |
 |------------------|------------------------|----------------------------|
 | Business logic   | Simple transformations | Collections aren't Actions |
 | Database queries | In-memory operations   | Use QueryBuilder for DB    |

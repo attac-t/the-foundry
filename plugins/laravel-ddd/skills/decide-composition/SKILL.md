@@ -30,12 +30,12 @@ Ask: *"Does this class **have** this behavior, or **is it** this thing?"*
 
 ## The Quick Test
 
-| Ask Yourself | Answer | Use |
-|--------------|--------|-----|
-| Does every subclass need this? | Yes | Abstract |
-| Can multiple unrelated classes need this? | Yes | Trait |
-| Is there a clear IS-A relationship? | Yes | Abstract |
-| Is this a capability/feature? | Yes | Trait |
+| Ask Yourself                              | Answer | Use      |
+|-------------------------------------------|--------|----------|
+| Does every subclass need this?            | Yes    | Abstract |
+| Can multiple unrelated classes need this? | Yes    | Trait    |
+| Is there a clear IS-A relationship?       | Yes    | Abstract |
+| Is this a capability/feature?             | Yes    | Trait    |
 
 ## Real-World Examples
 

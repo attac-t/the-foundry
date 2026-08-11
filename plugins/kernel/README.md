@@ -245,11 +245,11 @@ plugins/my-stack/
 
 ### Skill Types
 
-| Prefix | Purpose | When Activated |
-|--------|---------|----------------|
+| Prefix     | Purpose             | When Activated            |
+|------------|---------------------|---------------------------|
 | `ground-*` | Philosophy, mindset | Task enters stack context |
-| `craft-*` | How to build | Implementation needed |
-| `decide-*` | When to use what | Architectural choice |
+| `craft-*`  | How to build        | Implementation needed     |
+| `decide-*` | When to use what    | Architectural choice      |
 
 ### Writing a ground-* Skill
 

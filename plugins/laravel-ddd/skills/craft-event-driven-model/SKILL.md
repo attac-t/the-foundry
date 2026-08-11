@@ -16,12 +16,12 @@ description: Crafting Event-Driven Models. Side effects via observers.
 
 ## The Anti-Patterns
 
-| ❌ Don't                  | ✅ Do                          | Why                        |
-|--------------------------|-------------------------------|----------------------------|
-| Logic in `boot()`        | Event + Subscriber            | Testable, traceable        |
-| Direct method calls      | Dispatch event                | Loose coupling             |
-| Fat model observers      | Focused subscribers           | Single responsibility      |
-| Skip event for "simple"  | Always event for side effects | Consistency                |
+| ❌ Don't                | ✅ Do                         | Why                   |
+|-------------------------|-------------------------------|-----------------------|
+| Logic in `boot()`       | Event + Subscriber            | Testable, traceable   |
+| Direct method calls     | Dispatch event                | Loose coupling        |
+| Fat model observers     | Focused subscribers           | Single responsibility |
+| Skip event for "simple" | Always event for side effects | Consistency           |
 
 ## Real-World Examples
 

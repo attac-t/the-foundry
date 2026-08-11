@@ -16,12 +16,12 @@ description: Crafting ViewModels. Data transformation for views.
 
 ## The Anti-Patterns
 
-| ❌ Don't               | ✅ Do                      | Why                         |
-|-----------------------|---------------------------|-----------------------------|
-| View Composers        | ViewModel in controller   | Explicit > implicit         |
+| ❌ Don't              | ✅ Do                         | Why                         |
+|-----------------------|-------------------------------|-----------------------------|
+| View Composers        | ViewModel in controller       | Explicit > implicit         |
 | Duplicate create/edit | One ViewModel, optional model | DRY, single source of truth |
-| Query in controller   | Query in ViewModel method | Controller stays thin       |
-| Return arrays         | Return ViewModel object   | Type safety, testability    |
+| Query in controller   | Query in ViewModel method     | Controller stays thin       |
+| Return arrays         | Return ViewModel object       | Type safety, testability    |
 
 ## Real-World Examples
 
