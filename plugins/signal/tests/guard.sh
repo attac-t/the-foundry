@@ -4,20 +4,33 @@
 # The loop guard is the test that matters. A Stop hook that always blocks never lets a turn end.
 # It keys on a per-prompt marker, not on `stop_hook_active` alone: that flag is set by any Stop
 # hook, so another plugin's block used to silence this one.
+#
+# The second thing checked here is what a middling reply costs. Anything over the working line but
+# under the tail must leave a note and print nothing, because printing costs the reader a second
+# reply for a first one they had already read.
+
+#
+# Set PLUGIN_ROOT to point these checks at a deliberately broken copy.
 
 set -u
-root="$(cd "$(dirname "$0")/.." && pwd)"
-. "$root/tests/lib.sh"
+here="$(cd "$(dirname "$0")/.." && pwd)"
+root="${PLUGIN_ROOT:-$here}"
+. "$here/tests/lib.sh"
 
 hook="$root/hooks/signal.sh"
 sanitiser="$root/lib/jsonsafe.awk"
 session="signal-test-$$"
 mark="${TMPDIR:-/tmp}/signal-${session}.mark"
-trap 'rm -f "$mark"' EXIT
+note="${TMPDIR:-/tmp}/signal-${session}.note"
+trap 'rm -f "$mark" "$note"' EXIT
 
-bad='Additionally, it is worth noting that we should leverage this comprehensive functionality in order to facilitate a robust implementation.'
+# Long enough to clear the tail: 600 words, a 45-word sentence, or a quarter of them long.
+bad='Additionally, it is worth noting that we should leverage this comprehensive functionality in order to facilitate a robust implementation, and furthermore the extraordinarily sophisticated architectural considerations demonstrate fundamentally comprehensive capabilities.'
 good='We cut it by ten. The hook reads what the agent said.'
 near='The elephant sat on a mat. My family went to the shop and got some milk today.'
+
+# Over the working line, under the tail. The note gets the numbers and the reader gets nothing.
+middling='The elephant sat on a mat and the family went to the shop to get some milk today, which took a while because the shop was shut and they had to walk on to the next one.'
 
 # Build hook input from a flag, a reply, and a prompt id. Replies here carry no quotes.
 payload() {
@@ -36,6 +49,12 @@ forget() { rm -f "$mark"; }
 
 # Write a prompt id into the marker.
 claim() { printf '%s' "$1" > "$mark"; }
+
+# Remove the note.
+unnote() { rm -f "$note"; }
+
+# Read what the note holds, if anything.
+noted() { cat "$note" 2>/dev/null; }
 
 # Count how far the braces fail to balance.
 braces() { printf '%s' "$1" | awk '{ print gsub(/{/, "{") - gsub(/}/, "}") }'; }
@@ -73,23 +92,53 @@ out=$(printf '{"session_id":"%s","stop_hook_active":true,"last_assistant_message
 lacks "with no prompt id we never block" "$out" '"decision"'
 
 claim p1
+printf '%s' 'stale' > "$note"
 printf '{"session_id":"%s","hook_event_name":"SessionEnd"}' "$session" | bash "$root/hooks/cleanup.sh" >/dev/null 2>&1
 [ -f "$mark" ] && bad "SessionEnd left the marker behind" || ok "SessionEnd drops the marker"
+[ -f "$note" ] && bad "SessionEnd left the note behind"   || ok "SessionEnd drops the note"
 forget
+unnote
 
 # --- the three answers ---
+#
+# Only two of them reach anybody now. A reply over the working line but under the tail leaves its
+# numbers in the note and prints nothing: `systemMessage` reaches the reader and never the agent, so
+# printing them told the one party who cannot act on them, beside a reply they had already read.
 
-is    "clean text says nothing" "$(run "$(payload false "$good")")" ""
+is "clean text says nothing" "$(run "$(payload false "$good")")" ""
+
+unnote
+out=$(run "$(payload false "$middling")")
+is    "an ordinary overshoot says nothing to the reader" "$out" ""
+has   "an ordinary overshoot leaves its numbers in the note" "$(noted)" 'longest sentence 37'
+
+unnote
 out=$(run "$(payload false "$near")")
-has   "a near miss warns you"        "$out" '"systemMessage"'
-lacks "a near miss does not block"   "$out" '"decision"'
+is "a near miss says nothing to the reader either" "$out" ""
+has "a near miss still leaves a note" "$(noted)" 'long words'
+
+# A reply inside the budget has nothing to answer for, so last turn's numbers must not follow it.
+printf '%s' 'stale numbers from an earlier turn' > "$note"
+run "$(payload false "$good")" >/dev/null
+is "clean text drops the note" "$(noted)" ""
 
 # --- the block message has to be usable ---
 
+unnote
 out=$(run "$(payload false "$bad")")
 has "the block names the numbers"   "$out" 'long words'
 has "the block gives the target"    "$out" 'aim for'
 has "the block points at the skill" "$out" 'signal:plain-english'
+has "the block says the long one is already read" "$out" 'already read'
+has "a block leaves a note too"     "$(noted)" 'long words'
+
+# The sanitiser keeps letters, digits, space and `.,:%-`, so anything else we write is dropped where
+# it stood and its spaces are not. A double space is what a stripped character looks like from here,
+# and an em dash in the advice is how this was found.
+lacks "nothing signal prints loses a character to the sanitiser" "$out" '  '
+
+forget
+unnote
 
 # --- nothing to score ---
 

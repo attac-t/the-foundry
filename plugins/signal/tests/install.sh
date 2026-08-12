@@ -85,9 +85,10 @@ echo "install"
 # --- every wired hook is really there ---
 
 events=$(wiring | cut -f1 | tr '\n' ' ')
-has "hooks.json wires SessionStart" "$events" "SessionStart"
-has "hooks.json wires Stop"         "$events" "Stop"
-has "hooks.json wires SessionEnd"   "$events" "SessionEnd"
+has "hooks.json wires SessionStart"      "$events" "SessionStart"
+has "hooks.json wires UserPromptSubmit"  "$events" "UserPromptSubmit"
+has "hooks.json wires Stop"              "$events" "Stop"
+has "hooks.json wires SessionEnd"        "$events" "SessionEnd"
 
 # --- the shipped invocation works ---
 # This is the check the release needed and did not have.
@@ -97,6 +98,12 @@ has "the wired Stop command blocks bad prose" "$out" '"decision":"block"'
 is  "the wired Stop command passes good prose" "$(fire Stop "$(stop "$good")")" ""
 is  "the wired SessionStart command is silent when healthy" "$(fire SessionStart '{"source":"startup"}')" ""
 is  "the wired SessionEnd command is silent" "$(fire SessionEnd '{"session_id":"install-'"$$"'"}')" ""
+
+# The half that runs before the reply exists. Everything else here fires too late to stop a long
+# reply reaching the reader, so a broken wire on this event costs the whole point of the plugin.
+out=$(fire UserPromptSubmit '{"session_id":"install-'"$$"'","prompt":"go","hook_event_name":"UserPromptSubmit"}')
+has "the wired UserPromptSubmit command states the budget" "$out" '120 words'
+has "and it points at the skill"                           "$out" 'signal:plain-english'
 
 # --- a path with a space in it ---
 # `C:\Users\John Smith` and `/Users/me/My Plugins` are both ordinary. An unquoted variable in
@@ -146,10 +153,26 @@ done
 # --- the preflight earns its place ---
 # Take awk away and signal cannot judge anything. It has to say so.
 
-mkdir -p "$tmp/noawk"
-ln -sf "$(command -v sh)" "$tmp/noawk/sh"
-out=$(printf '{"source":"startup"}' | env PATH="$tmp/noawk" CLAUDE_PLUGIN_ROOT="$root" sh -c "$(command_for SessionStart)" 2>/dev/null)
-has "with no awk the preflight speaks up" "$out" '"systemMessage"'
-has "and it names what is missing"        "$out" 'awk'
+#
+# Determine if this platform can hand a shell a PATH holding `sh` and nothing else.
+#
+# Windows cannot. `ln -s` under Git Bash writes a copy rather than a link, and a copied `sh.exe`
+# cannot find the DLLs it was living beside, so nothing starts and the check below reads empty. That
+# is a failure about symlinks wearing the costume of a failure about the preflight, and it had the
+# whole suite red on Windows — the one platform the runtime gate exists to cover.
+#
+strippable() {
+  mkdir -p "$tmp/noawk"
+  ln -sf "$(command -v sh)" "$tmp/noawk/sh" 2>/dev/null || return 1
+  PATH="$tmp/noawk" "$tmp/noawk/sh" -c 'exit 0' 2>/dev/null
+}
+
+if strippable; then
+  out=$(printf '{"source":"startup"}' | env PATH="$tmp/noawk" CLAUDE_PLUGIN_ROOT="$root" sh -c "$(command_for SessionStart)" 2>/dev/null)
+  has "with no awk the preflight speaks up" "$out" '"systemMessage"'
+  has "and it names what is missing"        "$out" 'awk'
+else
+  skip "the preflight with no awk — this platform cannot build a PATH without it"
+fi
 
 summary "install"

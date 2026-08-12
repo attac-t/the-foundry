@@ -13,13 +13,22 @@
 # toward long words, because a hard word is hard wherever it sits.
 # POSIX awk only.
 
+#
+# Warn is the working line. Block is the tail.
+#
+# The two bands do different jobs now, so they sit far apart. Warn costs nothing and its numbers go
+# to the agent before it writes again, so it sits where good writing sits. Block costs a reply the
+# reader already read plus a second one, so it sits at the 95th percentile of real replies — 619
+# words, a 46-word sentence, and long words at 19.5%. Under the old block line of 250 words, 78% of
+# real replies blocked, and every one of them showed the reader two answers.
+#
 BEGIN {
   if (long_warn   == "") long_warn   = 10
-  if (long_block  == "") long_block  = 15
+  if (long_block  == "") long_block  = 25
   if (sent_warn   == "") sent_warn   = 20
-  if (sent_block  == "") sent_block  = 30
+  if (sent_block  == "") sent_block  = 45
   if (words_warn  == "") words_warn  = 120
-  if (words_block == "") words_block = 250
+  if (words_block == "") words_block = 600
   fence = 0
   SEP = " \001 "
 }
@@ -158,6 +167,13 @@ END {
     reason = sprintf("%d words, %.0f%% long words, longest sentence %d", prose_words, long_pct, longest)
 
   if (measured_words == 0 && prose_words == 0) { verdict = "pass"; reason = "" }
+
+  # The working line, reported back. hooks/brief.sh reads these to tell the agent what it is aiming
+  # at, so the brief can never quote a budget the gate does not hold it to. Defaults live here and
+  # nowhere else — they were once restated in the hook too, and moving one moved half the gate.
+  printf "words_warn=%d\n", words_warn
+  printf "sent_warn=%d\n",  sent_warn
+  printf "long_warn=%d\n",  long_warn
 
   printf "words=%d\n",      prose_words
   printf "measured=%d\n",   measured_words

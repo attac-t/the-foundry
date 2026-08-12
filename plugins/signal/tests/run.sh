@@ -38,7 +38,11 @@ why() { head -1 "$tmp/$1.err"; }
 # Only test-owned names are read. A marker under a real session id is a live turn's lock, and a check
 # that goes red for someone else's correct behaviour is a check people learn to ignore.
 #
-strays() { ls "${TMPDIR:-/tmp}"/signal-install-*.mark "${TMPDIR:-/tmp}"/signal-signal-test-*.mark 2>/dev/null | sort; }
+strays() {
+  ls "${TMPDIR:-/tmp}"/signal-install-*.mark      "${TMPDIR:-/tmp}"/signal-install-*.note \
+     "${TMPDIR:-/tmp}"/signal-signal-test-*.mark  "${TMPDIR:-/tmp}"/signal-signal-test-*.note \
+     "${TMPDIR:-/tmp}"/signal-signal-brief-*.note 2>/dev/null | sort
+}
 
 # Count the lines in a list, treating the empty list as none.
 tally() { printf '%s\n' "$1" | grep -c . ; }
@@ -62,7 +66,7 @@ audit() {
 
 marks_before=$(strays)
 
-for suite in score unjson guard install manifest; do
+for suite in score unjson guard brief install manifest; do
   bash "$root/tests/$suite.sh" || failed=1
   echo
 done
@@ -96,19 +100,21 @@ echo "audit — break the install, the install suite must notice"
 # Copy the plugin somewhere we can ruin it.
 copy() { rm -rf "$tmp/$1" && cp -R "$root" "$tmp/$1"; }
 
-# Determine if the install suite fails against the broken copy.
-caught() { ! PLUGIN_ROOT="$tmp/$1" bash "$root/tests/install.sh" >/dev/null 2>&1; }
+# Determine if a suite fails against the broken copy.
+caught()  { ! PLUGIN_ROOT="$tmp/$1" bash "$root/tests/install.sh" >/dev/null 2>&1; }
+guarded() { ! PLUGIN_ROOT="$tmp/$1" bash "$root/tests/guard.sh"   >/dev/null 2>&1; }
+briefed() { ! PLUGIN_ROOT="$tmp/$1" bash "$root/tests/brief.sh"   >/dev/null 2>&1; }
 
 # Rewrite a file in place.
 rewrite() { cat > "$1.new" && mv "$1.new" "$1"; }
 
-# Break one thing about the install and require the suite to notice.
+# Break one thing about the install and require a suite to notice. Defaults to the install suite.
 wreck() {
-  local name="$1" tag="$2" break_it="$3"
+  local name="$1" tag="$2" break_it="$3" notices="${4:-caught}"
 
   copy "$tag"      || { bad "$name — could not copy the plugin, so this proves nothing"; return; }
   "$break_it" "$tmp/$tag" || { bad "$name — the break did not apply, so this proves nothing"; return; }
-  caught "$tag"    || { bad "$name — the suite passed against a broken install"; return; }
+  "$notices" "$tag" || { bad "$name — the suite passed against a broken install"; return; }
 
   printf '  ok    %s\n' "$name"
 }
@@ -131,6 +137,9 @@ crlf()    { awk '{ printf "%s\r\n", $0 }' "$1/hooks/signal.sh" | rewrite "$1/hoo
 unquote() { sed 's/\\"//g' "$1/hooks/hooks.json" | rewrite "$1/hooks/hooks.json"; }
 unship()  { rm -f "$1/lib/score.awk"; }
 rewire()  { sed 's|hooks/signal.sh|hooks/gone.sh|' "$1/hooks/hooks.json" | rewrite "$1/hooks/hooks.json"; }
+unbrief() { sed 's|hooks/brief.sh|hooks/gone.sh|'  "$1/hooks/hooks.json" | rewrite "$1/hooks/hooks.json"; }
+nonote()  { sed 's|^note |: |'                     "$1/hooks/signal.sh"  | rewrite "$1/hooks/signal.sh"; }
+unread()  { sed 's|^last=.*|last=|'                "$1/hooks/brief.sh"   | rewrite "$1/hooks/brief.sh"; }
 
 if records_exec; then
   wreck "a hook that lost its executable bit is caught" nox unhook
@@ -142,6 +151,17 @@ wreck "a hook checked out with CRLF is caught"        crlf   crlf
 wreck "an unquoted plugin root is caught"             noquot unquote
 wreck "a lib that did not ship is caught"             nolib  unship
 wreck "hooks.json pointing at nothing is caught"      nofile rewire
+
+#
+# The forward correction, broken at each end.
+#
+# Both ends fail silently. Unwired, signal still scores every reply and still blocks the tail, so it
+# looks alive while the half that runs before the reply is simply gone — and that half is the only
+# one that can stop a long reply reaching the reader at all.
+#
+wreck "a brief that lost its wire is caught"          nobrief unbrief
+wreck "a Stop hook that leaves no note is caught"     nonote  nonote guarded
+wreck "a brief that never reads the note is caught"   noread  unread briefed
 
 echo
 echo "audit — the run leaves nothing behind"

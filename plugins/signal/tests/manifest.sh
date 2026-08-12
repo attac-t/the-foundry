@@ -61,10 +61,29 @@ mentions "$hooks" 'CLAUDE_PLUGIN_ROOT' \
   && ok "hooks.json uses the plugin root" \
   || bad "hooks.json hardcodes a path"
 
+mentions "$hooks" '"UserPromptSubmit"' \
+  && ok "hooks.json hooks UserPromptSubmit" \
+  || bad "hooks.json never runs the brief, so nothing reaches the agent before it writes"
+
 # Claude Code runs the hook as a command, so it needs one. Nothing else here would notice.
-head -1 "$root/hooks/signal.sh" | grep -q '^#!' \
-  && ok "the hook has a shebang" \
-  || bad "the hook has no shebang"
+for hook in signal brief preflight cleanup; do
+  head -1 "$root/hooks/$hook.sh" | grep -q '^#!' \
+    && ok "$hook.sh has a shebang" \
+    || bad "$hook.sh has no shebang"
+done
+
+# --- the gate has one home ---
+#
+# score.awk owns every default. A hook that names one again is a second gate wearing the first one's
+# name, and they part company the moment either moves — which is what happened: the block lines were
+# raised in the scorer while the hook went on passing it the old ones, so the shipped gate was
+# whatever the hook said. Nothing was red.
+#
+if grep -qE 'SIGNAL_[A-Z_]+:-[0-9]' "$root/hooks/"*.sh; then
+  bad "a hook restates a default — score.awk owns them, pass the dial through empty instead"
+else
+  ok "no hook restates a default"
+fi
 
 # --- no word data ships ---
 
