@@ -73,12 +73,9 @@ for hook in signal brief preflight cleanup; do
 done
 
 # --- the gate has one home ---
-#
-# score.awk owns every default. A hook that names one again is a second gate wearing the first one's
-# name, and they part company the moment either moves — which is what happened: the block lines were
-# raised in the scorer while the hook went on passing it the old ones, so the shipped gate was
-# whatever the hook said. Nothing was red.
-#
+# score.awk owns every default. A hook that names one again is a second gate, free to part company
+# with the first: the block lines were raised in the scorer while the hook kept passing the old
+# ones, and nothing was red.
 if grep -qE 'SIGNAL_[A-Z_]+:-[0-9]' "$root/hooks/"*.sh; then
   bad "a hook restates a default — score.awk owns them, pass the dial through empty instead"
 else

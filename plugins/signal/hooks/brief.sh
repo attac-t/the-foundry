@@ -2,13 +2,11 @@
 #
 # UserPromptSubmit: tell the agent the budget before it writes, not after.
 #
-# This is the half signal was missing. `Stop` arrives after the reply is written and on screen, so
-# blocking there cannot take it back — it adds a second reply beside the first. Nothing ran before
-# that. The agent wrote every first draft blind, and the reader got the long answer and the short
-# one. Measured on real replies from this repo: 78% of them blocked.
+# The half signal was missing. `Stop` arrives too late to keep a long reply off the screen, so every
+# first draft was written blind and 78% of them blocked. This is the only moment that can help.
 #
-# So say the budget first. Then carry the last reply's numbers forward, because a standing rule the
-# agent has already broken reads as wallpaper, where "you just ran 288 words against 120" does not.
+# Then the last reply's numbers, because a standing rule the agent has already broken reads as
+# wallpaper, where "you just ran 288 words against 120" does not.
 #
 # Plain text on stdout reaches the agent on this event. Nothing here reaches the reader.
 #
@@ -23,13 +21,8 @@ value() { printf '%s' "$payload" | awk -f "$root/lib/unjson.awk" -v key="$1"; }
 # Get the path to this session's note.
 note() { printf '%s/signal-%s.note' "$temp" "${session:-nosession}"; }
 
-#
-# Ask the scorer for the budget it will hold the reply to.
-#
-# Nothing is restated here. A brief that names its own numbers is a second copy of the gate, and the
-# copy is the one that goes stale — telling the agent to aim at 120 while the scorer marks against
-# something else is worse than saying nothing, because it reads as authoritative.
-#
+# Ask the scorer for the budget it will mark against. Naming it here instead would be a second copy
+# of the gate, and a brief that aims the agent at a line nobody marks is worse than no brief.
 budget() {
   printf '' | awk -f "$root/lib/score.awk" \
     -v long_warn="${SIGNAL_LONG_WARN:-}" \

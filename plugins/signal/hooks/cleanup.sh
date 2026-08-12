@@ -1,7 +1,6 @@
 #!/bin/sh
 #
-# SessionEnd: drop the two files signal.sh writes — the marker it leaves when it blocks, and the
-# note it leaves for the next turn's brief.
+# SessionEnd: drop what signal.sh leaves behind — the marker from a block, the note for the brief.
 # Losing either costs at most one extra rewrite, so this never fails the session.
 
 root="$(cd "$(dirname "$0")/.." && pwd)"

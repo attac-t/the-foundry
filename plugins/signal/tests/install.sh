@@ -99,8 +99,8 @@ is  "the wired Stop command passes good prose" "$(fire Stop "$(stop "$good")")" 
 is  "the wired SessionStart command is silent when healthy" "$(fire SessionStart '{"source":"startup"}')" ""
 is  "the wired SessionEnd command is silent" "$(fire SessionEnd '{"session_id":"install-'"$$"'"}')" ""
 
-# The half that runs before the reply exists. Everything else here fires too late to stop a long
-# reply reaching the reader, so a broken wire on this event costs the whole point of the plugin.
+# The half that runs before the reply exists. Every other event here fires too late to keep a long
+# reply off the screen, so a broken wire on this one costs the plugin its point.
 out=$(fire UserPromptSubmit '{"session_id":"install-'"$$"'","prompt":"go","hook_event_name":"UserPromptSubmit"}')
 has "the wired UserPromptSubmit command states the budget" "$out" '120 words'
 has "and it points at the skill"                           "$out" 'signal:plain-english'
@@ -156,10 +156,9 @@ done
 #
 # Determine if this platform can hand a shell a PATH holding `sh` and nothing else.
 #
-# Windows cannot. `ln -s` under Git Bash writes a copy rather than a link, and a copied `sh.exe`
-# cannot find the DLLs it was living beside, so nothing starts and the check below reads empty. That
-# is a failure about symlinks wearing the costume of a failure about the preflight, and it had the
-# whole suite red on Windows — the one platform the runtime gate exists to cover.
+# Windows cannot. `ln -s` under Git Bash writes a copy, and a copied `sh.exe` cannot find the DLLs
+# it lived beside, so nothing starts and the check below reads empty. A symlink failure wearing the
+# costume of a preflight failure, red on the one platform the runtime gate exists to cover.
 #
 strippable() {
   mkdir -p "$tmp/noawk"

@@ -1,12 +1,11 @@
 #!/bin/bash
 # Drives the UserPromptSubmit hook the way Claude Code drives it: JSON on stdin, plain text back.
 #
-# Plain text is the point. On this event stdout is handed to the agent, so the budget arrives before
-# the reply exists — the only moment anything can stop a long one reaching the reader. Everywhere
-# else signal speaks JSON, and JSON here would be read as a literal instead of an instruction.
+# Plain text is the point. Stdout on this event is handed to the agent, and signal speaks JSON
+# everywhere else, where here it would arrive as a literal rather than an instruction.
 #
-# The other half is the handoff. Stop leaves the last reply's numbers in a note and this reads them
-# out, so the correction lands on the next reply instead of costing the reader a second one.
+# The rest is the handoff. Stop leaves the last reply's numbers in a note and this reads them out,
+# so the correction lands on the next reply instead of costing the reader a second one.
 
 #
 # Set PLUGIN_ROOT to point these checks at a deliberately broken copy.
@@ -49,7 +48,7 @@ has "the brief says what does not count"   "$out" 'Code, paths and tables'
 lacks "the brief is plain text, not JSON" "$out" '{"'
 
 # --- the brief quotes the gate, never a copy of it ---
-# Read out of the scorer here too, so a budget that moves in one place moves in both or this fails.
+# Read out of the scorer here too, so a budget that moves in one place must move in both.
 
 gate() { printf '' | awk -f "$root/lib/score.awk" | awk -F= -v k="$1" '$1 == k { print $2; exit }'; }
 
@@ -94,8 +93,7 @@ is "an empty payload still exits zero" "$(printf '{}' | bash "$hook" >/dev/null 
 has "and still states the budget"      "$(printf '{}' | bash "$hook" 2>/dev/null)" '120 words'
 
 # --- the brief holds itself to the budget it preaches ---
-# It lands in context on every prompt. A brief that broke its own gate would be the plugin's
-# loudest counter-example, and it would spend the budget it is asking the agent to keep.
+# It lands in context on every prompt, and it would be spending the budget it asks the agent to keep.
 
 rm -f "$note"
 run | awk -f "$root/lib/score.awk" >/dev/null 2>&1

@@ -2,13 +2,10 @@
 #
 # Stop: hold the agent's last reply to a budget a ten-year-old can skim.
 #
-# Blocking cannot unsend what the reader already read. `Stop` fires after the reply is finished and
-# on screen, so handing it back never takes it away — it only puts a second reply beside the first.
-# That is worth a turn only when the first one cannot be skimmed at all.
-#
-# Everything under that line is corrected forward instead. Warn writes the numbers to a note, says
-# nothing to anyone now, and hooks/brief.sh reads them out before the agent writes again. Feedback
-# at no turns and no second reply.
+# Blocking cannot unsend what the reader already read. It only sets a second reply beside the first,
+# which is worth a turn when the first cannot be skimmed at all, and never otherwise. Below that
+# line we correct forward: warn leaves the numbers in a note and hooks/brief.sh reads them out
+# before the agent writes again.
 #
 # Pass drops the note. Warn writes it. Block writes it and hands the reply back, once.
 # All the judging lives in lib/score.awk.
@@ -45,13 +42,8 @@ note() { printf '%s' "$1" > "$(notefile)" 2>/dev/null; }
 # Drop them. A reply inside the budget has nothing to answer for.
 forget() { rm -f "$(notefile)" 2>/dev/null; }
 
-#
-# Score a reply and return its report.
-#
-# Every dial is passed through empty when it is unset, because score.awk owns the defaults. Naming
-# them here as well is how the two halves came apart: the block lines moved in the scorer and this
-# line went on handing it the old ones, so the shipped gate was whatever the hook said it was.
-#
+# Score a reply and return its report. Unset dials pass through empty: score.awk owns the defaults,
+# and a hook that names them again is half a gate, free to drift from the other half.
 score() {
   printf '%s' "$1" | awk -f "$root/lib/score.awk" \
     -v long_warn="${SIGNAL_LONG_WARN:-}"    -v long_block="${SIGNAL_LONG_BLOCK:-}" \
@@ -65,28 +57,15 @@ field() { printf '%s\n' "$report" | awk -F= -v k="$1" '$1 == k { sub(/^[^=]*=/, 
 # Reduce a string to characters that cannot break a JSON literal.
 safe() { printf '%s' "$1" | awk -f "$root/lib/jsonsafe.awk"; }
 
-#
-# Tell the reader, and let the turn end.
-#
-# Kept for one case only: a rewrite we asked for that came back still over. The reader is about to
-# read a long reply for the second time and signal owes them the admission.
-#
-# Ordinary overshoot says nothing here. `systemMessage` reaches the reader and never the agent, so
-# printing the numbers told the one party who cannot act on them, in front of the reply they are
-# already looking at. The note carries them to the party who can.
-#
+# Tell the reader, and let the turn end. Kept for the one case we owe them: a rewrite we asked for
+# that came back still over. `systemMessage` never reaches the agent, so ordinary overshoot would be
+# handing the numbers to the only party who cannot act on them. That goes to the note.
 warn() { printf '{"systemMessage":"signal: %s"}\n' "$(safe "$1")"; }
 
 # Hand the reply back to the agent to write again.
 block() { printf '{"decision":"block","reason":"%s"}\n' "$(safe "$1")"; }
 
-#
-# Get the rewrite instructions.
-#
-# ASCII only, and that is not a style choice. Everything here goes through jsonsafe.awk, which keeps
-# letters, digits, space and `.,:%-` and drops the rest. An em dash leaves its two spaces behind and
-# the agent reads a gap where the punctuation was.
-#
+# Get the rewrite instructions. ASCII only: jsonsafe.awk drops an em dash and leaves its two spaces.
 advice() { printf '%s' "They have already read the long one, so do not write it again. Answer first, in one line, and drop the route you took. Keep every fact. Cut the words. For every word, ask whether a ten-year-old would use it, and whether a plainer word means the same. Read the signal:plain-english skill, which names the standard."; }
 
 #
@@ -120,8 +99,7 @@ note "$why"
 
 spent && { warn "rewrite still over: $why. One block per turn, so this one ships."; exit 0; }
 
-# Over the working line, under the tail. The note already has the numbers and the next turn will
-# read them out, so there is nothing left to do here that would not cost the reader a second reply.
+# Over the working line, under the tail. The note has it. Anything more costs a second reply.
 [ "$verdict" -eq 1 ] && exit 0
 
 remember

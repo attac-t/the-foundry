@@ -157,9 +157,7 @@ has "evaluate forces skill evaluation"    "$(fire evaluate.sh '{"prompt":"go"}')
 has "delegate fires with a blueprint"     "$(fire delegate.sh '{"prompt":"go"}')" "Delegation Check"
 has "verify blocks on in-progress work"   "$(fire verify.sh '{"stop_hook_active":false}')" '"decision"'
 
-# Once per turn, not eight. Without this the hook blocked every turn until Claude Code overrode it
-# at the cap, so one line about the blueprint cost the reader eight replies. The payload above
-# already carried the flag; nothing had ever read it.
+# Once per turn, not eight. The payload above already carried the flag; nothing had ever read it.
 is "verify stands down once a stop hook is driving the turn" \
    "$(fire verify.sh '{"stop_hook_active":true}')" ""
 
@@ -246,10 +244,9 @@ done
 #
 # Determine if this platform can hand a shell a PATH holding `sh` and nothing else.
 #
-# Windows cannot. `ln -s` under Git Bash writes a copy rather than a link, and a copied `sh.exe`
-# cannot find the DLLs it was living beside, so nothing starts and the check below reads empty. That
-# is a failure about symlinks wearing the costume of a failure about the preflight, and it had this
-# suite red on Windows — the platform the runtime gate exists to cover.
+# Windows cannot. `ln -s` under Git Bash writes a copy, and a copied `sh.exe` cannot find the DLLs
+# it lived beside, so nothing starts and the check below reads empty. A symlink failure wearing the
+# costume of a preflight failure, red on the one platform the runtime gate exists to cover.
 #
 strippable() {
   mkdir -p "$tmp/noawk"

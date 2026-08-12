@@ -153,11 +153,8 @@ wreck "a lib that did not ship is caught"             nolib  unship
 wreck "hooks.json pointing at nothing is caught"      nofile rewire
 
 #
-# The forward correction, broken at each end.
-#
-# Both ends fail silently. Unwired, signal still scores every reply and still blocks the tail, so it
-# looks alive while the half that runs before the reply is simply gone — and that half is the only
-# one that can stop a long reply reaching the reader at all.
+# The forward correction, broken at each end. Both ends fail silently: signal goes on scoring every
+# reply and blocking the tail, looking alive while the half that runs first is gone.
 #
 wreck "a brief that lost its wire is caught"          nobrief unbrief
 wreck "a Stop hook that leaves no note is caught"     nonote  nonote guarded

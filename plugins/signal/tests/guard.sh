@@ -5,9 +5,8 @@
 # It keys on a per-prompt marker, not on `stop_hook_active` alone: that flag is set by any Stop
 # hook, so another plugin's block used to silence this one.
 #
-# The second thing checked here is what a middling reply costs. Anything over the working line but
-# under the tail must leave a note and print nothing, because printing costs the reader a second
-# reply for a first one they had already read.
+# After that, what a middling reply costs. Over the working line but under the tail, it must leave a
+# note and print nothing.
 
 #
 # Set PLUGIN_ROOT to point these checks at a deliberately broken copy.
@@ -100,10 +99,8 @@ forget
 unnote
 
 # --- the three answers ---
-#
-# Only two of them reach anybody now. A reply over the working line but under the tail leaves its
-# numbers in the note and prints nothing: `systemMessage` reaches the reader and never the agent, so
-# printing them told the one party who cannot act on them, beside a reply they had already read.
+# Only two of them reach anybody now. `systemMessage` never reaches the agent, so an overshoot that
+# printed the numbers was handing them to the only party who could not act on them.
 
 is "clean text says nothing" "$(run "$(payload false "$good")")" ""
 
@@ -132,9 +129,8 @@ has "the block points at the skill" "$out" 'signal:plain-english'
 has "the block says the long one is already read" "$out" 'already read'
 has "a block leaves a note too"     "$(noted)" 'long words'
 
-# The sanitiser keeps letters, digits, space and `.,:%-`, so anything else we write is dropped where
-# it stood and its spaces are not. A double space is what a stripped character looks like from here,
-# and an em dash in the advice is how this was found.
+# The sanitiser drops what it cannot keep and leaves the spaces that flanked it, so a double space
+# is what a stripped character looks like from here. An em dash in the advice is how this was found.
 lacks "nothing signal prints loses a character to the sanitiser" "$out" '  '
 
 forget

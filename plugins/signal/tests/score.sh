@@ -129,8 +129,8 @@ The elephant ate a banana. My family had a holiday. The computer rang the teleph
 is "an unclosed fence still counts" "$(verdict "$unclosed")" 2
 
 # A wall of product names must not water the share down. Names leave both sides of the fraction, so
-# the two long words here still carry it past the line. Counted the other way — names in the
-# denominator, out of the numerator — the same text reads 20% and never blocks.
+# the two long words here still carry it past the line. Left in the denominator alone, the same
+# text reads 20% and never blocks.
 dilution='We use PostgreSQL, TypeScript, MySQL and GraphQL comprehensively and additionally.'
 is "names cannot dilute the share" "$(verdict "$dilution")" 2
 

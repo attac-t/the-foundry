@@ -14,13 +14,8 @@
 # POSIX awk only.
 
 #
-# Warn is the working line. Block is the tail.
-#
-# The two bands do different jobs now, so they sit far apart. Warn costs nothing and its numbers go
-# to the agent before it writes again, so it sits where good writing sits. Block costs a reply the
-# reader already read plus a second one, so it sits at the 95th percentile of real replies — 619
-# words, a 46-word sentence, and long words at 19.5%. Under the old block line of 250 words, 78% of
-# real replies blocked, and every one of them showed the reader two answers.
+# Warn is the working line, so it sits where good writing sits. Block costs the reader a second
+# reply, so it sits at the 95th percentile of real ones. At 250 words it caught 78% of them.
 #
 BEGIN {
   if (long_warn   == "") long_warn   = 10
@@ -168,9 +163,8 @@ END {
 
   if (measured_words == 0 && prose_words == 0) { verdict = "pass"; reason = "" }
 
-  # The working line, reported back. hooks/brief.sh reads these to tell the agent what it is aiming
-  # at, so the brief can never quote a budget the gate does not hold it to. Defaults live here and
-  # nowhere else — they were once restated in the hook too, and moving one moved half the gate.
+  # The working line, reported back for hooks/brief.sh to read out. Defaults live here and nowhere
+  # else: the hook restated them once, and moving one moved half the gate.
   printf "words_warn=%d\n", words_warn
   printf "sent_warn=%d\n",  sent_warn
   printf "long_warn=%d\n",  long_warn

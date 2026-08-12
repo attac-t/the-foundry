@@ -1,17 +1,12 @@
 #!/bin/sh
-# Stop: hand the turn back when the blueprint still shows work in flight.
+# Stop: hand the turn back when the blueprint still shows work in flight. Once per turn.
 #
-# Once per turn, and this is the whole point of the guard below.
+# A block costs the reader a second reply. One is worth it, because the reason names work the agent
+# can do — close the task, defer it, or write the handoff. Eight are not, and eight is what this did
+# without the guard, until Claude Code overrode it at the cap.
 #
-# `Stop` fires after the reply is written and on screen, so blocking never takes that reply back —
-# it adds a second one beside it. One is worth it here, because the reason names work the agent can
-# actually do: close the task, defer it, or write the handoff. Eight are not. Without a guard this
-# blocked every turn until Claude Code overrode it at the eighth, so the reader paid eight replies
-# for one line and the blueprint ended no closer to done.
-#
-# `stop_hook_active` is true whenever a stop hook is already driving the turn — any plugin's, not
-# only this one. Reading it as "stand down" gives up our block to someone else's now and then. That
-# trade is the right way round: a nag that arrives one turn late costs nothing, and a nag that
+# `stop_hook_active` is set by any plugin's stop hook, not only ours, so reading it as "stand down"
+# gives up our block to someone else's now and then. A nag one turn late costs nothing. A nag that
 # cannot be turned off costs every turn.
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
