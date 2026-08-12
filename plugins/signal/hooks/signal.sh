@@ -2,7 +2,12 @@
 #
 # Stop: hold the agent's last reply to a budget a ten-year-old can skim.
 #
-# Pass says nothing. Warn reaches the user and costs no turn. Block reaches the agent and costs one.
+# Blocking cannot unsend what the reader already read. It only sets a second reply beside the first,
+# which is worth a turn when the first cannot be skimmed at all, and never otherwise. Below that
+# line we correct forward: warn leaves the numbers in a note and hooks/brief.sh reads them out
+# before the agent writes again.
+#
+# Pass drops the note. Warn writes it. Block writes it and hands the reply back, once.
 # All the judging lives in lib/score.awk.
 #
 
@@ -28,12 +33,22 @@ keepable() { [ -w "$temp" ]; }
 # Record that we blocked this prompt.
 remember() { printf '%s' "$prompt" > "$(marker)" 2>/dev/null; }
 
-# Score a reply and return its report.
+# Get the path to this session's note.
+notefile() { printf '%s/signal-%s.note' "$temp" "${session:-nosession}"; }
+
+# Leave the numbers where the next turn's brief will find them.
+note() { printf '%s' "$1" > "$(notefile)" 2>/dev/null; }
+
+# Drop them. A reply inside the budget has nothing to answer for.
+forget() { rm -f "$(notefile)" 2>/dev/null; }
+
+# Score a reply and return its report. Unset dials pass through empty: score.awk owns the defaults,
+# and a hook that names them again is half a gate, free to drift from the other half.
 score() {
   printf '%s' "$1" | awk -f "$root/lib/score.awk" \
-    -v long_warn="${SIGNAL_LONG_WARN:-10}"    -v long_block="${SIGNAL_LONG_BLOCK:-15}" \
-    -v sent_warn="${SIGNAL_SENT_WARN:-20}"    -v sent_block="${SIGNAL_SENT_BLOCK:-30}" \
-    -v words_warn="${SIGNAL_WORDS_WARN:-120}" -v words_block="${SIGNAL_WORDS_BLOCK:-250}"
+    -v long_warn="${SIGNAL_LONG_WARN:-}"    -v long_block="${SIGNAL_LONG_BLOCK:-}" \
+    -v sent_warn="${SIGNAL_SENT_WARN:-}"    -v sent_block="${SIGNAL_SENT_BLOCK:-}" \
+    -v words_warn="${SIGNAL_WORDS_WARN:-}"  -v words_block="${SIGNAL_WORDS_BLOCK:-}"
 }
 
 # Get a single field from the report.
@@ -42,14 +57,16 @@ field() { printf '%s\n' "$report" | awk -F= -v k="$1" '$1 == k { sub(/^[^=]*=/, 
 # Reduce a string to characters that cannot break a JSON literal.
 safe() { printf '%s' "$1" | awk -f "$root/lib/jsonsafe.awk"; }
 
-# Tell the user, and let the turn end.
+# Tell the reader, and let the turn end. Kept for the one case we owe them: a rewrite we asked for
+# that came back still over. `systemMessage` never reaches the agent, so ordinary overshoot would be
+# handing the numbers to the only party who cannot act on them. That goes to the note.
 warn() { printf '{"systemMessage":"signal: %s"}\n' "$(safe "$1")"; }
 
 # Hand the reply back to the agent to write again.
 block() { printf '{"decision":"block","reason":"%s"}\n' "$(safe "$1")"; }
 
-# Get the rewrite instructions.
-advice() { printf '%s' "Keep every fact. Cut the words. For every word, ask whether a ten-year-old would use it, and whether a plainer word means the same. Read the signal:plain-english skill, which names the standard."; }
+# Get the rewrite instructions. ASCII only: jsonsafe.awk drops an em dash and leaves its two spaces.
+advice() { printf '%s' "They have already read the long one, so do not write it again. Answer first, in one line, and drop the route you took. Keep every fact. Cut the words. For every word, ask whether a ten-year-old would use it, and whether a plainer word means the same. Read the signal:plain-english skill, which names the standard."; }
 
 #
 # Determine if we have already spent our one block on this prompt.
@@ -75,13 +92,15 @@ reply=$(value last_assistant_message)
 
 report=$(score "$reply")
 verdict=$?
-[ "$verdict" -eq 0 ] && exit 0
+[ "$verdict" -eq 0 ] && { forget; exit 0; }
 
 why=$(field reason)
+note "$why"
 
-spent && { warn "rewrite still over — $why. One block per turn, so this one ships."; exit 0; }
+spent && { warn "rewrite still over: $why. One block per turn, so this one ships."; exit 0; }
 
-[ "$verdict" -eq 1 ] && { warn "$why"; exit 0; }
+# Over the working line, under the tail. The note has it. Anything more costs a second reply.
+[ "$verdict" -eq 1 ] && exit 0
 
 remember
 block "Say that again in plain English. $why. $(advice)"

@@ -1,7 +1,7 @@
 #!/bin/sh
 #
-# SessionEnd: drop the marker signal.sh writes when it blocks.
-# Losing the marker costs at most one extra rewrite, so this never fails the session.
+# SessionEnd: drop what signal.sh leaves behind — the marker from a block, the note for the brief.
+# Losing either costs at most one extra rewrite, so this never fails the session.
 
 root="$(cd "$(dirname "$0")/.." && pwd)"
 payload=$(cat)
@@ -12,5 +12,5 @@ session() { printf '%s' "$payload" | awk -f "$root/lib/unjson.awk" -v key=sessio
 id=$(session)
 [ -n "$id" ] || exit 0
 
-rm -f "${TMPDIR:-/tmp}/signal-${id}.mark" 2>/dev/null
+rm -f "${TMPDIR:-/tmp}/signal-${id}.mark" "${TMPDIR:-/tmp}/signal-${id}.note" 2>/dev/null
 exit 0

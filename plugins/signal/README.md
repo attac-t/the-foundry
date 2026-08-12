@@ -2,9 +2,11 @@
 
 > Plain English harness. How to speak.
 
-Agents write too much. This cuts it by ten, and holds the cut with a gate.
+Agents write too much. This cuts it by ten, and holds the cut with two hooks.
 
-An output style asks. A `Stop` hook gets the finished reply and can hand it back.
+One speaks before the reply exists and states the budget. One reads what came back. Only the first
+can keep a long reply off your screen. `Stop` fires after the reply is written and shown. Handing it
+back never takes it away. It puts a second reply beside the first.
 
 ---
 
@@ -12,17 +14,25 @@ An output style asks. A `Stop` hook gets the finished reply and can hand it back
 
 | Answer | What happens | Cost |
 |---|---|---|
-| pass | Nothing. You never see the hook | none |
-| warn | You get the numbers. The agent does not | none |
-| block | The agent gets the numbers and says it again | one turn |
+| pass | Nothing. Last turn's numbers are dropped | none |
+| warn | The numbers wait for the agent, and reach it before it writes again | none |
+| block | The agent gets them now and says it again | one turn, and you read two replies |
 
-One block per turn. If the rewrite is still over, it ships and you get a note.
+Warn says nothing to you. You are looking at the reply, so its length is not news. The field that
+would tell you never reaches the agent. The numbers go to the one who can act on them.
 
 | What we count | Pass | Warn | Block |
 |---|---|---|---|
-| Long words | up to 10% | over 10%, up to 15% | over 15% |
-| Longest sentence | up to 20 words | 21 to 30 | over 30 |
-| Words in all | up to 120 | 121 to 250 | over 250 |
+| Long words | up to 10% | over 10%, up to 25% | over 25% |
+| Longest sentence | up to 20 words | 21 to 45 | over 45 |
+| Words in all | up to 120 | 121 to 600 | over 600 |
+
+Warn is where good writing sits. Block is the tail, and it sits far out because it is the only
+answer that costs you anything. At 250 words it fired on 78 of every 100 real replies. Each one
+handed you the long answer, then the short one. It now sits where the longest 5% of real replies
+sit, and 13 in 100 reach it.
+
+One block per turn. If the rewrite is still over, it ships and you get a note.
 
 **Beats** are syllables, counted by vowel groups. `use` is one, `utilise` three. **Long words** means
 three beats or more, over prose and table cells. Names and paths leave both sides of that fraction.
@@ -39,6 +49,20 @@ Out of scope: files the agent writes, subagent replies, and any language but Eng
 
 ---
 
+## Before the reply exists
+
+Nothing used to tell the agent the budget until it had already broken it. The skill loaded only if
+the agent reached for it, and the hook named it only inside a block. Every first draft was written
+blind, so the block was not the exception. It was the path.
+
+A `UserPromptSubmit` hook now states the budget on each prompt, and reads out what the last reply
+scored. Both go to the agent. Neither reaches you.
+
+The budget is read out of the scorer, never restated. The line the agent aims at is the line it is
+marked against.
+
+---
+
 ## Install
 
 Needs: Claude Code CLI, `sh`, `awk`. No Python, Node or `jq`.
@@ -47,7 +71,7 @@ Needs: Claude Code CLI, `sh`, `awk`. No Python, Node or `jq`.
 /plugin install signal@the-foundry
 ```
 
-It works on the next reply. There is no style to switch on.
+It works on the next prompt. There is no style to switch on.
 
 If it cannot run, it says so at the top of the next session. A missing `awk` counts, and so does a
 file that did not survive the install. Silence means it is working.
@@ -70,11 +94,14 @@ says it does.
 | Variable | Ships as |
 |---|---|
 | `SIGNAL_LONG_WARN` | 10 |
-| `SIGNAL_LONG_BLOCK` | 15 |
+| `SIGNAL_LONG_BLOCK` | 25 |
 | `SIGNAL_SENT_WARN` | 20 |
-| `SIGNAL_SENT_BLOCK` | 30 |
+| `SIGNAL_SENT_BLOCK` | 45 |
 | `SIGNAL_WORDS_WARN` | 120 |
-| `SIGNAL_WORDS_BLOCK` | 250 |
+| `SIGNAL_WORDS_BLOCK` | 600 |
+
+Set a warn line and the brief quotes it back to the agent. The three warn dials are the budget it
+is told to hold.
 
 Put them under `env` in `.claude/settings.json`, per project or in your home directory, or export
 them in your shell. Score a file by hand with
@@ -86,13 +113,21 @@ them in your shell. Score a file by hand with
 bash plugins/signal/tests/run.sh
 ```
 
-114 checks, then seventeen deliberate breaks that must each turn the suite red. Needs a clone of
+147 checks, then twenty deliberate breaks that must each turn the suite red. Needs a clone of
 this repo. Takes a few seconds.
 
-Five of those breaks target the install, not the scoring. That is where the last one hid. The
+Eight of those breaks target the install, not the scoring. That is where the last one hid. The
 shipped hook was not executable, so it died before it read a word. Every other suite stayed green.
 Each one called the hook itself, instead of reading how Claude Code is told to call it. So
 `tests/install.sh` reads the command out of `hooks/hooks.json` and hands it to a shell.
+
+Three of the eight break the forward correction, at each end and in the middle. Unwired, signal
+still scores every reply and still blocks the tail. It looks alive while the half that runs first
+is gone. A green suite would have said nothing.
+
+One check guards against the way the gate last came apart. Every default lives in `lib/score.awk`.
+The hook named them a second time. Raising the block lines in the scorer moved half the gate, and
+left the other half shipping the old ones. Nothing was red. No hook may name a default now.
 
 Last comes a check that is neither. The suites block on purpose, and every block writes a file to
 your temp directory. Nothing ever came back for those. The cleanup hook runs when a session ends,

@@ -157,6 +157,10 @@ has "evaluate forces skill evaluation"    "$(fire evaluate.sh '{"prompt":"go"}')
 has "delegate fires with a blueprint"     "$(fire delegate.sh '{"prompt":"go"}')" "Delegation Check"
 has "verify blocks on in-progress work"   "$(fire verify.sh '{"stop_hook_active":false}')" '"decision"'
 
+# Once per turn, not eight. The payload above already carried the flag; nothing had ever read it.
+is "verify stands down once a stop hook is driving the turn" \
+   "$(fire verify.sh '{"stop_hook_active":true}')" ""
+
 # --- the ADR nudge reads the payload ---
 # The jq-shaped hole: with no reader, the path came back empty, nothing matched the skip list, and
 # the nudge fired on every write it exists to stay out of.
@@ -237,11 +241,26 @@ done
 # --- the preflight earns its place ---
 # Take awk away and kernel cannot read a payload or trust a path. It has to say so.
 
-mkdir -p "$tmp/noawk"
-ln -sf "$(command -v sh)" "$tmp/noawk/sh" 2>/dev/null
-out=$(printf '{"source":"startup"}' \
-  | env PATH="$tmp/noawk" CLAUDE_PLUGIN_ROOT="$root" sh -c "$(command_for preflight.sh)" 2>/dev/null)
-has "with no awk the preflight speaks up" "$out" '"systemMessage"'
-has "and it names what is missing"        "$out" 'awk'
+#
+# Determine if this platform can hand a shell a PATH holding `sh` and nothing else.
+#
+# Windows cannot. `ln -s` under Git Bash writes a copy, and a copied `sh.exe` cannot find the DLLs
+# it lived beside, so nothing starts and the check below reads empty. A symlink failure wearing the
+# costume of a preflight failure, red on the one platform the runtime gate exists to cover.
+#
+strippable() {
+  mkdir -p "$tmp/noawk"
+  ln -sf "$(command -v sh)" "$tmp/noawk/sh" 2>/dev/null || return 1
+  PATH="$tmp/noawk" "$tmp/noawk/sh" -c 'exit 0' 2>/dev/null
+}
+
+if strippable; then
+  out=$(printf '{"source":"startup"}' \
+    | env PATH="$tmp/noawk" CLAUDE_PLUGIN_ROOT="$root" sh -c "$(command_for preflight.sh)" 2>/dev/null)
+  has "with no awk the preflight speaks up" "$out" '"systemMessage"'
+  has "and it names what is missing"        "$out" 'awk'
+else
+  skip "the preflight with no awk — this platform cannot build a PATH without it"
+fi
 
 summary "install"

@@ -52,8 +52,8 @@ is "clean text passes" "$(verdict "$clean")" 0
 # --- each count blocks on its own ---
 
 longwords='The elephant ate a banana. My family had a holiday. The computer rang the telephone.'
-sentence='I went to the shop and I got some milk and some bread and some jam and then I went home and put it all away and made a cake for my mum and dad.'
-budget=$(repeat 52 'The cat sat on a mat.')
+sentence='I went to the shop and I got some milk and some bread and some jam and then I went home and put it all away and made a cake for my mum and dad, and then we sat down at the table and ate it all up before the sun went down.'
+budget=$(repeat 110 'The cat sat on a mat.')
 
 is "long words block"           "$(verdict "$longwords")"     2
 is "and nothing else fired"     "$(without long "$longwords")" 0
@@ -89,7 +89,8 @@ is "line breaks do not hide long words" "$(verdict "$fragmented")" 2
 # widest line. Same sentence, wrapped and not, must measure the same.
 wrapped='I went to the shop and I got some milk and some bread
 and some jam and then I went home and put it all away
-and made a cake for my mum and dad.'
+and made a cake for my mum and dad, and then we sat down
+at the table and ate it all up before the sun went down.'
 is "wrapping does not shorten a sentence" "$(field "$wrapped" longest)" "$(field "$sentence" longest)"
 
 # Blank lines and list items must still end a sentence, or these would join into one long one and
@@ -128,8 +129,9 @@ The elephant ate a banana. My family had a holiday. The computer rang the teleph
 is "an unclosed fence still counts" "$(verdict "$unclosed")" 2
 
 # A wall of product names must not water the share down. Names leave both sides of the fraction, so
-# the one long word here still carries it past the line.
-dilution='We use PostgreSQL and TypeScript and MySQL and GraphQL comprehensively.'
+# the two long words here still carry it past the line. Left in the denominator alone, the same
+# text reads 20% and never blocks.
+dilution='We use PostgreSQL, TypeScript, MySQL and GraphQL comprehensively and additionally.'
 is "names cannot dilute the share" "$(verdict "$dilution")" 2
 
 # --- what gets stripped ---
