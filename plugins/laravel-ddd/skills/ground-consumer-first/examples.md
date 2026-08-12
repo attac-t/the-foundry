@@ -98,6 +98,37 @@ Four deletions. No call-site got worse.
 
 ---
 
+## Return the Thing, Not a Field of It
+
+A resolver folds several sources into one answer. Hand back the answer, not one column off it.
+
+```php
+// ❌ Answers exactly one question.
+public function effectivePaymentMethodId(): ?int
+{
+    return $this->adjustment?->payment_method_id ?? $this->payment_method_id;
+}
+
+// ✅ Answers every question the method has.
+public function effectivePaymentMethod(): ?PaymentMethod
+{
+    return $this->adjustment?->paymentMethod ?? $this->paymentMethod;
+}
+```
+
+The first call-site wants the key and takes it either way — `->effectivePaymentMethod()?->id`.
+The second wants the method's `name`, and against the `*Id()` shape must either re-query the
+model it already had or add `effectivePaymentMethodName()` beside the first. Two methods now
+hold the same `??` chain, and the day the rule changes, one of them is missed.
+
+The scalar is right where no model exists to return — a bare key from a third party. Then `->id`
+has nothing to hang off, and the name says so.
+
+**The tell.** A method name ending in `Id`, `Name`, `Code` or `Amount`. Drop the suffix and read
+it again: would its owner serve the call-site better?
+
+---
+
 ## The Test Suite Is a Call-Site Too
 
 If a domain is painful to set up in a test, it will be painful to call in production.

@@ -12,6 +12,7 @@ description: Consumer-first design. Shape the call-site before the implementatio
 - **Consumption before implementation**: Before building a domain, write the code that will call it. If it doesn't read well, the shape is wrong — fix it while there is nothing to refactor.
 - **Less code is better code, with one exception**: Every internal line is a liability. A line that makes a *call-site* clearer is an asset.
 - **The call-site is the product**: Your domain has one consumer before it has a hundred. Design for them, not for the implementation.
+- **Return the thing, not a field of it**: `effectivePaymentMethod()`, never `effectivePaymentMethodId()`. The caller who wants the key writes `->id`; the caller who wants anything else is not sent back for a second method.
 
 ## The Check
 
@@ -32,6 +33,7 @@ This is why extracting a condition into a named predicate is correct even though
 | Delete a named predicate to "save a line"      | Keep it — the caller reads as a sentence       | It is DX surface, not internal weight            |
 | Add a parameter "in case someone needs it"     | Add it when a call-site needs it               | No caller is clearer for it today                |
 | Wrap a method to "keep the API consistent"     | Let the caller use the real method             | A pass-through answers the question with silence |
+| Return an id from a resolver                   | Return the model; the caller takes `->id`      | One question answered, the rest hidden           |
 
 ## Real-World Examples
 
