@@ -12,7 +12,7 @@ description: Consumer-first design. Shape the call-site before the implementatio
 - **Consumption before implementation**: Before building a domain, write the code that will call it. If it doesn't read well, the shape is wrong — fix it while there is nothing to refactor.
 - **Less code is better code, with one exception**: Every internal line is a liability. A line that makes a *call-site* clearer is an asset.
 - **The call-site is the product**: Your domain has one consumer before it has a hundred. Design for them, not for the implementation.
-- **Return the thing, not a field of it**: `effectivePaymentMethod()`, never `effectivePaymentMethodId()`. The caller who wants the key writes `->id`; the caller who wants anything else is not sent back for a second method.
+- **Return the thing, not a field of it**: `owner()`, never `ownerId()`. The caller who wants the key writes `->id`; the caller who wants anything else is not sent back for a second method.
 
 ## The Check
 

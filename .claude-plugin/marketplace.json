@@ -25,7 +25,7 @@
       "name": "laravel-ddd",
       "source": "./plugins/laravel-ddd",
       "description": "Domain-driven design patterns for Laravel. Standalone; pairs well with kernel.",
-      "version": "1.4.1"
+      "version": "1.4.2"
     },
     {
       "name": "laravel-playbook",
