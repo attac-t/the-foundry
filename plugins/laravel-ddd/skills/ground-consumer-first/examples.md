@@ -100,39 +100,32 @@ Four deletions. No call-site got worse.
 
 ## Return the Thing, Not a Field of It
 
-A resolver folds several sources into one answer. Name it for the answer, and hand back the
-answer — not one column off it.
+A resolver folds several sources into one answer. Hand back the answer, not one column off it.
 
 ```php
 // ❌ Answers exactly one question.
 public function effectivePaymentMethodId(): ?int
 {
-    return $this->adjustment?->payment_method_type_id ?? $this->payment_method_type_id;
+    return $this->adjustment?->payment_method_id ?? $this->payment_method_id;
 }
 
 // ✅ Answers every question the method has.
 public function effectivePaymentMethod(): ?PaymentMethod
 {
-    return $this->adjustment?->payment ?? $this->payment;
+    return $this->adjustment?->paymentMethod ?? $this->paymentMethod;
 }
 ```
 
-The first call-site only wanted the key, so both shapes look equal:
+The first call-site wants the key and takes it either way — `->effectivePaymentMethod()?->id`.
+The second wants the method's `name`, and against the `*Id()` shape must either re-query the
+model it already had or add `effectivePaymentMethodName()` beside the first. Two methods now
+hold the same `??` chain, and the day the rule changes, one of them is missed.
 
-```php
-$methodId = (string) $transaction->effectivePaymentMethod()?->id;
-```
+The scalar is right where no model exists to return — a bare key from a third party. Then `->id`
+has nothing to hang off, and the name says so.
 
-The second one decides it. A reconciler needs `is_deductible`. A receipt needs `name`. Against
-the `*Id()` shape, each of those either re-queries the model it already had, or adds
-`effectivePaymentMethodName()` beside the first method. Now two resolvers hold the same
-`??` chain, and the day the rule changes, one of them is missed.
-
-The scalar is right in one case only: no model exists to return. A bare key from a third party,
-for instance. Then `->id` has nothing to hang off, and the name says so.
-
-**The tell.** A method name ending in `Id`, `Name`, `Code` or `Amount` is worth one question:
-would its owner serve the call-site better? Drop the suffix and read it again.
+**The tell.** A method name ending in `Id`, `Name`, `Code` or `Amount`. Drop the suffix and read
+it again: would its owner serve the call-site better?
 
 ---
 
