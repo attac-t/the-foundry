@@ -104,28 +104,26 @@ A resolver folds several sources into one answer. Hand back the answer, not one 
 
 ```php
 // ❌ Answers exactly one question.
-public function effectivePaymentMethodId(): ?int
+public function ownerId(): ?int
 {
-    return $this->adjustment?->payment_method_id ?? $this->payment_method_id;
+    return $this->transfer?->recipient_id ?? $this->user_id;
 }
 
 // ✅ Answers every question the method has.
-public function effectivePaymentMethod(): ?PaymentMethod
+public function owner(): ?User
 {
-    return $this->adjustment?->paymentMethod ?? $this->paymentMethod;
+    return $this->transfer?->recipient ?? $this->user;
 }
 ```
 
-The first call-site wants the key and takes it either way — `->effectivePaymentMethod()?->id`.
-The second wants the method's `name`, and against the `*Id()` shape must either re-query the
-model it already had or add `effectivePaymentMethodName()` beside the first. Two methods now
-hold the same `??` chain, and the day the rule changes, one of them is missed.
+The caller that wants the key still has it — `->owner()?->id`. The caller that wants `name` must
+re-query the model it already had, or grow an `ownerName()` holding a second copy of the same
+`??` chain. The day the rule changes, one copy is missed.
 
-The scalar is right where no model exists to return — a bare key from a third party. Then `->id`
-has nothing to hang off, and the name says so.
+The scalar is right only where no model exists to return — a bare key from a third party.
 
 **The tell.** A method name ending in `Id`, `Name`, `Code` or `Amount`. Drop the suffix and read
-it again: would its owner serve the call-site better?
+it again.
 
 ---
 

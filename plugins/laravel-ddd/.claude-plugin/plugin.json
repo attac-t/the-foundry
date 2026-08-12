@@ -1,6 +1,6 @@
 {
   "name": "laravel-ddd",
-  "version": "1.4.1",
+  "version": "1.4.2",
   "description": "Laravel DDD patterns. Opinionated domain-driven design with Actions, DTOs, QueryBuilders, and decision heuristics. Standalone; pairs well with kernel.",
   "author": {
     "name": "Christian Attard",
