@@ -174,6 +174,16 @@ if make_repo "$tmp/boot" main && set_origin "$tmp/boot" 'https://tok3n:x@github.
 
   lacks "and the credential never reaches disk" "$(cat "$booted/bootstrap" 2>/dev/null)" "tok3n"
   is    "bootstrap prints it back" "$(floor "$tmp/boot" bootstrap)" "https://github.com/acme/backend.git main"
+
+  # A password may contain an `@`. Stopping at the first one left the tail of it on disk.
+  lacks "no path under the run holds a credential" \
+        "$(grep -rh . "$booted/bootstrap" "$booted/units" 2>/dev/null)" "tok3n"
+fi
+
+if make_repo "$tmp/atpass" main && set_origin "$tmp/atpass" 'https://u:p@ss@github.com/acme/x.git'; then
+  atp=$(floor "$tmp/atpass" new "At In Password")
+  is "a password holding an @ is stripped whole" \
+     "$(cat "$atp/bootstrap" 2>/dev/null)" "https://github.com/acme/x.git main"
 else
   skip "the bootstrap target — git could not make a repo here"
 fi
@@ -221,11 +231,34 @@ is "targets add refuses a local path" \
 is "and writes nothing when it refuses" \
    "$(in_run targets | grep -c "$tmp" || true)" "0"
 
+# `ssh://git@host` carries a login. Dropping it breaks the clone; keeping a password does not.
+in_run targets add 'ssh://git@github.com/acme/ssh.git' main >/dev/null
+has "an ssh login survives" "$(in_run targets)" "ssh://git@github.com/acme/ssh.git main"
+
+in_run targets add 'ssh://u:secret@github.com/acme/pw.git' main >/dev/null
+lacks "but an ssh password does not" "$(in_run targets)" "secret"
+
+# A `/` before the colon is a path, not a host. Without that rule a dotted directory reads as
+# scp-style and a local path gets written down.
+is "a path with a dotted segment is not scp-style" \
+   "$(code_of in_run targets add '/srv/git/v1.2:mirror' main)" "4"
+
+is "FILE:// is refused whatever its case" \
+   "$(code_of in_run targets add 'FILE:///srv/git/x.git' main)" "4"
+
+# The ref is the other half of the line, and it was going in unchecked.
+is "a ref that is a path is refused" \
+   "$(code_of in_run targets add 'https://github.com/acme/a.git' '/home/me/wip')" "4"
+is "a ref holding a newline cannot write a second target" \
+   "$(code_of in_run targets add 'https://github.com/acme/a.git' 'main
+evil')" "4"
+
 is "targets add needs both a repo and a ref" \
    "$(code_of in_run targets add 'https://github.com/acme/api.git')" "2"
 
+before_comment=$(in_run targets | grep -c .)
 printf '# a comment\n\n' >> "$fresh/units/01/targets"
-is "comments and blank lines are not targets" "$(in_run targets | grep -c .)" "3"
+is "comments and blank lines are not targets" "$(in_run targets | grep -c .)" "$before_comment"
 
 # The two levels stay apart. Nothing moves an advisory target into a unit — the allowlist that would
 # is the next issue.
@@ -233,9 +266,10 @@ printf 'targets: https://github.com/attacker/evil.git main\n' >> "$fresh/item.md
 lacks "an advisory target in item.md does not reach the unit" \
       "$(in_run targets)" "attacker/evil"
 
-# No stored line anywhere may hold a machine-local path.
-is "nothing under the run holds the Foundry home as a path" \
-   "$(grep -rl "$home" "$fresh/units" "$fresh/bootstrap" 2>/dev/null | grep -c . || true)" "0"
+# No stored line anywhere may hold a machine-local path. Swept over the run that actually has a
+# bootstrap file too — naming `$fresh/bootstrap` alone checked a file that cannot exist.
+is "no stored line under any run holds a local path" \
+   "$(grep -rl "$tmp" "$fresh/units" "${booted:-$fresh}" 2>/dev/null | grep -c . || true)" "0"
 
 # --- the caller gets told ---
 

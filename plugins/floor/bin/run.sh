@@ -8,10 +8,10 @@
 #
 # Exit codes:
 #   0  answered
-#   1  no run is active — from `path` only
+#   1  nothing to answer with — no run is active, or the run has no bootstrap target
 #   2  asked for something this does not do
 #   3  nowhere to put a run, or the home cannot be written to
-#   4  a repository has no portable identity, so nothing was recorded
+#   4  a target was refused: no portable identity, or a ref that is not one
 
 set -u
 
@@ -177,18 +177,35 @@ print_active_run() {
 #
 repo_identity() {
     url=$1
+    [ -n "$url" ] || return 1
+
+    # `file://` is a path wearing a scheme. Lowercased first, because a scheme is case-insensitive
+    # and `FILE://` is the same path.
+    case "$(printf '%s' "$url" | tr 'A-Z' 'a-z')" in
+        file://*) return 1 ;;
+    esac
 
     case "$url" in
-        '' | file://*) return 1 ;;
-        *://*) printf '%s' "$url" | sed 's|://[^/@]*@|://|'; return 0 ;;
+        # `ssh://git@host` carries a login, and dropping it breaks the clone. Take the password and
+        # leave the user.
+        ssh://*) printf '%s' "$url" | sed 's|://\([^/@]*\):[^/]*@|://\1@|'; return 0 ;;
+
+        # Everywhere else the whole userinfo is a credential. Greedy to the last `@` before the
+        # path, because a password may contain one — `[^/@]*@` stopped at the first and left the
+        # tail of the password on disk.
+        *://*) printf '%s' "$url" | sed 's|://[^/]*@|://|'; return 0 ;;
     esac
 
     case "$url" in
         *:*)
             host=${url%%:*}
-            case "${host##*@}" in
-                *.*) printf '%s' "$url"; return 0 ;;
-            esac
+
+            # A `/` before the colon means a path, not a host — git's own rule. Without it
+            # `/srv/git/v1.2:mirror` reads as scp-style and a local path gets written down.
+            case "$host" in */*) return 1 ;; esac
+
+            # A host with no dot is a Windows drive letter.
+            case "${host##*@}" in *.*) printf '%s' "$url"; return 0 ;; esac
             ;;
     esac
 
@@ -209,7 +226,13 @@ bootstrap_here() {
     git rev-parse --git-dir >/dev/null 2>&1 || return 1
     url=$(git remote get-url origin 2>/dev/null) || return 1
     id=$(repo_identity "$url") || return 1
-    printf '%s %s' "$id" "$(base_ref)"
+
+    # Both halves or nothing. `add_target` refuses a missing ref, and two writers of one contract
+    # cannot disagree about what a complete line is.
+    ref=$(base_ref)
+    [ -n "$ref" ] || return 1
+
+    printf '%s %s' "$id" "$ref"
 }
 
 # Zero or one per run. Invoking Foundry inside a repository is the human act that makes that
@@ -257,6 +280,15 @@ add_target() {
         note "no portable identity for [$repo] — a target may not hold a local path"
         exit 4
     }
+
+    # The ref is the other half of the line, and it was going in unchecked. A leading `/` is a path,
+    # and whitespace either splits the fields or writes a second target from one call.
+    case "$ref" in
+        /* | *[!-A-Za-z0-9_./]*)
+            note "not a usable ref: [$ref]"
+            exit 4
+            ;;
+    esac
 
     printf '%s %s\n' "$id" "$ref" >> "$file" || die_unwritable "$file"
 }

@@ -85,12 +85,32 @@ wreck_runner "a runner that trusts an unset run directory is caught" \
 
 # A credential written into a run directory is a secret on disk that nobody meant to put there.
 wreck_runner "an identity that keeps its credentials is caught" \
-  creds 's#sed .s|://\[^/@\]\*@|://|.#cat#'
+  creds 's#sed .s|://\[^/\]\*@|://|.#cat#'
 
 # A path is the one thing a target may not hold. Accepting it makes the run unusable elsewhere and
 # says nothing at the time.
+#
+# Scoped to the function: unanchored, this also rewrote `foundry_home`'s `return 1`, which made the
+# mutant broader than the thing it claims to test.
 wreck_runner "an identity that accepts a local path is caught" \
-  localpath 's|^    return 1$|    printf "%s" "$url"; return 0|'
+  localpath '/^repo_identity()/,/^}/ s|^    return 1$|    printf "%s" "$url"; return 0|'
+
+# The Critical. `[^/@]*@` stops at the first `@`, so a password containing one leaves its tail on
+# disk — and every `new` writes it, unasked.
+wreck_runner "a userinfo strip that stops at the first @ is caught" \
+  firstat 's|://\[^/\]\*@|://[^/@]*@|'
+
+# `ssh://git@host` carries a login. Stripping it writes an identity nobody can clone.
+wreck_runner "an identity that strips an ssh login is caught" \
+  sshuser '\|ssh://\*) printf|d'
+
+# A `/` before the colon means a path. Without the rule, a dotted directory reads as scp-style.
+wreck_runner "a path mistaken for scp-style is caught" \
+  scpish 's|case "$host" in \*/\*) return 1 ;; esac||'
+
+# The ref is half the line, and it went in unchecked.
+wreck_runner "a ref that is never validated is caught" \
+  anyref 's|/\* \| \*\[!-A-Za-z0-9_./\]\*)|/no-such-guard)|'
 
 # Targets belong to the unit. At the run root they move the day a second unit exists.
 wreck_runner "targets stored at the run root are caught" \
