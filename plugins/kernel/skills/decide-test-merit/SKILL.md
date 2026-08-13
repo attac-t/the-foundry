@@ -41,6 +41,17 @@ Nothing → it was never a test.
 | Does another check fail first, same cause? | Yes | Cut the later one |
 | Would anything else notice? | No | Keep it, whatever it costs |
 
+## Aim The Break
+
+A break must change the lines you meant and no others. Prove it before you trust it: apply it, count
+the changed lines, and check the result still parses.
+
+**A break that fires in two places tests neither.** One that must fire in several says so on its own
+line — otherwise the next reader cannot tell design from accident.
+
+Moving code silently unaims every break that named it. A harness worth having reports *the break did
+not apply* rather than passing.
+
 ## Passing For The Wrong Reason
 
 Worse than a missing test, because every instrument scores it as coverage — including the person who

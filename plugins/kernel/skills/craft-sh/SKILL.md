@@ -47,6 +47,12 @@ Seven lines, the whole story. The test: **can a stranger describe the script aft
 8. **Comments carry discoveries, not narration.** `# herd start stops the data services` earns its
    line. `# ── Step 3 ──` above a line printing "Step 3" does not.
 9. **`shellcheck` passes.** Not optional.
+10. **One name, one meaning.** Every variable is global unless you say otherwise, so a name that
+    means two things is a bug waiting for a refactor.
+11. **A split moves its comments.** After extracting, the parent keeps only what the parts do not
+    say. Facts left behind get read twice and edited once.
+12. **Say why a defensive line survives.** A guard with no reason reads as redundant, and redundant
+    is what gets simplified away.
 
 ## The Anti-Patterns
 
@@ -58,6 +64,8 @@ Seven lines, the whole story. The test: **can a stranger describe the script aft
 | Trusting a tool's message      | Poll what it claims             | Tools lie about themselves             |
 | A banner above a labelled step | The label alone                 | The script says it twice               |
 | Inlining a helper used once    | Naming it anyway                | The call-site reads as a sentence      |
+| A comment that counts lines    | Say what the code does          | It rots the next time one moves        |
+| A name that hides what returns | `unit_targets_file`             | The call-site should read as what it gets |
 | `echo` everywhere              | `step`, `note`, `fail`          | One voice, one place to change         |
 | Bare `exit 1`                  | Documented exit codes           | The caller cannot branch on "it broke" |
 
