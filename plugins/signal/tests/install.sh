@@ -21,7 +21,7 @@ tmp="${TMPDIR:-/tmp}/signal-install-$$"
 mkdir -p "$tmp"
 trap 'rm -rf "$tmp"' EXIT
 
-bad='Additionally, it is worth noting that we should leverage this comprehensive functionality in order to facilitate a robust implementation.'
+blocking='Additionally, it is worth noting that we should leverage this comprehensive functionality in order to facilitate a robust implementation.'
 good='We cut it by ten. The hook reads what the agent said.'
 
 # One line per wired hook: the event, a tab, the command string Claude Code will run.
@@ -93,7 +93,7 @@ has "hooks.json wires SessionEnd"        "$events" "SessionEnd"
 # --- the shipped invocation works ---
 # This is the check the release needed and did not have.
 
-out=$(fire Stop "$(stop "$bad")")
+out=$(fire Stop "$(stop "$blocking")")
 has "the wired Stop command blocks bad prose" "$out" '"decision":"block"'
 is  "the wired Stop command passes good prose" "$(fire Stop "$(stop "$good")")" ""
 is  "the wired SessionStart command is silent when healthy" "$(fire SessionStart '{"source":"startup"}')" ""
@@ -110,7 +110,7 @@ has "and it points at the skill"                           "$out" 'signal:plain-
 # hooks.json splits on that space and the hook never starts.
 
 cp -R "$root" "$tmp/with space" 2>/dev/null
-out=$(fire Stop "$(stop "$bad")" "$tmp/with space")
+out=$(fire Stop "$(stop "$blocking")" "$tmp/with space")
 has "the wired command survives a space in the path" "$out" '"decision":"block"'
 
 # --- the files can start ---

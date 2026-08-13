@@ -53,9 +53,8 @@ fi
 
 # --- one line, always ---
 #
-# The regression guard. `&>` is bash's; dash reads it as "run in the background, then redirect", so
-# the guard cannot fail and git's own output reaches stdout ahead of the path. The answer came back
-# two lines long with a path to git on top, and every hook downstream believed it.
+# The regression guard. resolve-memory.sh's header names the bashism. It shipped, the answer came
+# back two lines long with a path to git on top, and every hook downstream believed it.
 
 is "the answer outside a repo is one line" "$(lines "$(resolve "$tmp/bare" "$tmp/mem")")" "1"
 [ -d "$tmp/repo/.git" ] \

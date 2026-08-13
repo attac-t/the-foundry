@@ -73,17 +73,19 @@ wired() { wiring | cut -f2 | sort -u; }
 # Claude Code, and nothing should wire them.
 shipped_hooks() { find "$root/hooks" -maxdepth 1 -name '*.sh' -type f | sed 's|.*/||' | sort; }
 
-# List every file the plugin needs at runtime.
-shipped() { find "$root/hooks" -type f \( -name '*.sh' -o -name '*.awk' \) | sort; }
+# List the path of every file the plugin needs at runtime.
+runtime_files() { find "$root/hooks" -type f \( -name '*.sh' -o -name '*.awk' \) | sort; }
 
 #
 # Run a hook exactly as Claude Code would: its own shell, its own variable, JSON on stdin.
 #
 # The working directory is a plain directory with no git in it, so the memory resolver returns the
-# fixture path untouched and the checks below can name what they expect.
+# fixture path untouched and the checks below can name what they expect. Bail rather than fire from
+# anywhere else: somewhere with git in it resolves memory to a branch path, and every check below
+# would then be reading a directory it never wrote.
 #
 fire() {
-  ( cd "${FIRE_CWD:-$tmp/bare}" 2>/dev/null || exit 0
+  ( cd "$tmp/bare" 2>/dev/null || exit 0
     printf '%s' "$2" \
       | CLAUDE_PLUGIN_ROOT="${FIRE_ROOT:-$root}" CLAUDE_MEMORY_DIR="$tmp/mem" FOUNDRY_RUN= TMPDIR="$tmp" \
         sh -c "$(command_for "$1")" 2>/dev/null )
@@ -127,7 +129,7 @@ done
 
 # --- the wiring is the portable form ---
 #
-# Three checks for the three ways the old wiring failed on Windows. Each one is a string in a JSON
+# One check for each way the old wiring failed on Windows. Every one of them is a string in a JSON
 # file, which is exactly the kind of thing that goes wrong quietly and stays wrong for releases.
 
 for script in $(wired); do
@@ -193,7 +195,7 @@ fi
 # `sh -n` reads without running. It is the cheapest way to catch a bashism that would otherwise wait
 # for the one user whose /bin/sh is dash.
 
-for file in $(shipped); do
+for file in $(runtime_files); do
   case "$file" in
     *.sh) sh -n "$file" 2>/dev/null && ok "parses under sh — ${file##*/}" \
                                     || bad "will not parse under sh — ${file##*/}" ;;
@@ -206,7 +208,7 @@ done
 # wiring — a bare path, no interpreter — fail on every install that recorded it.
 
 if records_exec; then
-  for file in $(shipped); do
+  for file in $(runtime_files); do
     case "$file" in
       */lib/*.awk) ;;
       *.sh) [ -x "$file" ] && ok "executable — ${file##*/}" || bad "not executable — ${file##*/}" ;;
@@ -221,7 +223,7 @@ fi
 # fail: the shell dies parsing it, and a Stop hook that exits 2 means block. Every turn.
 
 crlf=0
-for file in $(shipped); do
+for file in $(runtime_files); do
   has_cr "$file" && { crlf=1; bad "carriage returns — ${file##*/} would not run on Windows"; }
 done
 [ "$crlf" -eq 0 ] && ok "every shipped file is LF only"

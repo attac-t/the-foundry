@@ -66,10 +66,10 @@ mentions "$hooks" '"UserPromptSubmit"' \
   || bad "hooks.json never runs the brief, so nothing reaches the agent before it writes"
 
 # Claude Code runs the hook as a command, so it needs one. Nothing else here would notice.
-for hook in signal brief preflight cleanup; do
-  head -1 "$root/hooks/$hook.sh" | grep -q '^#!' \
-    && ok "$hook.sh has a shebang" \
-    || bad "$hook.sh has no shebang"
+for script in signal brief preflight cleanup; do
+  head -1 "$root/hooks/$script.sh" | grep -q '^#!' \
+    && ok "$script.sh has a shebang" \
+    || bad "$script.sh has no shebang"
 done
 
 # --- the gate has one home ---
