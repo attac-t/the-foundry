@@ -48,8 +48,12 @@ wreck_runner() {
   printf '  ok    %s\n' "$name"
 }
 
+#
+# Two breaks on one line, and they are not the same break: this one blinds the slot chooser
+# completely, `inherit` below blinds it only to grants. Same line, different halves of its meaning.
+#
 wreck_runner "a runner that stops checking for a free path is caught" \
-  collide 's|\[ -e "$RUNS/$candidate" \] |\[ 1 -eq 0 \] |'
+  collide 's|\[ ! -e "$RUNS/$1" \] && \[ ! -e "$GRANTS/$1" \]|true|'
 
 # In the worktree the pointer gets committed, and a run id in someone else's clone names a directory
 # that was never on their machine.
@@ -120,6 +124,53 @@ wreck_runner "targets stored at the run root are caught" \
 # out of nothing.
 wreck_runner "a bootstrap written without an identity is caught" \
   alwaysboot 's|line=$(bootstrap_here) \|\| return 0|line=$(bootstrap_here); line="${line:-unknown unknown}"|'
+
+# The whole point of the allowlist. A run that may reach anything makes every check below decorative.
+wreck_runner "an allowlist that authorises anything is caught" \
+  openbar 's|\[ "$(bootstrap_identity "$1")" = "$2" \] && return 0|[ -n "$2" ] \&\& return 0|'
+
+#
+# The authority invariant: nothing widens a run's reach except `policy authorize`.
+#
+# Aimed at the append, not the guard. Weakening the guard only makes a refusal louder or quieter —
+# the first version of this break added a condition that was always false, so the refusal still
+# fired, the mutant behaved identically, and the audit reported a suite that had noticed nothing.
+#
+wreck_runner "targets add that grants itself is caught" \
+  selfgrant 's|printf .%s %s\\n. "$identity" "$ref" >> "$file"|printf "%s\\n" "$identity" >> "$(grants_file "$dir")"; printf "%s %s\\n" "$identity" "$ref" >> "$file"|'
+
+# Reporting success while writing nothing is worse than refusing: the caller carries on.
+wreck_runner "a refusal that exits 0 is caught" \
+  quietno 's|^        exit 5$|        exit 0|'
+
+# One allowlist for every run is one run's grant handed to all of them.
+#
+# Also caught by the credential check, which shares the grants file — so a red here does not on its
+# own point at scoping. Kept because it is the only break aimed at that line.
+wreck_runner "a grant shared across runs is caught" \
+  global 's|printf .%s/%s/targets. "$GRANTS" "$(basename "$1")"|printf "%s/targets" "$GRANTS"|'
+
+# A newline turns `grep -Fxq` into a pattern list, so one grant matches a second repo and the append
+# writes both. The whole exploit is one unguarded argument.
+wreck_runner "an identity that may hold a newline is caught" \
+  smuggle 's|\*\[!-A-Za-z0-9_.:/@~+%\]\* \| \*/../\* \| \*/..)|no-such-shape)|'
+
+# Grants outlive the run directory, so a slot chooser that reads only `runs/` inherits an allowlist.
+# The half `collide` cannot tell you about.
+wreck_runner "a slot reclaimed with grants behind it is caught" \
+  inherit 's|\[ ! -e "$RUNS/$1" \] && \[ ! -e "$GRANTS/$1" \]|[ ! -e "$RUNS/$1" ]|'
+
+# The bootstrap is an effective grant. Copied, it becomes a second place the truth lives.
+wreck_runner "a bootstrap copied into the grants is caught" \
+  copyboot 's|is_authorised "$dir" "$identity" && return 0|is_authorised "$dir" "$identity" \&\& [ 1 -eq 0 ] \&\& return 0|'
+
+# A bootstrap file naming nothing must read as no bootstrap, or `policy` lists a nameless entry.
+wreck_runner "a bootstrap that names nothing is caught" \
+  blankboot 's|NR == 1 && $1 != "" { printf "%s", $1; found = 1 } END { exit !found }|NR == 1 { printf "%s", $1; exit }|'
+
+# Policy state is read by eye and outlives the run. A password stored here is a password on disk.
+wreck_runner "a grant that stores credentials is caught" \
+  grantcreds 's|printf .%s\\n. "$identity" >> "$grants"|printf "%s\\n" "$repo" >> "$grants"|'
 
 # --- break the install ---
 

@@ -27,6 +27,8 @@ sh bin/run.sh home
 sh bin/run.sh bootstrap
 sh bin/run.sh targets
 sh bin/run.sh targets add https://github.com/acme/api.git main
+sh bin/run.sh policy
+sh bin/run.sh policy authorize https://github.com/acme/api.git
 ```
 
 `new` makes a run and points this checkout at it. `path` prints the active run, or exits 1.
@@ -52,10 +54,16 @@ ${FOUNDRY_HOME:-$HOME/.foundry}/runs/<date>-<slug>-<short id>/
 The short id is the first free slot. It says nothing about the work, and exists only to stop two
 runs from one title on one day landing in one directory.
 
-**Slots are reused.** Delete a run and the next one with that date and title takes its number back,
-so a pointer that outlived its run resolves to a different attempt. Harmless today, because nothing
-keeps a pointer past the run it names. It stops being harmless in #72, when evidence starts citing a
-run id — revisit the scheme there.
+**Slots are reused, but never while anything still speaks for one.** Delete a run and the next one
+with that date and title takes its number back, so a pointer that outlived its run resolves to a
+different attempt.
+
+That was harmless while nothing outlived a run. Grants do: they live under `policy/`, not under the
+run, and deleting a run leaves them. A reclaimed slot therefore used to hand the next run an
+allowlist nobody granted it. A slot is now free only when neither `runs/` nor `policy/runs/` holds
+it, which is why the second run in a day can land on `0001` with no `0000` in sight.
+
+Anything else that outlives a run must join that check. Evidence will be the next one.
 
 `units/` holds one unit today. The level is there from the first run because adding it later would
 move every path in every adapter.
@@ -91,11 +99,18 @@ A run is meant to move to another machine. So a target may hold no local path, e
 |---|---|
 | `https://tok3n:x@github.com/acme/api.git` | `https://github.com/acme/api.git` — credentials stripped |
 | `git@github.com:acme/api.git` | kept as-is; `git@` is an ssh login, not a credential |
-| `C:/repos/api`, `/home/me/api`, `file://…` | **refused** |
+| `C:/repos/api`, `/home/me/api`, `file://…` | **refused** — not portable |
+| anything holding a space, a newline or a `..` segment | **refused** — not storable |
 
 A host with no dot in it is a Windows drive letter, which is why `C:/repos/api` cannot pass as
 scp-style. When no portable identity can be derived, floor records nothing and says so — it never
 writes a path instead.
+
+**Storable is a second question, and it is about the line, not the repository.** Every identity is
+one whole line in a file that `grep -Fxq` reads back. A newline in one is therefore two entries: the
+allowlist matched on the first and the unit recorded the second, so one grant fetched a repository
+nobody authorised. A `..` segment deceives differently — git resolves it, so the line clones one
+repository while reading as another in a file whose whole job is being read. Both are refused.
 
 Source-relative names come later, with the work-source adapter. There is nothing for them to be
 relative to yet.
@@ -115,11 +130,55 @@ A work-source repository never becomes the bootstrap target because an item came
 | work-item targets | `item.md` | **advisory** — anyone who can file an item can write them |
 | unit targets | `units/NN/targets` | **authoritative** |
 
-Nothing moves one into the other. The allowlist that would is the next issue, and until it lands an
-advisory target reaching a unit would be a hostile item choosing where the work pushes.
+Nothing moves one into the other. Naming a repository in `item.md` grants nothing at all — the
+allowlist below decides, and `policy authorize` is the only thing that writes to it.
 
 Authoritative targets sit under the unit because a workspace belongs to a unit and targets belong to
 a workspace. One unit ships; the level is already there.
+
+---
+
+## The allowlist
+
+**Authorised is not selected.** The allowlist says what a run *may* reach. `units/NN/targets` says
+what it *does* reach. `targets add` needs both, and neither implies the other.
+
+```
+${FOUNDRY_HOME:-$HOME/.foundry}/policy/runs/<run id>/targets
+```
+
+One allowlist per run. A grant for one run authorises nothing in the next, so a run that went wrong
+cannot leave a wider reach behind it.
+
+| | |
+|---|---|
+| the file | what is authorised — read it to know |
+| `policy authorize` | the only thing that authorises — nothing else writes here |
+
+The bootstrap target is authorised without a grant. It is the repository a human invoked Foundry
+inside, which is the same act. It is **never copied** into the grants file: a copy is a second place
+the truth lives, and the two drift the first time a run is edited by hand.
+
+A run with no bootstrap starts authorised for nothing.
+
+### What this is not
+
+**It is not a security boundary.** Grants live outside the run directory, and that buys nothing
+against a hostile worker: a worker holding a shell as the same user can edit the grants file
+directly, and no arrangement of files on that user's disk can stop it.
+
+Half the allowlist is not out there anyway. The bootstrap entry is read from `<run>/bootstrap`,
+inside the run — so "outside the run directory" describes where grants are kept, and nothing more.
+
+What it buys is that **no accident widens authority**. Nothing derives a grant. No command grants as
+a side effect of doing something else. A run has no way to authorise itself.
+
+Resisting a worker with arbitrary host-user shell access needs a runtime and workspace boundary that
+makes policy state unavailable for the worker to mutate. That does not exist yet. Until it does,
+this is a correctness mechanism, not a containment one.
+
+Policy state holds portable identities and nothing else — no local path, no credential. It outlives
+the run that wrote it and it gets read by eye.
 
 ---
 

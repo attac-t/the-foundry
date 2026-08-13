@@ -215,11 +215,16 @@ is "targets with no run exits 1" "$(code_of floor "$tmp/bare" targets)" "1"
 fresh=$(floor "$tmp/bare" new "Targets")
 in_run() { floor_as "$tmp/bare" "$home" "$fresh" "$@"; }
 
+# `$tmp/bare` has no git, so this run gets no bootstrap and its allowlist starts empty. The checks
+# below are about identity and refs, so the ones that expect to succeed grant first. The ones that
+# expect a refusal still refuse for their own reason: identity and ref are read before policy is.
+allow_and_add() { in_run policy authorize "$1" >/dev/null && in_run targets add "$1" "$2" >/dev/null; }
+
 is "a fresh unit lists nothing" "$(in_run targets)" ""
 
-in_run targets add 'https://github.com/acme/api.git'   main    >/dev/null
-in_run targets add 'git@github.com:acme/web.git'       develop >/dev/null
-in_run targets add 'https://u:p@github.com/acme/m.git' v2      >/dev/null
+allow_and_add 'https://github.com/acme/api.git'   main
+allow_and_add 'git@github.com:acme/web.git'       develop
+allow_and_add 'https://u:p@github.com/acme/m.git' v2
 
 is "three targets list back in order" "$(in_run targets)" \
 "https://github.com/acme/api.git main
@@ -235,11 +240,13 @@ is "and writes nothing when it refuses" \
    "$(in_run targets | grep -c "$tmp" || true)" "0"
 
 # `ssh://git@host` carries a login. Dropping it breaks the clone; keeping a password does not.
-in_run targets add 'ssh://git@github.com/acme/ssh.git' main >/dev/null
+allow_and_add 'ssh://git@github.com/acme/ssh.git' main
 has "an ssh login survives" "$(in_run targets)" "ssh://git@github.com/acme/ssh.git main"
 
-in_run targets add 'ssh://u:secret@github.com/acme/pw.git' main >/dev/null
-lacks "but an ssh password does not" "$(in_run targets)" "secret"
+# Both halves, because `lacks` alone cannot tell a stripped password from a target never written.
+allow_and_add 'ssh://u:secret@github.com/acme/pw.git' main
+has   "but an ssh password does not" "$(in_run targets)" "ssh://u@github.com/acme/pw.git main"
+lacks "and the password is nowhere"  "$(in_run targets)" "secret"
 
 # A `/` before the colon is a path, not a host. Without that rule a dotted directory reads as
 # scp-style and a local path gets written down.
@@ -269,10 +276,218 @@ printf 'targets: https://github.com/attacker/evil.git main\n' >> "$fresh/item.md
 lacks "an advisory target in item.md does not reach the unit" \
       "$(in_run targets)" "attacker/evil"
 
-# No stored line anywhere may hold a machine-local path. Swept over the run that actually has a
-# bootstrap file too — naming `$fresh/bootstrap` alone checked a file that cannot exist.
-is "no stored line under any run holds a local path" \
-   "$(grep -rl "$tmp" "$fresh/units" "${booted:-$fresh}" 2>/dev/null | grep -c . || true)" "0"
+# --- policy ---
+#
+# Policy is not a security boundary. A worker holding a shell as the same user can edit the grants
+# directly. What it buys is that no accident widens authority: nothing grants but `policy authorize`.
+
+policy_for() { printf '%s/policy/runs/%s/targets' "$home" "$(basename "$1")"; }
+
+the_bootstrap_is_authorised_without_a_grant() {
+  make_repo "$tmp/pol" main && set_origin "$tmp/pol" 'https://github.com/acme/boot.git' \
+    || { skip "policy — git could not make a repo here"; return; }
+
+  polrun=$(floor "$tmp/pol" new "Policy")
+
+  is "the bootstrap lists as bootstrap, not as a grant" \
+     "$(floor "$tmp/pol" policy)" "$(printf 'https://github.com/acme/boot.git\tbootstrap')"
+
+  absent "and no grants file was written" "$(policy_for "$polrun")"
+
+  is "the bootstrap can be added as a target" \
+     "$(code_of floor "$tmp/pol" targets add 'https://github.com/acme/boot.git' main)" "0"
+}
+the_bootstrap_is_authorised_without_a_grant
+
+#
+# The advisory proof, by sequence rather than by absence.
+#
+# The weak form — name it in `item.md`, watch it never arrive — passes with no policy at all, because
+# nothing reads advisory targets. Refused, then granted, then accepted is the only shape that fails
+# if policy does nothing.
+#
+an_item_grants_nothing() {
+  [ -n "${polrun:-}" ] || { skip "the advisory proof — no run with a bootstrap"; return; }
+
+  printf 'targets: https://github.com/attacker/evil.git main\n' >> "$polrun/item.md"
+
+  is "a repo named only in item.md is refused" \
+     "$(code_of floor "$tmp/pol" targets add 'https://github.com/attacker/evil.git' main)" "5"
+
+  lacks "and nothing about it reached the unit" "$(floor "$tmp/pol" targets)" "attacker/evil"
+
+  floor "$tmp/pol" policy authorize 'https://github.com/attacker/evil.git' >/dev/null
+
+  is "once authorised, the same call succeeds" \
+     "$(code_of floor "$tmp/pol" targets add 'https://github.com/attacker/evil.git' main)" "0"
+
+  has "and only then is it a target" "$(floor "$tmp/pol" targets)" "attacker/evil"
+}
+an_item_grants_nothing
+
+a_refusal_writes_nothing() {
+  [ -n "${polrun:-}" ] || { skip "the refusal proof — no run with a bootstrap"; return; }
+
+  before=$(cat "$polrun/units/01/targets" 2>/dev/null)
+  floor "$tmp/pol" targets add 'https://github.com/nobody/asked.git' main >/dev/null 2>&1
+
+  is "a refused target leaves the unit file byte-identical" \
+     "$(cat "$polrun/units/01/targets" 2>/dev/null)" "$before"
+}
+a_refusal_writes_nothing
+
+#
+# The discriminator. Without it the sequence above would still pass while authority widened itself.
+#
+targets_add_never_grants() {
+  [ -n "${polrun:-}" ] || { skip "the self-authorisation proof — no run with a bootstrap"; return; }
+
+  grants_before=$(cat "$(policy_for "$polrun")" 2>/dev/null)
+
+  # Both paths. A refused add returns before the append, so only the second one — already granted
+  # above, so it succeeds — reaches the line where a write to the grants could actually happen.
+  floor "$tmp/pol" targets add 'https://github.com/sneaky/repo.git' main >/dev/null 2>&1
+  floor "$tmp/pol" targets add 'https://github.com/attacker/evil.git' main >/dev/null 2>&1
+
+  is "targets add cannot add to the allowlist" \
+     "$(cat "$(policy_for "$polrun")" 2>/dev/null)" "$grants_before"
+}
+targets_add_never_grants
+
+#
+# The other half of the stored line.
+#
+# `grep -Fxq` reads a pattern holding a newline as a list of patterns and matches when any one line
+# does, so one grant authorised a second repo and the append wrote both down. `..` is refused for a
+# different reason: git resolves dot segments, so the line clones one repo and reads as another.
+#
+a_repo_argument_cannot_carry_a_second_line() {
+  [ -n "${polrun:-}" ] || { skip "the newline proof — no run with a bootstrap"; return; }
+
+  smuggle=$(printf 'https://github.com/acme/boot.git\nhttps://github.com/smuggled/in.git')
+
+  is "a repo argument holding a newline is refused" \
+     "$(code_of floor "$tmp/pol" targets add "$smuggle" main)" "4"
+  lacks "and nothing was smuggled into the unit" "$(floor "$tmp/pol" targets)" "smuggled"
+
+  is "policy authorize refuses one too" \
+     "$(code_of floor "$tmp/pol" policy authorize "$smuggle")" "4"
+  lacks "and grants nothing from it" "$(floor "$tmp/pol" policy)" "smuggled"
+
+  is "a dot-dot segment is refused" \
+     "$(code_of floor "$tmp/pol" targets add 'https://github.com/acme/../evil/x.git' main)" "4"
+}
+a_repo_argument_cannot_carry_a_second_line
+
+#
+# Grants outlive the run directory, and run ids are reclaimed. Until the slot chooser read both, a
+# `rm -rf` handed the next run an allowlist nobody granted it.
+#
+a_reclaimed_slot_inherits_no_grants() {
+  make_repo "$tmp/pol3" main && set_origin "$tmp/pol3" 'https://github.com/acme/three.git' \
+    || { skip "slot reuse — git could not make a repo here"; return; }
+
+  gone=$(floor "$tmp/pol3" new "Reuse")
+  floor "$tmp/pol3" policy authorize 'https://github.com/acme/inherited.git' >/dev/null
+  rm -rf "$gone"
+
+  floor "$tmp/pol3" new "Reuse" >/dev/null
+
+  has   "a run made after a deletion still has its own bootstrap" \
+        "$(floor "$tmp/pol3" policy)" "acme/three.git"
+  lacks "but inherits no grant from the run it replaced" \
+        "$(floor "$tmp/pol3" policy)" "inherited"
+}
+a_reclaimed_slot_inherits_no_grants
+
+a_grant_is_scoped_to_one_run() {
+  make_repo "$tmp/pol2" main && set_origin "$tmp/pol2" 'https://github.com/acme/other.git' \
+    || { skip "grant scope — git could not make a second repo"; return; }
+
+  floor "$tmp/pol2" new "Other" >/dev/null
+
+  is "a grant for one run does not authorise another" \
+     "$(code_of floor "$tmp/pol2" targets add 'https://github.com/attacker/evil.git' main)" "5"
+}
+a_grant_is_scoped_to_one_run
+
+a_run_with_no_bootstrap_allows_nothing() {
+  norun=$(floor "$tmp/bare" new "No Boot")
+
+  # Empty output is what a `policy` that printed nothing at all also looks like, so the run that does
+  # have one answers in the same breath.
+  is "with no bootstrap the allowlist is empty" \
+     "$(floor_as "$tmp/bare" "$home" "$norun" policy)" ""
+  differs "while a run that has one says so" \
+     "$(floor "$tmp/pol" policy)" ""
+
+  is "and every target is refused" \
+     "$(code_of floor_as "$tmp/bare" "$home" "$norun" targets add 'https://github.com/any/thing.git' main)" "5"
+}
+a_run_with_no_bootstrap_allows_nothing
+
+#
+# Policy state outlives the run that wrote it and gets read by eye. A password or a machine-local
+# path in there is a leak whatever the allowlist then decides, so neither may be stored at all.
+#
+policy_stores_only_portable_identities() {
+  [ -n "${polrun:-}" ] || { skip "policy storage — no run with a bootstrap"; return; }
+
+  floor "$tmp/pol" policy authorize 'https://u:hunter2@github.com/acme/creds.git' >/dev/null
+
+  has   "a grant stores the stripped identity" \
+        "$(cat "$(policy_for "$polrun")")" "https://github.com/acme/creds.git"
+  lacks "and never the password" "$(cat "$(policy_for "$polrun")")" "hunter2"
+
+  is "policy authorize refuses a local path" \
+     "$(code_of floor "$tmp/pol" policy authorize "$tmp/some/clone")" "4"
+  lacks "and stores nothing for it" "$(cat "$(policy_for "$polrun")")" "$tmp"
+}
+policy_stores_only_portable_identities
+
+# The bootstrap is an effective grant, not a stored one. Copying it would outlive the run's own
+# `bootstrap` file and make the two disagree about what a run may reach.
+authorizing_the_bootstrap_copies_nothing() {
+  [ -n "${polrun:-}" ] || { skip "the bootstrap copy proof — no run with a bootstrap"; return; }
+
+  # Byte-identical, not merely `lacks`: an empty file lacks everything.
+  before=$(cat "$(policy_for "$polrun")" 2>/dev/null)
+  floor "$tmp/pol" policy authorize 'https://github.com/acme/boot.git' >/dev/null
+
+  is "an explicit grant for the bootstrap writes nothing" \
+     "$(cat "$(policy_for "$polrun")" 2>/dev/null)" "$before"
+}
+authorizing_the_bootstrap_copies_nothing
+
+# A bootstrap file exists but names nothing. Two readers, one file — they have to agree it is empty,
+# or `policy` lists an entry that authorises nothing and reads as though it does.
+a_nameless_bootstrap_is_no_bootstrap() {
+  make_repo "$tmp/pol4" main && set_origin "$tmp/pol4" 'https://github.com/acme/four.git' \
+    || { skip "empty bootstrap — git could not make a repo here"; return; }
+
+  blank=$(floor "$tmp/pol4" new "Blank")
+  : > "$blank/bootstrap"
+
+  is "a bootstrap naming nothing lists nothing" "$(floor "$tmp/pol4" policy)" ""
+  is "and authorises nothing" \
+     "$(code_of floor "$tmp/pol4" targets add 'https://github.com/acme/four.git' main)" "5"
+}
+a_nameless_bootstrap_is_no_bootstrap
+
+# Policy and targets share one normalisation, so two spellings are two identities. Recorded as the
+# behaviour it is, not asserted as the behaviour anyone wants.
+two_spellings_are_two_identities() {
+  [ -n "${polrun:-}" ] || { skip "identity spelling — no run with a bootstrap"; return; }
+
+  is "an ssh spelling of a granted https repo is still refused" \
+     "$(code_of floor "$tmp/pol" targets add 'git@github.com:attacker/evil.git' main)" "5"
+}
+two_spellings_are_two_identities
+
+# Last, so it sweeps policy state too. Nothing floor writes anywhere under the home may hold a
+# machine-local path — grants outlive the run that made them and travel with the home.
+is "nothing floor stored holds a local path" \
+   "$(grep -rl "$tmp" "$home" 2>/dev/null | grep -c . || true)" "0"
 
 # --- asking for the wrong thing ---
 
