@@ -21,7 +21,8 @@ Read `.github/PULL_REQUEST_TEMPLATE.md` before writing the body — `gh pr creat
 Answer one question: why does this change exist? Record it, don't argue it — cut any sentence
 that would not change what the reader does. No headings, no file tables, no verification logs.
 The reader is you in a year, arriving from `git blame`; they already see the diff. Close with
-`@see` for related PRs or issues.
+`Closes #N` for the issue this finishes, and `Refs #N` for anything related. Never `@see` —
+[github.com/see](https://github.com/see) is a real person, and GitHub notifies them.
 
 ### Stack Plugins
 
