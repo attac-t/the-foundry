@@ -561,10 +561,16 @@ the_three_kinds_stay_apart
 an_introduced_clause_stays_introduced() {
   [ -n "${chrun:-}" ] || { skip "introduction — no charter run"; return; }
 
-  floor "$tmp/ch" charter derive >/dev/null 2>&1
-  held=$(cat "$(charter_of "$chrun")")
+  #
+  # Both halves. Carrying introduced clauses forward is what makes `derive` *work*; the drop guard
+  # is what makes it safe. Assert only the content and removing the carry looks fine — the guard
+  # catches the loss, refuses, and leaves the charter exactly as the content check wants it.
+  #
+  is "re-deriving over an introduced clause succeeds" \
+     "$(code_of floor "$tmp/ch" charter derive)" "0"
 
-  has "re-deriving keeps a clause nothing derived" "$held" "Decided refund copy signed off"
+  held=$(cat "$(charter_of "$chrun")")
+  has "and keeps the clause nothing derived" "$held" "Decided refund copy signed off"
   is  "and never gives it a pin" \
       "$(awk -v id="$(clause_of 'refund copy signed off')" '$1 == "pin" && $2 == id' "$(charter_of "$chrun")" | grep -c .)" "0"
 }
@@ -658,9 +664,16 @@ a_pin_that_cannot_be_captured_writes_nothing
 deriving_needs_the_right_repository() {
   [ -n "${chrun:-}" ] || { skip "wrong repo — no charter run"; return; }
 
+  #
   # `$tmp/ch2` is a different repository. The run points at `acme/ch.git`.
-  is "deriving from another repository is refused" \
-     "$(code_of floor_as "$tmp/ch2" "$home" "$chrun" charter derive)" "6"
+  #
+  # The message, not the code. Deriving here also fails for an unrelated reason — `develop:Makefile`
+  # does not resolve in a repository sitting on `main` — so exit 6 alone passed with the guard
+  # removed entirely.
+  #
+  has "deriving from another repository is refused for being the wrong repository" \
+      "$( cd "$tmp/ch2" && FOUNDRY_HOME="$home" FOUNDRY_RUN="$chrun" sh "$runner" charter derive 2>&1 )" \
+      "run this inside [https://github.com/acme/ch.git]"
 }
 deriving_needs_the_right_repository
 

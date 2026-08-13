@@ -208,7 +208,7 @@ wreck_runner "clause text that may hold a newline is caught" \
 
 # Re-deriving must not drop what nothing derived. Losing them makes `derive` a silent deletion.
 wreck_runner "a re-derivation that drops introduced clauses is caught" \
-  dropintro 's|    keep_introduced "$file" >> "$draft" .*$|    :|'
+  dropintro 's|^    keep_introduced .*$|    :|'
 
 # Deriving from the wrong repository pins another repo's files under this run's target.
 wreck_runner "deriving from a repository the run does not name is caught" \
