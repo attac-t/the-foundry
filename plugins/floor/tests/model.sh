@@ -160,6 +160,83 @@ else
   skip "an unwritable home — could not make a file to stand in for one"
 fi
 
+# --- the bootstrap target ---
+#
+# Zero or one. A run started outside a repository is not a broken run.
+
+set_origin() { git -C "$1" remote add origin "$2" >/dev/null 2>&1; }
+
+if make_repo "$tmp/boot" main && set_origin "$tmp/boot" 'https://tok3n:x@github.com/acme/backend.git'; then
+  booted=$(floor "$tmp/boot" new "With Origin")
+
+  is "the bootstrap target names the repo and the base ref" \
+     "$(cat "$booted/bootstrap" 2>/dev/null)" "https://github.com/acme/backend.git main"
+
+  lacks "and the credential never reaches disk" "$(cat "$booted/bootstrap" 2>/dev/null)" "tok3n"
+  is    "bootstrap prints it back" "$(floor "$tmp/boot" bootstrap)" "https://github.com/acme/backend.git main"
+else
+  skip "the bootstrap target — git could not make a repo here"
+fi
+
+# 0..1, so absence is an answer and not a failure.
+outside=$(floor "$tmp/bare" new "No Origin")
+absent "a run started outside a repo records no bootstrap target" "$outside/bootstrap"
+is     "and asking for it exits 1" "$(code_of floor "$tmp/bare" bootstrap)" "1"
+
+if make_repo "$tmp/noremote" main; then
+  none=$(floor "$tmp/noremote" new "No Remote")
+  absent "a repo with no origin records none" "$none/bootstrap"
+fi
+
+# A path is exactly what a target may not hold, so a path-shaped remote yields nothing.
+if make_repo "$tmp/pathremote" main && set_origin "$tmp/pathremote" "$tmp/some/local/clone"; then
+  pathy=$(floor "$tmp/pathremote" new "Path Remote")
+  absent "a remote that is a local path records none" "$pathy/bootstrap"
+fi
+
+# --- unit targets ---
+#
+# Named through FOUNDRY_RUN rather than a pointer: `$tmp/bare` has no git, so there is nowhere for a
+# pointer to live. That is #67's behaviour, not a fault here.
+
+fresh=$(floor "$tmp/bare" new "Targets")
+in_run() { floor_as "$tmp/bare" "$home" "$fresh" "$@"; }
+
+is "a fresh unit lists nothing" "$(in_run targets)" ""
+
+in_run targets add 'https://github.com/acme/api.git'   main    >/dev/null
+in_run targets add 'git@github.com:acme/web.git'       develop >/dev/null
+in_run targets add 'https://u:p@github.com/acme/m.git' v2      >/dev/null
+
+is "three targets list back in order" "$(in_run targets)" \
+"https://github.com/acme/api.git main
+git@github.com:acme/web.git develop
+https://github.com/acme/m.git v2"
+
+exists "they live under the unit" "$fresh/units/01/targets"
+absent "and not at the run root"  "$fresh/targets"
+
+is "targets add refuses a local path" \
+   "$(code_of in_run targets add "$tmp/some/clone" main)" "4"
+is "and writes nothing when it refuses" \
+   "$(in_run targets | grep -c "$tmp" || true)" "0"
+
+is "targets add needs both a repo and a ref" \
+   "$(code_of in_run targets add 'https://github.com/acme/api.git')" "2"
+
+printf '# a comment\n\n' >> "$fresh/units/01/targets"
+is "comments and blank lines are not targets" "$(in_run targets | grep -c .)" "3"
+
+# The two levels stay apart. Nothing moves an advisory target into a unit — the allowlist that would
+# is the next issue.
+printf 'targets: https://github.com/attacker/evil.git main\n' >> "$fresh/item.md"
+lacks "an advisory target in item.md does not reach the unit" \
+      "$(in_run targets)" "attacker/evil"
+
+# No stored line anywhere may hold a machine-local path.
+is "nothing under the run holds the Foundry home as a path" \
+   "$(grep -rl "$home" "$fresh/units" "$fresh/bootstrap" 2>/dev/null | grep -c . || true)" "0"
+
 # --- the caller gets told ---
 
 is "new with no title exits 2"  "$(code_of floor "$tmp/bare" new)" "2"

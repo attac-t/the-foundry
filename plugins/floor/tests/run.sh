@@ -83,6 +83,24 @@ wreck_runner "a runner that ignores a home it cannot write to is caught" \
 wreck_runner "a runner that trusts an unset run directory is caught" \
   ghostvar 's|\[ -n "${FOUNDRY_RUN:-}" \] && \[ -d "$FOUNDRY_RUN" \]|\[ -n "${FOUNDRY_RUN:-}" \]|'
 
+# A credential written into a run directory is a secret on disk that nobody meant to put there.
+wreck_runner "an identity that keeps its credentials is caught" \
+  creds 's#sed .s|://\[^/@\]\*@|://|.#cat#'
+
+# A path is the one thing a target may not hold. Accepting it makes the run unusable elsewhere and
+# says nothing at the time.
+wreck_runner "an identity that accepts a local path is caught" \
+  localpath 's|^    return 1$|    printf "%s" "$url"; return 0|'
+
+# Targets belong to the unit. At the run root they move the day a second unit exists.
+wreck_runner "targets stored at the run root are caught" \
+  flat 's|%s/units/01/targets|%s/targets|'
+
+# 0..1, not exactly one. A bootstrap written when no identity could be derived is a target invented
+# out of nothing.
+wreck_runner "a bootstrap written without an identity is caught" \
+  alwaysboot 's|line=$(bootstrap_here) \|\| return 0|line=$(bootstrap_here); line="${line:-unknown unknown}"|'
+
 # --- break the install ---
 
 echo
