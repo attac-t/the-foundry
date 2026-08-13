@@ -2,7 +2,7 @@
 # SessionStart: say which run this checkout is working on. Silent when there is none.
 #
 # A hook cannot export a variable into the session that started it, so a run found through the
-# pointer is a run kernel cannot see. Hence the last two lines.
+# pointer is a run kernel cannot see. Saying so beats letting you assume memory moved with it.
 
 root="$(cd "$(dirname "$0")/.." && pwd)"
 

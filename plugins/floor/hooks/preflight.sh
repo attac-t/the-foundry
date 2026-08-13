@@ -28,7 +28,7 @@ answers_absence() {
     [ -z "$out" ]
 }
 
-# Tell the user. This is the only line floor ever prints unasked.
+# Tell the user. Silence means it is working, so this is the only thing floor says when it is not.
 warn() { printf '{"systemMessage":"floor: hooks not running — %s"}\n' "$1"; }
 
 answers_home && answers_absence && exit 0

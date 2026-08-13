@@ -17,9 +17,6 @@ failed=0
 # Record a failing audit.
 bad() { failed=1; printf '  FAIL  %s\n' "$1"; }
 
-# Rewrite a file in place.
-rewrite() { cat > "$1.new" && mv "$1.new" "$1"; }
-
 for suite in model install; do
   bash "$root/tests/$suite.sh" || failed=1
   echo
@@ -40,10 +37,10 @@ model_caught() { ! RUNNER="$tmp/$1/bin/run.sh" bash "$root/tests/model.sh" >/dev
 # differs from the original too.
 #
 wreck_runner() {
-  local name="$1" tag="$2" expr="$3"
+  local name="$1" tag="$2" mutation="$3"
 
   rm -rf "${tmp:?}/$tag" && cp -R "$root" "$tmp/$tag" || { bad "$name — could not copy the plugin"; return; }
-  sed "$expr" "$root/bin/run.sh" > "$tmp/$tag/bin/run.sh"  || { bad "$name — sed failed, so this proves nothing"; return; }
+  sed "$mutation" "$root/bin/run.sh" > "$tmp/$tag/bin/run.sh" || { bad "$name — sed failed, so this proves nothing"; return; }
   [ -s "$tmp/$tag/bin/run.sh" ] || { bad "$name — the mutant is empty, so the suite failed for the wrong reason"; return; }
   cmp -s "$tmp/$tag/bin/run.sh" "$root/bin/run.sh" && { bad "$name — the break did not apply, so this proves nothing"; return; }
   model_caught "$tag" || { bad "$name — the suite passed against a broken runner"; return; }
@@ -51,8 +48,12 @@ wreck_runner() {
   printf '  ok    %s\n' "$name"
 }
 
+#
+# Two breaks on one line, and they are not the same break: this one blinds the slot chooser
+# completely, `inherit` below blinds it only to grants. Same line, different halves of its meaning.
+#
 wreck_runner "a runner that stops checking for a free path is caught" \
-  collide 's|\[ -e "$RUNS/$candidate" \] |\[ 1 -eq 0 \] |'
+  collide 's|\[ ! -e "$RUNS/$1" \] && \[ ! -e "$GRANTS/$1" \]|true|'
 
 # In the worktree the pointer gets committed, and a run id in someone else's clone names a directory
 # that was never on their machine.
@@ -63,6 +64,9 @@ wreck_runner "a runner that ignores FOUNDRY_HOME is caught" \
   nohome 's|\[ -n "${FOUNDRY_HOME:-}" \] |\[ -z "${FOUNDRY_HOME:-}" \] |'
 
 # Exit 0 with nothing lets a caller read "no run" as "the run is at the empty path".
+#
+# Three lines, and deliberately so: `path`, `bootstrap` and `targets` open with the same guard, and
+# the rule is that no entry point softens it. It does not prove any one of the three alone is caught.
 wreck_runner "a runner that exits 0 on no run is caught" \
   softno 's|dir=$(active_run) \|\| exit 1|dir=$(active_run) \|\| exit 0|'
 
@@ -82,6 +86,91 @@ wreck_runner "a runner that ignores a home it cannot write to is caught" \
 
 wreck_runner "a runner that trusts an unset run directory is caught" \
   ghostvar 's|\[ -n "${FOUNDRY_RUN:-}" \] && \[ -d "$FOUNDRY_RUN" \]|\[ -n "${FOUNDRY_RUN:-}" \]|'
+
+# A credential written into a run directory is a secret on disk that nobody meant to put there.
+wreck_runner "an identity that keeps its credentials is caught" \
+  creds 's#sed .s|://\[^/\]\*@|://|.#cat#'
+
+# A path is the one thing a target may not hold. Accepting it makes the run unusable elsewhere and
+# says nothing at the time.
+#
+# Anchored on the whole line. `*) return 1 ;; esac` alone matches the path guard below it too, and a
+# mutation that fires in two places is testing neither of them.
+wreck_runner "an identity that accepts a local path is caught" \
+  localpath 's|case "$1" in \*:\*) ;; \*) return 1 ;; esac|case "$1" in *:*) ;; *) return 0 ;; esac|'
+
+# The Critical. `[^/@]*@` stops at the first `@`, so a password containing one leaves its tail on
+# disk — and every `new` writes it, unasked.
+wreck_runner "a userinfo strip that stops at the first @ is caught" \
+  firstat 's|://\[^/\]\*@|://[^/@]*@|'
+
+# `ssh://git@host` carries a login. Stripping it writes an identity nobody can clone.
+wreck_runner "an identity that strips an ssh login is caught" \
+  sshuser '\|ssh://\*) strip_ssh_password|d'
+
+# A `/` before the colon means a path. Without the rule, a dotted directory reads as scp-style.
+wreck_runner "a path mistaken for scp-style is caught" \
+  scpish 's|case "$host" in \*/\*) return 1 ;; esac||'
+
+# The ref is half the line, and it went in unchecked.
+wreck_runner "a ref that is never validated is caught" \
+  anyref 's|/\* \| \*\[!-A-Za-z0-9_./\]\*)|/no-such-guard)|'
+
+# Targets belong to the unit. At the run root they move the day a second unit exists.
+wreck_runner "targets stored at the run root are caught" \
+  flat 's|%s/units/01/targets|%s/targets|'
+
+# 0..1, not exactly one. A bootstrap written when no identity could be derived is a target invented
+# out of nothing.
+wreck_runner "a bootstrap written without an identity is caught" \
+  alwaysboot 's|line=$(bootstrap_here) \|\| return 0|line=$(bootstrap_here); line="${line:-unknown unknown}"|'
+
+# The whole point of the allowlist. A run that may reach anything makes every check below decorative.
+wreck_runner "an allowlist that authorises anything is caught" \
+  openbar 's|\[ "$(bootstrap_identity "$1")" = "$2" \] && return 0|[ -n "$2" ] \&\& return 0|'
+
+#
+# The authority invariant: nothing widens a run's reach except `policy authorize`.
+#
+# Aimed at the append, not the guard. Weakening the guard only makes a refusal louder or quieter —
+# the first version of this break added a condition that was always false, so the refusal still
+# fired, the mutant behaved identically, and the audit reported a suite that had noticed nothing.
+#
+wreck_runner "targets add that grants itself is caught" \
+  selfgrant 's|printf .%s %s\\n. "$identity" "$ref" >> "$file"|printf "%s\\n" "$identity" >> "$(grants_file "$dir")"; printf "%s %s\\n" "$identity" "$ref" >> "$file"|'
+
+# Reporting success while writing nothing is worse than refusing: the caller carries on.
+wreck_runner "a refusal that exits 0 is caught" \
+  quietno 's|^        exit 5$|        exit 0|'
+
+# One allowlist for every run is one run's grant handed to all of them.
+#
+# Also caught by the credential check, which shares the grants file — so a red here does not on its
+# own point at scoping. Kept because it is the only break aimed at that line.
+wreck_runner "a grant shared across runs is caught" \
+  global 's|printf .%s/%s/targets. "$GRANTS" "$(basename "$1")"|printf "%s/targets" "$GRANTS"|'
+
+# A newline turns `grep -Fxq` into a pattern list, so one grant matches a second repo and the append
+# writes both. The whole exploit is one unguarded argument.
+wreck_runner "an identity that may hold a newline is caught" \
+  smuggle 's|\*\[!-A-Za-z0-9_.:/@~+%\]\* \| \*/../\* \| \*/..)|no-such-shape)|'
+
+# Grants outlive the run directory, so a slot chooser that reads only `runs/` inherits an allowlist.
+# The half `collide` cannot tell you about.
+wreck_runner "a slot reclaimed with grants behind it is caught" \
+  inherit 's|\[ ! -e "$RUNS/$1" \] && \[ ! -e "$GRANTS/$1" \]|[ ! -e "$RUNS/$1" ]|'
+
+# The bootstrap is an effective grant. Copied, it becomes a second place the truth lives.
+wreck_runner "a bootstrap copied into the grants is caught" \
+  copyboot 's|is_authorised "$dir" "$identity" && return 0|is_authorised "$dir" "$identity" \&\& [ 1 -eq 0 ] \&\& return 0|'
+
+# A bootstrap file naming nothing must read as no bootstrap, or `policy` lists a nameless entry.
+wreck_runner "a bootstrap that names nothing is caught" \
+  blankboot 's|NR == 1 && $1 != "" { printf "%s", $1; found = 1 } END { exit !found }|NR == 1 { printf "%s", $1; exit }|'
+
+# Policy state is read by eye and outlives the run. A password stored here is a password on disk.
+wreck_runner "a grant that stores credentials is caught" \
+  grantcreds 's|printf .%s\\n. "$identity" >> "$grants"|printf "%s\\n" "$repo" >> "$grants"|'
 
 # --- break the install ---
 
@@ -115,6 +204,9 @@ records_exec() {
   chmod -x "$probe" 2>/dev/null
   [ ! -x "$probe" ]
 }
+
+# Read a file and write it back, so a break can filter a file through itself.
+rewrite() { cat > "$1.new" && mv "$1.new" "$1"; }
 
 # The breaks. Every one is a failure kernel or signal actually shipped.
 crlf()    { awk '{ printf "%s\r\n", $0 }' "$1/hooks/announce.sh" | rewrite "$1/hooks/announce.sh"; }
