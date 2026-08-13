@@ -90,10 +90,10 @@ wreck_runner "an identity that keeps its credentials is caught" \
 # A path is the one thing a target may not hold. Accepting it makes the run unusable elsewhere and
 # says nothing at the time.
 #
-# Scoped to the function: unanchored, this also rewrote `foundry_home`'s `return 1`, which made the
-# mutant broader than the thing it claims to test.
+# Anchored on the whole line. `*) return 1 ;; esac` alone matches the path guard below it too, and a
+# mutation that fires in two places is testing neither of them.
 wreck_runner "an identity that accepts a local path is caught" \
-  localpath '/^repo_identity()/,/^}/ s|^    return 1$|    printf "%s" "$url"; return 0|'
+  localpath 's|case "$1" in \*:\*) ;; \*) return 1 ;; esac|case "$1" in *:*) ;; *) return 0 ;; esac|'
 
 # The Critical. `[^/@]*@` stops at the first `@`, so a password containing one leaves its tail on
 # disk — and every `new` writes it, unasked.
@@ -102,7 +102,7 @@ wreck_runner "a userinfo strip that stops at the first @ is caught" \
 
 # `ssh://git@host` carries a login. Stripping it writes an identity nobody can clone.
 wreck_runner "an identity that strips an ssh login is caught" \
-  sshuser '\|ssh://\*) printf|d'
+  sshuser '\|ssh://\*) strip_ssh_password|d'
 
 # A `/` before the colon means a path. Without the rule, a dotted directory reads as scp-style.
 wreck_runner "a path mistaken for scp-style is caught" \

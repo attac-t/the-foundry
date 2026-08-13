@@ -49,7 +49,7 @@
       "name": "floor",
       "source": "./plugins/floor",
       "description": "Where work happens. A run is one attempt at one work item, held outside every repository it changes.",
-      "version": "0.2.0"
+      "version": "0.2.1"
     }
   ]
 }

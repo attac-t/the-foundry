@@ -142,12 +142,20 @@ point_this_checkout_at() {
     printf '%s\n' "$1" > "$mark" 2>/dev/null || note "could not write $mark"
 }
 
-# `-d` matches the check kernel makes before it moves memory. Drop it here and floor calls a run
-# active that kernel has already fallen back from, while announce stays quiet because the variable
-# is set.
 active_run() {
-    [ -n "${FOUNDRY_RUN:-}" ] && [ -d "$FOUNDRY_RUN" ] && { printf '%s' "$FOUNDRY_RUN"; return 0; }
+    named_run && return 0
+    pointed_run
+}
 
+# `-d` matches the check kernel makes before it moves memory. Drop it and floor calls a run active
+# that kernel has already fallen back from, while announce stays quiet because the variable is set.
+named_run() {
+    [ -n "${FOUNDRY_RUN:-}" ] && [ -d "$FOUNDRY_RUN" ] || return 1
+    printf '%s' "$FOUNDRY_RUN"
+}
+
+# The run this checkout was pointed at, when it is still there.
+pointed_run() {
     mark=$(pointer) || return 1
     [ -f "$mark" ] || return 1
 
@@ -177,37 +185,47 @@ print_active_run() {
 #
 repo_identity() {
     url=$1
-    [ -n "$url" ] || return 1
 
-    # `file://` is a path wearing a scheme. Lowercased first, because a scheme is case-insensitive
-    # and `FILE://` is the same path.
-    case "$(printf '%s' "$url" | tr 'A-Z' 'a-z')" in
-        file://*) return 1 ;;
-    esac
+    [ -n "$url" ]      || return 1
+    is_file_url "$url" && return 1
 
     case "$url" in
-        # `ssh://git@host` carries a login, and dropping it breaks the clone. Take the password and
-        # leave the user.
-        ssh://*) printf '%s' "$url" | sed 's|://\([^/@]*\):[^/]*@|://\1@|'; return 0 ;;
-
-        # Everywhere else the whole userinfo is a credential. Greedy to the last `@` before the
-        # path, because a password may contain one — `[^/@]*@` stopped at the first and left the
-        # tail of the password on disk.
-        *://*) printf '%s' "$url" | sed 's|://[^/]*@|://|'; return 0 ;;
+        ssh://*) strip_ssh_password "$url"; return 0 ;;
+        *://*)   strip_userinfo "$url";     return 0 ;;
     esac
 
-    case "$url" in
-        *:*)
-            host=${url%%:*}
+    is_scp_style "$url" || return 1
+    printf '%s' "$url"
+}
 
-            # A `/` before the colon means a path, not a host — git's own rule. Without it
-            # `/srv/git/v1.2:mirror` reads as scp-style and a local path gets written down.
-            case "$host" in */*) return 1 ;; esac
-
-            # A host with no dot is a Windows drive letter.
-            case "${host##*@}" in *.*) printf '%s' "$url"; return 0 ;; esac
-            ;;
+# A scheme is case-insensitive, so `FILE://` names the same path `file://` does.
+is_file_url() {
+    case "$(printf '%s' "$1" | tr 'A-Z' 'a-z')" in
+        file://*) return 0 ;;
     esac
+    return 1
+}
+
+# `ssh://git@host` carries a login, and dropping it breaks the clone. Take the password, leave the
+# user.
+strip_ssh_password() { printf '%s' "$1" | sed 's|://\([^/@]*\):[^/]*@|://\1@|'; }
+
+# Everywhere else the whole userinfo is a credential. Greedy to the last `@` before the path,
+# because a password may contain one — `[^/@]*@` stopped at the first and left the tail on disk.
+strip_userinfo() { printf '%s' "$1" | sed 's|://[^/]*@|://|'; }
+
+#
+# `user@host:path`, and not a path that happens to hold a colon.
+#
+# A `/` before the colon means a path — git's own rule, without which `/srv/git/v1.2:mirror` reads as
+# scp-style. A host with no dot in it is a Windows drive letter.
+#
+is_scp_style() {
+    case "$1" in *:*) ;; *) return 1 ;; esac
+
+    host=${1%%:*}
+    case "$host" in */*) return 1 ;; esac
+    case "${host##*@}" in *.*) return 0 ;; esac
 
     return 1
 }
@@ -281,16 +299,18 @@ add_target() {
         exit 4
     }
 
-    # The ref is the other half of the line, and it was going in unchecked. A leading `/` is a path,
-    # and whitespace either splits the fields or writes a second target from one call.
-    case "$ref" in
-        /* | *[!-A-Za-z0-9_./]*)
-            note "not a usable ref: [$ref]"
-            exit 4
-            ;;
-    esac
+    is_usable_ref "$ref" || { note "not a usable ref: [$ref]"; exit 4; }
 
     printf '%s %s\n' "$id" "$ref" >> "$file" || die_unwritable "$file"
+}
+
+# The other half of the line. A leading `/` is a path, and whitespace either splits the two fields or
+# writes a second target from one call.
+is_usable_ref() {
+    case "$1" in
+        /* | *[!-A-Za-z0-9_./]*) return 1 ;;
+    esac
+    return 0
 }
 
 main "$@"
