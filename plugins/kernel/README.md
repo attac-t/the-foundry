@@ -73,6 +73,7 @@ plugin         Plugin architecture
 polish          Deep code polish (seven-pass protocol)
 review          Ruthless critic mentality
 test            Testing philosophy (what to test, not syntax)
+test-merit      Whether a test you already have earns its line
 evaluate        Verify the OS is functioning
 evaluate-plugin Verify plugin structure
 ```
