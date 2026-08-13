@@ -131,6 +131,11 @@ fi
 
 wreck_lib "an objective parser that keeps placeholders is caught" tbd extract-objective.sh 's|^  "\["\*"\]") exit 0 ;;|  "no-such-case") exit 0 ;;|'
 
+# The run rung, both ways: a rung that fires on a directory that is not there, and a rung that never
+# fires at all. Every memory hook goes quiet rather than loud on the first.
+wreck_lib "a resolver that trusts a deleted run is caught"  ghost  resolve-memory.sh 's|\[ -d "$FOUNDRY_RUN" \]|\[ -n "$FOUNDRY_RUN" \]|'
+wreck_lib "a resolver that ignores an active run is caught" norung resolve-memory.sh 's|if \[ -n "${FOUNDRY_RUN:-}" \] |if \[ -z "${FOUNDRY_RUN:-}" \] |'
+
 # --- break the install ---
 
 echo

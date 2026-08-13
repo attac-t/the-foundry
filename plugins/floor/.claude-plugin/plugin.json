@@ -1,0 +1,15 @@
+{
+  "name": "floor",
+  "version": "0.1.0",
+  "description": "Where work happens. A run is one attempt at one work item, held outside every repository it changes.",
+  "author": {
+    "name": "Christian Attard",
+    "url": "https://github.com/attac-t"
+  },
+  "keywords": [
+    "run",
+    "workspace",
+    "execution-state",
+    "multi-repo"
+  ]
+}

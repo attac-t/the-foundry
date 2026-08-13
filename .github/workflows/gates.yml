@@ -49,7 +49,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        plugin: [kernel, signal]
+        plugin: [kernel, signal, floor]
     runs-on: ${{ matrix.os }}
     defaults:
       run:
@@ -61,6 +61,8 @@ jobs:
         run: |
           command -v sh   && sh -c 'echo sh ok'
           command -v awk  && echo 'a b' | awk '{ print "awk ok" }'
+          # floor needs git rather than awk — it finds the active run through the git directory.
+          command -v git  && git --version
           # Which sh this runner has, printed so a skipped bashism audit can be read back later.
           # dash lets the output escape; bash sends it to /dev/null.
           [ -z "$(sh -c 'echo leak &>/dev/null' 2>/dev/null)" ] \

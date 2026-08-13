@@ -150,7 +150,17 @@ Claude implements whatever you ask, even bad ideas.
 
 ## Working Memory
 
-Branch-aware. Each topic gets its own memory.
+Branch-aware by default. Each topic gets its own memory.
+
+```
+FOUNDRY_RUN set?  → $FOUNDRY_RUN/memory      an active floor run owns it
+git branch?       → .claude/memory/<branch>
+otherwise         → .claude/memory
+```
+
+One variable is the whole handshake with [floor](../floor/README.md). kernel never learns where a
+run is kept and never calls floor, so each still works with the other uninstalled. `FOUNDRY_RUN`
+unset — which is every session without floor — changes nothing below.
 
 ```
 .claude/memory/

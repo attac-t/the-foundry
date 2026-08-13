@@ -29,8 +29,11 @@ reads() {
 # git's own output reaches stdout ahead of the path. The answer is two lines and the first is
 # wherever git lives. Every hook that resolves memory then writes to a directory named after it.
 #
+# `FOUNDRY_RUN=`, or a developer with one exported sees this probe call kernel broken for doing its
+# job.
+#
 resolves() {
-  out=$(CLAUDE_MEMORY_DIR=__kernel_probe__ sh "$root/lib/resolve-memory.sh" 2>/dev/null)
+  out=$(FOUNDRY_RUN= CLAUDE_MEMORY_DIR=__kernel_probe__ sh "$root/lib/resolve-memory.sh" 2>/dev/null)
   [ "$(printf '%s\n' "$out" | grep -c .)" -eq 1 ] || return 1
   case "$out" in
     __kernel_probe__*) return 0 ;;

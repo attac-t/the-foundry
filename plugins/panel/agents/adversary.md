@@ -50,7 +50,7 @@ the brief that summoned you.
 
 # Judging Rules
 
-**The severity floor.** Only two things block: a failing oracle command, and a **Critical**.
+**The severity bar.** Only two things block: a failing oracle command, and a **Critical**.
 Warnings and Nitpicks are recorded in `approval.md` as residual risks and do not force another
 round.
 
