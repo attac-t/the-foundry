@@ -17,9 +17,6 @@ failed=0
 # Record a failing audit.
 bad() { failed=1; printf '  FAIL  %s\n' "$1"; }
 
-# Rewrite a file in place.
-rewrite() { cat > "$1.new" && mv "$1.new" "$1"; }
-
 for suite in model install; do
   bash "$root/tests/$suite.sh" || failed=1
   echo
@@ -40,10 +37,10 @@ model_caught() { ! RUNNER="$tmp/$1/bin/run.sh" bash "$root/tests/model.sh" >/dev
 # differs from the original too.
 #
 wreck_runner() {
-  local name="$1" tag="$2" expr="$3"
+  local name="$1" tag="$2" mutation="$3"
 
   rm -rf "${tmp:?}/$tag" && cp -R "$root" "$tmp/$tag" || { bad "$name — could not copy the plugin"; return; }
-  sed "$expr" "$root/bin/run.sh" > "$tmp/$tag/bin/run.sh"  || { bad "$name — sed failed, so this proves nothing"; return; }
+  sed "$mutation" "$root/bin/run.sh" > "$tmp/$tag/bin/run.sh" || { bad "$name — sed failed, so this proves nothing"; return; }
   [ -s "$tmp/$tag/bin/run.sh" ] || { bad "$name — the mutant is empty, so the suite failed for the wrong reason"; return; }
   cmp -s "$tmp/$tag/bin/run.sh" "$root/bin/run.sh" && { bad "$name — the break did not apply, so this proves nothing"; return; }
   model_caught "$tag" || { bad "$name — the suite passed against a broken runner"; return; }
@@ -63,6 +60,9 @@ wreck_runner "a runner that ignores FOUNDRY_HOME is caught" \
   nohome 's|\[ -n "${FOUNDRY_HOME:-}" \] |\[ -z "${FOUNDRY_HOME:-}" \] |'
 
 # Exit 0 with nothing lets a caller read "no run" as "the run is at the empty path".
+#
+# Three lines, and deliberately so: `path`, `bootstrap` and `targets` open with the same guard, and
+# the rule is that no entry point softens it. It does not prove any one of the three alone is caught.
 wreck_runner "a runner that exits 0 on no run is caught" \
   softno 's|dir=$(active_run) \|\| exit 1|dir=$(active_run) \|\| exit 0|'
 
@@ -153,6 +153,9 @@ records_exec() {
   chmod -x "$probe" 2>/dev/null
   [ ! -x "$probe" ]
 }
+
+# Read a file and write it back, so a break can filter a file through itself.
+rewrite() { cat > "$1.new" && mv "$1.new" "$1"; }
 
 # The breaks. Every one is a failure kernel or signal actually shipped.
 crlf()    { awk '{ printf "%s\r\n", $0 }' "$1/hooks/announce.sh" | rewrite "$1/hooks/announce.sh"; }

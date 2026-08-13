@@ -81,27 +81,29 @@ make_run() {
     printf '%s\n' "$dir"
 }
 
-#
 # `<date>-<slug>-<first free slot>`.
+mint_id() { first_free_slot "$(date +%Y-%m-%d)-$(slug "$1")"; }
+
 #
-# Counting from zero, not from `$$`. Every `new` is a fresh process, so pid-seeded ids differed
-# without the loop ever running once — and the test that claimed to prove uniqueness passed without
+# `<base>-NNNN`, counting up from zero until nothing holds that name.
+#
+# Counting, not seeding from `$$`. Every `new` is a fresh process, so pid-seeded ids differed without
+# the loop ever running once — and the test that claimed to prove uniqueness passed without
 # exercising it. A hash would not help: `md5` is BSD's, `shasum` is not everywhere, and it would
 # still need the loop.
 #
-mint_id() {
-    base="$(date +%Y-%m-%d)-$(slug "$1")"
+first_free_slot() {
     n=0
 
     while :; do
-        candidate="$base-$(printf '%04x' "$n")"
+        candidate="$1-$(printf '%04x' "$n")"
         [ -e "$RUNS/$candidate" ] || { printf '%s' "$candidate"; return 0; }
         n=$((n + 1))
     done
 }
 
 # `sed`, not `tr -c`: the complement form needs its replacement set padded, and implementations
-# disagree about who pads it.
+# disagree about who pads it. The trim runs twice because `cut` can slice mid-word and leave a dash.
 slug() {
     text=$(printf '%s' "$1" \
         | tr 'A-Z' 'a-z' \
@@ -176,12 +178,8 @@ print_active_run() {
 #
 # A repository identity that still means the same thing on another machine.
 #
-# Credentials are stripped — a token in a remote URL is a secret, and a run directory is not where it
-# belongs. `git@host:path` keeps its user, which is an ssh login rather than a credential.
-#
-# A host with no dot in it is a Windows drive letter, so `C:/repos/thing` cannot pass as scp-style.
 # Anything that resolves to a path is refused rather than written down: a path is precisely what a
-# target may not hold.
+# target may not hold. What each branch strips, and why, sits on the helper that strips it.
 #
 repo_identity() {
     url=$1
@@ -194,6 +192,7 @@ repo_identity() {
         *://*)   strip_userinfo "$url";     return 0 ;;
     esac
 
+    # scp-style goes through whole: `git@` is an ssh login, not a credential.
     is_scp_style "$url" || return 1
     printf '%s' "$url"
 }
@@ -243,19 +242,18 @@ base_ref() {
 bootstrap_here() {
     git rev-parse --git-dir >/dev/null 2>&1 || return 1
     url=$(git remote get-url origin 2>/dev/null) || return 1
-    id=$(repo_identity "$url") || return 1
+    identity=$(repo_identity "$url") || return 1
 
     # Both halves or nothing. `add_target` refuses a missing ref, and two writers of one contract
     # cannot disagree about what a complete line is.
     ref=$(base_ref)
     [ -n "$ref" ] || return 1
 
-    printf '%s %s' "$id" "$ref"
+    printf '%s %s' "$identity" "$ref"
 }
 
-# Zero or one per run. Invoking Foundry inside a repository is the human act that makes that
-# repository a target. Starting from a work source, a bare CLI call or a remote runner is equally
-# valid and records none.
+# Zero or one per run. Starting from a work source, a bare CLI call or a remote runner is equally
+# valid and records none, so absence is an answer rather than a failure.
 write_bootstrap() {
     line=$(bootstrap_here) || return 0
     printf '%s\n' "$line" > "$1/bootstrap" 2>/dev/null || note "could not write $1/bootstrap"
@@ -267,13 +265,12 @@ print_bootstrap() {
     cat "$dir/bootstrap"
 }
 
-# Authoritative targets belong to the unit, because a workspace belongs to a unit and targets belong
-# to a workspace. One unit ships; the level is already there.
-unit_targets() { printf '%s/units/01/targets' "$1"; }
+# Under the unit, not the run root: a workspace belongs to a unit, and targets belong to a workspace.
+unit_targets_file() { printf '%s/units/01/targets' "$1"; }
 
 targets() {
     dir=$(active_run) || exit 1
-    file=$(unit_targets "$dir")
+    file=$(unit_targets_file "$dir")
 
     case "${1:-}" in
         '')  list_targets "$file" ;;
@@ -294,14 +291,14 @@ add_target() {
 
     [ -n "$repo" ] && [ -n "$ref" ] || { note "targets add needs a repo and a ref"; exit 2; }
 
-    id=$(repo_identity "$repo") || {
+    identity=$(repo_identity "$repo") || {
         note "no portable identity for [$repo] — a target may not hold a local path"
         exit 4
     }
 
     is_usable_ref "$ref" || { note "not a usable ref: [$ref]"; exit 4; }
 
-    printf '%s %s\n' "$id" "$ref" >> "$file" || die_unwritable "$file"
+    printf '%s %s\n' "$identity" "$ref" >> "$file" || die_unwritable "$file"
 }
 
 # The other half of the line. A leading `/` is a path, and whitespace either splits the two fields or

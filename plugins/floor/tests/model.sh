@@ -75,15 +75,12 @@ has "the id carries the slug"    "$id" "-test-item-"
 
 matches "the id ends in a short id" "$id" '-[0-9a-f]{4}$'
 
-# Two checks, not one. "The ids differ" passes without the free-path loop ever running; naming the
-# slots does not.
+# Two checks, not one. "The ids differ" passes without the free-slot loop ever running; naming the
+# slot does not, and `-0001` implies the first was `-0000`.
 second=$(floor "$tmp/bare" new "Test Item")
 
 differs "two runs from one title do not collide" "$first" "$second"
-
-# The behaviour above passes without the loop ever running. Naming the second slot does not, and
-# `-0001` implies the first was `-0000`.
-has "the second run takes the next slot" "$(basename "$second")" "-0001"
+has     "the second run takes the next slot"     "$(basename "$second")" "-0001"
 
 is "a title of pure punctuation still names a run" \
    "$(basename "$(floor "$tmp/bare" new '!!!')" | sed 's/-[0-9a-f]*$//')" \
@@ -106,6 +103,7 @@ if make_repo "$tmp/repo" main; then
   is "the pointer holds the id and nothing else" \
      "$(cat "$tmp/repo/.git/foundry-run" 2>/dev/null)" "$(basename "$made")"
 
+  # And the other half of the pointer's contract: making a run changes nothing in any repository.
   is "making a run leaves the worktree clean" \
      "$(git -C "$tmp/repo" status --porcelain 2>/dev/null)" ""
   is "making a run adds no commit" \
@@ -271,7 +269,7 @@ lacks "an advisory target in item.md does not reach the unit" \
 is "no stored line under any run holds a local path" \
    "$(grep -rl "$tmp" "$fresh/units" "${booted:-$fresh}" 2>/dev/null | grep -c . || true)" "0"
 
-# --- the caller gets told ---
+# --- asking for the wrong thing ---
 
 is "new with no title exits 2"  "$(code_of floor "$tmp/bare" new)" "2"
 is "an unknown command exits 2" "$(code_of floor "$tmp/bare" fly)" "2"
