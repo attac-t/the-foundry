@@ -55,7 +55,9 @@ unnote() { rm -f "$note"; }
 noted() { cat "$note" 2>/dev/null; }
 
 # Count how far the braces fail to balance.
-braces() { printf '%s' "$1" | awk '{ print gsub(/{/, "{") - gsub(/}/, "}") }'; }
+# `\{`, not `{`. POSIX starts an interval expression at a bare brace, so one that begins no interval
+# is undefined — gawk and mawk read it as a literal, BusyBox awk refuses the whole program.
+braces() { printf '%s' "$1" | awk '{ print gsub(/\{/, "{") - gsub(/\}/, "}") }'; }
 
 # Determine whether the quotes come in pairs. Zero means they do.
 quotes() { printf '%s' "$1" | awk '{ print gsub(/"/, "\"") % 2 }'; }

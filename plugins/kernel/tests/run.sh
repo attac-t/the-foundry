@@ -71,18 +71,35 @@ audit_the_reader() {
   audit "a reader that leaves escapes in is caught" 's|out = out ((e in esc) ? esc\[e\] : e)|out = out "\\\\" e|' escapes
 
   #
-  # The cursor guard, which only a clock can judge.
+  # The cursor guard, and the one break whose premise depends on the awk underneath.
   #
-  # Removing it does not make the reader wrong, it makes it never finish, and a suite with no bound
-  # on a runaway cannot tell that from a slow pass — it just hangs with it. macOS ships no
-  # `timeout`, so there the mutation is skipped rather than left to stall the runner for its full
-  # job budget.
+  # Removing it lets the cursor stand still. mawk then finishes with the wrong answer and the suite
+  # catches it. BusyBox awk finishes with the *right* answer, so the same edit changes nothing it can
+  # see — and requiring a catch there reported the suite as broken when nothing was.
   #
-  command -v timeout >/dev/null 2>&1 || {
-    printf '  skip  a reader that can trap its cursor — no timeout here to bound the runaway\n'
+  # So prove the break bites here before demanding it be caught. Scoped to this one mutation on
+  # purpose: a probe cheap enough to run against every break would wrongly clear the ones that only
+  # show on inputs it does not carry, `truncated` among them.
+  #
+  cursor_break='s|if (j == i) { i++; continue }|if (j == i) { i = i }|'
+
+  mutate cursor "$cursor_break"
+  changes_the_answer cursor || {
+    printf '  skip  a reader that can trap its cursor — this awk finishes the mutant with the right answer\n'
     return
   }
-  audit "a reader that can trap its cursor is caught" 's|if (j == i) { i++; continue }|if (j == i) { i = i }|' cursor
+
+  audit "a reader that can trap its cursor is caught" "$cursor_break" cursor
+}
+
+# Read a known nested value with a given reader.
+probe_reader() {
+  printf '%s' '{"tool_input":{"file_path":"ok"}}' | awk -f "$1" -v path=tool_input.file_path 2>/dev/null
+}
+
+# Determine if a mutant answers differently from the shipped reader.
+changes_the_answer() {
+  [ "$(probe_reader "$tmp/$1.awk")" != "$(probe_reader "$root/hooks/lib/unjson.awk")" ]
 }
 
 #
