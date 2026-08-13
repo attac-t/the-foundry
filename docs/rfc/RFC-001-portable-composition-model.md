@@ -1,6 +1,6 @@
 # RFC-001: The Portable Composition Model
 
-**Status:** Accepted — revision 5
+**Status:** Accepted — revision 6
 **Plugin:** `floor`
 **Author:** Christian Attard
 **Date:** 2026-08-12
@@ -177,11 +177,15 @@ A charter is a set of clauses. Each is machine, judged or human:
 
 ```markdown
 ## Done when
-- [ ] Gate:    composer test                      machine   ← derived from composer.json@base
-- [ ] Gate:    vendor/bin/phpstan analyse         machine   ← derived from composer.json@base
-- [ ] Judged:  adversary approves, risks recorded judged    ← derived from policy
+- [ ] Gate:    tests                              machine   ← acme/api@main, gates
+- [ ] Gate:    types                              machine   ← acme/api@main, gates
+- [ ] Judged:  adversary approves, risks recorded judged    ← acme/api@main, CLAUDE.md
 - [ ] Decided: pricing copy signed off            human     ← introduced by planning
 ```
+
+**A `Gate:` clause names a gate. It does not carry a command.** §2.4 resolves the name per target;
+the gates stage runs it. Revision 5 wrote the command here, leaving one fact in two places and
+making invariant 2 unanswerable — pinning a command means pinning whatever it resolves through.
 
 #### The four invariants
 
@@ -189,22 +193,57 @@ These replace routine approval. Each is checkable by code, not by the worker's a
 
 | # | Invariant | What it means |
 |---|---|---|
-| 1 | **Provenance** | Every clause names the human-owned artifact it came from — a repo script, policy, a prior charter, the work item — **and establishes the link by one of exactly two paths, mechanical or semantic (below).** A clause that establishes neither is *introduced* |
+| 1 | **Provenance** | Every clause names the human-owned artifact it came from — a repo script, an instruction file, the work item — **and establishes the link by one of exactly two paths, mechanical or semantic (below).** A clause that establishes neither is *introduced* |
 | 2 | **Pinning** | That artifact is captured at the base ref of **the target it came from** — §2.3's `ref`. Both the clause *and its resolution* are pinned |
-| 3 | **Monotonicity** | Derivation may add or tighten clauses. It may never remove or weaken one. A weakening is not a charter edit — it becomes a `Decided:` clause |
+| 3 | **Monotonicity** | Derivation may add or tighten clauses. It may never remove or weaken one. A weakening is not a charter edit — it becomes a `Decided:` clause. **The baseline is what the pinned artifacts derive now, never a previous run's charter** |
 | 4 | **Authority** | Selecting the work item **is** the human act, stamped as `human` evidence. It authorises everything derived from artifacts that human already owns |
+
+#### The baseline is derived, not inherited
+
+A previous run's charter is history, not authority.
+
+Two cases decide it. A human who relaxes a requirement edits a human-owned artifact and commits it —
+the next run's base carries the change, and the lower bar is correct. A charter from a buggy
+derivation would otherwise become law; re-deriving is the only thing that clears it.
+
+Three confirm it. The first run has nothing to inherit. Two runs from one base derive the same
+baseline without finding each other — and `run` is N per item, so "the previous charter" names no
+single document. A failed run binds nothing.
+
+**`Decided:` clauses therefore do not carry forward.** A decision meant to last belongs in a
+committed artifact, not in one attempt's ledger.
 
 #### Pinning closes break 4
 
-`Gate: composer test` is an indirection. Pinning captures the sha of every file the gate resolves
-through — `composer.json`, `package.json`, `Makefile`, the gate file itself, CI config. Then:
+`Gate: tests` is an indirection. Something resolves the name to a command, and that is what a worker
+would move.
 
-> **If a gate-defining file differs between the base ref and the delivered ref, that clause's
-> evidence is downgraded from `machine` to `judged`.**
+Revision 5 pinned "every file the gate resolves through" and listed `composer.json`, `package.json`,
+CI config. That set is open — a gate may `curl | sh` — and §7's second question marked it blocking.
+It also forced a choice with no good side: pinning `composer.json` whole downgrades every gate on a
+dependency bump; pinning one key inside it needs a JSON parser, which §4 forbids.
+
+**The set is not open, because Foundry authors the detector.** Resolution is Level 1 detection —
+Foundry's own code, reading files it chose. So pin what it read and what it answered:
+
+```
+at base       the files the detector read, at their base shas, and the command it resolved
+at delivery   run it again — the answer moved, or a file it read moved  →  downgrade
+```
+
+> **If the resolved command differs between the base and delivered refs, or any file the detector
+> read differs, that clause's evidence is downgraded from `machine` to `judged`.**
+
+Foundry never reads `composer.json` for meaning. It records what it read and whether its own answer
+changed. Level 2 covers detection being wrong.
 
 Downgraded, not voided. Legitimate work changes test scripts — adding a suite is good. Voiding would
 punish it. Downgrading says the exit code no longer speaks for itself and something that is not the
 author must look. One `git diff`, no machinery.
+
+**The residual.** A worker can leave the command intact and change what it reaches — `phpunit.xml`,
+a bootstrap, an environment file. That is the workspace boundary's to close, and why this is
+correctness rather than containment.
 
 #### Two derivation paths
 
@@ -220,8 +259,8 @@ Mechanical truth is code's. Semantic entailment is a judge's. New meaning is the
 clause candidate
     │
     ├── code derives it from a pinned artifact?          → mechanical provenance
-    │      composer.json defines a `test` script
-    │      therefore Gate: composer test
+    │      the target declares a gate named `tests`
+    │      therefore Gate: tests
     │
     ├── else — an independent judge finds it entailed
     │          by a pinned human-owned artifact?         → semantic provenance
@@ -272,6 +311,14 @@ test satisfied: *mark/select work → work runs*.
 
 The worker cannot dodge the gate, because none of the four conditions is reported by the worker. It
 cannot lower its own bar, because lowering *is* condition three.
+
+**When the conditions are evaluated decides whether that is true.** Derived once at planning and
+trusted after, an in-flight edit of the charter is silent. So the charter is re-derived from its
+pins at completion and compared with what it holds.
+
+**The honest limit**, which §2.5 states for evidence and floor's README for policy: the charter is a
+file the worker can write, as the same user. Re-derivation catches accident and drift, not a worker
+editing charter and pins together. That is the workspace boundary's, and it does not exist yet.
 
 #### Where this sits relative to Panel
 
@@ -423,7 +470,11 @@ Nothing in revision 2 said when a run was finished. Gates could pass at commit N
 land, and delivery proceed on evidence that no longer applied.
 
 > **A run may deliver only when every charter clause has satisfying evidence stamped at the
-> delivered ref.**
+> delivered ref of every target that clause names.**
+
+**Per target, because there is no run-level ref.** A clause spanning two targets is satisfied
+against `acme/api@sha1` *and* `acme/web@sha2`; "the delivered ref" names neither. Revision 5 fixed
+this on the base side and left the delivered side singular.
 
 Panel already had this — `craft-verdict:67` stamps `branch @ sha`. Revision 2 dropped it. This is
 also why `Decided:` clauses need no second gate: they are clauses, so completion waits for them.
@@ -533,7 +584,7 @@ authorisation                   ← fires ONLY on the four conditions in §2.2
 mutating execution              ← one workspace per unit; gates run; evidence accumulates
     │
     ▼
-completion                      ← every clause evidenced at the delivered ref (§2.5)
+completion                      ← every clause evidenced at each target's delivered ref (§2.5)
     │
     ▼
 delivery
@@ -681,7 +732,7 @@ finding, and the Problem section now lists it as break 4.
 |---|---|
 | Clause resolution is unpinned | §2.2, invariant 2 — the deepest change in this revision |
 | Lifecycle self-contradictory | §4 — run-first, planning inside the run |
-| No completion invariant | §2.5 — deliver only when every clause is evidenced at the delivered ref |
+| No completion invariant | §2.5 — deliver only when every clause is evidenced at each named target's delivered ref |
 | Adapter terminology broken | §1 and §2.6 — `seam` added; "delivery needs no shape" deleted |
 | Per-run approval contradicts issue #66 | §2.2 — four narrow conditions replace ceremony |
 | The allowlist is already necessary | §2.3 — open question 2 closed; `policy` stays |
@@ -786,6 +837,31 @@ Not changed: `0..1` weakens nothing. A run with no bootstrap target starts with 
 so every proposed target fires the authorisation gate — which is right, because no human act of
 invoking-inside-a-repository ever happened.
 
+### Revision 6 — amended before the charter stage
+
+Building policy falsified one statement. Drafting the charter contract found four more, one of them
+a disagreement between two sections of this document.
+
+| Was | Is | What falsified it |
+|---|---|---|
+| §2.2: `Gate: composer test` | `Gate: tests`, resolved by §2.4 | §2.4 already defines a gate as `name command`, per target. The charter was copying the second field, so one fact lived in two places — and invariant 2 could not be answered, because pinning a command means pinning whatever it resolves through |
+| §2.2 invariant 1: "a prior charter" is a provenance source | removed | It has no target and no ref, so invariant 2 cannot reach it. A source that cannot be pinned is not a source |
+| §2.2 invariant 3: no baseline named | the pinned artifacts, never a previous charter | The two readings give different systems. A derivation bug would otherwise become law, and a human relaxing a rule in the open would be flagged as a weakening forever |
+| §2.5: "stamped at the delivered ref" | at the delivered ref of every target the clause names | Revision 5 corrected this on the base side and left the delivered side singular. Same defect, unswept — issue #70 made `ref` per-target on both sides |
+| §2.2: `Judged: … ← derived from policy` | derived from an instruction file | The policy that shipped holds target identities and nothing else. Nothing in it can derive that clause |
+
+**§7's second question is closed.** It did not need the parser it appeared to require.
+
+**"The worker cannot lower its own bar" is now stated honestly.** It was true of the API and false
+of the filesystem. Re-derivation at completion is added as the moment the conditions are evaluated.
+Without it the invariant is unenforceable by construction.
+
+A narrow consultation found the delivered-ref defect, the missing baseline, the unpinnable prior
+charter, and the parser trap. The `Gate:` inconsistency came from reading §2.2 against §2.4.
+
+Not changed: policy stays run-scoped. A durable grant for central sources is real. Its only honest
+scope is the source, and §9 already orders that stage after this one.
+
 ---
 
 ## 7. Unresolved questions
@@ -798,10 +874,11 @@ required by §2.3, not speculative.
    every agent that will implement the unit. In a one-unit v1 run that is easy. With N units and a
    shared planner, eligibility needs a rule rather than a convention. **Blocks the authorisation stage, not the run.**
 
-2. **Which files define a gate's resolution?** Invariant 2 pins them, so the set must be knowable.
-   `composer.json`, `package.json`, `Makefile`, the gate file, CI config are obvious; the honest
-   answer is that the set is open and detection will be wrong sometimes. Being wrong toward
-   *downgrade* is safe; being wrong toward *silence* is not. **Blocks the charter stage, not the run.**
+2. ~~**Which files define a gate's resolution?**~~ **Closed in revision 6.** The set is what
+   Foundry's detector read — knowable, because Foundry authors it (§2.2). What the resolved command
+   reaches at runtime stays open, and is named residual. "Wrong toward downgrade is safe" survives
+   as a tie-breaker, never as a policy: at its limit everything downgrades and the judge becomes the
+   routine path.
 
 3. **Does evidence need to leave the machine?** Runs live outside git by design; Panel's Law 5 wants
    verdicts committed. Publishing evidence into a target is a real need and a second code path.
@@ -826,6 +903,7 @@ required by §2.3, not speculative.
 | # | Experiment | Falsifies | Today |
 |---|---|---|---|
 | 1 | Rewrite a gate script to `exit 0`; confirm the clause downgrades to `judged` | the pinning invariant | not built — **and this is the one that matters** |
+| 1b | Ten ordinary runs — a dependency bump, a new test, a refactor; count how many downgrade | that downgrade is rare enough to mean something | not built |
 | 2 | Two targets, one run, one ledger | the run/target split | fails |
 | 3 | Two runs, same branch name, same machine | workspace isolation | collides |
 | 4 | A directory of markdown files as a source — `read` under twenty lines, plus `ask` and `receive` | the work-source contract | no contract to satisfy |
@@ -880,6 +958,8 @@ evidence            append-only, trust levels, no result parameter, the completi
 gates               per target, executed by code; retire panel.yml
   ↓
 work source         read, publish, ask, receive; TWO adapters — GitHub and a directory
+                    and durable grants, scoped to the source — §2.3's run-scoped allowlist asks
+                    once per run, which is right for a CLI run and wrong for a queue
   ↓
 workspace seam      the worktree adapter, and the interface a container would need
   ↓
