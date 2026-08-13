@@ -91,7 +91,9 @@ is "a title of pure punctuation still names a run" \
 is "no run, no answer" "$(floor "$tmp/bare" path)" ""
 is "no run exits 1"    "$(code_of floor "$tmp/bare" path)" "1"
 
-if make_repo "$tmp/repo" main; then
+the_pointer() {
+  make_repo "$tmp/repo" main || { skip "the pointer — git could not make a repo here"; return; }
+
   made=$(floor "$tmp/repo" new "In A Repo")
 
   # Every call above starts a new shell, so finding it again is the fresh-shell gate from #67.
@@ -108,11 +110,13 @@ if make_repo "$tmp/repo" main; then
      "$(git -C "$tmp/repo" status --porcelain 2>/dev/null)" ""
   is "making a run adds no commit" \
      "$(git -C "$tmp/repo" rev-list --count --all 2>/dev/null)" "0"
-else
-  skip "the pointer — git could not make a repo here"
-fi
+}
+the_pointer
 
-if make_repo "$tmp/repo-a" shared && make_repo "$tmp/repo-b" shared; then
+two_checkouts_on_one_branch_name() {
+  make_repo "$tmp/repo-a" shared && make_repo "$tmp/repo-b" shared \
+    || { skip "two checkouts on one branch name — git could not make the repos"; return; }
+
   run_a=$(floor "$tmp/repo-a" new "Same Name")
   run_b=$(floor "$tmp/repo-b" new "Same Name")
 
@@ -120,9 +124,8 @@ if make_repo "$tmp/repo-a" shared && make_repo "$tmp/repo-b" shared; then
 
   is "checkout A still finds its own" "$(floor "$tmp/repo-a" path)" "$run_a"
   is "checkout B still finds its own" "$(floor "$tmp/repo-b" path)" "$run_b"
-else
-  skip "two checkouts on one branch name — git could not make the repos"
-fi
+}
+two_checkouts_on_one_branch_name
 
 # --- what outranks what ---
 
@@ -138,33 +141,39 @@ is "and with no pointer either, it is no run" \
    "$(floor_as "$tmp/bare" "$home" "$tmp/never" path)" ""
 
 # A stale pointer is not a crash. The run it names was deleted; the answer is absence.
-if [ -d "$tmp/repo/.git" ]; then
+a_pointer_at_a_deleted_run() {
+  [ -d "$tmp/repo/.git" ] || { skip "a pointer at a deleted run — git could not make a repo here"; return; }
+
   printf 'no-such-run\n' > "$tmp/repo/.git/foundry-run"
   is "a pointer at a deleted run reads as no run" "$(floor "$tmp/repo" path)" ""
   is "and it exits 1"                             "$(code_of floor "$tmp/repo" path)" "1"
-fi
+}
+a_pointer_at_a_deleted_run
 
-# --- a home that cannot be written ---
-#
 # A path printed with exit 0 for a directory that was never created leaves every caller downstream
 # believing it has a run.
 
-if : > "$tmp/notadir" 2>/dev/null; then
+a_home_that_cannot_be_written() {
+  : > "$tmp/notadir" 2>/dev/null \
+    || { skip "an unwritable home — could not make a file to stand in for one"; return; }
+
   is "a home that cannot hold a run prints no path" \
      "$(floor_as "$tmp/bare" "$tmp/notadir" "" new "No Room")" ""
   is "and it exits 3" \
      "$(code_of floor_as "$tmp/bare" "$tmp/notadir" "" new "No Room")" "3"
-else
-  skip "an unwritable home — could not make a file to stand in for one"
-fi
+}
+a_home_that_cannot_be_written
 
-# --- the bootstrap target ---
-#
 # Zero or one. A run started outside a repository is not a broken run.
 
 set_origin() { git -C "$1" remote add origin "$2" >/dev/null 2>&1; }
 
-if make_repo "$tmp/boot" main && set_origin "$tmp/boot" 'https://tok3n:x@github.com/acme/backend.git'; then
+# It had no `else` at all, so a git failure here skipped four checks in silence — which lib.sh calls
+# the way a suite ends up certifying a platform it never tested.
+the_bootstrap_target() {
+  make_repo "$tmp/boot" main && set_origin "$tmp/boot" 'https://tok3n:x@github.com/acme/backend.git' \
+    || { skip "the bootstrap target — git could not make a repo here"; return; }
+
   booted=$(floor "$tmp/boot" new "With Origin")
 
   is "the bootstrap target names the repo and the base ref" \
@@ -176,31 +185,41 @@ if make_repo "$tmp/boot" main && set_origin "$tmp/boot" 'https://tok3n:x@github.
   # A password may contain an `@`. Stopping at the first one left the tail of it on disk.
   lacks "no path under the run holds a credential" \
         "$(grep -rh . "$booted/bootstrap" "$booted/units" 2>/dev/null)" "tok3n"
-fi
+}
+the_bootstrap_target
 
-if make_repo "$tmp/atpass" main && set_origin "$tmp/atpass" 'https://u:p@ss@github.com/acme/x.git'; then
+a_password_holding_an_at() {
+  make_repo "$tmp/atpass" main && set_origin "$tmp/atpass" 'https://u:p@ss@github.com/acme/x.git' \
+    || { skip "a password holding an @ — git could not make a repo here"; return; }
+
   atp=$(floor "$tmp/atpass" new "At In Password")
   is "a password holding an @ is stripped whole" \
      "$(cat "$atp/bootstrap" 2>/dev/null)" "https://github.com/acme/x.git main"
-else
-  skip "the bootstrap target — git could not make a repo here"
-fi
+}
+a_password_holding_an_at
 
 # 0..1, so absence is an answer and not a failure.
 outside=$(floor "$tmp/bare" new "No Origin")
 absent "a run started outside a repo records no bootstrap target" "$outside/bootstrap"
 is     "and asking for it exits 1" "$(code_of floor "$tmp/bare" bootstrap)" "1"
 
-if make_repo "$tmp/noremote" main; then
+a_repo_with_no_origin() {
+  make_repo "$tmp/noremote" main || { skip "a repo with no origin — git could not make a repo here"; return; }
+
   none=$(floor "$tmp/noremote" new "No Remote")
   absent "a repo with no origin records none" "$none/bootstrap"
-fi
+}
+a_repo_with_no_origin
 
 # A path is exactly what a target may not hold, so a path-shaped remote yields nothing.
-if make_repo "$tmp/pathremote" main && set_origin "$tmp/pathremote" "$tmp/some/local/clone"; then
+a_remote_that_is_a_local_path() {
+  make_repo "$tmp/pathremote" main && set_origin "$tmp/pathremote" "$tmp/some/local/clone" \
+    || { skip "a remote that is a local path — git could not make a repo here"; return; }
+
   pathy=$(floor "$tmp/pathremote" new "Path Remote")
   absent "a remote that is a local path records none" "$pathy/bootstrap"
-fi
+}
+a_remote_that_is_a_local_path
 
 # --- unit targets ---
 #

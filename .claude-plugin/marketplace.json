@@ -13,7 +13,7 @@
       "name": "kernel",
       "source": "./plugins/kernel",
       "description": "Universal cognitive kernel. Stack-agnostic thinking patterns, memory management, and planning tools.",
-      "version": "1.12.2"
+      "version": "1.12.3"
     },
     {
       "name": "panel",
@@ -43,13 +43,13 @@
       "name": "signal",
       "source": "./plugins/signal",
       "description": "Plain English harness. States the budget before the agent writes, and reads what came back.",
-      "version": "0.3.1"
+      "version": "0.3.2"
     },
     {
       "name": "floor",
       "source": "./plugins/floor",
       "description": "Where work happens. A run is one attempt at one work item, held outside every repository it changes.",
-      "version": "0.2.5"
+      "version": "0.2.6"
     }
   ]
 }

@@ -71,20 +71,18 @@ is "junk that is not JSON exits 1" "$(status tool_input.file_path 'not json at a
 is "an empty payload exits 1" "$(status tool_input.file_path '')" "1"
 is "a truncated payload exits 1" "$(status b '{"a":1')" "1"
 
-# --- and it always finishes ---
-#
 # Every branch of the walk has to move the cursor. A stray `]` is its own terminator, so the scan
 # for a bare token stops where it started, and without a guard the reader rereads that character
 # until the hook's timeout kills it. A malformed payload should cost an exit code, not a turn.
+it_always_finishes() {
+  have_timeout || { skip "malformed payloads — no timeout here, so a hang could not be told from a pass"; return; }
 
-if have_timeout; then
   for junk in '{"a":]}' '{"a":}' '{]' '{"a":[1,2}' '{{{{' '}}}}'; do
     rc=$(bounded a "$junk")
     [ "$rc" = "124" ] && bad "malformed payload hung the reader — $junk" \
                       || ok "malformed payload terminates — $junk"
   done
-else
-  skip "malformed payloads — no timeout here, so a hang could not be told from a pass"
-fi
+}
+it_always_finishes
 
 summary "unjson"

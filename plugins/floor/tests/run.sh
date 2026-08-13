@@ -177,11 +177,14 @@ wreck "a hook that ships but is never wired is caught" nowire unwire
 wreck "an announce hook that says nothing is caught"   quiet  mute
 wreck "a hook moved to an event that cannot inject is caught" event misfire
 
-if records_exec; then
+audit_the_executable_bit() {
+  records_exec || {
+    printf '  skip  a hook that lost its executable bit — this filesystem records no such bit\n'
+    return
+  }
   wreck "a hook that lost its executable bit is caught" nox unhook
-else
-  printf '  skip  a hook that lost its executable bit — this filesystem records no such bit\n'
-fi
+}
+audit_the_executable_bit
 
 echo
 [ "$failed" -eq 0 ] && echo "ALL GREEN" || echo "FAILURES ABOVE"

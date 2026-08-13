@@ -78,11 +78,11 @@ audit_the_reader() {
   # `timeout`, so there the mutation is skipped rather than left to stall the runner for its full
   # job budget.
   #
-  if command -v timeout >/dev/null 2>&1; then
-    audit "a reader that can trap its cursor is caught" 's|if (j == i) { i++; continue }|if (j == i) { i = i }|' cursor
-  else
+  command -v timeout >/dev/null 2>&1 || {
     printf '  skip  a reader that can trap its cursor — no timeout here to bound the runaway\n'
-  fi
+    return
+  }
+  audit "a reader that can trap its cursor is caught" 's|if (j == i) { i++; continue }|if (j == i) { i = i }|' cursor
 }
 
 #
@@ -122,14 +122,7 @@ audit_the_lib_scripts() {
   echo
   echo "audit — break a lib script, the memory suite must notice"
 
-  # Both of resolve-memory.sh's redirects at once. The rule is never `&>` anywhere in that file, so
-  # a break that put the bashism back in one place would leave the other unguarded. The leading
-  # space keeps it off the header line, which quotes the redirect it forbids.
-  if sh_is_bash; then
-    printf '  skip  a bash-only redirect put back — this sh is bash, where it is not a bug\n'
-  else
-    wreck_lib "a bash-only redirect put back is caught" amp resolve-memory.sh 's| >/dev/null 2>&1| \&>/dev/null|'
-  fi
+  audit_the_redirect
 
   wreck_lib "an objective parser that keeps placeholders is caught" tbd extract-objective.sh 's|^  "\["\*"\]") exit 0 ;;|  "no-such-case") exit 0 ;;|'
 
@@ -137,6 +130,17 @@ audit_the_lib_scripts() {
   # never fires at all. Every memory hook goes quiet rather than loud on the first.
   wreck_lib "a resolver that trusts a deleted run is caught"  ghost  resolve-memory.sh 's|\[ -d "$FOUNDRY_RUN" \]|\[ -n "$FOUNDRY_RUN" \]|'
   wreck_lib "a resolver that ignores an active run is caught" norung resolve-memory.sh 's|if \[ -n "${FOUNDRY_RUN:-}" \] |if \[ -z "${FOUNDRY_RUN:-}" \] |'
+}
+
+# Both of resolve-memory.sh's redirects at once. The rule is never `&>` anywhere in that file, so a
+# break that put the bashism back in one place would leave the other unguarded. The leading space
+# keeps it off the header line, which quotes the redirect it forbids.
+audit_the_redirect() {
+  sh_is_bash && {
+    printf '  skip  a bash-only redirect put back — this sh is bash, where it is not a bug\n'
+    return
+  }
+  wreck_lib "a bash-only redirect put back is caught" amp resolve-memory.sh 's| >/dev/null 2>&1| \&>/dev/null|'
 }
 
 # Break one thing about a lib script and require the suite to notice.
@@ -165,11 +169,7 @@ audit_the_install() {
   echo
   echo "audit — break the install, the install suite must notice"
 
-  if records_exec; then
-    wreck "a hook that lost its executable bit is caught" nox unhook
-  else
-    printf '  skip  a hook that lost its executable bit — this filesystem records no such bit\n'
-  fi
+  audit_the_executable_bit
 
   wreck "a hook checked out with CRLF is caught"        crlf   crlf
   wreck "an unquoted plugin root is caught"             noquot unquote
@@ -179,11 +179,19 @@ audit_the_install() {
   wreck "hooks.json pointing at nothing is caught"      nofile rewire
   wreck "a hook that ships but is never wired is caught" nowire unwire
 
-  if sh_is_bash; then
+  sh_is_bash && {
     printf '  skip  a bash-only variable put back — this sh is bash, where it still resolves\n'
-  else
-    wreck "a bash-only variable put back is caught"     bsrc   bashism
-  fi
+    return
+  }
+  wreck "a bash-only variable put back is caught"       bsrc   bashism
+}
+
+audit_the_executable_bit() {
+  records_exec || {
+    printf '  skip  a hook that lost its executable bit — this filesystem records no such bit\n'
+    return
+  }
+  wreck "a hook that lost its executable bit is caught" nox unhook
 }
 
 # Break one thing about the install and require the suite to notice.

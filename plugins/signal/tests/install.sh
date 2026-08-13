@@ -105,28 +105,33 @@ out=$(fire UserPromptSubmit '{"session_id":"install-'"$$"'","prompt":"go","hook_
 has "the wired UserPromptSubmit command states the budget" "$out" '120 words'
 has "and it points at the skill"                           "$out" 'signal:plain-english'
 
-# --- a path with a space in it ---
 # `C:\Users\John Smith` and `/Users/me/My Plugins` are both ordinary. An unquoted variable in
 # hooks.json splits on that space and the hook never starts.
+#
+# The copy was unguarded, so a filesystem that refuses the name turned this red for the copy rather
+# than for the wiring — a check reporting something it never tested. kernel guards the same one.
+a_path_with_a_space_in_it() {
+  cp -R "$root" "$tmp/with space" 2>/dev/null \
+    || { skip "a space in the path — could not copy the plugin here"; return; }
 
-cp -R "$root" "$tmp/with space" 2>/dev/null
-out=$(fire Stop "$(stop "$blocking")" "$tmp/with space")
-has "the wired command survives a space in the path" "$out" '"decision":"block"'
+  out=$(fire Stop "$(stop "$blocking")" "$tmp/with space")
+  has "the wired command survives a space in the path" "$out" '"decision":"block"'
+}
+a_path_with_a_space_in_it
 
-# --- the files can start ---
 # hooks.json names `sh` now, so the shell no longer needs this bit to start the hook. Keep it
 # anyway. It is what a reader checks first when a hook goes quiet, and its absence is what made the
 # old wiring — a bare path, no interpreter — fail on every install.
+the_files_can_start() {
+  records_exec || { skip "executable bits — this filesystem does not record them"; return; }
 
-if records_exec; then
   for file in $(shipped); do
     case "$file" in
       *.sh) [ -x "$file" ] && ok "executable — ${file##*/}" || bad "not executable — ${file##*/}" ;;
     esac
   done
-else
-  skip "executable bits — this filesystem does not record them"
-fi
+}
+the_files_can_start
 
 # --- line endings ---
 # Git for Windows clones with core.autocrlf=true. A hook that arrives with CRLF does not merely
@@ -166,12 +171,13 @@ strippable() {
   PATH="$tmp/noawk" "$tmp/noawk/sh" -c 'exit 0' 2>/dev/null
 }
 
-if strippable; then
+the_preflight_with_no_awk() {
+  strippable || { skip "the preflight with no awk — this platform cannot build a PATH without it"; return; }
+
   out=$(printf '{"source":"startup"}' | env PATH="$tmp/noawk" CLAUDE_PLUGIN_ROOT="$root" sh -c "$(command_for SessionStart)" 2>/dev/null)
   has "with no awk the preflight speaks up" "$out" '"systemMessage"'
   has "and it names what is missing"        "$out" 'awk'
-else
-  skip "the preflight with no awk — this platform cannot build a PATH without it"
-fi
+}
+the_preflight_with_no_awk
 
 summary "install"

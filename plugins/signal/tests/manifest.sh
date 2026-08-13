@@ -76,11 +76,9 @@ done
 # score.awk owns every default. A hook that names one again is a second gate, free to part company
 # with the first: the block lines were raised in the scorer while the hook kept passing the old
 # ones, and nothing was red.
-if grep -qE 'SIGNAL_[A-Z_]+:-[0-9]' "$root/hooks/"*.sh; then
-  bad "a hook restates a default — score.awk owns them, pass the dial through empty instead"
-else
-  ok "no hook restates a default"
-fi
+grep -qE 'SIGNAL_[A-Z_]+:-[0-9]' "$root/hooks/"*.sh \
+  && bad "a hook restates a default — score.awk owns them, pass the dial through empty instead" \
+  || ok "no hook restates a default"
 
 # --- no word data ships ---
 

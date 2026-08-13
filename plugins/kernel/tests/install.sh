@@ -180,16 +180,16 @@ is  "consider is quiet when it cannot read a path" \
 has "content holding a decoy path does not fool it" \
     "$(fire consider.sh '{"tool_input":{"file_path":"/app/src/A.php","content":"{\"file_path\":\"/x.md\"}"}}')" "additionalContext"
 
-# --- a path with a space in it ---
 # `C:\Program Files\ClaudeCode\plugins` is where Windows actually puts this. An unquoted variable in
 # hooks.json splits on that space and the hook never starts.
+a_path_with_a_space_in_it() {
+  cp -R "$root" "$tmp/with space" 2>/dev/null \
+    || { skip "a space in the path — could not copy the plugin here"; return; }
 
-if cp -R "$root" "$tmp/with space" 2>/dev/null; then
   has "the wired command survives a space in the path" \
       "$(FIRE_ROOT="$tmp/with space" fire ground.sh '{"source":"startup"}')" "GROUND NOW"
-else
-  skip "a space in the path — could not copy the plugin here"
-fi
+}
+a_path_with_a_space_in_it
 
 # --- the scripts parse where they will be run ---
 # `sh -n` reads without running. It is the cheapest way to catch a bashism that would otherwise wait
@@ -202,21 +202,20 @@ for file in $(runtime_files); do
   esac
 done
 
-# --- the files can start ---
 # hooks.json names `sh` now, so the shell no longer needs this bit to start a hook. Keep it anyway.
 # It is what a reader checks first when a hook goes quiet, and its absence is what made the old
 # wiring — a bare path, no interpreter — fail on every install that recorded it.
+the_files_can_start() {
+  records_exec || { skip "executable bits — this filesystem does not record them"; return; }
 
-if records_exec; then
   for file in $(runtime_files); do
     case "$file" in
       */lib/*.awk) ;;
       *.sh) [ -x "$file" ] && ok "executable — ${file##*/}" || bad "not executable — ${file##*/}" ;;
     esac
   done
-else
-  skip "executable bits — this filesystem does not record them"
-fi
+}
+the_files_can_start
 
 # --- line endings ---
 # Git for Windows clones with core.autocrlf=true. A hook that arrives with CRLF does not merely
@@ -256,13 +255,14 @@ strippable() {
   PATH="$tmp/noawk" "$tmp/noawk/sh" -c 'exit 0' 2>/dev/null
 }
 
-if strippable; then
+the_preflight_with_no_awk() {
+  strippable || { skip "the preflight with no awk — this platform cannot build a PATH without it"; return; }
+
   out=$(printf '{"source":"startup"}' \
     | env PATH="$tmp/noawk" CLAUDE_PLUGIN_ROOT="$root" sh -c "$(command_for preflight.sh)" 2>/dev/null)
   has "with no awk the preflight speaks up" "$out" '"systemMessage"'
   has "and it names what is missing"        "$out" 'awk'
-else
-  skip "the preflight with no awk — this platform cannot build a PATH without it"
-fi
+}
+the_preflight_with_no_awk
 
 summary "install"

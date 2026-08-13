@@ -143,11 +143,14 @@ unbrief() { sed 's|hooks/brief.sh|hooks/gone.sh|'  "$1/hooks/hooks.json" | rewri
 unnote()  { sed 's|^note |: |'                     "$1/hooks/signal.sh"  | rewrite "$1/hooks/signal.sh"; }
 unread()  { sed 's|^last=.*|last=|'                "$1/hooks/brief.sh"   | rewrite "$1/hooks/brief.sh"; }
 
-if records_exec; then
+audit_the_executable_bit() {
+  records_exec || {
+    printf '  skip  a hook that lost its executable bit — this filesystem records no such bit\n'
+    return
+  }
   wreck "a hook that lost its executable bit is caught" nox unhook
-else
-  printf '  skip  a hook that lost its executable bit — this filesystem records no such bit\n'
-fi
+}
+audit_the_executable_bit
 
 wreck "a hook checked out with CRLF is caught"        nolf   crlf
 wreck "an unquoted plugin root is caught"             noquot unquote
