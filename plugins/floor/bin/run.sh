@@ -13,6 +13,8 @@
 #   3  nowhere to put a run, or the home cannot be written to
 #   4  a target was refused: no portable identity, or a ref that is not one
 #   5  a target was refused: nobody authorised it for this run
+#   6  a clause was refused: it would weaken the charter, or its pin could not be captured
+#   7  the charter disagrees with its pins — something drifted or went missing
 
 set -u
 
@@ -31,6 +33,7 @@ main() {
         bootstrap) print_bootstrap ;;
         targets)   targets "$@" ;;
         policy)    policy "$@" ;;
+        charter)   charter "$@" ;;
         *)         usage; exit 2 ;;
     esac
 }
@@ -47,6 +50,11 @@ floor — where work happens.
   run.sh targets add <repo> <ref> add one
   run.sh policy                   list what this run may change
   run.sh policy authorize <repo>  let this run change one more
+  run.sh charter                  print what must be true for this run to be good
+  run.sh charter derive           derive clauses from this repository, pinned at its base
+  run.sh charter check            report clauses that drifted from their pins, or went missing
+  run.sh charter introduce <kind> <text>
+                                  add a clause nothing derived — it stays introduced
 EOF
 }
 
@@ -440,6 +448,265 @@ is_usable_ref() {
         /* | *[!-A-Za-z0-9_./]*) return 1 ;;
     esac
     return 0
+}
+
+# --- charter ---
+#
+# What must be true for this run to be good.
+#
+# Two records, sharing an id:
+#
+#     clause  <id>  Gate|Judged|Decided  <text>
+#     pin     <id>  <target>  <ref>  <source>  <sha>
+#
+# One clause, many pins — a clause whose meaning comes from two repositories names both. They are
+# separate records because inline pins make dropping a target and deleting a clause the same edit,
+# and monotonicity has to tell those apart.
+#
+# The charter lives inside the run. Grants do not, which is why a reclaimed slot could inherit them
+# — see `slot_is_free`. Nothing can inherit a charter, because deleting a run deletes it.
+#
+# Not a security boundary. The worker can write this file as the same user. What it buys is that no
+# accident moves the bar, and that a moved one is visible to `check`.
+
+charter() {
+    dir=$(active_run) || exit 1
+
+    case "${1:-}" in
+        '')        cat "$(charter_file "$dir")" 2>/dev/null; return 0 ;;
+        derive)    derive_charter "$dir" ;;
+        check)     check_charter "$dir" ;;
+        introduce) shift; introduce_clause "$dir" "${1:-}" "${2:-}" ;;
+        *)         usage; exit 2 ;;
+    esac
+}
+
+charter_file() { printf '%s/charter' "$1"; }
+
+#
+# A clause's identity is its meaning, so re-deriving the same clause finds the same record rather
+# than adding a second. `cksum` is POSIX and everywhere; no hashing tool needs installing.
+#
+# **The kind is not part of it.** Folding it in gave `Gate: tests` and `Decided: tests` different
+# ids, so the weakening check looked for a clause that could never be there and monotonicity was
+# decorative. One meaning, one clause, one strength.
+#
+clause_id() { printf '%s' "$1" | cksum | awk '{ print $1 }'; }
+
+# How hard a clause is to satisfy. A `Gate:` must pass a command; a `Decided:` needs only a person to
+# say so. Turning the first into the second is the weakening invariant 3 refuses.
+strength() {
+    case "$1" in
+        Gate)    printf '3' ;;
+        Judged)  printf '2' ;;
+        Decided) printf '1' ;;
+        *)       printf '0' ;;
+    esac
+}
+
+is_kind() { [ "$(strength "$1")" != 0 ]; }
+
+#
+# Clause text is one line of a line-oriented file. A newline in it would be a second record.
+#
+# Measured, not matched. `case "$x" in *"$(printf '\n')"*)` looks right and is not: command
+# substitution strips trailing newlines, so the pattern is `*""*` and matches everything.
+#
+is_one_line() {
+    [ -n "$1" ] || return 1
+    [ "$(printf '%s' "$1" | tr -d '\n\r\t' | wc -c)" -eq "$(printf '%s' "$1" | wc -c)" ]
+}
+
+# What the charter already says about one meaning, or nothing.
+clause_kind() {
+    awk -v want="$2" '$1 == "clause" && $2 == want { print $3; exit }' "$1" 2>/dev/null
+}
+
+print_clause() { printf 'clause %s %s %s\n' "$1" "$2" "$3"; }
+print_pin()    { printf 'pin %s %s %s %s %s\n' "$1" "$2" "$3" "$4" "$5"; }
+
+#
+# What a gate name resolved to at the base.
+#
+# A third record, not a sixth field on `pin`. A pin says where a clause's meaning came from; this
+# says what that meaning currently resolves to, and only gates have one. Folding it into `pin` would
+# make the record variable-length for one kind of clause, and `check` needs both facts separately:
+# a moved source and a moved command are different findings.
+#
+print_gate() { printf 'gate %s %s\n' "$1" "$2"; }
+
+# The command a gate resolved to when the charter was written.
+pinned_command() {
+    awk -v want="$2" '$1 == "gate" && $2 == want { $1 = ""; $2 = ""; sub(/^  /, ""); print; exit }' \
+        "$1" 2>/dev/null
+}
+
+# Resolve this repository's gates. The only caller of the one file that knows what an ecosystem is.
+detect_gates() { sh "$(dirname "$0")/../lib/detect-gates.sh" "$1" 2>/dev/null; }
+
+# The sha of one path at one ref. Empty means it could not be captured, and a pin that cannot be
+# captured is not written — `write_bootstrap`'s rule, for the same reason.
+#
+# `--verify`, or a failure looks like an answer.
+#
+# Plain `git rev-parse main:Makefile` sends its `fatal:` to stderr and then echoes `main:Makefile` to
+# stdout. Discarding stderr leaves that string looking exactly like a captured sha, and it gets
+# pinned. `--verify --quiet` prints nothing and exits non-zero.
+#
+blob_sha() { git rev-parse --verify --quiet "$1:$2" 2>/dev/null; }
+
+#
+# Derive clauses from the repository this is run in.
+#
+# Only this repository, because a target is declared and never cloned — §2.3. There is nothing on
+# disk to read for any other target until the workspace seam exists, so clauses for those targets
+# cannot be derived yet, and inventing them would be introduction wearing provenance.
+#
+derive_charter() {
+    dir=$1
+    boot=$(bootstrap_identity "$dir") || {
+        note "this run has no bootstrap target, so there is nothing to derive from"
+        exit 1
+    }
+    here=$(repo_identity "$(git remote get-url origin 2>/dev/null)" 2>/dev/null) || here=''
+    [ "$here" = "$boot" ] || {
+        note "run \`charter derive\` inside [$boot], not [${here:-nowhere}]"
+        exit 6
+    }
+
+    ref=$(awk 'NR == 1 { print $2; exit }' "$dir/bootstrap")
+    file=$(charter_file "$dir")
+    draft="$file.draft"
+
+    # Everything is checked and staged before the charter moves. A refusal leaves it untouched.
+    : > "$draft" || die_unwritable "$draft"
+    detect_gates . | while_reading_gates "$file" "$draft" "$boot" "$ref" || {
+        rm -f "$draft"
+        exit 6
+    }
+
+    keep_introduced "$file" >> "$draft" || { rm -f "$draft"; die_unwritable "$draft"; }
+    mv "$draft" "$file" || die_unwritable "$file"
+}
+
+#
+# Turn each detected gate into a clause, a pin and a resolution.
+#
+# Refuses rather than notes: a gate whose source has no sha at the base ref is a pin that cannot be
+# captured, and half a record is worse than none.
+#
+while_reading_gates() {
+    held=$1; draft=$2; target=$3; ref=$4
+
+    while read -r name source command; do
+        [ -n "$name" ] || continue
+
+        id=$(clause_id "$name")
+        was=$(clause_kind "$held" "$id")
+        [ -z "$was" ] || [ "$(strength "$was")" -ge "$(strength Gate)" ] || {
+            note "refusing to weaken [$name] from $was"
+            return 1
+        }
+
+        sha=$(blob_sha "$ref" "$source")
+        [ -n "$sha" ] || { note "no sha for [$source] at [$ref] — pin refused"; return 1; }
+
+        print_clause "$id" Gate "$name" >> "$draft"
+        print_pin    "$id" "$target" "$ref" "$source" "$sha" >> "$draft"
+        print_gate   "$id" "$command" >> "$draft"
+    done
+    return 0
+}
+
+# Clauses nothing derived survive a re-derivation. Losing them would make `derive` a silent deletion.
+keep_introduced() {
+    [ -f "$1" ] || return 0
+    awk '$1 == "clause" { held[$2] = $0 }
+         $1 == "pin"    { pinned[$2] = 1 }
+         END { for (id in held) if (!(id in pinned)) print held[id] }' "$1"
+}
+
+#
+# Compare the charter against what its pins say now.
+#
+# A charter derived once and trusted after is a bar the worker can move in silence. This is the
+# moment that catches it — and only accident and unattended drift, because a worker editing the
+# charter and its pins together defeats it. That is the workspace boundary's, and it does not exist.
+#
+check_charter() {
+    dir=$1
+    file=$(charter_file "$dir")
+    [ -f "$file" ] || { note "this run has no charter"; exit 1; }
+
+    # Captured, not accumulated in a variable: every reader below walks a pipe, and a count raised
+    # inside one dies with its subshell. Output survives; a flag would not.
+    findings=$(
+        unpinned_clauses "$file"
+        moved_sources "$file"
+        moved_resolutions "$file"
+        deleted_clauses "$file"
+    )
+
+    [ -n "$findings" ] || return 0
+    printf '%s\n' "$findings"
+    exit 7
+}
+
+# A clause resting on a target it never pinned.
+unpinned_clauses() {
+    awk '$1 == "clause" { kind[$2] = $3; text[$2] = $4 }
+         $1 == "pin"    { pinned[$2] = 1 }
+         $1 == "gate"   { resolved[$2] = 1 }
+         END { for (id in resolved) if (!(id in pinned)) printf "unpinned: %s %s\n", kind[id], text[id] }' "$1"
+}
+
+# A pinned artifact whose sha no longer matches. The bar may have moved under the clause.
+moved_sources() {
+    while read -r record id target ref source sha; do
+        [ "$record" = pin ] || continue
+        [ "$(blob_sha "$ref" "$source")" = "$sha" ] && continue
+        printf 'moved: %s at %s@%s\n' "$source" "$target" "$ref"
+    done < "$1"
+}
+
+#
+# A gate name that resolves to a different command than it did at the base.
+#
+# Separate from a moved source, because they catch different hands. Editing `.foundry/gates` moves a
+# sha. Adding a file the detector prefers moves the answer while every pinned sha still matches.
+#
+moved_resolutions() {
+    detect_gates . | while read -r name _ command; do
+        [ -n "$name" ] || continue
+        was=$(pinned_command "$1" "$(clause_id "$name")")
+        [ -n "$was" ] || continue
+        [ "$was" = "$command" ] || printf 'resolves elsewhere: %s was [%s] now [%s]\n' "$name" "$was" "$command"
+    done
+}
+
+# A clause that derives now and is not in the charter was removed after it was written.
+deleted_clauses() {
+    detect_gates . | while read -r name _ command; do
+        [ -n "$name" ] || continue
+        [ -n "$(clause_kind "$1" "$(clause_id "$name")")" ] || printf 'deleted: Gate %s\n' "$name"
+    done
+}
+
+introduce_clause() {
+    dir=$1; kind=$2; text=$3
+
+    is_kind "$kind"     || { note "a clause is Gate, Judged or Decided — not [$kind]"; exit 2; }
+    is_one_line "$text" || { note "a clause is one line of text"; exit 2; }
+
+    file=$(charter_file "$dir")
+    id=$(clause_id "$text")
+    was=$(clause_kind "$file" "$id")
+    [ -z "$was" ] || [ "$(strength "$was")" -le "$(strength "$kind")" ] || {
+        note "refusing to weaken this clause from $was to $kind"
+        exit 6
+    }
+
+    print_clause "$id" "$kind" "$text" >> "$file" || die_unwritable "$file"
 }
 
 main "$@"

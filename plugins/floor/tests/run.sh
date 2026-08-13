@@ -172,6 +172,53 @@ wreck_runner "a bootstrap that names nothing is caught" \
 wreck_runner "a grant that stores credentials is caught" \
   grantcreds 's|printf .%s\\n. "$identity" >> "$grants"|printf "%s\\n" "$repo" >> "$grants"|'
 
+# The charter lives in the run, so nothing can inherit one. Move it beside the runs and a reclaimed
+# slot would carry a dead run's definition of good — the bug policy shipped with.
+wreck_runner "a charter kept outside the run is caught" \
+  loosech 's|charter_file() { printf .%s/charter. "$1"; }|charter_file() { printf "%s/charter-%s" "$HOME_DIR" "$(basename "$1")"; }|'
+
+#
+# The bug this break exists because of.
+#
+# `git rev-parse main:Makefile` sends its `fatal:` to stderr and echoes the unresolved argument to
+# stdout, so dropping stderr leaves a string that looks exactly like a sha. It was pinned.
+#
+wreck_runner "a sha that is really an error message is caught" \
+  fakesha 's|git rev-parse --verify --quiet "$1:$2"|git rev-parse "$1:$2"|'
+
+#
+# The other one.
+#
+# Folding the kind into the id gave `Gate: tests` and `Decided: tests` different ids, so the
+# weakening check searched for a clause that could not be there and monotonicity did nothing.
+#
+wreck_runner "an id that includes the kind is caught" \
+  kindid 's|clause_id() { printf .%s. "$1"|clause_id() { printf "%s %s" "$1" "${2:-}"|'
+
+# Every kind equally strong is no ordering at all, so nothing is ever a weakening.
+wreck_runner "a strength that does not order the kinds is caught" \
+  flatstrength 's|        Gate)    printf .3. ;;|        Gate)    printf "1" ;;|'
+
+# A clause is one line of a line-oriented file. Accepting a newline makes one clause into two records.
+wreck_runner "clause text that may hold a newline is caught" \
+  twoline 's|    \[ -n "$1" \] || return 1|    [ -n "$1" ] || return 1; return 0|'
+
+# Re-deriving must not drop what nothing derived. Losing them makes `derive` a silent deletion.
+wreck_runner "a re-derivation that drops introduced clauses is caught" \
+  dropintro 's|    keep_introduced "$file" >> "$draft" .*$|    :|'
+
+# Deriving from the wrong repository pins another repo's files under this run's target.
+wreck_runner "deriving from a repository the run does not name is caught" \
+  wrongrepo 's|    \[ "$here" = "$boot" \] ||    [ "$here" != "" ] ||'
+
+# The three findings `check` exists to make. Each is the only thing that reports its own failure.
+wreck_runner "a check blind to a clause resting on nothing is caught" \
+  blindpin  's|^        unpinned_clauses "$file"$|        :|'
+wreck_runner "a check blind to a gate resolving elsewhere is caught" \
+  blindres  's|^        moved_resolutions "$file"$|        :|'
+wreck_runner "a check blind to a deleted clause is caught" \
+  blinddel  's|^        deleted_clauses "$file"$|        :|'
+
 # --- break the install ---
 
 echo

@@ -29,6 +29,9 @@ sh bin/run.sh targets
 sh bin/run.sh targets add https://github.com/acme/api.git main
 sh bin/run.sh policy
 sh bin/run.sh policy authorize https://github.com/acme/api.git
+sh bin/run.sh charter
+sh bin/run.sh charter derive
+sh bin/run.sh charter check
 ```
 
 `new` makes a run and points this checkout at it. `path` prints the active run, or exits 1.
@@ -179,6 +182,77 @@ this is a correctness mechanism, not a containment one.
 
 Policy state holds portable identities and nothing else — no local path, no credential. It outlives
 the run that wrote it and it gets read by eye.
+
+---
+
+## The charter
+
+What must be true for this run to be good. One file, in the run.
+
+```
+clause  <id>  Gate|Judged|Decided  <text>
+pin     <id>  <target>  <ref>  <source>  <sha>
+gate    <id>  <command>
+```
+
+| Kind | Truth | Checked by |
+|---|---|---|
+| `Gate:` | deterministic | code |
+| `Judged:` | meaning or quality | an independent judge |
+| `Decided:` | new meaning | a human |
+
+A clause's id is its meaning — not its kind. Fold the kind in and `Gate: tests` and `Decided: tests`
+become different clauses, so weakening one goes unnoticed.
+
+One clause may have many pins. A clause whose meaning comes from two repositories names both, each at
+its own base ref. Pins are separate records because inline ones make dropping a target and deleting a
+clause the same edit, and monotonicity has to tell those apart.
+
+A clause with no pin is **introduced**. It stays introduced. Re-deriving keeps it and never gives it
+provenance it did not earn.
+
+### A Gate names a gate
+
+`Gate: tests`, never `Gate: composer test`.
+
+`lib/detect-gates.sh` resolves the name. It is the only file here that may know an ecosystem exists,
+and nothing above it learns why. A repository declares its own gates in `.foundry/gates`; detection
+guesses when it does not.
+
+The charter pins what the detector read and records what it resolved to. `charter check` runs the
+detector again:
+
+| Finding | Means |
+|---|---|
+| `moved` | a pinned file's sha changed |
+| `resolves elsewhere` | the same gate name now yields a different command |
+| `deleted` | something derives that the charter no longer holds |
+| `unpinned` | a clause resting on nothing |
+
+Both drift findings exist because they catch different hands. Editing `.foundry/gates` moves a sha.
+Adding a file the detector prefers moves the answer while every pinned sha still matches.
+
+### Monotonicity
+
+Derivation may add or tighten. It may never remove or weaken.
+
+**The baseline is what the pinned artifacts derive now** — never a previous run's charter. A human who
+relaxes a rule commits it, and the next base carries it. A buggy derivation would otherwise become
+law. So `Decided:` clauses do not carry forward: a decision meant to last belongs in a committed file.
+
+### What this is not
+
+The charter is a file the worker can write, as the same user. `check` catches accident and
+unattended drift. It does not resist a worker editing the charter and its pins together.
+
+Containment is the workspace boundary's, and it does not exist yet.
+
+### Only this repository, for now
+
+`charter derive` reads the repository it is run in, and refuses to run anywhere else. A target is
+declared and never cloned, so there is nothing on disk to read for any other target until the
+workspace seam lands. Deriving clauses for a repository nobody checked out would be introduction
+wearing provenance.
 
 ---
 
