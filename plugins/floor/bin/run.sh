@@ -252,11 +252,21 @@ bootstrap_here() {
     printf '%s %s' "$identity" "$ref"
 }
 
-# Zero or one per run. Starting from a work source, a bare CLI call or a remote runner is equally
-# valid and records none, so absence is an answer rather than a failure.
+#
+# Zero or one per run. Two different things, and only the first is an answer:
+#
+#   no portable bootstrap can be derived    → valid absence, record none
+#   one was derived but cannot be written   → failure, and the run does not exist
+#
+# It used to note the second and carry on, which turned a lost target into a run that looked like it
+# never had one. Nothing downstream could tell them apart.
+#
+# The failure cannot be forced portably — `build_layout` creates the directory and nothing runs
+# between that and this write — so the guard ships untested rather than pretended.
+#
 write_bootstrap() {
     line=$(bootstrap_here) || return 0
-    printf '%s\n' "$line" > "$1/bootstrap" 2>/dev/null || note "could not write $1/bootstrap"
+    printf '%s\n' "$line" > "$1/bootstrap" 2>/dev/null || die_unwritable "$1/bootstrap"
 }
 
 print_bootstrap() {
