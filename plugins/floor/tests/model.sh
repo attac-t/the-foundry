@@ -75,15 +75,12 @@ has "the id carries the slug"    "$id" "-test-item-"
 
 matches "the id ends in a short id" "$id" '-[0-9a-f]{4}$'
 
-# Two checks, not one. "The ids differ" passes without the free-path loop ever running; naming the
-# slots does not.
+# Two checks, not one. "The ids differ" passes without the free-slot loop ever running; naming the
+# slot does not, and `-0001` implies the first was `-0000`.
 second=$(floor "$tmp/bare" new "Test Item")
 
 differs "two runs from one title do not collide" "$first" "$second"
-
-# The behaviour above passes without the loop ever running. Naming the second slot does not, and
-# `-0001` implies the first was `-0000`.
-has "the second run takes the next slot" "$(basename "$second")" "-0001"
+has     "the second run takes the next slot"     "$(basename "$second")" "-0001"
 
 is "a title of pure punctuation still names a run" \
    "$(basename "$(floor "$tmp/bare" new '!!!')" | sed 's/-[0-9a-f]*$//')" \
@@ -106,6 +103,7 @@ if make_repo "$tmp/repo" main; then
   is "the pointer holds the id and nothing else" \
      "$(cat "$tmp/repo/.git/foundry-run" 2>/dev/null)" "$(basename "$made")"
 
+  # And the other half of the pointer's contract: making a run changes nothing in any repository.
   is "making a run leaves the worktree clean" \
      "$(git -C "$tmp/repo" status --porcelain 2>/dev/null)" ""
   is "making a run adds no commit" \
@@ -160,7 +158,123 @@ else
   skip "an unwritable home — could not make a file to stand in for one"
 fi
 
-# --- the caller gets told ---
+# --- the bootstrap target ---
+#
+# Zero or one. A run started outside a repository is not a broken run.
+
+set_origin() { git -C "$1" remote add origin "$2" >/dev/null 2>&1; }
+
+if make_repo "$tmp/boot" main && set_origin "$tmp/boot" 'https://tok3n:x@github.com/acme/backend.git'; then
+  booted=$(floor "$tmp/boot" new "With Origin")
+
+  is "the bootstrap target names the repo and the base ref" \
+     "$(cat "$booted/bootstrap" 2>/dev/null)" "https://github.com/acme/backend.git main"
+
+  lacks "and the credential never reaches disk" "$(cat "$booted/bootstrap" 2>/dev/null)" "tok3n"
+  is    "bootstrap prints it back" "$(floor "$tmp/boot" bootstrap)" "https://github.com/acme/backend.git main"
+
+  # A password may contain an `@`. Stopping at the first one left the tail of it on disk.
+  lacks "no path under the run holds a credential" \
+        "$(grep -rh . "$booted/bootstrap" "$booted/units" 2>/dev/null)" "tok3n"
+fi
+
+if make_repo "$tmp/atpass" main && set_origin "$tmp/atpass" 'https://u:p@ss@github.com/acme/x.git'; then
+  atp=$(floor "$tmp/atpass" new "At In Password")
+  is "a password holding an @ is stripped whole" \
+     "$(cat "$atp/bootstrap" 2>/dev/null)" "https://github.com/acme/x.git main"
+else
+  skip "the bootstrap target — git could not make a repo here"
+fi
+
+# 0..1, so absence is an answer and not a failure.
+outside=$(floor "$tmp/bare" new "No Origin")
+absent "a run started outside a repo records no bootstrap target" "$outside/bootstrap"
+is     "and asking for it exits 1" "$(code_of floor "$tmp/bare" bootstrap)" "1"
+
+if make_repo "$tmp/noremote" main; then
+  none=$(floor "$tmp/noremote" new "No Remote")
+  absent "a repo with no origin records none" "$none/bootstrap"
+fi
+
+# A path is exactly what a target may not hold, so a path-shaped remote yields nothing.
+if make_repo "$tmp/pathremote" main && set_origin "$tmp/pathremote" "$tmp/some/local/clone"; then
+  pathy=$(floor "$tmp/pathremote" new "Path Remote")
+  absent "a remote that is a local path records none" "$pathy/bootstrap"
+fi
+
+# --- unit targets ---
+#
+# Named through FOUNDRY_RUN rather than a pointer: `$tmp/bare` has no git, so there is nowhere for a
+# pointer to live. That is #67's behaviour, not a fault here.
+
+# The third entry point behind the same no-run guard. `path` and `bootstrap` each had a check; this
+# one did not, so softening its guard alone would have gone unnoticed — the break that covers all
+# three cannot tell you which of them holds.
+is "targets with no run exits 1" "$(code_of floor "$tmp/bare" targets)" "1"
+
+fresh=$(floor "$tmp/bare" new "Targets")
+in_run() { floor_as "$tmp/bare" "$home" "$fresh" "$@"; }
+
+is "a fresh unit lists nothing" "$(in_run targets)" ""
+
+in_run targets add 'https://github.com/acme/api.git'   main    >/dev/null
+in_run targets add 'git@github.com:acme/web.git'       develop >/dev/null
+in_run targets add 'https://u:p@github.com/acme/m.git' v2      >/dev/null
+
+is "three targets list back in order" "$(in_run targets)" \
+"https://github.com/acme/api.git main
+git@github.com:acme/web.git develop
+https://github.com/acme/m.git v2"
+
+exists "they live under the unit" "$fresh/units/01/targets"
+absent "and not at the run root"  "$fresh/targets"
+
+is "targets add refuses a local path" \
+   "$(code_of in_run targets add "$tmp/some/clone" main)" "4"
+is "and writes nothing when it refuses" \
+   "$(in_run targets | grep -c "$tmp" || true)" "0"
+
+# `ssh://git@host` carries a login. Dropping it breaks the clone; keeping a password does not.
+in_run targets add 'ssh://git@github.com/acme/ssh.git' main >/dev/null
+has "an ssh login survives" "$(in_run targets)" "ssh://git@github.com/acme/ssh.git main"
+
+in_run targets add 'ssh://u:secret@github.com/acme/pw.git' main >/dev/null
+lacks "but an ssh password does not" "$(in_run targets)" "secret"
+
+# A `/` before the colon is a path, not a host. Without that rule a dotted directory reads as
+# scp-style and a local path gets written down.
+is "a path with a dotted segment is not scp-style" \
+   "$(code_of in_run targets add '/srv/git/v1.2:mirror' main)" "4"
+
+is "FILE:// is refused whatever its case" \
+   "$(code_of in_run targets add 'FILE:///srv/git/x.git' main)" "4"
+
+# The ref is the other half of the line, and it was going in unchecked.
+is "a ref that is a path is refused" \
+   "$(code_of in_run targets add 'https://github.com/acme/a.git' '/home/me/wip')" "4"
+is "a ref holding a newline cannot write a second target" \
+   "$(code_of in_run targets add 'https://github.com/acme/a.git' 'main
+evil')" "4"
+
+is "targets add needs both a repo and a ref" \
+   "$(code_of in_run targets add 'https://github.com/acme/api.git')" "2"
+
+before_comment=$(in_run targets | grep -c .)
+printf '# a comment\n\n' >> "$fresh/units/01/targets"
+is "comments and blank lines are not targets" "$(in_run targets | grep -c .)" "$before_comment"
+
+# The two levels stay apart. Nothing moves an advisory target into a unit — the allowlist that would
+# is the next issue.
+printf 'targets: https://github.com/attacker/evil.git main\n' >> "$fresh/item.md"
+lacks "an advisory target in item.md does not reach the unit" \
+      "$(in_run targets)" "attacker/evil"
+
+# No stored line anywhere may hold a machine-local path. Swept over the run that actually has a
+# bootstrap file too — naming `$fresh/bootstrap` alone checked a file that cannot exist.
+is "no stored line under any run holds a local path" \
+   "$(grep -rl "$tmp" "$fresh/units" "${booted:-$fresh}" 2>/dev/null | grep -c . || true)" "0"
+
+# --- asking for the wrong thing ---
 
 is "new with no title exits 2"  "$(code_of floor "$tmp/bare" new)" "2"
 is "an unknown command exits 2" "$(code_of floor "$tmp/bare" fly)" "2"

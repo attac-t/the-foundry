@@ -70,8 +70,8 @@ wired() { wiring | cut -f2 | sort -u; }
 # and by people, and nothing should wire it.
 shipped_hooks() { find "$root/hooks" -maxdepth 1 -name '*.sh' -type f | sed 's|.*/||' | sort; }
 
-# List every file the plugin needs at runtime.
-shipped() { find "$root/hooks" "$root/bin" -type f -name '*.sh' | sort; }
+# List the path of every script the plugin runs — hooks and the CLI both.
+runtime_scripts() { find "$root/hooks" "$root/bin" -type f -name '*.sh' | sort; }
 
 # Run a hook exactly as Claude Code would: its own shell, its own variable, JSON on stdin.
 fire() {
@@ -123,7 +123,8 @@ for script in $(wired); do
 done
 
 # --- the wiring is the portable form ---
-# Three checks for the three ways kernel's wiring failed on Windows.
+# Four ways the wiring fails, in the order checked below: no interpreter, no declared shell, an event
+# that cannot inject, an unquoted root. kernel or signal shipped every one of them.
 
 for script in $(wired); do
   case "$(command_for "$script")" in
@@ -171,7 +172,7 @@ fi
 # `sh -n` reads without running. The cheapest way to catch a bashism that would otherwise wait for
 # the one user whose /bin/sh is dash.
 
-for file in $(shipped); do
+for file in $(runtime_scripts); do
   sh -n "$file" 2>/dev/null && ok "parses under sh — ${file##*/}" \
                             || bad "will not parse under sh — ${file##*/}"
 done
@@ -179,7 +180,7 @@ done
 # --- the files can start ---
 
 if records_exec; then
-  for file in $(shipped); do
+  for file in $(runtime_scripts); do
     [ -x "$file" ] && ok "executable — ${file##*/}" || bad "not executable — ${file##*/}"
   done
 else
@@ -191,7 +192,7 @@ fi
 # fail: the shell dies parsing it.
 
 crlf=0
-for file in $(shipped); do
+for file in $(runtime_scripts); do
   has_cr "$file" && { crlf=1; bad "carriage returns — ${file##*/} would not run on Windows"; }
 done
 [ "$crlf" -eq 0 ] && ok "every shipped file is LF only"
