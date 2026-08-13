@@ -207,6 +207,11 @@ fi
 # Named through FOUNDRY_RUN rather than a pointer: `$tmp/bare` has no git, so there is nowhere for a
 # pointer to live. That is #67's behaviour, not a fault here.
 
+# The third entry point behind the same no-run guard. `path` and `bootstrap` each had a check; this
+# one did not, so softening its guard alone would have gone unnoticed — the break that covers all
+# three cannot tell you which of them holds.
+is "targets with no run exits 1" "$(code_of floor "$tmp/bare" targets)" "1"
+
 fresh=$(floor "$tmp/bare" new "Targets")
 in_run() { floor_as "$tmp/bare" "$home" "$fresh" "$@"; }
 
