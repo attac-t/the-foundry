@@ -13,7 +13,7 @@
       "name": "kernel",
       "source": "./plugins/kernel",
       "description": "Universal cognitive kernel. Stack-agnostic thinking patterns, memory management, and planning tools.",
-      "version": "1.12.1"
+      "version": "1.12.2"
     },
     {
       "name": "panel",
