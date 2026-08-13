@@ -85,7 +85,7 @@ shipped() { find "$root/hooks" -type f \( -name '*.sh' -o -name '*.awk' \) | sor
 fire() {
   ( cd "${FIRE_CWD:-$tmp/bare}" 2>/dev/null || exit 0
     printf '%s' "$2" \
-      | CLAUDE_PLUGIN_ROOT="${FIRE_ROOT:-$root}" CLAUDE_MEMORY_DIR="$tmp/mem" TMPDIR="$tmp" \
+      | CLAUDE_PLUGIN_ROOT="${FIRE_ROOT:-$root}" CLAUDE_MEMORY_DIR="$tmp/mem" FOUNDRY_RUN= TMPDIR="$tmp" \
         sh -c "$(command_for "$1")" 2>/dev/null )
 }
 
