@@ -200,8 +200,11 @@ wreck_runner "a strength that does not order the kinds is caught" \
   flatstrength 's|        Gate)    printf .3. ;;|        Gate)    printf "1" ;;|'
 
 # A clause is one line of a line-oriented file. Accepting a newline makes one clause into two records.
+#
+# `#` as the delimiter, because the text being replaced contains `||` and sed reads the first `|` as
+# the end of the pattern. The audit caught this as *sed failed* rather than passing — twice.
 wreck_runner "clause text that may hold a newline is caught" \
-  twoline 's|    \[ -n "$1" \] || return 1|    [ -n "$1" ] || return 1; return 0|'
+  twoline 's#^is_one_line() {#is_one_line() { return 0; :#'
 
 # Re-deriving must not drop what nothing derived. Losing them makes `derive` a silent deletion.
 wreck_runner "a re-derivation that drops introduced clauses is caught" \
@@ -209,7 +212,7 @@ wreck_runner "a re-derivation that drops introduced clauses is caught" \
 
 # Deriving from the wrong repository pins another repo's files under this run's target.
 wreck_runner "deriving from a repository the run does not name is caught" \
-  wrongrepo 's|    \[ "$here" = "$boot" \] ||    [ "$here" != "" ] ||'
+  wrongrepo 's#^refuse_wrong_repository() {#refuse_wrong_repository() { return 0; :#'
 
 # The three findings `check` exists to make. Each is the only thing that reports its own failure.
 wreck_runner "a check blind to a clause resting on nothing is caught" \

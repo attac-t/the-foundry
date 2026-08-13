@@ -523,6 +523,25 @@ clause_kind() {
 }
 
 print_clause() { printf 'clause %s %s %s\n' "$1" "$2" "$3"; }
+
+#
+# One record per meaning, in the place the meaning already had.
+#
+# Appending a tightened clause leaves the weaker record first, and every reader here takes the first
+# match — so the tightening was accepted, written down, and had no effect on anything.
+#
+put_clause() {
+    file=$1
+    line="clause $2 $3 $4"
+
+    awk -v id="$2" -v line="$line" \
+        '$1 == "clause" && $2 == id { print line; replaced = 1; next }
+         { print }
+         END { if (!replaced) print line }' "$file" 2>/dev/null > "$file.put" \
+        || die_unwritable "$file"
+
+    mv "$file.put" "$file" || die_unwritable "$file"
+}
 print_pin()    { printf 'pin %s %s %s %s %s\n' "$1" "$2" "$3" "$4" "$5"; }
 
 #
@@ -568,11 +587,7 @@ derive_charter() {
         note "this run has no bootstrap target, so there is nothing to derive from"
         exit 1
     }
-    here=$(repo_identity "$(git remote get-url origin 2>/dev/null)" 2>/dev/null) || here=''
-    [ "$here" = "$boot" ] || {
-        note "run \`charter derive\` inside [$boot], not [${here:-nowhere}]"
-        exit 6
-    }
+    refuse_wrong_repository "$dir"
 
     ref=$(awk 'NR == 1 { print $2; exit }' "$dir/bootstrap")
     file=$(charter_file "$dir")
@@ -585,8 +600,38 @@ derive_charter() {
         exit 6
     }
 
-    keep_introduced "$file" >> "$draft" || { rm -f "$draft"; die_unwritable "$draft"; }
+    keep_introduced "$file" "$draft" >> "$draft" || { rm -f "$draft"; die_unwritable "$draft"; }
+
+    #
+    # Derivation may add or tighten. It may never remove — RFC-001 §2.2, invariant 3.
+    #
+    # The draft is built from nothing, so a clause the detector has stopped yielding simply fails to
+    # reappear. That is a removal, and it used to happen at exit 0 with an empty charter and a silent
+    # `check`. Removing a requirement is a human act; it does not happen because a file moved.
+    #
+    lost=$(dropped_clauses "$file" "$draft")
+    [ -z "$lost" ] || {
+        rm -f "$draft"
+        note "refusing to drop what no longer derives:"
+        printf '%s\n' "$lost" >&2
+        exit 6
+    }
+
     mv "$draft" "$file" || die_unwritable "$file"
+}
+
+#
+# Clauses the charter holds that the draft does not. Empty when nothing would be lost.
+#
+# `FILENAME == draft`, never `NR == FNR`. When the draft is empty — which is exactly the case this
+# exists to catch — awk goes straight to the second file, where `NR == FNR` is still true for its
+# first line. The one clause being dropped was read as if it had been kept, so nothing was reported.
+#
+dropped_clauses() {
+    [ -f "$1" ] || return 0
+    awk -v draft="$2" '
+         FILENAME == draft { kept[$2] = 1; next }
+         $1 == "clause" && !($2 in kept) { $1 = ""; sub(/^ /, ""); print }' "$2" "$1"
 }
 
 #
@@ -602,12 +647,6 @@ while_reading_gates() {
         [ -n "$name" ] || continue
 
         id=$(clause_id "$name")
-        was=$(clause_kind "$held" "$id")
-        [ -z "$was" ] || [ "$(strength "$was")" -ge "$(strength Gate)" ] || {
-            note "refusing to weaken [$name] from $was"
-            return 1
-        }
-
         sha=$(blob_sha "$ref" "$source")
         [ -n "$sha" ] || { note "no sha for [$source] at [$ref] — pin refused"; return 1; }
 
@@ -618,12 +657,20 @@ while_reading_gates() {
     return 0
 }
 
-# Clauses nothing derived survive a re-derivation. Losing them would make `derive` a silent deletion.
+#
+# Clauses nothing derived survive a re-derivation, unless this run has just derived them.
+#
+# Without the second file, `introduce Gate tests` followed by `derive` re-appended the pin-less
+# record next to the pinned one — a duplicate clause that also reads as having provenance it was
+# never given.
+#
 keep_introduced() {
     [ -f "$1" ] || return 0
-    awk '$1 == "clause" { held[$2] = $0 }
+    awk -v draft="$2" '
+         FILENAME == draft { fresh[$2] = 1; next }
+         $1 == "clause" { held[$2] = $0 }
          $1 == "pin"    { pinned[$2] = 1 }
-         END { for (id in held) if (!(id in pinned)) print held[id] }' "$1"
+         END { for (id in held) if (!(id in pinned) && !(id in fresh)) print held[id] }' "$2" "$1"
 }
 
 #
@@ -638,6 +685,10 @@ check_charter() {
     file=$(charter_file "$dir")
     [ -f "$file" ] || { note "this run has no charter"; exit 1; }
 
+    # The same guard `derive` carries. Half of what `check` reports comes from running the detector
+    # here, so without it the answer depends on which directory you happened to be in.
+    refuse_wrong_repository "$dir"
+
     # Captured, not accumulated in a variable: every reader below walks a pipe, and a count raised
     # inside one dies with its subshell. Output survives; a flag would not.
     findings=$(
@@ -649,24 +700,60 @@ check_charter() {
 
     [ -n "$findings" ] || return 0
     printf '%s\n' "$findings"
+
+    # An uncheckable pin is reported, never counted. It says this stage cannot verify another
+    # repository from here, which is true of every multi-target charter — failing on it would make
+    # `check` useless for the shape it is meant to support.
+    printf '%s\n' "$findings" | grep -qv '^uncheckable: ' || return 0
     exit 7
 }
 
 # A clause resting on a target it never pinned.
 unpinned_clauses() {
-    awk '$1 == "clause" { kind[$2] = $3; text[$2] = $4 }
+    awk '$1 == "clause" { kind[$2] = $3; t = $0; sub(/^clause [^ ]+ [^ ]+ /, "", t); text[$2] = t }
          $1 == "pin"    { pinned[$2] = 1 }
          $1 == "gate"   { resolved[$2] = 1 }
          END { for (id in resolved) if (!(id in pinned)) printf "unpinned: %s %s\n", kind[id], text[id] }' "$1"
 }
 
+# `$4` is the first word of the clause, so a finding used to name half its own subject.
+clause_text() {
+    awk -v id="$2" '$1 == "clause" && $2 == id { $1 = ""; $2 = ""; $3 = ""; sub(/^   /, ""); print; exit }' \
+        "$1" 2>/dev/null
+}
+
+#
 # A pinned artifact whose sha no longer matches. The bar may have moved under the clause.
+#
+# Only pins on **this** repository. `git rev-parse` answers from whatever checkout it is standing
+# in, so verifying `acme/web@release` here either invents a failure, because no such ref is local,
+# or invents a pass, because a local branch of that name happens to match. Both certify a repository
+# nobody read. The rest are named as uncheckable and left to the workspace seam.
+#
 moved_sources() {
+    here=$(this_repository)
+
     while read -r record id target ref source sha; do
         [ "$record" = pin ] || continue
+        [ "$target" = "$here" ] || { printf 'uncheckable: %s at %s@%s\n' "$source" "$target" "$ref"; continue; }
         [ "$(blob_sha "$ref" "$source")" = "$sha" ] && continue
         printf 'moved: %s at %s@%s\n' "$source" "$target" "$ref"
     done < "$1"
+}
+
+# The identity of the repository this command is standing in, or nothing.
+this_repository() { repo_identity "$(git remote get-url origin 2>/dev/null)" 2>/dev/null; }
+
+# Both `derive` and `check` run the detector here, so both answer for whatever repository they are
+# standing in. Only one repository is the right one.
+refuse_wrong_repository() {
+    boot=$(bootstrap_identity "$1") || return 0
+    here=$(this_repository) || here=''
+
+    [ "$here" = "$boot" ] || {
+        note "run this inside [$boot], not [${here:-nowhere}]"
+        exit 6
+    }
 }
 
 #
@@ -706,7 +793,8 @@ introduce_clause() {
         exit 6
     }
 
-    print_clause "$id" "$kind" "$text" >> "$file" || die_unwritable "$file"
+    [ -f "$file" ] || : > "$file" || die_unwritable "$file"
+    put_clause "$file" "$id" "$kind" "$text"
 }
 
 main "$@"

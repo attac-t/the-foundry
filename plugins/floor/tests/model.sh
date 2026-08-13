@@ -27,6 +27,15 @@ floor_as() {
 # half these checks with their own run, and the suite passes for the wrong reason on their machine.
 floor() { dir=$1; shift; floor_as "$dir" "$home" "" "$@"; }
 
+# Like `floor`, but keeps what the CLI said while refusing. Every refusal explains itself on stderr,
+# and `floor_as` drops it — so an outer `2>&1` at the call site captures nothing and the check reads
+# as if the runner said nothing at all.
+floor_says() {
+  dir=$1; shift
+  ( cd "$dir" 2>/dev/null || exit 9
+    FOUNDRY_HOME="$home" FOUNDRY_RUN="" sh "$runner" "$@" 2>&1 )
+}
+
 # Run any of the above and report only its exit code.
 code_of() { "$@" >/dev/null 2>&1; printf '%s' "$?"; }
 
@@ -513,7 +522,11 @@ a_charter_derives_from_the_repository_it_is_run_in() {
   floor "$tmp/ch" charter derive >/dev/null 2>&1
 
   exists "the charter is a file in the run" "$(charter_of "$chrun")"
-  absent "and nothing charter-shaped outlives it" "$home/charter"
+
+  # `absent "$home/charter"` passed against the one mutation aimed at this, which writes
+  # `charter-<id>`. Anything charter-shaped beside the runs is what must not exist.
+  is "and nothing charter-shaped sits beside the runs" \
+     "$(find "$home" -maxdepth 1 -name 'charter*' 2>/dev/null | grep -c .)" "0"
 
   held=$(cat "$(charter_of "$chrun")" 2>/dev/null)
   has "a detected gate becomes a clause"    "$held" "clause $(clause_of tests) Gate tests"
@@ -567,8 +580,12 @@ a_clause_cannot_be_weakened() {
   is "and the charter is byte-identical after" \
      "$(cat "$(charter_of "$chrun")")" "$before"
 
-  is "raising a Decided to a Gate is allowed" \
-     "$(code_of floor "$tmp/ch" charter introduce Gate 'refund copy signed off')" "0"
+  # Exit 0 proved only that the command returned. It returned, appended a second record, and every
+  # reader kept taking the first — so the tightening was accepted and changed nothing.
+  floor "$tmp/ch" charter introduce Gate 'refund copy signed off' >/dev/null 2>&1
+  is "raising a Decided to a Gate takes effect" \
+     "$(awk -v id="$(clause_of 'refund copy signed off')" '$1 == "clause" && $2 == id { print $3 }' "$(charter_of "$chrun")")" \
+     "Gate"
 }
 a_clause_cannot_be_weakened
 
@@ -665,6 +682,13 @@ a_clause_may_span_two_targets() {
      "$(awk -v id="$id" '$1 == "pin" && $2 == id' "$(charter_of "$chrun")" | grep -c .)" "2"
   is "and they carry different refs" \
      "$(awk -v id="$id" '$1 == "pin" && $2 == id { print $4 }' "$(charter_of "$chrun")" | sort -u | grep -c .)" "2"
+
+  # `check` must actually run, or this asserts a shape nothing reads. A pin on another repository
+  # cannot be verified from this one: `git rev-parse` would answer from whatever checkout it stands
+  # in, inventing a pass or a failure for a repository nobody read.
+  out=$(floor "$tmp/ch" charter check 2>&1)
+  has   "a pin on another repository is named uncheckable" "$out" "uncheckable: Makefile at https://github.com/acme/other.git"
+  lacks "and never reported as moved"                      "$out" "moved: Makefile at https://github.com/acme/other.git"
 }
 a_clause_may_span_two_targets
 
@@ -685,6 +709,52 @@ a_clause_with_no_pin_at_all_is_reported() {
       "$(floor "$tmp/ch5" charter check 2>&1)" "unpinned: Gate tests"
 }
 a_clause_with_no_pin_at_all_is_reported
+
+#
+# Derivation may add or tighten. It may never remove.
+#
+# The draft is built from nothing, so a clause the detector stops yielding simply fails to reappear.
+# That emptied a charter at exit 0, and `check` then had nothing to iterate over and said so with
+# silence.
+#
+derivation_never_removes() {
+  make_repo "$tmp/ch6" main && set_origin "$tmp/ch6" 'https://github.com/acme/ch6.git' \
+    && commit_file "$tmp/ch6" Makefile 'test:
+	echo ok
+' || { skip "removal — git could not make a repo here"; return; }
+
+  g=$(floor "$tmp/ch6" new "Gone")
+  floor "$tmp/ch6" charter derive >/dev/null 2>&1
+  before=$(cat "$(charter_of "$g")")
+
+  # The gate stops resolving. A human deleting a requirement is a human act, not a consequence.
+  rm -f "$tmp/ch6/Makefile"
+
+  is "deriving refuses to drop a clause that no longer derives" \
+     "$(code_of floor "$tmp/ch6" charter derive)" "6"
+  is "and the charter is byte-identical after" \
+     "$(cat "$(charter_of "$g")")" "$before"
+  has "and it names what would have been lost" \
+      "$(floor_says "$tmp/ch6" charter derive)" "Gate tests"
+}
+derivation_never_removes
+
+# `introduce` then `derive` re-appended the pin-less record beside the pinned one — a duplicate that
+# also read as having provenance nobody gave it.
+introducing_then_deriving_leaves_one_record() {
+  make_repo "$tmp/ch7" main && set_origin "$tmp/ch7" 'https://github.com/acme/ch7.git' \
+    && commit_file "$tmp/ch7" Makefile 'test:
+	echo ok
+' || { skip "duplicate — git could not make a repo here"; return; }
+
+  d=$(floor "$tmp/ch7" new "Dup")
+  floor "$tmp/ch7" charter introduce Gate tests >/dev/null 2>&1
+  floor "$tmp/ch7" charter derive >/dev/null 2>&1
+
+  is "one clause record, not two" \
+     "$(awk -v id="$(clause_of tests)" '$1 == "clause" && $2 == id' "$(charter_of "$d")" | grep -c .)" "1"
+}
+introducing_then_deriving_leaves_one_record
 
 is "charter with no run exits 1" "$(code_of floor "$tmp/bare" charter)" "1"
 
