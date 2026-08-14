@@ -312,7 +312,8 @@ per-target declarations are readable.
 coverage is a function of `units/NN/targets`, a file the worker can write as the same user. Policy
 guards the act of adding a target, not the file's contents when they are next read — so a
 hand-appended line widens what every clause grades, and a hand-deleted one removes a delivery
-precondition without removing a clause. That is the workspace boundary's, and it does not exist yet.
+precondition without removing a clause. Re-derivation cannot catch it either: the charter is
+unchanged, and it is the selection that moved.
 
 #### Two derivation paths
 
