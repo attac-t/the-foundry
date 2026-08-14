@@ -52,6 +52,10 @@ line — otherwise the next reader cannot tell design from accident.
 Moving code silently unaims every break that named it. A harness worth having reports *the break did
 not apply* rather than passing.
 
+**Test a break through the harness that runs it. Never by retyping its expression.** A backslash
+does not always survive being retyped, so a working break reads as broken and gets "fixed" — the
+harness holds the only copy you can trust.
+
 ## Passing For The Wrong Reason
 
 Worse than a missing test, because every instrument scores it as coverage — including the person who

@@ -4,10 +4,6 @@
 # Review artifacts: charters and verdicts stay local to the branch that produced them
 .claude/panel/
 
-# Design prose: RFCs are how a decision got made, not what shipped. The decision reaches the repo as
-# code, a commit message, or an issue — never as a document nobody updates.
-docs/rfc/
-
 # Local settings (may contain local paths)
 .claude/settings.json
 .claude/settings.local.json
