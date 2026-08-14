@@ -584,7 +584,26 @@ pinned_command() {
 }
 
 # Resolve this repository's gates. The only caller of the one file that knows what an ecosystem is.
-detect_gates() { sh "$(dirname "$0")/../lib/detect-gates.sh" "$1" 2>/dev/null; }
+#
+# Resolve this repository's gates, through whichever resolver is in use.
+#
+# The resolver is an adapter, and an adapter you cannot replace without editing its caller is not
+# one. `FOUNDRY_GATES` names another; the shipped one is the default, and it is the only file here
+# permitted to know an ecosystem exists. Nothing above this line learns which resolver answered.
+#
+gate_resolver() { printf '%s' "${FOUNDRY_GATES:-$(dirname "$0")/../lib/detect-gates.sh}"; }
+
+detect_gates() { sh "$(gate_resolver)" "$1" 2>/dev/null; }
+
+#
+# A resolver that is not there answers "no gates", and no gates is what a clean charter looks like.
+#
+# Checked by the caller, never inside `detect_gates`: every reader of it runs in a pipe or a command
+# substitution, where `exit` leaves the subshell and the command carries on reporting nothing.
+#
+refuse_missing_resolver() {
+    [ -f "$(gate_resolver)" ] || { note "no gate resolver at [$(gate_resolver)]"; exit 3; }
+}
 
 # The sha of one path at one ref. Empty means it could not be captured, and a pin that cannot be
 # captured is not written — `write_bootstrap`'s rule, for the same reason.
@@ -611,6 +630,7 @@ derive_charter() {
         exit 1
     }
     refuse_wrong_repository "$dir"
+    refuse_missing_resolver
 
     ref=$(awk 'NR == 1 { print $2; exit }' "$dir/bootstrap")
     file=$(charter_file "$dir")
@@ -713,15 +733,16 @@ check_charter() {
     # The same guard `derive` carries. Half of what `check` reports comes from running the detector
     # here, so without it the answer depends on which directory you happened to be in.
     refuse_wrong_repository "$dir"
+    refuse_missing_resolver
 
     # Captured, not accumulated in a variable: every reader below walks a pipe, and a count raised
     # inside one dies with its subshell. Output survives; a flag would not.
     findings=$(
+        forged_ids "$file"
         ambiguous_ids "$file"
-        unpinned_clauses "$file"
+        underived_gates "$file"
         moved_sources "$file"
         moved_resolutions "$file"
-        deleted_clauses "$file"
     )
 
     [ -n "$findings" ] || return 0
@@ -750,13 +771,42 @@ ambiguous_ids() {
          }' "$1" | sort -u
 }
 
-# A clause resting on a target it never pinned.
-unpinned_clauses() {
-    awk '$1 == "clause" { kind[$2] = $3; t = $0; sub(/^clause [^ ]+ [^ ]+ /, "", t); text[$2] = t }
-         $1 == "pin"    { pinned[$2] = 1 }
-         $1 == "gate"   { resolved[$2] = 1 }
-         END { for (id in resolved) if (!(id in pinned)) printf "unpinned: %s %s\n", kind[id], text[id] }' "$1"
+#
+# A clause whose text is not the text its id was made from.
+#
+# "A clause is its text" is the premise everything else rests on — `dropped_clauses` keys on the id,
+# so rewriting the text under its id changes the requirement while every other check still matches.
+# Nothing enforced the premise until here.
+#
+forged_ids() {
+    awk '$1 == "clause" { t = $0; sub(/^clause [^ ]+ [^ ]+ /, "", t); print $2 " " t }' "$1" \
+    | while read -r id text; do
+        [ "$(clause_id "$text")" = "$id" ] || printf 'forged: id %s was not made from [%s]\n' "$id" "$text"
+    done
 }
+
+# Whether one record type carries an id at all.
+has_record() { awk -v kind="$2" -v id="$3" '$1 == kind && $2 == id { seen = 1 } END { exit !seen }' "$1"; }
+
+#
+# Every gate the detector yields, judged against what the charter holds for it.
+#
+# Driven from the detector rather than from the charter's own records, because each finding used to
+# be gated on the record a tamper deletes: no `gate` record meant no unpinned finding, and `deleted`
+# asked only whether some clause held the id. Deleting two lines left a `Gate:` resting on nothing
+# and `check` called it clean.
+#
+underived_gates() {
+    detect_gates . | while read -r name _ command; do
+        [ -n "$name" ] || continue
+        id=$(clause_id "$name")
+
+        [ "$(clause_kind "$1" "$id")" = Gate ] || { printf 'deleted: Gate %s\n' "$name"; continue; }
+        has_record "$1" pin  "$id" || printf 'unpinned: Gate %s\n' "$name"
+        has_record "$1" gate "$id" || printf 'unresolved: Gate %s\n' "$name"
+    done
+}
+
 
 # `$4` is the first word of the clause, so a finding used to name half its own subject.
 clause_text() {
@@ -813,13 +863,6 @@ moved_resolutions() {
     done
 }
 
-# A clause that derives now and is not in the charter was removed after it was written.
-deleted_clauses() {
-    detect_gates . | while read -r name _ command; do
-        [ -n "$name" ] || continue
-        [ -n "$(clause_kind "$1" "$(clause_id "$name")")" ] || printf 'deleted: Gate %s\n' "$name"
-    done
-}
 
 introduce_clause() {
     dir=$1; kind=$2; text=$3

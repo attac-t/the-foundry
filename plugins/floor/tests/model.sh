@@ -818,6 +818,93 @@ one_id_means_one_thing() {
 }
 one_id_means_one_thing
 
+#
+# The resolver is an adapter, so another one must work without editing anything above it.
+#
+# This one knows no ecosystem at all — it answers for a repository holding none of the files the
+# shipped detector looks for. If the charter still records a gate, nothing above the seam learned
+# which resolver answered.
+#
+another_resolver_needs_no_change_above_it() {
+  make_repo "$tmp/ch9" main && set_origin "$tmp/ch9" 'https://github.com/acme/ch9.git' \
+    && commit_file "$tmp/ch9" thing.rs 'fn main() {}' || { skip "resolver seam — git could not make a repo"; return; }
+
+  printf '#!/bin/sh\necho "checks thing.rs cargo test"\n' > "$tmp/rustish.sh"
+
+  r=$(floor "$tmp/ch9" new "Other Resolver")
+  ( cd "$tmp/ch9" && FOUNDRY_HOME="$home" FOUNDRY_RUN="$r" FOUNDRY_GATES="$tmp/rustish.sh" \
+      sh "$runner" charter derive >/dev/null 2>&1 )
+
+  held=$(cat "$(charter_of "$r")" 2>/dev/null)
+  has "a replacement resolver's gate becomes a clause" "$held" "Gate checks"
+  has "pinned to what that resolver read"              "$held" "thing.rs"
+  has "and its command recorded"                       "$held" "gate $(clause_of checks) cargo test"
+
+  is "the shipped resolver finds nothing here" \
+     "$(sh "$here/lib/detect-gates.sh" "$tmp/ch9" | grep -c .)" "0"
+}
+another_resolver_needs_no_change_above_it
+
+#
+# Three tampers that every earlier check passed.
+#
+# Each edits the charter and nothing else — no pin touched, no sha moved. They passed because every
+# finding was gated on a record the tamper removes, or on an id nothing recomputed.
+#
+a_tampered_charter_is_visible() {
+  make_repo "$tmp/tam" main && set_origin "$tmp/tam" 'https://github.com/acme/tam.git' \
+    && commit_file "$tmp/tam" Makefile 'test:
+	echo ok
+' || { skip "tamper — git could not make a repo here"; return; }
+
+  m=$(floor "$tmp/tam" new "Tamper")
+  rm -f "$(charter_of "$m")"; floor "$tmp/tam" charter derive >/dev/null 2>&1
+  id=$(clause_of tests)
+
+  # The text rewritten under its id. Every other record still matches, so nothing else notices.
+  sed "s|^clause $id Gate tests\$|clause $id Gate anything at all|" "$(charter_of "$m")" > "$tmp/t1" \
+    && cp "$tmp/t1" "$(charter_of "$m")"
+  has "a clause whose text was rewritten under its id is caught" \
+      "$(floor "$tmp/tam" charter check 2>&1)" "forged: id $id"
+
+  # The pin and the resolution deleted. The clause stays, and used to read as satisfied.
+  rm -f "$(charter_of "$m")"; floor "$tmp/tam" charter derive >/dev/null 2>&1
+  grep -v '^pin \|^gate ' "$(charter_of "$m")" > "$tmp/t2" && cp "$tmp/t2" "$(charter_of "$m")"
+  out=$(floor "$tmp/tam" charter check 2>&1)
+  has "a Gate whose pin was deleted is caught"        "$out" "unpinned: Gate tests"
+  has "and one whose resolution was deleted as well"  "$out" "unresolved: Gate tests"
+
+  # The clause deleted outright, leaving pin and gate behind.
+  rm -f "$(charter_of "$m")"; floor "$tmp/tam" charter derive >/dev/null 2>&1
+  grep -v '^clause ' "$(charter_of "$m")" > "$tmp/t3" && cp "$tmp/t3" "$(charter_of "$m")"
+  has "a deleted clause is caught even with its records left behind" \
+      "$(floor "$tmp/tam" charter check 2>&1)" "deleted: Gate tests"
+}
+a_tampered_charter_is_visible
+
+# `introduce` replaces the record for a meaning. Appending left the first one winning for every
+# reader, so the second was accepted and changed nothing.
+introducing_twice_leaves_one_record() {
+  [ -n "${chrun:-}" ] || { skip "one record — no charter run"; return; }
+
+  floor "$tmp/ch" charter introduce Judged 'said once' >/dev/null 2>&1
+  floor "$tmp/ch" charter introduce Judged 'said once' >/dev/null 2>&1
+
+  is "the same clause twice is one record" \
+     "$(awk -v id="$(clause_of 'said once')" '$1 == "clause" && $2 == id' "$(charter_of "$chrun")" | grep -c .)" "1"
+}
+introducing_twice_leaves_one_record
+
+# A resolver that is not there answers "no gates", which is what a clean charter looks like.
+a_missing_resolver_is_not_silence() {
+  [ -n "${chrun:-}" ] || { skip "missing resolver — no charter run"; return; }
+
+  is "a resolver that is not there stops the command" \
+     "$( cd "$tmp/ch" && FOUNDRY_HOME="$home" FOUNDRY_RUN="$chrun" FOUNDRY_GATES="$tmp/no-such" \
+         sh "$runner" charter check >/dev/null 2>&1; printf '%s' "$?" )" "3"
+}
+a_missing_resolver_is_not_silence
+
 is "charter with no run exits 1" "$(code_of floor "$tmp/bare" charter)" "1"
 
 # --- asking for the wrong thing ---

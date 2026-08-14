@@ -220,13 +220,23 @@ wreck_runner "a re-derivation that drops introduced clauses is caught" \
 wreck_runner "deriving from a repository the run does not name is caught" \
   wrongrepo 's#^refuse_wrong_repository() {#refuse_wrong_repository() { return 0; :#'
 
-# The three findings `check` exists to make. Each is the only thing that reports its own failure.
-wreck_runner "a check blind to a clause resting on nothing is caught" \
-  blindpin  's|^        unpinned_clauses "$file"$|        :|'
+#
+# Every finding `check` exists to make, one break each.
+#
+# Two of these named readers that no longer exist. `unpinned_clauses` and `deleted_clauses` were
+# each gated on a record a tamper deletes — no `gate` record meant no unpinned finding — so both
+# were replaced by `underived_gates`, which asks the detector what should be there and then looks.
+#
+wreck_runner "a check blind to a gate resting on nothing is caught" \
+  blindgates 's|^        underived_gates "$file"$|        :|'
+wreck_runner "a check blind to a rewritten clause is caught" \
+  blindforge 's|^        forged_ids "$file"$|        :|'
 wreck_runner "a check blind to a gate resolving elsewhere is caught" \
-  blindres  's|^        moved_resolutions "$file"$|        :|'
-wreck_runner "a check blind to a deleted clause is caught" \
-  blinddel  's|^        deleted_clauses "$file"$|        :|'
+  blindres   's|^        moved_resolutions "$file"$|        :|'
+wreck_runner "a check blind to a pinned file that moved is caught" \
+  blindmoved 's|^        moved_sources "$file"$|        :|'
+wreck_runner "a check blind to one id naming two meanings is caught" \
+  blindambig 's|^        ambiguous_ids "$file"$|        :|'
 
 # --- break the install ---
 
