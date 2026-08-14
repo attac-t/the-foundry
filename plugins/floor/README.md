@@ -252,6 +252,16 @@ removal, and the refusal to drop is the whole invariant.
 relaxes a rule commits it, and the next base carries it. A buggy derivation would otherwise become
 law. So `Decided:` clauses do not carry forward: a decision meant to last belongs in a committed file.
 
+### What `check` cannot see
+
+**A deleted introduced clause.** Every finding compares the charter against something outside it —
+the detector for a gate, the pinned sha for a source, the id for the text. An introduced clause has
+no outside: nothing derived it, nothing pinned it, and the charter is the only record it existed.
+Delete the line and `check` reports nothing.
+
+Closing that needs a ledger the charter cannot edit, which is the evidence stage. Until then a
+`Decided:` clause is exactly as durable as the file holding it.
+
 ### What this is not
 
 The charter is a file the worker can write, as the same user. `check` catches accident and
