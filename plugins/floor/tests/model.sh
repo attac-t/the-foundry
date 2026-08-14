@@ -586,12 +586,21 @@ a_clause_cannot_be_weakened() {
   is "and the charter is byte-identical after" \
      "$(cat "$(charter_of "$chrun")")" "$before"
 
-  # Exit 0 proved only that the command returned. It returned, appended a second record, and every
-  # reader kept taking the first — so the tightening was accepted and changed nothing.
-  floor "$tmp/ch" charter introduce Gate 'refund copy signed off' >/dev/null 2>&1
-  is "raising a Decided to a Gate takes effect" \
+  #
+  # Both directions, because the kinds are not a scale.
+  #
+  # An earlier version ranked them and allowed the "raise", which let a human claim a requirement was
+  # mechanically established without anything establishing it. `Judged: the interface is
+  # understandable` raised to `Gate:` is the case that shows the rank was never real.
+  #
+  is "raising a Decided to a Gate is refused too" \
+     "$(code_of floor "$tmp/ch" charter introduce Gate 'refund copy signed off')" "6"
+  is "the kind is still what it was" \
      "$(awk -v id="$(clause_of 'refund copy signed off')" '$1 == "clause" && $2 == id { print $3 }' "$(charter_of "$chrun")")" \
-     "Gate"
+     "Decided"
+
+  is "re-stating a clause unchanged is not a change" \
+     "$(code_of floor "$tmp/ch" charter introduce Decided 'refund copy signed off')" "0"
 }
 a_clause_cannot_be_weakened
 
@@ -761,13 +770,53 @@ introducing_then_deriving_leaves_one_record() {
 ' || { skip "duplicate — git could not make a repo here"; return; }
 
   d=$(floor "$tmp/ch7" new "Dup")
-  floor "$tmp/ch7" charter introduce Gate tests >/dev/null 2>&1
+  floor "$tmp/ch7" charter introduce Decided tests >/dev/null 2>&1
   floor "$tmp/ch7" charter derive >/dev/null 2>&1
 
   is "one clause record, not two" \
      "$(awk -v id="$(clause_of tests)" '$1 == "clause" && $2 == id' "$(charter_of "$d")" | grep -c .)" "1"
+
+  #
+  # Provenance arriving is not promotion.
+  #
+  # The clause was introduced because nothing established it. Something does now, and derivation is
+  # the only thing permitted to say so — which is why a human is refused the same edit above.
+  #
+  is "derivation may set the kind a human may not" \
+     "$(awk -v id="$(clause_of tests)" '$1 == "clause" && $2 == id { print $3 }' "$(charter_of "$d")")" "Gate"
+  is "and it now carries a pin" \
+     "$(awk -v id="$(clause_of tests)" '$1 == "pin" && $2 == id' "$(charter_of "$d")" | grep -c .)" "1"
 }
 introducing_then_deriving_leaves_one_record
+
+#
+# `cksum` is 32 bits, so two meanings can land on one id.
+#
+# Forced by hand rather than by hunting a real CRC collision: what matters is that the path is
+# reachable and refuses, not that two English sentences happen to collide today.
+#
+one_id_means_one_thing() {
+  make_repo "$tmp/ch8" main && set_origin "$tmp/ch8" 'https://github.com/acme/ch8.git' \
+    && commit_file "$tmp/ch8" README.md 'x' || { skip "collision — git could not make a repo"; return; }
+
+  c=$(floor "$tmp/ch8" new "Collide")
+  floor "$tmp/ch8" charter introduce Decided 'the first meaning' >/dev/null 2>&1
+
+  # The same id, a different meaning. This is what a collision looks like on disk.
+  id=$(clause_of 'the first meaning')
+  before=$(cat "$(charter_of "$c")")
+
+  has "the charter holds it once to begin with" "$before" "Decided the first meaning"
+
+  # The same id, a different meaning. This is what a collision looks like on disk.
+  printf 'clause %s Decided a different meaning entirely\n' "$id" >> "$(charter_of "$c")"
+
+  has "a charter naming two meanings on one id says so" \
+      "$(floor "$tmp/ch8" charter check 2>&1)" "ambiguous: id $id names two meanings"
+  is  "and check refuses to call that clean" \
+      "$(code_of floor "$tmp/ch8" charter check)" "7"
+}
+one_id_means_one_thing
 
 is "charter with no run exits 1" "$(code_of floor "$tmp/bare" charter)" "1"
 

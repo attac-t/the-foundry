@@ -493,18 +493,23 @@ charter_file() { printf '%s/charter' "$1"; }
 #
 clause_id() { printf '%s' "$1" | cksum | awk '{ print $1 }'; }
 
-# How hard a clause is to satisfy. A `Gate:` must pass a command; a `Decided:` needs only a person to
-# say so. Turning the first into the second is the weakening invariant 3 refuses.
-strength() {
+#
+# The three kinds, and deliberately no order over them.
+#
+# An earlier version ranked them — Gate over Judged over Decided — to decide whether a kind change
+# was a tightening. It is neither. `Judged: the interface is understandable` raised to `Gate:` asks
+# for a command that cannot exist, and `Decided:` carries authority no command can hold. The kinds
+# say how truth is established, not how much of it there is.
+#
+# What monotonicity actually needs is `dropped_clauses`: a clause is its text, so a changed
+# requirement is a different clause, and every weakening is therefore a removal.
+#
+is_kind() {
     case "$1" in
-        Gate)    printf '3' ;;
-        Judged)  printf '2' ;;
-        Decided) printf '1' ;;
-        *)       printf '0' ;;
+        Gate | Judged | Decided) return 0 ;;
     esac
+    return 1
 }
-
-is_kind() { [ "$(strength "$1")" != 0 ]; }
 
 #
 # Clause text is one line of a line-oriented file. A newline in it would be a second record.
@@ -530,9 +535,27 @@ print_clause() { printf 'clause %s %s %s\n' "$1" "$2" "$3"; }
 # Appending a tightened clause leaves the weaker record first, and every reader here takes the first
 # match — so the tightening was accepted, written down, and had no effect on anything.
 #
+#
+# One id, one meaning — or refuse.
+#
+# `cksum` is 32 bits, so two texts can land on the same id. Every reader here takes the first record
+# for an id, so a collision silently replaces the wrong clause and makes monotonicity compare two
+# meanings that are not the same. The text is stored beside the id, which is what makes the collision
+# visible at all; refusing is the only answer that cannot corrupt a charter.
+#
+refuse_collision() {
+    was=$(clause_text "$1" "$2")
+    [ -z "$was" ] || [ "$was" = "$3" ] || {
+        note "id $2 already means [$was] — refusing to reuse it for [$3]"
+        return 1
+    }
+}
+
 put_clause() {
     file=$1
     line="clause $2 $3 $4"
+
+    refuse_collision "$file" "$2" "$4" || exit 6
 
     awk -v id="$2" -v line="$line" \
         '$1 == "clause" && $2 == id { print line; replaced = 1; next }
@@ -647,6 +670,8 @@ while_reading_gates() {
         [ -n "$name" ] || continue
 
         id=$(clause_id "$name")
+        refuse_collision "$held" "$id" "$name" || return 1
+
         sha=$(blob_sha "$ref" "$source")
         [ -n "$sha" ] || { note "no sha for [$source] at [$ref] — pin refused"; return 1; }
 
@@ -692,6 +717,7 @@ check_charter() {
     # Captured, not accumulated in a variable: every reader below walks a pipe, and a count raised
     # inside one dies with its subshell. Output survives; a flag would not.
     findings=$(
+        ambiguous_ids "$file"
         unpinned_clauses "$file"
         moved_sources "$file"
         moved_resolutions "$file"
@@ -706,6 +732,22 @@ check_charter() {
     # `check` useless for the shape it is meant to support.
     printf '%s\n' "$findings" | grep -qv '^uncheckable: ' || return 0
     exit 7
+}
+
+#
+# One id carrying two meanings.
+#
+# `cksum` is 32 bits, so this is possible. Every reader here takes the first record for an id, so a
+# charter in this state answers questions about the wrong clause — silently. Reported here because
+# this is the only place it can be: `refuse_collision` guards the write, but a write can only
+# collide when two texts share a checksum, which no test can arrange on purpose.
+#
+ambiguous_ids() {
+    awk '$1 == "clause" {
+             t = $0; sub(/^clause [^ ]+ [^ ]+ /, "", t)
+             if (($2 in seen) && seen[$2] != t) print "ambiguous: id " $2 " names two meanings"
+             seen[$2] = t
+         }' "$1" | sort -u
 }
 
 # A clause resting on a target it never pinned.
@@ -787,9 +829,16 @@ introduce_clause() {
 
     file=$(charter_file "$dir")
     id=$(clause_id "$text")
+    #
+    # A human may not change how a requirement is established.
+    #
+    # Deciding that `tests` is checked differently is new meaning, and new meaning belongs in a
+    # human-owned artifact where derivation finds it. Writing it here instead pins the claim to
+    # nothing. Only `derive` sets a kind, and only by establishing provenance.
+    #
     was=$(clause_kind "$file" "$id")
-    [ -z "$was" ] || [ "$(strength "$was")" -le "$(strength "$kind")" ] || {
-        note "refusing to weaken this clause from $was to $kind"
+    [ -z "$was" ] || [ "$was" = "$kind" ] || {
+        note "this clause is already $was — only derivation may make it $kind"
         exit 6
     }
 

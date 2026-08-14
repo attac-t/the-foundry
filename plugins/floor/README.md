@@ -234,7 +234,19 @@ Adding a file the detector prefers moves the answer while every pinned sha still
 
 ### Monotonicity
 
-Derivation may add or tighten. It may never remove or weaken.
+The set of requirements may grow. It may never shrink.
+
+**The kinds are not a scale.** `Judged: the interface is understandable` raised to `Gate:` asks for a
+command that cannot exist, and `Decided:` carries authority no command can hold. They say how truth
+is established, not how much of it there is.
+
+So a human may not change a kind at all. Deciding a requirement is established differently is new
+meaning, and new meaning belongs in a committed artifact where derivation finds it. Only `derive`
+sets a kind, and only by establishing provenance — which is also what happens when something
+introduced later becomes derivable. Provenance arriving is not promotion.
+
+A clause is its text, so a changed requirement is a different clause. Every weakening is therefore a
+removal, and the refusal to drop is the whole invariant.
 
 **The baseline is what the pinned artifacts derive now** — never a previous run's charter. A human who
 relaxes a rule commits it, and the next base carries it. A buggy derivation would otherwise become

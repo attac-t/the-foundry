@@ -195,9 +195,15 @@ wreck_runner "a sha that is really an error message is caught" \
 wreck_runner "an id that includes the kind is caught" \
   kindid 's|clause_id() { printf .%s. "$1"|clause_id() { printf "%s %s" "$1" "${2:-}"|'
 
-# Every kind equally strong is no ordering at all, so nothing is ever a weakening.
-wreck_runner "a strength that does not order the kinds is caught" \
-  flatstrength 's|        Gate)    printf .3. ;;|        Gate)    printf "1" ;;|'
+#
+# Only derivation may set a kind.
+#
+# This replaced a break against a numeric ranking of the kinds. There is no ranking now — the kinds
+# say how truth is established, not how much, so a human editing one is claiming provenance that
+# nothing established rather than tightening or weakening anything.
+#
+wreck_runner "a human allowed to change a clause's kind is caught" \
+  kindedit 's#^    \[ -z "$was" \] .* {$#    [ 1 -eq 1 ] || {#'
 
 # A clause is one line of a line-oriented file. Accepting a newline makes one clause into two records.
 #
