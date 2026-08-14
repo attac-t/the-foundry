@@ -40,12 +40,14 @@ computes it — read it from the reflog: `git rev-parse <parent-branch>@{1}`, or
 
 ## The Landing
 
-**GitHub retargets a child only when the parent's branch is deleted.** Merging alone does not delete
-it. The base survives, the child stays aimed at it, and merging the child lands the work on a stale
-branch instead of the trunk.
+**Merging a parent does not move its children.** The base branch survives the merge, the child stays
+aimed at it, and merging the child lands the work on a stale branch instead of the trunk.
 
-So once the parent merges, delete its branch or retarget the child — before the child merges, not
-after:
+**Deleting the base does not move them either — it closes them.** Observed here: the base was deleted
+and the child closed one second later, still aimed at it. GitHub documents an auto-retarget. Do not
+spend a pull request finding out when it applies.
+
+So retarget every child first. Delete the parent branch after, or not at all:
 
 ```bash
 gh pr edit <child> --base main
