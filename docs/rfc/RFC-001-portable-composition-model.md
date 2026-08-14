@@ -1,6 +1,6 @@
 # RFC-001: The Portable Composition Model
 
-**Status:** Accepted — revision 7
+**Status:** Accepted — revision 8
 **Plugin:** `floor`
 **Author:** Christian Attard
 **Date:** 2026-08-12
@@ -421,7 +421,9 @@ target: a run has both, and only one of them is writable.
 
 **A work-source repository does not become a writable target because the work item came from it.**
 Items filed in `acme/issues` grant no authority over `acme/issues`. If a team genuinely wants that
-repo writable, it is authorised like any other target — by a human, explicitly, once.
+repo writable, it is authorised like any other target — by a human, explicitly. Under §2.3's
+run-scoped allowlist that is once **per run**; the durable grant scoped to a source is the work-source
+stage's, and §9 orders it there.
 
 The bootstrap target is the only entry on the allowlist that needs no human act, because invoking
 Foundry there *was* the human act. Everything else is authorised or refused.
@@ -887,6 +889,20 @@ charter, and the parser trap. The `Gate:` inconsistency came from reading §2.2 
 
 Not changed: policy stays run-scoped. A durable grant for central sources is real. Its only honest
 scope is the source, and §9 already orders that stage after this one.
+
+### Revision 8 — "once" was two answers
+
+Drafting the authorisation stage found §2.3 and §9 disagreeing about how often a human is asked.
+
+| Was | Is | What falsified it |
+|---|---|---|
+| §2.3: a work-source repo is authorised "by a human, explicitly, once" | once **per run**, with the durable grant deferred to the work-source stage | §9 already said the run-scoped allowlist "asks once per run, which is right for a CLI run and wrong for a queue". Two sections, two answers, and §9 held the correct one |
+
+Found by two independent architecture reviews of a stage that has not been built. The second
+corrected the first: an ask with no transport is **not** a further contradiction, because §2.1
+already defines what a source that can only `read` does — it forces every `ask` to block — and §9
+orders the work source deliberately. A promise with a stated degenerate mode and a scheduled
+mechanism is a dependency, not a defect.
 
 ### Revision 7 — the kinds were never a scale
 
