@@ -17,6 +17,9 @@ stops working on Alpine.
 
 A plugin that ships no code has no gate. Green says nothing about whether its skills are still true.
 
+Panel ships code now, and only this: the review chain refusing a prior verdict that is not there. That
+enforces a contract Panel already had. It does not make Panel a planner or a coordinator.
+
 ## Stack plugins
 
 Read the README before modifying one. Check whether it needs updating after.
