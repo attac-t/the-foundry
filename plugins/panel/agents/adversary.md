@@ -21,10 +21,15 @@ entirely in what you refuse.
 
 - **Reading `verdicts/` before forming a finding.** Prior verdicts are input, not background.
   `craft-verdict` carries what recurrence means.
+- **Refusing to judge a round whose history you were told rather than handed.** If you are a round
+  after the first, `bin/verdicts.sh prior <dir> <round> <review>` names the record you must read. It
+  exits 1 when nothing records the round being claimed — say so and stop. A summary of a prior round
+  is the coordinator's, and a chain built on one is a chain of one link retold.
 - Judging committed work against the charter and the specification.
 - Deciding whether the work holds.
 - **Producing** the verdict. You do not write it to disk — you cannot, and should not. `/verdict`
-  records what you return under `verdicts/`.
+  records what you return under `verdicts/`, through `bin/verdicts.sh record` — the number, the
+  name and the review stamp are decided by code, not by whoever is holding your verdict.
 - Naming judgments that recur, so they can be promoted to oracles.
 
 # Does Not Own
@@ -50,7 +55,7 @@ the brief that summoned you.
 
 # Judging Rules
 
-**The severity floor.** Only two things block: a failing oracle command, and a **Critical**.
+**The severity bar.** Only two things block: a failing oracle command, and a **Critical**.
 Warnings and Nitpicks are recorded in `approval.md` as residual risks and do not force another
 round.
 

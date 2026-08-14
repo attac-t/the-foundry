@@ -62,7 +62,8 @@ Invert conditions and return early. The happy path is the last thing in the meth
 
 ### Pass 7: Tests — Same Standard
 
-Tests are production code. They get every pass above **plus** test-specific polish.
+Tests are production code. They get every pass above **plus** `decide-test-merit` on each check:
+delete the line, and if nothing that should go red goes red, it was never a test.
 
 ## Discovering Stack Lenses
 

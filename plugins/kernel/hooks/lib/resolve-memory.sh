@@ -8,6 +8,16 @@
 
 MEMORY_BASE="${CLAUDE_MEMORY_DIR:-.claude/memory}"
 
+# An active run outranks the branch, and outranks the base above.
+#
+# One variable is the whole handshake with floor — no shared file, no call — so each plugin still
+# works with the other uninstalled. The price is that a hook cannot export into the session that
+# started it, so a run floor found through its own pointer is one this script cannot see.
+if [ -n "${FOUNDRY_RUN:-}" ] && [ -d "$FOUNDRY_RUN" ]; then
+    echo "$FOUNDRY_RUN/memory"
+    exit 0
+fi
+
 # No git? Use base.
 command -v git >/dev/null 2>&1 || { echo "$MEMORY_BASE"; exit 0; }
 

@@ -17,7 +17,13 @@ mkdir -p "$tmp"
 trap 'rm -rf "$tmp"' EXIT
 
 # Resolve the memory directory from a given working directory.
-resolve() { (cd "$1" && CLAUDE_MEMORY_DIR="$2" sh "$lib/resolve-memory.sh" 2>/dev/null); }
+#
+# `FOUNDRY_RUN=`, or a developer with one exported has their own run answer every check below and
+# the suite certifies nothing about the branch path it exists to test.
+resolve() { (cd "$1" && FOUNDRY_RUN= CLAUDE_MEMORY_DIR="$2" sh "$lib/resolve-memory.sh" 2>/dev/null); }
+
+# Resolve with an active run, from a given working directory.
+resolve_in_run() { (cd "$1" && FOUNDRY_RUN="$2" CLAUDE_MEMORY_DIR="$3" sh "$lib/resolve-memory.sh" 2>/dev/null); }
 
 # Count the non-empty lines in a value.
 lines() { printf '%s\n' "$1" | grep -c .; }
@@ -56,6 +62,26 @@ is "the answer outside a repo is one line" "$(lines "$(resolve "$tmp/bare" "$tmp
   && is "the answer inside a repo is one line" "$(lines "$(resolve "$tmp/repo" "$tmp/mem")")" "1"
 
 lacks "the answer never carries a path to git" "$(resolve "$tmp/bare" "$tmp/mem")" "bin/git"
+
+# --- an active run ---
+
+mkdir -p "$tmp/run"
+
+is "an active run outranks the base" \
+   "$(resolve_in_run "$tmp/bare" "$tmp/run" "$tmp/mem")" "$tmp/run/memory"
+
+[ -d "$tmp/repo/.git" ] \
+  && is "an active run outranks the branch" \
+       "$(resolve_in_run "$tmp/repo" "$tmp/run" "$tmp/mem")" "$tmp/run/memory"
+
+is "a run that is gone falls back to the branch" \
+   "$(resolve_in_run "$tmp/bare" "$tmp/gone" "$tmp/mem")" "$tmp/mem"
+
+is "an empty run variable changes nothing" \
+   "$(resolve_in_run "$tmp/bare" "" "$tmp/mem")" "$tmp/mem"
+
+is "the answer inside a run is one line" \
+   "$(lines "$(resolve_in_run "$tmp/bare" "$tmp/run" "$tmp/mem")")" "1"
 
 # --- the objective ---
 

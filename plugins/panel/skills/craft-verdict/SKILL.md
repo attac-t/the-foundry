@@ -79,7 +79,7 @@ Reviewed: <branch> @ <sha>    # stamped by /verdict, not the judge
 charter. `decide-boundary` carries the tells, and any of them **outranks the finding you were about
 to write**.
 
-- **Floor** — only oracles and Criticals force a round.
+- **Bar** — only oracles and Criticals force a round.
 - **Ratchet** — verdict N+1 cites only unresolved items and fix-induced regressions. No new W or N
   after round one. A new **C** is always admissible.
 - **Licence** — an approval with residual risks recorded is a successful review.
@@ -100,7 +100,7 @@ Name which fired. Deadlocking out of category early is cheap; burning six rounds
 |-------|----|
 | Verdict in chat | Verdict in git |
 | "This could be better" | Sev · Where · Issue · Change · Principle |
-| Everything Critical | Use the floor |
+| Everything Critical | Use the bar |
 | New nitpicks in round three | Ratchet |
 | Approve without recording risks | Record them |
 | "Recording what held…", "That is the point:", "Worth noting" | Delete. Meta-narration. |
