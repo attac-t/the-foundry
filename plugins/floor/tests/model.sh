@@ -27,6 +27,15 @@ floor_as() {
 # half these checks with their own run, and the suite passes for the wrong reason on their machine.
 floor() { dir=$1; shift; floor_as "$dir" "$home" "" "$@"; }
 
+# Like `floor`, but keeps what the CLI said while refusing. Every refusal explains itself on stderr,
+# and `floor_as` drops it — so an outer `2>&1` at the call site captures nothing and the check reads
+# as if the runner said nothing at all.
+floor_says() {
+  dir=$1; shift
+  ( cd "$dir" 2>/dev/null || exit 9
+    FOUNDRY_HOME="$home" FOUNDRY_RUN="" sh "$runner" "$@" 2>&1 )
+}
+
 # Run any of the above and report only its exit code.
 code_of() { "$@" >/dev/null 2>&1; printf '%s' "$?"; }
 
@@ -488,6 +497,442 @@ two_spellings_are_two_identities
 # machine-local path — grants outlive the run that made them and travel with the home.
 is "nothing floor stored holds a local path" \
    "$(grep -rl "$tmp" "$home" 2>/dev/null | grep -c . || true)" "0"
+
+# --- charter ---
+#
+# The charter lives in the run, so nothing can inherit one. Grants live beside the runs and could,
+# which is why `slot_is_free` reads both — see the policy section.
+
+charter_of() { printf '%s/charter' "$1"; }
+
+# `make_repo` leaves no commit, and a pin is a blob at a ref. Nothing to pin without one.
+commit_file() {
+  printf '%s' "$3" > "$1/$2" || return 1
+  git -C "$1" add "$2" >/dev/null 2>&1 || return 1
+  git -C "$1" -c user.email=a@b.c -c user.name=a commit -qm x >/dev/null 2>&1
+}
+
+a_charter_derives_from_the_repository_it_is_run_in() {
+  make_repo "$tmp/ch" develop && set_origin "$tmp/ch" 'https://github.com/acme/ch.git' \
+    && commit_file "$tmp/ch" Makefile 'test:
+	echo ok
+' || { skip "charter — git could not make a repo here"; return; }
+
+  chrun=$(floor "$tmp/ch" new "Charter")
+  floor "$tmp/ch" charter derive >/dev/null 2>&1
+
+  exists "the charter is a file in the run" "$(charter_of "$chrun")"
+
+  # `absent "$home/charter"` passed against the one mutation aimed at this, which writes
+  # `charter-<id>`. Anything charter-shaped beside the runs is what must not exist.
+  is "and nothing charter-shaped sits beside the runs" \
+     "$(find "$home" -maxdepth 1 -name 'charter*' 2>/dev/null | grep -c .)" "0"
+
+  held=$(cat "$(charter_of "$chrun")" 2>/dev/null)
+  has "a detected gate becomes a clause"    "$held" "clause $(clause_of tests) Gate tests"
+  has "with a pin at its own target's ref"  "$held" "pin $(clause_of tests) https://github.com/acme/ch.git develop Makefile"
+  has "and the command it resolved to"      "$held" "gate $(clause_of tests) make test"
+
+  is "a run whose clauses all derive asks nobody" "$(code_of floor "$tmp/ch" charter check)" "0"
+}
+
+# The id is the meaning. Recomputed here rather than read back, so a test cannot agree with a wrong
+# id by copying it.
+clause_of() { printf '%s' "$1" | cksum | awk '{ print $1 }'; }
+
+a_charter_derives_from_the_repository_it_is_run_in
+
+the_three_kinds_stay_apart() {
+  [ -n "${chrun:-}" ] || { skip "clause kinds — no charter run"; return; }
+
+  floor "$tmp/ch" charter introduce Judged  'adversary approves' >/dev/null 2>&1
+  floor "$tmp/ch" charter introduce Decided 'refund copy signed off' >/dev/null 2>&1
+
+  held=$(cat "$(charter_of "$chrun")")
+  has "Gate survives a write and a read"    "$held" "Gate tests"
+  has "Judged survives too"                 "$held" "Judged adversary approves"
+  has "and Decided"                         "$held" "Decided refund copy signed off"
+
+  is "an unknown kind is refused" \
+     "$(code_of floor "$tmp/ch" charter introduce Hoped 'it works')" "2"
+}
+the_three_kinds_stay_apart
+
+an_introduced_clause_stays_introduced() {
+  [ -n "${chrun:-}" ] || { skip "introduction — no charter run"; return; }
+
+  #
+  # Both halves. Carrying introduced clauses forward is what makes `derive` *work*; the drop guard
+  # is what makes it safe. Assert only the content and removing the carry looks fine — the guard
+  # catches the loss, refuses, and leaves the charter exactly as the content check wants it.
+  #
+  is "re-deriving over an introduced clause succeeds" \
+     "$(code_of floor "$tmp/ch" charter derive)" "0"
+
+  held=$(cat "$(charter_of "$chrun")")
+  has "and keeps the clause nothing derived" "$held" "Decided refund copy signed off"
+  is  "and never gives it a pin" \
+      "$(awk -v id="$(clause_of 'refund copy signed off')" '$1 == "pin" && $2 == id' "$(charter_of "$chrun")" | grep -c .)" "0"
+}
+an_introduced_clause_stays_introduced
+
+a_clause_cannot_be_weakened() {
+  [ -n "${chrun:-}" ] || { skip "monotonicity — no charter run"; return; }
+
+  before=$(cat "$(charter_of "$chrun")")
+
+  is "turning a Gate into a Decided is refused" \
+     "$(code_of floor "$tmp/ch" charter introduce Decided tests)" "6"
+  is "and the charter is byte-identical after" \
+     "$(cat "$(charter_of "$chrun")")" "$before"
+
+  #
+  # Both directions, because the kinds are not a scale.
+  #
+  # An earlier version ranked them and allowed the "raise", which let a human claim a requirement was
+  # mechanically established without anything establishing it. `Judged: the interface is
+  # understandable` raised to `Gate:` is the case that shows the rank was never real.
+  #
+  is "raising a Decided to a Gate is refused too" \
+     "$(code_of floor "$tmp/ch" charter introduce Gate 'refund copy signed off')" "6"
+  is "the kind is still what it was" \
+     "$(awk -v id="$(clause_of 'refund copy signed off')" '$1 == "clause" && $2 == id { print $3 }' "$(charter_of "$chrun")")" \
+     "Decided"
+
+  is "re-stating a clause unchanged is not a change" \
+     "$(code_of floor "$tmp/ch" charter introduce Decided 'refund copy signed off')" "0"
+}
+a_clause_cannot_be_weakened
+
+a_clause_is_one_line() {
+  [ -n "${chrun:-}" ] || { skip "one line — no charter run"; return; }
+
+  lines_before=$(grep -c . "$(charter_of "$chrun")")
+  floor "$tmp/ch" charter introduce Decided "$(printf 'one\ntwo')" >/dev/null 2>&1
+
+  is "a clause holding a newline cannot become two records" \
+     "$(grep -c . "$(charter_of "$chrun")")" "$lines_before"
+}
+a_clause_is_one_line
+
+deletion_and_drift_are_visible() {
+  make_repo "$tmp/ch2" main && set_origin "$tmp/ch2" 'https://github.com/acme/ch2.git' \
+    && commit_file "$tmp/ch2" Makefile 'test:
+	echo ok
+' || { skip "drift — git could not make a repo here"; return; }
+
+  d=$(floor "$tmp/ch2" new "Drift")
+  floor "$tmp/ch2" charter derive >/dev/null 2>&1
+
+  # Deletion, by removing the clause the way a worker would.
+  grep -v '^clause' "$(charter_of "$d")" > "$tmp/ch2.cut" && cp "$tmp/ch2.cut" "$(charter_of "$d")"
+  has "deleting a clause is detectable"  "$(floor "$tmp/ch2" charter check 2>&1)" "deleted: Gate tests"
+  is  "and check says so with exit 7"    "$(code_of floor "$tmp/ch2" charter check)" "7"
+
+  # A moved source, with the clause restored.
+  floor "$tmp/ch2" charter derive >/dev/null 2>&1
+  commit_file "$tmp/ch2" Makefile 'test:
+	echo moved
+'
+  has "a pinned source that moved is detectable" \
+      "$(floor "$tmp/ch2" charter check 2>&1)" "moved: Makefile"
+}
+deletion_and_drift_are_visible
+
+a_gate_that_resolves_elsewhere_is_visible() {
+  make_repo "$tmp/ch3" main && set_origin "$tmp/ch3" 'https://github.com/acme/ch3.git' \
+    && commit_file "$tmp/ch3" Makefile 'test:
+	echo ok
+' || { skip "resolution drift — git could not make a repo here"; return; }
+
+  r=$(floor "$tmp/ch3" new "Resolve")
+  floor "$tmp/ch3" charter derive >/dev/null 2>&1
+
+  # A declared file the detector prefers. Every pinned sha still matches; the answer moved anyway.
+  mkdir -p "$tmp/ch3/.foundry" && printf 'tests true\n' > "$tmp/ch3/.foundry/gates"
+
+  has "a gate resolving to a new command is detectable" \
+      "$(floor "$tmp/ch3" charter check 2>&1)" "resolves elsewhere: tests"
+}
+a_gate_that_resolves_elsewhere_is_visible
+
+a_pin_that_cannot_be_captured_writes_nothing() {
+  make_repo "$tmp/ch4" main && set_origin "$tmp/ch4" 'https://github.com/acme/ch4.git' \
+    && commit_file "$tmp/ch4" README.md 'x' || { skip "pin capture — git could not make a repo"; return; }
+
+  p=$(floor "$tmp/ch4" new "Pin")
+
+  # Detected but never committed, so it has no sha at the base ref.
+  printf 'test:\n\techo ok\n' > "$tmp/ch4/Makefile"
+
+  is     "a pin with no sha at the base is refused" "$(code_of floor "$tmp/ch4" charter derive)" "6"
+  absent "and no charter is written at all"         "$(charter_of "$p")"
+}
+a_pin_that_cannot_be_captured_writes_nothing
+
+deriving_needs_the_right_repository() {
+  [ -n "${chrun:-}" ] || { skip "wrong repo — no charter run"; return; }
+
+  #
+  # `$tmp/ch2` is a different repository. The run points at `acme/ch.git`.
+  #
+  # The message, not the code. Deriving here also fails for an unrelated reason — `develop:Makefile`
+  # does not resolve in a repository sitting on `main` — so exit 6 alone passed with the guard
+  # removed entirely.
+  #
+  has "deriving from another repository is refused for being the wrong repository" \
+      "$( cd "$tmp/ch2" && FOUNDRY_HOME="$home" FOUNDRY_RUN="$chrun" sh "$runner" charter derive 2>&1 )" \
+      "run this inside [https://github.com/acme/ch.git]"
+}
+deriving_needs_the_right_repository
+
+a_clause_may_span_two_targets() {
+  [ -n "${chrun:-}" ] || { skip "two targets — no charter run"; return; }
+
+  # Written by hand: deriving a second target needs a checkout of it, which is the workspace seam.
+  # What is tested here is that the shape holds two pins on different refs, and `check` reads both.
+  id=$(clause_of 'the feature works end to end')
+  {
+    printf 'clause %s Judged the feature works end to end\n' "$id"
+    printf 'pin %s https://github.com/acme/ch.git develop Makefile %s\n' \
+           "$id" "$(git -C "$tmp/ch" rev-parse develop:Makefile)"
+    printf 'pin %s https://github.com/acme/other.git release Makefile %s\n' \
+           "$id" "$(git -C "$tmp/ch" rev-parse develop:Makefile)"
+  } >> "$(charter_of "$chrun")"
+
+  is "two pins on one clause are both kept" \
+     "$(awk -v id="$id" '$1 == "pin" && $2 == id' "$(charter_of "$chrun")" | grep -c .)" "2"
+  is "and they carry different refs" \
+     "$(awk -v id="$id" '$1 == "pin" && $2 == id { print $4 }' "$(charter_of "$chrun")" | sort -u | grep -c .)" "2"
+
+  # `check` must actually run, or this asserts a shape nothing reads. A pin on another repository
+  # cannot be verified from this one: `git rev-parse` would answer from whatever checkout it stands
+  # in, inventing a pass or a failure for a repository nobody read.
+  out=$(floor "$tmp/ch" charter check 2>&1)
+  has   "a pin on another repository is named uncheckable" "$out" "uncheckable: Makefile at https://github.com/acme/other.git"
+  lacks "and never reported as moved"                      "$out" "moved: Makefile at https://github.com/acme/other.git"
+}
+a_clause_may_span_two_targets
+
+a_clause_with_no_pin_at_all_is_reported() {
+  make_repo "$tmp/ch5" main && set_origin "$tmp/ch5" 'https://github.com/acme/ch5.git' \
+    && commit_file "$tmp/ch5" Makefile 'test:
+	echo ok
+' || { skip "unpinned — git could not make a repo here"; return; }
+
+  u=$(floor "$tmp/ch5" new "Unpinned")
+  floor "$tmp/ch5" charter derive >/dev/null 2>&1
+
+  # A gate that resolves but whose pin was removed. Distinct from an introduced clause, which has no
+  # resolution either — this one claims a gate and rests on nothing.
+  grep -v '^pin' "$(charter_of "$u")" > "$tmp/ch5.cut" && cp "$tmp/ch5.cut" "$(charter_of "$u")"
+
+  has "a gate clause with no pin is reported" \
+      "$(floor "$tmp/ch5" charter check 2>&1)" "unpinned: Gate tests"
+}
+a_clause_with_no_pin_at_all_is_reported
+
+#
+# Derivation may add or tighten. It may never remove.
+#
+# The draft is built from nothing, so a clause the detector stops yielding simply fails to reappear.
+# That emptied a charter at exit 0, and `check` then had nothing to iterate over and said so with
+# silence.
+#
+derivation_never_removes() {
+  make_repo "$tmp/ch6" main && set_origin "$tmp/ch6" 'https://github.com/acme/ch6.git' \
+    && commit_file "$tmp/ch6" Makefile 'test:
+	echo ok
+' || { skip "removal — git could not make a repo here"; return; }
+
+  g=$(floor "$tmp/ch6" new "Gone")
+  floor "$tmp/ch6" charter derive >/dev/null 2>&1
+  before=$(cat "$(charter_of "$g")")
+
+  # The gate stops resolving. A human deleting a requirement is a human act, not a consequence.
+  rm -f "$tmp/ch6/Makefile"
+
+  is "deriving refuses to drop a clause that no longer derives" \
+     "$(code_of floor "$tmp/ch6" charter derive)" "6"
+  is "and the charter is byte-identical after" \
+     "$(cat "$(charter_of "$g")")" "$before"
+  has "and it names what would have been lost" \
+      "$(floor_says "$tmp/ch6" charter derive)" "Gate tests"
+}
+derivation_never_removes
+
+# `introduce` then `derive` re-appended the pin-less record beside the pinned one — a duplicate that
+# also read as having provenance nobody gave it.
+introducing_then_deriving_leaves_one_record() {
+  make_repo "$tmp/ch7" main && set_origin "$tmp/ch7" 'https://github.com/acme/ch7.git' \
+    && commit_file "$tmp/ch7" Makefile 'test:
+	echo ok
+' || { skip "duplicate — git could not make a repo here"; return; }
+
+  d=$(floor "$tmp/ch7" new "Dup")
+  floor "$tmp/ch7" charter introduce Decided tests >/dev/null 2>&1
+  floor "$tmp/ch7" charter derive >/dev/null 2>&1
+
+  is "one clause record, not two" \
+     "$(awk -v id="$(clause_of tests)" '$1 == "clause" && $2 == id' "$(charter_of "$d")" | grep -c .)" "1"
+
+  #
+  # Provenance arriving is not promotion.
+  #
+  # The clause was introduced because nothing established it. Something does now, and derivation is
+  # the only thing permitted to say so — which is why a human is refused the same edit above.
+  #
+  is "derivation may set the kind a human may not" \
+     "$(awk -v id="$(clause_of tests)" '$1 == "clause" && $2 == id { print $3 }' "$(charter_of "$d")")" "Gate"
+  is "and it now carries a pin" \
+     "$(awk -v id="$(clause_of tests)" '$1 == "pin" && $2 == id' "$(charter_of "$d")" | grep -c .)" "1"
+}
+introducing_then_deriving_leaves_one_record
+
+#
+# `cksum` is 32 bits, so two meanings can land on one id.
+#
+# Forced by hand rather than by hunting a real CRC collision: what matters is that the path is
+# reachable and refuses, not that two English sentences happen to collide today.
+#
+one_id_means_one_thing() {
+  make_repo "$tmp/ch8" main && set_origin "$tmp/ch8" 'https://github.com/acme/ch8.git' \
+    && commit_file "$tmp/ch8" README.md 'x' || { skip "collision — git could not make a repo"; return; }
+
+  c=$(floor "$tmp/ch8" new "Collide")
+  floor "$tmp/ch8" charter introduce Decided 'the first meaning' >/dev/null 2>&1
+
+  # The same id, a different meaning. This is what a collision looks like on disk.
+  id=$(clause_of 'the first meaning')
+  before=$(cat "$(charter_of "$c")")
+
+  has "the charter holds it once to begin with" "$before" "Decided the first meaning"
+
+  # The same id, a different meaning. This is what a collision looks like on disk.
+  printf 'clause %s Decided a different meaning entirely\n' "$id" >> "$(charter_of "$c")"
+
+  has "a charter naming two meanings on one id says so" \
+      "$(floor "$tmp/ch8" charter check 2>&1)" "ambiguous: id $id names two meanings"
+  is  "and check refuses to call that clean" \
+      "$(code_of floor "$tmp/ch8" charter check)" "7"
+}
+one_id_means_one_thing
+
+#
+# The resolver is an adapter, so another one must work without editing anything above it.
+#
+# This one knows no ecosystem at all — it answers for a repository holding none of the files the
+# shipped detector looks for. If the charter still records a gate, nothing above the seam learned
+# which resolver answered.
+#
+another_resolver_needs_no_change_above_it() {
+  make_repo "$tmp/ch9" main && set_origin "$tmp/ch9" 'https://github.com/acme/ch9.git' \
+    && commit_file "$tmp/ch9" thing.rs 'fn main() {}' || { skip "resolver seam — git could not make a repo"; return; }
+
+  printf '#!/bin/sh\necho "checks thing.rs cargo test"\n' > "$tmp/rustish.sh"
+
+  r=$(floor "$tmp/ch9" new "Other Resolver")
+  ( cd "$tmp/ch9" && FOUNDRY_HOME="$home" FOUNDRY_RUN="$r" FOUNDRY_GATES="$tmp/rustish.sh" \
+      sh "$runner" charter derive >/dev/null 2>&1 )
+
+  held=$(cat "$(charter_of "$r")" 2>/dev/null)
+  has "a replacement resolver's gate becomes a clause" "$held" "Gate checks"
+  has "pinned to what that resolver read"              "$held" "thing.rs"
+  has "and its command recorded"                       "$held" "gate $(clause_of checks) cargo test"
+
+  is "the shipped resolver finds nothing here" \
+     "$(sh "$here/lib/detect-gates.sh" "$tmp/ch9" | grep -c .)" "0"
+}
+another_resolver_needs_no_change_above_it
+
+#
+# Three tampers that every earlier check passed.
+#
+# Each edits the charter and nothing else — no pin touched, no sha moved. They passed because every
+# finding was gated on a record the tamper removes, or on an id nothing recomputed.
+#
+a_tampered_charter_is_visible() {
+  make_repo "$tmp/tam" main && set_origin "$tmp/tam" 'https://github.com/acme/tam.git' \
+    && commit_file "$tmp/tam" Makefile 'test:
+	echo ok
+' || { skip "tamper — git could not make a repo here"; return; }
+
+  m=$(floor "$tmp/tam" new "Tamper")
+  rm -f "$(charter_of "$m")"; floor "$tmp/tam" charter derive >/dev/null 2>&1
+  id=$(clause_of tests)
+
+  # The text rewritten under its id. Every other record still matches, so nothing else notices.
+  sed "s|^clause $id Gate tests\$|clause $id Gate anything at all|" "$(charter_of "$m")" > "$tmp/t1" \
+    && cp "$tmp/t1" "$(charter_of "$m")"
+  has "a clause whose text was rewritten under its id is caught" \
+      "$(floor "$tmp/tam" charter check 2>&1)" "forged: id $id"
+
+  # The pin and the resolution deleted. The clause stays, and used to read as satisfied.
+  rm -f "$(charter_of "$m")"; floor "$tmp/tam" charter derive >/dev/null 2>&1
+  grep -v '^pin \|^gate ' "$(charter_of "$m")" > "$tmp/t2" && cp "$tmp/t2" "$(charter_of "$m")"
+  out=$(floor "$tmp/tam" charter check 2>&1)
+  has "a Gate whose pin was deleted is caught"        "$out" "unpinned: Gate tests"
+  has "and one whose resolution was deleted as well"  "$out" "unresolved: Gate tests"
+
+  # The clause deleted outright, leaving pin and gate behind.
+  rm -f "$(charter_of "$m")"; floor "$tmp/tam" charter derive >/dev/null 2>&1
+  grep -v '^clause ' "$(charter_of "$m")" > "$tmp/t3" && cp "$tmp/t3" "$(charter_of "$m")"
+  has "a deleted clause is caught even with its records left behind" \
+      "$(floor "$tmp/tam" charter check 2>&1)" "deleted: Gate tests"
+
+  # One word. A pin's target is what it says it is, so relabelling it made a local pin read foreign
+  # — reported as uncheckable, never compared, and never counted.
+  rm -f "$(charter_of "$m")"; floor "$tmp/tam" charter derive >/dev/null 2>&1
+  sed 's|^\(pin [0-9]* \)https://github.com/acme/tam.git|\1https://github.com/acme/elsewhere.git|' \
+    "$(charter_of "$m")" > "$tmp/t4" && cp "$tmp/t4" "$(charter_of "$m")"
+
+  has "a pin relabelled onto another repository is caught" \
+      "$(floor "$tmp/tam" charter check 2>&1)" "unpinned: Gate tests"
+  is  "and it fails rather than reading uncheckable" \
+      "$(code_of floor "$tmp/tam" charter check)" "7"
+}
+
+# The detector answers for the repository, never for the directory you happen to stand in.
+deriving_from_a_subdirectory_is_the_same_answer() {
+  make_repo "$tmp/sub" main && set_origin "$tmp/sub" 'https://github.com/acme/sub.git' \
+    && commit_file "$tmp/sub" Makefile 'test:
+	echo ok
+' || { skip "subdirectory — git could not make a repo here"; return; }
+  mkdir -p "$tmp/sub/deep"
+
+  s=$(floor "$tmp/sub" new "Deep")
+  floor_as "$tmp/sub/deep" "$home" "$s" charter derive >/dev/null 2>&1
+
+  has "deriving one level down finds the same gate" \
+      "$(cat "$(charter_of "$s")" 2>/dev/null)" "clause $(clause_of tests) Gate tests"
+}
+deriving_from_a_subdirectory_is_the_same_answer
+a_tampered_charter_is_visible
+
+# `introduce` replaces the record for a meaning. Appending left the first one winning for every
+# reader, so the second was accepted and changed nothing.
+introducing_twice_leaves_one_record() {
+  [ -n "${chrun:-}" ] || { skip "one record — no charter run"; return; }
+
+  floor "$tmp/ch" charter introduce Judged 'said once' >/dev/null 2>&1
+  floor "$tmp/ch" charter introduce Judged 'said once' >/dev/null 2>&1
+
+  is "the same clause twice is one record" \
+     "$(awk -v id="$(clause_of 'said once')" '$1 == "clause" && $2 == id' "$(charter_of "$chrun")" | grep -c .)" "1"
+}
+introducing_twice_leaves_one_record
+
+# A resolver that is not there answers "no gates", which is what a clean charter looks like.
+a_missing_resolver_is_not_silence() {
+  [ -n "${chrun:-}" ] || { skip "missing resolver — no charter run"; return; }
+
+  is "a resolver that is not there stops the command" \
+     "$( cd "$tmp/ch" && FOUNDRY_HOME="$home" FOUNDRY_RUN="$chrun" FOUNDRY_GATES="$tmp/no-such" \
+         sh "$runner" charter check >/dev/null 2>&1; printf '%s' "$?" )" "3"
+}
+a_missing_resolver_is_not_silence
+
+is "charter with no run exits 1" "$(code_of floor "$tmp/bare" charter)" "1"
 
 # --- asking for the wrong thing ---
 

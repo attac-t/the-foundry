@@ -172,6 +172,82 @@ wreck_runner "a bootstrap that names nothing is caught" \
 wreck_runner "a grant that stores credentials is caught" \
   grantcreds 's|printf .%s\\n. "$identity" >> "$grants"|printf "%s\\n" "$repo" >> "$grants"|'
 
+# The charter lives in the run, so nothing can inherit one. Move it beside the runs and a reclaimed
+# slot would carry a dead run's definition of good — the bug policy shipped with.
+wreck_runner "a charter kept outside the run is caught" \
+  loosech 's|charter_file() { printf .%s/charter. "$1"; }|charter_file() { printf "%s/charter-%s" "$HOME_DIR" "$(basename "$1")"; }|'
+
+#
+# The bug this break exists because of.
+#
+# `git rev-parse main:Makefile` sends its `fatal:` to stderr and echoes the unresolved argument to
+# stdout, so dropping stderr leaves a string that looks exactly like a sha. It was pinned.
+#
+wreck_runner "a sha that is really an error message is caught" \
+  fakesha 's|git rev-parse --verify --quiet "$1:$2"|git rev-parse "$1:$2"|'
+
+#
+# The other one.
+#
+# Folding the kind into the id gave `Gate: tests` and `Decided: tests` different ids, so the
+# weakening check searched for a clause that could not be there and monotonicity did nothing.
+#
+wreck_runner "an id that includes the kind is caught" \
+  kindid 's|clause_id() { printf .%s. "$1"|clause_id() { printf "%s %s" "$1" "${2:-}"|'
+
+#
+# Only derivation may set a kind.
+#
+# This replaced a break against a numeric ranking of the kinds. There is no ranking now — the kinds
+# say how truth is established, not how much, so a human editing one is claiming provenance that
+# nothing established rather than tightening or weakening anything.
+#
+wreck_runner "a human allowed to change a clause's kind is caught" \
+  kindedit 's#^    \[ -z "$was" \] .* {$#    [ 1 -eq 1 ] || {#'
+
+# A clause is one line of a line-oriented file. Accepting a newline makes one clause into two records.
+#
+# `#` as the delimiter, because the text being replaced contains `||` and sed reads the first `|` as
+# the end of the pattern. The audit caught this as *sed failed* rather than passing — twice.
+wreck_runner "clause text that may hold a newline is caught" \
+  twoline 's#^is_one_line() {#is_one_line() { return 0; :#'
+
+# Re-deriving must not drop what nothing derived. Losing them makes `derive` a silent deletion.
+wreck_runner "a re-derivation that drops introduced clauses is caught" \
+  dropintro 's|^    keep_introduced .*$|    :|'
+
+# Deriving from the wrong repository pins another repo's files under this run's target.
+wreck_runner "deriving from a repository the run does not name is caught" \
+  wrongrepo 's#^refuse_wrong_repository() {#refuse_wrong_repository() { return 0; :#'
+
+#
+# Every finding `check` exists to make, one break each.
+#
+# Two of these named readers that no longer exist. `unpinned_clauses` and `deleted_clauses` were
+# each gated on a record a tamper deletes — no `gate` record meant no unpinned finding — so both
+# were replaced by `underived_gates`, which asks the detector what should be there and then looks.
+#
+wreck_runner "a check blind to a gate resting on nothing is caught" \
+  blindgates 's|^        underived_gates "$file"$|        :|'
+wreck_runner "a check blind to a rewritten clause is caught" \
+  blindforge 's|^        forged_ids "$file"$|        :|'
+wreck_runner "a check blind to a gate resolving elsewhere is caught" \
+  blindres   's|^        moved_resolutions "$file"$|        :|'
+wreck_runner "a check blind to a pinned file that moved is caught" \
+  blindmoved 's|^        moved_sources "$file"$|        :|'
+wreck_runner "a check blind to one id naming two meanings is caught" \
+  blindambig 's|^        ambiguous_ids "$file"$|        :|'
+
+# The detector must answer for the repository, not for the directory you stand in. One level down it
+# found nothing, wrote an empty charter, and exited 0.
+wreck_runner "a detector run against the working directory is caught" \
+  cwdgates 's|sh "$(gate_resolver)" "$(repo_root)"|sh "$(gate_resolver)" .|'
+
+# A pin's target is self-asserted, so accepting any pin carrying the id let one relabelled word make
+# a local pin read foreign — reported uncheckable, never compared, never counted.
+wreck_runner "a gate satisfied by a pin on another repository is caught" \
+  anypin 's|has_local_pin "$1" "$id" "$here"|has_record "$1" pin "$id"      |'
+
 # --- break the install ---
 
 echo
