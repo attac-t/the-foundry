@@ -293,10 +293,12 @@ answer. A `Gate:` clause governing a target whose gates cannot be read has **no 
 and no downgrade to route it to a judge** — §2.4 runs a gate only where it is declared, and the
 downgrade compares a resolved command at two refs, which needs the declaration readable at both. So
 the clause cannot be evidenced there, and §2.5 blocks delivery with nothing able to unblock it.
-**Until the workspace seam gives each target a checkout, a multi-target run holding any `Gate:`
-clause cannot complete.** A charter of `Judged:` and `Decided:` clauses is unaffected — neither
-producer needs a gate declaration. v1 ships one unit against the bootstrap target, where the question
-does not arise, which is why this is a stated limit and not a blocker. §8 tests it.
+A `Judged:` or `Decided:` clause pays no part of **this** cost: neither producer needs a gate
+declaration. That does not make it deliverable. §2.5 stamps evidence at each selected target's
+delivered ref, and with no checkout there is no second delivered ref to stamp — so **multi-target
+completion waits on the workspace seam whatever the charter holds**, and §8's experiment 2 already
+records it failing. v1 ships one unit against the bootstrap target, where the question does not
+arise. §8 tests the `Gate:` half.
 
 **A clause that governs no selected target is refused, not evidenced.** A charter whose clauses grade
 nothing is not a low bar; it is not a bar. §4 says when that refusal binds.
@@ -389,16 +391,17 @@ The worker cannot dodge the gate, because none of the four conditions is reporte
 cannot lower its own bar, because lowering *is* condition three.
 
 **Authorisation also refuses, and a refusal is not a fifth condition.** The four decide when a human
-is *asked*, and each has an answer a person can give. Two cases have none. A charter holding no
-clause does not describe work yet, so there is nothing to authorise. A clause governing no selected
-target grades nothing, and a bar that grades nothing is no bar — authorising it would authorise a
-requirement nothing can answer.
+is *asked*, and each has an answer a person can give. Two cases have none:
+
+| Refused | Because | Cleared by |
+|---|---|---|
+| the charter holds no clause | nothing is described, so there is nothing to authorise | a target declaring a gate, or a pinned instruction file carrying a requirement |
+| a clause governs no selected target | a bar that grades nothing is no bar | declaring the gate that clause names, or a later run selecting a target it governs |
 
 **The refused run ends. It does not re-plan.** Invariant 3's baseline is what the pinned artifacts
-derive *now*, so a second attempt from the same base derives the same charter and refuses
-identically. The remedy changes an input, never the attempt: declare the gate the clause names, or
-change the human-owned artifact that derives it. A condition routes to a person for an answer; this
-routes to an artifact for an edit.
+derive *now*, so an attempt from the same base and the same selection derives the same charter and
+refuses identically. Every remedy above changes an input. A condition routes to a person for an
+answer; this routes to an artifact, or to a selection, for an edit.
 
 **An authorisation answer names the condition that fired, never the clause.** Answering *yes,
 introduce it* authorises a requirement's existence; it never says the work met it. A `Decided:`
@@ -1087,7 +1090,7 @@ required by §2.3, not speculative.
 | 1 | Rewrite a gate script to `exit 0`; confirm the clause downgrades to `judged` | the pinning invariant | not built — **and this is the one that matters** |
 | 1b | Ten ordinary runs — a dependency bump, a new test, a refactor; count how many downgrade | that downgrade is rare enough to mean something | not built |
 | 2 | Two targets, one run, one ledger | the run/target split | fails |
-| 2b | A two-target run where only the bootstrap declares `tests`; confirm completion blocks on the other target | that a `Gate:` clause on an unreadable target is evidenceable | not built |
+| 2b | A two-target run where only the bootstrap declares `tests`; confirm completion blocks on the other target | that a `Gate:` clause on an unreadable target cannot be evidenced | not built |
 | 3 | Two runs, same branch name, same machine | workspace isolation | collides |
 | 4 | A directory of markdown files as a source — `read` under twenty lines, plus `ask` and `receive` | the work-source contract | no contract to satisfy |
 | 5 | A run where all clauses derive; confirm no human is asked | the authorisation gate is not ceremony | not built |
