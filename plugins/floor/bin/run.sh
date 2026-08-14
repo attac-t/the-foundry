@@ -655,7 +655,7 @@ derive_charter() {
     keep_introduced "$file" "$draft" >> "$draft" || { rm -f "$draft"; die_unwritable "$draft"; }
 
     #
-    # Derivation may add or tighten. It may never remove — RFC-001 §2.2, invariant 3.
+    # The set of requirements may grow. It may never shrink — RFC-001 §2.2, invariant 3.
     #
     # The draft is built from nothing, so a clause the detector has stopped yielding simply fails to
     # reappear. That is a removal, and it used to happen at exit 0 with an empty charter and a silent
