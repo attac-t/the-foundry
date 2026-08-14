@@ -227,7 +227,14 @@ detector again:
 | `moved` | a pinned file's sha changed |
 | `resolves elsewhere` | the same gate name now yields a different command |
 | `deleted` | something derives that the charter no longer holds |
-| `unpinned` | a clause resting on nothing |
+| `unpinned` | a gate with no pin on this repository |
+| `unresolved` | a gate whose resolution record is gone |
+| `forged` | a clause whose text is not the text its id was made from |
+| `ambiguous` | one id naming two meanings |
+| `uncheckable` | a pin on another repository — **printed, but the command still exits 0** |
+
+`uncheckable` is the one finding that does not fail. Every multi-target charter has one, and failing
+on it would make `check` useless for the shape it exists to support.
 
 Both drift findings exist because they catch different hands. Editing `.foundry/gates` moves a sha.
 Adding a file the detector prefers moves the answer while every pinned sha still matches.
