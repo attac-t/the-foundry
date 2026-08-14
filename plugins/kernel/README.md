@@ -56,6 +56,7 @@ flow           ASCII flowcharts
 handoff        State transfer between sessions
 map            Elegant directory trees
 observation    Record learnings and discoveries
+pr-stack       Pull requests that depend on each other
 readme         Documentation that doesn't suck
 ```
 
