@@ -238,6 +238,16 @@ wreck_runner "a check blind to a pinned file that moved is caught" \
 wreck_runner "a check blind to one id naming two meanings is caught" \
   blindambig 's|^        ambiguous_ids "$file"$|        :|'
 
+# The detector must answer for the repository, not for the directory you stand in. One level down it
+# found nothing, wrote an empty charter, and exited 0.
+wreck_runner "a detector run against the working directory is caught" \
+  cwdgates 's|sh "$(gate_resolver)" "$(repo_root)"|sh "$(gate_resolver)" .|'
+
+# A pin's target is self-asserted, so accepting any pin carrying the id let one relabelled word make
+# a local pin read foreign — reported uncheckable, never compared, never counted.
+wreck_runner "a gate satisfied by a pin on another repository is caught" \
+  anypin 's|has_local_pin "$1" "$id" "$here"|has_record "$1" pin "$id"      |'
+
 # --- break the install ---
 
 echo

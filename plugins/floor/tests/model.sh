@@ -879,7 +879,34 @@ a_tampered_charter_is_visible() {
   grep -v '^clause ' "$(charter_of "$m")" > "$tmp/t3" && cp "$tmp/t3" "$(charter_of "$m")"
   has "a deleted clause is caught even with its records left behind" \
       "$(floor "$tmp/tam" charter check 2>&1)" "deleted: Gate tests"
+
+  # One word. A pin's target is what it says it is, so relabelling it made a local pin read foreign
+  # — reported as uncheckable, never compared, and never counted.
+  rm -f "$(charter_of "$m")"; floor "$tmp/tam" charter derive >/dev/null 2>&1
+  sed 's|^\(pin [0-9]* \)https://github.com/acme/tam.git|\1https://github.com/acme/elsewhere.git|' \
+    "$(charter_of "$m")" > "$tmp/t4" && cp "$tmp/t4" "$(charter_of "$m")"
+
+  has "a pin relabelled onto another repository is caught" \
+      "$(floor "$tmp/tam" charter check 2>&1)" "unpinned: Gate tests"
+  is  "and it fails rather than reading uncheckable" \
+      "$(code_of floor "$tmp/tam" charter check)" "7"
 }
+
+# The detector answers for the repository, never for the directory you happen to stand in.
+deriving_from_a_subdirectory_is_the_same_answer() {
+  make_repo "$tmp/sub" main && set_origin "$tmp/sub" 'https://github.com/acme/sub.git' \
+    && commit_file "$tmp/sub" Makefile 'test:
+	echo ok
+' || { skip "subdirectory — git could not make a repo here"; return; }
+  mkdir -p "$tmp/sub/deep"
+
+  s=$(floor "$tmp/sub" new "Deep")
+  floor_as "$tmp/sub/deep" "$home" "$s" charter derive >/dev/null 2>&1
+
+  has "deriving one level down finds the same gate" \
+      "$(cat "$(charter_of "$s")" 2>/dev/null)" "clause $(clause_of tests) Gate tests"
+}
+deriving_from_a_subdirectory_is_the_same_answer
 a_tampered_charter_is_visible
 
 # `introduce` replaces the record for a meaning. Appending left the first one winning for every

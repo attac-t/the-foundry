@@ -593,7 +593,16 @@ pinned_command() {
 #
 gate_resolver() { printf '%s' "${FOUNDRY_GATES:-$(dirname "$0")/../lib/detect-gates.sh}"; }
 
-detect_gates() { sh "$(gate_resolver)" "$1" 2>/dev/null; }
+#
+# Always the repository root, never the working directory.
+#
+# `detect_gates .` let the directory you happened to stand in decide what the charter says. Running
+# `charter derive` one level down found no gates, wrote an empty charter, and exited 0 — the silent
+# emptying `dropped_clauses` exists to refuse, arriving through the front door instead.
+#
+detect_gates() { sh "$(gate_resolver)" "$(repo_root)" 2>/dev/null; }
+
+repo_root() { git rev-parse --show-toplevel 2>/dev/null || printf '.'; }
 
 #
 # A resolver that is not there answers "no gates", and no gates is what a clean charter looks like.
@@ -638,7 +647,7 @@ derive_charter() {
 
     # Everything is checked and staged before the charter moves. A refusal leaves it untouched.
     : > "$draft" || die_unwritable "$draft"
-    detect_gates . | while_reading_gates "$file" "$draft" "$boot" "$ref" || {
+    detect_gates | while_reading_gates "$file" "$draft" "$boot" "$ref" || {
         rm -f "$draft"
         exit 6
     }
@@ -789,6 +798,17 @@ forged_ids() {
 has_record() { awk -v kind="$2" -v id="$3" '$1 == kind && $2 == id { seen = 1 } END { exit !seen }' "$1"; }
 
 #
+# A pin on *this* repository, which is the only kind that can be verified from here.
+#
+# A pin's target is self-asserted. Relabelling that one field made a local pin read foreign, so
+# `moved_sources` printed `uncheckable:` and stopped comparing shas, and asking merely whether *some*
+# pin carried the id was satisfied by the relabelled one. Neutralising a gate cost a single word.
+#
+has_local_pin() {
+    awk -v id="$2" -v here="$3" '$1 == "pin" && $2 == id && $3 == here { seen = 1 } END { exit !seen }' "$1"
+}
+
+#
 # Every gate the detector yields, judged against what the charter holds for it.
 #
 # Driven from the detector rather than from the charter's own records, because each finding used to
@@ -797,13 +817,15 @@ has_record() { awk -v kind="$2" -v id="$3" '$1 == kind && $2 == id { seen = 1 } 
 # and `check` called it clean.
 #
 underived_gates() {
-    detect_gates . | while read -r name _ command; do
+    here=$(this_repository)
+
+    detect_gates | while read -r name _ command; do
         [ -n "$name" ] || continue
         id=$(clause_id "$name")
 
         [ "$(clause_kind "$1" "$id")" = Gate ] || { printf 'deleted: Gate %s\n' "$name"; continue; }
-        has_record "$1" pin  "$id" || printf 'unpinned: Gate %s\n' "$name"
-        has_record "$1" gate "$id" || printf 'unresolved: Gate %s\n' "$name"
+        has_local_pin "$1" "$id" "$here" || printf 'unpinned: Gate %s\n' "$name"
+        has_record "$1" gate "$id"       || printf 'unresolved: Gate %s\n' "$name"
     done
 }
 
@@ -855,7 +877,7 @@ refuse_wrong_repository() {
 # sha. Adding a file the detector prefers moves the answer while every pinned sha still matches.
 #
 moved_resolutions() {
-    detect_gates . | while read -r name _ command; do
+    detect_gates | while read -r name _ command; do
         [ -n "$name" ] || continue
         was=$(pinned_command "$1" "$(clause_id "$name")")
         [ -n "$was" ] || continue
