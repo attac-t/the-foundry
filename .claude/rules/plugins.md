@@ -10,6 +10,9 @@ because this shipped.
 
 Patch for a fix or docs. Minor for a new skill or command. Major for a break.
 
+Every plugin change edits `marketplace.json`, so two plugin branches off `main` collide there by
+construction. Open the second on the first via `craft-pr-stack`.
+
 ## Shipped code
 
 A plugin that ships code declares `sh`, `awk` and `git`. Nothing else — a gate needing a parser
