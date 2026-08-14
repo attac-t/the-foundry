@@ -1,6 +1,6 @@
 # RFC-001: The Portable Composition Model
 
-**Status:** Accepted — revision 6
+**Status:** Accepted — revision 7
 **Plugin:** `floor`
 **Author:** Christian Attard
 **Date:** 2026-08-12
@@ -195,8 +195,34 @@ These replace routine approval. Each is checkable by code, not by the worker's a
 |---|---|---|
 | 1 | **Provenance** | Every clause names the human-owned artifact it came from — a repo script, an instruction file, the work item — **and establishes the link by one of exactly two paths, mechanical or semantic (below).** A clause that establishes neither is *introduced* |
 | 2 | **Pinning** | That artifact is captured at the base ref of **the target it came from** — §2.3's `ref`. Both the clause *and its resolution* are pinned |
-| 3 | **Monotonicity** | Derivation may add or tighten clauses. It may never remove or weaken one. A weakening is not a charter edit — it becomes a `Decided:` clause. **The baseline is what the pinned artifacts derive now, never a previous run's charter** |
+| 3 | **Monotonicity** | The set of requirements may grow. It may never shrink. A clause's kind is not a rank on that set — below. **The baseline is what the pinned artifacts derive now, never a previous run's charter** |
 | 4 | **Authority** | Selecting the work item **is** the human act, stamped as `human` evidence. It authorises everything derived from artifacts that human already owns |
+
+#### The kinds are not a scale
+
+`Gate:`, `Judged:` and `Decided:` say how a clause's truth is established. They do not rank it.
+
+Turning `Judged: the interface is understandable` into `Gate:` strengthens nothing. It demands a
+command that does not exist, and inventing one produces the green gate that certifies nothing —
+`craft-oracle`'s first failure. `Decided:` is not the weakest either. It carries authority no
+command can hold.
+
+So monotonicity is about the requirement, and never about the kind:
+
+```
+add a clause      the set grew         allowed
+remove a clause   the set shrank       refused
+change the text   a different requirement, so the old one is being removed
+change the kind   only derivation, and only by establishing provenance
+```
+
+**A human may not change a kind.** Deciding that a requirement is now established differently is new
+meaning, and new meaning goes into a human-owned artifact where derivation finds it. Editing the
+charter to say so skips the artifact and leaves the claim pinned to nothing.
+
+This also settles what happens when something introduced is later derived. Provenance arriving is
+not promotion — the clause was introduced because nothing established it, and now something does.
+Derivation says so by setting the kind. Nothing else may.
 
 #### The baseline is derived, not inherited
 
@@ -302,7 +328,7 @@ A human is asked **only** when one of four conditions fires:
 ```
 neither path establishes provenance   → new meaning was introduced
 the judge answered "ambiguous"        → the meaning is genuinely unclear
-a clause is weaker than derived       → invariant 3 was violated
+a clause the pins still derive is gone → invariant 3 was violated
 a target is outside the allowlist     → policy refuses (§2.3)
 ```
 
@@ -861,6 +887,28 @@ charter, and the parser trap. The `Gate:` inconsistency came from reading §2.2 
 
 Not changed: policy stays run-scoped. A durable grant for central sources is real. Its only honest
 scope is the source, and §9 already orders that stage after this one.
+
+### Revision 7 — the kinds were never a scale
+
+Building the charter needed to know whether changing a clause's kind was a tightening or a
+weakening. Invariant 3 said "add or tighten… never remove or weaken" and never defined either across
+kinds, so the implementation invented an order — `Gate` over `Judged` over `Decided` — and enforced
+it.
+
+| Was | Is | What falsified it |
+|---|---|---|
+| §2.2 invariant 3: "add or tighten… never remove or weaken" | the set of requirements may grow, never shrink; the kind is not a rank | `Judged: the interface is understandable` promoted to `Gate:` demands a command that cannot exist. The invented order made that a tightening and a weakening of the reverse — both wrong |
+| §2.2 gate condition 3: "a clause is weaker than derived" | a clause the pins still derive is gone | With no rank, "weaker" names nothing. The condition it was reaching for is removal, which is the only shape a weakening now takes |
+
+The correction removes code rather than adding it. A clause is identified by its text, so a changed
+requirement is a different clause: "tighten" collapses into add, "weaken" collapses into remove, and
+the guard against removal already carries the whole invariant.
+
+It also closes a question §2.2 never answered: an introduced clause that is later derived. Provenance
+arriving is not promotion, and derivation is the only thing that may say so.
+
+Found reviewing the charter implementation, not by reading this document — the ordering looked
+obvious until a clause that cannot be mechanically checked was written down next to it.
 
 ---
 
