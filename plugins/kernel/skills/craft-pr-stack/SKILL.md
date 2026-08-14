@@ -14,8 +14,8 @@ description: Opening a pull request on top of one that has not merged. When a st
 | The second change needs the first | Neither needs the other |
 | Both edit a file every change edits — manifest, lockfile, changelog | They touch different files |
 
-A file every change edits conflicts by construction. A green gate is not evidence: each branch
-passes alone while the merge of both is wrong.
+On that second row a green gate is not evidence: each branch passes alone while the merge of both is
+wrong.
 
 A stack imposes a merge order, and an order nobody needs is one somebody has to wait for.
 
@@ -34,17 +34,16 @@ git rebase --onto <parent-branch> <old-parent-tip> <child-branch>
 git push --force-with-lease origin <child-branch>
 ```
 
-`<old-parent-tip>` is the parent commit the child was built on. Once the parent is rewritten nothing
-computes it — read it from the reflog: `git rev-parse <parent-branch>@{1}`, or
-`origin/<parent-branch>@{1}` when someone else force-pushed.
+Once the parent is rewritten, nothing computes `<old-parent-tip>`. Read it from the reflog:
+`git rev-parse <parent-branch>@{1}`, or `origin/<parent-branch>@{1}` if someone else force-pushed.
 
 ## The Landing
 
 **Merging a parent does not move its children.** The base branch survives the merge, the child stays
 aimed at it, and merging the child lands the work on a stale branch instead of the trunk.
 
-**Deleting the base does not move them either — it closes them.** Observed here: the base was deleted
-and the child closed one second later, still aimed at it. GitHub documents an auto-retarget. Do not
+**Deleting the base does not move them either — it closes them.** Seen in practice: a base deleted,
+and one second later the child closed, still aimed at it. GitHub documents an auto-retarget. Do not
 spend a pull request finding out when it applies.
 
 So retarget every child first. Delete the parent branch after, or not at all:
