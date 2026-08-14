@@ -39,6 +39,9 @@ Once the parent is rewritten, nothing computes `<old-parent-tip>`. Read it from 
 
 ## The Landing
 
+Everything above is git and holds anywhere. This section is one forge's behaviour, and the commands
+are `gh`. Confirm it on any other before relying on it.
+
 **Merging a parent does not move its children.** The base branch survives the merge, the child stays
 aimed at it, and merging the child lands the work on a stale branch instead of the trunk.
 
