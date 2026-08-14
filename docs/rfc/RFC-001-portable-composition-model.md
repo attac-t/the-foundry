@@ -289,12 +289,14 @@ narrow nothing. Wrong toward *governed* is the safe direction; the alternative i
 stopped applying.
 
 **Name its cost, because it is not the downgrade's.** A downgraded gate routes to a judge who can
-answer. A `Gate:` clause governing a target whose gates cannot be read has **no producer at all** —
-§2.4 runs a gate only where it is declared, and an exit code is the only thing that makes `machine`
-evidence. So the clause cannot be evidenced there, and §2.5 blocks delivery with nothing able to
-unblock it. **Until the workspace seam gives each target a checkout, a multi-target run cannot
-complete.** v1 ships one unit against the bootstrap target, where the question does not arise — which
-is why this is a stated limit and not a blocker. §8 tests it.
+answer. A `Gate:` clause governing a target whose gates cannot be read has **no `machine` producer,
+and no downgrade to route it to a judge** — §2.4 runs a gate only where it is declared, and the
+downgrade compares a resolved command at two refs, which needs the declaration readable at both. So
+the clause cannot be evidenced there, and §2.5 blocks delivery with nothing able to unblock it.
+**Until the workspace seam gives each target a checkout, a multi-target run holding any `Gate:`
+clause cannot complete.** A charter of `Judged:` and `Decided:` clauses is unaffected — neither
+producer needs a gate declaration. v1 ships one unit against the bootstrap target, where the question
+does not arise, which is why this is a stated limit and not a blocker. §8 tests it.
 
 **A clause that governs no selected target is refused, not evidenced.** A charter whose clauses grade
 nothing is not a low bar; it is not a bar. §4 says when that refusal binds.
@@ -387,10 +389,16 @@ The worker cannot dodge the gate, because none of the four conditions is reporte
 cannot lower its own bar, because lowering *is* condition three.
 
 **Authorisation also refuses, and a refusal is not a fifth condition.** The four decide when a human
-is *asked*, and each has an answer a person can give. A charter holding no clause, or a clause
-governing no selected target, has none: nobody can authorise work the run has not described yet. So
-authorisation refuses and planning runs again. A condition routes to a person; this routes back to
-the machine that produced the incoherence.
+is *asked*, and each has an answer a person can give. Two cases have none. A charter holding no
+clause does not describe work yet, so there is nothing to authorise. A clause governing no selected
+target grades nothing, and a bar that grades nothing is no bar — authorising it would authorise a
+requirement nothing can answer.
+
+**The refused run ends. It does not re-plan.** Invariant 3's baseline is what the pinned artifacts
+derive *now*, so a second attempt from the same base derives the same charter and refuses
+identically. The remedy changes an input, never the attempt: declare the gate the clause names, or
+change the human-owned artifact that derives it. A condition routes to a person for an answer; this
+routes to an artifact for an edit.
 
 **An authorisation answer names the condition that fired, never the clause.** Answering *yes,
 introduce it* authorises a requirement's existence; it never says the work met it. A `Decided:`
@@ -534,7 +542,8 @@ why       on failure, what the command said
 | `human` | an explicit person-action, via the work source's `receive` | yes — the gap Panel's charter already names |
 
 `judged` evidence has one producer: an independent judge answering whether a clause was **met** — a
-review **verdict** at completion, or the second look a downgraded gate requires. A **clause
+review **verdict** at completion for a `Judged:` clause, or the second look a downgraded `Gate:`
+clause requires. A **clause
 entailment verdict is not evidence**; it answers whether a clause legitimately exists, which is
 provenance, and §2.2 records it beside the pin. Both are attributed and both are countable, which is
 what lets a recurring judgement be promoted into a mechanical check later.
@@ -679,7 +688,8 @@ planning                        ← read-only workspace
     ▼
 authorisation                   ← asks ONLY on the four conditions in §2.2
     │                             otherwise silent, and the run continues
-    │                             refuses a charter that describes no work — §2.2
+    │                             refuses a charter with no clause, or a clause
+    │                             governing no selected target — §2.2
     │                             the selected set freezes here, and coverage with it
     ▼
 mutating execution              ← one workspace per unit; gates run; evidence accumulates
@@ -1077,7 +1087,7 @@ required by §2.3, not speculative.
 | 1 | Rewrite a gate script to `exit 0`; confirm the clause downgrades to `judged` | the pinning invariant | not built — **and this is the one that matters** |
 | 1b | Ten ordinary runs — a dependency bump, a new test, a refactor; count how many downgrade | that downgrade is rare enough to mean something | not built |
 | 2 | Two targets, one run, one ledger | the run/target split | fails |
-| 2b | A two-target run where only the bootstrap declares `tests`; confirm completion blocks on the other target, with no producer able to clear it | that "stays governed" has a stated cost rather than a hidden one | not built |
+| 2b | A two-target run where only the bootstrap declares `tests`; confirm completion blocks on the other target | that a `Gate:` clause on an unreadable target is evidenceable | not built |
 | 3 | Two runs, same branch name, same machine | workspace isolation | collides |
 | 4 | A directory of markdown files as a source — `read` under twenty lines, plus `ask` and `receive` | the work-source contract | no contract to satisfy |
 | 5 | A run where all clauses derive; confirm no human is asked | the authorisation gate is not ceremony | not built |
@@ -1127,7 +1137,7 @@ policy              the target allowlist and the bootstrap target, enforced in c
 charter             clauses, mechanical provenance, pinning, monotonicity
   ↓
 authorisation       the four conditions, the semantic path, silence when none fire,
-                    refusal when the charter describes no work
+                    refusal when a clause grades nothing or the charter holds none
   ↓
 evidence            append-only, trust levels, no result parameter, the completion invariant
   ↓
