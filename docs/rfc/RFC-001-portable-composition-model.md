@@ -890,20 +890,6 @@ charter, and the parser trap. The `Gate:` inconsistency came from reading §2.2 
 Not changed: policy stays run-scoped. A durable grant for central sources is real. Its only honest
 scope is the source, and §9 already orders that stage after this one.
 
-### Revision 8 — "once" was two answers
-
-Drafting the authorisation stage found §2.3 and §9 disagreeing about how often a human is asked.
-
-| Was | Is | What falsified it |
-|---|---|---|
-| §2.3: a work-source repo is authorised "by a human, explicitly, once" | once **per run**, with the durable grant deferred to the work-source stage | §9 already said the run-scoped allowlist "asks once per run, which is right for a CLI run and wrong for a queue". Two sections, two answers, and §9 held the correct one |
-
-Found by two independent architecture reviews of a stage that has not been built. The second
-corrected the first: an ask with no transport is **not** a further contradiction, because §2.1
-already defines what a source that can only `read` does — it forces every `ask` to block — and §9
-orders the work source deliberately. A promise with a stated degenerate mode and a scheduled
-mechanism is a dependency, not a defect.
-
 ### Revision 7 — the kinds were never a scale
 
 Building the charter needed to know whether changing a clause's kind was a tightening or a
@@ -927,6 +913,20 @@ Found reviewing the charter implementation, not by reading this document — the
 obvious until a clause that cannot be mechanically checked was written down next to it.
 
 ---
+### Revision 8 — "once" was two answers
+
+Drafting the authorisation stage found §2.3 and §9 disagreeing about how often a human is asked.
+
+| Was | Is | What falsified it |
+|---|---|---|
+| §2.3: a work-source repo is authorised "by a human, explicitly, once" | once **per run**, with the durable grant deferred to the work-source stage | §9 already said the run-scoped allowlist "asks once per run, which is right for a CLI run and wrong for a queue". Two sections, two answers, and §9 held the correct one |
+
+Found by two independent architecture reviews of a stage that has not been built. The second
+corrected the first: an ask with no transport is **not** a further contradiction, because §2.1
+already defines what a source that can only `read` does — it forces every `ask` to block — and §9
+orders the work source deliberately. A promise with a stated degenerate mode and a scheduled
+mechanism is a dependency, not a defect.
+
 
 ## 7. Unresolved questions
 
