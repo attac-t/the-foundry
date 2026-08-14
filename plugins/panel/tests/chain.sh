@@ -77,4 +77,38 @@ is "a verdict naming another review is refused" \
 is "even though a round 1 file is sitting right there" \
    "$(ls "$c" | grep -c 'verdict')" "1"
 
+# --- the recorder ---
+#
+# The other half. Verifying a prior record is worth nothing if writing one is left to whoever is
+# holding the verdict: `prior` refuses a record that does not name its review, so a hand-written file
+# missing the stamp fails an honest round.
+
+d=$tmp/recorded
+
+is "the first record lands at round 1" \
+   "$(printf 'body\n' | sh "$runner" record "$d" adversary 'the charter' | sed 's|.*/||')" \
+   "001-adversary-verdict.md"
+
+is "and the next one counts on" \
+   "$(printf 'body\n' | sh "$runner" record "$d" adversary 'the charter' | sed 's|.*/||')" \
+   "002-adversary-verdict.md"
+
+# The stamp is what `prior` reads. Written by code, so it cannot be forgotten.
+has "a recorded verdict names the review it judged" \
+    "$(cat "$d/001-adversary-verdict.md")" "Judged: the charter"
+
+has "and keeps the body it was given" "$(cat "$d/001-adversary-verdict.md")" "body"
+
+# Round 2 must be satisfied by what `record` wrote, or the two halves disagree.
+has "what record wrote is what prior hands the next round" \
+    "$(chain prior "$d" 002 'the charter')" "001-adversary-verdict.md"
+
+# A recorder that interprets a verdict is a second author.
+is "the body is written through, not read" \
+   "$(printf '## Verdict: APPROVE\n' | sh "$runner" record "$d" newcomer 'the charter' >/dev/null 2>&1; \
+      grep -c 'APPROVE' "$d/003-newcomer-verdict.md")" "1"
+
+is "a role that is not a plain name is refused" \
+   "$(code_of sh "$runner" record "$d" '../escape' 'the charter')" "2"
+
 summary "chain"

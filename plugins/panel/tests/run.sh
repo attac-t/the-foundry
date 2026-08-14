@@ -59,6 +59,15 @@ wreck "a chain where no round ever looks back is caught" \
 wreck "a chain that always reports round 1 is caught" \
   stuckone 's|^    printf .%03d\\n. "$(( .*$|    printf "001\\n"|'
 
+# The stamp is the whole reason `prior` can tell one chain from another. A recorder that omits it
+# writes verdicts that fail the next honest round.
+wreck "a recorder that does not stamp the review is caught" \
+  nostamp 's|^        printf .Judged: %s\\n\\n. "$review"$|        :|'
+
+# Two rounds writing the same file is one round overwritten.
+wreck "a recorder that always writes round 1 is caught" \
+  sameslot 's|^    round=$(next_round "$dir")$|    round=001|'
+
 echo
 [ "$failed" -eq 0 ] && echo "ALL GREEN" || echo "FAILURES ABOVE"
 exit $failed

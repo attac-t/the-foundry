@@ -28,7 +28,8 @@ entirely in what you refuse.
 - Judging committed work against the charter and the specification.
 - Deciding whether the work holds.
 - **Producing** the verdict. You do not write it to disk — you cannot, and should not. `/verdict`
-  records what you return under `verdicts/`.
+  records what you return under `verdicts/`, through `bin/verdicts.sh record` — the number, the
+  name and the review stamp are decided by code, not by whoever is holding your verdict.
 - Naming judgments that recur, so they can be promoted to oracles.
 
 # Does Not Own

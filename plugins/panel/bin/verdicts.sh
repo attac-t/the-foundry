@@ -23,8 +23,9 @@ main() {
     [ "$#" -gt 0 ] && shift
 
     case "$action" in
-        next)  next_round  "${1:-}" ;;
-        prior) prior_round "${1:-}" "${2:-}" "${3:-}" ;;
+        next)   next_round  "${1:-}" ;;
+        prior)  prior_round "${1:-}" "${2:-}" "${3:-}" ;;
+        record) record_verdict "${1:-}" "${2:-}" "${3:-}" ;;
         *)     usage; exit 2 ;;
     esac
 }
@@ -33,8 +34,9 @@ usage() {
     cat <<'EOF'
 panel verdicts — the review chain.
 
-  verdicts.sh next  <dir>                     the round number to write next
-  verdicts.sh prior <dir> <round> <review>    the verdict round-1 must read, or exit 1
+  verdicts.sh next   <dir>                     the round number to write next
+  verdicts.sh prior  <dir> <round> <review>    the verdict round-1 must read, or exit 1
+  verdicts.sh record <dir> <role> <review>     write what a judge returned, on stdin
 EOF
 }
 
@@ -77,6 +79,42 @@ prior_round() {
         exit 1
     }
 
+    printf '%s\n' "$file"
+}
+
+#
+# Write what a judge returned, at the next round, stamped with the review it judged.
+#
+# The number, the name and the stamp are decided here rather than by whoever is holding the verdict.
+# `prior` refuses a record that does not name its review — which is only worth anything if something
+# guarantees a recorded verdict carries one. A model asked to write the file might not, and the
+# refusal would then fire on an honest round.
+#
+# The body arrives on stdin and is never interpreted. A recorder that edits a verdict is a second
+# author.
+#
+record_verdict() {
+    dir=$1; role=$2; review=$3
+
+    [ -n "$dir" ] && [ -n "$role" ] && [ -n "$review" ] \
+        || { note "record needs a directory, a role and a review"; exit 2; }
+
+    case "$role" in
+        *[!A-Za-z0-9-]*) note "a role is a plain name, not [$role]"; exit 2 ;;
+    esac
+
+    mkdir -p "$dir" || { note "could not write $dir"; exit 2; }
+    round=$(next_round "$dir")
+    file="$dir/$round-$role-verdict.md"
+
+    # Everything is staged before the record exists. A refusal leaves the chain as it was.
+    {
+        printf '# Verdict %s — %s\n\n' "$round" "$role"
+        printf 'Judged: %s\n\n' "$review"
+        cat
+    } > "$file.part" || { rm -f "$file.part"; note "could not write $file"; exit 2; }
+
+    mv "$file.part" "$file" || { rm -f "$file.part"; note "could not write $file"; exit 2; }
     printf '%s\n' "$file"
 }
 
