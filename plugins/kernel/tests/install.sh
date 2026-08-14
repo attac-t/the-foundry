@@ -73,17 +73,19 @@ wired() { wiring | cut -f2 | sort -u; }
 # Claude Code, and nothing should wire them.
 shipped_hooks() { find "$root/hooks" -maxdepth 1 -name '*.sh' -type f | sed 's|.*/||' | sort; }
 
-# List every file the plugin needs at runtime.
-shipped() { find "$root/hooks" -type f \( -name '*.sh' -o -name '*.awk' \) | sort; }
+# List the path of every file the plugin needs at runtime.
+runtime_files() { find "$root/hooks" -type f \( -name '*.sh' -o -name '*.awk' \) | sort; }
 
 #
 # Run a hook exactly as Claude Code would: its own shell, its own variable, JSON on stdin.
 #
 # The working directory is a plain directory with no git in it, so the memory resolver returns the
-# fixture path untouched and the checks below can name what they expect.
+# fixture path untouched and the checks below can name what they expect. Bail rather than fire from
+# anywhere else: somewhere with git in it resolves memory to a branch path, and every check below
+# would then be reading a directory it never wrote.
 #
 fire() {
-  ( cd "${FIRE_CWD:-$tmp/bare}" 2>/dev/null || exit 0
+  ( cd "$tmp/bare" 2>/dev/null || exit 0
     printf '%s' "$2" \
       | CLAUDE_PLUGIN_ROOT="${FIRE_ROOT:-$root}" CLAUDE_MEMORY_DIR="$tmp/mem" FOUNDRY_RUN= TMPDIR="$tmp" \
         sh -c "$(command_for "$1")" 2>/dev/null )
@@ -127,7 +129,7 @@ done
 
 # --- the wiring is the portable form ---
 #
-# Three checks for the three ways the old wiring failed on Windows. Each one is a string in a JSON
+# One check for each way the old wiring failed on Windows. Every one of them is a string in a JSON
 # file, which is exactly the kind of thing that goes wrong quietly and stays wrong for releases.
 
 for script in $(wired); do
@@ -178,50 +180,49 @@ is  "consider is quiet when it cannot read a path" \
 has "content holding a decoy path does not fool it" \
     "$(fire consider.sh '{"tool_input":{"file_path":"/app/src/A.php","content":"{\"file_path\":\"/x.md\"}"}}')" "additionalContext"
 
-# --- a path with a space in it ---
 # `C:\Program Files\ClaudeCode\plugins` is where Windows actually puts this. An unquoted variable in
 # hooks.json splits on that space and the hook never starts.
+a_path_with_a_space_in_it() {
+  cp -R "$root" "$tmp/with space" 2>/dev/null \
+    || { skip "a space in the path — could not copy the plugin here"; return; }
 
-if cp -R "$root" "$tmp/with space" 2>/dev/null; then
   has "the wired command survives a space in the path" \
       "$(FIRE_ROOT="$tmp/with space" fire ground.sh '{"source":"startup"}')" "GROUND NOW"
-else
-  skip "a space in the path — could not copy the plugin here"
-fi
+}
+a_path_with_a_space_in_it
 
 # --- the scripts parse where they will be run ---
 # `sh -n` reads without running. It is the cheapest way to catch a bashism that would otherwise wait
 # for the one user whose /bin/sh is dash.
 
-for file in $(shipped); do
+for file in $(runtime_files); do
   case "$file" in
     *.sh) sh -n "$file" 2>/dev/null && ok "parses under sh — ${file##*/}" \
                                     || bad "will not parse under sh — ${file##*/}" ;;
   esac
 done
 
-# --- the files can start ---
 # hooks.json names `sh` now, so the shell no longer needs this bit to start a hook. Keep it anyway.
 # It is what a reader checks first when a hook goes quiet, and its absence is what made the old
 # wiring — a bare path, no interpreter — fail on every install that recorded it.
+the_files_can_start() {
+  records_exec || { skip "executable bits — this filesystem does not record them"; return; }
 
-if records_exec; then
-  for file in $(shipped); do
+  for file in $(runtime_files); do
     case "$file" in
       */lib/*.awk) ;;
       *.sh) [ -x "$file" ] && ok "executable — ${file##*/}" || bad "not executable — ${file##*/}" ;;
     esac
   done
-else
-  skip "executable bits — this filesystem does not record them"
-fi
+}
+the_files_can_start
 
 # --- line endings ---
 # Git for Windows clones with core.autocrlf=true. A hook that arrives with CRLF does not merely
 # fail: the shell dies parsing it, and a Stop hook that exits 2 means block. Every turn.
 
 crlf=0
-for file in $(shipped); do
+for file in $(runtime_files); do
   has_cr "$file" && { crlf=1; bad "carriage returns — ${file##*/} would not run on Windows"; }
 done
 [ "$crlf" -eq 0 ] && ok "every shipped file is LF only"
@@ -254,13 +255,14 @@ strippable() {
   PATH="$tmp/noawk" "$tmp/noawk/sh" -c 'exit 0' 2>/dev/null
 }
 
-if strippable; then
+the_preflight_with_no_awk() {
+  strippable || { skip "the preflight with no awk — this platform cannot build a PATH without it"; return; }
+
   out=$(printf '{"source":"startup"}' \
     | env PATH="$tmp/noawk" CLAUDE_PLUGIN_ROOT="$root" sh -c "$(command_for preflight.sh)" 2>/dev/null)
   has "with no awk the preflight speaks up" "$out" '"systemMessage"'
   has "and it names what is missing"        "$out" 'awk'
-else
-  skip "the preflight with no awk — this platform cannot build a PATH without it"
-fi
+}
+the_preflight_with_no_awk
 
 summary "install"

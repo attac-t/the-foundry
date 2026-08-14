@@ -11,7 +11,9 @@
 #
 # Table cells do not count toward the word budget, because a table is easy to skim. They do count
 # toward long words, because a hard word is hard wherever it sits.
+#
 # POSIX awk only.
+#
 
 #
 # Warn is the working line, so it sits where good writing sits. Block costs the reader a second
@@ -25,13 +27,15 @@ BEGIN {
   if (words_warn  == "") words_warn  = 120
   if (words_block == "") words_block = 600
   fence = 0
-  SEP = " \001 "
+
+  # A block edge. END turns each one into a full stop, so no sentence runs across one.
+  EDGE = " \001 "
 }
 
 # A fence that closes takes its contents out of every count. One that never closes does not, or
 # opening a fence and leaving it open would hide the whole rest of the reply.
-/^[ \t]*(```|~~~)/ { if (fence) fbuf = ""; fence = !fence; pbuf = pbuf SEP; next }
-fence               { fbuf = fbuf SEP $0; next }
+/^[ \t]*(```|~~~)/ { if (fence) fbuf = ""; fence = !fence; pbuf = pbuf EDGE; next }
+fence               { fbuf = fbuf EDGE $0; next }
 
 {
   line = $0
@@ -45,17 +49,17 @@ fence               { fbuf = fbuf SEP $0; next }
 /^[ \t]*\|/ {
   gsub(/\|/, " ", line)
   if (line !~ /^[ \t:|-]*$/) tbuf = tbuf " " line
-  pbuf = pbuf SEP
+  pbuf = pbuf EDGE
   next
 }
 
 # A sentence ends at punctuation or a block edge, never because a line wrapped. Ending it at every
 # line break defeated the whole count: a 35-word sentence broken over three lines measured 13.
-/^[ \t]*$/                       { pbuf = pbuf SEP; next }
-/^[ \t]*#+[ \t]/                 { sub(/^[ \t]*#+[ \t]*/, "", line); pbuf = pbuf SEP line SEP; next }
+/^[ \t]*$/                       { pbuf = pbuf EDGE; next }
+/^[ \t]*#+[ \t]/                 { sub(/^[ \t]*#+[ \t]*/, "", line); pbuf = pbuf EDGE line EDGE; next }
 /^[ \t]*([-+*]|[0-9]+\.)[ \t]/   { sub(/^[ \t]*([-+*]|[0-9]+\.)[ \t]+/, "", line)
                                    sub(/^\[[ x]\][ \t]*/, "", line)
-                                   pbuf = pbuf SEP line; next }
+                                   pbuf = pbuf EDGE line; next }
                                  { pbuf = pbuf " " line }
 
 # Determine if a token holds a readable word.
@@ -105,7 +109,7 @@ function beats(t,   s, prev, k, v) {
 # Names and paths leave both sides of the long-word share. In the denominator alone, a wall of
 # product names would water the percentage down.
 #
-function tally(chunk,   n, i, raw, core, t, c) {
+function tally(chunk,   n, i, tok, raw, core, word, c) {
   n = split(chunk, tok, /[ \t]+/)
   c = 0
   for (i = 1; i <= n; i++) {
@@ -114,13 +118,13 @@ function tally(chunk,   n, i, raw, core, t, c) {
     gsub(/^[^A-Za-z0-9]+|[^A-Za-z0-9]+$/, "", core)
     if (core == "") continue
     if (looks_like_path(core)) continue
-    t = tolower(core); gsub(/[^a-z'-]/, "", t)
-    if (!is_word(t)) continue
+    word = tolower(core); gsub(/[^a-z'-]/, "", word)
+    if (!is_word(word)) continue
     c++
     if (is_name(core)) continue
     measured_words++
-    syl_total += beats(t)
-    if (beats(t) >= 3) hard_words++
+    beat_total += beats(word)
+    if (beats(word) >= 3) hard_words++
   }
   return c
 }
@@ -129,7 +133,7 @@ function tally(chunk,   n, i, raw, core, t, c) {
 function sep() { return (reason == "") ? "" : ". " }
 
 END {
-  if (fence) pbuf = pbuf SEP fbuf
+  if (fence) pbuf = pbuf EDGE fbuf
 
   gsub(/\001/, ".", pbuf)
   n = split(pbuf, sent, /[.!?]+[ \t]/)
@@ -143,8 +147,10 @@ END {
   tally(tbuf)
 
   long_pct = (measured_words > 0) ? 100 * hard_words / measured_words : 0
+
+  # Flesch-Kincaid, reported and never judged: a line break lowers it while the words stay hard.
   grade = (sentences > 0 && measured_words > 0) \
-        ? 0.39 * (prose_words / sentences) + 11.8 * (syl_total / measured_words) - 15.59 \
+        ? 0.39 * (prose_words / sentences) + 11.8 * (beat_total / measured_words) - 15.59 \
         : 0
 
   verdict = "pass"; reason = ""

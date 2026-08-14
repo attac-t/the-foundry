@@ -66,21 +66,19 @@ mentions "$hooks" '"UserPromptSubmit"' \
   || bad "hooks.json never runs the brief, so nothing reaches the agent before it writes"
 
 # Claude Code runs the hook as a command, so it needs one. Nothing else here would notice.
-for hook in signal brief preflight cleanup; do
-  head -1 "$root/hooks/$hook.sh" | grep -q '^#!' \
-    && ok "$hook.sh has a shebang" \
-    || bad "$hook.sh has no shebang"
+for script in signal brief preflight cleanup; do
+  head -1 "$root/hooks/$script.sh" | grep -q '^#!' \
+    && ok "$script.sh has a shebang" \
+    || bad "$script.sh has no shebang"
 done
 
 # --- the gate has one home ---
 # score.awk owns every default. A hook that names one again is a second gate, free to part company
 # with the first: the block lines were raised in the scorer while the hook kept passing the old
 # ones, and nothing was red.
-if grep -qE 'SIGNAL_[A-Z_]+:-[0-9]' "$root/hooks/"*.sh; then
-  bad "a hook restates a default — score.awk owns them, pass the dial through empty instead"
-else
-  ok "no hook restates a default"
-fi
+grep -qE 'SIGNAL_[A-Z_]+:-[0-9]' "$root/hooks/"*.sh \
+  && bad "a hook restates a default — score.awk owns them, pass the dial through empty instead" \
+  || ok "no hook restates a default"
 
 # --- no word data ships ---
 

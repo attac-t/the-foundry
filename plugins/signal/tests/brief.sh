@@ -6,7 +6,6 @@
 #
 # The rest is the handoff. Stop leaves the last reply's numbers in a note and this reads them out,
 # so the correction lands on the next reply instead of costing the reader a second one.
-
 #
 # Set PLUGIN_ROOT to point these checks at a deliberately broken copy.
 

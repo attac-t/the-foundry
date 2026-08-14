@@ -83,7 +83,7 @@ audit "a dead word-budget warn band is caught"   's/^  if (prose_words > words_w
 audit "a table left out of long words is caught" 's/^  tally(tbuf)/  dead = 0/'                        table
 audit "the sh-sound exception is tested"         's@ && t !~ /\[tcsx\](ia|io)\[nl\]/@@'                shsound
 audit "the -tio ending carve-out is tested"      's@(ia|io)\[nl\]@(ia|io)@'                            tioend
-audit "a dead blank-line boundary is caught"     's|^/\^\[ \\t\]\*\$/  *{ pbuf = pbuf SEP; next }|/^ZZZNEVER$/ { next }|' blankline
+audit "a dead blank-line boundary is caught"     's|^/\^\[ \\t\]\*\$/  *{ pbuf = pbuf EDGE; next }|/^ZZZNEVER$/ { next }|' blankline
 audit "the wrap dodge staying shut is tested"    's|^                                 { pbuf = pbuf " " line }|{ if (line ~ /[A-Za-z0-9)]$/) line = line "."; pbuf = pbuf " " line }|' wrap
 
 echo
@@ -131,23 +131,28 @@ records_exec() {
   [ ! -x "$probe" ]
 }
 
-# The breaks.
+# The breaks. Each sed replaces the one line it names, except unquote, which takes the quotes off
+# all four commands the way a hand-edited hooks.json loses them. Only the Stop wire is ever fired
+# against a path with a space in it, so that is the one that turns the suite red.
 unhook()  { chmod -x "$1/hooks/signal.sh"; }
 crlf()    { awk '{ printf "%s\r\n", $0 }' "$1/hooks/signal.sh" | rewrite "$1/hooks/signal.sh"; }
 unquote() { sed 's/\\"//g' "$1/hooks/hooks.json" | rewrite "$1/hooks/hooks.json"; }
 unship()  { rm -f "$1/lib/score.awk"; }
 rewire()  { sed 's|hooks/signal.sh|hooks/gone.sh|' "$1/hooks/hooks.json" | rewrite "$1/hooks/hooks.json"; }
 unbrief() { sed 's|hooks/brief.sh|hooks/gone.sh|'  "$1/hooks/hooks.json" | rewrite "$1/hooks/hooks.json"; }
-nonote()  { sed 's|^note |: |'                     "$1/hooks/signal.sh"  | rewrite "$1/hooks/signal.sh"; }
+unnote()  { sed 's|^note |: |'                     "$1/hooks/signal.sh"  | rewrite "$1/hooks/signal.sh"; }
 unread()  { sed 's|^last=.*|last=|'                "$1/hooks/brief.sh"   | rewrite "$1/hooks/brief.sh"; }
 
-if records_exec; then
+audit_the_executable_bit() {
+  records_exec || {
+    printf '  skip  a hook that lost its executable bit — this filesystem records no such bit\n'
+    return
+  }
   wreck "a hook that lost its executable bit is caught" nox unhook
-else
-  printf '  skip  a hook that lost its executable bit — this filesystem records no such bit\n'
-fi
+}
+audit_the_executable_bit
 
-wreck "a hook checked out with CRLF is caught"        crlf   crlf
+wreck "a hook checked out with CRLF is caught"        nolf   crlf
 wreck "an unquoted plugin root is caught"             noquot unquote
 wreck "a lib that did not ship is caught"             nolib  unship
 wreck "hooks.json pointing at nothing is caught"      nofile rewire
@@ -157,7 +162,7 @@ wreck "hooks.json pointing at nothing is caught"      nofile rewire
 # reply and blocking the tail, looking alive while the half that runs first is gone.
 #
 wreck "a brief that lost its wire is caught"          nobrief unbrief
-wreck "a Stop hook that leaves no note is caught"     nonote  nonote guarded
+wreck "a Stop hook that leaves no note is caught"     nonote  unnote guarded
 wreck "a brief that never reads the note is caught"   noread  unread briefed
 
 echo
