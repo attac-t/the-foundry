@@ -261,10 +261,11 @@ law. So `Decided:` clauses do not carry forward: a decision meant to last belong
 
 ### What `check` cannot see
 
-**A deleted introduced clause.** Every finding compares the charter against something outside it —
-the detector for a gate, the pinned sha for a source, the id for the text. An introduced clause has
-no outside: nothing derived it, nothing pinned it, and the charter is the only record it existed.
-Delete the line and `check` reports nothing.
+**A deleted introduced clause.** Every finding but one compares the charter against something outside
+it — the detector for a gate, the pinned sha for a source, the id for the text. `ambiguous` is the
+exception, and it reads the charter alone. An introduced clause has no outside: nothing derived it,
+nothing pinned it, and the charter is the only record it existed. Delete the line and `check` reports
+nothing.
 
 Closing that needs a ledger the charter cannot edit, which is the evidence stage. Until then a
 `Decided:` clause is exactly as durable as the file holding it.
