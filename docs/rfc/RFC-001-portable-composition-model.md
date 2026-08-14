@@ -1,6 +1,6 @@
 # RFC-001: The Portable Composition Model
 
-**Status:** Accepted — revision 8
+**Status:** Accepted — revision 9
 **Plugin:** `floor`
 **Author:** Christian Attard
 **Date:** 2026-08-12
@@ -345,10 +345,14 @@ Four constraints keep it from becoming exactly that:
 **The judge's power is deliberately asymmetric.** It can *prevent a question* by confirming meaning
 already existed. It can never *permit a weakening* — condition three below routes every weakening to
 the human regardless of what any judge thinks. So a compromised or over-agreeable judge costs an
-unnecessary question at worst; it can never lower the bar — **and it can never certify that the
-clause it established was met, because an entailment verdict is not evidence.** Without that second
-half the asymmetry does not hold: a judge would create a clause and satisfy it with the same record,
-and condition three, which is about removal, would never fire.
+unnecessary question at worst; it can never lower the bar — **and the record it produces can never
+certify that the clause it established was met, because an entailment verdict is not evidence.**
+Without that second half the asymmetry does not hold: one record would create a clause and satisfy
+it, and condition three, which is about removal, would never fire.
+
+**That separates the records, not the agents.** Nothing here stops the same judge from later
+producing the satisfaction verdict for a clause it established. §7's first question — who is eligible
+to judge — is what would, and it is open.
 
 Every entailment verdict is recorded beside the pin it establishes — a record of its own, naming the
 clause, the artifact and its ref. **It says a requirement legitimately exists, never that it was
@@ -375,11 +379,11 @@ test satisfied: *mark/select work → work runs*.
 The worker cannot dodge the gate, because none of the four conditions is reported by the worker. It
 cannot lower its own bar, because lowering *is* condition three.
 
-**A human's answer names the condition that fired, never the clause.** §2.1's `receive` returns it as
-`human` evidence and conditions 1–3 are per clause, so without this rule an answer would be a second
-kind of clause-naming record and §2.5's completion invariant would be back to guessing what a record
-meant. Answering *yes, introduce it* authorises the requirement's existence. Whether the delivered
-work then meets it is completion's question, asked later, of different records.
+**An authorisation answer names the condition that fired, never the clause.** Answering *yes,
+introduce it* authorises a requirement's existence; it never says the work met it. A `Decided:`
+clause reaches completion through the same channel and a **different** answer — one that does name
+the clause, and is evidence. Without that line both arrive as `human` records naming a clause, and
+§2.5's completion invariant is back to guessing which one it is holding.
 
 **When the conditions are evaluated decides whether that is true.** Derived once at planning and
 trusted after, an in-flight edit of the charter is silent. So the charter is re-derived from its
