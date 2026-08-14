@@ -1,6 +1,6 @@
 # RFC-001: The Portable Composition Model
 
-**Status:** Accepted — revision 9
+**Status:** Accepted — revision 10
 **Plugin:** `floor`
 **Author:** Christian Attard
 **Date:** 2026-08-12
@@ -154,7 +154,7 @@ Four operations. The item shape is the first of them, not the whole contract.
 |---|---|
 | `read` | items — `{ id, source, title, body, targets[] }` |
 | `publish` | run state, addressed to the item |
-| `ask` | a question addressed to a human, with options and a recommendation |
+| `ask` | a question addressed to a human — the decision, the evidence behind it, the options with what each one causes, and a recommendation where one is defensible |
 | `receive` | that human's answer, as evidence at trust `human` |
 
 **`ask` and `receive` are why this matters.** A human is asked *where they already are* — the issue,
@@ -388,6 +388,12 @@ None of the four fires → **no human is asked, and the run proceeds**, unless t
 describe work at all — below. That is issue #66's convention test satisfied: *mark/select work → work
 runs*.
 
+**For a repository the detector reads a gate from.** Level-1 detection reads three things (§2.4), and
+a repository holding none of them derives an empty charter, which the refusal below ends. Foundry's
+own repository is one: it declares its gates in a README and a workflow, and the detector reads
+neither. So *work runs* is a promise about detection's reach, not about every repository — and
+widening that reach is Level 2's job, which is why `.foundry/gates` exists.
+
 The worker cannot dodge the gate, because none of the four conditions is reported by the worker. It
 cannot lower its own bar, because lowering *is* condition three.
 
@@ -409,6 +415,14 @@ introduce it* authorises a requirement's existence; it never says the work met i
 clause reaches completion through the same channel and a **different** answer — one that does name
 the clause, and is evidence. Without that line both arrive as `human` records naming a clause, and
 §2.5's completion invariant is back to guessing which one it is holding.
+
+**An answer binds one run, and the ask must say so.** Invariant 3 re-derives the baseline from the
+pins every time, and `Decided:` clauses do not carry forward — so the same base proposes the same
+clause and asks the same question on the next run, for ever. Nothing in the model stops that, and
+nothing should: a run cannot write permanent meaning. **What ends it is amending the pinned artifact,
+and that is an option the ask names** — answer for this run, or change the artifact so no run asks
+again. A question re-asked after it was settled is not new meaning, and this document's whole claim
+is that a human is interrupted only where new meaning appears.
 
 **When the conditions are evaluated decides whether that is true.** Derived once at planning and
 trusted after, an in-flight edit of the charter is silent. So the charter is re-derived from its
@@ -1043,6 +1057,24 @@ was prose the code could not enforce.
 record is a satisfaction claim — a constant, not a field. The set is closed in §2.2 rather than
 assumed: an authorisation answer names the condition that fired, never the clause.
 
+### Revision 10 — the refusal reached this repository
+
+Drafting the authorisation stage ran revision 9's new refusal against the repository that wrote it.
+
+| Was | Is | What falsified it |
+|---|---|---|
+| §2.2: *work runs* stated without qualification | for a repository the detector reads a gate from | **Executed here.** Level-1 detection reads a `Makefile` `test:` target, or `"test"` in `composer.json` or `package.json`. Foundry's own repository has none: `detect-gates.sh` exits 1, `charter derive` writes a zero-byte charter at exit 0, and revision 9 ends that run. The refusal is right; the promise was the overstatement |
+| §2.1: `ask` carries "options and a recommendation" | plus the decision, the evidence, and what each option causes | An ask that carries neither evidence nor consequence has moved the work to the human rather than the decision |
+| nothing said how long an answer binds | one run, and the ask says so | The baseline re-derives from the pins every run and `Decided:` clauses do not carry forward, so the same base re-asks the same settled question for ever. What ends it is amending the artifact, which no ask offered |
+| §8: experiments 9b and 6e | both carry the precondition they turn on | 9b does not refuse when Foundry is invoked inside a clone of the source, because the bootstrap knows nothing of sources. 6e counts items where detection is per repository |
+
+Also corrected outside this document: floor's README claimed *"a run has no way to authorise
+itself."* Granting is one named command, which stops an accident and not a worker holding the same
+shell — which is what the paragraph beneath it already said.
+
+**Found by three independent reviews of a stage that has not been built**, the same method that found
+revision 8. Two of the three read the shipped detector rather than this document.
+
 
 ## 7. Unresolved questions
 
@@ -1099,9 +1131,9 @@ required by §2.3, not speculative.
 | 6b | The worker asserts its own provenance for an invented clause; confirm it is treated as introduced | the independence constraint | not built |
 | 6c | A clause entailed only by `CLAUDE.md` prose; confirm the judge establishes it and no human is asked | the semantic path earns its place | not built |
 | 6d | A clause that *weakens* a prior one, with a judge willing to bless it; confirm the human is still asked | the asymmetry — a judge may never permit a weakening | not built |
-| 6e | Count how often the semantic path is reached across ten real items | that semantic is a fallback, not the common path | not built |
+| 6e | Count how often the semantic path is reached across ten **repositories** — detection is repo-scoped, so ten items in one repo answer once | that semantic is a fallback, not the common path | not built |
 | 6f | A judge establishes a clause; run completion with that entailment verdict as the only record naming it; confirm delivery refuses | the second half of the asymmetry — an entailment verdict is not evidence | not built |
-| 9b | A work item filed in `acme/issues` that names `acme/issues` as a target; confirm refusal | source is not a target | not built |
+| 9b | A work item filed in `acme/issues` that names `acme/issues` as a target; confirm refusal — **run it from somewhere other than a clone of the source**, or the bootstrap authorises it and the experiment answers a different question | source is not a target | not built |
 | 7 | Move a run directory to another machine and resume it | the portability rule | fails as of revision 1 |
 | 8 | Items in repo A, code in repo B, Foundry installed globally | source/target independence | untested |
 | 9 | A work item naming a repo outside the allowlist; confirm refusal | `policy` | not built |
