@@ -296,8 +296,8 @@ the clause cannot be evidenced there, and §2.5 blocks delivery with nothing abl
 A `Judged:` or `Decided:` clause pays no part of **this** cost: neither producer needs a gate
 declaration. That does not make it deliverable. §2.5 stamps evidence at each selected target's
 delivered ref, and with no checkout there is no second delivered ref to stamp — so **multi-target
-completion waits on the workspace seam whatever the charter holds**, and §8's experiment 2 already
-records it failing. v1 ships one unit against the bootstrap target, where the question does not
+completion waits on the workspace seam whatever the charter holds**, which is why §8's experiment 2
+records a two-target run failing today. v1 ships one unit against the bootstrap target, where the question does not
 arise. §8 tests the `Gate:` half.
 
 **A clause that governs no selected target is refused, not evidenced.** A charter whose clauses grade
