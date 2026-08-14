@@ -285,10 +285,16 @@ declaration. Nothing else states coverage.
 
 **A target whose declarations cannot be read stays governed.** Today that is every target but the
 bootstrap, because detection reads one checkout — so an unevaluable exception must widen nothing and
-narrow nothing. Wrong toward *governed* is the safe direction, for the reason wrong toward
-*downgrade* is safe above: the cost is an unnecessary question, and the alternative is a bar that
-quietly stopped applying. The exception becomes real when the workspace seam gives each target a
-checkout, and not before.
+narrow nothing. Wrong toward *governed* is the safe direction; the alternative is a bar that quietly
+stopped applying.
+
+**Name its cost, because it is not the downgrade's.** A downgraded gate routes to a judge who can
+answer. A `Gate:` clause governing a target whose gates cannot be read has **no producer at all** —
+§2.4 runs a gate only where it is declared, and an exit code is the only thing that makes `machine`
+evidence. So the clause cannot be evidenced there, and §2.5 blocks delivery with nothing able to
+unblock it. **Until the workspace seam gives each target a checkout, a multi-target run cannot
+complete.** v1 ships one unit against the bootstrap target, where the question does not arise — which
+is why this is a stated limit and not a blocker. §8 tests it.
 
 **A clause that governs no selected target is refused, not evidenced.** A charter whose clauses grade
 nothing is not a low bar; it is not a bar. §4 says when that refusal binds.
@@ -373,11 +379,18 @@ a clause the pins still derive is gone → invariant 3 was violated
 a target is outside the allowlist     → policy refuses (§2.3)
 ```
 
-None of the four fires → **no human is asked, and the run proceeds.** That is issue #66's convention
-test satisfied: *mark/select work → work runs*.
+None of the four fires → **no human is asked, and the run proceeds**, unless the charter does not yet
+describe work at all — below. That is issue #66's convention test satisfied: *mark/select work → work
+runs*.
 
 The worker cannot dodge the gate, because none of the four conditions is reported by the worker. It
 cannot lower its own bar, because lowering *is* condition three.
+
+**Authorisation also refuses, and a refusal is not a fifth condition.** The four decide when a human
+is *asked*, and each has an answer a person can give. A charter holding no clause, or a clause
+governing no selected target, has none: nobody can authorise work the run has not described yet. So
+authorisation refuses and planning runs again. A condition routes to a person; this routes back to
+the machine that produced the incoherence.
 
 **An authorisation answer names the condition that fired, never the clause.** Answering *yes,
 introduce it* authorises a requirement's existence; it never says the work met it. A `Decided:`
@@ -664,8 +677,9 @@ planning                        ← read-only workspace
     └──▶ targets   authoritative, filtered by the allowlist
     │
     ▼
-authorisation                   ← fires ONLY on the four conditions in §2.2
+authorisation                   ← asks ONLY on the four conditions in §2.2
     │                             otherwise silent, and the run continues
+    │                             refuses a charter that describes no work — §2.2
     │                             the selected set freezes here, and coverage with it
     ▼
 mutating execution              ← one workspace per unit; gates run; evidence accumulates
@@ -684,7 +698,8 @@ run be abandoned during planning at no cost — already implied by run-per-attem
 coverage from selection, so the two cannot bind at different moments. That is also where §2.2's
 refusal lands — a clause governing no selected target is refused *there*, not while planning is still
 writing `units/NN/targets`, where every clause governs nothing yet and refusing would refuse the
-whole charter. Changing the selection afterwards is a new run, or a fifth condition; v1 has four.
+whole charter. That refusal asks nobody anything, so it adds no condition. Changing the selection
+afterwards would: v1 has four, so a change after the freeze is a new run.
 
 **Planning gets a read-only workspace, scoped to the run.** It must read the targets:
 `decide-boundary`'s tells "surface only in code", and gate detection reads the repo. The alternative
@@ -1001,7 +1016,7 @@ mechanism is a dependency, not a defect.
 | §2.2: an entailment verdict is "stamped as evidence… naming the clause" | recorded beside its pin; never evidence | It is the only specified non-satisfaction record naming a clause, so completion would accept the record that *created* a clause as proof it was met |
 | §2.5 listing the entailment verdict as a `judged` producer | not a producer of evidence | Amending §2.2 alone left two sections with two answers — the defect revision 8 existed to fix |
 | §2.2 invariant 1 listing "the work item" | struck | No target, no ref — revision 6's own test |
-| §2.2: "it can never lower the bar" | plus: it can never certify what it established | Condition three is *removal*. A judge creating a clause and satisfying it removes nothing, so condition three never fires |
+| §2.2: "it can never lower the bar" | plus: the record it produces can never certify what that record established | Condition three is *removal*. One record creating a clause and satisfying it removes nothing, so condition three never fires. **The records are separated, not the agents** — §7's first question |
 | nothing said when coverage binds | §4 — with the selected set, at authorisation | Refusing an ungoverning clause any earlier refuses every clause, because planning has selected nothing yet |
 
 Four investigations against the shipped charter, and two designs rejected. **Coverage narrowing is
@@ -1021,9 +1036,12 @@ assumed: an authorisation answer names the condition that fired, never the claus
 required by §2.3, not speculative.
 **Closed in revision 4:** the plugin is `floor` — §6. **Nothing now blocks the run stage** — shipped as issue #67.
 
-1. **Who is eligible to judge entailment?** §2.2 requires independence from the proposer and from
-   every agent that will implement the unit. In a one-unit v1 run that is easy. With N units and a
-   shared planner, eligibility needs a rule rather than a convention. **Blocks the authorisation stage, not the run.**
+1. **Who is eligible to judge, and to judge what?** §2.2 requires independence from the proposer and
+   from every agent that will implement the unit. In a one-unit v1 run that is easy. With N units and
+   a shared planner, eligibility needs a rule rather than a convention. **Revision 9 widened this**:
+   separating the entailment verdict from the satisfaction verdict separates the records, and nothing
+   yet stops one judge from producing both for the same clause. Eligibility has to answer that
+   sequence too. **Blocks the authorisation stage, not the run.**
 
 2. ~~**Which files define a gate's resolution?**~~ **Closed in revision 6.** The set is what
    Foundry's detector read — knowable, because Foundry authors it (§2.2). What the resolved command
@@ -1059,6 +1077,7 @@ required by §2.3, not speculative.
 | 1 | Rewrite a gate script to `exit 0`; confirm the clause downgrades to `judged` | the pinning invariant | not built — **and this is the one that matters** |
 | 1b | Ten ordinary runs — a dependency bump, a new test, a refactor; count how many downgrade | that downgrade is rare enough to mean something | not built |
 | 2 | Two targets, one run, one ledger | the run/target split | fails |
+| 2b | A two-target run where only the bootstrap declares `tests`; confirm completion blocks on the other target, with no producer able to clear it | that "stays governed" has a stated cost rather than a hidden one | not built |
 | 3 | Two runs, same branch name, same machine | workspace isolation | collides |
 | 4 | A directory of markdown files as a source — `read` under twenty lines, plus `ask` and `receive` | the work-source contract | no contract to satisfy |
 | 5 | A run where all clauses derive; confirm no human is asked | the authorisation gate is not ceremony | not built |
@@ -1107,7 +1126,8 @@ policy              the target allowlist and the bootstrap target, enforced in c
   ↓
 charter             clauses, mechanical provenance, pinning, monotonicity
   ↓
-authorisation       the four conditions, the semantic path, silence when none fire
+authorisation       the four conditions, the semantic path, silence when none fire,
+                    refusal when the charter describes no work
   ↓
 evidence            append-only, trust levels, no result parameter, the completion invariant
   ↓
