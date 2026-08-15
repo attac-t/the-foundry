@@ -17,9 +17,9 @@ where truth is mechanical, verified by an independent judge where meaning alread
 decided by a human only where new meaning appears.** Five contracts, all of them shapes rather than
 files. No coordinator, no registry, no graph engine, no schema language.
 
-**Every revision since the second was forced by something outside it** — a review, a competing
-design, or code that falsified a sentence written here. §6 records each one, what it claimed and what
-broke it.
+**Most revisions here were forced rather than chosen** — by a review, a competing design, or code that
+falsified a sentence written in it. The rest settled a question only a human could. §6 records each
+one, what it claimed and what moved it.
 
 ---
 
@@ -463,8 +463,9 @@ None of the four fires → **no human is asked, and the run proceeds**, unless t
 describe work at all — below. That is issue #66's convention test satisfied: *mark/select work → work
 runs*.
 
-**For a repository the detector reads a gate from.** Level-1 detection reads three things (§2.4), and
-a repository holding none of them derives an empty charter, which the refusal below ends. Foundry's
+**For a repository the detector reads a gate from.** Level 1 reads three things — a `Makefile` `test:`
+target, or `"test"` in `composer.json` or `package.json` — and a repository holding none of them
+derives an empty charter, which the refusal below ends. Foundry's
 own repository is one: it declares its gates in a README and a workflow, and the detector reads
 neither. So *work runs* is a promise about detection's reach, not about every repository — and
 widening that reach is Level 2's job, which is why `.foundry/gates` exists.
@@ -506,7 +507,7 @@ question to transport and no answer to interpret — the run refuses, and the ne
 base derives the lower bar legitimately.
 
 So **only conditions one and two are ever transported as questions.** Both concern a single clause,
-which is what lets a question be named exactly — below. Condition four is a policy refusal whose
+which is what lets a question be named exactly — §2.1. Condition four is a policy refusal whose
 remedy is a separate human command, and condition three is a refusal whose remedy is a commit.
 
 Revision 11 decided that if condition three ever *did* carry an answer, that answer would name the
@@ -698,9 +699,8 @@ what      the run, or one clause
 ```
 
 No `unit`, no `ref`. An authorisation answer authorises a clause's existence, which no ref makes
-truer; selection has no unit and no ref of its own, since **the act precedes the run and the record
-cannot** — §4 selects the work item, and the stamp lands with the ledger at run creation, naming the
-run it authorised. **A record without a `ref` cannot satisfy the completion invariant**, which
+truer; selection has neither, because **it happens before the run does** — §4 selects the work item,
+and the stamp lands with the ledger at run creation, naming the run it authorised. **A record without a `ref` cannot satisfy the completion invariant**, which
 quantifies over the delivered ref of every selected target. That is the separation, in the shape
 rather than in a sentence about it.
 
@@ -869,9 +869,9 @@ refusal lands — a clause governing no selected target is refused *there*, not 
 writing `units/NN/targets`, where every clause governs nothing yet and refusing would refuse the
 whole charter. That refusal is not one of §2.2's four: nothing fired about where the clause came from
 or about its removal — it simply grades nothing, so it is no bar. **Changing the selection afterwards
-would need a fifth, and v1 has four.** Widening it to a target policy already allows fires nothing at
-all — one, two and three concern clauses, and four asks whether the allowlist permits it, which it
-does. So a change after the freeze is a new run.
+would need a fifth, and v1 has four.** Widen it to a target the allowlist already permits and nothing
+fires at all: one, two and three concern clauses, and four tests the allowlist, which allows it. So a
+change after the freeze is a new run.
 
 **Planning gets a read-only workspace, scoped to the run.** It must read the targets:
 `decide-boundary`'s tells "surface only in code", and gate detection reads the repo. The alternative
@@ -943,11 +943,11 @@ resolved, with the missing rows added.
 | 13 | Provider neutrality | Two rules, no abstraction layer. Neutrality ≠ lowest common denominator | synthesis |
 | 14 | Developer takeover | `session` named with cardinality; no machinery in v1 | synthesis, scoped |
 | 15 | Two-adapter portability test | Generalised: a contract is unproven until two adapters satisfy it | RFC |
-| 16 | Convention over configuration | The synthesis's three levels, with concrete Level-1 content | both |
+| 16 | Convention over configuration | The synthesis's three levels, with concrete Level 1 content | both |
 | 17 | Source independent of targets | Both agreed. Only achieved once targets stopped carrying local paths | synthesis |
 
 **Correction.** Revision 2 claimed neither document named delivery. The synthesis names it in its
-Level-1 table. Delivery being a *separate slot from the source* is this RFC's contribution; naming
+Level 1 table. Delivery being a *separate slot from the source* is this RFC's contribution; naming
 it was not.
 
 **Deferred, not resolved.** The synthesis's *contracts first* — planning must find the work's
@@ -980,8 +980,9 @@ floor    where work happens  new
 | existing memory dirs | keep working, untouched, no migration |
 
 **An active run outranks `CLAUDE_MEMORY_DIR`.** Revision 4 said that variable "keeps its meaning" and
-never said what happens when a run is also active. Implementing #67 forced the choice: a user who
-relocated memory loses that setting silently the moment a run exists.
+never said what happens when a run is also active. Implementing #67 forced the choice, and an
+adversary caught that the RFC had ducked it: a user who relocated memory loses that setting silently
+the moment a run exists.
 
 Run wins, for one reason. `CLAUDE_MEMORY_DIR` is the base of the *branch* ladder — it answers "where
 do branch-keyed memories live". A run is a different organising principle, not a different base, so
@@ -1110,9 +1111,7 @@ A narrow consultation confirmed all three and found the §2.2 pinning dependency
 had noticed. It also warned that the stale numbers lived outside §9 — in the compatibility row, in
 two "Blocks" notes, and in floor's own README. Swept.
 
-Not changed: `0..1` weakens nothing. A run with no bootstrap target starts with an empty allowlist,
-so every proposed target fires the authorisation gate — which is right, because no human act of
-invoking-inside-a-repository ever happened.
+Not changed: `0..1` weakens nothing — §2.3 says why, and it is stronger, not weaker.
 
 ### Revision 6 — amended before the charter stage
 
@@ -1210,7 +1209,7 @@ Drafting the authorisation stage ran revision 9's new refusal against the reposi
 
 | Was | Is | What falsified it |
 |---|---|---|
-| §2.2: *work runs* stated without qualification | for a repository the detector reads a gate from | **Executed here.** Level-1 detection reads a `Makefile` `test:` target, or `"test"` in `composer.json` or `package.json`. Foundry's own repository has none: `detect-gates.sh` exits 1, `charter derive` writes a zero-byte charter at exit 0, and revision 9 ends that run. The refusal is right; the promise was the overstatement |
+| §2.2: *work runs* stated without qualification | for a repository the detector reads a gate from | **Executed here.** Level 1 detection reads a `Makefile` `test:` target, or `"test"` in `composer.json` or `package.json`. Foundry's own repository has none: `detect-gates.sh` exits 1, `charter derive` writes a zero-byte charter at exit 0, and revision 9 ends that run. The refusal is right; the promise was the overstatement |
 | §2.1: `ask` carries "options and a recommendation" | plus the decision, the evidence, and what each option causes | An ask that carries neither evidence nor consequence has moved the work to the human rather than the decision |
 | nothing said how long an answer binds | one run, and the ask says so | The baseline re-derives from the pins every run and `Decided:` clauses do not carry forward, so the same base re-asks the same settled question for ever. What ends it is amending the artifact, which no ask offered |
 | §8: experiments 9b and 6e | both carry the precondition they turn on | 9b does not refuse when Foundry is invoked inside a clone of the source, because the bootstrap knows nothing of sources. 6e counts items where detection is per repository |
@@ -1330,13 +1329,13 @@ required by §2.3, not speculative.
 | 6g | A judge answers *ambiguous*; the run asks and stops; resume it with a judge rigged to answer *entailed*; confirm the question still derives identically and the human's answer still matches | that recording the verdict makes condition two resumable — a flipped judge is exactly what replay must survive | not built |
 | 6h | Kill the run **between the verdict and the ask**, then resume with the judge rigged to flip | the write-ordering, which 6g cannot reach — it resumes a run that already asked | not built |
 | 6i | Answer condition one for a `Decided:` clause, then run completion with that answer as the only `human` record naming it; confirm delivery refuses | revision 12's headline separation — an authorisation answer is not satisfaction evidence. 6f tests the same shape for a judge's record | not built |
-| 9b | A work item filed in `acme/issues` that names `acme/issues` as a target; confirm refusal — **run it from somewhere other than a clone of the source**, or the bootstrap authorises it and the experiment answers a different question | source is not a target | not built |
 | 7 | Move a run directory to another machine and resume it | the portability rule | fails as of revision 1 |
 | 8 | Items in repo A, code in repo B, Foundry installed globally | source/target independence | untested |
 | 9 | A work item naming a repo outside the allowlist; confirm refusal | `policy` | not built |
+| 9b | A work item filed in `acme/issues` that names `acme/issues` as a target; confirm refusal — **run it from somewhere other than a clone of the source**, or the bootstrap authorises it and the experiment answers a different question | source is not a target | not built |
 | 10 | Deliver after gates pass, then land a commit; confirm completion refuses | the completion invariant | not built |
 | 10b | A run whose charter derives no clause, and one whose units select no target; confirm both refuse to deliver | the two non-empty conjuncts | not built — **and both would deliver today** |
-| 11 | Detection across ten unfamiliar repos — right, wrong, and *says it cannot tell* | Level-1 convention | untested |
+| 11 | Detection across ten unfamiliar repos — right, wrong, and *says it cannot tell* | Level 1 convention | untested |
 | 12 | Open a shell in a workspace and take over mid-run | the session decomposition | untested |
 | 13 | Two units in one run, in parallel, no interference | the unit/workspace split | not built |
 | 14 | Skill narrowing vs. kernel's claimed 84% activation | the discovery convention | unmeasured |
