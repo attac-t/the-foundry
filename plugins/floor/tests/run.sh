@@ -119,8 +119,11 @@ wreck_runner "a layout with no units level is caught" \
 # `#` as the delimiter: the text being removed is a `||`, and sed reads the first one as the end of
 # the pattern.
 #
+# Three guards, not two. The slot claim added the third, and a mutant that removes only the ones it
+# knew about is a mutant the runner survives — which is how this went from caught to unkillable
+# without any check going red.
 wreck_runner "a runner that ignores a home it cannot write to is caught" \
-  blind 's# *|| die_unwritable "$dir/item.md"$##; s# *|| die_unwritable "$dir"$##'
+  blind 's# *|| die_unwritable "$dir/item.md"$##; s# *|| die_unwritable "$dir"$##; s# *|| die_unwritable "$RUNS"$##'
 
 wreck_runner "a runner that trusts an unset run directory is caught" \
   ghostvar 's|\[ -n "${FOUNDRY_RUN:-}" \] && \[ -d "$FOUNDRY_RUN" \]|\[ -n "${FOUNDRY_RUN:-}" \]|'

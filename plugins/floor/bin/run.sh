@@ -138,7 +138,10 @@ claim_slot() {
 # exercising it. A hash would not help: `md5` is BSD's, `shasum` is not everywhere, and it would
 # still need the loop.
 claim_free_slot() {
-    mkdir -p "$RUNS" 2>/dev/null || return 1
+    # No `|| return 1` here. If this cannot make `runs/`, the first claim fails and the guard below
+    # ends the loop with the same answer — two ways to refuse the same thing is one more than the
+    # `blind` mutant can remove, and it left that mutant unkillable.
+    mkdir -p "$RUNS" 2>/dev/null
 
     n=0
 
