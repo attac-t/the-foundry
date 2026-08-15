@@ -349,6 +349,15 @@ Authorising again over an unchanged selection is not a change and does not refus
 moved one exits 10 and does **not** re-freeze: quietly recording the new set would let the selection
 be edited after the moment it was fixed, which is the entire thing the freeze exists to stop.
 
+**Who is authoritative moves here.** Before authorisation the selection file is the answer to *what
+does this run touch*. After it, the frozen record is, and the live file's authority ends — which is
+what lets completion grade against what was authorised rather than against what the file says now.
+
+**The same honest limit as policy and the charter.** The frozen record is a file the worker can write
+as the same user, and deleting it silently un-freezes the run — the next authorise records the new
+set as if it were the first. Nothing here stops that. What it buys is that no *accident* moves a
+selection after it was fixed, and that a moved one is visible to anything that reads both.
+
 **Not here yet:** the four conditions, the ask, and the answer.
 
 ---
