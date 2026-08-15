@@ -174,7 +174,8 @@ Half the allowlist is not out there anyway. The bootstrap entry is read from `<r
 inside the run — so "outside the run directory" describes where grants are kept, and nothing more.
 
 What it buys is that **no accident widens authority**. Nothing derives a grant. No command grants as
-a side effect of doing something else. A run has no way to authorise itself.
+a side effect of doing something else. Granting is one named command and nothing else reaches it —
+which stops an accident, not a worker holding the same shell.
 
 Resisting a worker with arbitrary host-user shell access needs a runtime and workspace boundary that
 makes policy state unavailable for the worker to mutate. That does not exist yet. Until it does,
