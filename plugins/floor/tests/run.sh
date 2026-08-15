@@ -49,11 +49,20 @@ wreck_runner() {
 }
 
 #
-# Two breaks on one line, and they are not the same break: this one blinds the slot chooser
-# completely, `inherit` below blinds it only to grants. Same line, different halves of its meaning.
+# Two breaks on the claim, and they are not the same break: this one blinds it to a slot already
+# taken, `inherit` below blinds it only to grants.
 #
 wreck_runner "a runner that stops checking for a free path is caught" \
-  collide 's|\[ ! -e "$RUNS/$1" \] && \[ ! -e "$GRANTS/$1" \]|true|'
+  collide 's#if ! slot_is_reserved "$candidate" \&\& mkdir "$RUNS/$candidate" 2>/dev/null; then#if true; then#'
+
+#
+# The defect this replaced, put back exactly: `-p` succeeds on a directory that already exists, so
+# the claim reports a collision as a win and two runs share a slot. Nothing else in the suite can
+# see it — sequential `new` calls never race — so this mutant and `eight_at_once` stand or fall
+# together.
+#
+wreck_runner "a claim that tolerates an existing directory is caught" \
+  notatomic 's#mkdir "$RUNS/$candidate" 2>/dev/null#mkdir -p "$RUNS/$candidate" 2>/dev/null#'
 
 # In the worktree the pointer gets committed, and a run id in someone else's clone names a directory
 # that was never on their machine.
@@ -238,7 +247,7 @@ wreck_runner "an identity that may hold a newline is caught" \
 # Grants outlive the run directory, so a slot chooser that reads only `runs/` inherits an allowlist.
 # The half `collide` cannot tell you about.
 wreck_runner "a slot reclaimed with grants behind it is caught" \
-  inherit 's|\[ ! -e "$RUNS/$1" \] && \[ ! -e "$GRANTS/$1" \]|[ ! -e "$RUNS/$1" ]|'
+  inherit 's#slot_is_reserved() { \[ -e "$GRANTS/$1" \]; }#slot_is_reserved() { false; }#'
 
 # The bootstrap is an effective grant. Copied, it becomes a second place the truth lives.
 wreck_runner "a bootstrap copied into the grants is caught" \

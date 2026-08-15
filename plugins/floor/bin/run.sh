@@ -95,7 +95,7 @@ make_run() {
     title=$1
     [ -n "$title" ] || { note "new needs a title"; exit 2; }
 
-    id=$(mint_id "$title")
+    id=$(mint_id "$title") || die_unwritable "$RUNS"
     dir="$RUNS/$id"
 
     build_layout "$dir"        || die_unwritable "$dir"
@@ -107,7 +107,7 @@ make_run() {
 }
 
 # `<date>-<slug>-<first free slot>`.
-mint_id() { first_free_slot "$(date +%Y-%m-%d)-$(slug "$1")"; }
+mint_id() { claim_free_slot "$(date +%Y-%m-%d)-$(slug "$1")"; }
 
 #
 # `<base>-NNNN`, counting up from zero until nothing holds that name.
@@ -123,14 +123,32 @@ mint_id() { first_free_slot "$(date +%Y-%m-%d)-$(slug "$1")"; }
 # Grants outlive the run directory by design, so a slot reclaimed after `rm -rf` would hand the next
 # run the deleted run's allowlist — authority no human gave it.
 #
-slot_is_free() { [ ! -e "$RUNS/$1" ] && [ ! -e "$GRANTS/$1" ]; }
+slot_is_reserved() { [ -e "$GRANTS/$1" ]; }
 
-first_free_slot() {
+# Claiming is `mkdir` without `-p`, and that is the whole fix: it creates the directory or fails
+# because someone else already did, in one step nothing can interleave with.
+#
+# Testing a name and creating it later left a window between the two. Eight concurrent `new` calls
+# produced three directories, and two runs holding one slot share `policy/runs/<id>/targets` — so a
+# grant a human gave to one authorises the other.
+#
+# `-p` cannot do this job. It succeeds on a directory that already exists, which reports the
+# collision as success. The bare form's failure is the signal.
+claim_free_slot() {
+    mkdir -p "$RUNS" 2>/dev/null || return 1
+
     n=0
 
     while :; do
         candidate="$1-$(printf '%04x' "$n")"
-        slot_is_free "$candidate" && { printf '%s' "$candidate"; return 0; }
+
+        # An `if`, not a `||` chain: `a || b && c` groups as `(a || b) && c`, so a reserved slot
+        # would short-circuit past the claim and be returned without ever being created.
+        if ! slot_is_reserved "$candidate" && mkdir "$RUNS/$candidate" 2>/dev/null; then
+            printf '%s' "$candidate"
+            return 0
+        fi
+
         n=$((n + 1))
     done
 }

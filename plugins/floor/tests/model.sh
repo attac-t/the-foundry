@@ -95,6 +95,7 @@ is "a title of pure punctuation still names a run" \
    "$(basename "$(floor "$tmp/bare" new '!!!')" | sed 's/-[0-9a-f]*$//')" \
    "$(date +%Y-%m-%d)-run"
 
+
 # --- finding a run ---
 
 is "no run, no answer" "$(floor "$tmp/bare" path)" ""
@@ -445,6 +446,29 @@ a_repo_argument_cannot_carry_a_second_line() {
      "$(code_of floor "$tmp/pol" targets add 'https://github.com/acme/../evil/x.git' main)" "4"
 }
 a_repo_argument_cannot_carry_a_second_line
+
+#
+# Sequential calls never exercised the claim, because nothing competed for the slot. Eight at once
+# did: the chooser asked whether a name was free and created it a moment later, and eight callers
+# agreed on three answers. Two runs holding one slot share `policy/runs/<id>/targets`, so a grant a
+# human gave to one authorises the other.
+#
+# Eight because eight is what reproduced it, and this sits below `set_origin` because a function
+# called before its definition takes the `|| skip` branch — which reads as a pass.
+#
+eight_at_once_claim_eight_slots() {
+  make_repo "$tmp/race" main && set_origin "$tmp/race" 'https://github.com/acme/race.git' \
+    || { skip "concurrent new — git could not make a repo here"; return; }
+
+  for _ in 1 2 3 4 5 6 7 8; do floor "$tmp/race" new "Eight At Once" >/dev/null 2>&1 & done
+  wait
+
+  is  "eight concurrent runs claim eight slots" \
+      "$(ls "$home/runs" 2>/dev/null | grep -c -- '-eight-at-once-')" "8"
+  has "and the slots run unbroken to the eighth" \
+      "$(ls "$home/runs" 2>/dev/null | grep -- '-eight-at-once-' | tr '\n' ' ')" "-0007"
+}
+eight_at_once_claim_eight_slots
 
 #
 # Grants outlive the run directory, and run ids are reclaimed. Until the slot chooser read both, a
