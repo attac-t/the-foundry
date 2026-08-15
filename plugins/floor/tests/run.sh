@@ -49,11 +49,49 @@ wreck_runner() {
 }
 
 #
-# Two breaks on one line, and they are not the same break: this one blinds the slot chooser
-# completely, `inherit` below blinds it only to grants. Same line, different halves of its meaning.
+# Three breaks on one claim, and they are three: this one blinds it to everything, `notatomic` to a
+# directory already there, `inherit` below to grants alone.
 #
 wreck_runner "a runner that stops checking for a free path is caught" \
-  collide 's|\[ ! -e "$RUNS/$1" \] && \[ ! -e "$GRANTS/$1" \]|true|'
+  collide 's#slot_is_reserved "$1" \&\& return 1#:#; s#mkdir "$RUNS/$1" 2>/dev/null#mkdir -p "$RUNS/$1" 2>/dev/null#'
+
+#
+# The defect this replaced, put back exactly: `-p` succeeds on a directory that already exists, so
+# the claim reports a collision as a win and two runs share a slot. Nothing else in the suite can
+# see it — sequential `new` calls never race — so this mutant and `eight_at_once` stand or fall
+# together.
+#
+wreck_runner "a claim that tolerates an existing directory is caught" \
+  notatomic 's#mkdir "$RUNS/$1" 2>/dev/null#mkdir -p "$RUNS/$1" 2>/dev/null#'
+
+# Counting past a failure that counting cannot fix. `mkdir -p "$RUNS"` succeeds on a `runs/` that
+# refuses a child, so the loop runs for ever on a directory it will never create.
+#
+# The break is a hang rather than a wrong answer, so the check that catches it bounds the runner with
+# `timeout`. Without that this mutant would stop the audit instead of failing it.
+#
+# Gated on the same condition as the check itself. Windows ignores chmod, so no directory there
+# refuses a child, the check skips, and running the mutant anyway would report *untestable here* as
+# *broken*.
+chmod_bites() {
+  probe="$tmp/chmod-probe"
+  rm -rf "$probe"; mkdir -p "$probe"
+  chmod 500 "$probe" 2>/dev/null
+
+  if mkdir "$probe/child" 2>/dev/null; then
+    chmod 700 "$probe" 2>/dev/null
+    return 1
+  fi
+
+  chmod 700 "$probe" 2>/dev/null
+}
+
+if chmod_bites; then
+  wreck_runner "a loop that counts past a failure it cannot fix is caught" \
+    spins 's#slot_is_taken "$candidate" || return 1#:#'
+else
+  printf '  skip  a loop that counts past a failure it cannot fix — this filesystem ignores chmod\n'
+fi
 
 # In the worktree the pointer gets committed, and a run id in someone else's clone names a directory
 # that was never on their machine.
@@ -238,7 +276,7 @@ wreck_runner "an identity that may hold a newline is caught" \
 # Grants outlive the run directory, so a slot chooser that reads only `runs/` inherits an allowlist.
 # The half `collide` cannot tell you about.
 wreck_runner "a slot reclaimed with grants behind it is caught" \
-  inherit 's|\[ ! -e "$RUNS/$1" \] && \[ ! -e "$GRANTS/$1" \]|[ ! -e "$RUNS/$1" ]|'
+  inherit 's#slot_is_reserved() { \[ -e "$GRANTS/$1" \]; }#slot_is_reserved() { false; }#'
 
 # The bootstrap is an effective grant. Copied, it becomes a second place the truth lives.
 wreck_runner "a bootstrap copied into the grants is caught" \

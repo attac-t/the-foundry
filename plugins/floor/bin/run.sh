@@ -95,7 +95,7 @@ make_run() {
     title=$1
     [ -n "$title" ] || { note "new needs a title"; exit 2; }
 
-    id=$(mint_id "$title")
+    id=$(mint_id "$title") || die_unwritable "$RUNS"
     dir="$RUNS/$id"
 
     build_layout "$dir"        || die_unwritable "$dir"
@@ -107,7 +107,7 @@ make_run() {
 }
 
 # `<date>-<slug>-<first free slot>`.
-mint_id() { first_free_slot "$(date +%Y-%m-%d)-$(slug "$1")"; }
+mint_id() { claim_free_slot "$(date +%Y-%m-%d)-$(slug "$1")"; }
 
 #
 # `<base>-NNNN`, counting up from zero until nothing holds that name.
@@ -117,20 +117,41 @@ mint_id() { first_free_slot "$(date +%Y-%m-%d)-$(slug "$1")"; }
 # exercising it. A hash would not help: `md5` is BSD's, `shasum` is not everywhere, and it would
 # still need the loop.
 #
-#
-# Free means nothing anywhere still speaks for the slot.
-#
 # Grants outlive the run directory by design, so a slot reclaimed after `rm -rf` would hand the next
 # run the deleted run's allowlist — authority no human gave it.
-#
-slot_is_free() { [ ! -e "$RUNS/$1" ] && [ ! -e "$GRANTS/$1" ]; }
+slot_is_reserved() { [ -e "$GRANTS/$1" ]; }
 
-first_free_slot() {
+slot_is_taken() { slot_is_reserved "$1" || [ -e "$RUNS/$1" ]; }
+
+# `mkdir` without `-p`: it creates the directory or fails because someone else already did, in one
+# step nothing can interleave with. `-p` succeeds on a directory that already exists, which reports
+# the collision as success — testing a name and creating it later is the same mistake spelled longer.
+claim_slot() {
+    slot_is_reserved "$1" && return 1
+    mkdir "$RUNS/$1" 2>/dev/null
+}
+
+# `<base>-NNNN`, counting up from zero until a claim lands.
+#
+# Counting, not seeding from `$$`. Every `new` is a fresh process, so pid-seeded ids differed without
+# the loop ever running once — and the test that claimed to prove uniqueness passed without
+# exercising it. A hash would not help: `md5` is BSD's, `shasum` is not everywhere, and it would
+# still need the loop.
+claim_free_slot() {
+    mkdir -p "$RUNS" 2>/dev/null || return 1
+
     n=0
 
     while :; do
         candidate="$1-$(printf '%04x' "$n")"
-        slot_is_free "$candidate" && { printf '%s' "$candidate"; return 0; }
+
+        claim_slot "$candidate" && { printf '%s' "$candidate"; return 0; }
+
+        # Taken is the only failure worth counting past. `mkdir -p` above succeeds on a `runs/` that
+        # exists and cannot be written, so without this the loop spins for ever on a directory it
+        # will never create.
+        slot_is_taken "$candidate" || return 1
+
         n=$((n + 1))
     done
 }
