@@ -171,9 +171,12 @@ entirely different things. Who reads it decides:
 | authorisation | this run may proceed past the condition that fired — **run-scoped authority, and nothing about any clause** |
 | completion | for a `Decided:` clause, that the clause was met — `human` evidence, as §2.5 defines it |
 
-§2.2's rule is unchanged and is what keeps the two apart: an authorisation answer names the condition
-that fired, and only condition three names a clause. A satisfaction answer names a clause the charter
-still holds.
+§2.2's rule is what keeps the two apart: **never name a clause the charter still holds.** An
+authorisation answer names the condition that fired; a satisfaction answer must name a clause the
+charter holds, and only completion asks about those.
+
+**Only conditions one and two are ever transported.** Three refuses and four refuses — §2.2 says why —
+so those two are the whole of what a work source carries, and both concern exactly one clause.
 
 **A question has an identity, and it is derived rather than issued.** The run, the condition that
 fired, and the clause it concerns are enough to name a question exactly — all three already exist
@@ -441,16 +444,21 @@ through the same channel and a **different** answer — one that does name the c
 Without that separation both arrive as `human` records naming a clause, and §2.5's completion
 invariant is back to guessing which one it is holding.
 
-**Condition three is the one exception: its answer names the clause whose removal it authorises.**
-Lowering the bar is the one direction that must be authorised piece by piece — a single answer
-covering every removal in a run is a blanket the model gives no way to narrow, and condition three
-exists precisely to make lowering deliberate.
+**Condition three asks nobody anything.** It fires when the pins still derive a clause the charter no
+longer holds, and the model already says what a human does about that: *a human who relaxes a
+requirement edits a human-owned artifact and commits it*. The remedy is that edit. There is no
+question to transport and no answer to interpret — the run refuses, and the next run from the amended
+base derives the lower bar legitimately.
 
-Naming the clause there cannot be confused with satisfaction, because the two records describe
-different sets. **Completion asks only about clauses the charter holds**; a removal answer names a
-clause the charter no longer holds, so it is never consulted. The rule that keeps the pool
-unambiguous is therefore not *never name a clause* but *never name a clause the charter still holds*,
-which condition three cannot do and a satisfaction answer must.
+So **only conditions one and two are ever transported as questions.** Both concern a single clause,
+which is what lets a question be named exactly — below. Condition four is a policy refusal whose
+remedy is a separate human command, and condition three is a refusal whose remedy is a commit.
+
+Revision 11 decided that if condition three ever *did* carry an answer, that answer would name the
+clause whose removal it authorises, one clause at a time. That constraint stands and binds nothing
+today, because there is no such answer. It also settled the rule that keeps the evidence pool
+unambiguous, and that rule is doing work: **never name a clause the charter still holds.** A
+satisfaction answer must name one; an authorisation answer cannot.
 
 **An answer binds one run, and the ask must say so.** Invariant 3 re-derives the baseline from the
 pins every time, and `Decided:` clauses do not carry forward — so the same base proposes the same
@@ -1135,6 +1143,7 @@ Drafting the work source found §2.1 making a semantic claim it has no standing 
 |---|---|---|
 | §2.1: `receive` returns "that human's answer, **as evidence at trust `human`**" | an attributed answer, bound to the run and the question | An authorisation answer and a satisfaction answer arrive through the same channel and mean different things. Stamping every answer as evidence made the transport assert that a clause was met, which is completion's judgement and nobody else's |
 | nothing said how a question is identified | derived from the run, the condition and the clause | Without it a resumed run asks again, an answer to another question is consumed, and an answer to an earlier run is too. **Derived rather than issued**, because issuing means storing, and a stored pending question is the parallel ledger §2.2 refuses |
+| §2.2 gave condition three's *answer* a rule | condition three asks nobody anything | It is a refusal, in this document, in issue #93 and in the shipped code, which exits 12. A rule for its answer implied an answer existed. The remedy was always the one §2.2 already names — a human edits the artifact and commits it — so **only conditions one and two are ever transported** |
 
 Found by drafting the stage rather than by building it — the fourth revision in a row that a stage
 which does not exist yet has corrected.
