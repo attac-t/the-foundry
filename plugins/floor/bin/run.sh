@@ -561,6 +561,15 @@ authorise() {
 
     refuse_unselectable "$run_dir" "$selection_path" || exit 5
 
+    # The third consumer of the detector, and it needs what the other two need. `detect_gates` reads
+    # the directory you are standing in, so without these an `authorise` run from anywhere holding a
+    # `.foundry/gates` answers from that file — and this stage writes its answer down. Verified: a
+    # plain directory declaring the charter's gates turned a correct exit 9 into exit 0 and a frozen
+    # record. `refuse_wrong_repository` returns 0 for a run with no bootstrap, so the bare-CLI case
+    # is untouched.
+    refuse_wrong_repository "$run_dir"
+    refuse_missing_resolver
+
     [ "$(clause_count "$charter_path")" -gt 0 ] || {
         note "the charter holds no clause, so there is nothing to authorise"
         note "declare a gate this run's targets can be checked with, or write the requirement into an artifact derivation reads"
@@ -572,7 +581,13 @@ authorise() {
         for id in $ungoverned; do
             note "clause $id grades no selected target, so it is no bar"
         done
-        note "declare the gate that clause names, or select a target it governs"
+        # Once the selection is frozen, selecting a target is no longer a remedy — it is what exits
+        # 10. A refusal that names a remedy leading to another refusal is worse than one remedy.
+        if [ -f "$(frozen_selection_file "$run_dir")" ]; then
+            note "declare the gate that clause names — the selection is frozen, so changing it is a new run"
+        else
+            note "declare the gate that clause names, or select a target it governs"
+        fi
         exit 9
     }
 
@@ -607,7 +622,9 @@ freeze_selection() {
 # read as a set that moved — a refusal on a selection nobody changed, which is the thing sorting is
 # here to avoid.
 #
-normalised_selection() { list_targets "$1" | LC_ALL=C sort -u; }
+# `$1 = $1` rebuilds the line on single spaces, so a hand-added tab or a doubled space is not a
+# selection that moved. Same reason as the sort and the dedupe: only a changed *set* may refuse.
+normalised_selection() { list_targets "$1" | awk '{ $1 = $1; print }' | LC_ALL=C sort -u; }
 
 #
 # Authorising twice over a selection that moved in between.

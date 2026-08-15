@@ -663,6 +663,20 @@ a_charter_derives_from_the_repository_it_is_run_in() {
   is "a comment added after the freeze is not a change" \
      "$(code_of floor "$tmp/ch" authorise)" "0"
 
+  #
+  # The two arrangements that pin the ordering. Both refuse either way, so only the *code* separates
+  # a moved-first gate from a moved-last one — and the whole argument for moving it was that the
+  # later checks name remedies the freeze forbids.
+  #
+  : > "$chrun/units/01/targets"
+  is "an emptied selection is a moved one, not a bar that grades nothing" \
+     "$(code_of floor "$tmp/ch" authorise)" "10"
+
+  printf 'https://github.com/acme/ch.git develop\nhttps://github.com/acme/never.git main\n' \
+    > "$chrun/units/01/targets"
+  is "an unauthorised target added after the freeze is a moved selection, not a policy question" \
+     "$(code_of floor "$tmp/ch" authorise)" "10"
+
   printf 'https://github.com/acme/ch.git develop\n' > "$chrun/units/01/targets"
   printf 'https://github.com/acme/ch.git develop\n' > "$frozen"
 
@@ -847,6 +861,23 @@ deriving_needs_the_right_repository() {
       "run this inside [https://github.com/acme/ch.git]"
 }
 deriving_needs_the_right_repository
+
+#
+# `authorise` is the detector's third consumer, and the first that writes its answer down.
+#
+# Without this guard a run authorised from any directory holding a `.foundry/gates` that named the
+# charter's gates — turning a correct refusal into a frozen record. `$tmp/ch2` is a different
+# repository, and the message is what is asserted: exit 6 alone would pass for the wrong reason,
+# which is the lesson the check above already carries.
+#
+authorising_needs_the_right_repository() {
+  [ -n "${chrun:-}" ] || { skip "authorise wrong repo — no charter run"; return; }
+
+  has "authorising from another repository is refused for being the wrong repository" \
+      "$( cd "$tmp/ch2" && FOUNDRY_HOME="$home" FOUNDRY_RUN="$chrun" sh "$runner" authorise 2>&1 )" \
+      "run this inside [https://github.com/acme/ch.git]"
+}
+authorising_needs_the_right_repository
 
 a_clause_may_span_two_targets() {
   [ -n "${chrun:-}" ] || { skip "two targets — no charter run"; return; }

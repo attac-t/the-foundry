@@ -187,12 +187,22 @@ wreck_runner "a selection that moved and authorises anyway is caught" \
 # expression is alternation to GNU sed and a literal elsewhere — a mutation that means two things is
 # not a mutation.
 wreck_runner "a freeze that records a digest instead of the lines is caught" \
-  digested 's#normalised_selection() { list_targets "$1" | LC_ALL=C sort -u; }#normalised_selection() { list_targets "$1" | LC_ALL=C sort -u | cksum; }#'
+  digested 's#| LC_ALL=C sort -u; }#| LC_ALL=C sort -u | cksum; }#'
 
 # Sorting and `-u` are the two halves of "a set". Reordering or repeating a target is not a change,
 # and a refusal on either would teach people to ignore refusals.
+#
+# Both aim at the tail of the pipeline rather than the whole function body: the body has grown twice
+# already, and a mutation quoting it in full stops applying every time it does. A break that no
+# longer applies is a break that proves nothing, and the harness can only tell you so afterwards.
 wreck_runner "a freeze that reads the selection as a list is caught" \
-  aslist 's#normalised_selection() { list_targets "$1" | LC_ALL=C sort -u; }#normalised_selection() { list_targets "$1"; }#'
+  aslist 's#| LC_ALL=C sort -u; }#; }#'
+
+# The detector answers for the directory you stand in. `derive` and `check` both guard that; the
+# third consumer did not, so a directory declaring the charter's gates authorised a run that the
+# bootstrap refuses — and wrote the frozen record on the way out.
+wreck_runner "authorising for whatever repository you stand in is caught" \
+  anywhere 's|    refuse_wrong_repository "$run_dir"|    :|'
 
 # One allowlist for every run is one run's grant handed to all of them.
 #
