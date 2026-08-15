@@ -598,7 +598,7 @@ a_charter_derives_from_the_repository_it_is_run_in() {
   # source exists — and why they fire with no human present.
   #
   is "nothing selected, so the clause grades nothing" \
-     "$(code_of floor "$tmp/ch" authorise)" "8"
+     "$(code_of floor "$tmp/ch" authorise)" "9"
 
   floor "$tmp/ch" targets add 'https://github.com/acme/ch.git' develop >/dev/null 2>&1
   is "the bootstrap selected and its gate declared authorises" \
@@ -606,9 +606,83 @@ a_charter_derives_from_the_repository_it_is_run_in() {
 
   # The one derived exception: a `Gate:` clause governs a selected target that declares that gate.
   # The bootstrap is the only target whose declarations are readable, and it declares no `nosuch`.
+  #
+  # The freeze. Authorising writes the selected set down, and it is the only record of what was
+  # selected at that moment — which is what lets a line *removed* afterwards be seen at all. The
+  # selection file cannot show an absence; a second record can.
+  #
+  frozen=$chrun/units/01/authorised-targets
+  exists "authorising writes the selected set down" "$frozen"
+  is "and it holds the lines, not a digest of them" \
+     "$(cat "$frozen")" "https://github.com/acme/ch.git develop"
+
+  is "authorising again over the same selection is not a change" \
+     "$(code_of floor "$tmp/ch" authorise)" "0"
+
+  floor "$tmp/ch" policy authorize 'https://github.com/acme/second.git' >/dev/null 2>&1
+  printf 'https://github.com/acme/second.git main\n' >> "$chrun/units/01/targets"
+  is "a target added after the freeze is a different run" \
+     "$(code_of floor "$tmp/ch" authorise)" "10"
+
+  # Exactly back, so this proves the comparison and not merely that something was touched.
+  printf 'https://github.com/acme/ch.git develop\n' > "$chrun/units/01/targets"
+  is "and putting it back exactly authorises again" \
+     "$(code_of floor "$tmp/ch" authorise)" "0"
+
+  #
+  # The half nothing could see before, and it has to be a deletion that leaves the selection
+  # standing. Emptying the file is refused whether or not a freeze exists — every clause then grades
+  # nothing — so a suite that only empties it proves the ordering and never the absence.
+  #
+  # A fresh authorisation of a two-target selection. The record has to go, because adding a target
+  # to a frozen selection is exactly what exits 10 — which the check above just proved.
+  rm -f "$frozen"
+  printf 'https://github.com/acme/ch.git develop\nhttps://github.com/acme/second.git main\n' \
+    > "$chrun/units/01/targets"
+  is "two selected targets authorise" "$(code_of floor "$tmp/ch" authorise)" "0"
+
+  printf 'https://github.com/acme/ch.git develop\n' > "$chrun/units/01/targets"
+  is "one of two deleted after the freeze is a different run" \
+     "$(code_of floor "$tmp/ch" authorise)" "10"
+
+  # Order is not part of a set, and a refusal that fired on it would teach people to ignore refusals.
+  printf 'https://github.com/acme/second.git main\nhttps://github.com/acme/ch.git develop\n' \
+    > "$chrun/units/01/targets"
+  is "the same two targets in another order are the same selection" \
+     "$(code_of floor "$tmp/ch" authorise)" "0"
+
+  # `add_target` does not dedupe, so a set is not a list here either.
+  printf 'https://github.com/acme/ch.git develop\nhttps://github.com/acme/second.git main\nhttps://github.com/acme/ch.git develop\n' \
+    > "$chrun/units/01/targets"
+  is "the same target twice is the same selection" \
+     "$(code_of floor "$tmp/ch" authorise)" "0"
+
+  # A comment is not a target. Without this the whole normalisation could be `cat` and nothing notices.
+  printf 'https://github.com/acme/ch.git develop\nhttps://github.com/acme/second.git main\n# a note\n' \
+    > "$chrun/units/01/targets"
+  is "a comment added after the freeze is not a change" \
+     "$(code_of floor "$tmp/ch" authorise)" "0"
+
+  #
+  # The two arrangements that pin the ordering. Both refuse either way, so only the *code* separates
+  # a moved-first gate from a moved-last one — and the whole argument for moving it was that the
+  # later checks name remedies the freeze forbids.
+  #
+  : > "$chrun/units/01/targets"
+  is "an emptied selection is a moved one, not a bar that grades nothing" \
+     "$(code_of floor "$tmp/ch" authorise)" "10"
+
+  printf 'https://github.com/acme/ch.git develop\nhttps://github.com/acme/never.git main\n' \
+    > "$chrun/units/01/targets"
+  is "an unauthorised target added after the freeze is a moved selection, not a policy question" \
+     "$(code_of floor "$tmp/ch" authorise)" "10"
+
+  printf 'https://github.com/acme/ch.git develop\n' > "$chrun/units/01/targets"
+  printf 'https://github.com/acme/ch.git develop\n' > "$frozen"
+
   floor "$tmp/ch" charter introduce Gate nosuch >/dev/null 2>&1
   is "a Gate naming an undeclared gate grades nothing" \
-     "$(code_of floor "$tmp/ch" authorise)" "8"
+     "$(code_of floor "$tmp/ch" authorise)" "9"
 
   # Refusing must not be the answer to everything: the run above still holds a clause that does
   # govern, so a green authorise has to be reachable again once the ungoverning one is gone.
@@ -787,6 +861,23 @@ deriving_needs_the_right_repository() {
       "run this inside [https://github.com/acme/ch.git]"
 }
 deriving_needs_the_right_repository
+
+#
+# `authorise` is the detector's third consumer, and the first that writes its answer down.
+#
+# Without this guard a run authorised from any directory holding a `.foundry/gates` that named the
+# charter's gates — turning a correct refusal into a frozen record. `$tmp/ch2` is a different
+# repository, and the message is what is asserted: exit 6 alone would pass for the wrong reason,
+# which is the lesson the check above already carries.
+#
+authorising_needs_the_right_repository() {
+  [ -n "${chrun:-}" ] || { skip "authorise wrong repo — no charter run"; return; }
+
+  has "authorising from another repository is refused for being the wrong repository" \
+      "$( cd "$tmp/ch2" && FOUNDRY_HOME="$home" FOUNDRY_RUN="$chrun" sh "$runner" authorise 2>&1 )" \
+      "run this inside [https://github.com/acme/ch.git]"
+}
+authorising_needs_the_right_repository
 
 a_clause_may_span_two_targets() {
   [ -n "${chrun:-}" ] || { skip "two targets — no charter run"; return; }
