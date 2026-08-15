@@ -737,6 +737,27 @@ a_charter_derives_from_the_repository_it_is_run_in() {
 # three things and Foundry declares its gates in none of them, so this is the default run, not a
 # contrived one.
 #
+#
+# Every other `authorise` check in this suite derives first, so the never-derived path had no reader
+# at all — and it is the one that was wrong: `underived_gates` yields `deleted:` for a gate no clause
+# exists for, which is every gate when no charter exists. That run was told it had lost a clause
+# whose pins never existed.
+#
+authorising_before_deriving() {
+  make_repo "$tmp/pre" main && set_origin "$tmp/pre" 'https://github.com/acme/pre.git' \
+    || { skip "authorise before derive — git could not make a repo here"; return; }
+
+  printf 'test:\n\techo ok\n' > "$tmp/pre/Makefile"
+  git -C "$tmp/pre" add -A >/dev/null 2>&1 && git -C "$tmp/pre" commit -qm gate >/dev/null 2>&1
+
+  floor "$tmp/pre" new "Before deriving" >/dev/null
+  is "authorising before deriving asks for a charter, not for a lost clause" \
+     "$(code_of floor "$tmp/pre" authorise)" "1"
+  has "and it says which" \
+      "$(floor_says "$tmp/pre" authorise)" "this run has no charter"
+}
+authorising_before_deriving
+
 an_empty_charter_is_refused() {
   make_repo "$tmp/nogate" main && set_origin "$tmp/nogate" 'https://github.com/acme/nogate.git' \
     || { skip "authorise — git could not make a repo here"; return; }

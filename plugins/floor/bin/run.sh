@@ -8,8 +8,8 @@
 #
 # Exit codes:
 #   0  answered
-#   1  nothing to answer with — no run is active, or the run has no bootstrap target
-#  12  the detector yields a gate the charter holds no clause for — re-derive
+#   1  nothing to answer with — no run is active, no bootstrap target, or no charter yet
+#   2  asked for something this does not do
 #   3  nowhere to put a run, or the home cannot be written to
 #   4  a target was refused: no portable identity, or a ref that is not one
 #   5  a target was refused: nobody authorised it for this run
@@ -66,7 +66,7 @@ floor — where work happens.
   run.sh charter introduce <kind> <text>
                                   add a clause nothing derived — it stays introduced
   run.sh authorise                refuse a run that describes no work, or whose selection moved
-                                  — exit 5, 8, 9, 10, 11 or 12
+                                  — exit 1, 5, 8, 9, 10, 11 or 12
 EOF
 }
 
@@ -597,9 +597,9 @@ authorise() {
     # for. A clause removed by hand is one way to reach that; a gate declared since the last
     # derivation is another, and growth is allowed. Re-deriving is the remedy for both, so the
     # refusal is right either way — but naming a loss that may not have happened is not.
-    ungoverned_by_pins=$(underived_gates "$charter_path" | awk '/^deleted: /')
-    [ -z "$ungoverned_by_pins" ] || {
-        printf '%s\n' "$ungoverned_by_pins" | while read -r _ kind name; do
+    gates_with_no_clause=$(underived_gates "$charter_path" | awk '/^deleted: /')
+    [ -z "$gates_with_no_clause" ] || {
+        printf '%s\n' "$gates_with_no_clause" | while read -r _ kind name; do
             note "the detector yields $kind $name and the charter holds no clause for it"
         done
         note "re-derive, or stop the artifact declaring it"
@@ -1006,10 +1006,10 @@ introduced_clauses() {
 keep_introduced() {
     [ -f "$1" ] || return 0
 
-    held=$(introduced_clauses "$1") || return 1
-    [ -n "$held" ] || return 0
+    carried=$(introduced_clauses "$1") || return 1
+    [ -n "$carried" ] || return 0
 
-    printf '%s\n' "$held" | awk -v draft="$2" '
+    printf '%s\n' "$carried" | awk -v draft="$2" '
          FILENAME == draft { fresh[$2] = 1; next }
          !($2 in fresh)' "$2" -
 }

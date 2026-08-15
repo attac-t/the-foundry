@@ -215,8 +215,13 @@ wreck_runner "a run that authorises over introduced meaning is caught" \
   ownbar 's|    introduced=$(introduced_clauses "$charter_path")|    introduced=|'
 
 # The whole line, anchored: the capture holds a pipe, and a `|`-delimited expression would end at it.
+# The guard that keeps a never-derived run from being told it lost a clause. It had no break, and a
+# rule with no break is a rule the next edit deletes for free.
+wreck_runner "authorising before deriving, reported as a lost clause, is caught" \
+  nocharter 's#\[ -f "$charter_path" \]#true#'
+
 wreck_runner "a run that authorises after a derived clause was removed is caught" \
-  lowered 's#^    ungoverned_by_pins=.*#    ungoverned_by_pins=#'
+  lowered 's#^    gates_with_no_clause=.*#    gates_with_no_clause=#'
 
 # One allowlist for every run is one run's grant handed to all of them.
 #
