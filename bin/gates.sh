@@ -1,13 +1,7 @@
 #!/bin/sh
 #
-# Every product gate, in one place.
-#
-# The README lists these seven. Nothing checks that the two agree — but they are now one file apart,
-# which is the smallest a gap can get without a gate for it.
-#
-# Runs where you are. `bin/gates-in-docker.sh` runs it on Linux, where `sh` is dash.
-#
-# Usage: sh bin/gates.sh
+# Every product gate. The README lists these seven; nothing yet checks the two agree.
+# `bin/gates-in-docker.sh` runs this on Linux, where `sh` is dash.
 
 set -u
 
@@ -20,12 +14,10 @@ gate() {
     name=$1
     shift
 
-    if "$@" >/dev/null 2>&1; then
-        printf '  PASS  %s\n' "$name"
-    else
-        printf '  FAIL  %s (exit %s)\n' "$name" "$?"
-        failed=$((failed + 1))
-    fi
+    "$@" >/dev/null 2>&1 && { printf '  PASS  %s\n' "$name"; return; }
+
+    printf '  FAIL  %s (exit %s)\n' "$name" "$?"
+    failed=$((failed + 1))
 }
 
 printf 'sh  %s\n' "$(readlink -f /bin/sh 2>/dev/null || echo '?')"

@@ -1,10 +1,7 @@
-# The Linux runner the gates need, and nothing more.
+# Debian because its `/bin/sh` is dash. On macOS and Git Bash `sh` *is* bash and takes `&>` and
+# `[[ =~ ]]` without a word, so neither can fail a bashism — and every runner here opens `#!/bin/sh`.
 #
-# Debian for one reason: its `/bin/sh` is dash. On macOS and under Git Bash `sh` *is* bash and takes
-# `&>`, `[[ =~ ]]` and `${BASH_SOURCE[0]}` without a word — so neither can fail a bashism, and every
-# runner this repository ships opens `#!/bin/sh`.
-#
-# Build and run it with `bin/gates-in-docker.sh`.
+# Built by `bin/gates-in-docker.sh`.
 
 FROM debian:stable-slim
 
