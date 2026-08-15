@@ -168,16 +168,15 @@ entirely different things. Who reads it decides:
 
 | Read by | The answer means |
 |---|---|
-| authorisation | this run may proceed past the condition that fired — **run-scoped authority, and nothing about any clause** |
+| authorisation | this clause may exist — **authority, scoped to this run and this clause, saying nothing about whether it was met** |
 | completion | for a `Decided:` clause, that the clause was met — `human` evidence, as §2.5 defines it |
 
-**A question belongs to a stage, and that is what keeps the two apart.** Both kinds concern a clause,
-so naming the clause cannot separate them — an introduced clause is authorised by one question and,
-if it is `Decided:`, satisfied by another about the same clause in the same run. What differs is who
-asked:
+**Both name a clause, and the stage is what keeps them apart.** An introduced clause is authorised by
+one question and, if it is `Decided:`, satisfied by another about the same clause in the same run.
+Naming cannot separate those; who asked can:
 
 ```
-question = run + stage + condition + clause
+question = run + stage + clause
 ```
 
 **Completion never reads an authorisation answer, because it never asked that question.** Drop the
@@ -185,21 +184,27 @@ stage and the two collapse: the answer authorising a clause's existence would sa
 the defect revision 9 closed for entailment verdicts. It returns for human answers unless the stage
 is carried.
 
+**Three terms, and the fourth was tried.** Revision 12 first keyed the condition that fired as well.
+It never discriminates: for one clause at authorisation, either no path established provenance or the
+judge could not tell — never both live at once, and the question is *may this clause exist* either
+way. The condition is what the ask must **say**, so a human knows why they are being asked. It is not
+what the answer must **match**.
+
 **Authorisation transports conditions one and two, and nothing else.** Three refuses and four
 refuses — §2.2 says why. Completion transports its own question, for `Decided:` clauses, which is the
 requirement this section opened by naming.
 
-**That identity is derived rather than issued.** Every component already exists when the question is
-asked, and a resumed run recovers all four. So a resumed run finds its own question rather than asking
-a second one, an answer to another question does not match, and an answer to an earlier run does not
-either. Issuing an identity instead would mean storing it, and a stored pending question is the
-parallel ledger §2.2 refuses.
+**That identity is derived rather than issued.** Every term already exists when the question is asked
+and recomputes from the base when a run resumes. So a resumed run finds its own question rather than
+asking a second one, an answer to another question does not match, and an answer to an earlier run
+does not either. Issuing an identity instead would mean storing it, and a stored pending question is
+the parallel ledger §2.2 refuses.
 
-**Recovered, not recomputed — the difference is `condition`, and it costs one record.** Run, stage and
-clause recompute from the base. Conditions one and two are a judge's answer, and re-convening a judge
-is not recomputation: it may answer differently, and then the question a human is already holding is
-no longer derivable. So §2.2 records what the judge answered and a resumed run replays it. That record
-is a provenance judgement, not a pending question — nothing reads it to find an outstanding ask.
+**A stable identity is not a stable question, and only one of those is free.** Whether a clause is
+asked about at all turns on a judge, and re-convening a judge on resume can answer differently — so a
+question a human is already holding can stop existing, with its identity still perfectly derivable.
+That is why §2.2 records what the judge answered and a resumed run replays it. The record is a
+provenance judgement, not a pending question: nothing reads it to find an outstanding ask.
 
 A clause's identity is its text, so editing a clause asks a new question. That is correct: a changed
 requirement is a different requirement, and the old answer authorised the old one.
@@ -239,7 +244,7 @@ These replace routine approval. Each is checkable by code, not by the worker's a
 | 1 | **Provenance** | Every clause names the human-owned artifact it came from — a repo script or an instruction file — **and establishes the link by one of exactly two paths, mechanical or semantic (below).** A clause that establishes neither is *introduced* |
 | 2 | **Pinning** | That artifact is captured at the base ref of **the target it came from** — §2.3's `ref`. Both the clause *and its resolution* are pinned |
 | 3 | **Monotonicity** | The set of requirements may grow. It may never shrink. A clause's kind is not a rank on that set — below. **The baseline is what the pinned artifacts derive now, never a previous run's charter** |
-| 4 | **Authority** | Selecting the work item **is** the human act, stamped as `human` evidence. It authorises everything derived from artifacts that human already owns |
+| 4 | **Authority** | Selecting the work item **is** the human act, stamped as run-scoped `human` **authority** — never evidence, because it names no clause and so answers nothing about one. It authorises everything derived from artifacts that human already owns |
 
 #### The kinds are not a scale
 
@@ -411,9 +416,10 @@ now a rule rather than a convention.
 
 **Every attempt at the semantic path is recorded** — the verdict, or that no eligible judge could be
 formed. The record is one of its own, naming the clause, the artifact and its ref; `entailed`
-additionally establishes the pin. **It says a requirement legitimately exists, never that it was
-met.** Judgements stay countable, which is what later lets a recurring one be promoted into a
-mechanical check — `craft-oracle`'s promotion rule, unchanged.
+additionally establishes the pin. **Not one of them says a clause was met**, and the one that
+establishes anything says only that a requirement legitimately exists. Judgements stay countable,
+which is what later lets a recurring one be promoted into a mechanical check — `craft-oracle`'s
+promotion rule, unchanged.
 
 **Revision 11 kept a verdict only beside the pin it established — the one answer that needed keeping
 least.** *Not entailed*, *ambiguous* and *no eligible judge* establish no pin, and each of them fires
@@ -422,11 +428,12 @@ nothing kept. A run that stops with a question outstanding re-convenes a judge w
 judge may answer differently, and the question the human is holding then derives differently or not at
 all.
 
-**A recorded verdict is replayed, not re-judged.** The judge was asked whether *this* clause is
-entailed by *that* artifact at *that* ref; the verdict is about that triple, so replaying it answers
-the identical question. A second convening that answered differently would be the judge being
-non-deterministic, not new information. A changed triple — an edited clause, a different pinned ref —
-is a different question and gets a fresh judge. A new run gets one for every clause.
+**A recorded attempt is replayed, not re-judged** — including the one that records that no eligible
+judge could be formed. The judge was asked whether *this* clause is entailed by *that* artifact at
+*that* ref; the record is about that triple, so replaying it answers the identical question. A second
+convening that answered differently would be the judge being non-deterministic, not new information.
+A changed triple — an edited clause, a different pinned ref — is a different question and gets a fresh
+judge. A new run gets one for every clause.
 
 **That is a record of what a judge answered, never of what is awaited.** No stage reads it to find an
 outstanding question, nothing clears it, and it cannot say a clause was met. A pending-question ledger
@@ -437,13 +444,14 @@ whether meaning already exists. It proposes nothing.
 
 #### The authorisation gate
 
-A human is asked **only** when one of four conditions fires:
+Authorisation stops **only** when one of four conditions fires — the first two by asking a human, the
+last two by refusing:
 
 ```
-neither path establishes provenance   → new meaning was introduced
-the judge answered "ambiguous"        → the meaning is genuinely unclear
-a clause the pins still derive is gone → invariant 3 was violated
-a target is outside the allowlist     → policy refuses (§2.3)
+no provenance — the judge said no, or none could be formed   ask     new meaning was introduced
+no provenance — the judge could not tell                     ask     the meaning is genuinely unclear
+a clause the pins still derive is gone                       refuse  invariant 3 was violated
+a target is outside the allowlist                            refuse  policy refuses (§2.3)
 ```
 
 None of the four fires → **no human is asked, and the run proceeds**, unless the charter does not yet
@@ -478,11 +486,11 @@ verdict record above fixes it only within a run — so a fresh attempt may reach
 without any artifact changing. Deliberate: a verdict carried between runs would be a run inheriting
 provenance it never established, and invariant 3 re-derives *now* precisely to stop that.
 
-**An authorisation answer names the condition that fired.** Answering *yes, introduce it* authorises
-a requirement's existence; it never says the work met it. A `Decided:` clause reaches completion
-through the same channel and a **different** answer — one that does name the clause, and is evidence.
-Without that separation both arrive as `human` records naming a clause, and §2.5's completion
-invariant is back to guessing which one it is holding.
+**An authorisation answer authorises a requirement's existence. It never says the work met it.** A
+`Decided:` clause reaches completion through the same channel and a **different** answer, which
+completion reads as evidence. Both name a clause, so the stage is what separates them — §2.1. Without
+that separation both arrive as `human` records naming a clause, and §2.5's completion invariant is
+back to guessing which one it is holding.
 
 **Condition three asks nobody anything.** It fires when the pins still derive a clause the charter no
 longer holds, and the model already says what a human does about that: *a human who relaxes a
@@ -496,9 +504,13 @@ remedy is a separate human command, and condition three is a refusal whose remed
 
 Revision 11 decided that if condition three ever *did* carry an answer, that answer would name the
 clause whose removal it authorises, one clause at a time. That constraint stands and binds nothing
-today, because there is no such answer. It also settled the rule that keeps the evidence pool
-unambiguous, and that rule is doing work: **never name a clause the charter still holds.** A
-satisfaction answer must name one; an authorisation answer cannot.
+today, because there is no such answer.
+
+**Revision 11 also kept the evidence pool unambiguous by a naming rule — never name a clause the
+charter still holds — and revision 12 retires it.** The rule cannot survive conditions one and two
+being asked per clause: an introduced clause *is* in the charter, so its authorisation answer names a
+clause the charter holds, and the rule forbids exactly what the model does. **The stage does that job
+instead**, for every clause rather than only the ones being removed.
 
 **An answer binds one run, and the ask must say so.** Invariant 3 re-derives the baseline from the
 pins every time, and `Decided:` clauses do not carry forward — so the same base proposes the same
@@ -654,8 +666,14 @@ mechanical check later.
 **`human` evidence has one producer too, and it is not the transport.** An answer reaches the run
 through the work source's `receive`, which carries it and decides nothing about it — §2.1. Completion
 makes it evidence, by reading the answer to a question completion asked about a `Decided:` clause it
-holds. An authorisation answer arrives through the same channel and never becomes evidence at all,
-because no stage reads it that way.
+holds.
+
+**Not every `human` record is evidence.** Selecting the work item is stamped `human` — invariant 4 —
+and so is an authorisation answer, and neither answers *was this clause met*. They are run-scoped
+**authority**: one authorises the run, the other authorises a clause's existence. The rule that sorts
+them is the one this section already states below — a record that answers anything about a clause
+other than whether it was met is not evidence — and a record naming no clause at all was never a
+candidate. So the pool completion reads holds satisfaction records and nothing else.
 
 **Machine evidence cannot be faked through the API, because there is no API for it.** The recorder
 takes a command, runs it, and stamps what happened. There is no parameter for a result:
@@ -782,7 +800,7 @@ said planning *produces* the run's contents. Planning therefore had no ledger �
 three-ledger disease this RFC diagnoses in its own Problem section.
 
 ```
-work item selected              ← the human act. Stamped as `human` evidence
+work item selected              ← the human act. Stamped as `human` authority, not evidence
     │
     ▼
 run created                     ← the ledger exists. Nothing has mutated
@@ -795,7 +813,7 @@ planning                        ← read-only workspace
     └──▶ targets   authoritative, filtered by the allowlist
     │
     ▼
-authorisation                   ← asks ONLY on the four conditions in §2.2
+authorisation                   ← §2.2's four conditions. Two ask, two refuse
     │                             otherwise silent, and the run continues
     │                             refuses a charter with no clause, or a clause
     │                             governing no selected target — §2.2
@@ -883,7 +901,7 @@ resolved, with the missing rows added.
 | 6 | Filesystem: transport or architecture | Transport, plus a portability test revision 1's own file failed | synthesis |
 | 7 | Evidence provenance and trust | Three trust levels, matching the charter's clause kinds | synthesis |
 | 8 | Gates vs the wider definition of good | Good is the charter. Gates are its machine third | synthesis |
-| 9 | **Human judgement vs human ceremony** | **Synthesis. Revision 2 resolved this by silence, in favour of the position that both issue #66 and the synthesis argue against.** §2.2 now derives what it can, has a judge establish what it cannot, and asks a human only on the four conditions | synthesis |
+| 9 | **Human judgement vs human ceremony** | **Synthesis. Revision 2 resolved this by silence, in favour of the position that both issue #66 and the synthesis argue against.** §2.2 now derives what it can, has a judge establish what it cannot, and asks a human only where both fail | synthesis |
 | 10 | **Work source bidirectional, or a passive item** | **Synthesis.** Revision 2 kept five read-only fields and left the human-input channel homeless — while depending on it. §2.1 restores `publish`, `ask`, `receive` | synthesis |
 | 11 | **Workspace operations** | **Synthesis.** It carried a six-operation sketch; revision 2 replaced it with "no contract". §2.6 restores it as a sketch | synthesis |
 | 12 | **Browser** | **Synthesis.** Named twice there, and in issue #66's attention list. Revision 2 lost it entirely. Now a named seam | synthesis |
@@ -1148,7 +1166,8 @@ was prose the code could not enforce.
 record is a satisfaction claim — a constant, not a field. The set is closed in §2.2 rather than
 assumed: an authorisation answer names the condition that fired, never the clause. **History**:
 revision 11 lets condition three name its clause, and closes the set on *never a clause the charter
-still holds* instead. Still no field.
+still holds* instead. Revision 12 lets every authorisation answer name its clause, and closes the set
+on the **stage**. Still no field.
 
 ### Revision 10 — the refusal reached this repository
 
@@ -1178,9 +1197,10 @@ Neither was settled by code, spec or a prior review. Both were escalated and bot
 | §7 q1: judge eligibility open, *"blocks the authorisation stage"* | **closed** — role and information path, never vendor | Fresh, read-only, neither proposer nor implementer, unable to mutate the charter, judging from the pinned artifact and the candidate clause alone. Where no such judge can be formed, semantic provenance is not established and the clause falls to the human — which was already the answer for *not entailed* |
 | §2.2: *"nothing stops the same judge producing both records"* | *fresh* stops it | Revision 9 separated the records and said so honestly. Eligibility separates the agents, and could not be claimed until it was a rule |
 
-**No new field, and no new record.** **History**: revision 12 found condition three has no answer at
-all — it refuses. Condition three's answer is a `human` record like any other; what
-changed is which clause it may name and why that cannot collide.
+**No new field, and no new record.** Condition three's answer would be a `human` record like any
+other; what changed is which clause it may name and why that cannot collide. **History**: revision 12
+found condition three has no answer at all — it refuses — and retired the naming rule this row
+settled. The stage keeps the pool unambiguous now.
 
 
 ### Revision 12 — the transport was deciding what an answer meant
@@ -1190,13 +1210,17 @@ Drafting the work source found §2.1 making a semantic claim it has no standing 
 | Was | Is | What falsified it |
 |---|---|---|
 | §2.1 and §2.5: `receive` returns "that human's answer, **as evidence at trust `human`**" | an attributed answer, bound to the run and the question. Completion produces the evidence | An authorisation answer and a satisfaction answer arrive through the same channel and mean different things. Stamping every answer as evidence made the transport assert that a clause was met, which is completion's judgement and nobody else's. §2.5's trust table carried the same claim one section later |
-| nothing said how a question is identified | derived from the run, the **stage**, the condition and the clause | Without it a resumed run asks again, an answer to another question is consumed, and an answer to an earlier run is too. **The stage is what separates the two kinds**: both name a clause, so without it the answer authorising an introduced `Decided:` clause would satisfy it — revision 9's defect, returning for human answers. **Derived rather than issued**, because issuing means storing, and a stored pending question is the parallel ledger §2.2 refuses |
+| nothing said how a question is identified | derived from the run, the **stage** and the clause | Without it a resumed run asks again, an answer to another question is consumed, and an answer to an earlier run is too. **The stage is what separates the two kinds**: both name a clause, so without it the answer authorising an introduced `Decided:` clause would satisfy it — revision 9's defect, returning for human answers. **Derived rather than issued**, because issuing means storing, and a stored pending question is the parallel ledger §2.2 refuses |
+| a fourth term, the condition that fired, was tried and dropped | three terms | It never discriminates: for one clause at authorisation, either no path established provenance or the judge could not tell, never both. The condition is what the ask must **say**; it is not what the answer must **match**. It was also the one term a resumed run could not recompute, which is how the record below was found |
+| §2.2: *"never name a clause the charter still holds"* kept the evidence pool unambiguous | the **stage** keeps it unambiguous | Conditions one and two are asked per clause, and an introduced clause *is* in the charter — so the rule forbade exactly what the model does. It could only ever have held while condition three was the sole clause-naming authorisation answer |
+| invariant 4 and §4's lifecycle stamped work-item selection as `human` **evidence** | `human` **authority** | Revision 12 separated run-scoped authority from clause-satisfaction evidence for *answers* and left the same conflation standing two sections earlier. Selection names no clause, so it can satisfy none — it belongs with the authorisation answer, not in the pool completion reads |
 | §2.2 recorded an entailment verdict only beside the pin it established | every semantic attempt is recorded, and a resumed run replays it | *Not entailed*, *ambiguous* and *no eligible judge* establish no pin — so the fact that fired an authorisation condition was the one fact nothing kept, and a resumed run re-convened a judge free to answer differently. The question a human was already holding then derived differently or not at all. **The model did need a durable provenance judgement**; it is not a pending question, because nothing reads it to find an outstanding ask, nothing clears it, and it can never say a clause was met |
 | §2.2 gave condition three's *answer* a rule | condition three asks nobody anything | It is a refusal, in this document, in issue #93 and in the shipped code, which exits 12. A rule for its answer implied an answer existed. The remedy was always the one §2.2 already names — a human edits the artifact and commits it — so **only conditions one and two are ever transported** |
 
-Drafting the stage found the first and the last — the fourth revision in a row corrected by a stage
-that does not exist yet. Review found the middle two, and the verdict record is the first time this
-document has answered *what happens when a run stops mid-question*.
+Drafting the stage found the transport defect and the condition-three defect. Review found the rest,
+and two of those were fixes leaving a contradiction in a section the fix did not reach — this
+document's oldest failure mode, committed twice more while correcting it. The verdict record is the
+first time it has answered *what happens when a run stops mid-question*.
 
 
 ## 7. Unresolved questions
@@ -1229,13 +1253,19 @@ required by §2.3, not speculative.
 
 6. **Where does promotion counting live?** Panel's "raised three times becomes an oracle" is counted
    by a model. A machine-readable ledger makes it countable by code. **Revision 9 split what must be
-   counted across two stores** — entailment verdicts sit beside the charter's pins, satisfaction
+   counted across two stores** — semantic verdicts recorded with the charter's pins, satisfaction
    verdicts in an evidence ledger that does not exist yet. Promotion counting reads both, or one
    moves.
 
 7. **How is a unit's boundary decided?** `decide-boundary`'s tells surface in code, not in a plan, so
    planning splits units using the one gate that cannot see them. **The weakest joint in the model**,
    and it does not block the run stage because v1 ships one unit.
+
+8. **Does one `Decided:` answer cover every selected target?** §2.5's completion invariant demands
+   satisfying evidence at the delivered ref of **every** selected target a clause governs. A question
+   is `run + stage + clause` — no target — so one answer covers a two-target run. That is right for a
+   human decision and wrong for the invariant as written, and only one of them can stay. Nothing
+   forces it yet: v1 selects one target, and `Decided:` clauses are the only human-answered kind.
 
 ---
 
@@ -1296,7 +1326,8 @@ policy              the target allowlist and the bootstrap target, enforced in c
   ↓
 charter             clauses, mechanical provenance, pinning, monotonicity
   ↓
-authorisation       the four conditions, the semantic path, silence when none fire,
+authorisation       four conditions — two ask, two refuse; the semantic path and its
+                    recorded verdicts; silence when none fire,
                     refusal when a clause grades nothing or the charter holds none
   ↓
 evidence            append-only, trust levels, no result parameter, the completion invariant
