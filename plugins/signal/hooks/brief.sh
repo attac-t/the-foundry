@@ -10,6 +10,9 @@
 #
 # Plain text on stdout reaches the agent on this event. Nothing here reaches the reader.
 #
+# No `set -e`: most turns leave no note, and the read that finds none would end the hook before it
+# states the budget.
+#
 
 root="$(cd "$(dirname "$0")/.." && pwd)"
 temp="${TMPDIR:-/tmp}"
@@ -19,7 +22,7 @@ payload=$(cat)
 value() { printf '%s' "$payload" | awk -f "$root/lib/unjson.awk" -v key="$1"; }
 
 # Get the path to this session's note.
-note() { printf '%s/signal-%s.note' "$temp" "${session:-nosession}"; }
+notefile() { printf '%s/signal-%s.note' "$temp" "${session:-nosession}"; }
 
 # Ask the scorer for the budget it will mark against. Naming it here instead would be a second copy
 # of the gate, and a brief that aims the agent at a line nobody marks is worse than no brief.
@@ -37,8 +40,8 @@ field() { printf '%s\n' "$report" | awk -F= -v k="$1" '$1 == k { print $2; exit 
 session=$(value session_id | tr -cd 'A-Za-z0-9._-')
 
 # Read the last reply's numbers, then drop them. They answer for one turn only.
-last=$(cat "$(note)" 2>/dev/null)
-rm -f "$(note)" 2>/dev/null
+last=$(cat "$(notefile)" 2>/dev/null)
+rm -f "$(notefile)" 2>/dev/null
 
 report=$(budget)
 

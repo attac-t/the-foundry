@@ -7,7 +7,6 @@
 #
 # After that, what a middling reply costs. Over the working line but under the tail, it must leave a
 # note and print nothing.
-
 #
 # Set PLUGIN_ROOT to point these checks at a deliberately broken copy.
 
@@ -24,7 +23,7 @@ note="${TMPDIR:-/tmp}/signal-${session}.note"
 trap 'rm -f "$mark" "$note"' EXIT
 
 # Long enough to clear the tail: 600 words, a 45-word sentence, or a quarter of them long.
-bad='Additionally, it is worth noting that we should leverage this comprehensive functionality in order to facilitate a robust implementation, and furthermore the extraordinarily sophisticated architectural considerations demonstrate fundamentally comprehensive capabilities.'
+blocking='Additionally, it is worth noting that we should leverage this comprehensive functionality in order to facilitate a robust implementation, and furthermore the extraordinarily sophisticated architectural considerations demonstrate fundamentally comprehensive capabilities.'
 good='We cut it by ten. The hook reads what the agent said.'
 near='The elephant sat on a mat. My family went to the shop and got some milk today.'
 
@@ -56,7 +55,9 @@ unnote() { rm -f "$note"; }
 noted() { cat "$note" 2>/dev/null; }
 
 # Count how far the braces fail to balance.
-braces() { printf '%s' "$1" | awk '{ print gsub(/{/, "{") - gsub(/}/, "}") }'; }
+# `\{`, not `{`. POSIX starts an interval expression at a bare brace, so one that begins no interval
+# is undefined — gawk and mawk read it as a literal, BusyBox awk refuses the whole program.
+braces() { printf '%s' "$1" | awk '{ print gsub(/\{/, "{") - gsub(/\}/, "}") }'; }
 
 # Determine whether the quotes come in pairs. Zero means they do.
 quotes() { printf '%s' "$1" | awk '{ print gsub(/"/, "\"") % 2 }'; }
@@ -66,10 +67,10 @@ echo "guard"
 # --- the loop guard ---
 
 forget
-out=$(run "$(payload false "$bad" p1)")
+out=$(run "$(payload false "$blocking" p1)")
 has "the first stop blocks" "$out" '"decision":"block"'
 
-out=$(run "$(payload true "$bad" p1)")
+out=$(run "$(payload true "$blocking" p1)")
 has   "a rewrite still over budget tells you" "$out" '"systemMessage"'
 lacks "the second stop does not block"        "$out" '"decision"'
 
@@ -78,16 +79,16 @@ is "a rewrite that fixed it is silent" "$out" ""
 
 # Another plugin blocked, so the flag is set but no marker names this prompt. We still owe a score.
 forget
-out=$(run "$(payload true "$bad" p1)")
+out=$(run "$(payload true "$blocking" p1)")
 has "another plugin's block does not silence us" "$out" '"decision":"block"'
 
 claim p-earlier
-out=$(run "$(payload true "$bad" p1)")
+out=$(run "$(payload true "$blocking" p1)")
 has "a marker from an earlier turn does not silence us" "$out" '"decision":"block"'
 
 # No prompt id to key on. We cannot tell our own block from anyone else's, so warn, never block.
 forget
-out=$(printf '{"session_id":"%s","stop_hook_active":true,"last_assistant_message":"%s"}' "$session" "$bad" | bash "$hook" 2>/dev/null)
+out=$(printf '{"session_id":"%s","stop_hook_active":true,"last_assistant_message":"%s"}' "$session" "$blocking" | bash "$hook" 2>/dev/null)
 lacks "with no prompt id we never block" "$out" '"decision"'
 
 claim p1
@@ -122,7 +123,7 @@ is "clean text drops the note" "$(noted)" ""
 # --- the block message has to be usable ---
 
 unnote
-out=$(run "$(payload false "$bad")")
+out=$(run "$(payload false "$blocking")")
 has "the block names the numbers"   "$out" 'long words'
 has "the block gives the target"    "$out" 'aim for'
 has "the block points at the skill" "$out" 'signal:plain-english'
@@ -145,14 +146,14 @@ is "an empty reply says nothing" "$(run "$(payload false "")")" ""
 # A non-zero exit is reported to the user as a hook error, whatever the verdict was.
 
 codes=""
-for pair in "false|$good" "false|$near" "false|$bad" "true|$bad" "false|"; do
+for pair in "false|$good" "false|$near" "false|$blocking" "true|$blocking" "false|"; do
   codes="$codes$(status "$(payload "${pair%%|*}" "${pair#*|}")")"
 done
 is "the hook never exits non-zero" "$codes" "00000"
 
 # --- the output must be JSON ---
 
-out=$(run "$(payload false "$bad")")
+out=$(run "$(payload false "$blocking")")
 is "output is one line"   "$(printf '%s' "$out" | wc -l | tr -d ' ')" 0
 is "braces balance"       "$(braces "$out")" 0
 is "quotes come in pairs" "$(quotes "$out")" 0

@@ -158,15 +158,17 @@ handed=$(FIRE_RUN="$made" fire announce.sh '{"source":"startup"}')
 has   "announce names the run it was handed"            "$handed" "$(basename "$made")"
 lacks "and says nothing about the variable when it is set" "$handed" "is not set"
 
-if git init -q "$tmp/pointed" >/dev/null 2>&1 && [ -d "$tmp/pointed/.git" ]; then
+announce_through_the_pointer() {
+  git init -q "$tmp/pointed" >/dev/null 2>&1 && [ -d "$tmp/pointed/.git" ] \
+    || { skip "announce through the pointer — git could not make a repo here"; return; }
+
   make_run_in "$tmp/pointed" "Via Pointer" >/dev/null
   spoke=$(FIRE_CWD="$tmp/pointed" fire announce.sh '{"source":"startup"}')
 
   has "announce finds a run through the pointer alone" "$spoke" "via-pointer"
   has "and warns that memory has not moved with it"    "$spoke" "FOUNDRY_RUN is not set"
-else
-  skip "announce through the pointer — git could not make a repo here"
-fi
+}
+announce_through_the_pointer
 
 # --- the scripts parse where they will be run ---
 # `sh -n` reads without running. The cheapest way to catch a bashism that would otherwise wait for
@@ -177,15 +179,14 @@ for file in $(runtime_scripts); do
                             || bad "will not parse under sh — ${file##*/}"
 done
 
-# --- the files can start ---
+the_files_can_start() {
+  records_exec || { skip "executable bits — this filesystem does not record them"; return; }
 
-if records_exec; then
   for file in $(runtime_scripts); do
     [ -x "$file" ] && ok "executable — ${file##*/}" || bad "not executable — ${file##*/}"
   done
-else
-  skip "executable bits — this filesystem does not record them"
-fi
+}
+the_files_can_start
 
 # --- line endings ---
 # Git for Windows clones with core.autocrlf=true. A hook that arrives with CRLF does not merely
@@ -206,15 +207,15 @@ case "$(cd "$here" && git check-attr eol -- "x.sh" 2>/dev/null)" in
   *)          bad "nothing pins .sh files to LF — add it to .gitattributes" ;;
 esac
 
-# --- the preflight earns its place ---
+the_preflight_earns_its_place() {
+  cp -R "$root" "$tmp/broken" 2>/dev/null \
+    || { skip "the preflight with a broken runner — could not copy the plugin here"; return; }
 
-if cp -R "$root" "$tmp/broken" 2>/dev/null; then
   printf 'exit 7\n' > "$tmp/broken/bin/run.sh"
   out=$( cd "$tmp/bare" && printf '{"source":"startup"}' \
     | CLAUDE_PLUGIN_ROOT="$tmp/broken" sh -c "$(command_for preflight.sh)" 2>/dev/null )
   has "with a broken runner the preflight speaks up" "$out" '"systemMessage"'
-else
-  skip "the preflight with a broken runner — could not copy the plugin here"
-fi
+}
+the_preflight_earns_its_place
 
 summary "install"

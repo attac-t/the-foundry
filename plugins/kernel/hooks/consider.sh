@@ -30,7 +30,6 @@ FILE=$(printf '%s' "$FILE" | tr '\\' '/')
 # Skip non-code files (tests, docs, config)
 printf '%s' "$FILE" | grep -qE '(^|/)tests?/|\.test\.|\.spec\.|\.md$|\.json$|\.ya?ml$|\.env' && exit 0
 
-# JSON output for PostToolUse context injection
 cat <<'EOF'
 {
   "hookSpecificOutput": {

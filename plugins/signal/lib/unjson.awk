@@ -15,11 +15,11 @@
 #
 
 BEGIN {
-  esc["n"] = "\n"
-  esc["t"] = "\t"
-  esc["r"] = ""
-  esc["b"] = " "
-  esc["f"] = " "
+  ESC["n"] = "\n"
+  ESC["t"] = "\t"
+  ESC["r"] = ""
+  ESC["b"] = " "
+  ESC["f"] = " "
 }
 
 { buf = buf $0 "\n" }
@@ -35,7 +35,7 @@ function readstr(pos,   out, i, c, e) {
 
     e = substr(BUF, i + 1, 1)
     if (e == "u") { out = out " "; i += 6; continue }
-    out = out ((e in esc) ? esc[e] : e)
+    out = out ((e in ESC) ? ESC[e] : e)
     i += 2
   }
   ENDPOS = i
@@ -57,6 +57,8 @@ function skipnested(pos,   d, i, c) {
 }
 
 END {
+  # Uppercase is what the functions share — BUF, LEN, ESC, and ENDPOS coming back. Everything else
+  # below is END's own, which is why a function may declare its own `i` and leave this one alone.
   BUF = buf
   LEN = length(BUF)
 

@@ -13,12 +13,12 @@
 
 root="$(cd "$(dirname "$0")/.." && pwd)"
 
-# Prose the scorer has to call a block. The dials stay at their defaults here, so a project that
-# loosens them cannot turn this check into a false alarm.
-bad='Fundamentally, the comprehensive implementation demonstrates extraordinarily sophisticated architectural considerations.'
+# The dials stay at their defaults here, so a project that loosens them cannot turn this check into
+# a false alarm.
+blocking='Fundamentally, the comprehensive implementation demonstrates extraordinarily sophisticated architectural considerations.'
 
 # Determine if the scorer still blocks prose it must block.
-scores() { printf '%s' "$bad" | awk -f "$root/lib/score.awk" >/dev/null 2>&1; [ $? -eq 2 ]; }
+scores() { printf '%s' "$blocking" | awk -f "$root/lib/score.awk" >/dev/null 2>&1; [ $? -eq 2 ]; }
 
 # Determine if the reader still finds a value in a hook payload.
 reads() { [ "$(printf '{"a":1,"b":"yes"}' | awk -f "$root/lib/unjson.awk" -v key=b 2>/dev/null)" = "yes" ]; }

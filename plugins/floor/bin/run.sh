@@ -15,6 +15,13 @@
 #   5  a target was refused: nobody authorised it for this run
 #   6  a clause was refused: it would weaken the charter, or its pin could not be captured
 #   7  the charter disagrees with its pins — something drifted or went missing
+#   8  the charter holds no clause, so it grades nothing
+#   9  a clause grades no selected target, so it is no bar
+#  10  the selection moved after it was authorised — that is a new run, not this one
+#
+# Eight, nine and ten are one stage and three remedies: write a requirement down, select a target it
+# governs, or start again. Collapsing them would make the exit code say *authorisation refused* and
+# leave the caller to read prose for what to do about it.
 
 set -u
 
@@ -34,6 +41,7 @@ main() {
         targets)   targets "$@" ;;
         policy)    policy "$@" ;;
         charter)   charter "$@" ;;
+        authorise) authorise ;;
         *)         usage; exit 2 ;;
     esac
 }
@@ -55,6 +63,8 @@ floor — where work happens.
   run.sh charter check            report clauses that drifted from their pins, or went missing
   run.sh charter introduce <kind> <text>
                                   add a clause nothing derived — it stays introduced
+  run.sh authorise                refuse a run that describes no work, or whose selection moved
+                                  — exit 8, 9 or 10
 EOF
 }
 
@@ -324,8 +334,11 @@ targets() {
     file=$(unit_targets_file "$dir")
 
     case "${1:-}" in
-        '')  list_targets "$file" ;;
-        add) shift; add_target "$dir" "$file" "${1:-}" "${2:-}" ;;
+        '')  refuse_unselectable "$dir" "$file" || exit 5
+             list_targets "$file" ;;
+        add) shift
+             refuse_unselectable "$dir" "$file" || exit 5
+             add_target "$dir" "$file" "${1:-}" "${2:-}" ;;
         *)   usage; exit 2 ;;
     esac
 }
@@ -416,6 +429,41 @@ list_targets() {
     awk '!/^[ \t]*#/ && NF' "$1"
 }
 
+#
+# The selection, re-checked every time it is read.
+#
+# `add_target` guarded the write and nothing guarded the read, so a line appended by hand was
+# selected all the same. RFC-001 grades every charter clause against every selected target, which
+# made this file a way to change what the run answers for without touching the charter — and
+# re-deriving the charter cannot catch it, because the charter did not move.
+#
+# Refuses rather than filters. Dropping the line silently would leave the run working against a
+# selection nobody chose, which is the failure this exists to make loud.
+#
+# `$1` in awk is whitespace-delimited, so it can never hold a space and the split below is safe.
+#
+refuse_unselectable() {
+    dir=$1
+    file=$2
+    status=0
+
+    [ -f "$file" ] || return 0
+
+    for line in $(awk '!/^[ \t]*#/ && NF && NF != 2 { print NR }' "$file"); do
+        note "line $line of the selection is not a repo and a ref"
+        status=1
+    done
+
+    for identity in $(awk '!/^[ \t]*#/ && NF { print $1 }' "$file"); do
+        is_authorised "$dir" "$identity" || {
+            note "selected but not authorised: [$identity] — \`policy authorize\` it, or drop the line"
+            status=1
+        }
+    done
+
+    return "$status"
+}
+
 add_target() {
     dir=$1
     file=$2
@@ -482,6 +530,160 @@ charter() {
 }
 
 charter_file() { printf '%s/charter' "$1"; }
+
+#
+# Authorisation — the refusals, and nothing else yet.
+#
+# RFC-001 §2.2 gives this stage four conditions and two refusals. The four decide when a human is
+# *asked*, and asking needs a work source that does not exist. The refusals ask nobody anything, so
+# they are the half that can ship, and they are the half that fires without a human present.
+#
+# Both are the same question — does this run describe work a charter can grade? — and neither has an
+# answer a person could give, which is why they refuse rather than ask.
+#
+#
+# `charter_path` and `selection_path`, not `file`: `refuse_unselectable` and `add_target` both assign
+# `file`, sh has no locals, and the second call would quietly rename the first's. That is `craft-sh`
+# rule 10 — one name, one meaning — and it cost a debugging session here before the rule was applied.
+#
+authorise() {
+    run_dir=$(active_run) || exit 1
+
+    charter_path=$(charter_file "$run_dir")
+    selection_path=$(unit_targets_file "$run_dir")
+
+    # First of all the refusals, and that ordering is the whole point. Every later check reports what
+    # is wrong with the selection *now* and names a remedy that would edit it — `policy authorize`
+    # this, select that. Once a selection is frozen those remedies are forbidden: the only answer is
+    # a new run. Emptying the selection reaches the same fork, where the grades-nothing check would
+    # otherwise fire first and report the symptom.
+    refuse_moved_selection "$run_dir" "$selection_path" || exit 10
+
+    refuse_unselectable "$run_dir" "$selection_path" || exit 5
+
+    # The third consumer of the detector, and it needs what the other two need. `detect_gates` reads
+    # the directory you are standing in, so without these an `authorise` run from anywhere holding a
+    # `.foundry/gates` answers from that file — and this stage writes its answer down. Verified: a
+    # plain directory declaring the charter's gates turned a correct exit 9 into exit 0 and a frozen
+    # record. `refuse_wrong_repository` returns 0 for a run with no bootstrap, so the bare-CLI case
+    # is untouched.
+    refuse_wrong_repository "$run_dir"
+    refuse_missing_resolver
+
+    [ "$(clause_count "$charter_path")" -gt 0 ] || {
+        note "the charter holds no clause, so there is nothing to authorise"
+        note "declare a gate this run's targets can be checked with, or write the requirement into an artifact derivation reads"
+        exit 8
+    }
+
+    ungoverned=$(ungoverning_clauses "$run_dir" "$charter_path" "$selection_path")
+    [ -z "$ungoverned" ] || {
+        for id in $ungoverned; do
+            note "clause $id grades no selected target, so it is no bar"
+        done
+        # Once the selection is frozen, selecting a target is no longer a remedy — it is what exits
+        # 10. A refusal that names a remedy leading to another refusal is worse than one remedy.
+        if [ -f "$(frozen_selection_file "$run_dir")" ]; then
+            note "declare the gate that clause names — the selection is frozen, so changing it is a new run"
+        else
+            note "declare the gate that clause names, or select a target it governs"
+        fi
+        exit 9
+    }
+
+    freeze_selection "$run_dir" "$selection_path"
+}
+
+frozen_selection_file() { printf '%s/units/01/authorised-targets' "$1"; }
+
+#
+# The selection, written down at the moment it stops moving.
+#
+# §4 freezes the selected set here, and until now that was a word with no mechanism: the only record
+# of what was selected was the file being selected from, so nothing could tell a line added since
+# from a line always there — and nothing at all could see a line **removed**. Revision 7 killed this
+# same shape once already, when monotonicity turned out to be decorative.
+#
+# The lines, not a checksum of them. A digest answers *something moved* and a diff has to answer
+# *what*, and the second question is the one a person asks. Two records of the same set would drift;
+# this is the only one.
+#
+# Sorted, because §2.3 calls it a set. Reordering the file is not a different selection, and a
+# refusal that fired on it would teach people to ignore refusals.
+#
+freeze_selection() {
+    frozen=$(frozen_selection_file "$1")
+    mkdir -p "$(dirname "$frozen")" || die_unwritable "$frozen"
+    normalised_selection "$2" > "$frozen" || die_unwritable "$frozen"
+}
+
+#
+# `-u` as well as sorted. `add_target` does not dedupe, so selecting one target twice would otherwise
+# read as a set that moved — a refusal on a selection nobody changed, which is the thing sorting is
+# here to avoid.
+#
+# `$1 = $1` rebuilds the line on single spaces, so a hand-added tab or a doubled space is not a
+# selection that moved. Same reason as the sort and the dedupe: only a changed *set* may refuse.
+normalised_selection() { list_targets "$1" | awk '{ $1 = $1; print }' | LC_ALL=C sort -u; }
+
+#
+# Authorising twice over a selection that moved in between.
+#
+# §4's remedy is a new run, never a re-run: the frozen set is what completion will grade against, so
+# quietly re-freezing would let the selection be edited after the moment it was fixed, which is the
+# whole thing the freeze exists to stop.
+#
+# Deletion is why this reads the frozen record rather than re-checking policy. A removed line leaves
+# nothing behind to check, and `refuse_unselectable` cannot see an absence.
+#
+refuse_moved_selection() {
+    frozen=$(frozen_selection_file "$1")
+    [ -f "$frozen" ] || return 0
+
+    [ "$(normalised_selection "$2")" = "$(cat "$frozen")" ] && return 0
+
+    note "the selection moved after it was authorised, so this run is no longer the one that was authorised"
+    note "start a new run — §4 makes a changed selection a new attempt, not a re-authorisation"
+    return 1
+}
+
+clause_count() {
+    [ -f "$1" ] || { printf '0\n'; return 0; }
+    awk '$1 == "clause" && NF >= 2' "$1" | wc -l | tr -d ' '
+}
+
+#
+# Which clauses grade nothing.
+#
+# §2.2: every clause governs every selected target, with one derived exception — a `Gate:` clause
+# governs each selected target that declares that gate. A target whose declarations cannot be read
+# **stays governed**, and detection reads the bootstrap checkout only, so every other selected target
+# is unreadable and therefore governed by everything.
+#
+# Two cases follow, and only two: nothing is selected, or the sole selected target is the bootstrap
+# and it declares no gate by that name. Both are computed here rather than assumed, so the day a
+# workspace gives each target a checkout this reads the same and answers differently.
+#
+ungoverning_clauses() {
+    dir=$1
+    file=$2
+    targets_file=$3
+
+    [ -f "$file" ] || return 0
+
+    selected=$(list_targets "$targets_file" | wc -l | tr -d ' ')
+    [ "$selected" -gt 0 ] || { awk '$1 == "clause" { print $2 }' "$file"; return 0; }
+
+    boot=$(bootstrap_identity "$dir") || return 0
+    only_boot=$(list_targets "$targets_file" | awk -v b="$boot" '$1 != b' | wc -l | tr -d ' ')
+    [ "$only_boot" -eq 0 ] || return 0
+
+    declared=$(detect_gates | awk '{ print $1 }')
+    awk -v names="$declared" '
+        BEGIN { split(names, seen, "\n"); for (i in seen) has[seen[i]] = 1 }
+        $1 == "clause" && $3 == "Gate" && !($4 in has) { print $2 }
+    ' "$file"
+}
 
 #
 # A clause's identity is its meaning, so re-deriving the same clause finds the same record rather

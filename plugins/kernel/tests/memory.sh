@@ -38,28 +38,30 @@ echo "memory"
 mkdir -p "$tmp/bare"
 is "no repo falls back to the base" "$(resolve "$tmp/bare" "$tmp/mem")" "$tmp/mem"
 
-# --- inside a repo ---
+inside_a_repo() {
+  git init -q "$tmp/repo" >/dev/null 2>&1
+  [ -d "$tmp/repo/.git" ] || { skip "branch resolution — git could not make a repo here"; return; }
 
-git init -q "$tmp/repo" >/dev/null 2>&1
-if [ -d "$tmp/repo/.git" ]; then
   git -C "$tmp/repo" symbolic-ref HEAD refs/heads/feat/api-v2 >/dev/null 2>&1
   is "a repo appends the branch" "$(resolve "$tmp/repo" "$tmp/mem")" "$tmp/mem/feat/api-v2"
 
   git -C "$tmp/repo" symbolic-ref HEAD 'refs/heads/wip@thing' >/dev/null 2>&1
   is "a branch is sanitised into a path" "$(resolve "$tmp/repo" "$tmp/mem")" "$tmp/mem/wip-thing"
-else
-  skip "branch resolution — git could not make a repo here"
-fi
+}
+inside_a_repo
 
 # --- one line, always ---
 #
-# The regression guard. `&>` is bash's; dash reads it as "run in the background, then redirect", so
-# the guard cannot fail and git's own output reaches stdout ahead of the path. The answer came back
-# two lines long with a path to git on top, and every hook downstream believed it.
+# The regression guard. resolve-memory.sh's header names the bashism. It shipped, the answer came
+# back two lines long with a path to git on top, and every hook downstream believed it.
 
 is "the answer outside a repo is one line" "$(lines "$(resolve "$tmp/bare" "$tmp/mem")")" "1"
-[ -d "$tmp/repo/.git" ] \
-  && is "the answer inside a repo is one line" "$(lines "$(resolve "$tmp/repo" "$tmp/mem")")" "1"
+
+the_answer_inside_a_repo() {
+  [ -d "$tmp/repo/.git" ] || { skip "the answer inside a repo — git could not make a repo here"; return; }
+  is "the answer inside a repo is one line" "$(lines "$(resolve "$tmp/repo" "$tmp/mem")")" "1"
+}
+the_answer_inside_a_repo
 
 lacks "the answer never carries a path to git" "$(resolve "$tmp/bare" "$tmp/mem")" "bin/git"
 
@@ -70,9 +72,12 @@ mkdir -p "$tmp/run"
 is "an active run outranks the base" \
    "$(resolve_in_run "$tmp/bare" "$tmp/run" "$tmp/mem")" "$tmp/run/memory"
 
-[ -d "$tmp/repo/.git" ] \
-  && is "an active run outranks the branch" \
-       "$(resolve_in_run "$tmp/repo" "$tmp/run" "$tmp/mem")" "$tmp/run/memory"
+an_active_run_outranks_the_branch() {
+  [ -d "$tmp/repo/.git" ] || { skip "an active run outranks the branch — git could not make a repo here"; return; }
+  is "an active run outranks the branch" \
+     "$(resolve_in_run "$tmp/repo" "$tmp/run" "$tmp/mem")" "$tmp/run/memory"
+}
+an_active_run_outranks_the_branch
 
 is "a run that is gone falls back to the branch" \
    "$(resolve_in_run "$tmp/bare" "$tmp/gone" "$tmp/mem")" "$tmp/mem"

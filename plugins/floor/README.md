@@ -164,6 +164,21 @@ the truth lives, and the two drift the first time a run is edited by hand.
 
 A run with no bootstrap starts authorised for nothing.
 
+### The selection is checked every time it is read
+
+`targets add` guarded the write. Nothing guarded the read, so a line put into `units/NN/targets` by
+hand was selected all the same — and every charter clause is graded against every selected target, so
+that edit changes what the run answers for. Re-deriving the charter cannot catch it: the charter did
+not move, the selection did.
+
+Reading the selection now refuses it — exit 5 — unless every line is a repo and a ref, and every
+repo is authorised. It refuses rather than skipping the line, because a run carrying on against a
+selection nobody chose is the failure this exists to make loud.
+
+**A line removed by hand is still invisible.** The file is the only record of what was selected, so
+nothing can tell a deletion from a selection that never happened. Catching that needs the set written
+down at the moment it is fixed, which belongs to the authorisation stage.
+
 ### What this is not
 
 **It is not a security boundary.** Grants live outside the run directory, and that buys nothing
@@ -174,7 +189,8 @@ Half the allowlist is not out there anyway. The bootstrap entry is read from `<r
 inside the run — so "outside the run directory" describes where grants are kept, and nothing more.
 
 What it buys is that **no accident widens authority**. Nothing derives a grant. No command grants as
-a side effect of doing something else. A run has no way to authorise itself.
+a side effect of doing something else. Granting is one named command and nothing else reaches it —
+which stops an accident, not a worker holding the same shell.
 
 Resisting a worker with arbitrary host-user shell access needs a runtime and workspace boundary that
 makes policy state unavailable for the worker to mutate. That does not exist yet. Until it does,
@@ -283,6 +299,66 @@ Containment is the workspace boundary's, and it does not exist yet.
 declared and never cloned, so there is nothing on disk to read for any other target until the
 workspace seam lands. Deriving clauses for a repository nobody checked out would be introduction
 wearing provenance.
+
+---
+
+## Authorisation
+
+```
+run.sh authorise
+```
+
+RFC-001 gives this stage four conditions and two refusals. **The refusals are what ships here.** The
+four decide when a *human is asked*, and asking needs a work source to ask through — so they arrive
+with it. The refusals ask nobody anything, which is exactly why they can run with no human present.
+
+| Refused | Because | Exit |
+|---|---|---|
+| the charter holds no clause | nothing is described, so there is nothing to authorise | 8 |
+| a clause grades no selected target | a bar that grades nothing is no bar | 9 |
+| the selection moved since it was authorised | that is a different run | 10 |
+
+**Three codes, because there are three remedies** — write a requirement down, select a target it
+governs, or start again. One code would say *refused* and leave the caller reading prose to find out
+what to do. **The refused run ends.** Re-running planning
+against the same pins and the same selection derives the same charter and refuses again, so the
+remedy is a gate declared, an artifact amended, or a target selected — never another attempt.
+
+The second refusal has exactly two shapes today: nothing is selected, or the only selected target is
+the bootstrap and it declares no gate by that clause's name. Every other selected target is one whose
+declarations cannot be read, and an unreadable target **stays governed** — so a clause still grades
+it. That is computed rather than assumed, and it answers differently the day each target has a
+checkout.
+
+### The selection freezes here
+
+```
+<run>/units/01/authorised-targets
+```
+
+Authorising writes the selected set down. **That record is what makes a line *removed* from
+`units/NN/targets` visible** — the selection file cannot show an absence, and a second record can.
+Adding a line is caught either way; deleting one was caught by nothing at all until this existed.
+
+The lines, not a digest of them: a digest answers *something moved* where a diff answers *what*, and
+the second is the question a person asks. Sorted, because §2.3 calls it a set — the same two targets
+in another order are the same selection, and a refusal that fired on that would teach people to
+ignore refusals.
+
+Authorising again over an unchanged selection is not a change and does not refuse. Authorising over a
+moved one exits 10 and does **not** re-freeze: quietly recording the new set would let the selection
+be edited after the moment it was fixed, which is the entire thing the freeze exists to stop.
+
+**Who is authoritative moves here.** Before authorisation the selection file is the answer to *what
+does this run touch*. After it, the frozen record is, and the live file's authority ends — which is
+what lets completion grade against what was authorised rather than against what the file says now.
+
+**The same honest limit as policy and the charter.** The frozen record is a file the worker can write
+as the same user, and deleting it silently un-freezes the run — the next authorise records the new
+set as if it were the first. Nothing here stops that. What it buys is that no *accident* moves a
+selection after it was fixed, and that a moved one is visible to anything that reads both.
+
+**Not here yet:** the four conditions, the ask, and the answer.
 
 ---
 

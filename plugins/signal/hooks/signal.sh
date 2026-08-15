@@ -10,6 +10,9 @@
 # Pass drops the note. Warn writes it. Block writes it and hands the reply back, once.
 # All the judging lives in lib/score.awk.
 #
+# No `set -e`: the scorer answers in its exit status, and the assignment that reads it would take a
+# warn for a failure and kill the hook mid-turn.
+#
 
 root="$(cd "$(dirname "$0")/.." && pwd)"
 temp="${TMPDIR:-/tmp}"
@@ -21,17 +24,17 @@ value() { printf '%s' "$payload" | awk -f "$root/lib/unjson.awk" -v key="$1"; }
 # Determine if the turn is already running on because of a stop hook.
 continuing() { [ "$(value stop_hook_active)" = "true" ]; }
 
-# Get the path to this session's marker file.
-marker() { printf '%s/signal-%s.mark' "$temp" "${session:-nosession}"; }
+# Get the path to this session's marker.
+markfile() { printf '%s/signal-%s.mark' "$temp" "${session:-nosession}"; }
 
 # Determine if the marker names the prompt in flight.
-ours() { [ "$(cat "$(marker)" 2>/dev/null)" = "$prompt" ]; }
+ours() { [ "$(cat "$(markfile)" 2>/dev/null)" = "$prompt" ]; }
 
 # Determine if the temp directory can hold a marker.
 keepable() { [ -w "$temp" ]; }
 
 # Record that we blocked this prompt.
-remember() { printf '%s' "$prompt" > "$(marker)" 2>/dev/null; }
+remember() { printf '%s' "$prompt" > "$(markfile)" 2>/dev/null; }
 
 # Get the path to this session's note.
 notefile() { printf '%s/signal-%s.note' "$temp" "${session:-nosession}"; }
@@ -87,6 +90,8 @@ spent() {
 session=$(value session_id | tr -cd 'A-Za-z0-9._-')
 prompt=$(value prompt_id  | tr -cd 'A-Za-z0-9._-')
 
+# No message on the event, or none we could read. Falling through would score nothing, call it a
+# pass, and drop the note the last real reply earned.
 reply=$(value last_assistant_message)
 [ -n "$reply" ] || exit 0
 

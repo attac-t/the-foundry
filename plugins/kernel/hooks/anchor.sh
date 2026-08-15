@@ -6,12 +6,13 @@
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 MEMORY_DIR=$(sh "$SCRIPT_DIR/lib/resolve-memory.sh")
-MEMORY="$MEMORY_DIR/working.md"
+WORKING_MD="$MEMORY_DIR/working.md"
 
-[ -f "$MEMORY" ] || exit 0
+[ -f "$WORKING_MD" ] || exit 0
 
-goal=$(sh "$SCRIPT_DIR/lib/extract-objective.sh" "$MEMORY")
+goal=$(sh "$SCRIPT_DIR/lib/extract-objective.sh" "$WORKING_MD")
 [ -n "$goal" ] || exit 0
 
-branch=$(basename "$MEMORY_DIR")
-echo "📎 [$branch] $goal"
+# Not always the branch — a run and the bare fallback both land here too.
+scope=$(basename "$MEMORY_DIR")
+echo "📎 [$scope] $goal"

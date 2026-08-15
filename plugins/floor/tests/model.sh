@@ -100,7 +100,9 @@ is "a title of pure punctuation still names a run" \
 is "no run, no answer" "$(floor "$tmp/bare" path)" ""
 is "no run exits 1"    "$(code_of floor "$tmp/bare" path)" "1"
 
-if make_repo "$tmp/repo" main; then
+the_pointer() {
+  make_repo "$tmp/repo" main || { skip "the pointer — git could not make a repo here"; return; }
+
   made=$(floor "$tmp/repo" new "In A Repo")
 
   # Every call above starts a new shell, so finding it again is the fresh-shell gate from #67.
@@ -117,11 +119,13 @@ if make_repo "$tmp/repo" main; then
      "$(git -C "$tmp/repo" status --porcelain 2>/dev/null)" ""
   is "making a run adds no commit" \
      "$(git -C "$tmp/repo" rev-list --count --all 2>/dev/null)" "0"
-else
-  skip "the pointer — git could not make a repo here"
-fi
+}
+the_pointer
 
-if make_repo "$tmp/repo-a" shared && make_repo "$tmp/repo-b" shared; then
+two_checkouts_on_one_branch_name() {
+  make_repo "$tmp/repo-a" shared && make_repo "$tmp/repo-b" shared \
+    || { skip "two checkouts on one branch name — git could not make the repos"; return; }
+
   run_a=$(floor "$tmp/repo-a" new "Same Name")
   run_b=$(floor "$tmp/repo-b" new "Same Name")
 
@@ -129,9 +133,8 @@ if make_repo "$tmp/repo-a" shared && make_repo "$tmp/repo-b" shared; then
 
   is "checkout A still finds its own" "$(floor "$tmp/repo-a" path)" "$run_a"
   is "checkout B still finds its own" "$(floor "$tmp/repo-b" path)" "$run_b"
-else
-  skip "two checkouts on one branch name — git could not make the repos"
-fi
+}
+two_checkouts_on_one_branch_name
 
 # --- what outranks what ---
 
@@ -147,33 +150,39 @@ is "and with no pointer either, it is no run" \
    "$(floor_as "$tmp/bare" "$home" "$tmp/never" path)" ""
 
 # A stale pointer is not a crash. The run it names was deleted; the answer is absence.
-if [ -d "$tmp/repo/.git" ]; then
+a_pointer_at_a_deleted_run() {
+  [ -d "$tmp/repo/.git" ] || { skip "a pointer at a deleted run — git could not make a repo here"; return; }
+
   printf 'no-such-run\n' > "$tmp/repo/.git/foundry-run"
   is "a pointer at a deleted run reads as no run" "$(floor "$tmp/repo" path)" ""
   is "and it exits 1"                             "$(code_of floor "$tmp/repo" path)" "1"
-fi
+}
+a_pointer_at_a_deleted_run
 
-# --- a home that cannot be written ---
-#
 # A path printed with exit 0 for a directory that was never created leaves every caller downstream
 # believing it has a run.
 
-if : > "$tmp/notadir" 2>/dev/null; then
+a_home_that_cannot_be_written() {
+  : > "$tmp/notadir" 2>/dev/null \
+    || { skip "an unwritable home — could not make a file to stand in for one"; return; }
+
   is "a home that cannot hold a run prints no path" \
      "$(floor_as "$tmp/bare" "$tmp/notadir" "" new "No Room")" ""
   is "and it exits 3" \
      "$(code_of floor_as "$tmp/bare" "$tmp/notadir" "" new "No Room")" "3"
-else
-  skip "an unwritable home — could not make a file to stand in for one"
-fi
+}
+a_home_that_cannot_be_written
 
-# --- the bootstrap target ---
-#
 # Zero or one. A run started outside a repository is not a broken run.
 
 set_origin() { git -C "$1" remote add origin "$2" >/dev/null 2>&1; }
 
-if make_repo "$tmp/boot" main && set_origin "$tmp/boot" 'https://tok3n:x@github.com/acme/backend.git'; then
+# It had no `else` at all, so a git failure here skipped four checks in silence — which lib.sh calls
+# the way a suite ends up certifying a platform it never tested.
+the_bootstrap_target() {
+  make_repo "$tmp/boot" main && set_origin "$tmp/boot" 'https://tok3n:x@github.com/acme/backend.git' \
+    || { skip "the bootstrap target — git could not make a repo here"; return; }
+
   booted=$(floor "$tmp/boot" new "With Origin")
 
   is "the bootstrap target names the repo and the base ref" \
@@ -185,31 +194,41 @@ if make_repo "$tmp/boot" main && set_origin "$tmp/boot" 'https://tok3n:x@github.
   # A password may contain an `@`. Stopping at the first one left the tail of it on disk.
   lacks "no path under the run holds a credential" \
         "$(grep -rh . "$booted/bootstrap" "$booted/units" 2>/dev/null)" "tok3n"
-fi
+}
+the_bootstrap_target
 
-if make_repo "$tmp/atpass" main && set_origin "$tmp/atpass" 'https://u:p@ss@github.com/acme/x.git'; then
+a_password_holding_an_at() {
+  make_repo "$tmp/atpass" main && set_origin "$tmp/atpass" 'https://u:p@ss@github.com/acme/x.git' \
+    || { skip "a password holding an @ — git could not make a repo here"; return; }
+
   atp=$(floor "$tmp/atpass" new "At In Password")
   is "a password holding an @ is stripped whole" \
      "$(cat "$atp/bootstrap" 2>/dev/null)" "https://github.com/acme/x.git main"
-else
-  skip "the bootstrap target — git could not make a repo here"
-fi
+}
+a_password_holding_an_at
 
 # 0..1, so absence is an answer and not a failure.
 outside=$(floor "$tmp/bare" new "No Origin")
 absent "a run started outside a repo records no bootstrap target" "$outside/bootstrap"
 is     "and asking for it exits 1" "$(code_of floor "$tmp/bare" bootstrap)" "1"
 
-if make_repo "$tmp/noremote" main; then
+a_repo_with_no_origin() {
+  make_repo "$tmp/noremote" main || { skip "a repo with no origin — git could not make a repo here"; return; }
+
   none=$(floor "$tmp/noremote" new "No Remote")
   absent "a repo with no origin records none" "$none/bootstrap"
-fi
+}
+a_repo_with_no_origin
 
 # A path is exactly what a target may not hold, so a path-shaped remote yields nothing.
-if make_repo "$tmp/pathremote" main && set_origin "$tmp/pathremote" "$tmp/some/local/clone"; then
+a_remote_that_is_a_local_path() {
+  make_repo "$tmp/pathremote" main && set_origin "$tmp/pathremote" "$tmp/some/local/clone" \
+    || { skip "a remote that is a local path — git could not make a repo here"; return; }
+
   pathy=$(floor "$tmp/pathremote" new "Path Remote")
   absent "a remote that is a local path records none" "$pathy/bootstrap"
-fi
+}
+a_remote_that_is_a_local_path
 
 # --- unit targets ---
 #
@@ -284,6 +303,45 @@ is "comments and blank lines are not targets" "$(in_run targets | grep -c .)" "$
 printf 'targets: https://github.com/attacker/evil.git main\n' >> "$fresh/item.md"
 lacks "an advisory target in item.md does not reach the unit" \
       "$(in_run targets)" "attacker/evil"
+
+#
+# The selection is read far more often than it is written, and only the write was guarded. Every
+# charter clause is graded against every selected target, so a line put here by hand changes what
+# the run answers for — and re-deriving the charter cannot see it, because the charter did not move.
+#
+# The file is restored after each check: these run against the same run as everything above.
+#
+selection=$fresh/units/01/targets
+intact=$(cat "$selection")
+listed_before=$(in_run targets)
+restore_selection() { printf '%s\n' "$intact" > "$selection"; }
+
+printf 'https://github.com/attacker/evil.git main\n' >> "$selection"
+is "a target appended by hand is refused on read" \
+   "$(code_of in_run targets)" "5"
+is "and the same edit stops targets add" \
+   "$(code_of in_run targets add 'https://github.com/acme/api.git' main)" "5"
+restore_selection
+
+is "the selection lists unchanged once the hand-added line is gone" \
+   "$(in_run targets)" "$listed_before"
+
+# A repo authorised for this run may be selected by hand: policy permits it, and selecting is the
+# other act. Without this the check would be refusing the allowlist rather than reading it.
+in_run policy authorize 'https://github.com/acme/later.git' >/dev/null
+printf 'https://github.com/acme/later.git main\n' >> "$selection"
+is "a hand-added line that policy already allows is not refused" \
+   "$(code_of in_run targets)" "0"
+restore_selection
+
+# A line is a repo and a ref. One field is not a target, and neither is three.
+printf 'https://github.com/acme/api.git\n' >> "$selection"
+is "a line missing its ref is refused" "$(code_of in_run targets)" "5"
+restore_selection
+
+printf 'https://github.com/acme/api.git main extra\n' >> "$selection"
+is "a line carrying a third field is refused" "$(code_of in_run targets)" "5"
+restore_selection
 
 # --- policy ---
 #
@@ -534,7 +592,125 @@ a_charter_derives_from_the_repository_it_is_run_in() {
   has "and the command it resolved to"      "$held" "gate $(clause_of tests) make test"
 
   is "a run whose clauses all derive asks nobody" "$(code_of floor "$tmp/ch" charter check)" "0"
+
+  #
+  # Authorisation's two refusals. Neither asks anything, which is why they can ship before a work
+  # source exists — and why they fire with no human present.
+  #
+  is "nothing selected, so the clause grades nothing" \
+     "$(code_of floor "$tmp/ch" authorise)" "9"
+
+  floor "$tmp/ch" targets add 'https://github.com/acme/ch.git' develop >/dev/null 2>&1
+  is "the bootstrap selected and its gate declared authorises" \
+     "$(code_of floor "$tmp/ch" authorise)" "0"
+
+  # The one derived exception: a `Gate:` clause governs a selected target that declares that gate.
+  # The bootstrap is the only target whose declarations are readable, and it declares no `nosuch`.
+  #
+  # The freeze. Authorising writes the selected set down, and it is the only record of what was
+  # selected at that moment — which is what lets a line *removed* afterwards be seen at all. The
+  # selection file cannot show an absence; a second record can.
+  #
+  frozen=$chrun/units/01/authorised-targets
+  exists "authorising writes the selected set down" "$frozen"
+  is "and it holds the lines, not a digest of them" \
+     "$(cat "$frozen")" "https://github.com/acme/ch.git develop"
+
+  is "authorising again over the same selection is not a change" \
+     "$(code_of floor "$tmp/ch" authorise)" "0"
+
+  floor "$tmp/ch" policy authorize 'https://github.com/acme/second.git' >/dev/null 2>&1
+  printf 'https://github.com/acme/second.git main\n' >> "$chrun/units/01/targets"
+  is "a target added after the freeze is a different run" \
+     "$(code_of floor "$tmp/ch" authorise)" "10"
+
+  # Exactly back, so this proves the comparison and not merely that something was touched.
+  printf 'https://github.com/acme/ch.git develop\n' > "$chrun/units/01/targets"
+  is "and putting it back exactly authorises again" \
+     "$(code_of floor "$tmp/ch" authorise)" "0"
+
+  #
+  # The half nothing could see before, and it has to be a deletion that leaves the selection
+  # standing. Emptying the file is refused whether or not a freeze exists — every clause then grades
+  # nothing — so a suite that only empties it proves the ordering and never the absence.
+  #
+  # A fresh authorisation of a two-target selection. The record has to go, because adding a target
+  # to a frozen selection is exactly what exits 10 — which the check above just proved.
+  rm -f "$frozen"
+  printf 'https://github.com/acme/ch.git develop\nhttps://github.com/acme/second.git main\n' \
+    > "$chrun/units/01/targets"
+  is "two selected targets authorise" "$(code_of floor "$tmp/ch" authorise)" "0"
+
+  printf 'https://github.com/acme/ch.git develop\n' > "$chrun/units/01/targets"
+  is "one of two deleted after the freeze is a different run" \
+     "$(code_of floor "$tmp/ch" authorise)" "10"
+
+  # Order is not part of a set, and a refusal that fired on it would teach people to ignore refusals.
+  printf 'https://github.com/acme/second.git main\nhttps://github.com/acme/ch.git develop\n' \
+    > "$chrun/units/01/targets"
+  is "the same two targets in another order are the same selection" \
+     "$(code_of floor "$tmp/ch" authorise)" "0"
+
+  # `add_target` does not dedupe, so a set is not a list here either.
+  printf 'https://github.com/acme/ch.git develop\nhttps://github.com/acme/second.git main\nhttps://github.com/acme/ch.git develop\n' \
+    > "$chrun/units/01/targets"
+  is "the same target twice is the same selection" \
+     "$(code_of floor "$tmp/ch" authorise)" "0"
+
+  # A comment is not a target. Without this the whole normalisation could be `cat` and nothing notices.
+  printf 'https://github.com/acme/ch.git develop\nhttps://github.com/acme/second.git main\n# a note\n' \
+    > "$chrun/units/01/targets"
+  is "a comment added after the freeze is not a change" \
+     "$(code_of floor "$tmp/ch" authorise)" "0"
+
+  #
+  # The two arrangements that pin the ordering. Both refuse either way, so only the *code* separates
+  # a moved-first gate from a moved-last one — and the whole argument for moving it was that the
+  # later checks name remedies the freeze forbids.
+  #
+  : > "$chrun/units/01/targets"
+  is "an emptied selection is a moved one, not a bar that grades nothing" \
+     "$(code_of floor "$tmp/ch" authorise)" "10"
+
+  printf 'https://github.com/acme/ch.git develop\nhttps://github.com/acme/never.git main\n' \
+    > "$chrun/units/01/targets"
+  is "an unauthorised target added after the freeze is a moved selection, not a policy question" \
+     "$(code_of floor "$tmp/ch" authorise)" "10"
+
+  printf 'https://github.com/acme/ch.git develop\n' > "$chrun/units/01/targets"
+  printf 'https://github.com/acme/ch.git develop\n' > "$frozen"
+
+  floor "$tmp/ch" charter introduce Gate nosuch >/dev/null 2>&1
+  is "a Gate naming an undeclared gate grades nothing" \
+     "$(code_of floor "$tmp/ch" authorise)" "9"
+
+  # Refusing must not be the answer to everything: the run above still holds a clause that does
+  # govern, so a green authorise has to be reachable again once the ungoverning one is gone.
+  grep -v ' Gate nosuch$' "$(charter_of "$chrun")" > "$chrun/charter.tmp" \
+    && mv "$chrun/charter.tmp" "$(charter_of "$chrun")"
+  is "and authorises again once that clause is gone" \
+     "$(code_of floor "$tmp/ch" authorise)" "0"
 }
+
+#
+# A charter with no clause grades nothing at all. Its own repository is the case: the detector reads
+# three things and Foundry declares its gates in none of them, so this is the default run, not a
+# contrived one.
+#
+an_empty_charter_is_refused() {
+  make_repo "$tmp/nogate" main && set_origin "$tmp/nogate" 'https://github.com/acme/nogate.git' \
+    || { skip "authorise — git could not make a repo here"; return; }
+
+  norun=$(floor "$tmp/nogate" new "No gates")
+  is "deriving from a repo with no gate still succeeds" \
+     "$(code_of floor "$tmp/nogate" charter derive)" "0"
+  is "and the charter it wrote is empty" \
+     "$(wc -c < "$(charter_of "$norun")" | tr -d ' ')" "0"
+  is "which authorisation refuses" \
+     "$(code_of floor "$tmp/nogate" authorise)" "8"
+}
+
+an_empty_charter_is_refused
 
 # The id is the meaning. Recomputed here rather than read back, so a test cannot agree with a wrong
 # id by copying it.
@@ -685,6 +861,23 @@ deriving_needs_the_right_repository() {
       "run this inside [https://github.com/acme/ch.git]"
 }
 deriving_needs_the_right_repository
+
+#
+# `authorise` is the detector's third consumer, and the first that writes its answer down.
+#
+# Without this guard a run authorised from any directory holding a `.foundry/gates` that named the
+# charter's gates — turning a correct refusal into a frozen record. `$tmp/ch2` is a different
+# repository, and the message is what is asserted: exit 6 alone would pass for the wrong reason,
+# which is the lesson the check above already carries.
+#
+authorising_needs_the_right_repository() {
+  [ -n "${chrun:-}" ] || { skip "authorise wrong repo — no charter run"; return; }
+
+  has "authorising from another repository is refused for being the wrong repository" \
+      "$( cd "$tmp/ch2" && FOUNDRY_HOME="$home" FOUNDRY_RUN="$chrun" sh "$runner" authorise 2>&1 )" \
+      "run this inside [https://github.com/acme/ch.git]"
+}
+authorising_needs_the_right_repository
 
 a_clause_may_span_two_targets() {
   [ -n "${chrun:-}" ] || { skip "two targets — no charter run"; return; }

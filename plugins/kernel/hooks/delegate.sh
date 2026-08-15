@@ -9,11 +9,9 @@
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 MEMORY_DIR=$(sh "$SCRIPT_DIR/lib/resolve-memory.sh")
 
-# Only fire if blueprint exists
 BLUEPRINT="$MEMORY_DIR/blueprint.md"
 [ -f "$BLUEPRINT" ] || exit 0
 
-# Check if any agent tasks are pending or if we should reassess
 cat <<'EOF'
 ---
 **Delegation Check** (ground-delegation)
