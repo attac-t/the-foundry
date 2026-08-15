@@ -314,8 +314,10 @@ with it. The refusals ask nobody anything, which is exactly why they can run wit
 
 | Refused | Because | Exit |
 |---|---|---|
+| the pins still derive a clause the charter no longer holds | condition 3 — the bar was lowered | 12 |
 | the charter holds no clause | nothing is described, so there is nothing to authorise | 8 |
 | a clause grades no selected target | a bar that grades nothing is no bar | 9 |
+| a clause is introduced | condition 1 — nobody authorised it, and there is nowhere to ask | 11 |
 | the selection moved since it was authorised | that is a different run | 10 |
 
 **Three codes, because there are three remedies** — write a requirement down, select a target it
@@ -358,7 +360,23 @@ as the same user, and deleting it silently un-freezes the run — the next autho
 set as if it were the first. Nothing here stops that. What it buys is that no *accident* moves a
 selection after it was fixed, and that a moved one is visible to anything that reads both.
 
-**Not here yet:** the four conditions, the ask, and the answer.
+### Two conditions are consumed, not computed
+
+Condition 3 is `underived_gates`, which `check` already reports. Condition 4 is `is_authorised`,
+through the read-side check. Authorisation asks neither question a second time — a third writing of
+either is the tell that the boundary is wrong.
+
+**Condition 1 blocks rather than asking.** An introduced clause is a bar nobody authorised; the run
+cannot proceed on it and cannot ask about it, because asking needs a work source. §2.1 already says
+what a source that cannot ask does — it forces every ask to block — so that is what happens, visibly
+and with the clause named.
+
+**Condition 2 collapses into it.** No judge exists, so nothing reaches the semantic path: every
+clause the mechanical path cannot establish arrives as introduced instead. The gate therefore blocks
+more often than it eventually will, never less. Nothing durable records the ambiguity, because there
+is nothing yet that could answer it.
+
+**Not here yet:** the ask, and the answer.
 
 ---
 

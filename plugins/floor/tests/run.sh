@@ -204,6 +204,20 @@ wreck_runner "a freeze that reads the selection as a list is caught" \
 wreck_runner "authorising for whatever repository you stand in is caught" \
   anywhere 's|    refuse_wrong_repository "$run_dir"|    :|'
 
+#
+# Conditions 1 and 3, the two signals authorisation consumes rather than computes.
+#
+# Blinding either lets a run authorise on a bar nobody set: `introduced` on a clause nothing derives,
+# `removed` on one the pins still yield. Both are aimed at the capture, not the test — a test that
+# always passes leaves the capture running and the mutant reading identically.
+#
+wreck_runner "a run that authorises over introduced meaning is caught" \
+  ownbar 's|    introduced=$(introduced_clauses "$charter_path")|    introduced=|'
+
+# The whole line, anchored: the capture holds a pipe, and a `|`-delimited expression would end at it.
+wreck_runner "a run that authorises after a derived clause was removed is caught" \
+  lowered 's#^    removed=.*#    removed=#'
+
 # One allowlist for every run is one run's grant handed to all of them.
 #
 # Also caught by the credential check, which shares the grants file — so a red here does not on its

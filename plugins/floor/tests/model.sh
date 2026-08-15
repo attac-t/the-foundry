@@ -680,6 +680,38 @@ a_charter_derives_from_the_repository_it_is_run_in() {
   printf 'https://github.com/acme/ch.git develop\n' > "$chrun/units/01/targets"
   printf 'https://github.com/acme/ch.git develop\n' > "$frozen"
 
+  #
+  # Condition 1. An introduced clause is a bar nobody authorised, and there is no channel to ask
+  # through — so the gate blocks rather than passing. Condition 2 arrives here too: with no judge,
+  # every clause the mechanical path cannot establish is introduced.
+  #
+  floor "$tmp/ch" charter introduce Judged 'the interface is understandable' >/dev/null 2>&1
+  is "an introduced clause cannot authorise cleanly" \
+     "$(code_of floor "$tmp/ch" authorise)" "11"
+  has "and the refusal names the clause and the missing channel" \
+      "$(floor_says "$tmp/ch" authorise)" "no channel to ask through"
+
+  grep -v 'the interface is understandable' "$(charter_of "$chrun")" > "$chrun/c.tmp" \
+    && mv "$chrun/c.tmp" "$(charter_of "$chrun")"
+  is "and authorises again once nothing is introduced" \
+     "$(code_of floor "$tmp/ch" authorise)" "0"
+
+  #
+  # Condition 3, consumed from `underived_gates` rather than asked again. Ahead of the empty-charter
+  # refusal: deleting the last clause satisfies both, and only this one is true — exit 8 would answer
+  # "declare a gate" where a gate is declared and the clause was removed.
+  #
+  cp "$(charter_of "$chrun")" "$chrun/charter.keep"
+  grep -v '^clause .* Gate tests$' "$chrun/charter.keep" > "$(charter_of "$chrun")"
+  is "a still-derived clause that was removed cannot pass" \
+     "$(code_of floor "$tmp/ch" authorise)" "12"
+  has "and it is reported as still derived, not as an empty charter" \
+      "$(floor_says "$tmp/ch" authorise)" "the pins still derive Gate tests"
+
+  mv "$chrun/charter.keep" "$(charter_of "$chrun")"
+  is "and authorises again once it is back" \
+     "$(code_of floor "$tmp/ch" authorise)" "0"
+
   floor "$tmp/ch" charter introduce Gate nosuch >/dev/null 2>&1
   is "a Gate naming an undeclared gate grades nothing" \
      "$(code_of floor "$tmp/ch" authorise)" "9"
