@@ -138,6 +138,8 @@ claim_slot() {
 # exercising it. A hash would not help: `md5` is BSD's, `shasum` is not everywhere, and it would
 # still need the loop.
 claim_free_slot() {
+    # Refuse here, not in the loop. The loop reaches the same answer only by counting, so a mutant
+    # that removes its guard leaves an unwritable home spinning instead of failing.
     mkdir -p "$RUNS" 2>/dev/null || return 1
 
     n=0
