@@ -312,12 +312,15 @@ RFC-001 gives this stage four conditions and two refusals. **The refusals are wh
 four decide when a *human is asked*, and asking needs a work source to ask through — so they arrive
 with it. The refusals ask nobody anything, which is exactly why they can run with no human present.
 
-| Refused | Because |
-|---|---|
-| the charter holds no clause | nothing is described, so there is nothing to authorise |
-| a clause grades no selected target | a bar that grades nothing is no bar |
+| Refused | Because | Exit |
+|---|---|---|
+| the charter holds no clause | nothing is described, so there is nothing to authorise | 8 |
+| a clause grades no selected target | a bar that grades nothing is no bar | 9 |
+| the selection moved since it was authorised | that is a different run | 10 |
 
-Exit 8, and the message names the input to change. **The refused run ends.** Re-running planning
+**Three codes, because there are three remedies** — write a requirement down, select a target it
+governs, or start again. One code would say *refused* and leave the caller reading prose to find out
+what to do. **The refused run ends.** Re-running planning
 against the same pins and the same selection derives the same charter and refuses again, so the
 remedy is a gate declared, an artifact amended, or a target selected — never another attempt.
 
@@ -327,8 +330,26 @@ declarations cannot be read, and an unreadable target **stays governed** — so 
 it. That is computed rather than assumed, and it answers differently the day each target has a
 checkout.
 
-**Not here yet:** the four conditions, the ask, and the answer. Nor the frozen selection, which is
-what would make a line *removed* from `units/NN/targets` visible.
+### The selection freezes here
+
+```
+<run>/units/01/authorised-targets
+```
+
+Authorising writes the selected set down. **That record is what makes a line *removed* from
+`units/NN/targets` visible** — the selection file cannot show an absence, and a second record can.
+Adding a line is caught either way; deleting one was caught by nothing at all until this existed.
+
+The lines, not a digest of them: a digest answers *something moved* where a diff answers *what*, and
+the second is the question a person asks. Sorted, because §2.3 calls it a set — the same two targets
+in another order are the same selection, and a refusal that fired on that would teach people to
+ignore refusals.
+
+Authorising again over an unchanged selection is not a change and does not refuse. Authorising over a
+moved one exits 10 and does **not** re-freeze: quietly recording the new set would let the selection
+be edited after the moment it was fixed, which is the entire thing the freeze exists to stop.
+
+**Not here yet:** the four conditions, the ask, and the answer.
 
 ---
 

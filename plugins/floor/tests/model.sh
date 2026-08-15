@@ -598,7 +598,7 @@ a_charter_derives_from_the_repository_it_is_run_in() {
   # source exists — and why they fire with no human present.
   #
   is "nothing selected, so the clause grades nothing" \
-     "$(code_of floor "$tmp/ch" authorise)" "8"
+     "$(code_of floor "$tmp/ch" authorise)" "9"
 
   floor "$tmp/ch" targets add 'https://github.com/acme/ch.git' develop >/dev/null 2>&1
   is "the bootstrap selected and its gate declared authorises" \
@@ -606,9 +606,48 @@ a_charter_derives_from_the_repository_it_is_run_in() {
 
   # The one derived exception: a `Gate:` clause governs a selected target that declares that gate.
   # The bootstrap is the only target whose declarations are readable, and it declares no `nosuch`.
+  #
+  # The freeze. Authorising writes the selected set down, and it is the only record of what was
+  # selected at that moment — which is what lets a line *removed* afterwards be seen at all. The
+  # selection file cannot show an absence; a second record can.
+  #
+  frozen=$chrun/units/01/authorised-targets
+  exists "authorising writes the selected set down" "$frozen"
+  is "and it holds the lines, not a digest of them" \
+     "$(cat "$frozen")" "https://github.com/acme/ch.git develop"
+
+  is "authorising again over the same selection is not a change" \
+     "$(code_of floor "$tmp/ch" authorise)" "0"
+
+  floor "$tmp/ch" policy authorize 'https://github.com/acme/second.git' >/dev/null 2>&1
+  printf 'https://github.com/acme/second.git main\n' >> "$chrun/units/01/targets"
+  is "a target added after the freeze is a different run" \
+     "$(code_of floor "$tmp/ch" authorise)" "10"
+
+  # Exactly back, so this proves the comparison and not merely that something was touched.
+  printf 'https://github.com/acme/ch.git develop\n' > "$chrun/units/01/targets"
+  is "and putting it back exactly authorises again" \
+     "$(code_of floor "$tmp/ch" authorise)" "0"
+
+  # The half nothing could see before: an absence leaves nothing behind to check.
+  : > "$chrun/units/01/targets"
+  is "a target deleted after the freeze is a different run" \
+     "$(code_of floor "$tmp/ch" authorise)" "10"
+
+  # Order is not part of a set, and a refusal that fired on it would teach people to ignore refusals.
+  printf 'https://github.com/acme/second.git main\nhttps://github.com/acme/ch.git develop\n' \
+    > "$chrun/units/01/targets"
+  printf 'https://github.com/acme/ch.git develop\nhttps://github.com/acme/second.git main\n' \
+    > "$frozen"
+  is "the same two targets in another order are the same selection" \
+     "$(code_of floor "$tmp/ch" authorise)" "0"
+
+  printf 'https://github.com/acme/ch.git develop\n' > "$chrun/units/01/targets"
+  printf 'https://github.com/acme/ch.git develop\n' > "$frozen"
+
   floor "$tmp/ch" charter introduce Gate nosuch >/dev/null 2>&1
   is "a Gate naming an undeclared gate grades nothing" \
-     "$(code_of floor "$tmp/ch" authorise)" "8"
+     "$(code_of floor "$tmp/ch" authorise)" "9"
 
   # Refusing must not be the answer to everything: the run above still holds a clause that does
   # govern, so a green authorise has to be reachable again once the ungoverning one is gone.

@@ -15,7 +15,13 @@
 #   5  a target was refused: nobody authorised it for this run
 #   6  a clause was refused: it would weaken the charter, or its pin could not be captured
 #   7  the charter disagrees with its pins — something drifted or went missing
-#   8  the run describes no work: no clause, or a clause that grades no selected target
+#   8  the charter holds no clause, so it grades nothing
+#   9  a clause grades no selected target, so it is no bar
+#  10  the selection moved after it was authorised — that is a new run, not this one
+#
+# Eight, nine and ten are one stage and three remedies: write a requirement down, select a target it
+# governs, or start again. Collapsing them would make the exit code say *authorisation refused* and
+# leave the caller to read prose for what to do about it.
 
 set -u
 
@@ -547,6 +553,11 @@ authorise() {
 
     refuse_unselectable "$run_dir" "$selection_path" || exit 5
 
+    # Before the two refusals, not after: emptying the selection makes every clause grade nothing,
+    # so the later check would fire first and report the symptom. *It moved* names the cause, and
+    # its remedy — a new run — is the only one that applies.
+    refuse_moved_selection "$run_dir" "$selection_path" || exit 10
+
     [ "$(clause_count "$charter_path")" -gt 0 ] || {
         note "the charter holds no clause, so there is nothing to authorise"
         note "declare a gate this run's targets can be checked with, or write the requirement into an artifact derivation reads"
@@ -559,8 +570,56 @@ authorise() {
             note "clause $id grades no selected target, so it is no bar"
         done
         note "declare the gate that clause names, or select a target it governs"
-        exit 8
+        exit 9
     }
+
+    freeze_selection "$run_dir" "$selection_path"
+}
+
+frozen_selection_file() { printf '%s/units/01/authorised-targets' "$1"; }
+
+#
+# The selection, written down at the moment it stops moving.
+#
+# §4 freezes the selected set here, and until now that was a word with no mechanism: the only record
+# of what was selected was the file being selected from, so nothing could tell a line added since
+# from a line always there — and nothing at all could see a line **removed**. Revision 7 killed this
+# same shape once already, when monotonicity turned out to be decorative.
+#
+# The lines, not a checksum of them. A digest answers *something moved* and a diff has to answer
+# *what*, and the second question is the one a person asks. Two records of the same set would drift;
+# this is the only one.
+#
+# Sorted, because §2.3 calls it a set. Reordering the file is not a different selection, and a
+# refusal that fired on it would teach people to ignore refusals.
+#
+freeze_selection() {
+    frozen=$(frozen_selection_file "$1")
+    mkdir -p "$(dirname "$frozen")" || die_unwritable "$frozen"
+    normalised_selection "$2" > "$frozen" || die_unwritable "$frozen"
+}
+
+normalised_selection() { list_targets "$1" | LC_ALL=C sort; }
+
+#
+# Authorising twice over a selection that moved in between.
+#
+# §4's remedy is a new run, never a re-run: the frozen set is what completion will grade against, so
+# quietly re-freezing would let the selection be edited after the moment it was fixed, which is the
+# whole thing the freeze exists to stop.
+#
+# Deletion is why this reads the frozen record rather than re-checking policy. A removed line leaves
+# nothing behind to check, and `refuse_unselectable` cannot see an absence.
+#
+refuse_moved_selection() {
+    frozen=$(frozen_selection_file "$1")
+    [ -f "$frozen" ] || return 0
+
+    [ "$(normalised_selection "$2")" = "$(cat "$frozen")" ] && return 0
+
+    note "the selection moved after it was authorised, so this run is no longer the one that was authorised"
+    note "start a new run — §4 makes a changed selection a new attempt, not a re-authorisation"
+    return 1
 }
 
 clause_count() {
