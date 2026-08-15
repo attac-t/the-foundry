@@ -629,17 +629,38 @@ a_charter_derives_from_the_repository_it_is_run_in() {
   is "and putting it back exactly authorises again" \
      "$(code_of floor "$tmp/ch" authorise)" "0"
 
-  # The half nothing could see before: an absence leaves nothing behind to check.
-  : > "$chrun/units/01/targets"
-  is "a target deleted after the freeze is a different run" \
+  #
+  # The half nothing could see before, and it has to be a deletion that leaves the selection
+  # standing. Emptying the file is refused whether or not a freeze exists — every clause then grades
+  # nothing — so a suite that only empties it proves the ordering and never the absence.
+  #
+  # A fresh authorisation of a two-target selection. The record has to go, because adding a target
+  # to a frozen selection is exactly what exits 10 — which the check above just proved.
+  rm -f "$frozen"
+  printf 'https://github.com/acme/ch.git develop\nhttps://github.com/acme/second.git main\n' \
+    > "$chrun/units/01/targets"
+  is "two selected targets authorise" "$(code_of floor "$tmp/ch" authorise)" "0"
+
+  printf 'https://github.com/acme/ch.git develop\n' > "$chrun/units/01/targets"
+  is "one of two deleted after the freeze is a different run" \
      "$(code_of floor "$tmp/ch" authorise)" "10"
 
   # Order is not part of a set, and a refusal that fired on it would teach people to ignore refusals.
   printf 'https://github.com/acme/second.git main\nhttps://github.com/acme/ch.git develop\n' \
     > "$chrun/units/01/targets"
-  printf 'https://github.com/acme/ch.git develop\nhttps://github.com/acme/second.git main\n' \
-    > "$frozen"
   is "the same two targets in another order are the same selection" \
+     "$(code_of floor "$tmp/ch" authorise)" "0"
+
+  # `add_target` does not dedupe, so a set is not a list here either.
+  printf 'https://github.com/acme/ch.git develop\nhttps://github.com/acme/second.git main\nhttps://github.com/acme/ch.git develop\n' \
+    > "$chrun/units/01/targets"
+  is "the same target twice is the same selection" \
+     "$(code_of floor "$tmp/ch" authorise)" "0"
+
+  # A comment is not a target. Without this the whole normalisation could be `cat` and nothing notices.
+  printf 'https://github.com/acme/ch.git develop\nhttps://github.com/acme/second.git main\n# a note\n' \
+    > "$chrun/units/01/targets"
+  is "a comment added after the freeze is not a change" \
      "$(code_of floor "$tmp/ch" authorise)" "0"
 
   printf 'https://github.com/acme/ch.git develop\n' > "$chrun/units/01/targets"

@@ -187,7 +187,12 @@ wreck_runner "a selection that moved and authorises anyway is caught" \
 # expression is alternation to GNU sed and a literal elsewhere — a mutation that means two things is
 # not a mutation.
 wreck_runner "a freeze that records a digest instead of the lines is caught" \
-  digested 's#normalised_selection() { list_targets "$1" | LC_ALL=C sort; }#normalised_selection() { list_targets "$1" | LC_ALL=C sort | cksum; }#'
+  digested 's#normalised_selection() { list_targets "$1" | LC_ALL=C sort -u; }#normalised_selection() { list_targets "$1" | LC_ALL=C sort -u | cksum; }#'
+
+# Sorting and `-u` are the two halves of "a set". Reordering or repeating a target is not a change,
+# and a refusal on either would teach people to ignore refusals.
+wreck_runner "a freeze that reads the selection as a list is caught" \
+  aslist 's#normalised_selection() { list_targets "$1" | LC_ALL=C sort -u; }#normalised_selection() { list_targets "$1"; }#'
 
 # One allowlist for every run is one run's grant handed to all of them.
 #

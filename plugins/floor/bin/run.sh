@@ -63,7 +63,8 @@ floor — where work happens.
   run.sh charter check            report clauses that drifted from their pins, or went missing
   run.sh charter introduce <kind> <text>
                                   add a clause nothing derived — it stays introduced
-  run.sh authorise                refuse a run that describes no work — exit 8
+  run.sh authorise                refuse a run that describes no work, or whose selection moved
+                                  — exit 8, 9 or 10
 EOF
 }
 
@@ -531,7 +532,7 @@ charter() {
 charter_file() { printf '%s/charter' "$1"; }
 
 #
-# Authorisation — the two refusals, and nothing else yet.
+# Authorisation — the refusals, and nothing else yet.
 #
 # RFC-001 §2.2 gives this stage four conditions and two refusals. The four decide when a human is
 # *asked*, and asking needs a work source that does not exist. The refusals ask nobody anything, so
@@ -551,12 +552,14 @@ authorise() {
     charter_path=$(charter_file "$run_dir")
     selection_path=$(unit_targets_file "$run_dir")
 
-    refuse_unselectable "$run_dir" "$selection_path" || exit 5
-
-    # Before the two refusals, not after: emptying the selection makes every clause grade nothing,
-    # so the later check would fire first and report the symptom. *It moved* names the cause, and
-    # its remedy — a new run — is the only one that applies.
+    # First of all the refusals, and that ordering is the whole point. Every later check reports what
+    # is wrong with the selection *now* and names a remedy that would edit it — `policy authorize`
+    # this, select that. Once a selection is frozen those remedies are forbidden: the only answer is
+    # a new run. Emptying the selection reaches the same fork, where the grades-nothing check would
+    # otherwise fire first and report the symptom.
     refuse_moved_selection "$run_dir" "$selection_path" || exit 10
+
+    refuse_unselectable "$run_dir" "$selection_path" || exit 5
 
     [ "$(clause_count "$charter_path")" -gt 0 ] || {
         note "the charter holds no clause, so there is nothing to authorise"
@@ -599,7 +602,12 @@ freeze_selection() {
     normalised_selection "$2" > "$frozen" || die_unwritable "$frozen"
 }
 
-normalised_selection() { list_targets "$1" | LC_ALL=C sort; }
+#
+# `-u` as well as sorted. `add_target` does not dedupe, so selecting one target twice would otherwise
+# read as a set that moved — a refusal on a selection nobody changed, which is the thing sorting is
+# here to avoid.
+#
+normalised_selection() { list_targets "$1" | LC_ALL=C sort -u; }
 
 #
 # Authorising twice over a selection that moved in between.
@@ -624,7 +632,7 @@ refuse_moved_selection() {
 
 clause_count() {
     [ -f "$1" ] || { printf '0\n'; return 0; }
-    awk '$1 == "clause"' "$1" | wc -l | tr -d ' '
+    awk '$1 == "clause" && NF >= 2' "$1" | wc -l | tr -d ' '
 }
 
 #
