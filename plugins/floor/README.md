@@ -308,21 +308,28 @@ wearing provenance.
 run.sh authorise
 ```
 
-RFC-001 gives this stage four conditions and two refusals. **The refusals are what ships here.** The
-four decide when a *human is asked*, and asking needs a work source to ask through — so they arrive
-with it. The refusals ask nobody anything, which is exactly why they can run with no human present.
+RFC-001 gives this stage four conditions and two refusals. **Everything that can refuse without a
+human present ships here** — both refusals, and the three conditions that resolve to a refusal or a
+block. What is missing is the *ask*, which needs a work source to ask through and arrives with it.
 
 | Refused | Because | Exit |
 |---|---|---|
-| the pins still derive a clause the charter no longer holds | condition 3 — the bar was lowered | 12 |
-| the charter holds no clause | nothing is described, so there is nothing to authorise | 8 |
-| a clause grades no selected target | a bar that grades nothing is no bar | 9 |
-| a clause is introduced | condition 1 — nobody authorised it, and there is nowhere to ask | 11 |
 | the selection moved since it was authorised | that is a different run | 10 |
+| a selected target policy never authorised | condition 4, read side | 5 |
+| this run has no charter | there is nothing to authorise yet | 1 |
+| the detector yields a gate the charter holds no clause for | condition 3 — re-derive | 12 |
+| the charter holds no clause | nothing is described | 8 |
+| a clause is introduced | condition 1 — nobody authorised it, and there is nowhere to ask | 11 |
+| a clause grades no selected target | a bar that grades nothing is no bar | 9 |
 
-**Three codes, because there are three remedies** — write a requirement down, select a target it
-governs, or start again. One code would say *refused* and leave the caller reading prose to find out
-what to do. **The refused run ends.** Re-running planning
+**In that order, and the order carries meaning.** Each refusal names a remedy, and a remedy that
+leads to another refusal is worse than one remedy — so the cause always outranks the symptom. An
+emptied selection is a *moved* one, not a bar grading nothing. An introduced clause is stopped for
+its provenance before its coverage, because *declare that gate* would turn a clause nobody authorised
+into a real bar and only then mention it had none.
+
+**A code per remedy, never one code for the stage.** One code would say *refused* and leave the
+caller reading prose to find out what to do about it. **The refused run ends.** Re-running planning
 against the same pins and the same selection derives the same charter and refuses again, so the
 remedy is a gate declared, an artifact amended, or a target selected — never another attempt.
 

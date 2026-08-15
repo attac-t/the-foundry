@@ -208,15 +208,15 @@ wreck_runner "authorising for whatever repository you stand in is caught" \
 # Conditions 1 and 3, the two signals authorisation consumes rather than computes.
 #
 # Blinding either lets a run authorise on a bar nobody set: `introduced` on a clause nothing derives,
-# `removed` on one the pins still yield. Both are aimed at the capture, not the test — a test that
-# always passes leaves the capture running and the mutant reading identically.
+# the other on a gate the detector yields with no clause for it. Both aim at the capture, not the
+# test — a test that always passes leaves the capture running and the mutant reading identically.
 #
 wreck_runner "a run that authorises over introduced meaning is caught" \
   ownbar 's|    introduced=$(introduced_clauses "$charter_path")|    introduced=|'
 
 # The whole line, anchored: the capture holds a pipe, and a `|`-delimited expression would end at it.
 wreck_runner "a run that authorises after a derived clause was removed is caught" \
-  lowered 's#^    removed=.*#    removed=#'
+  lowered 's#^    ungoverned_by_pins=.*#    ungoverned_by_pins=#'
 
 # One allowlist for every run is one run's grant handed to all of them.
 #

@@ -706,15 +706,23 @@ a_charter_derives_from_the_repository_it_is_run_in() {
   is "a still-derived clause that was removed cannot pass" \
      "$(code_of floor "$tmp/ch" authorise)" "12"
   has "and it is reported as still derived, not as an empty charter" \
-      "$(floor_says "$tmp/ch" authorise)" "the pins still derive Gate tests"
+      "$(floor_says "$tmp/ch" authorise)" "the detector yields Gate tests"
 
   mv "$chrun/charter.keep" "$(charter_of "$chrun")"
   is "and authorises again once it is back" \
      "$(code_of floor "$tmp/ch" authorise)" "0"
 
+  #
+  # An introduced `Gate:` naming a gate nothing declares satisfies both refusals, and provenance is
+  # the earlier question. Exit 9's remedy is *declare that gate* — which would coach someone into
+  # making a clause nobody authorised into a real bar, and only then tell them it had no provenance.
+  #
+  # Exit 9 stays reachable and stays checked: the empty-selection case above is a derived clause
+  # governing nothing, which is what that refusal is actually for.
+  #
   floor "$tmp/ch" charter introduce Gate nosuch >/dev/null 2>&1
-  is "a Gate naming an undeclared gate grades nothing" \
-     "$(code_of floor "$tmp/ch" authorise)" "9"
+  is "an introduced Gate is stopped for its provenance, not its coverage" \
+     "$(code_of floor "$tmp/ch" authorise)" "11"
 
   # Refusing must not be the answer to everything: the run above still holds a clause that does
   # govern, so a green authorise has to be reachable again once the ungoverning one is gone.
