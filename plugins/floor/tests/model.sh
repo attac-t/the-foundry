@@ -471,6 +471,44 @@ eight_at_once_claim_eight_slots() {
 eight_at_once_claim_eight_slots
 
 #
+# `mkdir -p "$RUNS"` succeeds on a `runs/` that already exists and refuses a child, so every claim
+# after it fails for a reason counting cannot fix. Advancing on any failure counts for ever.
+#
+# **Bounded on purpose.** The break this guards against is a hang, not a wrong answer, so a check
+# that simply called the runner would take the suite down with it rather than turn it red. `timeout`
+# is the harness's, not the plugin's — floor still ships needing only `sh`, `awk` and `git`.
+#
+a_claim_that_can_never_land_refuses() {
+  command -v timeout >/dev/null 2>&1 \
+    || { skip "a claim that can never land — no timeout to bound a runner that may not return"; return; }
+
+  make_repo "$tmp/noclaim" main && set_origin "$tmp/noclaim" 'https://github.com/acme/noclaim.git' \
+    || { skip "a claim that can never land — git could not make a repo here"; return; }
+
+  shut="$tmp/shut"
+  rm -rf "$shut"; mkdir -p "$shut/runs"
+  chmod 500 "$shut/runs" 2>/dev/null
+
+  # Windows ignores chmod. Without this probe the check would pass by claiming a slot normally, and
+  # report a guard it never reached.
+  if mkdir "$shut/runs/probe" 2>/dev/null; then
+    rmdir "$shut/runs/probe"; chmod 700 "$shut/runs" 2>/dev/null
+    skip "a claim that can never land — this filesystem ignores chmod"
+    return
+  fi
+
+  ( cd "$tmp/noclaim" 2>/dev/null || exit 9
+    FOUNDRY_HOME="$shut" FOUNDRY_RUN="" timeout 20 sh "$runner" new "No Claim" >/dev/null 2>&1 )
+  code=$?
+
+  chmod 700 "$shut/runs" 2>/dev/null
+
+  # 124 is `timeout` killing it — the loop counting past a failure it will never fix.
+  is "a claim that can never land refuses instead of counting" "$code" "3"
+}
+a_claim_that_can_never_land_refuses
+
+#
 # Grants outlive the run directory, and run ids are reclaimed. Until the slot chooser read both, a
 # `rm -rf` handed the next run an allowlist nobody granted it.
 #

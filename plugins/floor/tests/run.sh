@@ -64,10 +64,34 @@ wreck_runner "a runner that stops checking for a free path is caught" \
 wreck_runner "a claim that tolerates an existing directory is caught" \
   notatomic 's#mkdir "$RUNS/$1" 2>/dev/null#mkdir -p "$RUNS/$1" 2>/dev/null#'
 
-# No mutant for the loop's `slot_is_taken || return 1` guard. Reaching it needs a `runs/` that exists
-# and cannot be written, and `chmod` does not reliably produce one under Git Bash — so the break has
-# no test here, and a mutant with no test reports a permanent failure that means nothing. Worse, the
-# break is a hang rather than a wrong answer: the audit would stop, not go red. Stated, not faked.
+# Counting past a failure that counting cannot fix. `mkdir -p "$RUNS"` succeeds on a `runs/` that
+# refuses a child, so the loop runs for ever on a directory it will never create.
+#
+# The break is a hang rather than a wrong answer, so the check that catches it bounds the runner with
+# `timeout`. Without that this mutant would stop the audit instead of failing it.
+#
+# Gated on the same condition as the check itself. Windows ignores chmod, so no directory there
+# refuses a child, the check skips, and running the mutant anyway would report *untestable here* as
+# *broken*.
+chmod_bites() {
+  probe="$tmp/chmod-probe"
+  rm -rf "$probe"; mkdir -p "$probe"
+  chmod 500 "$probe" 2>/dev/null
+
+  if mkdir "$probe/child" 2>/dev/null; then
+    chmod 700 "$probe" 2>/dev/null
+    return 1
+  fi
+
+  chmod 700 "$probe" 2>/dev/null
+}
+
+if chmod_bites; then
+  wreck_runner "a loop that counts past a failure it cannot fix is caught" \
+    spins 's#slot_is_taken "$candidate" || return 1#:#'
+else
+  printf '  skip  a loop that counts past a failure it cannot fix — this filesystem ignores chmod\n'
+fi
 
 # In the worktree the pointer gets committed, and a run id in someone else's clone names a directory
 # that was never on their machine.
