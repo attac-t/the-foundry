@@ -15,6 +15,7 @@
 #   5  a target was refused: nobody authorised it for this run
 #   6  a clause was refused: it would weaken the charter, or its pin could not be captured
 #   7  the charter disagrees with its pins — something drifted or went missing
+#   8  the run describes no work: no clause, or a clause that grades no selected target
 
 set -u
 
@@ -34,6 +35,7 @@ main() {
         targets)   targets "$@" ;;
         policy)    policy "$@" ;;
         charter)   charter "$@" ;;
+        authorise) authorise ;;
         *)         usage; exit 2 ;;
     esac
 }
@@ -55,6 +57,7 @@ floor — where work happens.
   run.sh charter check            report clauses that drifted from their pins, or went missing
   run.sh charter introduce <kind> <text>
                                   add a clause nothing derived — it stays introduced
+  run.sh authorise                refuse a run that describes no work — exit 8
 EOF
 }
 
@@ -520,6 +523,83 @@ charter() {
 }
 
 charter_file() { printf '%s/charter' "$1"; }
+
+#
+# Authorisation — the two refusals, and nothing else yet.
+#
+# RFC-001 §2.2 gives this stage four conditions and two refusals. The four decide when a human is
+# *asked*, and asking needs a work source that does not exist. The refusals ask nobody anything, so
+# they are the half that can ship, and they are the half that fires without a human present.
+#
+# Both are the same question — does this run describe work a charter can grade? — and neither has an
+# answer a person could give, which is why they refuse rather than ask.
+#
+#
+# `charter_path` and `selection_path`, not `file`: `refuse_unselectable` and `add_target` both assign
+# `file`, sh has no locals, and the second call would quietly rename the first's. That is `craft-sh`
+# rule 10 — one name, one meaning — and it cost a debugging session here before the rule was applied.
+#
+authorise() {
+    run_dir=$(active_run) || exit 1
+
+    charter_path=$(charter_file "$run_dir")
+    selection_path=$(unit_targets_file "$run_dir")
+
+    refuse_unselectable "$run_dir" "$selection_path" || exit 5
+
+    [ "$(clause_count "$charter_path")" -gt 0 ] || {
+        note "the charter holds no clause, so there is nothing to authorise"
+        note "declare a gate this run's targets can be checked with, or write the requirement into an artifact derivation reads"
+        exit 8
+    }
+
+    ungoverned=$(ungoverning_clauses "$run_dir" "$charter_path" "$selection_path")
+    [ -z "$ungoverned" ] || {
+        for id in $ungoverned; do
+            note "clause $id grades no selected target, so it is no bar"
+        done
+        note "declare the gate that clause names, or select a target it governs"
+        exit 8
+    }
+}
+
+clause_count() {
+    [ -f "$1" ] || { printf '0\n'; return 0; }
+    awk '$1 == "clause"' "$1" | wc -l | tr -d ' '
+}
+
+#
+# Which clauses grade nothing.
+#
+# §2.2: every clause governs every selected target, with one derived exception — a `Gate:` clause
+# governs each selected target that declares that gate. A target whose declarations cannot be read
+# **stays governed**, and detection reads the bootstrap checkout only, so every other selected target
+# is unreadable and therefore governed by everything.
+#
+# Two cases follow, and only two: nothing is selected, or the sole selected target is the bootstrap
+# and it declares no gate by that name. Both are computed here rather than assumed, so the day a
+# workspace gives each target a checkout this reads the same and answers differently.
+#
+ungoverning_clauses() {
+    dir=$1
+    file=$2
+    targets_file=$3
+
+    [ -f "$file" ] || return 0
+
+    selected=$(list_targets "$targets_file" | wc -l | tr -d ' ')
+    [ "$selected" -gt 0 ] || { awk '$1 == "clause" { print $2 }' "$file"; return 0; }
+
+    boot=$(bootstrap_identity "$dir") || return 0
+    only_boot=$(list_targets "$targets_file" | awk -v b="$boot" '$1 != b' | wc -l | tr -d ' ')
+    [ "$only_boot" -eq 0 ] || return 0
+
+    declared=$(detect_gates | awk '{ print $1 }')
+    awk -v names="$declared" '
+        BEGIN { split(names, seen, "\n"); for (i in seen) has[seen[i]] = 1 }
+        $1 == "clause" && $3 == "Gate" && !($4 in has) { print $2 }
+    ' "$file"
+}
 
 #
 # A clause's identity is its meaning, so re-deriving the same clause finds the same record rather

@@ -592,7 +592,51 @@ a_charter_derives_from_the_repository_it_is_run_in() {
   has "and the command it resolved to"      "$held" "gate $(clause_of tests) make test"
 
   is "a run whose clauses all derive asks nobody" "$(code_of floor "$tmp/ch" charter check)" "0"
+
+  #
+  # Authorisation's two refusals. Neither asks anything, which is why they can ship before a work
+  # source exists — and why they fire with no human present.
+  #
+  is "nothing selected, so the clause grades nothing" \
+     "$(code_of floor "$tmp/ch" authorise)" "8"
+
+  floor "$tmp/ch" targets add 'https://github.com/acme/ch.git' develop >/dev/null 2>&1
+  is "the bootstrap selected and its gate declared authorises" \
+     "$(code_of floor "$tmp/ch" authorise)" "0"
+
+  # The one derived exception: a `Gate:` clause governs a selected target that declares that gate.
+  # The bootstrap is the only target whose declarations are readable, and it declares no `nosuch`.
+  floor "$tmp/ch" charter introduce Gate nosuch >/dev/null 2>&1
+  is "a Gate naming an undeclared gate grades nothing" \
+     "$(code_of floor "$tmp/ch" authorise)" "8"
+
+  # Refusing must not be the answer to everything: the run above still holds a clause that does
+  # govern, so a green authorise has to be reachable again once the ungoverning one is gone.
+  grep -v ' Gate nosuch$' "$(charter_of "$chrun")" > "$chrun/charter.tmp" \
+    && mv "$chrun/charter.tmp" "$(charter_of "$chrun")"
+  is "and authorises again once that clause is gone" \
+     "$(code_of floor "$tmp/ch" authorise)" "0"
 }
+
+#
+# A charter with no clause grades nothing at all. Its own repository is the case: the detector reads
+# three things and Foundry declares its gates in none of them, so this is the default run, not a
+# contrived one.
+#
+an_empty_charter_is_refused() {
+  make_repo "$tmp/nogate" main && set_origin "$tmp/nogate" 'https://github.com/acme/nogate.git' \
+    || { skip "authorise — git could not make a repo here"; return; }
+
+  norun=$(floor "$tmp/nogate" new "No gates")
+  is "deriving from a repo with no gate still succeeds" \
+     "$(code_of floor "$tmp/nogate" charter derive)" "0"
+  is "and the charter it wrote is empty" \
+     "$(wc -c < "$(charter_of "$norun")" | tr -d ' ')" "0"
+  is "which authorisation refuses" \
+     "$(code_of floor "$tmp/nogate" authorise)" "8"
+}
+
+an_empty_charter_is_refused
 
 # The id is the meaning. Recomputed here rather than read back, so a test cannot agree with a wrong
 # id by copying it.

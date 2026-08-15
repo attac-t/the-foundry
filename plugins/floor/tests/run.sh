@@ -157,6 +157,17 @@ wreck_runner "a selection read without checking policy is caught" \
 wreck_runner "a selection line that is not a repo and a ref is caught" \
   anyshape 's#NF && NF != 2#NF \&\& 0#'
 
+#
+# Authorisation refuses a run that describes no work. Two refusals, two breaks: an empty charter
+# grades nothing at all, and a clause that governs no selected target is a bar over nothing. A
+# refusal nobody can break is a refusal that was never doing anything.
+#
+wreck_runner "an empty charter that authorises anyway is caught" \
+  emptybar 's|\[ "$(clause_count "$charter_path")" -gt 0 \]|true|'
+
+wreck_runner "a clause grading nothing that authorises anyway is caught" \
+  nobar 's|ungoverned=$(ungoverning_clauses "$run_dir" "$charter_path" "$selection_path")|ungoverned=|'
+
 # One allowlist for every run is one run's grant handed to all of them.
 #
 # Also caught by the credential check, which shares the grants file — so a red here does not on its
