@@ -679,8 +679,8 @@ frozen_selection_file() { printf '%s/units/01/authorised-targets' "$1"; }
 
 selection_is_frozen() { [ -f "$(frozen_selection_file "$1")" ]; }
 
-# Once frozen, selecting a target stops being a remedy — it is what exits 10. A refusal naming a
-# remedy that leads to another refusal is worse than one remedy.
+# A refusal naming a remedy that leads to another refusal is worse than one remedy — and after the
+# freeze, selecting a target is that other refusal.
 note_coverage_remedy() {
     selection_is_frozen "$1" \
         || { note "declare the gate that clause names, or select a target it governs"; return; }

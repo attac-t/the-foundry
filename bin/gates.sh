@@ -2,6 +2,8 @@
 #
 # Every product gate. The README lists these seven; nothing yet checks the two agree.
 # `bin/gates-in-docker.sh` runs this on Linux, where `sh` is dash.
+#
+# No `set -e`: a gate that fails must not stop the ones after it. One red square names one gate.
 
 set -u
 
