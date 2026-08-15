@@ -49,11 +49,11 @@ wreck_runner() {
 }
 
 #
-# Two breaks on the claim, and they are not the same break: this one blinds it to a slot already
-# taken, `inherit` below blinds it only to grants.
+# Three breaks on one claim, and they are three: this one blinds it to everything, `notatomic` to a
+# directory already there, `inherit` below to grants alone.
 #
 wreck_runner "a runner that stops checking for a free path is caught" \
-  collide 's#if ! slot_is_reserved "$candidate" \&\& mkdir "$RUNS/$candidate" 2>/dev/null; then#if true; then#'
+  collide 's#slot_is_reserved "$1" \&\& return 1#:#; s#mkdir "$RUNS/$1" 2>/dev/null#mkdir -p "$RUNS/$1" 2>/dev/null#'
 
 #
 # The defect this replaced, put back exactly: `-p` succeeds on a directory that already exists, so
@@ -62,7 +62,12 @@ wreck_runner "a runner that stops checking for a free path is caught" \
 # together.
 #
 wreck_runner "a claim that tolerates an existing directory is caught" \
-  notatomic 's#mkdir "$RUNS/$candidate" 2>/dev/null#mkdir -p "$RUNS/$candidate" 2>/dev/null#'
+  notatomic 's#mkdir "$RUNS/$1" 2>/dev/null#mkdir -p "$RUNS/$1" 2>/dev/null#'
+
+# No mutant for the loop's `slot_is_taken || return 1` guard. Reaching it needs a `runs/` that exists
+# and cannot be written, and `chmod` does not reliably produce one under Git Bash — so the break has
+# no test here, and a mutant with no test reports a permanent failure that means nothing. Worse, the
+# break is a hang rather than a wrong answer: the audit would stop, not go red. Stated, not faked.
 
 # In the worktree the pointer gets committed, and a run id in someone else's clone names a directory
 # that was never on their machine.
