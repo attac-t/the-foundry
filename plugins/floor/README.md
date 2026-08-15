@@ -308,19 +308,28 @@ wearing provenance.
 run.sh authorise
 ```
 
-RFC-001 gives this stage four conditions and two refusals. **The refusals are what ships here.** The
-four decide when a *human is asked*, and asking needs a work source to ask through — so they arrive
-with it. The refusals ask nobody anything, which is exactly why they can run with no human present.
+RFC-001 gives this stage four conditions and two refusals. **Everything that can refuse without a
+human present ships here** — both refusals, and the three conditions that resolve to a refusal or a
+block. What is missing is the *ask*, which needs a work source to ask through and arrives with it.
 
 | Refused | Because | Exit |
 |---|---|---|
-| the charter holds no clause | nothing is described, so there is nothing to authorise | 8 |
-| a clause grades no selected target | a bar that grades nothing is no bar | 9 |
 | the selection moved since it was authorised | that is a different run | 10 |
+| a selected target policy never authorised | condition 4, read side | 5 |
+| this run has no charter | there is nothing to authorise yet | 1 |
+| the detector yields a gate the charter holds no clause for | condition 3 — re-derive | 12 |
+| the charter holds no clause | nothing is described | 8 |
+| a clause is introduced | condition 1 — nobody authorised it, and there is nowhere to ask | 11 |
+| a clause grades no selected target | a bar that grades nothing is no bar | 9 |
 
-**Three codes, because there are three remedies** — write a requirement down, select a target it
-governs, or start again. One code would say *refused* and leave the caller reading prose to find out
-what to do. **The refused run ends.** Re-running planning
+**In that order, and the order carries meaning.** Each refusal names a remedy, and a remedy that
+leads to another refusal is worse than one remedy — so the cause always outranks the symptom. An
+emptied selection is a *moved* one, not a bar grading nothing. An introduced clause is stopped for
+its provenance before its coverage, because *declare that gate* would turn a clause nobody authorised
+into a real bar and only then mention it had none.
+
+**A code per remedy, never one code for the stage.** One code would say *refused* and leave the
+caller reading prose to find out what to do about it. **The refused run ends.** Re-running planning
 against the same pins and the same selection derives the same charter and refuses again, so the
 remedy is a gate declared, an artifact amended, or a target selected — never another attempt.
 
@@ -358,7 +367,23 @@ as the same user, and deleting it silently un-freezes the run — the next autho
 set as if it were the first. Nothing here stops that. What it buys is that no *accident* moves a
 selection after it was fixed, and that a moved one is visible to anything that reads both.
 
-**Not here yet:** the four conditions, the ask, and the answer.
+### Two conditions are consumed, not computed
+
+Condition 3 is `underived_gates`, which `check` already reports. Condition 4 is `is_authorised`,
+through the read-side check. Authorisation asks neither question a second time — a third writing of
+either is the tell that the boundary is wrong.
+
+**Condition 1 blocks rather than asking.** An introduced clause is a bar nobody authorised; the run
+cannot proceed on it and cannot ask about it, because asking needs a work source. §2.1 already says
+what a source that cannot ask does — it forces every ask to block — so that is what happens, visibly
+and with the clause named.
+
+**Condition 2 collapses into it.** No judge exists, so nothing reaches the semantic path: every
+clause the mechanical path cannot establish arrives as introduced instead. The gate therefore blocks
+more often than it eventually will, never less. Nothing durable records the ambiguity, because there
+is nothing yet that could answer it.
+
+**Not here yet:** the ask, and the answer.
 
 ---
 

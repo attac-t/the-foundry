@@ -680,9 +680,49 @@ a_charter_derives_from_the_repository_it_is_run_in() {
   printf 'https://github.com/acme/ch.git develop\n' > "$chrun/units/01/targets"
   printf 'https://github.com/acme/ch.git develop\n' > "$frozen"
 
+  #
+  # Condition 1. An introduced clause is a bar nobody authorised, and there is no channel to ask
+  # through — so the gate blocks rather than passing. Condition 2 arrives here too: with no judge,
+  # every clause the mechanical path cannot establish is introduced.
+  #
+  floor "$tmp/ch" charter introduce Judged 'the interface is understandable' >/dev/null 2>&1
+  is "an introduced clause cannot authorise cleanly" \
+     "$(code_of floor "$tmp/ch" authorise)" "11"
+  has "and the refusal names the clause and the missing channel" \
+      "$(floor_says "$tmp/ch" authorise)" "no channel to ask through"
+
+  grep -v 'the interface is understandable' "$(charter_of "$chrun")" > "$chrun/c.tmp" \
+    && mv "$chrun/c.tmp" "$(charter_of "$chrun")"
+  is "and authorises again once nothing is introduced" \
+     "$(code_of floor "$tmp/ch" authorise)" "0"
+
+  #
+  # Condition 3, consumed from `underived_gates` rather than asked again. Ahead of the empty-charter
+  # refusal: deleting the last clause satisfies both, and only this one is true — exit 8 would answer
+  # "declare a gate" where a gate is declared and the clause was removed.
+  #
+  cp "$(charter_of "$chrun")" "$chrun/charter.keep"
+  grep -v '^clause .* Gate tests$' "$chrun/charter.keep" > "$(charter_of "$chrun")"
+  is "a still-derived clause that was removed cannot pass" \
+     "$(code_of floor "$tmp/ch" authorise)" "12"
+  has "and it is reported as still derived, not as an empty charter" \
+      "$(floor_says "$tmp/ch" authorise)" "the detector yields Gate tests"
+
+  mv "$chrun/charter.keep" "$(charter_of "$chrun")"
+  is "and authorises again once it is back" \
+     "$(code_of floor "$tmp/ch" authorise)" "0"
+
+  #
+  # An introduced `Gate:` naming a gate nothing declares satisfies both refusals, and provenance is
+  # the earlier question. Exit 9's remedy is *declare that gate* — which would coach someone into
+  # making a clause nobody authorised into a real bar, and only then tell them it had no provenance.
+  #
+  # Exit 9 stays reachable and stays checked: the empty-selection case above is a derived clause
+  # governing nothing, which is what that refusal is actually for.
+  #
   floor "$tmp/ch" charter introduce Gate nosuch >/dev/null 2>&1
-  is "a Gate naming an undeclared gate grades nothing" \
-     "$(code_of floor "$tmp/ch" authorise)" "9"
+  is "an introduced Gate is stopped for its provenance, not its coverage" \
+     "$(code_of floor "$tmp/ch" authorise)" "11"
 
   # Refusing must not be the answer to everything: the run above still holds a clause that does
   # govern, so a green authorise has to be reachable again once the ungoverning one is gone.
@@ -697,6 +737,27 @@ a_charter_derives_from_the_repository_it_is_run_in() {
 # three things and Foundry declares its gates in none of them, so this is the default run, not a
 # contrived one.
 #
+#
+# Every other `authorise` check in this suite derives first, so the never-derived path had no reader
+# at all — and it is the one that was wrong: `underived_gates` yields `deleted:` for a gate no clause
+# exists for, which is every gate when no charter exists. That run was told it had lost a clause
+# whose pins never existed.
+#
+authorising_before_deriving() {
+  make_repo "$tmp/pre" main && set_origin "$tmp/pre" 'https://github.com/acme/pre.git' \
+    || { skip "authorise before derive — git could not make a repo here"; return; }
+
+  printf 'test:\n\techo ok\n' > "$tmp/pre/Makefile"
+  git -C "$tmp/pre" add -A >/dev/null 2>&1 && git -C "$tmp/pre" commit -qm gate >/dev/null 2>&1
+
+  floor "$tmp/pre" new "Before deriving" >/dev/null
+  is "authorising before deriving asks for a charter, not for a lost clause" \
+     "$(code_of floor "$tmp/pre" authorise)" "1"
+  has "and it says which" \
+      "$(floor_says "$tmp/pre" authorise)" "this run has no charter"
+}
+authorising_before_deriving
+
 an_empty_charter_is_refused() {
   make_repo "$tmp/nogate" main && set_origin "$tmp/nogate" 'https://github.com/acme/nogate.git' \
     || { skip "authorise — git could not make a repo here"; return; }

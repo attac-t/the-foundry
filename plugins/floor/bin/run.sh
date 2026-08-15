@@ -8,7 +8,7 @@
 #
 # Exit codes:
 #   0  answered
-#   1  nothing to answer with — no run is active, or the run has no bootstrap target
+#   1  nothing to answer with — no run is active, no bootstrap target, or no charter yet
 #   2  asked for something this does not do
 #   3  nowhere to put a run, or the home cannot be written to
 #   4  a target was refused: no portable identity, or a ref that is not one
@@ -18,8 +18,10 @@
 #   8  the charter holds no clause, so it grades nothing
 #   9  a clause grades no selected target, so it is no bar
 #  10  the selection moved after it was authorised — that is a new run, not this one
+#  11  a clause is introduced and nothing can ask a human to authorise it
+#  12  the detector yields a gate the charter holds no clause for — re-derive
 #
-# Eight, nine and ten are one stage and three remedies: write a requirement down, select a target it
+# Eight through twelve are one stage and five remedies: write a requirement down, select a target it
 # governs, or start again. Collapsing them would make the exit code say *authorisation refused* and
 # leave the caller to read prose for what to do about it.
 
@@ -64,7 +66,7 @@ floor — where work happens.
   run.sh charter introduce <kind> <text>
                                   add a clause nothing derived — it stays introduced
   run.sh authorise                refuse a run that describes no work, or whose selection moved
-                                  — exit 8, 9 or 10
+                                  — exit 1, 5, 8, 9, 10, 11 or 12
 EOF
 }
 
@@ -532,7 +534,7 @@ charter() {
 charter_file() { printf '%s/charter' "$1"; }
 
 #
-# Authorisation — the refusals, and nothing else yet.
+# Authorisation — every refusal it can make without a human present.
 #
 # RFC-001 §2.2 gives this stage four conditions and two refusals. The four decide when a human is
 # *asked*, and asking needs a work source that does not exist. The refusals ask nobody anything, so
@@ -570,10 +572,72 @@ authorise() {
     refuse_wrong_repository "$run_dir"
     refuse_missing_resolver
 
+    #
+    # Condition 3 — a clause the pins still derive is gone. `underived_gates` already computes it and
+    # `check` already reports it; this consumes that answer rather than asking the question twice.
+    # `deleted:` alone: its other findings are drift, which is `check`'s to report and not a
+    # violation of invariant 3.
+    #
+    # A refusal, not a question. The remedy is to restore the clause or stop the artifact deriving
+    # it, and both are edits a person makes before the run, never answers a person gives during it.
+    #
+    # Ahead of the empty-charter refusal, because deleting the last clause satisfies both and only
+    # this one is true: exit 8 would answer "declare a gate" where a gate is declared and the clause
+    # was removed.
+    #
+    # The guard `check` carries. Without it a run that never derived is told it *lost* a clause, with
+    # pins asserted that do not exist — verified by execution on a fresh run in a repo with a
+    # `Makefile`.
+    [ -f "$charter_path" ] || {
+        note "this run has no charter — run \`charter derive\` first"
+        exit 1
+    }
+
+    # What `deleted:` observes, said exactly: the detector yields a gate the charter holds no clause
+    # for. A clause removed by hand is one way to reach that; a gate declared since the last
+    # derivation is another, and growth is allowed. Re-deriving is the remedy for both, so the
+    # refusal is right either way — but naming a loss that may not have happened is not.
+    gates_with_no_clause=$(underived_gates "$charter_path" | awk '/^deleted: /')
+    [ -z "$gates_with_no_clause" ] || {
+        printf '%s\n' "$gates_with_no_clause" | while read -r _ kind name; do
+            note "the detector yields $kind $name and the charter holds no clause for it"
+        done
+        note "re-derive, or stop the artifact declaring it"
+        exit 12
+    }
+
     [ "$(clause_count "$charter_path")" -gt 0 ] || {
         note "the charter holds no clause, so there is nothing to authorise"
         note "declare a gate this run's targets can be checked with, or write the requirement into an artifact derivation reads"
         exit 8
+    }
+
+    #
+    # Condition 1 — a clause nothing pinned, and no channel to ask about it.
+    #
+    # Blocks rather than authorising. The clause may be perfectly good; what is missing is the human
+    # act that says so, and §2.1 already defines what a source that cannot ask does — it forces every
+    # ask to block. Proceeding would let a run introduce its own bar, which is the one thing invariant
+    # 1 exists to prevent.
+    #
+    # **Condition 2 collapses into this.** No judge exists, so no clause reaches the semantic path at
+    # all: every clause the mechanical path cannot establish arrives here instead. The gate therefore
+    # blocks more often than it eventually will, never less — and nothing durable records the
+    # ambiguity, because there is no ambiguity to record until something can answer.
+    #
+    # Ahead of the coverage refusal below. Both fire on an introduced `Gate:` clause naming a gate
+    # nothing declares, and exit 9's remedy — declare that gate — would coach someone into making a
+    # clause nobody authorised into a real bar, then tell them afterwards it had no provenance.
+    # Provenance is the earlier question.
+    #
+    introduced=$(introduced_clauses "$charter_path")
+    [ -z "$introduced" ] || {
+        printf '%s\n' "$introduced" | while read -r _ id kind text; do
+            note "clause $id is introduced: $kind $text"
+        done
+        note "nothing derives it, so a human must authorise it — and this run has no channel to ask through"
+        note "the channel arrives with the work source; until then only a derived clause can authorise"
+        exit 11
     }
 
     ungoverned=$(ungoverning_clauses "$run_dir" "$charter_path" "$selection_path")
@@ -920,13 +984,34 @@ while_reading_gates() {
 # record next to the pinned one — a duplicate clause that also reads as having provenance it was
 # never given.
 #
+#
+# A clause nothing pinned. That is invariant 1's *introduced*, and one predicate answers both
+# questions asked of it: which introduced clauses a re-derivation must carry forward, and which ones
+# authorisation has to stop for. Two readers of one rule, never two statements of it.
+#
+introduced_clauses() {
+    [ -f "$1" ] || return 0
+    awk '$1 == "clause" { held[$2] = $0 }
+         $1 == "pin"    { pinned[$2] = 1 }
+         END { for (id in held) if (!(id in pinned)) print held[id] }' "$1"
+}
+
+#
+# Introduced, minus whatever this derivation just produced. `FILENAME` names the draft; stdin is `-`.
+#
+# Captured before the pipe, not piped into it: a pipeline reports its last stage, so a charter that
+# cannot be read would exit 0 here and `derive` would replace it with a draft holding no introduced
+# clause. The single awk this replaced could not hide that, and the refactor must not either.
+#
 keep_introduced() {
     [ -f "$1" ] || return 0
-    awk -v draft="$2" '
+
+    carried=$(introduced_clauses "$1") || return 1
+    [ -n "$carried" ] || return 0
+
+    printf '%s\n' "$carried" | awk -v draft="$2" '
          FILENAME == draft { fresh[$2] = 1; next }
-         $1 == "clause" { held[$2] = $0 }
-         $1 == "pin"    { pinned[$2] = 1 }
-         END { for (id in held) if (!(id in pinned) && !(id in fresh)) print held[id] }' "$2" "$1"
+         !($2 in fresh)' "$2" -
 }
 
 #
