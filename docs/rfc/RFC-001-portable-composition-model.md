@@ -127,7 +127,8 @@ work item ──┬─ run (attempt 1, abandoned during planning)
 |---|---|---|---|
 | `context` | what a model may read | nothing | n/a — a model may ignore it |
 | `policy` | what code refuses | code | **no** |
-| `evidence` | a stamped record carrying a trust level | provenance | no — there is no write API |
+| `evidence` | a stamped record that a clause was met | provenance | no — there is no write API |
+| `authority` | a stamped record that a human permitted something — this run, or one clause's existence | attribution | no — there is no write API |
 
 ### What was cut, and why
 
@@ -453,8 +454,10 @@ defect above returns unchanged.
 
 **That is a record of what a judge answered, never of what is awaited**, and the lookup direction is
 what says so. A resumed run derives its own question and finds the verdict recorded *for that clause*;
-nothing anywhere asks *which questions are outstanding* and gets an answer. Nothing clears it either,
-and it cannot say a clause was met. A pending-question ledger would be all three of those things.
+nothing anywhere asks *which questions are outstanding* and gets an answer. Nothing clears it either.
+**A pending-question ledger would be both of those things**, which is what makes them the test. That
+it can never say a clause was met is a separate guarantee, and it separates the record from evidence
+rather than from a ledger — a ledger could not say so either.
 
 **This is Panel verifying, not Panel planning.** The judge is handed a candidate clause and asked
 whether meaning already exists. It proposes nothing.
@@ -527,8 +530,8 @@ today, because there is no such answer.
 **Revision 11 also kept the evidence pool unambiguous by a naming rule — never name a clause the
 charter still holds — and revision 12 retires it.** The rule cannot survive conditions one and two
 being asked per clause: an introduced clause *is* in the charter, so its authorisation answer names a
-clause the charter holds, and the rule forbids exactly what the model does. **The stage does that job
-instead**, for every clause rather than only the ones being removed.
+clause the charter holds, and the rule forbids exactly what the model does. **The store does that job
+instead** — §2.5 keeps authority records out of the pool entirely, so what they name stops mattering.
 
 **An answer binds one run, and the ask must say so.** Invariant 3 re-derives the baseline from the
 pins every time, and `Decided:` clauses do not carry forward — so the same base proposes the same
@@ -706,10 +709,12 @@ who       the person, attributed
 what      the run, or one clause
 ```
 
-No `unit`, no `ref`. Selection has neither — §4 stamps it before the run exists — and an authorisation
-answer authorises a clause's existence, which no ref makes truer. **A record without a `ref` cannot
-satisfy the completion invariant**, which quantifies over the delivered ref of every selected target.
-That is the separation, in the shape rather than in a sentence about it.
+No `unit`, no `ref`. An authorisation answer authorises a clause's existence, which no ref makes
+truer; selection has no unit and no ref of its own, since **the act precedes the run and the record
+cannot** — §4 selects the work item, and the stamp lands with the ledger at run creation, naming the
+run it authorised. **A record without a `ref` cannot satisfy the completion invariant**, which
+quantifies over the delivered ref of every selected target. That is the separation, in the shape
+rather than in a sentence about it.
 
 **The stage and the store do different jobs, and neither does the other's.** The stage separates the
 *questions*, so an answer reaches the reader that asked it. The store separates the *records*, so a
@@ -841,10 +846,11 @@ said planning *produces* the run's contents. Planning therefore had no ledger �
 three-ledger disease this RFC diagnoses in its own Problem section.
 
 ```
-work item selected              ← the human act. Stamped as `human` authority, not evidence
+work item selected              ← the human act. Nothing to write to yet
     │
     ▼
 run created                     ← the ledger exists. Nothing has mutated
+                                  the act above lands here: `human` authority, never evidence
     │
     ▼
 planning                        ← read-only workspace
@@ -877,8 +883,10 @@ coverage from selection, so the two cannot bind at different moments. That is al
 refusal lands — a clause governing no selected target is refused *there*, not while planning is still
 writing `units/NN/targets`, where every clause governs nothing yet and refusing would refuse the
 whole charter. That refusal is not one of §2.2's four: nothing fired about where the clause came from
-or about its removal — it simply grades nothing, so it is no bar. Changing the selection afterwards
-*would* trigger a condition: v1 has four, so a change after the freeze is a new run.
+or about its removal — it simply grades nothing, so it is no bar. **Changing the selection afterwards
+would need a fifth, and v1 has four.** Widening it to a target policy already allows fires nothing at
+all — one, two and three concern clauses, and four asks whether the allowlist permits it, which it
+does. So a change after the freeze is a new run.
 
 **Planning gets a read-only workspace, scoped to the run.** It must read the targets:
 `decide-boundary`'s tells "surface only in code", and gate detection reads the repo. The alternative
@@ -1202,7 +1210,10 @@ Four investigations against the shipped charter, and two designs rejected. **Cov
 deliberately absent**: a clause governs every selected target, because v1 can derive no narrower
 answer from a pinned artifact, and a coverage dial nobody authorised is worse than none. The rejected
 pair share one shape — an authority record only a human may write, where *only a human may write it*
-was prose the code could not enforce.
+was prose the code could not enforce. **History**: revision 12 adds an authority record carrying that
+same unenforceable property. It survives where these did not because of what a forgery buys — these
+would have *narrowed* a clause, and a forged authorisation answer only buys the silence where a human
+would have been asked. §2.2 states the limit rather than claiming the code closed it.
 
 **No `purpose` field.** Remove the entailment verdict from the pool and every remaining clause-naming
 record is a satisfaction claim — a constant, not a field. The set is closed in §2.2 rather than
@@ -1239,10 +1250,10 @@ Neither was settled by code, spec or a prior review. Both were escalated and bot
 | §7 q1: judge eligibility open, *"blocks the authorisation stage"* | **closed** — role and information path, never vendor | Fresh, read-only, neither proposer nor implementer, unable to mutate the charter, judging from the pinned artifact and the candidate clause alone. Where no such judge can be formed, semantic provenance is not established and the clause falls to the human — which was already the answer for *not entailed* |
 | §2.2: *"nothing stops the same judge producing both records"* | *fresh* stops it | Revision 9 separated the records and said so honestly. Eligibility separates the agents, and could not be claimed until it was a rule |
 
-**No new field, and no new record.** Condition three's answer would be a `human` record like any
-other; what changed is which clause it may name and why that cannot collide. **History**: revision 12
-found condition three has no answer at all — it refuses — and retired the naming rule this row
-settled. The pool is kept unambiguous by the store now, not by what a record may name.
+**No new field, and no new record.** Condition three's answer is a `human` record like any other; what
+changed is which clause it may name and why that cannot collide. **History**: revision 12 found
+condition three has no answer at all — it refuses — and retired the naming rule this row settled. The
+pool is kept unambiguous by the store now, not by what a record may name.
 
 
 ### Revision 12 — the transport was deciding what an answer meant
@@ -1254,7 +1265,7 @@ Drafting the work source found §2.1 making a semantic claim it has no standing 
 | §2.1 and §2.5: `receive` returns "that human's answer, **as evidence at trust `human`**" | an attributed answer, bound to the run and the question. Completion produces the evidence | An authorisation answer and a satisfaction answer arrive through the same channel and mean different things. Stamping every answer as evidence made the transport assert that a clause was met, which is completion's judgement and nobody else's. §2.5's trust table carried the same claim one section later |
 | nothing said how a question is identified | derived from the run, the **stage** and the clause | Without it a resumed run asks again, an answer to another question is consumed, and an answer to an earlier run is too. **The stage is what separates the two questions**: both name a clause, so without it the answer authorising an introduced `Decided:` clause would satisfy it — revision 9's defect, returning for human answers. **Derived rather than issued**, because issuing means storing, and a stored pending question is the parallel ledger §2.2 refuses |
 | a fourth term, the condition that fired, was tried and dropped | three terms | It never discriminates: for one clause at authorisation, either no path established provenance or the judge could not tell, never both. The condition is what the ask must **say**; it is not what the answer must **match**. It was also the one term a resumed run could not recompute, which is how the record below was found |
-| §2.2: *"never name a clause the charter still holds"* kept the evidence pool unambiguous | the **stage** keeps it unambiguous | Conditions one and two are asked per clause, and an introduced clause *is* in the charter — so the rule forbade exactly what the model does. It could only ever have held while condition three was the sole clause-naming authorisation answer |
+| §2.2: *"never name a clause the charter still holds"* kept the evidence pool unambiguous | the **store** keeps it unambiguous | Conditions one and two are asked per clause, and an introduced clause *is* in the charter — so the rule forbade exactly what the model does. It could only ever have held while condition three was the sole clause-naming authorisation answer. A rule about what a record may name is replaced by a rule about where it lives, never by the stage — the stage is on the question |
 | invariant 4 and §4's lifecycle stamped work-item selection as `human` **evidence** | `human` **authority** | Revision 12 separated run-scoped authority from clause-satisfaction evidence for *answers* and left the same conflation standing two sections earlier. Selection names no clause, so it can satisfy none — it belongs with the authorisation answer, not in the pool completion reads |
 | the stage separated the two kinds, and §2.5's record shape carries no stage | authority records leave the evidence ledger | Two `human` records naming one clause differ in no field the shape defines — `name` holds the clause either way. A separation only prose can see is not a separation. Revision 9's move, applied again: remove the record from the pool rather than add a field to sort it. **The stage separates questions; the store separates records** |
 | condition one read *"neither path establishes provenance"*, which subsumed condition two | *the judge said no, or none could be formed* | Ambiguous **is** provenance not established, so both conditions fired on every ambiguous clause. Disjointness is what lets the condition drop out of the question's identity — the row above rests on this one |
@@ -1377,8 +1388,9 @@ policy              the target allowlist and the bootstrap target, enforced in c
 charter             clauses, mechanical provenance, pinning, monotonicity
   ↓
 authorisation       four conditions — two ask, two refuse; the semantic path and its
-                    recorded verdicts; silence when none fire,
-                    refusal when a clause grades nothing or the charter holds none
+                    recorded verdicts; the authority record, which is not the ledger;
+                    silence when none fire, refusal when a clause grades nothing
+                    or the charter holds none
   ↓
 evidence            append-only, trust levels, no result parameter, the completion invariant
   ↓
