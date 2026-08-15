@@ -1005,6 +1005,35 @@ a_run_cannot_author_its_own_bar() {
 }
 a_run_cannot_author_its_own_bar
 
+#
+# The same act with a quieter shape. Deleting a level-2 declaration drops detection a level, so the
+# clause survives under a different source and every pin that remains still matches — comparing
+# pinned sources one by one cannot see a source that stopped being yielded. Only the answer can.
+#
+a_run_cannot_change_what_the_gates_resolve_to() {
+  make_repo "$tmp/drop" main && set_origin "$tmp/drop" 'https://github.com/acme/drop.git' \
+    && mkdir -p "$tmp/drop/.foundry" \
+    && commit_file "$tmp/drop" Makefile 'test:
+	echo weak
+' && commit_file "$tmp/drop" .foundry/gates 'tests  echo STRICT
+' || { skip "resolution authority — git could not make a repo here"; return; }
+
+  d=$(floor "$tmp/drop" new "Drop")
+  floor "$tmp/drop" charter derive >/dev/null 2>&1
+  has "the declared bar is what derives" "$(cat "$(charter_of "$d")" 2>/dev/null)" "echo STRICT"
+
+  git -C "$tmp/drop" rm -q .foundry/gates >/dev/null 2>&1
+  git -C "$tmp/drop" -c user.email=a@b.c -c user.name=a commit -qm drop >/dev/null 2>&1
+
+  is  "deleting a declaration to fall back a level is refused" \
+      "$(code_of floor "$tmp/drop" charter derive)" "6"
+  has "and names the gate whose source moved" \
+      "$(floor_says "$tmp/drop" charter derive)" "declares these gates elsewhere"
+  has "the bar the human declared still stands" \
+      "$(cat "$(charter_of "$d")" 2>/dev/null)" "echo STRICT"
+}
+a_run_cannot_change_what_the_gates_resolve_to
+
 a_pin_that_cannot_be_captured_writes_nothing() {
   make_repo "$tmp/ch4" main && set_origin "$tmp/ch4" 'https://github.com/acme/ch4.git' \
     && commit_file "$tmp/ch4" README.md 'x' || { skip "pin capture — git could not make a repo"; return; }

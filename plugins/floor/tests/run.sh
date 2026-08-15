@@ -367,7 +367,18 @@ wreck_runner "a check blind to a rewritten clause is caught" \
 # authority: commit the rewritten bar, derive again, and `check` passes on a requirement no human
 # wrote. Issue #99.
 wreck_runner "a run allowed to derive from what it changed is caught" \
-  ownbar 's#refuse_moved_from_base "$source" "$sha" "$ref" || return 1#:#'
+  samerun 's#refuse_moved_from_base "$source" "$sha" "$ref" || return 1#:#'
+
+# Comparing pinned sources one by one cannot see a source that stopped being yielded. Delete a
+# level-2 declaration and detection falls back a level, so the clause survives under a different
+# source and every remaining pin still matches.
+wreck_runner "a run allowed to change what the gates resolve to is caught" \
+  resolution 's#refuse_moved_resolution "$ref" || exit 6#:#'
+
+# The rule the rest rests on. Derive through the branch and every guard below still passes, because
+# the base it compares against is whatever the worker last committed.
+wreck_runner "a base read from the branch instead of the commit is caught" \
+  branchbase 's#ref=$(bootstrap_base "$dir")#ref=$(awk "NR == 1 { print \\$2; exit }" "$dir/bootstrap")#'
 
 # The pin names a commit, so comparing the artifact against that ref compares it with itself and
 # always answers "unchanged". Drift is the checkout differing from what was pinned.
