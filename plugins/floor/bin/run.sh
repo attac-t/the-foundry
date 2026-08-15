@@ -13,7 +13,8 @@
 #   3  nowhere to put a run, or the home cannot be written to
 #   4  a target was refused: no portable identity, or a ref that is not one
 #   5  a target was refused: nobody authorised it for this run
-#   6  a clause was refused: it would weaken the charter, or its pin could not be captured
+#   6  a clause was refused: it would weaken the charter, its pin could not be captured, or the run
+#      would derive from an artifact it changed — including a run that recorded no base
 #   7  the charter disagrees with its pins — something drifted or went missing
 #   8  the charter holds no clause, so it grades nothing
 #   9  a clause grades no selected target, so it is no bar
@@ -313,6 +314,14 @@ base_ref() {
     git rev-parse HEAD 2>/dev/null
 }
 
+# The commit the run starts from. `base_ref` names where work happens and moves as the run commits;
+# this does not, and provenance is read here — RFC-001 invariant 2, the artifact captured at the
+# base ref. A branch name is not a base. Derive through one and a worker commits its own bar.
+#
+# `--verify`, because a repository with no commits answers `HEAD` on stdout and fails only on stderr.
+# Recording that string would pin every clause to a ref git cannot resolve.
+base_commit() { git rev-parse --verify --quiet HEAD 2>/dev/null; }
+
 # The repository this shell sits in, as a target. Nothing when there is no git, no origin, or no
 # portable identity.
 bootstrap_here() {
@@ -325,7 +334,12 @@ bootstrap_here() {
     ref=$(base_ref)
     [ -n "$ref" ] || return 1
 
-    printf '%s %s' "$identity" "$ref"
+    # The base is optional here and required by `derive`. A repository with no commits still has an
+    # identity `policy` must answer for; what it has no answer for is where a requirement came from.
+    line="$identity $ref"
+    commit=$(base_commit) && line="$line $commit"
+
+    printf '%s' "$line"
 }
 
 #
@@ -407,6 +421,13 @@ grants_file() { printf '%s/%s/targets' "$GRANTS" "$(basename "$1")"; }
 bootstrap_identity() {
     [ -f "$1/bootstrap" ] || return 1
     awk 'NR == 1 && $1 != "" { printf "%s", $1; found = 1 } END { exit !found }' "$1/bootstrap"
+}
+
+# The commit this run was made from. Recorded once, never rewritten — a run that could re-read it
+# from the checkout would read whatever the worker last committed.
+bootstrap_base() {
+    [ -f "$1/bootstrap" ] || return 1
+    awk 'NR == 1 && $3 != "" { printf "%s", $3; found = 1 } END { exit !found }' "$1/bootstrap"
 }
 
 #
@@ -896,6 +917,53 @@ gate_resolver() { printf '%s' "${FOUNDRY_GATES:-$(dirname "$0")/../lib/detect-ga
 #
 detect_gates() { sh "$(gate_resolver)" "$(repo_root)" 2>/dev/null; }
 
+#
+# The same question, asked of the base. A temporary worktree, because the resolver reads a directory
+# and a base is a commit — read-only, and removed either way. Not the workspace seam.
+#
+detect_gates_at_base() {
+    scratch="${TMPDIR:-/tmp}/floor-base-$$"
+
+    git worktree add --detach --quiet "$scratch" "$1" >/dev/null 2>&1 || return 1
+    sh "$(gate_resolver)" "$scratch" 2>/dev/null
+    git worktree remove --force "$scratch" >/dev/null 2>&1
+}
+
+#
+# What the resolver answers for the base, and what it answers now.
+#
+# Comparing pinned sources one by one cannot see a source that stopped being yielded. Delete a
+# level-2 declaration in the checkout and detection falls back a level, so the clause survives under
+# a different source and every remaining pin still matches — a bar the worker authored by deleting a
+# file. RFC-001 §2.2 asks for both halves: the resolved command must not differ between the base and
+# what is delivered, *and* no file the detector read may differ.
+#
+# Only what the base declared and no longer resolves the same way. A content change keeps its source
+# and is `refuse_moved_from_base`'s to report; a source that appears is `no sha`'s. Widen this past
+# the case nothing else covers and it answers first for all three, in the vaguest of the words.
+refuse_moved_resolution() {
+    declared=$(detect_gates_at_base "$1") || return 0
+
+    moved=$(printf '%s\n' "$declared" | awk -v now="$(detect_gates)" '
+        BEGIN {
+            rows = split(now, row, "\n")
+            for (i = 1; i <= rows; i++) {
+                split(row[i], field)
+                if (field[1] != "") source[field[1]] = field[2]
+            }
+        }
+        # Somewhere else, never nowhere. A gate that stops resolving at all is a clause about to be
+        # dropped, and invariant 3 refuses that by name — this would answer first and call it a move.
+        $1 != "" && source[$1] != "" && source[$1] != $2 { print $1 }
+    ')
+
+    [ -z "$moved" ] && return 0
+
+    note "the base declares these gates elsewhere than this checkout resolves them: $moved"
+    note "commit the change and start a new run — a run cannot author the bar it is graded by"
+    return 1
+}
+
 repo_root() { git rev-parse --show-toplevel 2>/dev/null || printf '.'; }
 
 #
@@ -919,6 +987,27 @@ refuse_missing_resolver() {
 #
 blob_sha() { git rev-parse --verify --quiet "$1:$2" 2>/dev/null; }
 
+# What the file says right now, whoever wrote it. Rooted at the repository, because a gate's source
+# is named from there and `derive` may be run from any directory inside it.
+worktree_sha() { git -C "$(repo_root)" hash-object -- "$1" 2>/dev/null; }
+
+#
+# A run may establish provenance only from its base — RFC-001 invariant 1, issue #99.
+#
+# The detector reads the checkout; the pin resolves at the base. Let those disagree and the charter
+# holds the base's blob beside the worker's command, so `check` passes on a bar nobody human wrote.
+# Re-deriving was the remedy for drift, which made it the way to launder an edit into authority.
+#
+# A later run's base holds the commit and derives from it normally.
+#
+refuse_moved_from_base() {
+    [ "$(worktree_sha "$1")" = "$2" ] && return 0
+
+    note "[$1] differs from the base at $3, so this run cannot derive from it"
+    note "commit it and start a new run — a run cannot author the artifact its own bar comes from"
+    return 1
+}
+
 #
 # Derive clauses from the repository this is run in.
 #
@@ -935,7 +1024,16 @@ derive_charter() {
     refuse_wrong_repository "$dir"
     refuse_missing_resolver
 
-    ref=$(awk 'NR == 1 { print $2; exit }' "$dir/bootstrap")
+    # The base, not the branch. Derive through a name and a worker that commits has rewritten the
+    # artifact its own bar comes from — RFC-001 invariant 1, issue #99.
+    ref=$(bootstrap_base "$dir") || {
+        note "this run recorded no base commit, so nothing can say where its provenance came from"
+        note "start a new run — one made before this rule cannot prove what it derived from"
+        exit 6
+    }
+
+    refuse_moved_resolution "$ref" || exit 6
+
     file=$(charter_file "$dir")
     draft="$file.draft"
 
@@ -997,6 +1095,8 @@ while_reading_gates() {
 
         sha=$(blob_sha "$ref" "$source")
         [ -n "$sha" ] || { note "no sha for [$source] at [$ref] — pin refused"; return 1; }
+
+        refuse_moved_from_base "$source" "$sha" "$ref" || return 1
 
         print_clause "$id" Gate "$name" >> "$draft"
         print_pin    "$id" "$target" "$ref" "$source" "$sha" >> "$draft"
@@ -1165,7 +1265,10 @@ moved_sources() {
     while read -r record id target ref source sha; do
         [ "$record" = pin ] || continue
         [ "$target" = "$here" ] || { printf 'uncheckable: %s at %s@%s\n' "$source" "$target" "$ref"; continue; }
-        [ "$(blob_sha "$ref" "$source")" = "$sha" ] && continue
+        # Against the checkout, not against the pinned ref. The pin names a commit now, and a commit
+        # cannot move — comparing it with itself would answer "unchanged" while the file a gate
+        # actually reads had been rewritten.
+        [ "$(worktree_sha "$source")" = "$sha" ] && continue
         printf 'moved: %s at %s@%s\n' "$source" "$target" "$ref"
     done < "$1"
 }

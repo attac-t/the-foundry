@@ -186,11 +186,16 @@ the_bootstrap_target() {
 
   booted=$(floor "$tmp/boot" new "With Origin")
 
-  is "the bootstrap target names the repo and the base ref" \
-     "$(cat "$booted/bootstrap" 2>/dev/null)" "https://github.com/acme/backend.git main"
+  has "the bootstrap target names the repo and the base ref" \
+      "$(cat "$booted/bootstrap" 2>/dev/null)" "https://github.com/acme/backend.git main"
+
+  # A repository with no commits has an identity and no base. `policy` still answers for it; only
+  # `derive` needs somewhere a requirement could have come from.
+  is "a repo with no commits records no base" \
+     "$(awk 'NR == 1 { print NF }' "$booted/bootstrap" 2>/dev/null)" "2"
 
   lacks "and the credential never reaches disk" "$(cat "$booted/bootstrap" 2>/dev/null)" "tok3n"
-  is    "bootstrap prints it back" "$(floor "$tmp/boot" bootstrap)" "https://github.com/acme/backend.git main"
+  has   "bootstrap prints it back" "$(floor "$tmp/boot" bootstrap)" "https://github.com/acme/backend.git main"
 
   # A password may contain an `@`. Stopping at the first one left the tail of it on disk.
   lacks "no path under the run holds a credential" \
@@ -203,8 +208,8 @@ a_password_holding_an_at() {
     || { skip "a password holding an @ — git could not make a repo here"; return; }
 
   atp=$(floor "$tmp/atpass" new "At In Password")
-  is "a password holding an @ is stripped whole" \
-     "$(cat "$atp/bootstrap" 2>/dev/null)" "https://github.com/acme/x.git main"
+  has "a password holding an @ is stripped whole" \
+      "$(cat "$atp/bootstrap" 2>/dev/null)" "https://github.com/acme/x.git main"
 }
 a_password_holding_an_at
 
@@ -650,7 +655,10 @@ a_charter_derives_from_the_repository_it_is_run_in() {
 
   held=$(cat "$(charter_of "$chrun")" 2>/dev/null)
   has "a detected gate becomes a clause"    "$held" "clause $(clause_of tests) Gate tests"
-  has "with a pin at its own target's ref"  "$held" "pin $(clause_of tests) https://github.com/acme/ch.git develop Makefile"
+  # The base commit, not `develop`. A pin naming a branch resolves to whatever that branch points at
+  # when it is read, which is how a run came to bless its own work — #99.
+  matches "with a pin at the base commit" \
+          "$held" "pin $(clause_of tests) https://github.com/acme/ch.git [0-9a-f]{40} Makefile"
   has "and the command it resolved to"      "$held" "gate $(clause_of tests) make test"
 
   is "a run whose clauses all derive asks nobody" "$(code_of floor "$tmp/ch" charter check)" "0"
@@ -821,8 +829,11 @@ authorising_before_deriving() {
 authorising_before_deriving
 
 an_empty_charter_is_refused() {
+  # A commit, because a repository with none has no base and so nothing to derive provenance from.
+  # No gate in it — that is what this checks.
   make_repo "$tmp/nogate" main && set_origin "$tmp/nogate" 'https://github.com/acme/nogate.git' \
-    || { skip "authorise — git could not make a repo here"; return; }
+    && commit_file "$tmp/nogate" README 'no gates here
+' || { skip "authorise — git could not make a repo here"; return; }
 
   norun=$(floor "$tmp/nogate" new "No gates")
   is "deriving from a repo with no gate still succeeds" \
@@ -955,6 +966,74 @@ a_gate_that_resolves_elsewhere_is_visible() {
 }
 a_gate_that_resolves_elsewhere_is_visible
 
+#
+# A run may establish provenance only from its base — RFC-001 invariant 1, issue #99.
+#
+# Drift already exited 7, and re-deriving was the remedy. That made re-deriving the way to launder a
+# worker's edit into authority: commit the rewritten bar, derive again, and `check` passes on a
+# requirement no human wrote.
+#
+a_run_cannot_author_its_own_bar() {
+  make_repo "$tmp/own" main && set_origin "$tmp/own" 'https://github.com/acme/own.git' \
+    && mkdir -p "$tmp/own/.foundry" \
+    && commit_file "$tmp/own" .foundry/gates 'tests  echo HUMAN
+' || { skip "same-run authority — git could not make a repo here"; return; }
+
+  base=$(git -C "$tmp/own" rev-parse HEAD 2>/dev/null)
+  floor "$tmp/own" new "Own Bar" >/dev/null
+  floor "$tmp/own" charter derive >/dev/null 2>&1
+
+  commit_file "$tmp/own" .foundry/gates 'tests  echo WORKER
+'
+
+  said=$(floor_says "$tmp/own" charter derive)
+
+  is   "a run refuses to derive from an artifact it changed" \
+       "$(code_of floor "$tmp/own" charter derive)" "6"
+  has  "and names the artifact"   "$said" ".foundry/gates"
+  has  "and the base it moved from" "$said" "$base"
+  has  "the bar stays the human's" \
+       "$(cat "$(charter_of "$(floor "$tmp/own" path)")" 2>/dev/null)" "echo HUMAN"
+
+  # The next run's base holds the worker's commit, so it derives from it normally. The rule bars a
+  # run from blessing its own work, not the work itself.
+  floor "$tmp/own" new "After" >/dev/null
+  is  "a later run derives from that commit normally" \
+      "$(code_of floor "$tmp/own" charter derive)" "0"
+  has "with the bar that commit carries" \
+      "$(cat "$(charter_of "$(floor "$tmp/own" path)")" 2>/dev/null)" "echo WORKER"
+}
+a_run_cannot_author_its_own_bar
+
+#
+# The same act with a quieter shape. Deleting a level-2 declaration drops detection a level, so the
+# clause survives under a different source and every pin that remains still matches — comparing
+# pinned sources one by one cannot see a source that stopped being yielded. Only the answer can.
+#
+a_run_cannot_change_what_the_gates_resolve_to() {
+  make_repo "$tmp/drop" main && set_origin "$tmp/drop" 'https://github.com/acme/drop.git' \
+    && mkdir -p "$tmp/drop/.foundry" \
+    && commit_file "$tmp/drop" Makefile 'test:
+	echo weak
+' && commit_file "$tmp/drop" .foundry/gates 'tests  echo STRICT
+' || { skip "resolution authority — git could not make a repo here"; return; }
+
+  d=$(floor "$tmp/drop" new "Drop")
+  floor "$tmp/drop" charter derive >/dev/null 2>&1
+  has "the declared bar is what derives" "$(cat "$(charter_of "$d")" 2>/dev/null)" "echo STRICT"
+
+  git -C "$tmp/drop" rm -q .foundry/gates >/dev/null 2>&1
+  git -C "$tmp/drop" -c user.email=a@b.c -c user.name=a commit -qm drop >/dev/null 2>&1
+
+  is  "deleting a declaration to fall back a level is refused" \
+      "$(code_of floor "$tmp/drop" charter derive)" "6"
+  has "and names the gate whose source moved" \
+      "$(floor_says "$tmp/drop" charter derive)" "declares these gates elsewhere"
+  has "the bar the human declared still stands" \
+      "$(cat "$(charter_of "$d")" 2>/dev/null)" "echo STRICT"
+}
+a_run_cannot_change_what_the_gates_resolve_to
+
 a_pin_that_cannot_be_captured_writes_nothing() {
   make_repo "$tmp/ch4" main && set_origin "$tmp/ch4" 'https://github.com/acme/ch4.git' \
     && commit_file "$tmp/ch4" README.md 'x' || { skip "pin capture — git could not make a repo"; return; }
@@ -966,6 +1045,12 @@ a_pin_that_cannot_be_captured_writes_nothing() {
 
   is     "a pin with no sha at the base is refused" "$(code_of floor "$tmp/ch4" charter derive)" "6"
   absent "and no charter is written at all"         "$(charter_of "$p")"
+
+  # The reason, not just the code. Exit 6 is shared by every clause refusal, so a runner that pinned
+  # `rev-parse`'s error string and one that refused an artifact moved from the base both look alike
+  # through the exit code alone.
+  has "and says the sha is what is missing" \
+      "$(floor_says "$tmp/ch4" charter derive)" "no sha for [Makefile]"
 }
 a_pin_that_cannot_be_captured_writes_nothing
 
