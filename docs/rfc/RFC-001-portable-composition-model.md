@@ -1,6 +1,6 @@
 # RFC-001: The Portable Composition Model
 
-**Status:** Accepted — revision 10
+**Status:** Accepted — revision 11
 **Plugin:** `floor`
 **Author:** Christian Attard
 **Date:** 2026-08-12
@@ -349,7 +349,7 @@ Four constraints keep it from becoming exactly that:
 | Constraint | Why |
 |---|---|
 | **Ordering** — only reached when code cannot derive | Keeps the judge off the common path |
-| **Independence** — the judge is neither the agent that proposed the clause nor any agent that will implement the unit | The worker may not certify its own provenance. Panel's Law 4 shape, `tools: Read, Glob, Grep` |
+| **Independence** — **fresh**, **read-only**, neither the proposer nor any agent that will implement the unit, unable to mutate the charter, and judging from the pinned artifact and the candidate clause alone | The worker may not certify its own provenance. Panel's Law 4 shape, `tools: Read, Glob, Grep` |
 | **Entailment, not endorsement** — the judge answers *"is this clause entailed by artifact X at ref Y?"*, never *"is this a good clause?"* | A narrow question has a defensible negative. A broad one collapses into taste |
 | **Three answers, not two** — entailed, not entailed, **ambiguous**. Ambiguous escalates | A judge forced to choose binary will guess, and guessing is how new meaning slips through |
 
@@ -361,9 +361,10 @@ certify that the clause it established was met, because an entailment verdict is
 Without that second half the asymmetry does not hold: one record would create a clause and satisfy
 it, and condition three, which is about removal, would never fire.
 
-**That separates the records, not the agents.** Nothing here stops the same judge from later
-producing the satisfaction verdict for a clause it established. §7's first question — who is eligible
-to judge — is what would, and it is open.
+**That separates the records. Eligibility separates the agents** — *fresh* means a judgement is made
+by an agent convened for it, so the judge that established a clause is not the one that later says
+the work met it. Revision 9 could not claim this; revision 11 can, and only because eligibility is
+now a rule rather than a convention.
 
 Every entailment verdict is recorded beside the pin it establishes — a record of its own, naming the
 clause, the artifact and its ref. **It says a requirement legitimately exists, never that it was
@@ -410,11 +411,22 @@ derive *now*, so an attempt from the same base and the same selection derives th
 refuses identically. Every remedy above changes an input. A condition routes to a person for an
 answer; this routes to an artifact, or to a selection, for an edit.
 
-**An authorisation answer names the condition that fired, never the clause.** Answering *yes,
-introduce it* authorises a requirement's existence; it never says the work met it. A `Decided:`
-clause reaches completion through the same channel and a **different** answer — one that does name
-the clause, and is evidence. Without that line both arrive as `human` records naming a clause, and
-§2.5's completion invariant is back to guessing which one it is holding.
+**An authorisation answer names the condition that fired.** Answering *yes, introduce it* authorises
+a requirement's existence; it never says the work met it. A `Decided:` clause reaches completion
+through the same channel and a **different** answer — one that does name the clause, and is evidence.
+Without that separation both arrive as `human` records naming a clause, and §2.5's completion
+invariant is back to guessing which one it is holding.
+
+**Condition three is the one exception: its answer names the clause whose removal it authorises.**
+Lowering the bar is the one direction that must be authorised piece by piece — a single answer
+covering every removal in a run is a blanket the model gives no way to narrow, and condition three
+exists precisely to make lowering deliberate.
+
+Naming the clause there cannot be confused with satisfaction, because the two records describe
+different sets. **Completion asks only about clauses the charter holds**; a removal answer names a
+clause the charter no longer holds, so it is never consulted. The rule that keeps the pool
+unambiguous is therefore not *never name a clause* but *never name a clause the charter still holds*,
+which condition three cannot do and a satisfaction answer must.
 
 **An answer binds one run, and the ask must say so.** Invariant 3 re-derives the baseline from the
 pins every time, and `Decided:` clauses do not carry forward — so the same base proposes the same
@@ -1055,7 +1067,9 @@ was prose the code could not enforce.
 
 **No `purpose` field.** Remove the entailment verdict from the pool and every remaining clause-naming
 record is a satisfaction claim — a constant, not a field. The set is closed in §2.2 rather than
-assumed: an authorisation answer names the condition that fired, never the clause.
+assumed: an authorisation answer names the condition that fired, never the clause. **History**:
+revision 11 lets condition three name its clause, and closes the set on *never a clause the charter
+still holds* instead. Still no field.
 
 ### Revision 10 — the refusal reached this repository
 
@@ -1075,6 +1089,19 @@ shell — which is what the paragraph beneath it already said.
 **Found by three independent reviews of a stage that has not been built**, the same method that found
 revision 8. Two of the three read the shipped detector rather than this document.
 
+### Revision 11 — two human decisions, and one question closed
+
+Neither was settled by code, spec or a prior review. Both were escalated and both were decided.
+
+| Was | Is | Why |
+|---|---|---|
+| §2.2: an authorisation answer *"never names the clause"* | condition three's answer names the clause whose removal it authorises | Lowering the bar is the one direction the model gives no way to narrow, so one answer covered every removal in a run. The pool stays unambiguous under a different rule: **never name a clause the charter still holds**. Completion asks only about clauses it holds, so a removal answer is never consulted |
+| §7 q1: judge eligibility open, *"blocks the authorisation stage"* | **closed** — role and information path, never vendor | Fresh, read-only, neither proposer nor implementer, unable to mutate the charter, judging from the pinned artifact and the candidate clause alone. Where no such judge can be formed, semantic provenance is not established and the clause falls to the human — which was already the answer for *not entailed* |
+| §2.2: *"nothing stops the same judge producing both records"* | *fresh* stops it | Revision 9 separated the records and said so honestly. Eligibility separates the agents, and could not be claimed until it was a rule |
+
+**No new field, and no new record.** Condition three's answer is a `human` record like any other; what
+changed is which clause it may name and why that cannot collide.
+
 
 ## 7. Unresolved questions
 
@@ -1082,12 +1109,12 @@ revision 8. Two of the three read the shipped detector rather than this document
 required by §2.3, not speculative.
 **Closed in revision 4:** the plugin is `floor` — §6. **Nothing now blocks the run stage** — shipped as issue #67.
 
-1. **Who is eligible to judge, and to judge what?** §2.2 requires independence from the proposer and
-   from every agent that will implement the unit. In a one-unit v1 run that is easy. With N units and
-   a shared planner, eligibility needs a rule rather than a convention. **Revision 9 widened this**:
-   separating the entailment verdict from the satisfaction verdict separates the records, and nothing
-   yet stops one judge from producing both for the same clause. Eligibility has to answer that
-   sequence too. **Blocks the authorisation stage, not the run.**
+1. ~~**Who is eligible to judge?**~~ **Closed in revision 11** — §2.2. Eligibility is a property of
+   role and information path, never of vendor or model. A judge is eligible when it is **fresh**,
+   **read-only**, is neither the proposer of the clause nor any agent that will implement the unit,
+   **cannot mutate the charter**, and judges from **the pinned artifact and the candidate clause
+   alone**. Where no such judge can be formed, semantic provenance is not established and the clause
+   falls to the human — the fallback that was already the answer for *not entailed*.
 
 2. ~~**Which files define a gate's resolution?**~~ **Closed in revision 6.** The set is what
    Foundry's detector read — knowable, because Foundry authors it (§2.2). What the resolved command
