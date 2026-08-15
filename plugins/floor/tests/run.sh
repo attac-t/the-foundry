@@ -143,6 +143,20 @@ wreck_runner "targets add that grants itself is caught" \
 wreck_runner "a refusal that exits 0 is caught" \
   quietno 's|^        exit 5$|        exit 0|'
 
+#
+# The other half of the same invariant, and the half that shipped unguarded: `targets add` refused a
+# repo policy never allowed, and then anything could append one by hand.
+#
+# Two breaks because the read makes two findings. Blinding the authorisation test leaves a selection
+# nobody granted; blinding the arity test leaves a line that is not a target at all. A suite that
+# notices one and not the other is covering half the read.
+#
+wreck_runner "a selection read without checking policy is caught" \
+  trustfile 's#is_authorised "$dir" "$identity" ||#true ||#'
+
+wreck_runner "a selection line that is not a repo and a ref is caught" \
+  anyshape 's#NF && NF != 2#NF \&\& 0#'
+
 # One allowlist for every run is one run's grant handed to all of them.
 #
 # Also caught by the credential check, which shares the grants file — so a red here does not on its

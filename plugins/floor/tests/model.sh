@@ -304,6 +304,45 @@ printf 'targets: https://github.com/attacker/evil.git main\n' >> "$fresh/item.md
 lacks "an advisory target in item.md does not reach the unit" \
       "$(in_run targets)" "attacker/evil"
 
+#
+# The selection is read far more often than it is written, and only the write was guarded. Every
+# charter clause is graded against every selected target, so a line put here by hand changes what
+# the run answers for — and re-deriving the charter cannot see it, because the charter did not move.
+#
+# The file is restored after each check: these run against the same run as everything above.
+#
+selection=$fresh/units/01/targets
+intact=$(cat "$selection")
+listed_before=$(in_run targets)
+restore_selection() { printf '%s\n' "$intact" > "$selection"; }
+
+printf 'https://github.com/attacker/evil.git main\n' >> "$selection"
+is "a target appended by hand is refused on read" \
+   "$(code_of in_run targets)" "5"
+is "and the same edit stops targets add" \
+   "$(code_of in_run targets add 'https://github.com/acme/api.git' main)" "5"
+restore_selection
+
+is "the selection lists unchanged once the hand-added line is gone" \
+   "$(in_run targets)" "$listed_before"
+
+# A repo authorised for this run may be selected by hand: policy permits it, and selecting is the
+# other act. Without this the check would be refusing the allowlist rather than reading it.
+in_run policy authorize 'https://github.com/acme/later.git' >/dev/null
+printf 'https://github.com/acme/later.git main\n' >> "$selection"
+is "a hand-added line that policy already allows is not refused" \
+   "$(code_of in_run targets)" "0"
+restore_selection
+
+# A line is a repo and a ref. One field is not a target, and neither is three.
+printf 'https://github.com/acme/api.git\n' >> "$selection"
+is "a line missing its ref is refused" "$(code_of in_run targets)" "5"
+restore_selection
+
+printf 'https://github.com/acme/api.git main extra\n' >> "$selection"
+is "a line carrying a third field is refused" "$(code_of in_run targets)" "5"
+restore_selection
+
 # --- policy ---
 #
 # Policy is not a security boundary. A worker holding a shell as the same user can edit the grants

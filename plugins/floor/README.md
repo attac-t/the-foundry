@@ -164,6 +164,21 @@ the truth lives, and the two drift the first time a run is edited by hand.
 
 A run with no bootstrap starts authorised for nothing.
 
+### The selection is checked every time it is read
+
+`targets add` guarded the write. Nothing guarded the read, so a line put into `units/NN/targets` by
+hand was selected all the same — and every charter clause is graded against every selected target, so
+that edit changes what the run answers for. Re-deriving the charter cannot catch it: the charter did
+not move, the selection did.
+
+Reading the selection now refuses it — exit 5 — unless every line is a repo and a ref, and every
+repo is authorised. It refuses rather than skipping the line, because a run carrying on against a
+selection nobody chose is the failure this exists to make loud.
+
+**A line removed by hand is still invisible.** The file is the only record of what was selected, so
+nothing can tell a deletion from a selection that never happened. Catching that needs the set written
+down at the moment it is fixed, which belongs to the authorisation stage.
+
 ### What this is not
 
 **It is not a security boundary.** Grants live outside the run directory, and that buys nothing
