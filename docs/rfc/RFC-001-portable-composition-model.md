@@ -1,6 +1,6 @@
 # RFC-001: The Portable Composition Model
 
-**Status:** Accepted — revision 11
+**Status:** Accepted — revision 12
 **Plugin:** `floor`
 **Author:** Christian Attard
 **Date:** 2026-08-12
@@ -155,11 +155,35 @@ Four operations. The item shape is the first of them, not the whole contract.
 | `read` | items — `{ id, source, title, body, targets[] }` |
 | `publish` | run state, addressed to the item |
 | `ask` | a question addressed to a human — the decision, the evidence behind it, the options with what each one causes, and a recommendation where one is defensible |
-| `receive` | that human's answer, as evidence at trust `human` |
+| `receive` | an attributed human answer, bound to the run and the question it answers |
 
 **`ask` and `receive` are why this matters.** A human is asked *where they already are* — the issue,
 the ticket, the channel — not in a terminal nobody is watching. That is the difference between human
 authority and human interruption, and it is a property of the transport, not of a policy.
+
+**`receive` carries an answer. It does not decide what the answer means.** An earlier draft said it
+returned evidence at trust `human`, which made the transport the author of a semantic claim it cannot
+make: an authorisation answer and a satisfaction answer arrive through the same channel and mean
+entirely different things. Who reads it decides:
+
+| Read by | The answer means |
+|---|---|
+| authorisation | this run may proceed past the condition that fired — **run-scoped authority, and nothing about any clause** |
+| completion | for a `Decided:` clause, that the clause was met — `human` evidence, as §2.5 defines it |
+
+§2.2's rule is unchanged and is what keeps the two apart: an authorisation answer names the condition
+that fired, and only condition three names a clause. A satisfaction answer names a clause the charter
+still holds.
+
+**A question has an identity, and it is derived rather than issued.** The run, the condition that
+fired, and the clause it concerns are enough to name a question exactly — all three already exist
+when the question is asked, and all three are recomputed when a run resumes. So a resumed run finds
+its own question rather than asking a second one, an answer to another question does not match, and
+an answer to an earlier run does not either. Issuing an identity instead would mean storing it, and a
+stored pending question is the parallel ledger §2.2 refuses.
+
+A clause's identity is its text, so editing a clause asks a new question. That is correct: a changed
+requirement is a different requirement, and the old answer authorised the old one.
 
 Anything that can do these four is a work source: GitHub Issues, Linear, a directory of markdown
 files, a CLI argument, another agent. A source that can only `read` is usable and says so; it forces
@@ -1101,6 +1125,19 @@ Neither was settled by code, spec or a prior review. Both were escalated and bot
 
 **No new field, and no new record.** Condition three's answer is a `human` record like any other; what
 changed is which clause it may name and why that cannot collide.
+
+
+### Revision 12 — the transport was deciding what an answer meant
+
+Drafting the work source found §2.1 making a semantic claim it has no standing to make.
+
+| Was | Is | What falsified it |
+|---|---|---|
+| §2.1: `receive` returns "that human's answer, **as evidence at trust `human`**" | an attributed answer, bound to the run and the question | An authorisation answer and a satisfaction answer arrive through the same channel and mean different things. Stamping every answer as evidence made the transport assert that a clause was met, which is completion's judgement and nobody else's |
+| nothing said how a question is identified | derived from the run, the condition and the clause | Without it a resumed run asks again, an answer to another question is consumed, and an answer to an earlier run is too. **Derived rather than issued**, because issuing means storing, and a stored pending question is the parallel ledger §2.2 refuses |
+
+Found by drafting the stage rather than by building it — the fourth revision in a row that a stage
+which does not exist yet has corrected.
 
 
 ## 7. Unresolved questions
