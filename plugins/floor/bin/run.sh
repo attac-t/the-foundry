@@ -313,6 +313,14 @@ base_ref() {
     git rev-parse HEAD 2>/dev/null
 }
 
+# The commit the run starts from. `base_ref` names where work happens and moves as the run commits;
+# this does not, and provenance is read here — RFC-001 invariant 2, the artifact captured at the
+# base ref. A branch name is not a base. Derive through one and a worker commits its own bar.
+#
+# `--verify`, because a repository with no commits answers `HEAD` on stdout and fails only on stderr.
+# Recording that string would pin every clause to a ref git cannot resolve.
+base_commit() { git rev-parse --verify --quiet HEAD 2>/dev/null; }
+
 # The repository this shell sits in, as a target. Nothing when there is no git, no origin, or no
 # portable identity.
 bootstrap_here() {
@@ -325,7 +333,12 @@ bootstrap_here() {
     ref=$(base_ref)
     [ -n "$ref" ] || return 1
 
-    printf '%s %s' "$identity" "$ref"
+    # The base is optional here and required by `derive`. A repository with no commits still has an
+    # identity `policy` must answer for; what it has no answer for is where a requirement came from.
+    line="$identity $ref"
+    commit=$(base_commit) && line="$line $commit"
+
+    printf '%s' "$line"
 }
 
 #
@@ -407,6 +420,13 @@ grants_file() { printf '%s/%s/targets' "$GRANTS" "$(basename "$1")"; }
 bootstrap_identity() {
     [ -f "$1/bootstrap" ] || return 1
     awk 'NR == 1 && $1 != "" { printf "%s", $1; found = 1 } END { exit !found }' "$1/bootstrap"
+}
+
+# The commit this run was made from. Recorded once, never rewritten — a run that could re-read it
+# from the checkout would read whatever the worker last committed.
+bootstrap_base() {
+    [ -f "$1/bootstrap" ] || return 1
+    awk 'NR == 1 && $3 != "" { printf "%s", $3; found = 1 } END { exit !found }' "$1/bootstrap"
 }
 
 #
@@ -919,6 +939,28 @@ refuse_missing_resolver() {
 #
 blob_sha() { git rev-parse --verify --quiet "$1:$2" 2>/dev/null; }
 
+# What the file says right now, whoever wrote it. Rooted at the repository, because a gate's source
+# is named from there and `derive` may be run from any directory inside it.
+worktree_sha() { git -C "$(repo_root)" hash-object "$1" 2>/dev/null; }
+
+#
+# A run may establish provenance only from its base — RFC-001 invariant 1, issue #99.
+#
+# The detector reads the checkout; the pin resolves at the base. Let those disagree and the charter
+# records the base's blob beside the worker's command, so `check` passes on a bar nobody human wrote.
+# Re-deriving was the sanctioned remedy for drift, which made it the way to launder an edit into
+# authority.
+#
+# The remedy is a new run. A later run's base holds the commit, and derives from it normally.
+#
+refuse_moved_from_base() {
+    [ "$(worktree_sha "$1")" = "$2" ] && return 0
+
+    note "[$1] differs from the base at $3, so this run cannot derive from it"
+    note "commit it and start a new run — a run cannot author the artifact its own bar comes from"
+    return 1
+}
+
 #
 # Derive clauses from the repository this is run in.
 #
@@ -935,7 +977,14 @@ derive_charter() {
     refuse_wrong_repository "$dir"
     refuse_missing_resolver
 
-    ref=$(awk 'NR == 1 { print $2; exit }' "$dir/bootstrap")
+    # The base, not the branch. Derive through a name and a worker that commits has rewritten the
+    # artifact its own bar comes from — RFC-001 invariant 1, issue #99.
+    ref=$(bootstrap_base "$dir") || {
+        note "this run recorded no base commit, so nothing can say where its provenance came from"
+        note "start a new run — one made before this rule cannot prove what it derived from"
+        exit 6
+    }
+
     file=$(charter_file "$dir")
     draft="$file.draft"
 
@@ -997,6 +1046,8 @@ while_reading_gates() {
 
         sha=$(blob_sha "$ref" "$source")
         [ -n "$sha" ] || { note "no sha for [$source] at [$ref] — pin refused"; return 1; }
+
+        refuse_moved_from_base "$source" "$sha" "$ref" || return 1
 
         print_clause "$id" Gate "$name" >> "$draft"
         print_pin    "$id" "$target" "$ref" "$source" "$sha" >> "$draft"
@@ -1165,7 +1216,10 @@ moved_sources() {
     while read -r record id target ref source sha; do
         [ "$record" = pin ] || continue
         [ "$target" = "$here" ] || { printf 'uncheckable: %s at %s@%s\n' "$source" "$target" "$ref"; continue; }
-        [ "$(blob_sha "$ref" "$source")" = "$sha" ] && continue
+        # Against the checkout, not against the pinned ref. The pin names a commit now, and a commit
+        # cannot move — comparing it with itself would answer "unchanged" while the file a gate
+        # actually reads had been rewritten.
+        [ "$(worktree_sha "$source")" = "$sha" ] && continue
         printf 'moved: %s at %s@%s\n' "$source" "$target" "$ref"
     done < "$1"
 }

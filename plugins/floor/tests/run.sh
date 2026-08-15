@@ -363,6 +363,17 @@ wreck_runner "a check blind to a gate resting on nothing is caught" \
   blindgates 's|^        underived_gates "$file"$|        :|'
 wreck_runner "a check blind to a rewritten clause is caught" \
   blindforge 's|^        forged_ids "$file"$|        :|'
+# Re-deriving was the remedy for drift, which made it the way to launder a worker's edit into
+# authority: commit the rewritten bar, derive again, and `check` passes on a requirement no human
+# wrote. Issue #99.
+wreck_runner "a run allowed to derive from what it changed is caught" \
+  ownbar 's#refuse_moved_from_base "$source" "$sha" "$ref" || return 1#:#'
+
+# The pin names a commit, so comparing the artifact against that ref compares it with itself and
+# always answers "unchanged". Drift is the checkout differing from what was pinned.
+wreck_runner "a drift check that compares the base with itself is caught" \
+  selfsame 's#\[ "$(worktree_sha "$source")" = "$sha" \] \&\& continue#[ "$(blob_sha "$ref" "$source")" = "$sha" ] \&\& continue#'
+
 wreck_runner "a check blind to a gate resolving elsewhere is caught" \
   blindres   's|^        moved_resolutions "$file"$|        :|'
 wreck_runner "a check blind to a pinned file that moved is caught" \
