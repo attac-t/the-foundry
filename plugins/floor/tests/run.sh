@@ -27,7 +27,18 @@ done
 echo "audit — break the runner, the model suite must notice"
 
 # Determine if the model suite fails against a broken runner.
-model_caught() { ! RUNNER="$tmp/$1/bin/run.sh" bash "$root/tests/model.sh" >/dev/null 2>&1; }
+#
+# Bounded where `timeout` exists. A break can hang rather than answer wrongly — one removes the only
+# refusal from a counting loop — and an unbounded audit stops on those instead of reporting them. A
+# stopped audit reads as a slow one.
+model_caught() {
+  local broken="$tmp/$1/bin/run.sh"
+
+  command -v timeout >/dev/null 2>&1 \
+    && { ! RUNNER="$broken" timeout 300 bash "$root/tests/model.sh" >/dev/null 2>&1; return; }
+
+  ! RUNNER="$broken" bash "$root/tests/model.sh" >/dev/null 2>&1
+}
 
 #
 # Break one rule in the runner and require the model suite to notice.
@@ -119,9 +130,8 @@ wreck_runner "a layout with no units level is caught" \
 # `#` as the delimiter: the text being removed is a `||`, and sed reads the first one as the end of
 # the pattern.
 #
-# Three guards, not two. The slot claim added the third, and a mutant that removes only the ones it
-# knew about is a mutant the runner survives — which is how this went from caught to unkillable
-# without any check going red.
+# Three guards, not two. The slot claim added the third, and a mutant removing only the ones it knew
+# about is one the runner survives. It went red on Linux, where nobody had run an audit in days.
 wreck_runner "a runner that ignores a home it cannot write to is caught" \
   blind 's# *|| die_unwritable "$dir/item.md"$##; s# *|| die_unwritable "$dir"$##; s# *|| die_unwritable "$RUNS"$##'
 
