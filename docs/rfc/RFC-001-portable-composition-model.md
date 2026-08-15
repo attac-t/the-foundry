@@ -1111,7 +1111,7 @@ A narrow consultation confirmed all three and found the §2.2 pinning dependency
 had noticed. It also warned that the stale numbers lived outside §9 — in the compatibility row, in
 two "Blocks" notes, and in floor's own README. Swept.
 
-Not changed: `0..1` weakens nothing — §2.3 says why, and it is stronger, not weaker.
+Not changed: `0..1` is stronger, not weaker — §2.3 says why.
 
 ### Revision 6 — amended before the charter stage
 
