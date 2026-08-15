@@ -302,6 +302,36 @@ wearing provenance.
 
 ---
 
+## Authorisation
+
+```
+run.sh authorise
+```
+
+RFC-001 gives this stage four conditions and two refusals. **The refusals are what ships here.** The
+four decide when a *human is asked*, and asking needs a work source to ask through — so they arrive
+with it. The refusals ask nobody anything, which is exactly why they can run with no human present.
+
+| Refused | Because |
+|---|---|
+| the charter holds no clause | nothing is described, so there is nothing to authorise |
+| a clause grades no selected target | a bar that grades nothing is no bar |
+
+Exit 8, and the message names the input to change. **The refused run ends.** Re-running planning
+against the same pins and the same selection derives the same charter and refuses again, so the
+remedy is a gate declared, an artifact amended, or a target selected — never another attempt.
+
+The second refusal has exactly two shapes today: nothing is selected, or the only selected target is
+the bootstrap and it declares no gate by that clause's name. Every other selected target is one whose
+declarations cannot be read, and an unreadable target **stays governed** — so a clause still grades
+it. That is computed rather than assumed, and it answers differently the day each target has a
+checkout.
+
+**Not here yet:** the four conditions, the ask, and the answer. Nor the frozen selection, which is
+what would make a line *removed* from `units/NN/targets` visible.
+
+---
+
 ## Which run is active
 
 ```
