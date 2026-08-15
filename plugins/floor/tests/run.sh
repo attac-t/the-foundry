@@ -97,12 +97,13 @@ chmod_bites() {
   chmod 700 "$probe" 2>/dev/null
 }
 
-if chmod_bites; then
-  wreck_runner "a loop that counts past a failure it cannot fix is caught" \
-    spins 's#slot_is_taken "$candidate" || return 1#:#'
-else
-  printf '  skip  a loop that counts past a failure it cannot fix — this filesystem ignores chmod\n'
-fi
+# Asked once. Two calls could disagree, and then the mutant is neither run nor skipped — a hole in
+# an audit whose whole premise is that a green suite proves nothing until you watch it go red.
+chmod_bites; bites=$?
+
+[ "$bites" -eq 0 ] || printf '  skip  a loop that counts past a failure it cannot fix — this filesystem ignores chmod\n'
+[ "$bites" -eq 0 ] && wreck_runner "a loop that counts past a failure it cannot fix is caught" \
+  spins 's#slot_is_taken "$candidate" || return 1#:#'
 
 # In the worktree the pointer gets committed, and a run id in someone else's clone names a directory
 # that was never on their machine.

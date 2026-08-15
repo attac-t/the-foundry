@@ -668,13 +668,7 @@ authorise() {
         for id in $ungoverned; do
             note "clause $id grades no selected target, so it is no bar"
         done
-        # Once the selection is frozen, selecting a target is no longer a remedy — it is what exits
-        # 10. A refusal that names a remedy leading to another refusal is worse than one remedy.
-        if [ -f "$(frozen_selection_file "$run_dir")" ]; then
-            note "declare the gate that clause names — the selection is frozen, so changing it is a new run"
-        else
-            note "declare the gate that clause names, or select a target it governs"
-        fi
+        note_coverage_remedy "$run_dir"
         exit 9
     }
 
@@ -682,6 +676,17 @@ authorise() {
 }
 
 frozen_selection_file() { printf '%s/units/01/authorised-targets' "$1"; }
+
+selection_is_frozen() { [ -f "$(frozen_selection_file "$1")" ]; }
+
+# A refusal naming a remedy that leads to another refusal is worse than one remedy — and after the
+# freeze, selecting a target is that other refusal.
+note_coverage_remedy() {
+    selection_is_frozen "$1" \
+        || { note "declare the gate that clause names, or select a target it governs"; return; }
+
+    note "declare the gate that clause names — the selection is frozen, so changing it is a new run"
+}
 
 #
 # The selection, written down at the moment it stops moving.

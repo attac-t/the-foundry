@@ -2,10 +2,8 @@
 #
 # Run the gates on Linux, where `sh` is dash.
 #
-# Usage: sh bin/gates-in-docker.sh
-#
-# The repository is copied into the container rather than mounted: the suites write, and a bind
-# mount would leave their work in your checkout.
+# Mounted read-only, then copied: the suites write, and writing through the mount would leave their
+# work in your checkout.
 
 set -eu
 
