@@ -171,19 +171,29 @@ entirely different things. Who reads it decides:
 | authorisation | this run may proceed past the condition that fired — **run-scoped authority, and nothing about any clause** |
 | completion | for a `Decided:` clause, that the clause was met — `human` evidence, as §2.5 defines it |
 
-§2.2's rule is what keeps the two apart: **never name a clause the charter still holds.** An
-authorisation answer names the condition that fired; a satisfaction answer must name a clause the
-charter holds, and only completion asks about those.
+**A question belongs to a stage, and that is what keeps the two apart.** Both kinds concern a clause,
+so naming the clause cannot separate them — an introduced clause is authorised by one question and,
+if it is `Decided:`, satisfied by another about the same clause in the same run. What differs is who
+asked:
 
-**Only conditions one and two are ever transported.** Three refuses and four refuses — §2.2 says why —
-so those two are the whole of what a work source carries, and both concern exactly one clause.
+```
+question = run + stage + condition + clause
+```
 
-**A question has an identity, and it is derived rather than issued.** The run, the condition that
-fired, and the clause it concerns are enough to name a question exactly — all three already exist
-when the question is asked, and all three are recomputed when a run resumes. So a resumed run finds
-its own question rather than asking a second one, an answer to another question does not match, and
-an answer to an earlier run does not either. Issuing an identity instead would mean storing it, and a
-stored pending question is the parallel ledger §2.2 refuses.
+**Completion never reads an authorisation answer, because it never asked that question.** Drop the
+stage and the two collapse: the answer authorising a clause's existence would satisfy it, which is
+the defect revision 9 closed for entailment verdicts. It returns for human answers unless the stage
+is carried.
+
+**Authorisation transports conditions one and two, and nothing else.** Three refuses and four
+refuses — §2.2 says why. Completion transports its own question, for `Decided:` clauses, which is the
+requirement this section opened by naming.
+
+**That identity is derived rather than issued.** Every component already exists when the question is
+asked, and every one is recomputed when a run resumes. So a resumed run finds its own question rather
+than asking a second one, an answer to another question does not match, and an answer to an earlier
+run does not either. Issuing an identity instead would mean storing it, and a stored pending question
+is the parallel ledger §2.2 refuses.
 
 A clause's identity is its text, so editing a clause asks a new question. That is correct: a changed
 requirement is a different requirement, and the old answer authorised the old one.
@@ -425,8 +435,9 @@ widening that reach is Level 2's job, which is why `.foundry/gates` exists.
 The worker cannot dodge the gate, because none of the four conditions is reported by the worker. It
 cannot lower its own bar, because lowering *is* condition three.
 
-**Authorisation also refuses, and a refusal is not a fifth condition.** The four decide when a human
-is *asked*, and each has an answer a person can give. Two cases have none:
+**Authorisation also refuses, and a refusal is not a fifth condition.** The four decide when
+authorisation stops. **One and two ask; three and four refuse** — three because the remedy is a commit,
+four because it is a separate human command. Two further cases stop it and have no answer at all:
 
 | Refused | Because | Cleared by |
 |---|---|---|
@@ -1131,7 +1142,8 @@ Neither was settled by code, spec or a prior review. Both were escalated and bot
 | §7 q1: judge eligibility open, *"blocks the authorisation stage"* | **closed** — role and information path, never vendor | Fresh, read-only, neither proposer nor implementer, unable to mutate the charter, judging from the pinned artifact and the candidate clause alone. Where no such judge can be formed, semantic provenance is not established and the clause falls to the human — which was already the answer for *not entailed* |
 | §2.2: *"nothing stops the same judge producing both records"* | *fresh* stops it | Revision 9 separated the records and said so honestly. Eligibility separates the agents, and could not be claimed until it was a rule |
 
-**No new field, and no new record.** Condition three's answer is a `human` record like any other; what
+**No new field, and no new record.** **History**: revision 12 found condition three has no answer at
+all — it refuses. Condition three's answer is a `human` record like any other; what
 changed is which clause it may name and why that cannot collide.
 
 
@@ -1203,7 +1215,7 @@ required by §2.3, not speculative.
 | 6 | A run that introduces one clause with no provenance; confirm exactly one question is asked | invariant 1 | not built |
 | 6b | The worker asserts its own provenance for an invented clause; confirm it is treated as introduced | the independence constraint | not built |
 | 6c | A clause entailed only by `CLAUDE.md` prose; confirm the judge establishes it and no human is asked | the semantic path earns its place | not built |
-| 6d | A clause that *weakens* a prior one, with a judge willing to bless it; confirm the human is still asked | the asymmetry — a judge may never permit a weakening | not built |
+| 6d | A clause that *weakens* a prior one, with a judge willing to bless it; confirm the run refuses | the asymmetry — a judge may never permit a weakening | not built |
 | 6e | Count how often the semantic path is reached across ten **repositories** — detection is repo-scoped, so ten items in one repo answer once | that semantic is a fallback, not the common path | not built |
 | 6f | A judge establishes a clause; run completion with that entailment verdict as the only record naming it; confirm delivery refuses | the second half of the asymmetry — an entailment verdict is not evidence | not built |
 | 9b | A work item filed in `acme/issues` that names `acme/issues` as a target; confirm refusal — **run it from somewhere other than a clone of the source**, or the bootstrap authorises it and the experiment answers a different question | source is not a target | not built |
