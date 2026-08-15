@@ -189,10 +189,10 @@ the defect revision 9 closed for entailment verdicts. It returns for human answe
 is carried.
 
 **Three terms, and the fourth was tried.** Revision 12 first keyed the condition that fired as well.
-It never discriminates: for one clause at authorisation, either no path established provenance or the
-judge could not tell — never both live at once, and the question is *may this clause exist* either
-way. The condition is what the ask must **say**, so a human knows why they are being asked. It is not
-what the answer must **match**.
+It never discriminates: for one clause at authorisation, either the judge said no — or none could be
+formed — or the judge could not tell. Never both, because §2.2 makes them disjoint, and the question
+is *may this clause exist* either way. The condition is what the ask must **say**, so a human knows
+why they are being asked. It is not what the answer must **match**.
 
 **Authorisation transports conditions one and two, and nothing else.** Three refuses and four
 refuses — §2.2 says why. Completion transports its own question, for `Decided:` clauses, which is the
@@ -434,21 +434,27 @@ nothing kept. A run that stops with a question outstanding re-convenes a judge w
 judge may answer differently, and the question the human is holding then derives differently or not at
 all.
 
-**A recorded attempt is replayed, not re-judged** — including the one that records that no eligible
-judge could be formed. The judge was asked whether *this* clause is entailed by *that* artifact at
-*that* ref; the record is about that triple, so replaying it answers the identical question. A second
-convening that answered differently would be the judge being non-deterministic, not new information.
-A changed triple — an edited clause, a different pinned ref — is a different question and gets a fresh
-judge. A new run gets one for every clause.
+**A recorded verdict is replayed, not re-judged.** The judge was asked whether *this* clause is
+entailed by *that* artifact at *that* ref; the verdict is about that triple, so replaying it answers
+the identical question. A second convening that answered differently would be the judge being
+non-deterministic, not new information. A changed triple — an edited clause, a different pinned ref —
+is a different question and gets a fresh judge. A new run gets one for every clause.
+
+**The no-judge record replays for a different reason**, because no judge was asked and there is no
+consistency to hold anything to. What is fixed is the run's *attempt*. Eligibility is a property of
+which agents exist, not of the triple — so a judge becoming available mid-run would change the charter
+by availability alone, and strand the question already asked. The run keeps the attempt it made; a new
+run makes a new one.
 
 **The record is written before the ask goes out**, and that ordering is the whole of what it buys. A
 run that stops between judging and asking resumes with the verdict already fixed, so it asks the same
 question it was about to ask. Written after, a stop in that window re-convenes the judge and the
 defect above returns unchanged.
 
-**That is a record of what a judge answered, never of what is awaited.** No stage reads it to find an
-outstanding question, nothing clears it, and it cannot say a clause was met. A pending-question ledger
-would be all three of those things.
+**That is a record of what a judge answered, never of what is awaited**, and the lookup direction is
+what says so. A resumed run derives its own question and finds the verdict recorded *for that clause*;
+nothing anywhere asks *which questions are outstanding* and gets an answer. Nothing clears it either,
+and it cannot say a clause was met. A pending-question ledger would be all three of those things.
 
 **This is Panel verifying, not Panel planning.** The judge is handed a candidate clause and asked
 whether meaning already exists. It proposes nothing.
@@ -477,10 +483,11 @@ widening that reach is Level 2's job, which is why `.foundry/gates` exists.
 The worker cannot dodge the gate, because none of the four conditions is reported by the worker. It
 cannot lower its own bar, because lowering *is* condition three.
 
-**Authorisation also refuses, and a refusal is not a fifth condition.** The four are what a clause or
-a target can trigger. **One and two ask; three and four refuse** — three because the remedy is a
-commit, four because it is a separate human command. Two further cases stop the run because the
-charter describes no bar at all, and they have no answer:
+**Authorisation also refuses, and a refusal is not a fifth condition.** A condition fires on where a
+clause's meaning came from, on a clause's removal, or on whether policy permits a target — invariants
+1 and 3, and §2.3. **One and two ask; three and four refuse** — three because the remedy is a commit,
+four because it is a separate human command. Two further cases stop the run without any of those
+firing, because what is offered is not a bar at all:
 
 | Refused | Because | Cleared by |
 |---|---|---|
@@ -489,8 +496,8 @@ charter describes no bar at all, and they have no answer:
 
 **The refused run ends. It does not re-plan.** Invariant 3's baseline is what the pinned artifacts
 derive *now*, so an attempt from the same base and the same selection derives the same charter and
-refuses identically. Every remedy above changes an input. A condition routes to a person for an
-answer; this routes to an artifact, or to a selection, for an edit.
+refuses identically. Every remedy above changes an input. Conditions one and two route to a person for
+an answer; every other stop routes to an edit or a command — the artifact, the selection, or `policy`.
 
 That holds for everything code derives. **A judge is the one input the base does not fix**, and the
 verdict record above fixes it only within a run — so a fresh attempt may reach a different charter
@@ -534,6 +541,12 @@ is that a human is interrupted only where new meaning appears.
 **When the conditions are evaluated decides whether that is true.** Derived once at planning and
 trusted after, an in-flight edit of the charter is silent. So the charter is re-derived from its
 pins at completion and compared with what it holds.
+
+**A condition firing there does exactly what it does at planning** — one and two ask, three and four
+refuse. Nothing about the stage changes; a clause introduced mid-flight still needs a human, and a
+clause deleted mid-flight is still condition three. The question is an *authorisation* question
+whenever it is asked, which is why §2.1's `stage` names the reader and not the moment: at completion,
+a lifecycle clock would stamp it the same as the satisfaction question and collide the two.
 
 **The honest limit**, which §2.5 states for evidence and floor's README for policy: the charter is a
 file the worker can write, as the same user. Re-derivation catches accident and drift, not a worker
@@ -669,10 +682,10 @@ why       on failure, what the command said
 
 `judged` evidence has one producer: an independent judge answering whether a clause was **met** — a
 review **verdict** at completion for a `Judged:` clause, or the second look a downgraded `Gate:`
-clause requires. A **clause entailment verdict is not evidence**; it answers whether a clause
-legitimately exists, which is provenance, and §2.2 records it with the charter's pins. Both are
-attributed and both are countable, which is what lets a recurring judgement be promoted into a
-mechanical check later.
+clause requires. **No record of a semantic attempt is evidence** — entailed, not entailed, could not
+tell, or no judge to ask. Each answers whether a clause legitimately exists, which is provenance, and
+§2.2 records them with the charter's pins. Both kinds are attributed and both are countable, which is
+what lets a recurring judgement be promoted into a mechanical check later.
 
 **`human` evidence has one producer too, and it is not the transport.** An answer reaches the run
 through the work source's `receive`, which carries it and decides nothing about it — §2.1. Completion
@@ -684,11 +697,19 @@ item is stamped `human` — invariant 4 — and so is an authorisation answer. N
 clause met*, but an authorisation answer names a clause, and the shape above cannot tell the two
 apart: `name` holds the clause either way, and the stage lives on the question, not on the record.
 
-**So they are not in this ledger.** Run-scoped authority is recorded with the semantic verdicts §2.2
-keeps, on the same principle and for the same reason: revision 9 removed the entailment verdict from
-the pool rather than adding a field to sort it, and revision 12 removes the authorisation answer the
-same way. Selection was never a candidate — it names no clause, and it predates the `unit` and `ref`
-this shape requires.
+**So they are not in this ledger**, on the principle revision 9 already used: remove the record from
+the pool rather than add a field to sort it. Their own shape, and it is not this one:
+
+```
+at        timestamp
+who       the person, attributed
+what      the run, or one clause
+```
+
+No `unit`, no `ref`. Selection has neither — §4 stamps it before the run exists — and an authorisation
+answer authorises a clause's existence, which no ref makes truer. **A record without a `ref` cannot
+satisfy the completion invariant**, which quantifies over the delivered ref of every selected target.
+That is the separation, in the shape rather than in a sentence about it.
 
 **The stage and the store do different jobs, and neither does the other's.** The stage separates the
 *questions*, so an answer reaches the reader that asked it. The store separates the *records*, so a
@@ -855,8 +876,9 @@ run be abandoned during planning at no cost — already implied by run-per-attem
 coverage from selection, so the two cannot bind at different moments. That is also where §2.2's
 refusal lands — a clause governing no selected target is refused *there*, not while planning is still
 writing `units/NN/targets`, where every clause governs nothing yet and refusing would refuse the
-whole charter. That refusal asks nobody anything, so it adds no condition. Changing the selection
-afterwards would: v1 has four, so a change after the freeze is a new run.
+whole charter. That refusal is not one of §2.2's four: nothing fired about where the clause came from
+or about its removal — it simply grades nothing, so it is no bar. Changing the selection afterwards
+*would* trigger a condition: v1 has four, so a change after the freeze is a new run.
 
 **Planning gets a read-only workspace, scoped to the run.** It must read the targets:
 `decide-boundary`'s tells "surface only in code", and gate detection reads the repo. The alternative
@@ -1236,6 +1258,9 @@ Drafting the work source found §2.1 making a semantic claim it has no standing 
 | invariant 4 and §4's lifecycle stamped work-item selection as `human` **evidence** | `human` **authority** | Revision 12 separated run-scoped authority from clause-satisfaction evidence for *answers* and left the same conflation standing two sections earlier. Selection names no clause, so it can satisfy none — it belongs with the authorisation answer, not in the pool completion reads |
 | the stage separated the two kinds, and §2.5's record shape carries no stage | authority records leave the evidence ledger | Two `human` records naming one clause differ in no field the shape defines — `name` holds the clause either way. A separation only prose can see is not a separation. Revision 9's move, applied again: remove the record from the pool rather than add a field to sort it. **The stage separates questions; the store separates records** |
 | condition one read *"neither path establishes provenance"*, which subsumed condition two | *the judge said no, or none could be formed* | Ambiguous **is** provenance not established, so both conditions fired on every ambiguous clause. Disjointness is what lets the condition drop out of the question's identity — the row above rests on this one |
+| condition four was listed among the conditions a human is **asked** on | a refusal, cleared by a separate human command | §2.3 already made it one. Listing it as an ask made *four conditions* mean *four asks*, which is why §2.2's every summary of the gate had to be restated |
+| §8's 6d asked for *"confirm the human is still asked"* | *confirm the run refuses* | Condition three is the weakening case, and revision 11 had already made it a refusal. The experiment tested for the answer the model stopped giving |
+| nothing said **when** the verdict record is written | before the ask goes out | Written after, a run that stops between judging and asking re-convenes the judge on resume and the defect returns whole. Experiment 6g cannot see it — it resumes a run that has already asked — so 6h kills the run inside that window |
 | §2.2 recorded an entailment verdict only beside the pin it established | every semantic attempt is recorded, and a resumed run replays it | *Not entailed*, *ambiguous* and *no eligible judge* establish no pin — so the fact that fired an authorisation condition was the one fact nothing kept, and a resumed run re-convened a judge free to answer differently. The question a human was already holding then derived differently or not at all. **The model did need a durable provenance judgement**; it is not a pending question, because nothing reads it to find an outstanding ask, nothing clears it, and it can never say a clause was met |
 | §2.2 gave condition three's *answer* a rule | condition three asks nobody anything | It is a refusal, in this document, in issue #93 and in the shipped code, which exits 12. A rule for its answer implied an answer existed. The remedy was always the one §2.2 already names — a human edits the artifact and commits it — so **only conditions one and two are ever transported** |
 
