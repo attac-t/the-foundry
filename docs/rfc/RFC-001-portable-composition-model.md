@@ -190,10 +190,16 @@ refuses — §2.2 says why. Completion transports its own question, for `Decided
 requirement this section opened by naming.
 
 **That identity is derived rather than issued.** Every component already exists when the question is
-asked, and every one is recomputed when a run resumes. So a resumed run finds its own question rather
-than asking a second one, an answer to another question does not match, and an answer to an earlier
-run does not either. Issuing an identity instead would mean storing it, and a stored pending question
-is the parallel ledger §2.2 refuses.
+asked, and a resumed run recovers all four. So a resumed run finds its own question rather than asking
+a second one, an answer to another question does not match, and an answer to an earlier run does not
+either. Issuing an identity instead would mean storing it, and a stored pending question is the
+parallel ledger §2.2 refuses.
+
+**Recovered, not recomputed — the difference is `condition`, and it costs one record.** Run, stage and
+clause recompute from the base. Conditions one and two are a judge's answer, and re-convening a judge
+is not recomputation: it may answer differently, and then the question a human is already holding is
+no longer derivable. So §2.2 records what the judge answered and a resumed run replays it. That record
+is a provenance judgement, not a pending question — nothing reads it to find an outstanding ask.
 
 A clause's identity is its text, so editing a clause asks a new question. That is correct: a changed
 requirement is a different requirement, and the old answer authorised the old one.
@@ -403,10 +409,28 @@ by an agent convened for it, so the judge that established a clause is not the o
 the work met it. Revision 9 could not claim this; revision 11 can, and only because eligibility is
 now a rule rather than a convention.
 
-Every entailment verdict is recorded beside the pin it establishes — a record of its own, naming the
-clause, the artifact and its ref. **It says a requirement legitimately exists, never that it was
+**Every attempt at the semantic path is recorded** — the verdict, or that no eligible judge could be
+formed. The record is one of its own, naming the clause, the artifact and its ref; `entailed`
+additionally establishes the pin. **It says a requirement legitimately exists, never that it was
 met.** Judgements stay countable, which is what later lets a recurring one be promoted into a
 mechanical check — `craft-oracle`'s promotion rule, unchanged.
+
+**Revision 11 kept a verdict only beside the pin it established — the one answer that needed keeping
+least.** *Not entailed*, *ambiguous* and *no eligible judge* establish no pin, and each of them fires
+an authorisation condition that asks a human. So the fact that produced the question was the one fact
+nothing kept. A run that stops with a question outstanding re-convenes a judge when it resumes, that
+judge may answer differently, and the question the human is holding then derives differently or not at
+all.
+
+**A recorded verdict is replayed, not re-judged.** The judge was asked whether *this* clause is
+entailed by *that* artifact at *that* ref; the verdict is about that triple, so replaying it answers
+the identical question. A second convening that answered differently would be the judge being
+non-deterministic, not new information. A changed triple — an edited clause, a different pinned ref —
+is a different question and gets a fresh judge. A new run gets one for every clause.
+
+**That is a record of what a judge answered, never of what is awaited.** No stage reads it to find an
+outstanding question, nothing clears it, and it cannot say a clause was met. A pending-question ledger
+would be all three of those things.
 
 **This is Panel verifying, not Panel planning.** The judge is handed a candidate clause and asked
 whether meaning already exists. It proposes nothing.
@@ -449,6 +473,11 @@ derive *now*, so an attempt from the same base and the same selection derives th
 refuses identically. Every remedy above changes an input. A condition routes to a person for an
 answer; this routes to an artifact, or to a selection, for an edit.
 
+That holds for everything code derives. **A judge is the one input the base does not fix**, and the
+verdict record above fixes it only within a run — so a fresh attempt may reach a different charter
+without any artifact changing. Deliberate: a verdict carried between runs would be a run inheriting
+provenance it never established, and invariant 3 re-derives *now* precisely to stop that.
+
 **An authorisation answer names the condition that fired.** Answering *yes, introduce it* authorises
 a requirement's existence; it never says the work met it. A `Decided:` clause reaches completion
 through the same channel and a **different** answer — one that does name the clause, and is evidence.
@@ -485,7 +514,8 @@ pins at completion and compared with what it holds.
 
 **The honest limit**, which §2.5 states for evidence and floor's README for policy: the charter is a
 file the worker can write, as the same user. Re-derivation catches accident and drift, not a worker
-editing charter and pins together. That is the workspace boundary's, and it does not exist yet.
+editing charter, pins and verdicts together — a forged `entailed` buys exactly one thing, the silence
+where a human would have been asked. That is the workspace boundary's, and it does not exist yet.
 
 #### Where this sits relative to Panel
 
@@ -612,14 +642,20 @@ why       on failure, what the command said
 |---|---|---|
 | `machine` | a command's exit code, recorded by the runner | not through the API. Yes, by writing the file directly |
 | `judged` | an agent that cannot write what it judges | an attributed opinion; forgery means impersonation |
-| `human` | an explicit person-action, via the work source's `receive` | yes — the gap Panel's charter already names |
+| `human` | completion, reading the answer to the question it asked | yes — the gap Panel's charter already names |
 
 `judged` evidence has one producer: an independent judge answering whether a clause was **met** — a
 review **verdict** at completion for a `Judged:` clause, or the second look a downgraded `Gate:`
-clause requires. A **clause
-entailment verdict is not evidence**; it answers whether a clause legitimately exists, which is
-provenance, and §2.2 records it beside the pin. Both are attributed and both are countable, which is
-what lets a recurring judgement be promoted into a mechanical check later.
+clause requires. A **clause entailment verdict is not evidence**; it answers whether a clause
+legitimately exists, which is provenance, and §2.2 records it with the charter's pins. Both are
+attributed and both are countable, which is what lets a recurring judgement be promoted into a
+mechanical check later.
+
+**`human` evidence has one producer too, and it is not the transport.** An answer reaches the run
+through the work source's `receive`, which carries it and decides nothing about it — §2.1. Completion
+makes it evidence, by reading the answer to a question completion asked about a `Decided:` clause it
+holds. An authorisation answer arrives through the same channel and never becomes evidence at all,
+because no stage reads it that way.
 
 **Machine evidence cannot be faked through the API, because there is no API for it.** The recorder
 takes a command, runs it, and stamps what happened. There is no parameter for a result:
@@ -1153,12 +1189,14 @@ Drafting the work source found §2.1 making a semantic claim it has no standing 
 
 | Was | Is | What falsified it |
 |---|---|---|
-| §2.1: `receive` returns "that human's answer, **as evidence at trust `human`**" | an attributed answer, bound to the run and the question | An authorisation answer and a satisfaction answer arrive through the same channel and mean different things. Stamping every answer as evidence made the transport assert that a clause was met, which is completion's judgement and nobody else's |
-| nothing said how a question is identified | derived from the run, the condition and the clause | Without it a resumed run asks again, an answer to another question is consumed, and an answer to an earlier run is too. **Derived rather than issued**, because issuing means storing, and a stored pending question is the parallel ledger §2.2 refuses |
+| §2.1 and §2.5: `receive` returns "that human's answer, **as evidence at trust `human`**" | an attributed answer, bound to the run and the question. Completion produces the evidence | An authorisation answer and a satisfaction answer arrive through the same channel and mean different things. Stamping every answer as evidence made the transport assert that a clause was met, which is completion's judgement and nobody else's. §2.5's trust table carried the same claim one section later |
+| nothing said how a question is identified | derived from the run, the **stage**, the condition and the clause | Without it a resumed run asks again, an answer to another question is consumed, and an answer to an earlier run is too. **The stage is what separates the two kinds**: both name a clause, so without it the answer authorising an introduced `Decided:` clause would satisfy it — revision 9's defect, returning for human answers. **Derived rather than issued**, because issuing means storing, and a stored pending question is the parallel ledger §2.2 refuses |
+| §2.2 recorded an entailment verdict only beside the pin it established | every semantic attempt is recorded, and a resumed run replays it | *Not entailed*, *ambiguous* and *no eligible judge* establish no pin — so the fact that fired an authorisation condition was the one fact nothing kept, and a resumed run re-convened a judge free to answer differently. The question a human was already holding then derived differently or not at all. **The model did need a durable provenance judgement**; it is not a pending question, because nothing reads it to find an outstanding ask, nothing clears it, and it can never say a clause was met |
 | §2.2 gave condition three's *answer* a rule | condition three asks nobody anything | It is a refusal, in this document, in issue #93 and in the shipped code, which exits 12. A rule for its answer implied an answer existed. The remedy was always the one §2.2 already names — a human edits the artifact and commits it — so **only conditions one and two are ever transported** |
 
-Found by drafting the stage rather than by building it — the fourth revision in a row that a stage
-which does not exist yet has corrected.
+Drafting the stage found the first and the last — the fourth revision in a row corrected by a stage
+that does not exist yet. Review found the middle two, and the verdict record is the first time this
+document has answered *what happens when a run stops mid-question*.
 
 
 ## 7. Unresolved questions
@@ -1218,6 +1256,7 @@ required by §2.3, not speculative.
 | 6d | A clause that *weakens* a prior one, with a judge willing to bless it; confirm the run refuses | the asymmetry — a judge may never permit a weakening | not built |
 | 6e | Count how often the semantic path is reached across ten **repositories** — detection is repo-scoped, so ten items in one repo answer once | that semantic is a fallback, not the common path | not built |
 | 6f | A judge establishes a clause; run completion with that entailment verdict as the only record naming it; confirm delivery refuses | the second half of the asymmetry — an entailment verdict is not evidence | not built |
+| 6g | A judge answers *ambiguous*; the run asks and stops; resume it with a judge rigged to answer *entailed*; confirm the question still derives identically and the human's answer still matches | that recording the verdict makes condition two resumable — a flipped judge is exactly what replay must survive | not built |
 | 9b | A work item filed in `acme/issues` that names `acme/issues` as a target; confirm refusal — **run it from somewhere other than a clone of the source**, or the bootstrap authorises it and the experiment answers a different question | source is not a target | not built |
 | 7 | Move a run directory to another machine and resume it | the portability rule | fails as of revision 1 |
 | 8 | Items in repo A, code in repo B, Foundry installed globally | source/target independence | untested |
