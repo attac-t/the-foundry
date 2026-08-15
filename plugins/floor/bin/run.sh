@@ -324,8 +324,11 @@ targets() {
     file=$(unit_targets_file "$dir")
 
     case "${1:-}" in
-        '')  list_targets "$file" ;;
-        add) shift; add_target "$dir" "$file" "${1:-}" "${2:-}" ;;
+        '')  refuse_unselectable "$dir" "$file" || exit 5
+             list_targets "$file" ;;
+        add) shift
+             refuse_unselectable "$dir" "$file" || exit 5
+             add_target "$dir" "$file" "${1:-}" "${2:-}" ;;
         *)   usage; exit 2 ;;
     esac
 }
@@ -414,6 +417,41 @@ authorize() {
 list_targets() {
     [ -f "$1" ] || return 0
     awk '!/^[ \t]*#/ && NF' "$1"
+}
+
+#
+# The selection, re-checked every time it is read.
+#
+# `add_target` guarded the write and nothing guarded the read, so a line appended by hand was
+# selected all the same. RFC-001 grades every charter clause against every selected target, which
+# made this file a way to change what the run answers for without touching the charter — and
+# re-deriving the charter cannot catch it, because the charter did not move.
+#
+# Refuses rather than filters. Dropping the line silently would leave the run working against a
+# selection nobody chose, which is the failure this exists to make loud.
+#
+# `$1` in awk is whitespace-delimited, so it can never hold a space and the split below is safe.
+#
+refuse_unselectable() {
+    dir=$1
+    file=$2
+    status=0
+
+    [ -f "$file" ] || return 0
+
+    for line in $(awk '!/^[ \t]*#/ && NF && NF != 2 { print NR }' "$file"); do
+        note "line $line of the selection is not a repo and a ref"
+        status=1
+    done
+
+    for identity in $(awk '!/^[ \t]*#/ && NF { print $1 }' "$file"); do
+        is_authorised "$dir" "$identity" || {
+            note "selected but not authorised: [$identity] — \`policy authorize\` it, or drop the line"
+            status=1
+        }
+    done
+
+    return "$status"
 }
 
 add_target() {
