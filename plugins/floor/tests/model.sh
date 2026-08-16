@@ -545,6 +545,47 @@ a_grant_is_scoped_to_one_run() {
 }
 a_grant_is_scoped_to_one_run
 
+#
+# Grants are keyed by the run's id and kept beside the runs, so a renamed directory looks up a key
+# nothing holds. It answered exit 0 with the bootstrap alone: authority a human gave, gone, silently.
+#
+a_renamed_run_refuses_rather_than_losing_its_grants() {
+  make_repo "$tmp/ren" main && set_origin "$tmp/ren" 'https://github.com/acme/ren.git' \
+    || { skip "renamed run — git could not make a repo here"; return; }
+
+  moved=$(floor "$tmp/ren" new "Rename Me")
+  floor "$tmp/ren" policy authorize 'https://github.com/acme/granted.git' >/dev/null
+  has "the grant is there to start with" "$(floor "$tmp/ren" policy)" "granted"
+
+  was=$(basename "$moved")
+  mv "$moved" "$(dirname "$moved")/renamed-by-hand"
+  printf 'renamed-by-hand\n' > "$tmp/ren/.git/foundry-run"
+
+  is  "a renamed run refuses"    "$(code_of floor "$tmp/ren" policy)" "13"
+  has "and names where it is"    "$(floor_says "$tmp/ren" policy)" "renamed-by-hand"
+  has "and what it calls itself" "$(floor_says "$tmp/ren" policy)" "$was"
+
+  # Every reader of the grants, not the one that happened to be tested. `policy` refusing alone let a
+  # rename onto a deleted run's id add a target at exit 0, and let `authorise` freeze a selection
+  # whose grants were not there.
+  is "targets refuses too"   "$(code_of floor "$tmp/ren" targets)" "13"
+  is "and authorise refuses" "$(code_of floor "$tmp/ren" authorise)" "13"
+
+  # Moving it back is the remedy, and it costs nothing — the grants were never gone.
+  mv "$(dirname "$moved")/renamed-by-hand" "$moved"
+  printf '%s\n' "$was" > "$tmp/ren/.git/foundry-run"
+  has "moving it back restores the grant" "$(floor "$tmp/ren" policy)" "granted"
+
+  # A run made before this rule has no `id`, and must work exactly as it did. The guard fails open
+  # there on purpose — without this check, closing it would break every existing run in silence.
+  rm -f "$moved/id"
+
+  is  "a run with no id is left alone"  "$(code_of floor "$tmp/ren" policy)" "0"
+  has "and still reads its grants"      "$(floor "$tmp/ren" policy)" "granted"
+  is  "targets is left alone too"       "$(code_of floor "$tmp/ren" targets)" "0"
+}
+a_renamed_run_refuses_rather_than_losing_its_grants
+
 a_run_with_no_bootstrap_allows_nothing() {
   norun=$(floor "$tmp/bare" new "No Boot")
 

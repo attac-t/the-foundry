@@ -21,6 +21,7 @@
 #  10  the selection moved after it was authorised — that is a new run, not this one
 #  11  a clause is introduced and nothing can ask a human to authorise it
 #  12  the detector yields a gate the charter holds no clause for — re-derive
+#  13  the run directory was renamed, so the grants a human gave it are not there
 #
 # Eight through twelve are one stage and five remedies: write a requirement down, select a target it
 # governs, or start again. Collapsing them would make the exit code say *authorisation refused* and
@@ -100,6 +101,7 @@ make_run() {
     dir="$RUNS/$id"
 
     build_layout "$dir"        || die_unwritable "$dir"
+    write_id "$dir" "$id"
     write_item "$dir" "$title" || die_unwritable "$dir/item.md"
     write_bootstrap "$dir"
     point_this_checkout_at "$id"
@@ -175,6 +177,42 @@ slug() {
 # One unit today. The level ships anyway, because adding it later moves every path in every adapter.
 build_layout() {
     mkdir -p "$1/memory" "$1/planning" "$1/units/01/memory"
+}
+
+#
+# The run's own name for itself, written once.
+#
+# Grants are keyed by it and kept beside the runs, never inside one — a slot reclaimed after `rm -rf`
+# would otherwise hand the next run a dead run's allowlist. That is why renaming the directory used
+# to lose every grant at exit 0: the key moved and nothing held the old one.
+#
+write_id() { printf '%s\n' "$2" > "$1/id" 2>/dev/null || die_unwritable "$1/id"; }
+
+# Fails open on a missing file, which is how a run made before this rule keeps working. It also
+# fails open on an empty or unreadable one, and that is a hole rather than a grandfather clause: the
+# guard it feeds cannot tell "no id was ever written" from "the id will not read".
+recorded_id() { [ -f "$1/id" ] && read -r named < "$1/id" && printf "%s" "$named"; }
+
+#
+# Authority is bound to the id, so a directory that no longer answers to it has none.
+#
+# Refuses rather than following the recorded id, which would let a rename carry a grant set to a name
+# a human never authorised.
+#
+# **Renames only.** Grants key on the directory's name, so a copy that keeps its name under another
+# parent still reads the same grants and passes here. Closing that needs an identity the filesystem
+# cannot supply, and it belongs to the workspace boundary.
+#
+# Every command that reads the grants for authority calls this. `policy` refusing alone let a rename
+# onto a deleted run's id add a target through `targets add` at exit 0.
+#
+refuse_renamed_run() {
+    named=$(recorded_id "$1") || return 0
+    [ "$named" = "$(basename "$1")" ] && return 0
+
+    note "this run is at [$(basename "$1")] and calls itself [$named], so its grants are not here"
+    note "move it back, or start a new run — authority a human gave is not renamed with a directory"
+    exit 13
 }
 
 # A placeholder until the work-source contract lands in #74.
@@ -370,6 +408,8 @@ unit_targets_file() { printf '%s/units/01/targets' "$1"; }
 
 targets() {
     dir=$(active_run) || exit 1
+    refuse_renamed_run "$dir"
+
     file=$(unit_targets_file "$dir")
 
     case "${1:-}" in
@@ -395,6 +435,7 @@ targets() {
 #
 policy() {
     dir=$(active_run) || exit 1
+    refuse_renamed_run "$dir"
 
     case "${1:-}" in
         '')        list_policy "$dir" ;;
@@ -594,15 +635,19 @@ charter_file() { printf '%s/charter' "$1"; }
 #
 authorise() {
     run_dir=$(active_run) || exit 1
+    refuse_renamed_run "$run_dir"
 
     charter_path=$(charter_file "$run_dir")
     selection_path=$(unit_targets_file "$run_dir")
 
-    # First of all the refusals, and that ordering is the whole point. Every later check reports what
-    # is wrong with the selection *now* and names a remedy that would edit it — `policy authorize`
+    # First of the selection refusals, and that ordering is the whole point. Every later check reports
+    # what is wrong with the selection *now* and names a remedy that would edit it — `policy authorize`
     # this, select that. Once a selection is frozen those remedies are forbidden: the only answer is
     # a new run. Emptying the selection reaches the same fork, where the grades-nothing check would
     # otherwise fire first and report the symptom.
+    #
+    # The rename guard runs ahead of all of them and does not disturb this. Its remedy edits no
+    # selection — move the directory back, or start again.
     refuse_moved_selection "$run_dir" "$selection_path" || exit 10
 
     refuse_unselectable "$run_dir" "$selection_path" || exit 5

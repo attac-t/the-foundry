@@ -134,7 +134,7 @@ wreck_runner "a layout with no units level is caught" \
 # Three guards, not two. The slot claim added the third, and a mutant removing only the ones it knew
 # about is one the runner survives. It went red on Linux, where nobody had run an audit in days.
 wreck_runner "a runner that ignores a home it cannot write to is caught" \
-  blind 's# *|| die_unwritable "$dir/item.md"$##; s# *|| die_unwritable "$dir"$##; s# *|| die_unwritable "$RUNS"$##'
+  blind 's# *|| die_unwritable "$dir/item.md"$##; s# *|| die_unwritable "$dir"$##; s# *|| die_unwritable "$RUNS"$##; s# *|| die_unwritable "$1/id"##'
 
 wreck_runner "a runner that trusts an unset run directory is caught" \
   ghostvar 's|\[ -n "${FOUNDRY_RUN:-}" \] && \[ -d "$FOUNDRY_RUN" \]|\[ -n "${FOUNDRY_RUN:-}" \]|'
@@ -384,6 +384,20 @@ wreck_runner "a base read from the branch instead of the commit is caught" \
 # always answers "unchanged". Drift is the checkout differing from what was pinned.
 wreck_runner "a drift check that compares the base with itself is caught" \
   selfsame 's#\[ "$(worktree_sha "$source")" = "$sha" \] \&\& continue#[ "$(blob_sha "$ref" "$source")" = "$sha" ] \&\& continue#'
+
+# Grants are keyed by the run's id, so a renamed directory looks up a key nothing holds and `policy`
+# answered exit 0 with the bootstrap alone. Authority a human gave, gone, without a word.
+#
+# Three call sites, and deliberately so: `policy`, `targets` and `authorise` each read the grants for
+# authority, and the rule is that no reader softens it. It does not prove any one of the three alone
+# is caught — `model.sh` asserts each separately for that.
+wreck_runner "a renamed run that loses its grants in silence is caught" \
+  renamed 's#    refuse_renamed_run "$dir"##; s#    refuse_renamed_run "$run_dir"##'
+
+# The other direction. Failing open on a missing `id` is what lets a run made before this rule keep
+# working, and closing it breaks every one of them at once — silently, because nothing asked.
+wreck_runner "a guard that refuses a run made before it is caught" \
+  nogrand 's#named=$(recorded_id "$1") || return 0#named=$(recorded_id "$1") || exit 13#'
 
 wreck_runner "a check blind to a gate resolving elsewhere is caught" \
   blindres   's|^        moved_resolutions "$file"$|        :|'
