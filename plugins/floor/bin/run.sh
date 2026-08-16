@@ -21,6 +21,7 @@
 #  10  the selection moved after it was authorised — that is a new run, not this one
 #  11  a clause is introduced and nothing can ask a human to authorise it
 #  12  the detector yields a gate the charter holds no clause for — re-derive
+#  13  the run directory was renamed, so the grants a human gave it are not there
 #
 # Eight through twelve are one stage and five remedies: write a requirement down, select a target it
 # governs, or start again. Collapsing them would make the exit code say *authorisation refused* and
@@ -100,6 +101,7 @@ make_run() {
     dir="$RUNS/$id"
 
     build_layout "$dir"        || die_unwritable "$dir"
+    write_id "$dir" "$id"
     write_item "$dir" "$title" || die_unwritable "$dir/item.md"
     write_bootstrap "$dir"
     point_this_checkout_at "$id"
@@ -175,6 +177,32 @@ slug() {
 # One unit today. The level ships anyway, because adding it later moves every path in every adapter.
 build_layout() {
     mkdir -p "$1/memory" "$1/planning" "$1/units/01/memory"
+}
+
+#
+# The run's own name for itself, written once.
+#
+# Grants are keyed by it and kept beside the runs, never inside one — a slot reclaimed after `rm -rf`
+# would otherwise hand the next run a dead run's allowlist. That is why renaming the directory used
+# to lose every grant at exit 0: the key moved and nothing held the old one.
+#
+write_id() { printf '%s\n' "$2" > "$1/id" 2>/dev/null || die_unwritable "$1/id"; }
+
+recorded_id() { [ -f "$1/id" ] && read -r line < "$1/id" && printf '%s' "$line"; }
+
+#
+# Authority is bound to the id, so a directory that no longer answers to it has none.
+#
+# Refuses rather than following the recorded id: two copies of one run would then share a grant set,
+# which is the collision `claim_slot` exists to prevent, arrived at from the other side.
+#
+refuse_renamed_run() {
+    was=$(recorded_id "$1") || return 0
+    [ "$was" = "$(basename "$1")" ] && return 0
+
+    note "this run is at [$(basename "$1")] and calls itself [$was], so its grants are not here"
+    note "move it back, or start a new run — authority a human gave is not renamed with a directory"
+    exit 13
 }
 
 # A placeholder until the work-source contract lands in #74.
@@ -395,6 +423,7 @@ targets() {
 #
 policy() {
     dir=$(active_run) || exit 1
+    refuse_renamed_run "$dir"
 
     case "${1:-}" in
         '')        list_policy "$dir" ;;
