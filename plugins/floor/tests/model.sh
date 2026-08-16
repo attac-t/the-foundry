@@ -1066,8 +1066,54 @@ evidence_is_what_happened() {
   matches "the passing record says machine, and zero" "$held" "machine.*tests.*	0	"
   matches "the failing record says machine, and one"  "$held" "machine.*types.*	1	"
   matches "each record names the ref it applies to"   "$held" "	[0-9a-f]{40}	"
+
+  # The shape is the artifact, and nothing reads it yet. Seven fields, in the order §2.5 names.
+  is "every record has seven fields" \
+     "$(printf '%s\n' "$held" | awk -F'\t' 'NF != 7' | grep -c .)" "0"
+  matches "and they are in order — at, trust, unit, name, result, ref" \
+          "$held" "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:]+Z	machine	01	tests	0	[0-9a-f]{40}"
 }
 evidence_is_what_happened
+
+#
+# A name is one line. A newline in it writes a second record whose result and ref the caller chose —
+# the one thing this stage exists to make impossible, arrived at through the field that was not
+# flattened.
+#
+a_name_cannot_forge_a_second_record() {
+  make_repo "$tmp/ev4" main && set_origin "$tmp/ev4" 'https://github.com/acme/ev4.git' \
+    && commit_file "$tmp/ev4" README 'x
+' || { skip "forged record — git could not make a repo here"; return; }
+
+  floor "$tmp/ev4" new "Forge" >/dev/null
+
+  forged='tests	0	deadbeef
+types'
+  is "a name holding a newline is refused" \
+     "$(code_of floor "$tmp/ev4" evidence record "$forged" true)" "2"
+  is "and nothing was written" "$(floor "$tmp/ev4" evidence)" ""
+}
+a_name_cannot_forge_a_second_record
+
+#
+# The ref is taken before the command runs. A gate that commits would otherwise be recorded against a
+# tree that did not exist when it was graded.
+#
+the_ref_is_what_was_tested() {
+  make_repo "$tmp/ev5" main && set_origin "$tmp/ev5" 'https://github.com/acme/ev5.git' \
+    && commit_file "$tmp/ev5" README 'x
+' || { skip "ref timing — git could not make a repo here"; return; }
+
+  floor "$tmp/ev5" new "Timing" >/dev/null
+  was=$(git -C "$tmp/ev5" rev-parse HEAD 2>/dev/null)
+
+  floor "$tmp/ev5" evidence record tests sh -c \
+    "cd '$tmp/ev5' && date > moved && git add -A && git -c user.email=a@b.c -c user.name=a commit -qm moved" \
+    >/dev/null 2>&1
+
+  has "the record names the ref that was tested" "$(floor "$tmp/ev5" evidence)" "$was"
+}
+the_ref_is_what_was_tested
 
 #
 # The property that makes it evidence. There is no argument for a result, so the only way to record a

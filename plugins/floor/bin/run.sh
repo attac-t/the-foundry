@@ -630,13 +630,18 @@ evidence_file() { printf '%s/evidence' "$1"; }
 #     record  <name> <command...>   run it, stamp what happened
 #     (none)                        print the ledger
 #
+# `machine` only. `judged` needs a judge and `human` needs the work source, and the completion
+# invariant needs the gates stage to say which clause a name belongs to — §9 orders all three after
+# this. What ships is the record and the rule that a caller cannot write one.
+#
+# No rename guard: the ledger lives inside the run and moves with it, where grants are keyed by the
+# run's name and do not. Nothing here reads a grant.
 evidence() {
     dir=$(active_run) || exit 1
-    refuse_renamed_run "$dir"
 
     case "${1:-}" in
         '')     cat "$(evidence_file "$dir")" 2>/dev/null; return 0 ;;
-        record) shift; record_gate "$dir" "$@" ;;
+        record) shift; refuse_wrong_repository "$dir"; record_gate "$dir" "$@" ;;
         *)      usage; exit 2 ;;
     esac
 }
@@ -654,9 +659,18 @@ record_gate() {
     [ -n "$name" ] || { note "record needs a name and a command"; exit 2; }
     [ "$#" -gt 0 ] || { note "record needs a command to run — a result is not something you pass"; exit 2; }
 
+    # A name is one line, or a newline in it writes a second record whose result the caller chose —
+    # which is the one thing this stage exists to make impossible. `why` is flattened; a name is
+    # refused, because a gate whose name holds a newline is a mistake, not something to tidy up.
+    is_one_line "$name" || { note "a gate's name is one line: [$name]"; exit 2; }
+
+    # Before the command runs. A recorded command that moves HEAD would otherwise stamp a sha whose
+    # tree was never tested — evidence for work that did not exist when the work was graded.
+    ref=$(delivered_ref) || { note "no commit to record evidence against"; exit 1; }
+
     why=$("$@" 2>&1); result=$?
 
-    stamp "$dir" machine "$name" "$result" "$(delivered_ref "$dir")" "$why"
+    stamp "$dir" machine "$name" "$result" "$ref" "$why"
     return "$result"
 }
 
@@ -668,11 +682,13 @@ stamp() {
 }
 
 # A gate that printed nothing on failure still records the ref it applies to, so `why` is last and
-# may be empty. Newlines would make one record read as several.
-one_line() { printf '%s' "$1" | tr '\n\t' '  '; }
+# may be empty. `\r` as well as `\n`: Git Bash is a platform this ships on, and `is_one_line` counts
+# all three.
+one_line() { printf '%s' "$1" | tr '\n\r\t' '   '; }
 
 # The sha the evidence applies to. `check` compares against the base; this is what the run delivers,
-# which is where the work is.
+# which is where the work is. It answers for the repository the caller stands in — `evidence` refuses
+# a wrong one before asking.
 delivered_ref() { git rev-parse --verify --quiet HEAD 2>/dev/null; }
 
 #

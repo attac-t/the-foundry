@@ -395,7 +395,18 @@ wreck_runner "a recorder that takes the result from its caller is caught" \
 # A record with no ref cannot be matched to a delivered sha, and §2.5's completion invariant
 # quantifies over the delivered ref of every selected target.
 wreck_runner "evidence stamped without the ref it applies to is caught" \
-  noref 's#"$(delivered_ref "$dir")" "$why"#"" "$why"#'
+  noref 's#stamp "$dir" machine "$name" "$result" "$ref" "$why"#stamp "$dir" machine "$name" "$result" "" "$why"#'
+
+# `why` is flattened and a name is refused. Let a name through raw and a newline in it writes a
+# second record whose result and ref the caller chose — a caller supplying an outcome, by the field
+# that was not guarded.
+wreck_runner "a gate name that can hold a newline is caught" \
+  forgedname 's#    is_one_line "$name" || { note "a gate.s name is one line: \[$name\]"; exit 2; }##'
+
+# Taken after the command, a gate that commits is recorded against a tree that did not exist when it
+# was graded.
+wreck_runner "a ref read after the command ran is caught" \
+  lateref 's#    ref=$(delivered_ref) || { note "no commit to record evidence against"; exit 1; }##; s#stamp "$dir" machine "$name" "$result" "$ref" "$why"#stamp "$dir" machine "$name" "$result" "$(delivered_ref)" "$why"#'
 
 # Grants are keyed by the run's id, so a renamed directory looks up a key nothing holds and `policy`
 # answered exit 0 with the bootstrap alone. Authority a human gave, gone, without a word.
