@@ -575,6 +575,14 @@ a_renamed_run_refuses_rather_than_losing_its_grants() {
   mv "$(dirname "$moved")/renamed-by-hand" "$moved"
   printf '%s\n' "$was" > "$tmp/ren/.git/foundry-run"
   has "moving it back restores the grant" "$(floor "$tmp/ren" policy)" "granted"
+
+  # A run made before this rule has no `id`, and must work exactly as it did. The guard fails open
+  # there on purpose — without this check, closing it would break every existing run in silence.
+  rm -f "$moved/id"
+
+  is  "a run with no id is left alone"  "$(code_of floor "$tmp/ren" policy)" "0"
+  has "and still reads its grants"      "$(floor "$tmp/ren" policy)" "granted"
+  is  "targets is left alone too"       "$(code_of floor "$tmp/ren" targets)" "0"
 }
 a_renamed_run_refuses_rather_than_losing_its_grants
 

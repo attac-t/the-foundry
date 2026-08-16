@@ -203,8 +203,8 @@ recorded_id() { [ -f "$1/id" ] && read -r named < "$1/id" && printf "%s" "$named
 # parent still reads the same grants and passes here. Closing that needs an identity the filesystem
 # cannot supply, and it belongs to the workspace boundary.
 #
-# Every reader of the grants calls this. Three of the four did not, and `policy` refusing alone let a
-# rename onto a deleted run's id add a target through `targets add` at exit 0.
+# Every command that reads the grants for authority calls this. `policy` refusing alone let a rename
+# onto a deleted run's id add a target through `targets add` at exit 0.
 #
 refuse_renamed_run() {
     named=$(recorded_id "$1") || return 0
@@ -640,11 +640,14 @@ authorise() {
     charter_path=$(charter_file "$run_dir")
     selection_path=$(unit_targets_file "$run_dir")
 
-    # First of all the refusals, and that ordering is the whole point. Every later check reports what
-    # is wrong with the selection *now* and names a remedy that would edit it — `policy authorize`
+    # First of the selection refusals, and that ordering is the whole point. Every later check reports
+    # what is wrong with the selection *now* and names a remedy that would edit it — `policy authorize`
     # this, select that. Once a selection is frozen those remedies are forbidden: the only answer is
     # a new run. Emptying the selection reaches the same fork, where the grades-nothing check would
     # otherwise fire first and report the symptom.
+    #
+    # The rename guard runs ahead of all of them and does not disturb this. Its remedy edits no
+    # selection — move the directory back, or start again.
     refuse_moved_selection "$run_dir" "$selection_path" || exit 10
 
     refuse_unselectable "$run_dir" "$selection_path" || exit 5

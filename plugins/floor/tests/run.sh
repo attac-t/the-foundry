@@ -387,8 +387,17 @@ wreck_runner "a drift check that compares the base with itself is caught" \
 
 # Grants are keyed by the run's id, so a renamed directory looks up a key nothing holds and `policy`
 # answered exit 0 with the bootstrap alone. Authority a human gave, gone, without a word.
+#
+# Three call sites, and deliberately so: `policy`, `targets` and `authorise` each read the grants for
+# authority, and the rule is that no reader softens it. It does not prove any one of the three alone
+# is caught — `model.sh` asserts each separately for that.
 wreck_runner "a renamed run that loses its grants in silence is caught" \
   renamed 's#    refuse_renamed_run "$dir"##; s#    refuse_renamed_run "$run_dir"##'
+
+# The other direction. Failing open on a missing `id` is what lets a run made before this rule keep
+# working, and closing it breaks every one of them at once — silently, because nothing asked.
+wreck_runner "a guard that refuses a run made before it is caught" \
+  nogrand 's#named=$(recorded_id "$1") || return 0#named=$(recorded_id "$1") || exit 13#'
 
 wreck_runner "a check blind to a gate resolving elsewhere is caught" \
   blindres   's|^        moved_resolutions "$file"$|        :|'
