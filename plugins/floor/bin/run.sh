@@ -751,6 +751,28 @@ refuse_repeated_ids() {
     return 1
 }
 
+#
+# Provenance, which is invariant 1: a clause establishing neither derivation nor authorisation is
+# *introduced*, and an introduced clause is what authorisation exists to stop.
+#
+# `check` looks for none of this. Its five readers walk the detector or the pin list, so a clause
+# invented for an id nothing pinned is invisible to all of them — `forged_ids` accepts an id honestly
+# made from the text beside it, and the rest never see the record at all. Two lines appended run a
+# command no artifact declares, and the ledger cannot tell it from one a human agreed to.
+#
+refuse_unpinned_gates() {
+    dir=$1
+
+    unpinned=$(printf '%s\n' "$2" | while read -r id _; do
+        [ -n "$id" ] || continue
+        has_record "$(charter_file "$dir")" pin "$id" || printf '%s ' "$id"
+    done)
+
+    [ -z "$unpinned" ] && return 0
+    note "the charter records where these gates came from nowhere: $unpinned"
+    return 1
+}
+
 # Every gate the charter pins, as `id command...`. `print_gate` wrote them.
 pinned_gates() {
     awk '$1 == "gate" { $1 = ""; sub(/^ /, ""); print }' "$(charter_file "$1")" 2>/dev/null
@@ -763,9 +785,10 @@ run_pinned_gates() {
     pins=$(pinned_gates "$dir")
     [ -n "$pins" ] || { note "this charter pins no gate, so it grades nothing mechanically"; exit 8; }
     refuse_repeated_ids "$pins" || exit 7
+    refuse_unpinned_gates "$dir" "$pins" || exit 7
 
     # §2.4: a gate runs with its target's checkout as the working directory. One checkout exists
-    # today — `composer test` in a two-repo workspace is otherwise ambiguous.
+    # today — a gate named `tests` in a two-repo workspace is otherwise ambiguous.
     #
     # Not restored, and nothing may run after this. `gates` ends here and `main` dispatches nothing
     # afterwards; a caller added below this line would inherit a directory it did not choose.
@@ -864,8 +887,8 @@ authorise() {
     # was removed.
     #
     # The guard `check` carries. Without it a run that never derived is told it *lost* a clause, with
-    # pins asserted that do not exist — verified by execution on a fresh run in a repo with a
-    # `Makefile`.
+    # pins asserted that do not exist — verified by execution on a fresh run in a repo the detector
+    # answers for.
     [ -f "$charter_path" ] || {
         note "this run has no charter — run \`charter derive\` first"
         exit 1
@@ -1218,7 +1241,7 @@ refuse_missing_resolver() {
 #
 # `--verify`, or a failure looks like an answer.
 #
-# Plain `git rev-parse main:Makefile` sends its `fatal:` to stderr and then echoes `main:Makefile` to
+# Plain `git rev-parse main:gone` sends its `fatal:` to stderr and then echoes `main:gone` to
 # stdout. Discarding stderr leaves that string looking exactly like a captured sha, and it gets
 # pinned. `--verify --quiet` prints nothing and exits non-zero.
 #

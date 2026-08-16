@@ -33,7 +33,7 @@ sh bin/run.sh charter
 sh bin/run.sh charter derive
 sh bin/run.sh charter check
 sh bin/run.sh evidence
-sh bin/run.sh evidence record tests composer test
+sh bin/run.sh evidence record tests ./check
 sh bin/run.sh gates
 ```
 
@@ -234,7 +234,7 @@ provenance it did not earn.
 
 ### A Gate names a gate
 
-`Gate: tests`, never `Gate: composer test`.
+`Gate: tests`, never `Gate: ./check`.
 
 `lib/detect-gates.sh` resolves the name. It is the only file here that may know an ecosystem exists,
 and nothing above it learns why. A repository declares its own gates in `.foundry/gates`; detection
@@ -326,11 +326,16 @@ One ref for the whole set, taken before the first gate. A gate that commits cann
 gates after it are recorded against.
 
 Each gate runs with its target's checkout as the working directory — §2.4. One checkout exists
-today; `composer test` in a two-repo workspace is otherwise ambiguous.
+today; a gate named `tests` in a two-repo workspace is otherwise ambiguous.
 
-A recorded command reads `/dev/null`, never the terminal. The gate list is the loop's own stdin, and
-a gate that read it swallowed the gates behind it — but the rule outlives that: evidence of something
-that waited on a human is evidence nobody can reproduce. This holds for `evidence record` too.
+A recorded command gets `/dev/null` on stdin. The gate list is the loop's own stdin, and a gate that
+read it swallowed the gates behind it — but the rule outlives that: evidence of something that waited
+on a human is evidence nobody can reproduce. This holds for `evidence record` too. It is the stream,
+not the terminal: a gate that opens `/dev/tty` still finds one.
+
+Every gate needs a pin. `check` reads the detector and the pin list, so a clause invented for an id
+nothing pinned is invisible to it — and running that command would record a bar no artifact declares.
+One unpinned gate refuses the whole set, before any of them runs.
 
 ---
 

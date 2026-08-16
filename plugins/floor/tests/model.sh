@@ -1291,10 +1291,13 @@ a_command_with_no_clause_is_refused() {
   d=$(floor "$tmp/g6" new "Nameless")
   floor "$tmp/g6" charter derive >/dev/null 2>&1
 
-  # Everything that could name this command, gone: the clause, its pin, and the file the detector
-  # reads. What is left is a charter `check` calls clean, holding a command that is no gate.
+  # The clause goes and the declaration with it, so the detector is silent and `check` has nothing to
+  # say. The pin stays, and is moved to another repository — reported uncheckable and never counted,
+  # so `check` still passes and the gate stage reaches the name rather than refusing the provenance.
   rm -f "$tmp/g6/.foundry/gates"
-  awk '$1 == "gate"' "$(charter_of "$d")" > "$tmp/g6/cut" && cp "$tmp/g6/cut" "$(charter_of "$d")"
+  id=$(awk '$1 == "gate" { print $2; exit }' "$(charter_of "$d")")
+  printf 'pin %s https://github.com/acme/elsewhere.git HEAD gone deadbeef\ngate %s true\n' \
+    "$id" "$id" > "$(charter_of "$d")"
 
   is "a charter this hollow is still clean" "$(code_of floor "$tmp/g6" charter check)" "0"
   is "and the command under it is refused"  "$(code_of floor "$tmp/g6" gates)" "7"
@@ -1360,10 +1363,12 @@ a_clause_with_no_text_names_no_gate() {
   d=$(floor "$tmp/g9" new "Blank")
   floor "$tmp/g9" charter derive >/dev/null 2>&1
 
-  # The declaration goes so the detector is silent, and the pin with it, so every reader `check` has
-  # is left with nothing to say. 4294967295 is `printf '' | cksum`.
+  # The declaration goes so the detector is silent. The pin stays, on another repository, where it is
+  # reported uncheckable and never counted — so `check` passes and the name is what refuses, not the
+  # provenance. 4294967295 is `printf '' | cksum`.
   rm -f "$tmp/g9/.foundry/gates"
-  printf 'clause 4294967295 Gate \ngate 4294967295 true\n' > "$(charter_of "$d")"
+  printf 'clause 4294967295 Gate \npin 4294967295 https://github.com/acme/elsewhere.git HEAD gone deadbeef\ngate 4294967295 true\n' \
+    > "$(charter_of "$d")"
 
   is "a clause whose id was made from no text is not forged" \
      "$(code_of floor "$tmp/g9" charter check)" "0"
@@ -1395,6 +1400,29 @@ a_second_command_under_one_id_is_refused() {
   is "so neither runs" "$(floor "$tmp/ga" evidence)" ""
 }
 a_second_command_under_one_id_is_refused
+
+#
+# A clause invented whole, for an id nothing pinned. `check`'s five readers walk the detector or the
+# pin list, so none of them sees it — `forged_ids` accepts the id because it was honestly made from
+# the words beside it. Two appended lines, and the command runs with no artifact behind it.
+#
+a_gate_from_nowhere_is_refused() {
+  make_repo "$tmp/gb" main && set_origin "$tmp/gb" 'https://github.com/acme/gb.git' \
+    && mkdir -p "$tmp/gb/.foundry" \
+    && commit_file "$tmp/gb" .foundry/gates 'tests  true
+' || { skip "unpinned gate — git could not make a repo here"; return; }
+
+  d=$(floor "$tmp/gb" new "Nowhere")
+  floor "$tmp/gb" charter derive >/dev/null 2>&1
+
+  rogue=$(printf '%s' rogue | cksum | awk '{ print $1 }')
+  printf 'clause %s Gate rogue\ngate %s false\n' "$rogue" "$rogue" >> "$(charter_of "$d")"
+
+  is "an invented clause reads as clean" "$(code_of floor "$tmp/gb" charter check)" "0"
+  is "and every gate is refused, not just that one" "$(code_of floor "$tmp/gb" gates)" "7"
+  is "so the pinned gate beside it never ran either" "$(floor "$tmp/gb" evidence)" ""
+}
+a_gate_from_nowhere_is_refused
 
 #
 # The same act with a quieter shape. Deleting a level-2 declaration drops detection a level, so the

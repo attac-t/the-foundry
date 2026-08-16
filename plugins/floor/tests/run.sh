@@ -493,6 +493,11 @@ wreck_runner "a clause read as spaces when it has no text is caught" \
 wreck_runner "a second command under one id is caught" \
   twoids 's#    refuse_repeated_ids "$pins" || exit 7##'
 
+# The general case of that one. `check` reads the detector and the pin list, so a clause invented for
+# an unpinned id is invisible to it, and the command runs with nothing behind it.
+wreck_runner "a gate the charter records no provenance for is caught" \
+  unpinned 's#    refuse_unpinned_gates "$dir" "$pins" || exit 7##'
+
 # The list the loop reads is the command's stdin. A gate that reads it swallows the gates behind it,
 # and they read as never having failed.
 wreck_runner "a gate that eats the gates after it is caught" \
