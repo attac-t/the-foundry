@@ -1303,9 +1303,15 @@ corrected. It also found that the stage should not be built yet, which is new.
 | satisfaction read existentially over an append-only ledger | unchanged, and now named as open | One `yes` outranks any number of noes. Invisible while every record is a command's exit code; a defect the moment a second human can disagree — §7 q10 |
 | §9 ordering `work source` with durable source-scoped grants | its own stage | `decide-boundary`'s tell: always-on policy and a deliberately-invoked transport activate differently, so they are two homes. The grant is also *scoped to* a source, which §2.3 says confers no authority *over* it — one word apart, and no contract for the difference |
 
-**Two things the work source needs and does not have.** Nothing says who may answer — attribution
+**Two things the work source needs and does not have.** Nothing said who may answer — attribution
 records *who*, never whether they may — and nothing says what an ask may disclose when the source and
-the target are different trust domains, which §2.3 already calls attacker-controlled. Both are §7.
+the target are different trust domains, which §2.3 already calls attacker-controlled.
+
+**The first is settled and cost nothing.** The human whose selection authorised the run may answer:
+invariant 4 already names them, so the rule adds no noun and no store. It makes the selector a
+bottleneck, which is the honest price — a run exists because they selected it, and their absence
+holding their own run is not a defect. §7 q9. **But invariant 4 describes a stamp nothing writes**,
+so the work source still waits on that becoming real.
 
 **And the order was about to be broken silently.** §9 runs `evidence → gates → work source`; neither
 of the first two exists. Where an answer lives between `receive` and the evidence ledger cannot be
@@ -1361,11 +1367,22 @@ required by §2.3, not speculative.
    **That deferral rests on a precondition nothing enforces.** `targets add` appends without limit and
    no refusal counts them, so a two-target run authorises today.
 
-9. **Who may answer?** `authority` is enforced by attribution — §1 — and attribution says *who*, never
-   whether they may. Every commenter on an item is an attributed human. The options each cost
-   something real: the person who selected the item blocks on their absence; an allowlist is a second
-   policy store; *anyone who can write to the source* is the provider's access control, which §3
-   forbids a contract from naming. **Nothing may be built on the work source until this is decided.**
+9. ~~**Who may answer?**~~ **Closed in revision 14** — the human whose selection authorised the run.
+   Attribution says *who*, never whether they may, so without a rule every commenter on an item is an
+   attributed human and the authorisation gate is decoration.
+
+   **It adds no noun.** Invariant 4 already makes selecting the work item the human act that
+   authorises the run, so the run holds one attributed human before any question is asked. An
+   allowlist invents a second policy store; *anyone who can write to the source* is the provider's
+   access control, which §3 forbids a contract from naming.
+
+   **The cost is real and accepted:** the selector is the bottleneck, and nobody may answer for them.
+   The first run that legitimately needs a second person is the evidence that would justify an
+   allowlist — building one now is guessing.
+
+   **What this owes:** floor writes `source: cli` and records no `who`, so the selector exists here
+   and not in code. Invariant 4 describes something nothing writes, and the work source cannot be
+   built until it does.
 
 10. **What does a second, contradicting answer mean?** First wins is racy. Last wins lets a late
     commenter overwrite. Refusing matches §2.2's *ambiguous escalates* and turns one disagreement into
