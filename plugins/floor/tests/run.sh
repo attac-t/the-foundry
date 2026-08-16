@@ -390,7 +390,7 @@ wreck_runner "a drift check that compares the base with itself is caught" \
 # the caller instead and the ledger records what a worker says happened.
 #
 wreck_runner "a recorder that takes the result from its caller is caught" \
-  claimed 's#why=$("$@" 2>&1); result=$?#result=$1; why=""#'
+  claimed 's#why=$("$@" </dev/null 2>&1); result=$?#result=$1; why=""#'
 
 # A record with no ref cannot be matched to a delivered sha, and §2.5's completion invariant
 # quantifies over the delivered ref of every selected target.
@@ -480,8 +480,18 @@ wreck_runner "a gate with no command recorded as a pass is caught" \
 # The count that made `emptycmd` equivalent. Blanking two fields of a two-field record leaves one
 # space, `check` read it as a command, and the spurious drift refused the run before the guard above
 # could — a mutant killed by a refusal that had nothing to do with it.
+# Two functions strip the same way now, so the break names the field count before it. Matching
+# `sub(/^ +/` alone would blank both and prove whichever failure the suite noticed first.
+#
+# Only this one has a break. `clause_text` strips the same way and cannot be reached with an empty
+# clause, because `forged_ids` remakes the id from the text and refuses the only charter that would.
 wreck_runner "a pinned command read as a space when it is empty is caught" \
-  spacecmd 's#sub(/^ +/, "")#sub(/^  /, "")#'
+  spacecmd 's#$2 = ""; sub(/^ +/, "")#$2 = ""; sub(/^  /, "")#'
+
+# The list the loop reads is the command's stdin. A gate that reads it swallows the gates behind it,
+# and they read as never having failed.
+wreck_runner "a gate that eats the gates after it is caught" \
+  eatstdin 's#why=$("$@" </dev/null 2>&1)#why=$("$@" 2>\&1)#'
 
 # --- break the install ---
 

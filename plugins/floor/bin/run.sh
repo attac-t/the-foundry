@@ -18,7 +18,7 @@
 #   6  a clause was refused: it would weaken the charter, its pin could not be captured, or the run
 #      would derive from an artifact it changed — including a run that recorded no base
 #   7  the charter disagrees with its pins — something drifted or went missing
-#   8  the charter holds no clause, so it grades nothing
+#   8  the charter grades nothing mechanically — it holds no clause, or none that pins a gate
 #   9  a clause grades no selected target, so it is no bar
 #  10  the selection moved after it was authorised — that is a new run, not this one
 #  11  a clause is introduced and nothing can ask a human to authorise it
@@ -686,7 +686,11 @@ stamp_command() {
     dir=$1; ref=$2; name=$3
     shift 3
 
-    why=$("$@" 2>&1); result=$?
+    # `</dev/null`, because `gates` feeds its pin list to the loop on stdin and the command inherits
+    # it. A gate that reads stdin ate the gates after it: they never ran, were never recorded, and
+    # the run answered 0. Closing it here rather than at the loop covers `evidence record` too — a
+    # recorded command that reads the caller's terminal is evidence of something nobody can repeat.
+    why=$("$@" </dev/null 2>&1); result=$?
 
     stamp "$dir" machine "$name" "$result" "$ref" "$why"
     return "$result"
@@ -747,6 +751,9 @@ run_pinned_gates() {
 
     # §2.4: a gate runs with its target's checkout as the working directory. One checkout exists
     # today — `composer test` in a two-repo workspace is otherwise ambiguous.
+    #
+    # Not restored, and nothing may run after this. `gates` ends here and `main` dispatches nothing
+    # afterwards; a caller added below this line would inherit a directory it did not choose.
     cd "$(repo_root)" || { note "no checkout to run gates in"; exit 1; }
 
     # A here-doc, not a pipe. A tally raised inside a pipe's subshell dies with it, and the tally is
@@ -1461,8 +1468,15 @@ underived_gates() {
 
 
 # `$4` is the first word of the clause, so a finding used to name half its own subject.
+#
+# `+` for the same reason `pinned_command` has it: blanking three fields of a three-field record —
+# a clause with no text — leaves two spaces, not three, and a fixed count returns them as the name.
+#
+# No break covers this one, where `pinned_command` has `spacecmd`. `forged_ids` remakes the id from
+# the text, so the only charter that reaches it is one `check` already refuses as forged. It is here
+# so two functions doing one job do it one way, not because anything can prove it.
 clause_text() {
-    awk -v id="$2" '$1 == "clause" && $2 == id { $1 = ""; $2 = ""; $3 = ""; sub(/^   /, ""); print; exit }' \
+    awk -v id="$2" '$1 == "clause" && $2 == id { $1 = ""; $2 = ""; $3 = ""; sub(/^ +/, ""); print; exit }' \
         "$1" 2>/dev/null
 }
 

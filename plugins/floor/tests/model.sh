@@ -1325,6 +1325,28 @@ a_gate_with_no_command_is_refused() {
 a_gate_with_no_command_is_refused
 
 #
+# The pin list is the loop's stdin, so a gate that reads stdin eats the gates after it: they never
+# run, are never recorded, and the run answers 0. A gate not run must never read as one that passed.
+#
+a_gate_cannot_eat_the_gates_after_it() {
+  make_repo "$tmp/g8" main && set_origin "$tmp/g8" 'https://github.com/acme/g8.git' \
+    && mkdir -p "$tmp/g8/.foundry" \
+    && commit_file "$tmp/g8" .foundry/gates 'greedy  cat
+second  true
+' || { skip "stdin — git could not make a repo here"; return; }
+
+  floor "$tmp/g8" new "Greedy" >/dev/null
+  floor "$tmp/g8" charter derive >/dev/null 2>&1
+  floor "$tmp/g8" gates >/dev/null 2>&1
+
+  held=$(floor "$tmp/g8" evidence)
+  is  "a gate that reads stdin does not consume the ones after it" \
+      "$(printf '%s\n' "$held" | awk -F'\t' 'NF == 7' | grep -c .)" "2"
+  has "so the gate behind it is recorded" "$held" "	second	"
+}
+a_gate_cannot_eat_the_gates_after_it
+
+#
 # The same act with a quieter shape. Deleting a level-2 declaration drops detection a level, so the
 # clause survives under a different source and every pin that remains still matches — comparing
 # pinned sources one by one cannot see a source that stopped being yielded. Only the answer can.
