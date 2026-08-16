@@ -385,6 +385,18 @@ wreck_runner "a base read from the branch instead of the commit is caught" \
 wreck_runner "a drift check that compares the base with itself is caught" \
   selfsame 's#\[ "$(worktree_sha "$source")" = "$sha" \] \&\& continue#[ "$(blob_sha "$ref" "$source")" = "$sha" ] \&\& continue#'
 
+#
+# The one property that makes a ledger evidence: the recorder runs the command. Take the result from
+# the caller instead and the ledger records what a worker says happened.
+#
+wreck_runner "a recorder that takes the result from its caller is caught" \
+  claimed 's#why=$("$@" 2>&1); result=$?#result=$1; why=""#'
+
+# A record with no ref cannot be matched to a delivered sha, and §2.5's completion invariant
+# quantifies over the delivered ref of every selected target.
+wreck_runner "evidence stamped without the ref it applies to is caught" \
+  noref 's#"$(delivered_ref "$dir")" "$why"#"" "$why"#'
+
 # Grants are keyed by the run's id, so a renamed directory looks up a key nothing holds and `policy`
 # answered exit 0 with the bootstrap alone. Authority a human gave, gone, without a word.
 #

@@ -1047,6 +1047,69 @@ a_run_cannot_author_its_own_bar() {
 a_run_cannot_author_its_own_bar
 
 #
+# Evidence is stamped, never claimed — RFC-001 §2.5. The recorder takes a command, runs it, and
+# records what happened, so a worker proves a gate passed only by making it pass.
+#
+evidence_is_what_happened() {
+  make_repo "$tmp/ev" main && set_origin "$tmp/ev" 'https://github.com/acme/ev.git' \
+    && commit_file "$tmp/ev" README 'x
+' || { skip "evidence — git could not make a repo here"; return; }
+
+  floor "$tmp/ev" new "Evidence" >/dev/null
+
+  is "a gate that passes is recorded, and the exit code carries" \
+     "$(code_of floor "$tmp/ev" evidence record tests true)" "0"
+  is "a gate that fails is recorded too, and so does that" \
+     "$(code_of floor "$tmp/ev" evidence record types false)" "1"
+
+  held=$(floor "$tmp/ev" evidence)
+  matches "the passing record says machine, and zero" "$held" "machine.*tests.*	0	"
+  matches "the failing record says machine, and one"  "$held" "machine.*types.*	1	"
+  matches "each record names the ref it applies to"   "$held" "	[0-9a-f]{40}	"
+}
+evidence_is_what_happened
+
+#
+# The property that makes it evidence. There is no argument for a result, so the only way to record a
+# pass is to pass — `record()` in §2.5 takes a command and no outcome.
+#
+a_result_is_not_something_you_pass() {
+  make_repo "$tmp/ev2" main && set_origin "$tmp/ev2" 'https://github.com/acme/ev2.git' \
+    && commit_file "$tmp/ev2" README 'x
+' || { skip "no result parameter — git could not make a repo here"; return; }
+
+  floor "$tmp/ev2" new "No Claim" >/dev/null
+
+  is  "a name with no command is refused" "$(code_of floor "$tmp/ev2" evidence record tests)" "2"
+  has "and says why" "$(floor_says "$tmp/ev2" evidence record tests)" "a result is not something you pass"
+  is  "and nothing was written" "$(floor "$tmp/ev2" evidence)" ""
+
+  # What a caller trying to claim a pass actually gets: `0` is run as a command, and there is no such
+  # command. The record says what happened, which is that nothing ran.
+  floor "$tmp/ev2" evidence record tests 0 >/dev/null 2>&1
+  lacks "a claimed result is never recorded as a pass" "$(floor "$tmp/ev2" evidence)" "	0	"
+}
+a_result_is_not_something_you_pass
+
+#
+# Why the command's own output is kept: a gate that failed and said nothing is a gate nobody can act
+# on. Newlines are flattened because one record is one line.
+#
+a_failure_records_what_the_command_said() {
+  make_repo "$tmp/ev3" main && set_origin "$tmp/ev3" 'https://github.com/acme/ev3.git' \
+    && commit_file "$tmp/ev3" README 'x
+' || { skip "failure detail — git could not make a repo here"; return; }
+
+  floor "$tmp/ev3" new "Why" >/dev/null
+  floor "$tmp/ev3" evidence record types sh -c 'printf "two\nerrors\n" >&2; exit 1' >/dev/null 2>&1
+
+  held=$(floor "$tmp/ev3" evidence)
+  has "the failure keeps what the command said" "$held" "two errors"
+  is  "on one line, so one record stays one record" "$(printf '%s' "$held" | wc -l | tr -d ' ')" "0"
+}
+a_failure_records_what_the_command_said
+
+#
 # The same act with a quieter shape. Deleting a level-2 declaration drops detection a level, so the
 # clause survives under a different source and every pin that remains still matches — comparing
 # pinned sources one by one cannot see a source that stopped being yielded. Only the answer can.

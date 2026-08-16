@@ -45,6 +45,7 @@ main() {
         targets)   targets "$@" ;;
         policy)    policy "$@" ;;
         charter)   charter "$@" ;;
+        evidence)  evidence "$@" ;;
         authorise) authorise ;;
         *)         usage; exit 2 ;;
     esac
@@ -67,6 +68,9 @@ floor — where work happens.
   run.sh charter check            report clauses that drifted from their pins, or went missing
   run.sh charter introduce <kind> <text>
                                   add a clause nothing derived — it stays introduced
+  run.sh evidence                 print what this run has proved
+  run.sh evidence record <name> <command...>
+                                  run it, and stamp what happened
   run.sh authorise                refuse a run that describes no work, or whose selection moved
                                   — exit 1, 5, 8, 9, 10, 11 or 12
 EOF
@@ -617,6 +621,59 @@ charter() {
 }
 
 charter_file() { printf '%s/charter' "$1"; }
+
+evidence_file() { printf '%s/evidence' "$1"; }
+
+#
+# What was proved, and by whom — RFC-001 §2.5.
+#
+#     record  <name> <command...>   run it, stamp what happened
+#     (none)                        print the ledger
+#
+evidence() {
+    dir=$(active_run) || exit 1
+    refuse_renamed_run "$dir"
+
+    case "${1:-}" in
+        '')     cat "$(evidence_file "$dir")" 2>/dev/null; return 0 ;;
+        record) shift; record_gate "$dir" "$@" ;;
+        *)      usage; exit 2 ;;
+    esac
+}
+
+#
+# **There is no parameter for a result.** The recorder takes a command, runs it, and stamps what
+# happened — so a worker can claim a gate passed only by making it pass.
+#
+# It cannot stop a model appending to the file by hand, and §2.5 says so. Removing the capability is
+# what Panel does with `tools: Read, Glob, Grep`, and it is what this does.
+#
+record_gate() {
+    dir=$1; name=${2:-}; [ "$#" -gt 0 ] && shift; [ "$#" -gt 0 ] && shift
+
+    [ -n "$name" ] || { note "record needs a name and a command"; exit 2; }
+    [ "$#" -gt 0 ] || { note "record needs a command to run — a result is not something you pass"; exit 2; }
+
+    why=$("$@" 2>&1); result=$?
+
+    stamp "$dir" machine "$name" "$result" "$(delivered_ref "$dir")" "$why"
+    return "$result"
+}
+
+# Append-only. One line, tab-separated, in the order §2.5 names.
+stamp() {
+    printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
+        "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$2" 01 "$3" "$4" "$5" "$(one_line "$6")" \
+        >> "$(evidence_file "$1")" 2>/dev/null || die_unwritable "$(evidence_file "$1")"
+}
+
+# A gate that printed nothing on failure still records the ref it applies to, so `why` is last and
+# may be empty. Newlines would make one record read as several.
+one_line() { printf '%s' "$1" | tr '\n\t' '  '; }
+
+# The sha the evidence applies to. `check` compares against the base; this is what the run delivers,
+# which is where the work is.
+delivered_ref() { git rev-parse --verify --quiet HEAD 2>/dev/null; }
 
 #
 # Authorisation — every refusal it can make without a human present.
