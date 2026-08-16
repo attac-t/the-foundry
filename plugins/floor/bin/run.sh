@@ -26,6 +26,7 @@
 #  12  the detector yields a gate the charter holds no clause for — re-derive
 #  13  the run directory was renamed, so the grants a human gave it are not there
 #  14  a gate the charter pins did not pass — an answer, not a refusal
+#  15  this run may not deliver yet — an answer too, and it names what is missing
 #
 # Eight through twelve are one stage and five remedies: write a requirement down, select a target it
 # governs, or start again. Collapsing them would make the exit code say *authorisation refused* and
@@ -51,6 +52,7 @@ main() {
         charter)   charter "$@" ;;
         evidence)  evidence "$@" ;;
         gates)     gates "$@" ;;
+        complete)  complete "$@" ;;
         authorise) authorise ;;
         *)         usage; exit 2 ;;
     esac
@@ -78,6 +80,7 @@ floor — where work happens.
                                   run it, and stamp what happened
   run.sh gates                    run every gate the charter pins, and record each — exit 14 if any
                                   did not pass
+  run.sh complete                 may this run deliver? exit 15 names what is missing
   run.sh authorise                refuse a run that describes no work, or whose selection moved
                                   — exit 1, 5, 8, 9, 10, 11 or 12
 EOF
@@ -848,6 +851,102 @@ gate_held() {
     [ -n "$command" ] || { note "the charter pins no command for [$name]"; exit 7; }
 
     stamp_command "$dir" "$ref" "$name" sh -c "$command"
+}
+
+#
+# May this run deliver? — RFC-001 §2.5's completion invariant.
+#
+# Every conjunct answers from state something else already wrote: `new` stamped the selection, the
+# charter holds the clauses, unit 01 holds the selection, the ledger holds what ran. Nothing here
+# keeps a record of its own, because a second copy of any of them is a second thing to drift.
+#
+# The first two conjuncts close fail-opens, not edge cases: the invariant quantifies over clauses and
+# over targets, so an empty charter and an empty selection each satisfy it vacuously. Every fresh run
+# has the second, and any repository the detector reads no gate from produces the first.
+#
+complete() {
+    [ "$#" -eq 0 ] || { usage; exit 2; }
+
+    dir=$(active_run) || exit 1
+    refuse_renamed_run "$dir"
+
+    findings=$(
+        unauthorised_run "$dir"
+        empty_bar "$dir"
+        empty_selection "$dir"
+        unmet_clauses "$dir"
+    )
+
+    [ -n "$findings" ] || return 0
+    printf '%s\n' "$findings"
+    exit 15
+}
+
+# Invariant 4. A run exists because a human selected the work item, and one that records nobody has
+# no authority to deliver — the stamp lands at `new`, so its absence is a run made before the rule.
+unauthorised_run() {
+    who=$(awk -F'\t' 'NF == 3 && $2 != "" { print $2; exit }' "$(authority_file "$1")" 2>/dev/null)
+
+    [ -n "$who" ] && return 0
+    printf 'unauthorised: nobody is recorded as having selected this run\n'
+}
+
+empty_bar() {
+    [ -n "$(awk '$1 == "clause" { print $2 }' "$(charter_file "$1")" 2>/dev/null)" ] && return 0
+    printf 'nobar: the charter holds no clause, so it grades nothing\n'
+}
+
+empty_selection() {
+    [ -n "$(awk '!/^[ \t]*#/ && NF { print $1 }' "$(unit_targets_file "$1")" 2>/dev/null)" ] && return 0
+    printf 'nothing selected: no target, so every clause is satisfied over nothing\n'
+}
+
+#
+# The invariant itself, per target — there is no run-level ref. A clause spanning two targets is
+# satisfied against each one's delivered sha, and "the delivered ref" names neither.
+#
+# One checkout has a delivered ref. A clause pinned anywhere else is reported, never assumed
+# satisfied: the alternative is a run that delivers because nobody could check it.
+#
+unmet_clauses() {
+    file=$(charter_file "$1")
+    here=$(this_repository)
+    ref=$(delivered_ref)
+
+    [ -n "$ref" ] || { printf 'nothing delivered: this checkout has no commit to be graded at\n'; return; }
+
+    awk '$1 == "clause" { print $2 }' "$file" 2>/dev/null | while read -r id; do
+        text=$(clause_text "$file" "$id")
+
+        # Three ways a clause is not met, and they take different remedies. A clause nothing pinned
+        # is invariant 1's *introduced*: no ref makes it true, and the answer that does is a human's,
+        # which the work source does not carry yet. Naming it `unverifiable` would send a reader
+        # looking for a checkout.
+        has_record "$file" pin "$id" \
+            || { printf 'introduced: [%s] rests on no pin, so no ref can satisfy it\n' "$text"; continue; }
+
+        has_local_pin "$file" "$id" "$here" \
+            || { printf 'unverifiable: [%s] is pinned to a repository this checkout is not\n' "$text"; continue; }
+
+        satisfied "$1" "$text" "$ref" && continue
+        printf 'unmet: [%s] at %s@%s\n' "$text" "$here" "$ref"
+    done
+}
+
+#
+# A record answering *was this clause met* with yes, at the ref delivered.
+#
+# One yes outranks any number of noes, because the ledger is append-only and satisfaction is read
+# existentially. §7 holds that open; it is harmless while every record is a command's exit code and
+# stops being so once a human can answer and a second human can disagree.
+#
+# `""` on both sides of each comparison. An `-v` assignment is a numeric string, so a clause named
+# `123` would match a record named `0123` — the identity defect §2.2 already paid for once.
+#
+satisfied() {
+    awk -F'\t' -v name="$2" -v ref="$3" \
+        '$4 "" == name "" && $5 == "0" && $6 "" == ref "" { seen = 1 } END { exit !seen }' \
+        "$(evidence_file "$1")" 2>/dev/null
 }
 
 #
