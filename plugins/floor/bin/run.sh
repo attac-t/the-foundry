@@ -17,13 +17,15 @@
 #   5  a target was refused: nobody authorised it for this run
 #   6  a clause was refused: it would weaken the charter, its pin could not be captured, or the run
 #      would derive from an artifact it changed — including a run that recorded no base
-#   7  the charter disagrees with its pins — something drifted or went missing
-#   8  the charter holds no clause, so it grades nothing
+#   7  the charter cannot be run against as it stands — something drifted, went missing, holds
+#      together with nothing, or is pinned to a repository this is not
+#   8  the charter grades nothing mechanically — it holds no clause, or none that pins a gate
 #   9  a clause grades no selected target, so it is no bar
 #  10  the selection moved after it was authorised — that is a new run, not this one
 #  11  a clause is introduced and nothing can ask a human to authorise it
 #  12  the detector yields a gate the charter holds no clause for — re-derive
 #  13  the run directory was renamed, so the grants a human gave it are not there
+#  14  a gate the charter pins did not pass — an answer, not a refusal
 #
 # Eight through twelve are one stage and five remedies: write a requirement down, select a target it
 # governs, or start again. Collapsing them would make the exit code say *authorisation refused* and
@@ -48,6 +50,7 @@ main() {
         policy)    policy "$@" ;;
         charter)   charter "$@" ;;
         evidence)  evidence "$@" ;;
+        gates)     gates "$@" ;;
         authorise) authorise ;;
         *)         usage; exit 2 ;;
     esac
@@ -73,6 +76,8 @@ floor — where work happens.
   run.sh evidence                 print what this run has proved
   run.sh evidence record <name> <command...>
                                   run it, and stamp what happened
+  run.sh gates                    run every gate the charter pins, and record each — exit 14 if any
+                                  did not pass
   run.sh authorise                refuse a run that describes no work, or whose selection moved
                                   — exit 1, 5, 8, 9, 10, 11 or 12
 EOF
@@ -670,7 +675,23 @@ record_gate() {
     # tree was never tested — evidence for work that did not exist when the work was graded.
     ref=$(delivered_ref) || { note "no commit to record evidence against"; exit 1; }
 
-    why=$("$@" 2>&1); result=$?
+    stamp_command "$dir" "$ref" "$name" "$@"
+}
+
+#
+# Run it, and stamp what happened. The only path to a `machine` record, and it takes the ref rather
+# than reading one — `gates` grades every gate against the tree it asked about, not against whatever
+# an earlier gate left behind.
+#
+stamp_command() {
+    dir=$1; ref=$2; name=$3
+    shift 3
+
+    # `</dev/null`, because `gates` feeds its pin list to the loop on stdin and the command inherits
+    # it. A gate that reads stdin ate the gates after it: they never ran, were never recorded, and
+    # the run answered 0. Closing it here rather than at the loop covers `evidence record` too — a
+    # recorded command that reads the caller's terminal is evidence of something nobody can repeat.
+    why=$("$@" </dev/null 2>&1); result=$?
 
     stamp "$dir" machine "$name" "$result" "$ref" "$why"
     return "$result"
@@ -692,6 +713,114 @@ one_line() { printf '%s' "$1" | tr '\n\r\t' '   '; }
 # which is where the work is. It answers for the repository the caller stands in — `evidence` refuses
 # a wrong one before asking.
 delivered_ref() { git rev-parse --verify --quiet HEAD 2>/dev/null; }
+
+#
+# Run every gate the charter pins, and record each — RFC-001 §2.4.
+#
+# **The command comes from the charter, never from the caller.** `evidence record` will run anything
+# you hand it under any name, so `evidence record tests true` writes a `machine` pass for a gate that
+# never ran. This takes no command, which is the whole of the difference between a record and a claim.
+#
+# `check_charter` first, and it exits 7 on drift: a moved pin is a command nobody authorised, and
+# evidence for it would look exactly like evidence for the one they did. It also carries the
+# `refuse_wrong_repository` guard, so there is no second call to it here.
+#
+gates() {
+    dir=$(active_run) || exit 1
+    [ "$#" -eq 0 ] || { usage; exit 2; }
+
+    check_charter "$dir"
+
+    # One ref for the whole run of them. Taken here rather than per gate, so a gate that commits
+    # cannot move the tree the gates after it are recorded against.
+    ref=$(delivered_ref) || { note "no commit to gate"; exit 1; }
+
+    run_pinned_gates "$dir" "$ref"
+}
+
+#
+# `pinned_command` answers with the first record for an id and `moved_resolutions` compares only that
+# one, so a second `gate` line under the same id is a command nothing validated — and `check` reads
+# the charter as clean. One line appended, no pin touched, which is less than the charter's own
+# threat model asks of a worker.
+#
+#
+# A gate runs where its pin says it came from. One checkout exists, so a gate pinned elsewhere has
+# nowhere to run — and running it here would grade this repository against another one's bar.
+#
+# `moved_sources` reports a foreign pin `uncheckable:` and never counts it, deliberately: a
+# multi-target charter cannot be verified from one checkout. That is right for asking whether the
+# charter is sound, and wrong for asking whether this gate can run, so the question lives here.
+#
+refuse_gates_from_elsewhere() {
+    file=$(charter_file "$1")
+    here=$(this_repository)
+
+    elsewhere=$(printf '%s\n' "$2" | while read -r id _; do
+        [ -n "$id" ] || continue
+        has_local_pin "$file" "$id" "$here" || printf '%s ' "$id"
+    done)
+
+    [ -z "$elsewhere" ] && return 0
+    note "these gates are pinned to another repository, so this checkout cannot run them: $elsewhere"
+    return 1
+}
+
+# Every gate the charter pins, as `id command...`. `print_gate` wrote them.
+pinned_gates() {
+    awk '$1 == "gate" { $1 = ""; sub(/^ /, ""); print }' "$(charter_file "$1")" 2>/dev/null
+}
+
+run_pinned_gates() {
+    dir=$1; ref=$2
+    failed=0
+
+    pins=$(pinned_gates "$dir")
+    [ -n "$pins" ] || { note "this charter pins no gate, so it grades nothing mechanically"; exit 8; }
+    refuse_gates_from_elsewhere "$dir" "$pins" || exit 7
+
+    # §2.4: a gate runs with its target's checkout as the working directory. One checkout exists
+    # today — a gate named `tests` in a two-repo workspace is otherwise ambiguous.
+    #
+    # Not restored, and nothing may run after this. `gates` ends here and `main` dispatches nothing
+    # afterwards; a caller added below this line would inherit a directory it did not choose.
+    cd "$(repo_root)" || { note "no checkout to run gates in"; exit 1; }
+
+    # A here-doc, not a pipe. A tally raised inside a pipe's subshell dies with it, and the tally is
+    # the only thing this loop produces that the caller needs.
+    while read -r id command; do
+        [ -n "$id" ] || continue
+        gate_held "$dir" "$ref" "$id" "$command" || failed=$((failed + 1))
+    done <<EOF
+$pins
+EOF
+
+    [ "$failed" -eq 0 ] && return 0
+    note "gates that did not pass: $failed"
+    return 14
+}
+
+#
+# The ledger reads in the charter's words. `clause_text` is the name a human agreed to; the id is
+# this file's bookkeeping and means nothing to the person reading the record back.
+#
+gate_held() {
+    dir=$1; ref=$2; id=$3; command=$4
+
+    name=$(clause_text "$(charter_file "$dir")" "$id")
+
+    # Reachable only by editing the charter, which is what `check` calls unattended drift. Refused
+    # rather than stamped: a record naming no clause cannot be matched to the bar it was meant to
+    # grade, and it would sit in the ledger looking like one that can.
+    [ -n "$name" ] || { note "the charter pins a command under [$id] and names no clause for it"; exit 7; }
+
+    # `sh -c ""` exits 0. A `.foundry/gates` line holding a name and nothing else derives to a clause
+    # with an empty command, and that is a typo away — so the green it would record is the one kind
+    # that is never earned. `derive` should refuse it at the source too; it does not yet.
+    [ -n "$command" ] || { note "the charter pins no command for [$name]"; exit 7; }
+
+    stamp_command "$dir" "$ref" "$name" sh -c "$command"
+}
 
 #
 # Authorisation — every refusal it can make without a human present.
@@ -750,8 +879,8 @@ authorise() {
     # was removed.
     #
     # The guard `check` carries. Without it a run that never derived is told it *lost* a clause, with
-    # pins asserted that do not exist — verified by execution on a fresh run in a repo with a
-    # `Makefile`.
+    # pins asserted that do not exist — verified by execution on a fresh run in a repo the detector
+    # answers for.
     [ -f "$charter_path" ] || {
         note "this run has no charter — run \`charter derive\` first"
         exit 1
@@ -1013,8 +1142,11 @@ print_pin()    { printf 'pin %s %s %s %s %s\n' "$1" "$2" "$3" "$4" "$5"; }
 print_gate() { printf 'gate %s %s\n' "$1" "$2"; }
 
 # The command a gate resolved to when the charter was written.
+# A count, not a pattern, was the bug: blanking two fields of a three-field record leaves two spaces,
+# but of a two-field one — a gate pinned with no command — it leaves a single space. `moved_resolutions`
+# then read that space as a command and reported drift from the empty string to the empty string.
 pinned_command() {
-    awk -v want="$2" '$1 == "gate" && $2 == want { $1 = ""; $2 = ""; sub(/^  /, ""); print; exit }' \
+    awk -v want="$2" '$1 == "gate" && $2 == want { $1 = ""; $2 = ""; sub(/^ +/, ""); print; exit }' \
         "$1" 2>/dev/null
 }
 
@@ -1101,7 +1233,7 @@ refuse_missing_resolver() {
 #
 # `--verify`, or a failure looks like an answer.
 #
-# Plain `git rev-parse main:Makefile` sends its `fatal:` to stderr and then echoes `main:Makefile` to
+# Plain `git rev-parse main:gone` sends its `fatal:` to stderr and then echoes `main:gone` to
 # stdout. Discarding stderr leaves that string looking exactly like a captured sha, and it gets
 # pinned. `--verify --quiet` prints nothing and exits non-zero.
 #
@@ -1284,6 +1416,7 @@ check_charter() {
     findings=$(
         forged_ids "$file"
         ambiguous_ids "$file"
+        unsound_records "$file"
         underived_gates "$file"
         moved_sources "$file"
         moved_resolutions "$file"
@@ -1322,6 +1455,36 @@ ambiguous_ids() {
 # so rewriting the text under its id changes the requirement while every other check still matches.
 # Nothing enforced the premise until here.
 #
+#
+# Every record judged as a record, in one pass. `check`'s other readers walk the detector or the pin
+# list, so a record missing its half is invisible to all of them, and four separate tampers each
+# reached the gate stage because no reader here was asking.
+#
+# **A whole `clause`, `pin` and `gate` written together still passes.** Nothing outside the file
+# contradicts a triple that agrees with itself, and this reader is inside it. §2.2's boundary, not a
+# gap here.
+#
+# Subscripts, because they compare as text. `awk -v id=123` against a field is a strnum, so
+# `$2 == id` matches `0123` — `has_record` called such a gate pinned while a subscript called it
+# another gate. Five of those comparisons are still in this file; what changed is that the disagreement
+# now refuses, because this reader answers `unpinned` and `unclaused` for the id nobody wrote.
+#
+unsound_records() {
+    awk '
+        $1 == "clause" { kind[$2] = $3 }
+        $1 == "pin"    { pinned[$2] = 1 }
+        $1 == "gate"   { held[$2]++ }
+        END {
+            for (id in held) {
+                if (held[id] > 1)    print "repeated: gate " id
+                if (!(id in pinned)) print "unprovenanced: gate " id
+
+                if (!(id in kind)) { print "unclaused: gate " id; continue }
+                if (kind[id] != "Gate") print "notagate: " kind[id] " " id
+            }
+        }' "$1"
+}
+
 forged_ids() {
     awk '$1 == "clause" { t = $0; sub(/^clause [^ ]+ [^ ]+ /, "", t); print $2 " " t }' "$1" \
     | while read -r id text; do
@@ -1366,8 +1529,14 @@ underived_gates() {
 
 
 # `$4` is the first word of the clause, so a finding used to name half its own subject.
+#
+# `+` for the same reason `pinned_command` has it: blanking three fields of a three-field record —
+# a clause with no text — leaves two spaces, not three, and a fixed count returns them as the name.
+#
+# `forged_ids` does not cover it, though it looks as though it should: `clause_id ""` is a value like
+# any other, so a clause whose id was made from no text is not forged and `check` passes it.
 clause_text() {
-    awk -v id="$2" '$1 == "clause" && $2 == id { $1 = ""; $2 = ""; $3 = ""; sub(/^   /, ""); print; exit }' \
+    awk -v id="$2" '$1 == "clause" && $2 == id { $1 = ""; $2 = ""; $3 = ""; sub(/^ +/, ""); print; exit }' \
         "$1" 2>/dev/null
 }
 

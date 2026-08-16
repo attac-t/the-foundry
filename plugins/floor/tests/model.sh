@@ -1175,6 +1175,262 @@ a_failure_records_what_the_command_said() {
 a_failure_records_what_the_command_said
 
 #
+# Gates — RFC-001 §2.4. The command comes from the charter, so a worker cannot name a gate and hand
+# it something else to run. `evidence record tests true` writes a pass; this takes no such argument.
+#
+a_gate_runs_the_command_the_charter_pinned() {
+  make_repo "$tmp/g1" main && set_origin "$tmp/g1" 'https://github.com/acme/g1.git' \
+    && mkdir -p "$tmp/g1/.foundry" \
+    && commit_file "$tmp/g1" .foundry/gates 'tests  true
+' || { skip "gates — git could not make a repo here"; return; }
+
+  floor "$tmp/g1" new "Gates" >/dev/null
+  floor "$tmp/g1" charter derive >/dev/null 2>&1
+
+  is "a charter whose gates all pass answers 0" "$(code_of floor "$tmp/g1" gates)" "0"
+
+  held=$(floor "$tmp/g1" evidence)
+  matches "the record is machine trust, in the charter's words" "$held" "	machine	01	tests	0	"
+  matches "and names the ref it applies to" "$held" "	[0-9a-f]{40}	"
+
+  is "and no command is taken from the caller" "$(code_of floor "$tmp/g1" gates true)" "2"
+}
+a_gate_runs_the_command_the_charter_pinned
+
+#
+# A gate that fails is recorded, and the exit code says so. Recording only the passes would leave a
+# run that looks unanswered rather than one that was answered badly.
+#
+a_failing_gate_is_recorded_and_answered() {
+  make_repo "$tmp/g2" main && set_origin "$tmp/g2" 'https://github.com/acme/g2.git' \
+    && mkdir -p "$tmp/g2/.foundry" \
+    && commit_file "$tmp/g2" .foundry/gates 'tests  false
+' || { skip "failing gate — git could not make a repo here"; return; }
+
+  floor "$tmp/g2" new "Red" >/dev/null
+  floor "$tmp/g2" charter derive >/dev/null 2>&1
+
+  is "a gate that did not pass answers 14" "$(code_of floor "$tmp/g2" gates)" "14"
+  matches "and is recorded with what it returned" "$(floor "$tmp/g2" evidence)" "	tests	1	"
+}
+a_failing_gate_is_recorded_and_answered
+
+#
+# One ref for the whole set. A gate that commits would otherwise move the tree the gates after it are
+# recorded against, and the ledger would name a sha nobody gated.
+#
+every_gate_is_recorded_against_one_ref() {
+  make_repo "$tmp/g3" main && set_origin "$tmp/g3" 'https://github.com/acme/g3.git' \
+    && mkdir -p "$tmp/g3/.foundry" \
+    && commit_file "$tmp/g3" .foundry/gates 'first   git -c user.email=a@b.c -c user.name=a commit -q --allow-empty -m moved
+second  true
+' || { skip "one ref — git could not make a repo here"; return; }
+
+  floor "$tmp/g3" new "OneRef" >/dev/null
+  floor "$tmp/g3" charter derive >/dev/null 2>&1
+  was=$(git -C "$tmp/g3" rev-parse HEAD 2>/dev/null)
+
+  floor "$tmp/g3" gates >/dev/null 2>&1
+
+  held=$(floor "$tmp/g3" evidence)
+  is  "two gates ran" "$(printf '%s\n' "$held" | awk -F'\t' 'NF == 7' | grep -c .)" "2"
+  is  "and named one ref between them" \
+      "$(printf '%s\n' "$held" | awk -F'\t' 'NF == 7 { print $6 }' | sort -u | grep -c .)" "1"
+  has "which is the tree they were asked about" "$held" "$was"
+}
+every_gate_is_recorded_against_one_ref
+
+#
+# A moved pin is a command nobody authorised, and evidence for it would be indistinguishable from
+# evidence for the one they did. So nothing runs, and nothing is written.
+#
+a_drifted_charter_gates_nothing() {
+  make_repo "$tmp/g4" main && set_origin "$tmp/g4" 'https://github.com/acme/g4.git' \
+    && mkdir -p "$tmp/g4/.foundry" \
+    && commit_file "$tmp/g4" .foundry/gates 'tests  true
+' || { skip "drift — git could not make a repo here"; return; }
+
+  floor "$tmp/g4" new "Drift" >/dev/null
+  floor "$tmp/g4" charter derive >/dev/null 2>&1
+
+  printf 'tests  false\n' > "$tmp/g4/.foundry/gates"
+
+  is "a charter that drifted from its pins gates nothing" "$(code_of floor "$tmp/g4" gates)" "7"
+  is "and records nothing"                               "$(floor "$tmp/g4" evidence)" ""
+}
+a_drifted_charter_gates_nothing
+
+#
+# §2.4: a gate runs with its target's checkout as the working directory. Standing one level down is
+# how the ambiguity shows up with a single target — the gate reads a path relative to the root.
+#
+a_gate_runs_at_the_targets_root() {
+  make_repo "$tmp/g5" main && set_origin "$tmp/g5" 'https://github.com/acme/g5.git' \
+    && mkdir -p "$tmp/g5/.foundry" "$tmp/g5/deep" \
+    && commit_file "$tmp/g5" .foundry/gates 'tests  test -f .foundry/gates
+' || { skip "gate cwd — git could not make a repo here"; return; }
+
+  floor "$tmp/g5" new "Deep" >/dev/null
+  floor "$tmp/g5" charter derive >/dev/null 2>&1
+
+  is "a gate run from a subdirectory still passes" "$(code_of floor "$tmp/g5/deep" gates)" "0"
+}
+a_gate_runs_at_the_targets_root
+
+#
+# A command pinned under an id the charter names no clause for. `check` cannot see it — it reads the
+# detector's gates, and the detector yields nothing once the declaration is gone. So the gate stage
+# refuses it itself, rather than stamp a record whose name field is empty and whose bar is unknowable.
+#
+a_record_that_answers_to_nothing_is_caught() {
+  make_repo "$tmp/g6" main && set_origin "$tmp/g6" 'https://github.com/acme/g6.git' \
+    && mkdir -p "$tmp/g6/.foundry" \
+    && commit_file "$tmp/g6" .foundry/gates 'tests  true
+' || { skip "unsound records — git could not make a repo here"; return; }
+
+  d=$(floor "$tmp/g6" new "Hollow")
+  floor "$tmp/g6" charter derive >/dev/null 2>&1
+  sound=$(cat "$(charter_of "$d")")
+  id=$(awk '$1 == "gate" { print $2; exit }' "$(charter_of "$d")")
+
+  # Each tamper on its own, against the charter that derived cleanly. The reader is one awk pass, so
+  # a finding that answered for another would say so in its own word.
+  tamper() { printf '%s\n' "$sound" > "$(charter_of "$d")"; printf '%s\n' "$1" >> "$(charter_of "$d")"; }
+
+  tamper "gate $id false"
+  has "a second command under one id is named" "$(floor "$tmp/g6" charter check 2>&1)" "repeated: gate $id"
+
+  # `0$id` is the same number and a different string. `has_record` compared numerically and a
+  # subscript compares as text, so this was pinned to one reader and unheard of by the other.
+  tamper "gate 0$id false"
+  has "a leading zero is a different gate" "$(floor "$tmp/g6" charter check 2>&1)" "unprovenanced: gate 0$id"
+
+  rogue=$(printf '%s' rogue | cksum | awk '{ print $1 }')
+  tamper "clause $rogue Gate rogue
+gate $rogue false"
+  has "a clause invented whole is named" "$(floor "$tmp/g6" charter check 2>&1)" "unprovenanced: gate $rogue"
+
+  tamper "gate $rogue false"
+  has "a gate with no clause is named" "$(floor "$tmp/g6" charter check 2>&1)" "unclaused: gate $rogue"
+
+  tamper "clause $rogue Judged someone read it
+pin $rogue $(awk '$1 == "pin" { print $3, $4, $5, $6; exit }' <<EOF
+$sound
+EOF
+)
+gate $rogue false"
+  has "a gate resting on a clause no command can hold is named" \
+      "$(floor "$tmp/g6" charter check 2>&1)" "notagate: Judged $rogue"
+
+  tamper "gate $id false"
+  is  "and none of them runs"  "$(code_of floor "$tmp/g6" gates)" "7"
+  is  "nor records anything"   "$(floor "$tmp/g6" evidence)" ""
+}
+a_record_that_answers_to_nothing_is_caught
+
+#
+# A gate that names itself and nothing else. `sh -c ""` exits 0, so this would record a pass for a
+# bar that runs nothing — and it is one typo in `.foundry/gates` away, not a hand-edited charter.
+#
+a_gate_with_no_command_is_refused() {
+  make_repo "$tmp/g7" main && set_origin "$tmp/g7" 'https://github.com/acme/g7.git' \
+    && mkdir -p "$tmp/g7/.foundry" \
+    && commit_file "$tmp/g7" .foundry/gates 'tests
+' || { skip "empty command — git could not make a repo here"; return; }
+
+  floor "$tmp/g7" new "Empty" >/dev/null
+
+  is "a gate naming no command still derives" "$(code_of floor "$tmp/g7" charter derive)" "0"
+  # Its own assertion, or the refusal below could come from `check` calling this drift and the guard
+  # that refuses an empty command would never run.
+  is "and reads as no drift, not as a moved resolution" \
+     "$(code_of floor "$tmp/g7" charter check)" "0"
+  is "but is refused rather than run"         "$(code_of floor "$tmp/g7" gates)" "7"
+  is "so no pass is recorded for it"          "$(floor "$tmp/g7" evidence)" ""
+}
+a_gate_with_no_command_is_refused
+
+#
+# The pin list is the loop's stdin, so a gate that reads stdin eats the gates after it: they never
+# run, are never recorded, and the run answers 0. A gate not run must never read as one that passed.
+#
+a_gate_cannot_eat_the_gates_after_it() {
+  make_repo "$tmp/g8" main && set_origin "$tmp/g8" 'https://github.com/acme/g8.git' \
+    && mkdir -p "$tmp/g8/.foundry" \
+    && commit_file "$tmp/g8" .foundry/gates 'greedy  cat
+second  true
+' || { skip "stdin — git could not make a repo here"; return; }
+
+  floor "$tmp/g8" new "Greedy" >/dev/null
+  floor "$tmp/g8" charter derive >/dev/null 2>&1
+  floor "$tmp/g8" gates >/dev/null 2>&1
+
+  held=$(floor "$tmp/g8" evidence)
+  is  "a gate that reads stdin does not consume the ones after it" \
+      "$(printf '%s\n' "$held" | awk -F'\t' 'NF == 7' | grep -c .)" "2"
+  has "so the gate behind it is recorded" "$held" "	second	"
+}
+a_gate_cannot_eat_the_gates_after_it
+
+#
+# A clause with no words. `clause_id ""` is a value like any other, so its id was honestly made from
+# the text it has and `forged_ids` passes it — leaving the gate stage the only thing that can refuse
+# a record named whitespace.
+#
+a_clause_with_no_text_names_no_gate() {
+  make_repo "$tmp/g9" main && set_origin "$tmp/g9" 'https://github.com/acme/g9.git' \
+    && mkdir -p "$tmp/g9/.foundry" \
+    && commit_file "$tmp/g9" NOTES 'kept
+' && commit_file "$tmp/g9" .foundry/gates 'tests  true
+' || { skip "blank clause — git could not make a repo here"; return; }
+
+  d=$(floor "$tmp/g9" new "Blank")
+  floor "$tmp/g9" charter derive >/dev/null 2>&1
+  target=$(awk '$1 == "pin" { print $3; exit }' "$(charter_of "$d")")
+  ref=$(awk '$1 == "pin" { print $4; exit }' "$(charter_of "$d")")
+
+  # The declaration goes so the detector is silent, and the pin moves to a file that is still there
+  # and still matches — local, so `check` verifies it and says nothing, and the name is what refuses
+  # rather than the provenance. 4294967295 is `printf '' | cksum`.
+  rm -f "$tmp/g9/.foundry/gates"
+  printf 'clause 4294967295 Gate \npin 4294967295 %s %s NOTES %s\ngate 4294967295 true\n' \
+    "$target" "$ref" "$(git -C "$tmp/g9" hash-object NOTES)" > "$(charter_of "$d")"
+
+  is "a clause whose id was made from no text is not forged" \
+     "$(code_of floor "$tmp/g9" charter check)" "0"
+  is "and the gate under it is refused rather than run" \
+     "$(code_of floor "$tmp/g9" gates)" "7"
+  is "so nothing is recorded" "$(floor "$tmp/g9" evidence)" ""
+}
+a_clause_with_no_text_names_no_gate
+
+#
+# A pin's target is self-asserted, and `moved_sources` reports a foreign one uncheckable rather than
+# refusing it — right for asking whether the charter is sound, wrong for asking whether a gate can
+# run. One checkout exists, so a gate pinned elsewhere has nowhere to run and no bar to be graded by.
+#
+a_gate_pinned_elsewhere_does_not_run_here() {
+  make_repo "$tmp/ga" main && set_origin "$tmp/ga" 'https://github.com/acme/ga.git' \
+    && mkdir -p "$tmp/ga/.foundry" \
+    && commit_file "$tmp/ga" .foundry/gates 'tests  true
+' || { skip "foreign pin — git could not make a repo here"; return; }
+
+  d=$(floor "$tmp/ga" new "Elsewhere")
+  floor "$tmp/ga" charter derive >/dev/null 2>&1
+
+  rm -f "$tmp/ga/.foundry/gates"
+  away=$(printf '%s' away | cksum | awk '{ print $1 }')
+  printf 'clause %s Gate away\npin %s https://github.com/acme/other.git HEAD gone deadbeef\ngate %s true\n' \
+    "$away" "$away" "$away" > "$(charter_of "$d")"
+
+  is "a charter pinned to another repository is sound" \
+     "$(code_of floor "$tmp/ga" charter check)" "0"
+  is "and its gates are refused here"  "$(code_of floor "$tmp/ga" gates)" "7"
+  is "so nothing is recorded"          "$(floor "$tmp/ga" evidence)" ""
+}
+a_gate_pinned_elsewhere_does_not_run_here
+
+#
 # The same act with a quieter shape. Deleting a level-2 declaration drops detection a level, so the
 # clause survives under a different source and every pin that remains still matches — comparing
 # pinned sources one by one cannot see a source that stopped being yielded. Only the answer can.

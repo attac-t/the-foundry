@@ -33,7 +33,8 @@ sh bin/run.sh charter
 sh bin/run.sh charter derive
 sh bin/run.sh charter check
 sh bin/run.sh evidence
-sh bin/run.sh evidence record tests composer test
+sh bin/run.sh evidence record tests ./check
+sh bin/run.sh gates
 ```
 
 `new` makes a run and points this checkout at it. `path` prints the active run, or exits 1.
@@ -233,7 +234,7 @@ provenance it did not earn.
 
 ### A Gate names a gate
 
-`Gate: tests`, never `Gate: composer test`.
+`Gate: tests`, never `Gate: ./check`.
 
 `lib/detect-gates.sh` resolves the name. It is the only file here that may know an ecosystem exists,
 and nothing above it learns why. A repository declares its own gates in `.foundry/gates`; detection
@@ -247,11 +248,19 @@ detector again:
 | `moved` | a pinned file's sha changed |
 | `resolves elsewhere` | the same gate name now yields a different command |
 | `deleted` | something derives that the charter no longer holds |
-| `unpinned` | a gate with no pin on this repository |
+| `unpinned` | a gate the detector yields, with no pin on this repository |
 | `unresolved` | a gate whose resolution record is gone |
 | `forged` | a clause whose text is not the text its id was made from |
 | `ambiguous` | one id naming two meanings |
+| `repeated` | one id holding two commands |
+| `unprovenanced` | a gate record with no pin at all |
+| `unclaused` | a gate record with no clause |
+| `notagate` | a gate resting on a clause that is not a `Gate` |
 | `uncheckable` | a pin on another repository — **printed, but the command still exits 0** |
+
+The last four read the charter alone. `unpinned` names a gate the **detector** yields;
+`unprovenanced` names a **record** in the file. Both are about a missing pin, and they are different
+questions — one asks what should be there, the other what is.
 
 `uncheckable` is the one finding that does not fail. Every multi-target charter has one, and failing
 on it would make `check` useless for the shape it exists to support.
@@ -279,13 +288,31 @@ removal, and the refusal to drop is the whole invariant.
 relaxes a rule commits it, and the next base carries it. A buggy derivation would otherwise become
 law. So `Decided:` clauses do not carry forward: a decision meant to last belongs in a committed file.
 
-### What `check` cannot see
+### What `check` reads
 
-**A deleted introduced clause.** Every finding but one compares the charter against something outside
-it — the detector for a gate, the pinned sha for a source, the id for the text. `ambiguous` is the
-exception, and it reads the charter alone. An introduced clause has no outside: nothing derived it,
-nothing pinned it, and the charter is the only record it existed. Delete the line and `check` reports
+Most findings compare the charter against something outside it — the detector for a gate, the pinned
+sha for a source, the id for the text. Two do not.
+
+`ambiguous` reads the charter alone. So does `unsound`, which judges every `clause`, `pin` and `gate`
+record **as a record**: a gate whose id appears twice, or carries no pin, or no clause, or a clause
+that is not a `Gate`. Nothing outside the file answers those, so nothing outside it was asked — and
+for four rounds each of those tampers reached the gate stage instead, one refusal at a time.
+
+`awk -v id=123` compared against a field is a strnum, so `$2 == id` matches `0123`: a gate is pinned
+to one reader and unheard of by the next. Five such comparisons are still in the runner. What changed
+is that the disagreement now refuses — `unsound` keys on subscripts, which are text, so it reports
+`unprovenanced` and `unclaused` for the id nobody wrote.
+
+### What `check` still cannot see
+
+**A deleted introduced clause.** An introduced clause has no outside: nothing derived it, nothing
+pinned it, and the charter is the only record it existed. Delete the line and `check` reports
 nothing.
+
+**A clause, a pin and a gate written together.** `unsound` catches a record missing its half; a whole
+triple that agrees with itself contradicts nothing, and every other reader looks outside the file for
+an answer this one carries inside it. Writing all three is the same act as editing the charter and
+its pins together, which the boundary below already names.
 
 Closing that needs a ledger the charter cannot edit, which is the evidence stage. Until then a
 `Decided:` clause is exactly as durable as the file holding it.
@@ -303,6 +330,38 @@ Containment is the workspace boundary's, and it does not exist yet.
 declared and never cloned, so there is nothing on disk to read for any other target until the
 workspace seam lands. Deriving clauses for a repository nobody checked out would be introduction
 wearing provenance.
+
+---
+
+## Gates
+
+```bash
+sh bin/run.sh gates
+```
+
+Runs every gate the charter pins, records each, and answers 14 if any did not pass.
+
+**The command comes from the charter, never from the caller.** `evidence record tests true` writes a
+`machine` record for a gate named `tests` that ran `true` — a pass nobody earned. `gates` takes no
+command at all, so the only thing it can record is what the pinned command did.
+
+It refuses on drift before running anything. A moved pin is a command nobody authorised, and
+evidence for it would sit in the ledger looking exactly like evidence for the one they did.
+
+One ref for the whole set, taken before the first gate. A gate that commits cannot move the tree the
+gates after it are recorded against.
+
+Each gate runs with its target's checkout as the working directory — §2.4. One checkout exists
+today; a gate named `tests` in a two-repo workspace is otherwise ambiguous.
+
+A recorded command gets `/dev/null` on stdin. The gate list is the loop's own stdin, and a gate that
+read it swallowed the gates behind it — but the rule outlives that: evidence of something that waited
+on a human is evidence nobody can reproduce. This holds for `evidence record` too. It is the stream,
+not the terminal: a gate that opens `/dev/tty` still finds one.
+
+A gate runs where its pin says it came from. One checkout exists, so a gate pinned to another
+repository has nowhere to run, and one of them refuses the set. Whether the charter's records hold
+together at all is `check`'s question, not this one — see **What `check` reads**.
 
 ---
 
