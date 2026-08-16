@@ -17,7 +17,8 @@
 #   5  a target was refused: nobody authorised it for this run
 #   6  a clause was refused: it would weaken the charter, its pin could not be captured, or the run
 #      would derive from an artifact it changed — including a run that recorded no base
-#   7  the charter disagrees with its pins — something drifted or went missing
+#   7  the charter cannot be run against as it stands — something drifted, went missing, holds
+#      together with nothing, or is pinned to a repository this is not
 #   8  the charter grades nothing mechanically — it holds no clause, or none that pins a gate
 #   9  a clause grades no selected target, so it is no bar
 #  10  the selection moved after it was authorised — that is a new run, not this one
@@ -1456,13 +1457,17 @@ ambiguous_ids() {
 #
 #
 # Every record judged as a record, in one pass. `check`'s other readers walk the detector or the pin
-# list, so a record invented in the file is invisible to all of them — a clause, its pin and its gate
-# appended together answered to nothing, and four separate tampers each reached the gate stage
-# because no reader here was asking.
+# list, so a record missing its half is invisible to all of them, and four separate tampers each
+# reached the gate stage because no reader here was asking.
 #
-# One notion of identity, and it is the string. `awk -v id=123` against a field is a strnum, so
-# `$2 == id` matches `0123` — `has_record` said such a gate was pinned while a subscript said it was
-# a different gate. Subscripts throughout, so the two answers cannot part again.
+# **A whole `clause`, `pin` and `gate` written together still passes.** Nothing outside the file
+# contradicts a triple that agrees with itself, and this reader is inside it. §2.2's boundary, not a
+# gap here.
+#
+# Subscripts, because they compare as text. `awk -v id=123` against a field is a strnum, so
+# `$2 == id` matches `0123` — `has_record` called such a gate pinned while a subscript called it
+# another gate. Five of those comparisons are still in this file; what changed is that the disagreement
+# now refuses, because this reader answers `unpinned` and `unclaused` for the id nobody wrote.
 #
 unsound_records() {
     awk '
@@ -1472,7 +1477,7 @@ unsound_records() {
         END {
             for (id in held) {
                 if (held[id] > 1)    print "repeated: gate " id
-                if (!(id in pinned)) print "unpinned: gate " id
+                if (!(id in pinned)) print "unprovenanced: gate " id
 
                 if (!(id in kind)) { print "unclaused: gate " id; continue }
                 if (kind[id] != "Gate") print "notagate: " kind[id] " " id

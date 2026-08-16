@@ -1303,12 +1303,12 @@ a_record_that_answers_to_nothing_is_caught() {
   # `0$id` is the same number and a different string. `has_record` compared numerically and a
   # subscript compares as text, so this was pinned to one reader and unheard of by the other.
   tamper "gate 0$id false"
-  has "a leading zero is a different gate" "$(floor "$tmp/g6" charter check 2>&1)" "unpinned: gate 0$id"
+  has "a leading zero is a different gate" "$(floor "$tmp/g6" charter check 2>&1)" "unprovenanced: gate 0$id"
 
   rogue=$(printf '%s' rogue | cksum | awk '{ print $1 }')
   tamper "clause $rogue Gate rogue
 gate $rogue false"
-  has "a clause invented whole is named" "$(floor "$tmp/g6" charter check 2>&1)" "unpinned: gate $rogue"
+  has "a clause invented whole is named" "$(floor "$tmp/g6" charter check 2>&1)" "unprovenanced: gate $rogue"
 
   tamper "gate $rogue false"
   has "a gate with no clause is named" "$(floor "$tmp/g6" charter check 2>&1)" "unclaused: gate $rogue"
