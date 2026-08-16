@@ -24,6 +24,7 @@
 #  11  a clause is introduced and nothing can ask a human to authorise it
 #  12  the detector yields a gate the charter holds no clause for — re-derive
 #  13  the run directory was renamed, so the grants a human gave it are not there
+#  14  a gate the charter pins did not pass — an answer, not a refusal
 #
 # Eight through twelve are one stage and five remedies: write a requirement down, select a target it
 # governs, or start again. Collapsing them would make the exit code say *authorisation refused* and
@@ -48,6 +49,7 @@ main() {
         policy)    policy "$@" ;;
         charter)   charter "$@" ;;
         evidence)  evidence "$@" ;;
+        gates)     gates "$@" ;;
         authorise) authorise ;;
         *)         usage; exit 2 ;;
     esac
@@ -73,6 +75,8 @@ floor — where work happens.
   run.sh evidence                 print what this run has proved
   run.sh evidence record <name> <command...>
                                   run it, and stamp what happened
+  run.sh gates                    run every gate the charter pins, and record each — exit 14 if any
+                                  did not pass
   run.sh authorise                refuse a run that describes no work, or whose selection moved
                                   — exit 1, 5, 8, 9, 10, 11 or 12
 EOF
@@ -670,6 +674,18 @@ record_gate() {
     # tree was never tested — evidence for work that did not exist when the work was graded.
     ref=$(delivered_ref) || { note "no commit to record evidence against"; exit 1; }
 
+    stamp_command "$dir" "$ref" "$name" "$@"
+}
+
+#
+# Run it, and stamp what happened. The only path to a `machine` record, and it takes the ref rather
+# than reading one — `gates` grades every gate against the tree it asked about, not against whatever
+# an earlier gate left behind.
+#
+stamp_command() {
+    dir=$1; ref=$2; name=$3
+    shift 3
+
     why=$("$@" 2>&1); result=$?
 
     stamp "$dir" machine "$name" "$result" "$ref" "$why"
@@ -692,6 +708,82 @@ one_line() { printf '%s' "$1" | tr '\n\r\t' '   '; }
 # which is where the work is. It answers for the repository the caller stands in — `evidence` refuses
 # a wrong one before asking.
 delivered_ref() { git rev-parse --verify --quiet HEAD 2>/dev/null; }
+
+#
+# Run every gate the charter pins, and record each — RFC-001 §2.4.
+#
+# **The command comes from the charter, never from the caller.** `evidence record` will run anything
+# you hand it under any name, so `evidence record tests true` writes a `machine` pass for a gate that
+# never ran. This takes no command, which is the whole of the difference between a record and a claim.
+#
+# `check_charter` first, and it exits 7 on drift: a moved pin is a command nobody authorised, and
+# evidence for it would look exactly like evidence for the one they did. It also carries the
+# `refuse_wrong_repository` guard, so there is no second call to it here.
+#
+gates() {
+    dir=$(active_run) || exit 1
+    [ "$#" -eq 0 ] || { usage; exit 2; }
+
+    check_charter "$dir"
+
+    # One ref for the whole run of them. Taken here rather than per gate, so a gate that commits
+    # cannot move the tree the gates after it are recorded against.
+    ref=$(delivered_ref) || { note "no commit to gate"; exit 1; }
+
+    run_pinned_gates "$dir" "$ref"
+}
+
+# Every gate the charter pins, as `id command...`. `print_gate` wrote them.
+pinned_gates() {
+    awk '$1 == "gate" { $1 = ""; sub(/^ /, ""); print }' "$(charter_file "$1")" 2>/dev/null
+}
+
+run_pinned_gates() {
+    dir=$1; ref=$2
+    failed=0
+
+    pins=$(pinned_gates "$dir")
+    [ -n "$pins" ] || { note "this charter pins no gate, so it grades nothing mechanically"; exit 8; }
+
+    # §2.4: a gate runs with its target's checkout as the working directory. One checkout exists
+    # today — `composer test` in a two-repo workspace is otherwise ambiguous.
+    cd "$(repo_root)" || { note "no checkout to run gates in"; exit 1; }
+
+    # A here-doc, not a pipe. A tally raised inside a pipe's subshell dies with it, and the tally is
+    # the only thing this loop produces that the caller needs.
+    while read -r id command; do
+        [ -n "$id" ] || continue
+        gate_held "$dir" "$ref" "$id" "$command" || failed=$((failed + 1))
+    done <<EOF
+$pins
+EOF
+
+    [ "$failed" -eq 0 ] && return 0
+    note "gates that did not pass: $failed"
+    return 14
+}
+
+#
+# The ledger reads in the charter's words. `clause_text` is the name a human agreed to; the id is
+# this file's bookkeeping and means nothing to the person reading the record back.
+#
+gate_held() {
+    dir=$1; ref=$2; id=$3; command=$4
+
+    name=$(clause_text "$(charter_file "$dir")" "$id")
+
+    # Reachable only by editing the charter, which is what `check` calls unattended drift. Refused
+    # rather than stamped: a record naming no clause cannot be matched to the bar it was meant to
+    # grade, and it would sit in the ledger looking like one that can.
+    [ -n "$name" ] || { note "the charter pins a command under [$id] and names no clause for it"; exit 7; }
+
+    # `sh -c ""` exits 0. A `.foundry/gates` line holding a name and nothing else derives to a clause
+    # with an empty command, and that is a typo away — so the green it would record is the one kind
+    # that is never earned. `derive` should refuse it at the source too; it does not yet.
+    [ -n "$command" ] || { note "the charter pins no command for [$name]"; exit 7; }
+
+    stamp_command "$dir" "$ref" "$name" sh -c "$command"
+}
 
 #
 # Authorisation — every refusal it can make without a human present.
@@ -1013,8 +1105,11 @@ print_pin()    { printf 'pin %s %s %s %s %s\n' "$1" "$2" "$3" "$4" "$5"; }
 print_gate() { printf 'gate %s %s\n' "$1" "$2"; }
 
 # The command a gate resolved to when the charter was written.
+# A count, not a pattern, was the bug: blanking two fields of a three-field record leaves two spaces,
+# but of a two-field one — a gate pinned with no command — it leaves a single space. `moved_resolutions`
+# then read that space as a command and reported drift from the empty string to the empty string.
 pinned_command() {
-    awk -v want="$2" '$1 == "gate" && $2 == want { $1 = ""; $2 = ""; sub(/^  /, ""); print; exit }' \
+    awk -v want="$2" '$1 == "gate" && $2 == want { $1 = ""; $2 = ""; sub(/^ +/, ""); print; exit }' \
         "$1" 2>/dev/null
 }
 

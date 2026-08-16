@@ -34,6 +34,7 @@ sh bin/run.sh charter derive
 sh bin/run.sh charter check
 sh bin/run.sh evidence
 sh bin/run.sh evidence record tests composer test
+sh bin/run.sh gates
 ```
 
 `new` makes a run and points this checkout at it. `path` prints the active run, or exits 1.
@@ -303,6 +304,29 @@ Containment is the workspace boundary's, and it does not exist yet.
 declared and never cloned, so there is nothing on disk to read for any other target until the
 workspace seam lands. Deriving clauses for a repository nobody checked out would be introduction
 wearing provenance.
+
+---
+
+## Gates
+
+```bash
+sh bin/run.sh gates
+```
+
+Runs every gate the charter pins, records each, and answers 14 if any did not pass.
+
+**The command comes from the charter, never from the caller.** `evidence record tests true` writes a
+`machine` record for a gate named `tests` that ran `true` — a pass nobody earned. `gates` takes no
+command at all, so the only thing it can record is what the pinned command did.
+
+It refuses on drift before running anything. A moved pin is a command nobody authorised, and
+evidence for it would sit in the ledger looking exactly like evidence for the one they did.
+
+One ref for the whole set, taken before the first gate. A gate that commits cannot move the tree the
+gates after it are recorded against.
+
+Each gate runs with its target's checkout as the working directory — §2.4. One checkout exists
+today; `composer test` in a two-repo workspace is otherwise ambiguous.
 
 ---
 

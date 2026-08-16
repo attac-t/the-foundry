@@ -445,6 +445,44 @@ wreck_runner "a detector run against the working directory is caught" \
 wreck_runner "a gate satisfied by a pin on another repository is caught" \
   anypin 's|has_local_pin "$1" "$id" "$here"|has_record "$1" pin "$id"      |'
 
+# Anchored, because the dispatch line holds the same call and blanking both would break `charter
+# check` as well — one break, or the mutant proves whichever failure the suite noticed first.
+wreck_runner "gates run against a charter that drifted from its pins are caught" \
+  nodrift 's#^    check_charter "$dir"$##'
+
+# The ref per gate rather than per run. A gate that commits moves the tree, and every gate after it
+# is recorded against a sha that was never the one they were asked about.
+wreck_runner "a ref taken once per gate is caught" \
+  gateref 's#stamp_command "$dir" "$ref" "$name" sh -c "$command"#stamp_command "$dir" "$(delivered_ref)" "$name" sh -c "$command"#'
+
+# §2.4's rule is the whole of what makes a gate unambiguous in a workspace. Without it a gate reads
+# whichever directory the caller happened to stand in.
+wreck_runner "a gate run somewhere other than its target's root is caught" \
+  gatecwd 's#    cd "$(repo_root)" || { note "no checkout to run gates in"; exit 1; }##'
+
+# Green regardless. The records still land, so only the exit code carries the answer — and a caller
+# that branches on it would ship a red run as a finished one.
+wreck_runner "a gate run that answers 0 whatever happened is caught" \
+  greengate 's#    \[ "$failed" -eq 0 \] \&\& return 0#    return 0#'
+
+# `%` for the delimiter: the argument count holds the one sed would otherwise end on.
+wreck_runner "a gate run that takes a command from the caller is caught" \
+  callercmd 's%    \[ "$#" -eq 0 \] || { usage; exit 2; }%%'
+
+# Two guards, two breaks. A record with no name cannot be matched to a bar; a record with no command
+# is a pass for having run nothing. One mutant each, or whichever fires first hides the other.
+wreck_runner "a gate recorded under no clause name is caught" \
+  noname 's#    \[ -n "$name" \] || { note "the charter pins a command under \[$id\] and names no clause for it"; exit 7; }##'
+
+wreck_runner "a gate with no command recorded as a pass is caught" \
+  emptycmd 's#    \[ -n "$command" \] || { note "the charter pins no command for \[$name\]"; exit 7; }##'
+
+# The count that made `emptycmd` equivalent. Blanking two fields of a two-field record leaves one
+# space, `check` read it as a command, and the spurious drift refused the run before the guard above
+# could — a mutant killed by a refusal that had nothing to do with it.
+wreck_runner "a pinned command read as a space when it is empty is caught" \
+  spacecmd 's#sub(/^ +/, "")#sub(/^  /, "")#'
+
 # --- break the install ---
 
 echo
