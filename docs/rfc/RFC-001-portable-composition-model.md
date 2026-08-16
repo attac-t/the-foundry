@@ -1,6 +1,6 @@
 # RFC-001: The Portable Composition Model
 
-**Status:** Accepted — revision 13
+**Status:** Accepted — revision 14
 **Plugin:** `floor`
 **Author:** Christian Attard
 **Date:** 2026-08-12
@@ -181,9 +181,15 @@ question = run + stage + clause
 
 | Term | Is | So an answer cannot |
 |---|---|---|
-| `run` | the run that asked | reach a later run |
+| `run` | the run that asked, **unique over all time** | reach a later run |
 | `stage` | **the reader** — authorisation, or completion | satisfy a clause whose existence it authorised |
 | `clause` | its text, so an edit is a new clause | answer a requirement that has since changed |
+
+**`run` must never be reclaimed, and today it is.** Floor reserves a slot only while a grant names it,
+so a run that authorised nothing frees its name when its directory goes — and the same base then
+mints the same id and the same clause id, giving a later run a byte-identical key. Verified by
+running it. Nothing breaks while questions live only in the run; the moment one is asked somewhere
+that outlives it, the first run's answer matches the second run's question.
 
 **`stage` is the reader, not the moment.** Authorisation is re-evaluated *at* completion — §2.2 — so a
 clock would stamp both questions alike and collide them.
@@ -740,6 +746,11 @@ land, and delivery proceed on evidence that no longer applied.
 record answering anything else about a clause — above all whether it legitimately exists — is not
 evidence. *Satisfying* evidence is such a record whose answer is yes.
 
+**One yes currently outranks any number of noes**, because the ledger is append-only and satisfaction
+is read existentially. Nothing says what a second, contradicting record about one clause and one ref
+means. Harmless while every record comes from a command's exit code; not harmless once a human can
+answer, and the second human can disagree. **Open — §7.**
+
 **The first two conjuncts close fail-opens, not edge cases.** The invariant quantifies over clauses
 and over targets, so an empty charter and an empty selection each satisfy it vacuously. Every fresh
 run has the second; any repo the detector reads no gate from produces the first.
@@ -1281,6 +1292,33 @@ remedy is a new run, whose base holds the commit and derives from it normally �
 from blessing its own work, not the work.
 
 
+### Revision 14 — a question that outlives its run
+
+Found by drafting the work source, which is the fifth revision a stage that does not exist has
+corrected. It also found that the stage should not be built yet, which is new.
+
+| Was | Is | What falsified it |
+|---|---|---|
+| `run` in a question's key, with no claim about its lifetime | unique over **all time** | Slots are reserved by grants, so a run that authorised nothing frees its name when its directory goes. The same base then mints the same id *and* the same clause id. Verified by running it — a later run's question is byte-identical to an earlier one's, and an answer left where it outlives a run would match |
+| satisfaction read existentially over an append-only ledger | unchanged, and now named as open | One `yes` outranks any number of noes. Invisible while every record is a command's exit code; a defect the moment a second human can disagree — §7 q10 |
+| §9 ordering `work source` with durable source-scoped grants | its own stage | `decide-boundary`'s tell: always-on policy and a deliberately-invoked transport activate differently, so they are two homes. The grant is also *scoped to* a source, which §2.3 says confers no authority *over* it — one word apart, and no contract for the difference |
+
+**Two things the work source needs and does not have.** Nothing said who may answer — attribution
+records *who*, never whether they may — and nothing says what an ask may disclose when the source and
+the target are different trust domains, which §2.3 already calls attacker-controlled.
+
+**The first is settled and cost nothing.** The human whose selection authorised the run may answer:
+invariant 4 already names them, so the rule adds no noun and no store. It makes the selector a
+bottleneck, which is the honest price — a run exists because they selected it, and their absence
+holding their own run is not a defect. §7 q9. **But invariant 4 describes a stamp nothing writes**,
+so the work source still waits on that becoming real.
+
+**And the order was about to be broken silently.** §9 runs `evidence → gates → work source`; neither
+of the first two exists. Where an answer lives between `receive` and the evidence ledger cannot be
+designed into a stage nobody has built. Every reordering in this document is recorded; this one would
+have been the first that was not, because nobody noticed it was one.
+
+
 ## 7. Unresolved questions
 
 **Closed since revision 2:** `policy` stays; the target allowlist is its first instance and is
@@ -1325,6 +1363,30 @@ required by §2.3, not speculative.
    per target is absurd for *pricing copy signed off*, so either the answer stamps one record per
    target or the invariant stops quantifying over targets for `Decided:` clauses. Nothing forces the
    choice yet: v1 selects one target.
+
+   **That deferral rests on a precondition nothing enforces.** `targets add` appends without limit and
+   no refusal counts them, so a two-target run authorises today.
+
+9. ~~**Who may answer?**~~ **Closed in revision 14** — the human whose selection authorised the run.
+   Attribution says *who*, never whether they may, so without a rule every commenter on an item is an
+   attributed human and the authorisation gate is decoration.
+
+   **It adds no noun.** Invariant 4 already makes selecting the work item the human act that
+   authorises the run, so the run holds one attributed human before any question is asked. An
+   allowlist invents a second policy store; *anyone who can write to the source* is the provider's
+   access control, which §3 forbids a contract from naming.
+
+   **The cost is real and accepted:** the selector is the bottleneck, and nobody may answer for them.
+   The first run that legitimately needs a second person is the evidence that would justify an
+   allowlist — building one now is guessing.
+
+   **What this owes:** floor writes `source: cli` and records no `who`, so the selector exists here
+   and not in code. Invariant 4 describes something nothing writes, and the work source cannot be
+   built until it does.
+
+10. **What does a second, contradicting answer mean?** First wins is racy. Last wins lets a late
+    commenter overwrite. Refusing matches §2.2's *ambiguous escalates* and turns one disagreement into
+    a stopped run. §2.5 says nothing, and an append-only ledger read existentially says *yes*.
 
 ---
 
@@ -1397,8 +1459,10 @@ evidence            append-only, trust levels, no result parameter, the completi
 gates               per target, executed by code; retire panel.yml
   ↓
 work source         read, publish, ask, receive; TWO adapters — GitHub and a directory
-                    and durable grants, scoped to the source — §2.3's run-scoped allowlist asks
-                    once per run, which is right for a CLI run and wrong for a queue
+
+durable grants      scoped to the source — §2.3's run-scoped allowlist asks once per run, which is
+                    right for a CLI run and wrong for a queue. Its own stage: always-on policy, where
+                    the work source is a transport nobody invokes by accident
   ↓
 workspace seam      the worktree adapter, and the interface a container would need
   ↓
