@@ -6,7 +6,9 @@
 #
 # `set -e` is off: `path` exits 1 when no run is active, which is an answer.
 #
-# Exit codes:
+# Exit codes — every command but one. `evidence record` returns what the gate returned, so read its
+# refusals off stderr and the ledger, never off the code.
+#
 #   0  answered
 #   1  nothing to answer with — no run is active, no bootstrap target, or no charter yet
 #   2  asked for something this does not do
@@ -45,6 +47,7 @@ main() {
         targets)   targets "$@" ;;
         policy)    policy "$@" ;;
         charter)   charter "$@" ;;
+        evidence)  evidence "$@" ;;
         authorise) authorise ;;
         *)         usage; exit 2 ;;
     esac
@@ -67,6 +70,9 @@ floor — where work happens.
   run.sh charter check            report clauses that drifted from their pins, or went missing
   run.sh charter introduce <kind> <text>
                                   add a clause nothing derived — it stays introduced
+  run.sh evidence                 print what this run has proved
+  run.sh evidence record <name> <command...>
+                                  run it, and stamp what happened
   run.sh authorise                refuse a run that describes no work, or whose selection moved
                                   — exit 1, 5, 8, 9, 10, 11 or 12
 EOF
@@ -617,6 +623,75 @@ charter() {
 }
 
 charter_file() { printf '%s/charter' "$1"; }
+
+evidence_file() { printf '%s/evidence' "$1"; }
+
+#
+# What was proved, and by whom — RFC-001 §2.5.
+#
+#     record  <name> <command...>   run it, stamp what happened
+#     (none)                        print the ledger
+#
+# `machine` only. `judged` needs a judge and `human` needs the work source, and the completion
+# invariant needs the gates stage to say which clause a name belongs to — §9 orders all three after
+# this. What ships is the record and the rule that a caller cannot write one.
+#
+# No rename guard: the ledger lives inside the run and moves with it, where grants are keyed by the
+# run's name and do not. Nothing here reads a grant.
+evidence() {
+    dir=$(active_run) || exit 1
+
+    case "${1:-}" in
+        '')     cat "$(evidence_file "$dir")" 2>/dev/null; return 0 ;;
+        record) shift; refuse_wrong_repository "$dir"; record_gate "$dir" "$@" ;;
+        *)      usage; exit 2 ;;
+    esac
+}
+
+#
+# **There is no parameter for a result.** The recorder takes a command, runs it, and stamps what
+# happened — so a worker can claim a gate passed only by making it pass.
+#
+# It cannot stop a model appending to the file by hand, and §2.5 says so. Removing the capability is
+# what Panel does with `tools: Read, Glob, Grep`, and it is what this does.
+#
+record_gate() {
+    dir=$1; name=${2:-}; [ "$#" -gt 0 ] && shift; [ "$#" -gt 0 ] && shift
+
+    [ -n "$name" ] || { note "record needs a name and a command"; exit 2; }
+    [ "$#" -gt 0 ] || { note "record needs a command to run — a result is not something you pass"; exit 2; }
+
+    # A name is one line, or a newline in it writes a second record whose result the caller chose —
+    # which is the one thing this stage exists to make impossible. `why` is flattened; a name is
+    # refused, because a gate whose name holds a newline is a mistake, not something to tidy up.
+    is_one_line "$name" || { note "a gate's name is one line: [$name]"; exit 2; }
+
+    # Before the command runs. A recorded command that moves HEAD would otherwise stamp a sha whose
+    # tree was never tested — evidence for work that did not exist when the work was graded.
+    ref=$(delivered_ref) || { note "no commit to record evidence against"; exit 1; }
+
+    why=$("$@" 2>&1); result=$?
+
+    stamp "$dir" machine "$name" "$result" "$ref" "$why"
+    return "$result"
+}
+
+# Append-only. One line, tab-separated, in the order §2.5 names.
+stamp() {
+    printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
+        "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$2" 01 "$3" "$4" "$5" "$(one_line "$6")" \
+        >> "$(evidence_file "$1")" 2>/dev/null || die_unwritable "$(evidence_file "$1")"
+}
+
+# A gate that printed nothing on failure still records the ref it applies to, so `why` is last and
+# may be empty. `\r` as well as `\n`: Git Bash is a platform this ships on, and `is_one_line` counts
+# all three.
+one_line() { printf '%s' "$1" | tr '\n\r\t' '   '; }
+
+# The sha the evidence applies to. `check` compares against the base; this is what the run delivers,
+# which is where the work is. It answers for the repository the caller stands in — `evidence` refuses
+# a wrong one before asking.
+delivered_ref() { git rev-parse --verify --quiet HEAD 2>/dev/null; }
 
 #
 # Authorisation — every refusal it can make without a human present.
