@@ -65,11 +65,22 @@ Verify the install: `/evaluate`
 
 ## Contributing
 
-Seven gates run on every pull request. Run them before you open one:
+Seven gates. Run them before you open a pull request:
 
 ```bash
-bash bin/frontmatter.sh && bash bin/versions.sh && bash bin/repeats.sh $(git ls-files 'plugins/panel/*.md' 'plugins/pest/*.md' 'plugins/signal/*.md') && bash plugins/kernel/tests/run.sh && bash plugins/signal/tests/run.sh && bash plugins/floor/tests/run.sh && bash plugins/panel/tests/run.sh
+sh bin/gates.sh                 # all seven, here
+sh bin/agree.sh                 # this table, the workflow and gates.sh name the same seven
+sh bin/gates-in-docker.sh       # all seven on Linux, where `sh` is dash
 ```
+
+CI runs the first two. Leave `agree` out of your run and a PR can still go red on a check the README
+never mentioned — the drift this file exists to prevent, one level up.
+
+The second is not a convenience. On macOS and under Git Bash `sh` **is** bash and accepts `&>` and
+`[[ =~ ]]` without complaint, so neither can fail a bashism — and every runner here opens `#!/bin/sh`.
+
+`bin/agree.sh` holds this table, that workflow and `bin/gates.sh` to the same list. It grades the
+seven and is not one of them. `panel` was advertised here and absent from CI for days.
 
 | Gate | Fails when |
 |------|------------|
