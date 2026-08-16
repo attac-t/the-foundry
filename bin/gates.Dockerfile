@@ -1,7 +1,7 @@
 # Debian because its `/bin/sh` is dash. On macOS and Git Bash `sh` *is* bash and takes `&>` and
 # `[[ =~ ]]` without a word, so neither can fail a bashism — and every runner here opens `#!/bin/sh`.
 #
-# Built by `bin/gates-in-docker.sh`.
+# Built by `bin/gates.sh linux`.
 
 FROM debian:stable-slim
 
