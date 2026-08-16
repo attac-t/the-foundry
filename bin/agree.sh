@@ -1,144 +1,132 @@
 #!/bin/sh
 #
-# The README, the workflow and `bin/gates.sh` must name the same gates.
+# The README, the workflow and `bin/gates.sh` name the same gates.
 #
-# A meta-check, not a product gate. It grades the other seven and is not one of them, and `workflow`
-# below excludes it by name — the boundary is that list, not a property of being a meta-check.
-#
-# Identities, never counts. The README claimed seven and the workflow ran six for days: same shape of
-# defect a count would have shown, but a count cannot say `panel` was the one missing, and cannot see
-# a gate swapped for another.
+#   sh bin/agree.sh         check
+#   sh bin/agree.sh audit   break it four ways, require each to go red
 
 set -u
 
-root=$(cd "$(dirname "$0")/.." && pwd)
-mode=${1:-check}
-cd "$root" || exit 1
+main() {
+    cd "$(root)" || exit 3
 
-# What runs. The one list the other two are graded against.
-runs() { sh bin/gates.sh list; }
+    [ "${1:-check}" = audit ] && { audit; exit $?; }
 
-# What contributors are promised. The rows of the table under the gate heading, first cell only.
-readme() {
+    gates_run > "$listed"
+    disagree README  "$(named_in_readme)"
+    disagree workflow "$(named_in_workflow)"
+
+    verdict
+}
+
+root() { cd "$(dirname "$0")/.." && pwd; }
+
+# --- the three lists ---
+
+gates_run() { sh bin/gates.sh list | sort -u; }
+
+# The rows of the table under the gate heading, first cell only.
+named_in_readme() {
     awk '
-        /^\| Gate \| Fails when \|/ { inside = 1; next }
-        inside && !/^\|/            { exit }
-        inside && /^\| `/           { gsub(/[`|]/, "", $2); print $2 }
+        /^\| Gate \| Fails when \|/ { table = 1; next }
+        table && !/^\|/             { exit }
+        table && /^\| `/            { gsub(/[`|]/, "", $2); print $2 }
     ' README.md
 }
 
 #
-# What CI runs. Any `bin/` script it invokes, and the plugins the matrix fills in.
+# Any `bin/` script CI invokes, whatever the interpreter, and the plugins the matrix fills in.
 #
-# Whatever the interpreter and whatever the name. Matching `bash bin/[a-z]+\.sh` excluded this check
-# by accident rather than by rule — `sh bin/agree.sh` simply did not match — so a gate added as
-# `sh bin/newgate.sh`, or named with a hyphen, would have run in CI and been invisible here.
+# Matching one spelling of one interpreter excluded this check by accident rather than by rule. The
+# exclusions are by name: `agree` grades the gates and `gates` runs them.
 #
-# The exclusions are by name and deliberate: `agree` grades the gates, and `gates`/`gates-in-docker`
-# run them. None of the three is one.
-#
-workflow() {
+named_in_workflow() {
     awk '
         /bin\/[a-z-]+\.sh/ {
             match($0, /bin\/[a-z-]+\.sh/)
             name = substr($0, RSTART + 4, RLENGTH - 7)
-            if (name !~ /^(agree|gates|gates-in-docker)$/) print name
+            if (name !~ /^(agree|gates)$/) print name
         }
 
-        # The step that runs them, not the matrix that declares them. Delete the step and keep the
-        # matrix and CI runs no suite at all, which reading the declaration alone calls agreement.
-        /plugins\/\$\{\{ matrix\.plugin \}\}\/tests\/run\.sh/ { steps = 1 }
-
+        # The step that runs the suites, not the matrix that declares them. Delete the step and keep
+        # the matrix and CI runs none of them, which reading the declaration alone calls agreement.
+        /plugins\/\$\{\{ matrix\.plugin \}\}\/tests\/run\.sh/ { step = 1 }
         /plugin: \[/ { gsub(/.*\[|\].*|,/, " "); for (i = 1; i <= NF; i++) held[$i] = 1 }
-
-        END { if (steps) for (name in held) print name }
+        END { if (step) for (name in held) print name }
     ' .github/workflows/gates.yml
 }
 
-report() {
-    missing=$(printf '%s\n' "$2" | sort -u | comm -23 - "$tmp/runs")
-    extra=$(printf '%s\n' "$2" | sort -u | comm -13 - "$tmp/runs")
+# --- grading ---
 
-    [ -z "$missing" ] && [ -z "$extra" ] && { printf '  PASS  %s\n' "$1"; return; }
+# Identities, never counts. A count cannot say which gate is missing, nor see one swapped for another.
+disagree() {
+    absent=$(printf '%s\n' "$2" | sort -u | comm -13 - "$listed")
+    unrun=$( printf '%s\n' "$2" | sort -u | comm -23 - "$listed")
 
-    [ -z "$extra" ]   || printf '  FAIL  %s does not name: %s\n' "$1" "$(echo $extra)"
-    [ -z "$missing" ] || printf '  FAIL  %s names what nothing runs: %s\n' "$1" "$(echo $missing)"
-    failed=$((failed + 1))
+    [ -z "$absent$unrun" ] && { printf '  PASS  %s\n' "$1"; return; }
+
+    [ -z "$absent" ] || printf '  FAIL  %s does not name: %s\n' "$1" "$absent"
+    [ -z "$unrun" ]  || printf '  FAIL  %s names what nothing runs: %s\n' "$1" "$unrun"
+    disagreed=$((disagreed + 1))
 }
 
+verdict() {
+    [ "$disagreed" -eq 0 ] || exit 1
+    printf 'AGREED — %s gates\n' "$(wc -l < "$listed" | tr -d ' ')"
+}
+
+# --- the audit ---
+
 #
-# Break it four ways and require each to go red. A check nobody has watched fail is one the next edit
-# deletes for free.
+# The real check against mutated copies, reading its exit code. Nothing grades itself.
 #
-# It runs the real check against mutated copies and reads the exit code, rather than asking anything
-# to grade itself.
+# The clean copy first: `caught` reads any non-zero exit as proof, so a lab that never assembled
+# would report every break caught and exit 0.
 #
 audit() {
-    lab=${TMPDIR:-/tmp}/foundry-agree-audit-$$
-    trap 'rm -rf "$lab"' EXIT
+    caught "the lab agrees before anything is broken" none '' \
+        || { printf '  FAIL  the lab does not work, so nothing below proves anything\n'; return 1; }
 
-    # The unmutated copy first. `caught` reads any non-zero exit as proof, so a lab that never
-    # assembled would report four breaks caught and exit 0 — every case vacuous, and cheerful.
-    caught "the lab agrees before anything is broken" '' none \
-        || { printf '  FAIL  the lab does not work, so nothing below proves anything\n'; exit 1; }
+    caught "a gate missing from CI"                workflow 's/, panel\]/]/'
+    caught "a gate swapped for another"            workflow 's/panel\]/pest]/'
+    caught "a duplicate hiding a gate"             workflow 's/, panel\]/, floor]/'
+    caught "a gate dropped from the README"        readme   '/^| `versions` |/d'
 
-    caught "a gate missing from CI" \
-        's/plugin: \[kernel, signal, floor, panel\]/plugin: [kernel, signal, floor]/' workflows
-    caught "a gate swapped for another, same count" \
-        's/plugin: \[kernel, signal, floor, panel\]/plugin: [kernel, signal, floor, pest]/' workflows
-    caught "a duplicate hiding a gate, same count" \
-        's/plugin: \[kernel, signal, floor, panel\]/plugin: [kernel, signal, floor, floor]/' workflows
-    caught "a gate dropped from the README" '/^| `versions` |/d' readme
-
-    [ "$broken" -eq 0 ] && { printf 'THE CHECK CAN FAIL\n'; exit 0; }
-    exit 1
+    [ "$disagreed" -eq 0 ] || return 1
+    printf 'THE CHECK CAN FAIL\n'
 }
 
-#
-# One break, one copy, one exit code. With `none` it breaks nothing and requires agreement, which is
-# what makes the four below mean anything.
-#
-# `sed` to a new file rather than `sed -i`: the in-place flag is GNU's, and BSD reads its argument as
-# a backup suffix — so on macOS this audit could not run at all, and CI would not have said so
-# because the job that runs it is ubuntu.
-#
+# `sed` to a new file: the in-place flag is GNU's, and BSD reads its argument as a backup suffix.
 caught() {
-    rm -rf "$lab"; mkdir -p "$lab" || { printf '  FAIL  %s — no lab\n' "$1"; broken=1; return 1; }
-    cp -R "$root"/. "$lab"/ 2>/dev/null || { printf '  FAIL  %s — no copy\n' "$1"; broken=1; return 1; }
+    fresh_lab || { printf '  FAIL  %s — no lab\n' "$1"; disagreed=$((disagreed + 1)); return 1; }
 
-    [ "$3" = none ] || {
-        target="$lab/README.md"
-        [ "$3" = workflows ] && target="$lab/.github/workflows/gates.yml"
-
-        sed "$2" "$target" > "$target.broken" 2>/dev/null \
-            && mv "$target.broken" "$target" \
-            || { printf '  FAIL  %s — the break did not apply\n' "$1"; broken=1; return 1; }
-    }
+    [ "$2" = none ] || break_it "$2" "$3" \
+        || { printf '  FAIL  %s — the break did not apply\n' "$1"; disagreed=$((disagreed + 1)); return 1; }
 
     sh "$lab/bin/agree.sh" >/dev/null 2>&1; agreed=$?
+    [ "$2" = none ] && { want=0; } || { want=1; }
 
-    [ "$3" = none ] && { [ "$agreed" -eq 0 ] && { printf '  ok    %s\n' "$1"; return 0; }
-                         printf '  FAIL  %s\n' "$1"; broken=1; return 1; }
-
-    [ "$agreed" -eq 0 ] && { printf '  FAIL  %s — agreed anyway\n' "$1"; broken=1; return 1; }
-
+    [ "$agreed" -ne "$want" ] && { printf '  FAIL  %s\n' "$1"; disagreed=$((disagreed + 1)); return 1; }
     printf '  ok    %s\n' "$1"
 }
 
-broken=0
-[ "$mode" = audit ] && audit
+fresh_lab() {
+    rm -rf "$lab" && mkdir -p "$lab" && cp -R "$(root)"/. "$lab"/ 2>/dev/null
+}
 
-tmp=${TMPDIR:-/tmp}/foundry-agree-$$
-mkdir -p "$tmp" || exit 3
-trap 'rm -rf "$tmp"' EXIT
+break_it() {
+    file="$lab/README.md"
+    [ "$1" = workflow ] && file="$lab/.github/workflows/gates.yml"
 
-runs | sort -u > "$tmp/runs"
+    sed "$2" "$file" > "$file.broken" && mv "$file.broken" "$file"
+}
 
-[ -s "$tmp/runs" ] || { printf '  FAIL  bin/gates.sh named no gate at all\n'; exit 1; }
+work=${TMPDIR:-/tmp}/foundry-agree-$$
+mkdir -p "$work" || exit 3
+trap 'rm -rf "$work"' EXIT
 
-failed=0
-report README "$(readme)"
-report workflow "$(workflow)"
+listed="$work/listed"
+lab="$work/lab"
+disagreed=0
 
-[ "$failed" -eq 0 ] && { printf 'AGREED — %s gates\n' "$(wc -l < "$tmp/runs" | tr -d ' ')"; exit 0; }
-exit 1
+main "$@"
