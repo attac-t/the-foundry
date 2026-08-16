@@ -280,12 +280,24 @@ removal, and the refusal to drop is the whole invariant.
 relaxes a rule commits it, and the next base carries it. A buggy derivation would otherwise become
 law. So `Decided:` clauses do not carry forward: a decision meant to last belongs in a committed file.
 
-### What `check` cannot see
+### What `check` reads
 
-**A deleted introduced clause.** Every finding but one compares the charter against something outside
-it — the detector for a gate, the pinned sha for a source, the id for the text. `ambiguous` is the
-exception, and it reads the charter alone. An introduced clause has no outside: nothing derived it,
-nothing pinned it, and the charter is the only record it existed. Delete the line and `check` reports
+Most findings compare the charter against something outside it — the detector for a gate, the pinned
+sha for a source, the id for the text. Two do not.
+
+`ambiguous` reads the charter alone. So does `unsound`, which judges every `clause`, `pin` and `gate`
+record **as a record**: a gate whose id appears twice, or carries no pin, or no clause, or a clause
+that is not a `Gate`. Nothing outside the file answers those, so nothing outside it was asked — and
+for four rounds each of those tampers reached the gate stage instead, one refusal at a time.
+
+One identity throughout, and it is the string. `awk -v id=123` compared against a field is a strnum,
+so `$2 == id` matches `0123`: a gate could be pinned to one reader and unheard of by the next.
+`unsound` keys on subscripts, which are text, so the two answers cannot part again.
+
+### What `check` still cannot see
+
+**A deleted introduced clause.** An introduced clause has no outside: nothing derived it, nothing
+pinned it, and the charter is the only record it existed. Delete the line and `check` reports
 nothing.
 
 Closing that needs a ledger the charter cannot edit, which is the evidence stage. Until then a
@@ -333,9 +345,9 @@ read it swallowed the gates behind it — but the rule outlives that: evidence o
 on a human is evidence nobody can reproduce. This holds for `evidence record` too. It is the stream,
 not the terminal: a gate that opens `/dev/tty` still finds one.
 
-Every gate needs a pin. `check` reads the detector and the pin list, so a clause invented for an id
-nothing pinned is invisible to it — and running that command would record a bar no artifact declares.
-One unpinned gate refuses the whole set, before any of them runs.
+A gate runs where its pin says it came from. One checkout exists, so a gate pinned to another
+repository has nowhere to run, and one of them refuses the set. Whether the charter's records hold
+together at all is `check`'s question, not this one — see **What `check` reads**.
 
 ---
 

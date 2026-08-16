@@ -743,33 +743,25 @@ gates() {
 # the charter as clean. One line appended, no pin touched, which is less than the charter's own
 # threat model asks of a worker.
 #
-refuse_repeated_ids() {
-    repeated=$(printf '%s\n' "$1" | awk '{ if (++seen[$1] == 2) print $1 }')
-
-    [ -z "$repeated" ] && return 0
-    note "the charter pins more than one command under: $repeated"
-    return 1
-}
-
 #
-# Provenance, which is invariant 1: a clause establishing neither derivation nor authorisation is
-# *introduced*, and an introduced clause is what authorisation exists to stop.
+# A gate runs where its pin says it came from. One checkout exists, so a gate pinned elsewhere has
+# nowhere to run — and running it here would grade this repository against another one's bar.
 #
-# `check` looks for none of this. Its five readers walk the detector or the pin list, so a clause
-# invented for an id nothing pinned is invisible to all of them — `forged_ids` accepts an id honestly
-# made from the text beside it, and the rest never see the record at all. Two lines appended run a
-# command no artifact declares, and the ledger cannot tell it from one a human agreed to.
+# `moved_sources` reports a foreign pin `uncheckable:` and never counts it, deliberately: a
+# multi-target charter cannot be verified from one checkout. That is right for asking whether the
+# charter is sound, and wrong for asking whether this gate can run, so the question lives here.
 #
-refuse_unpinned_gates() {
-    dir=$1
+refuse_gates_from_elsewhere() {
+    file=$(charter_file "$1")
+    here=$(this_repository)
 
-    unpinned=$(printf '%s\n' "$2" | while read -r id _; do
+    elsewhere=$(printf '%s\n' "$2" | while read -r id _; do
         [ -n "$id" ] || continue
-        has_record "$(charter_file "$dir")" pin "$id" || printf '%s ' "$id"
+        has_local_pin "$file" "$id" "$here" || printf '%s ' "$id"
     done)
 
-    [ -z "$unpinned" ] && return 0
-    note "the charter records where these gates came from nowhere: $unpinned"
+    [ -z "$elsewhere" ] && return 0
+    note "these gates are pinned to another repository, so this checkout cannot run them: $elsewhere"
     return 1
 }
 
@@ -784,8 +776,7 @@ run_pinned_gates() {
 
     pins=$(pinned_gates "$dir")
     [ -n "$pins" ] || { note "this charter pins no gate, so it grades nothing mechanically"; exit 8; }
-    refuse_repeated_ids "$pins" || exit 7
-    refuse_unpinned_gates "$dir" "$pins" || exit 7
+    refuse_gates_from_elsewhere "$dir" "$pins" || exit 7
 
     # §2.4: a gate runs with its target's checkout as the working directory. One checkout exists
     # today — a gate named `tests` in a two-repo workspace is otherwise ambiguous.
@@ -1424,6 +1415,7 @@ check_charter() {
     findings=$(
         forged_ids "$file"
         ambiguous_ids "$file"
+        unsound_records "$file"
         underived_gates "$file"
         moved_sources "$file"
         moved_resolutions "$file"
@@ -1462,6 +1454,32 @@ ambiguous_ids() {
 # so rewriting the text under its id changes the requirement while every other check still matches.
 # Nothing enforced the premise until here.
 #
+#
+# Every record judged as a record, in one pass. `check`'s other readers walk the detector or the pin
+# list, so a record invented in the file is invisible to all of them — a clause, its pin and its gate
+# appended together answered to nothing, and four separate tampers each reached the gate stage
+# because no reader here was asking.
+#
+# One notion of identity, and it is the string. `awk -v id=123` against a field is a strnum, so
+# `$2 == id` matches `0123` — `has_record` said such a gate was pinned while a subscript said it was
+# a different gate. Subscripts throughout, so the two answers cannot part again.
+#
+unsound_records() {
+    awk '
+        $1 == "clause" { kind[$2] = $3 }
+        $1 == "pin"    { pinned[$2] = 1 }
+        $1 == "gate"   { held[$2]++ }
+        END {
+            for (id in held) {
+                if (held[id] > 1)    print "repeated: gate " id
+                if (!(id in pinned)) print "unpinned: gate " id
+
+                if (!(id in kind)) { print "unclaused: gate " id; continue }
+                if (kind[id] != "Gate") print "notagate: " kind[id] " " id
+            }
+        }' "$1"
+}
+
 forged_ids() {
     awk '$1 == "clause" { t = $0; sub(/^clause [^ ]+ [^ ]+ /, "", t); print $2 " " t }' "$1" \
     | while read -r id text; do

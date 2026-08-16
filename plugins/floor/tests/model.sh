@@ -1282,28 +1282,51 @@ a_gate_runs_at_the_targets_root
 # detector's gates, and the detector yields nothing once the declaration is gone. So the gate stage
 # refuses it itself, rather than stamp a record whose name field is empty and whose bar is unknowable.
 #
-a_command_with_no_clause_is_refused() {
+a_record_that_answers_to_nothing_is_caught() {
   make_repo "$tmp/g6" main && set_origin "$tmp/g6" 'https://github.com/acme/g6.git' \
     && mkdir -p "$tmp/g6/.foundry" \
     && commit_file "$tmp/g6" .foundry/gates 'tests  true
-' || { skip "nameless gate — git could not make a repo here"; return; }
+' || { skip "unsound records — git could not make a repo here"; return; }
 
-  d=$(floor "$tmp/g6" new "Nameless")
+  d=$(floor "$tmp/g6" new "Hollow")
   floor "$tmp/g6" charter derive >/dev/null 2>&1
-
-  # The clause goes and the declaration with it, so the detector is silent and `check` has nothing to
-  # say. The pin stays, and is moved to another repository — reported uncheckable and never counted,
-  # so `check` still passes and the gate stage reaches the name rather than refusing the provenance.
-  rm -f "$tmp/g6/.foundry/gates"
+  sound=$(cat "$(charter_of "$d")")
   id=$(awk '$1 == "gate" { print $2; exit }' "$(charter_of "$d")")
-  printf 'pin %s https://github.com/acme/elsewhere.git HEAD gone deadbeef\ngate %s true\n' \
-    "$id" "$id" > "$(charter_of "$d")"
 
-  is "a charter this hollow is still clean" "$(code_of floor "$tmp/g6" charter check)" "0"
-  is "and the command under it is refused"  "$(code_of floor "$tmp/g6" gates)" "7"
-  is "and nothing is recorded"              "$(floor "$tmp/g6" evidence)" ""
+  # Each tamper on its own, against the charter that derived cleanly. The reader is one awk pass, so
+  # a finding that answered for another would say so in its own word.
+  tamper() { printf '%s\n' "$sound" > "$(charter_of "$d")"; printf '%s\n' "$1" >> "$(charter_of "$d")"; }
+
+  tamper "gate $id false"
+  has "a second command under one id is named" "$(floor "$tmp/g6" charter check 2>&1)" "repeated: gate $id"
+
+  # `0$id` is the same number and a different string. `has_record` compared numerically and a
+  # subscript compares as text, so this was pinned to one reader and unheard of by the other.
+  tamper "gate 0$id false"
+  has "a leading zero is a different gate" "$(floor "$tmp/g6" charter check 2>&1)" "unpinned: gate 0$id"
+
+  rogue=$(printf '%s' rogue | cksum | awk '{ print $1 }')
+  tamper "clause $rogue Gate rogue
+gate $rogue false"
+  has "a clause invented whole is named" "$(floor "$tmp/g6" charter check 2>&1)" "unpinned: gate $rogue"
+
+  tamper "gate $rogue false"
+  has "a gate with no clause is named" "$(floor "$tmp/g6" charter check 2>&1)" "unclaused: gate $rogue"
+
+  tamper "clause $rogue Judged someone read it
+pin $rogue $(awk '$1 == "pin" { print $3, $4, $5, $6; exit }' <<EOF
+$sound
+EOF
+)
+gate $rogue false"
+  has "a gate resting on a clause no command can hold is named" \
+      "$(floor "$tmp/g6" charter check 2>&1)" "notagate: Judged $rogue"
+
+  tamper "gate $id false"
+  is  "and none of them runs"  "$(code_of floor "$tmp/g6" gates)" "7"
+  is  "nor records anything"   "$(floor "$tmp/g6" evidence)" ""
 }
-a_command_with_no_clause_is_refused
+a_record_that_answers_to_nothing_is_caught
 
 #
 # A gate that names itself and nothing else. `sh -c ""` exits 0, so this would record a pass for a
@@ -1357,18 +1380,21 @@ a_gate_cannot_eat_the_gates_after_it
 a_clause_with_no_text_names_no_gate() {
   make_repo "$tmp/g9" main && set_origin "$tmp/g9" 'https://github.com/acme/g9.git' \
     && mkdir -p "$tmp/g9/.foundry" \
-    && commit_file "$tmp/g9" .foundry/gates 'tests  true
+    && commit_file "$tmp/g9" NOTES 'kept
+' && commit_file "$tmp/g9" .foundry/gates 'tests  true
 ' || { skip "blank clause — git could not make a repo here"; return; }
 
   d=$(floor "$tmp/g9" new "Blank")
   floor "$tmp/g9" charter derive >/dev/null 2>&1
+  target=$(awk '$1 == "pin" { print $3; exit }' "$(charter_of "$d")")
+  ref=$(awk '$1 == "pin" { print $4; exit }' "$(charter_of "$d")")
 
-  # The declaration goes so the detector is silent. The pin stays, on another repository, where it is
-  # reported uncheckable and never counted — so `check` passes and the name is what refuses, not the
-  # provenance. 4294967295 is `printf '' | cksum`.
+  # The declaration goes so the detector is silent, and the pin moves to a file that is still there
+  # and still matches — local, so `check` verifies it and says nothing, and the name is what refuses
+  # rather than the provenance. 4294967295 is `printf '' | cksum`.
   rm -f "$tmp/g9/.foundry/gates"
-  printf 'clause 4294967295 Gate \npin 4294967295 https://github.com/acme/elsewhere.git HEAD gone deadbeef\ngate 4294967295 true\n' \
-    > "$(charter_of "$d")"
+  printf 'clause 4294967295 Gate \npin 4294967295 %s %s NOTES %s\ngate 4294967295 true\n' \
+    "$target" "$ref" "$(git -C "$tmp/g9" hash-object NOTES)" > "$(charter_of "$d")"
 
   is "a clause whose id was made from no text is not forged" \
      "$(code_of floor "$tmp/g9" charter check)" "0"
@@ -1379,50 +1405,30 @@ a_clause_with_no_text_names_no_gate() {
 a_clause_with_no_text_names_no_gate
 
 #
-# `pinned_command` answers with the first record for an id, and `moved_resolutions` compares only
-# that one. A second `gate` line under the same id therefore runs a command nothing validated, and
-# `check` calls the charter clean — one line appended, no pin touched.
+# A pin's target is self-asserted, and `moved_sources` reports a foreign one uncheckable rather than
+# refusing it — right for asking whether the charter is sound, wrong for asking whether a gate can
+# run. One checkout exists, so a gate pinned elsewhere has nowhere to run and no bar to be graded by.
 #
-a_second_command_under_one_id_is_refused() {
+a_gate_pinned_elsewhere_does_not_run_here() {
   make_repo "$tmp/ga" main && set_origin "$tmp/ga" 'https://github.com/acme/ga.git' \
     && mkdir -p "$tmp/ga/.foundry" \
     && commit_file "$tmp/ga" .foundry/gates 'tests  true
-' || { skip "repeated id — git could not make a repo here"; return; }
+' || { skip "foreign pin — git could not make a repo here"; return; }
 
-  d=$(floor "$tmp/ga" new "Twice")
+  d=$(floor "$tmp/ga" new "Elsewhere")
   floor "$tmp/ga" charter derive >/dev/null 2>&1
 
-  id=$(awk '$1 == "gate" { print $2; exit }' "$(charter_of "$d")")
-  printf 'gate %s false\n' "$id" >> "$(charter_of "$d")"
+  rm -f "$tmp/ga/.foundry/gates"
+  away=$(printf '%s' away | cksum | awk '{ print $1 }')
+  printf 'clause %s Gate away\npin %s https://github.com/acme/other.git HEAD gone deadbeef\ngate %s true\n' \
+    "$away" "$away" "$away" > "$(charter_of "$d")"
 
-  is "the charter still reads as clean" "$(code_of floor "$tmp/ga" charter check)" "0"
-  is "but two commands under one id are refused" "$(code_of floor "$tmp/ga" gates)" "7"
-  is "so neither runs" "$(floor "$tmp/ga" evidence)" ""
+  is "a charter pinned to another repository is sound" \
+     "$(code_of floor "$tmp/ga" charter check)" "0"
+  is "and its gates are refused here"  "$(code_of floor "$tmp/ga" gates)" "7"
+  is "so nothing is recorded"          "$(floor "$tmp/ga" evidence)" ""
 }
-a_second_command_under_one_id_is_refused
-
-#
-# A clause invented whole, for an id nothing pinned. `check`'s five readers walk the detector or the
-# pin list, so none of them sees it — `forged_ids` accepts the id because it was honestly made from
-# the words beside it. Two appended lines, and the command runs with no artifact behind it.
-#
-a_gate_from_nowhere_is_refused() {
-  make_repo "$tmp/gb" main && set_origin "$tmp/gb" 'https://github.com/acme/gb.git' \
-    && mkdir -p "$tmp/gb/.foundry" \
-    && commit_file "$tmp/gb" .foundry/gates 'tests  true
-' || { skip "unpinned gate — git could not make a repo here"; return; }
-
-  d=$(floor "$tmp/gb" new "Nowhere")
-  floor "$tmp/gb" charter derive >/dev/null 2>&1
-
-  rogue=$(printf '%s' rogue | cksum | awk '{ print $1 }')
-  printf 'clause %s Gate rogue\ngate %s false\n' "$rogue" "$rogue" >> "$(charter_of "$d")"
-
-  is "an invented clause reads as clean" "$(code_of floor "$tmp/gb" charter check)" "0"
-  is "and every gate is refused, not just that one" "$(code_of floor "$tmp/gb" gates)" "7"
-  is "so the pinned gate beside it never ran either" "$(floor "$tmp/gb" evidence)" ""
-}
-a_gate_from_nowhere_is_refused
+a_gate_pinned_elsewhere_does_not_run_here
 
 #
 # The same act with a quieter shape. Deleting a level-2 declaration drops detection a level, so the

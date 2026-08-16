@@ -490,13 +490,20 @@ wreck_runner "a clause read as spaces when it has no text is caught" \
 
 # One appended line, no pin edited. `check` compares the first record for an id and never sees the
 # second, so without this the charter reads clean and runs a command nothing validated.
-wreck_runner "a second command under one id is caught" \
-  twoids 's#    refuse_repeated_ids "$pins" || exit 7##'
+# The reader that judges the charter's records as records. Without it every file-only tamper — a
+# repeat, an invented clause, a gate resting on a `Judged` one — reads as a sound charter.
+wreck_runner "a check that never reads its own records is caught" \
+  unsound 's#        unsound_records "$file"##'
 
-# The general case of that one. `check` reads the detector and the pin list, so a clause invented for
-# an unpinned id is invisible to it, and the command runs with nothing behind it.
-wreck_runner "a gate the charter records no provenance for is caught" \
-  unpinned 's#    refuse_unpinned_gates "$dir" "$pins" || exit 7##'
+# One notion of identity, and it is the string. Coerce the subscript and `0123` becomes `123`: the
+# repeat that is not one is reported, and the gate nothing pinned is not.
+wreck_runner "a gate id compared as a number is caught" \
+  numericid 's#held\[$2\]++#held[$2 + 0]++#'
+
+# A pin's target is self-asserted and `moved_sources` will not refuse a foreign one. Without this a
+# charter pinned to another repository runs its gates against this checkout.
+wreck_runner "a gate run against a repository it was not pinned to is caught" \
+  elsewhere 's#    refuse_gates_from_elsewhere "$dir" "$pins" || exit 7##'
 
 # The list the loop reads is the command's stdin. A gate that reads it swallows the gates behind it,
 # and they read as never having failed.
