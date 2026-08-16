@@ -234,8 +234,8 @@ These replace routine approval. Each is checkable by code, not by the worker's a
 
 | # | Invariant | What it means |
 |---|---|---|
-| 1 | **Provenance** | Every clause names the human-owned artifact it came from — a repo script or an instruction file — **and establishes the link by one of exactly two paths, mechanical or semantic (below).** A clause that establishes neither is *introduced* |
-| 2 | **Pinning** | That artifact is captured at the base ref of **the target it came from** — §2.3's `ref`. Both the clause *and its resolution* are pinned |
+| 1 | **Provenance** | Every clause names the human-owned artifact it came from — a repo script or an instruction file — **and establishes the link by one of exactly two paths, mechanical or semantic (below).** A clause that establishes neither is *introduced*. **History**: revision 13 adds what the resolver *answers* to what the artifact *contains* — deleting a declaration drops detection a level, and every remaining pin still matches |
+| 2 | **Pinning** | That artifact is captured at the **base commit** of the target it came from. Both the clause *and its resolution* are pinned. **History**: through revision 12 this read "the base ref — §2.3's `ref`", and §2.3 admits a branch, which moves as the run commits |
 | 3 | **Monotonicity** | The set of requirements may grow. It may never shrink. A clause's kind is not a rank on that set — below. **The baseline is what the pinned artifacts derive now, never a previous run's charter** |
 | 4 | **Authority** | Selecting the work item **is** the human act, stamped as run-scoped `human` **authority** — never evidence, because it names no clause and so answers nothing about one. It authorises everything derived from artifacts that human already owns |
 

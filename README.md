@@ -65,12 +65,16 @@ Verify the install: `/evaluate`
 
 ## Contributing
 
-Seven gates run on every pull request. Run them before you open one:
+Seven gates. Run them before you open a pull request:
 
 ```bash
 sh bin/gates.sh                 # all seven, here
+sh bin/agree.sh                 # this table, the workflow and gates.sh name the same seven
 sh bin/gates-in-docker.sh       # all seven on Linux, where `sh` is dash
 ```
+
+CI runs the first two. Leave `agree` out of your run and a PR can still go red on a check the README
+never mentioned — the drift this file exists to prevent, one level up.
 
 The second is not a convenience. On macOS and under Git Bash `sh` **is** bash and accepts `&>` and
 `[[ =~ ]]` without complaint, so neither can fail a bashism — and every runner here opens `#!/bin/sh`.

@@ -2,8 +2,8 @@
 #
 # The README, the workflow and `bin/gates.sh` must name the same gates.
 #
-# A meta-check, not a product gate. It grades the other seven and is not one of them, so adding it to
-# CI does not make the count it checks disagree with itself.
+# A meta-check, not a product gate. It grades the other seven and is not one of them, and `workflow`
+# below excludes it by name — the boundary is that list, not a property of being a meta-check.
 #
 # Identities, never counts. The README claimed seven and the workflow ran six for days: same shape of
 # defect a count would have shown, but a count cannot say `panel` was the one missing, and cannot see
@@ -27,14 +27,31 @@ readme() {
     ' README.md
 }
 
-# What CI would run. The scripts by name, and the plugins the matrix expands.
+#
+# What CI runs. Any `bin/` script it invokes, and the plugins the matrix fills in.
+#
+# Whatever the interpreter and whatever the name. Matching `bash bin/[a-z]+\.sh` excluded this check
+# by accident rather than by rule — `sh bin/agree.sh` simply did not match — so a gate added as
+# `sh bin/newgate.sh`, or named with a hyphen, would have run in CI and been invisible here.
+#
+# The exclusions are by name and deliberate: `agree` grades the gates, and `gates`/`gates-in-docker`
+# run them. None of the three is one.
+#
 workflow() {
     awk '
-        /bash bin\/[a-z]+\.sh/ { match($0, /bin\/[a-z]+\.sh/)
-                                 name = substr($0, RSTART + 4, RLENGTH - 7)
-                                 print name }
-        /plugin: \[/           { gsub(/.*\[|\].*|,/, " ")
-                                 for (i = 1; i <= NF; i++) print $i }
+        /bin\/[a-z-]+\.sh/ {
+            match($0, /bin\/[a-z-]+\.sh/)
+            name = substr($0, RSTART + 4, RLENGTH - 7)
+            if (name !~ /^(agree|gates|gates-in-docker)$/) print name
+        }
+
+        # The step that runs them, not the matrix that declares them. Delete the step and keep the
+        # matrix and CI runs no suite at all, which reading the declaration alone calls agreement.
+        /plugins\/\$\{\{ matrix\.plugin \}\}\/tests\/run\.sh/ { steps = 1 }
+
+        /plugin: \[/ { gsub(/.*\[|\].*|,/, " "); for (i = 1; i <= NF; i++) held[$i] = 1 }
+
+        END { if (steps) for (name in held) print name }
     ' .github/workflows/gates.yml
 }
 
@@ -60,6 +77,11 @@ audit() {
     lab=${TMPDIR:-/tmp}/foundry-agree-audit-$$
     trap 'rm -rf "$lab"' EXIT
 
+    # The unmutated copy first. `caught` reads any non-zero exit as proof, so a lab that never
+    # assembled would report four breaks caught and exit 0 — every case vacuous, and cheerful.
+    caught "the lab agrees before anything is broken" '' none \
+        || { printf '  FAIL  the lab does not work, so nothing below proves anything\n'; exit 1; }
+
     caught "a gate missing from CI" \
         's/plugin: \[kernel, signal, floor, panel\]/plugin: [kernel, signal, floor]/' workflows
     caught "a gate swapped for another, same count" \
@@ -72,18 +94,33 @@ audit() {
     exit 1
 }
 
-# One break, one copy, one exit code.
+#
+# One break, one copy, one exit code. With `none` it breaks nothing and requires agreement, which is
+# what makes the four below mean anything.
+#
+# `sed` to a new file rather than `sed -i`: the in-place flag is GNU's, and BSD reads its argument as
+# a backup suffix — so on macOS this audit could not run at all, and CI would not have said so
+# because the job that runs it is ubuntu.
+#
 caught() {
-    rm -rf "$lab"; mkdir -p "$lab" || { printf '  FAIL  %s — no lab\n' "$1"; broken=1; return; }
-    cp -R "$root"/. "$lab"/ 2>/dev/null
+    rm -rf "$lab"; mkdir -p "$lab" || { printf '  FAIL  %s — no lab\n' "$1"; broken=1; return 1; }
+    cp -R "$root"/. "$lab"/ 2>/dev/null || { printf '  FAIL  %s — no copy\n' "$1"; broken=1; return 1; }
 
-    target="$lab/README.md"
-    [ "$3" = workflows ] && target="$lab/.github/workflows/gates.yml"
+    [ "$3" = none ] || {
+        target="$lab/README.md"
+        [ "$3" = workflows ] && target="$lab/.github/workflows/gates.yml"
 
-    sed -i "$2" "$target" 2>/dev/null || { printf '  FAIL  %s — sed did not apply\n' "$1"; broken=1; return; }
+        sed "$2" "$target" > "$target.broken" 2>/dev/null \
+            && mv "$target.broken" "$target" \
+            || { printf '  FAIL  %s — the break did not apply\n' "$1"; broken=1; return 1; }
+    }
 
-    sh "$lab/bin/agree.sh" >/dev/null 2>&1 \
-        && { printf '  FAIL  %s — agreed anyway\n' "$1"; broken=1; return; }
+    sh "$lab/bin/agree.sh" >/dev/null 2>&1; agreed=$?
+
+    [ "$3" = none ] && { [ "$agreed" -eq 0 ] && { printf '  ok    %s\n' "$1"; return 0; }
+                         printf '  FAIL  %s\n' "$1"; broken=1; return 1; }
+
+    [ "$agreed" -eq 0 ] && { printf '  FAIL  %s — agreed anyway\n' "$1"; broken=1; return 1; }
 
     printf '  ok    %s\n' "$1"
 }
