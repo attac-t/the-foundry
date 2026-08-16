@@ -1116,6 +1116,25 @@ the_ref_is_what_was_tested() {
 the_ref_is_what_was_tested
 
 #
+# A repository with no commit has nothing to record evidence against. Refused, rather than stamped
+# with an empty ref — §2.5's completion invariant matches records to a delivered sha, and a record
+# holding none would sit in the ledger looking like one that can be matched.
+#
+a_record_needs_a_commit_to_apply_to() {
+  make_repo "$tmp/ev6" main && set_origin "$tmp/ev6" 'https://github.com/acme/ev6.git' \
+    || { skip "unborn HEAD — git could not make a repo here"; return; }
+
+  floor "$tmp/ev6" new "Unborn" >/dev/null
+
+  is  "a gate recorded before the first commit is refused" \
+      "$(code_of floor "$tmp/ev6" evidence record tests true)" "1"
+  has "and says why" \
+      "$(floor_says "$tmp/ev6" evidence record tests true)" "no commit to record evidence against"
+  is  "and nothing was written" "$(floor "$tmp/ev6" evidence)" ""
+}
+a_record_needs_a_commit_to_apply_to
+
+#
 # The property that makes it evidence. There is no argument for a result, so the only way to record a
 # pass is to pass — `record()` in §2.5 takes a command and no outcome.
 #

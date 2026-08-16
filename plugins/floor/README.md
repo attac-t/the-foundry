@@ -32,6 +32,8 @@ sh bin/run.sh policy authorize https://github.com/acme/api.git
 sh bin/run.sh charter
 sh bin/run.sh charter derive
 sh bin/run.sh charter check
+sh bin/run.sh evidence
+sh bin/run.sh evidence record tests composer test
 ```
 
 `new` makes a run and points this checkout at it. `path` prints the active run, or exits 1.
@@ -46,6 +48,7 @@ sh bin/run.sh charter check
 ${FOUNDRY_HOME:-$HOME/.foundry}/runs/<date>-<slug>-<short id>/
 ├── item.md            what someone wants, and advisory targets
 ├── bootstrap          the repo Foundry was invoked from — 0 or 1
+├── evidence           one line per gate that ran, tab-separated
 ├── memory/            working.md, blueprint.md, spec.md, adr/
 ├── planning/          scratch space for planning
 └── units/
@@ -66,7 +69,8 @@ run, and deleting a run leaves them. A reclaimed slot therefore used to hand the
 allowlist nobody granted it. A slot is now free only when neither `runs/` nor `policy/runs/` holds
 it, which is why the second run in a day can land on `0001` with no `0000` in sight.
 
-Anything else that outlives a run must join that check. Evidence will be the next one.
+Anything else that outlives a run must join that check. The evidence ledger does not — it lives
+inside the run and is deleted with it, so a reclaimed slot inherits no record it did not write.
 
 `units/` holds one unit today. The level is there from the first run because adding it later would
 move every path in every adapter.

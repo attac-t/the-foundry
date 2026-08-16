@@ -6,7 +6,9 @@
 #
 # `set -e` is off: `path` exits 1 when no run is active, which is an answer.
 #
-# Exit codes:
+# Exit codes — every command but one. `evidence record` returns what the gate returned, so read its
+# refusals off stderr and the ledger, never off the code.
+#
 #   0  answered
 #   1  nothing to answer with — no run is active, no bootstrap target, or no charter yet
 #   2  asked for something this does not do

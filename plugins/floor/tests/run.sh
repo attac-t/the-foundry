@@ -406,7 +406,13 @@ wreck_runner "a gate name that can hold a newline is caught" \
 # Taken after the command, a gate that commits is recorded against a tree that did not exist when it
 # was graded.
 wreck_runner "a ref read after the command ran is caught" \
-  lateref 's#    ref=$(delivered_ref) || { note "no commit to record evidence against"; exit 1; }##; s#stamp "$dir" machine "$name" "$result" "$ref" "$why"#stamp "$dir" machine "$name" "$result" "$(delivered_ref)" "$why"#'
+  lateref 's#stamp "$dir" machine "$name" "$result" "$ref" "$why"#stamp "$dir" machine "$name" "$result" "$(delivered_ref)" "$why"#'
+
+# The other half of that line. Without the guard the ref is empty rather than refused, so a repo with
+# no commit records a gate against nothing — and `noref` cannot catch it, because it blanks the ref
+# where a commit exists and this one only differs where none does.
+wreck_runner "a record written before the first commit is caught" \
+  unbornref 's#ref=$(delivered_ref) || { note "no commit to record evidence against"; exit 1; }#ref=$(delivered_ref)#'
 
 # Grants are keyed by the run's id, so a renamed directory looks up a key nothing holds and `policy`
 # answered exit 0 with the bootstrap alone. Authority a human gave, gone, without a word.
