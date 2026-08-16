@@ -114,6 +114,7 @@ make_run() {
     write_id "$dir" "$id"
     write_item "$dir" "$title" || die_unwritable "$dir/item.md"
     write_bootstrap "$dir"
+    stamp_selection "$dir" "$(selector)" "$id"
     point_this_checkout_at "$id"
 
     printf '%s\n' "$dir"
@@ -121,6 +122,33 @@ make_run() {
 
 # `<date>-<slug>-<first free slot>`.
 mint_id() { claim_free_slot "$(date +%Y-%m-%d)-$(slug "$1")"; }
+
+authority_file() { printf '%s/authority' "$1"; }
+
+#
+# Who selected the work item, and which run it authorised — RFC-001 invariant 4.
+#
+# **Not evidence, and not in that ledger.** It names no clause, so it can satisfy none. §2.5 keeps
+# the two apart by giving this a different shape rather than the evidence record a field to sort by:
+# three columns, and neither `unit` nor `ref` is one of them. A record with no `ref` cannot satisfy
+# the completion invariant, which is the separation stated in the shape instead of in a sentence.
+#
+# It happens before the run does, so it lands with the layout and names the run it authorised.
+#
+stamp_selection() {
+    printf '%s\t%s\t%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$(one_line "$2")" "$3" \
+        >> "$(authority_file "$1")" 2>/dev/null || die_unwritable "$(authority_file "$1")"
+}
+
+#
+# The human this run answers to. `FOUNDRY_WHO` first: a harness knows who it is acting for, and git
+# knows only whose checkout this is.
+#
+# Nobody is a real answer and is written as one. `new` changes nothing in any repository, so it is
+# the wrong place to demand a name — completion is, where a run nobody selected is a run nobody may
+# deliver.
+#
+selector() { printf '%s' "${FOUNDRY_WHO:-$(git config user.email 2>/dev/null)}"; }
 
 #
 # `<base>-NNNN`, counting up from zero until nothing holds that name.

@@ -218,6 +218,39 @@ outside=$(floor "$tmp/bare" new "No Origin")
 absent "a run started outside a repo records no bootstrap target" "$outside/bootstrap"
 is     "and asking for it exits 1" "$(code_of floor "$tmp/bare" bootstrap)" "1"
 
+#
+# Invariant 4: a run exists because a human selected the work item. That act is stamped where the run
+# begins, and it is not evidence — it names no clause, so it can satisfy none.
+#
+the_selection_is_stamped() {
+  chose=$( cd "$tmp/bare" 2>/dev/null || exit 9
+           FOUNDRY_HOME="$home" FOUNDRY_RUN="" FOUNDRY_WHO="ada@example.com" \
+           sh "$runner" new "Chosen" 2>/dev/null )
+
+  held=$(cat "$chose/authority" 2>/dev/null)
+  matches "the selection names when, who, and the run it authorised" \
+          "$held" "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:]+Z	ada@example.com	$(basename "$chose")$"
+  is "three fields, where evidence has seven" \
+     "$(printf '%s\n' "$held" | awk -F'\t' 'NF != 3' | grep -c .)" "0"
+  is "and it is not in the ledger completion reads" "$(cat "$chose/evidence" 2>/dev/null)" ""
+}
+the_selection_is_stamped
+
+#
+# Nobody is an answer, written as one. `new` changes nothing in any repository, so demanding a name
+# here would refuse a local act; the bar belongs at delivery, where an unattributable run matters.
+#
+a_run_nobody_claims_still_starts() {
+  nameless=$( cd "$tmp/bare" 2>/dev/null || exit 9
+              HOME="$tmp/nogit" FOUNDRY_HOME="$home" FOUNDRY_RUN="" FOUNDRY_WHO="" \
+              sh "$runner" new "Unclaimed" 2>/dev/null )
+
+  is "a run with no selector still starts" "$(code_of test -d "$nameless")" "0"
+  matches "and the stamp says so, rather than inventing one" \
+          "$(cat "$nameless/authority" 2>/dev/null)" "Z		$(basename "$nameless")$"
+}
+a_run_nobody_claims_still_starts
+
 a_repo_with_no_origin() {
   make_repo "$tmp/noremote" main || { skip "a repo with no origin — git could not make a repo here"; return; }
 
