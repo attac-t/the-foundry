@@ -480,13 +480,18 @@ wreck_runner "a gate with no command recorded as a pass is caught" \
 # The count that made `emptycmd` equivalent. Blanking two fields of a two-field record leaves one
 # space, `check` read it as a command, and the spurious drift refused the run before the guard above
 # could — a mutant killed by a refusal that had nothing to do with it.
-# Two functions strip the same way now, so the break names the field count before it. Matching
+# Two functions strip the same way, so each break names the field count before it. Matching
 # `sub(/^ +/` alone would blank both and prove whichever failure the suite noticed first.
-#
-# Only this one has a break. `clause_text` strips the same way and cannot be reached with an empty
-# clause, because `forged_ids` remakes the id from the text and refuses the only charter that would.
 wreck_runner "a pinned command read as a space when it is empty is caught" \
   spacecmd 's#$2 = ""; sub(/^ +/, "")#$2 = ""; sub(/^  /, "")#'
+
+wreck_runner "a clause read as spaces when it has no text is caught" \
+  spacetext 's#$2 = ""; $3 = ""; sub(/^ +/, "")#$2 = ""; $3 = ""; sub(/^   /, "")#'
+
+# One appended line, no pin edited. `check` compares the first record for an id and never sees the
+# second, so without this the charter reads clean and runs a command nothing validated.
+wreck_runner "a second command under one id is caught" \
+  twoids 's#    refuse_repeated_ids "$pins" || exit 7##'
 
 # The list the loop reads is the command's stdin. A gate that reads it swallows the gates behind it,
 # and they read as never having failed.

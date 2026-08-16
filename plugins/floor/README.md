@@ -328,6 +328,10 @@ gates after it are recorded against.
 Each gate runs with its target's checkout as the working directory — §2.4. One checkout exists
 today; `composer test` in a two-repo workspace is otherwise ambiguous.
 
+A recorded command reads `/dev/null`, never the terminal. The gate list is the loop's own stdin, and
+a gate that read it swallowed the gates behind it — but the rule outlives that: evidence of something
+that waited on a human is evidence nobody can reproduce. This holds for `evidence record` too.
+
 ---
 
 ## Authorisation

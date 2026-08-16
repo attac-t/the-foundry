@@ -1347,6 +1347,56 @@ second  true
 a_gate_cannot_eat_the_gates_after_it
 
 #
+# A clause with no words. `clause_id ""` is a value like any other, so its id was honestly made from
+# the text it has and `forged_ids` passes it — leaving the gate stage the only thing that can refuse
+# a record named whitespace.
+#
+a_clause_with_no_text_names_no_gate() {
+  make_repo "$tmp/g9" main && set_origin "$tmp/g9" 'https://github.com/acme/g9.git' \
+    && mkdir -p "$tmp/g9/.foundry" \
+    && commit_file "$tmp/g9" .foundry/gates 'tests  true
+' || { skip "blank clause — git could not make a repo here"; return; }
+
+  d=$(floor "$tmp/g9" new "Blank")
+  floor "$tmp/g9" charter derive >/dev/null 2>&1
+
+  # The declaration goes so the detector is silent, and the pin with it, so every reader `check` has
+  # is left with nothing to say. 4294967295 is `printf '' | cksum`.
+  rm -f "$tmp/g9/.foundry/gates"
+  printf 'clause 4294967295 Gate \ngate 4294967295 true\n' > "$(charter_of "$d")"
+
+  is "a clause whose id was made from no text is not forged" \
+     "$(code_of floor "$tmp/g9" charter check)" "0"
+  is "and the gate under it is refused rather than run" \
+     "$(code_of floor "$tmp/g9" gates)" "7"
+  is "so nothing is recorded" "$(floor "$tmp/g9" evidence)" ""
+}
+a_clause_with_no_text_names_no_gate
+
+#
+# `pinned_command` answers with the first record for an id, and `moved_resolutions` compares only
+# that one. A second `gate` line under the same id therefore runs a command nothing validated, and
+# `check` calls the charter clean — one line appended, no pin touched.
+#
+a_second_command_under_one_id_is_refused() {
+  make_repo "$tmp/ga" main && set_origin "$tmp/ga" 'https://github.com/acme/ga.git' \
+    && mkdir -p "$tmp/ga/.foundry" \
+    && commit_file "$tmp/ga" .foundry/gates 'tests  true
+' || { skip "repeated id — git could not make a repo here"; return; }
+
+  d=$(floor "$tmp/ga" new "Twice")
+  floor "$tmp/ga" charter derive >/dev/null 2>&1
+
+  id=$(awk '$1 == "gate" { print $2; exit }' "$(charter_of "$d")")
+  printf 'gate %s false\n' "$id" >> "$(charter_of "$d")"
+
+  is "the charter still reads as clean" "$(code_of floor "$tmp/ga" charter check)" "0"
+  is "but two commands under one id are refused" "$(code_of floor "$tmp/ga" gates)" "7"
+  is "so neither runs" "$(floor "$tmp/ga" evidence)" ""
+}
+a_second_command_under_one_id_is_refused
+
+#
 # The same act with a quieter shape. Deleting a level-2 declaration drops detection a level, so the
 # clause survives under a different source and every pin that remains still matches — comparing
 # pinned sources one by one cannot see a source that stopped being yielded. Only the answer can.

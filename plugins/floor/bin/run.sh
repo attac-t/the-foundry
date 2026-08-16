@@ -737,6 +737,20 @@ gates() {
     run_pinned_gates "$dir" "$ref"
 }
 
+#
+# `pinned_command` answers with the first record for an id and `moved_resolutions` compares only that
+# one, so a second `gate` line under the same id is a command nothing validated — and `check` reads
+# the charter as clean. One line appended, no pin touched, which is less than the charter's own
+# threat model asks of a worker.
+#
+refuse_repeated_ids() {
+    repeated=$(printf '%s\n' "$1" | awk '{ if (++seen[$1] == 2) print $1 }')
+
+    [ -z "$repeated" ] && return 0
+    note "the charter pins more than one command under: $repeated"
+    return 1
+}
+
 # Every gate the charter pins, as `id command...`. `print_gate` wrote them.
 pinned_gates() {
     awk '$1 == "gate" { $1 = ""; sub(/^ /, ""); print }' "$(charter_file "$1")" 2>/dev/null
@@ -748,6 +762,7 @@ run_pinned_gates() {
 
     pins=$(pinned_gates "$dir")
     [ -n "$pins" ] || { note "this charter pins no gate, so it grades nothing mechanically"; exit 8; }
+    refuse_repeated_ids "$pins" || exit 7
 
     # §2.4: a gate runs with its target's checkout as the working directory. One checkout exists
     # today — `composer test` in a two-repo workspace is otherwise ambiguous.
@@ -1472,9 +1487,8 @@ underived_gates() {
 # `+` for the same reason `pinned_command` has it: blanking three fields of a three-field record —
 # a clause with no text — leaves two spaces, not three, and a fixed count returns them as the name.
 #
-# No break covers this one, where `pinned_command` has `spacecmd`. `forged_ids` remakes the id from
-# the text, so the only charter that reaches it is one `check` already refuses as forged. It is here
-# so two functions doing one job do it one way, not because anything can prove it.
+# `forged_ids` does not cover it, though it looks as though it should: `clause_id ""` is a value like
+# any other, so a clause whose id was made from no text is not forged and `check` passes it.
 clause_text() {
     awk -v id="$2" '$1 == "clause" && $2 == id { $1 = ""; $2 = ""; $3 = ""; sub(/^ +/, ""); print; exit }' \
         "$1" 2>/dev/null
