@@ -1,6 +1,6 @@
 # RFC-001: The Portable Composition Model
 
-**Status:** Accepted — revision 12
+**Status:** Accepted — revision 13
 **Plugin:** `floor`
 **Author:** Christian Attard
 **Date:** 2026-08-12
@@ -563,6 +563,11 @@ the work.
 repo    an identity — a clone URL or a source-relative name
 ref     a branch, tag or sha
 ```
+
+**A pin's ref is always a commit**, and that is narrower than this. A branch names where work happens
+and moves as the run commits, so a clause pinned through one is a clause whose artifact the run can
+rewrite — issue #99, found in shipped code. Selection still takes any of the three; provenance takes
+a commit.
 
 **A target declaration never contains a local path.** The path is workspace-local state, not part of
 any contract.
@@ -1260,6 +1265,20 @@ Drafting the stage found the transport defect and the condition-three defect. Re
 and two of those were fixes leaving a contradiction in a section the fix did not reach — this
 document's oldest failure mode, committed twice more while correcting it. The verdict record is the
 first time it has answered *what happens when a run stops mid-question*.
+
+
+### Revision 13 — a branch is not a base
+
+Found by attacking the shipped charter, not by reading this document.
+
+| Was | Is | What falsified it |
+|---|---|---|
+| invariant 2: pinned at "§2.3's `ref`", which §2.3 defines as a branch, tag or sha | a pin's ref is always a **commit** | A branch moves as the run commits, so a clause pinned through one is a clause whose artifact the run may rewrite. `check` caught the drift and named re-deriving as the remedy, which made re-deriving the way to launder an edit into authority — issue #99 |
+| invariant 1 was read as covering the artifact's *content* | and what the resolver *answers* | Deleting a level-2 declaration drops detection a level. The clause survives under a different source, every remaining pin still matches, and the bar the worker authored by removing a file is the one that grades them. §2.2 asked for both halves; the code had one |
+
+**A run's own work may satisfy, invalidate or downgrade a requirement. It may never supply one.** The
+remedy is a new run, whose base holds the commit and derives from it normally — the rule bars a run
+from blessing its own work, not the work.
 
 
 ## 7. Unresolved questions

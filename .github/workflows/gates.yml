@@ -21,6 +21,14 @@ jobs:
       - name: The manifest agrees with every plugin
         run: bash bin/versions.sh
 
+      # A meta-check, not one of the seven. It grades them, so counting it among them would make the
+      # set it checks disagree with itself. `panel` was advertised and unrun for days.
+      - name: The README, this workflow and bin/gates.sh name the same gates
+        run: sh bin/agree.sh
+
+      - name: And that check can fail
+        run: sh bin/agree.sh audit
+
       # Enforced on the three plugins that are clean. kernel, laravel-ddd and laravel-playbook
       # carry 16 repeats between them; widening this gate means fixing those first. A gate
       # that declares its scope is honest — a gate quietly narrowed to stay green is not.
@@ -49,7 +57,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        plugin: [kernel, signal, floor]
+        plugin: [kernel, signal, floor, panel]
     runs-on: ${{ matrix.os }}
     defaults:
       run:
