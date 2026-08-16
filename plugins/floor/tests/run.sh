@@ -388,7 +388,7 @@ wreck_runner "a drift check that compares the base with itself is caught" \
 # Grants are keyed by the run's id, so a renamed directory looks up a key nothing holds and `policy`
 # answered exit 0 with the bootstrap alone. Authority a human gave, gone, without a word.
 wreck_runner "a renamed run that loses its grants in silence is caught" \
-  renamed 's#    refuse_renamed_run "$dir"##'
+  renamed 's#    refuse_renamed_run "$dir"##; s#    refuse_renamed_run "$run_dir"##'
 
 wreck_runner "a check blind to a gate resolving elsewhere is caught" \
   blindres   's|^        moved_resolutions "$file"$|        :|'

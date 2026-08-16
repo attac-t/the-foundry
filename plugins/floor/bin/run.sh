@@ -188,19 +188,29 @@ build_layout() {
 #
 write_id() { printf '%s\n' "$2" > "$1/id" 2>/dev/null || die_unwritable "$1/id"; }
 
-recorded_id() { [ -f "$1/id" ] && read -r line < "$1/id" && printf '%s' "$line"; }
+# Fails open on a missing file, which is how a run made before this rule keeps working. It also
+# fails open on an empty or unreadable one, and that is a hole rather than a grandfather clause: the
+# guard it feeds cannot tell "no id was ever written" from "the id will not read".
+recorded_id() { [ -f "$1/id" ] && read -r named < "$1/id" && printf "%s" "$named"; }
 
 #
 # Authority is bound to the id, so a directory that no longer answers to it has none.
 #
-# Refuses rather than following the recorded id: two copies of one run would then share a grant set,
-# which is the collision `claim_slot` exists to prevent, arrived at from the other side.
+# Refuses rather than following the recorded id, which would let a rename carry a grant set to a name
+# a human never authorised.
+#
+# **Renames only.** Grants key on the directory's name, so a copy that keeps its name under another
+# parent still reads the same grants and passes here. Closing that needs an identity the filesystem
+# cannot supply, and it belongs to the workspace boundary.
+#
+# Every reader of the grants calls this. Three of the four did not, and `policy` refusing alone let a
+# rename onto a deleted run's id add a target through `targets add` at exit 0.
 #
 refuse_renamed_run() {
-    was=$(recorded_id "$1") || return 0
-    [ "$was" = "$(basename "$1")" ] && return 0
+    named=$(recorded_id "$1") || return 0
+    [ "$named" = "$(basename "$1")" ] && return 0
 
-    note "this run is at [$(basename "$1")] and calls itself [$was], so its grants are not here"
+    note "this run is at [$(basename "$1")] and calls itself [$named], so its grants are not here"
     note "move it back, or start a new run — authority a human gave is not renamed with a directory"
     exit 13
 }
@@ -398,6 +408,8 @@ unit_targets_file() { printf '%s/units/01/targets' "$1"; }
 
 targets() {
     dir=$(active_run) || exit 1
+    refuse_renamed_run "$dir"
+
     file=$(unit_targets_file "$dir")
 
     case "${1:-}" in
@@ -623,6 +635,7 @@ charter_file() { printf '%s/charter' "$1"; }
 #
 authorise() {
     run_dir=$(active_run) || exit 1
+    refuse_renamed_run "$run_dir"
 
     charter_path=$(charter_file "$run_dir")
     selection_path=$(unit_targets_file "$run_dir")

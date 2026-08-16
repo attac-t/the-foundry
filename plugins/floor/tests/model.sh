@@ -565,6 +565,12 @@ a_renamed_run_refuses_rather_than_losing_its_grants() {
   has "and names where it is"    "$(floor_says "$tmp/ren" policy)" "renamed-by-hand"
   has "and what it calls itself" "$(floor_says "$tmp/ren" policy)" "$was"
 
+  # Every reader of the grants, not the one that happened to be tested. `policy` refusing alone let a
+  # rename onto a deleted run's id add a target at exit 0, and let `authorise` freeze a selection
+  # whose grants were not there.
+  is "targets refuses too"   "$(code_of floor "$tmp/ren" targets)" "13"
+  is "and authorise refuses" "$(code_of floor "$tmp/ren" authorise)" "13"
+
   # Moving it back is the remedy, and it costs nothing — the grants were never gone.
   mv "$(dirname "$moved")/renamed-by-hand" "$moved"
   printf '%s\n' "$was" > "$tmp/ren/.git/foundry-run"
