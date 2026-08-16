@@ -1589,6 +1589,57 @@ an_introduced_clause_holds_delivery() {
 an_introduced_clause_holds_delivery
 
 #
+# The workspace — one isolated checkout per selected target. Isolated means a clone: a worktree
+# shares `.git` with the checkout it came from, so a worker could move the source's refs.
+#
+a_workspace_is_isolated_from_the_checkout() {
+  make_repo "$tmp/ws" main && set_origin "$tmp/ws" 'https://github.com/acme/ws.git' \
+    && mkdir -p "$tmp/ws/.foundry" \
+    && commit_file "$tmp/ws" .foundry/gates 'tests  true
+' || { skip "workspace — git could not make a repo here"; return; }
+
+  d=$(floor_new_as "$tmp/ws" ada@example.com "Workspace")
+  floor "$tmp/ws" charter derive >/dev/null 2>&1
+  floor "$tmp/ws" policy authorize 'https://github.com/acme/ws.git' >/dev/null 2>&1
+  floor "$tmp/ws" targets add 'https://github.com/acme/ws.git' main >/dev/null 2>&1
+
+  where=$(floor "$tmp/ws" open)
+  slot="$where/github-com-acme-ws"
+
+  has "the workspace lives under the run"  "$where" "$d"
+  is  "and holds a checkout of the target" "$(code_of test -d "$slot/.git")" "0"
+  is  "opening twice answers the same place, and clones nothing twice" \
+      "$(floor "$tmp/ws" open)" "$where"
+
+  # The isolation, by execution rather than by assertion.
+  printf 'worker\n' > "$slot/WORKER"
+  absent "what a worker writes there is not in the checkout it came from" "$tmp/ws/WORKER"
+
+  is "the origin is the target's identity, never this machine's path" \
+     "$(git -C "$slot" remote get-url origin 2>/dev/null)" "https://github.com/acme/ws.git"
+}
+a_workspace_is_isolated_from_the_checkout
+
+#
+# A workspace is where mutation happens, so it may not exist for a run nobody authorised. `authorise`
+# holds twelve reasons and this restates none of them.
+#
+a_workspace_needs_authorisation() {
+  make_repo "$tmp/wt" main && set_origin "$tmp/wt" 'https://github.com/acme/wt.git' \
+    && mkdir -p "$tmp/wt/.foundry" \
+    && commit_file "$tmp/wt" .foundry/gates 'tests  true
+' || { skip "unauthorised workspace — git could not make a repo here"; return; }
+
+  d=$(floor_new_as "$tmp/wt" ada@example.com "Unauthorised")
+  floor "$tmp/wt" charter derive >/dev/null 2>&1
+
+  lacks "a run selecting nothing gets no workspace" \
+        "$(code_of floor "$tmp/wt" open)" "0"
+  absent "and nothing was checked out" "$d/units/01/workspace"
+}
+a_workspace_needs_authorisation
+
+#
 # The same act with a quieter shape. Deleting a level-2 declaration drops detection a level, so the
 # clause survives under a different source and every pin that remains still matches — comparing
 # pinned sources one by one cannot see a source that stopped being yielded. Only the answer can.

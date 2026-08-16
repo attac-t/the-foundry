@@ -52,6 +52,7 @@ main() {
         charter)   charter "$@" ;;
         evidence)  evidence "$@" ;;
         gates)     gates "$@" ;;
+        open)      open_workspace "$@" ;;
         complete)  complete "$@" ;;
         authorise) authorise ;;
         *)         usage; exit 2 ;;
@@ -80,6 +81,7 @@ floor — where work happens.
                                   run it, and stamp what happened
   run.sh gates                    run every gate the charter pins, and record each — exit 14 if any
                                   did not pass
+  run.sh open                     check out every selected target in isolation, and print where
   run.sh complete                 may this run deliver? exit 15 names what is missing
   run.sh authorise                refuse a run that describes no work, or whose selection moved
                                   — exit 1, 5, 8, 9, 10, 11 or 12
@@ -447,6 +449,88 @@ print_bootstrap() {
 
 # Under the unit, not the run root: a workspace belongs to a unit, and targets belong to a workspace.
 unit_targets_file() { printf '%s/units/01/targets' "$1"; }
+
+#
+# The workspace — one isolated checkout per selected target, under the unit that owns it.
+#
+# **One adapter is not a proven seam.** §5 leaves this contract deliberately unwritten and holds a
+# seam unproven until two adapters satisfy it. This is one: a clone, on this machine, of a target
+# this checkout already is. It exists because nothing downstream can run without isolation, and it
+# claims nothing about container, VM or sandbox adapters.
+#
+# **A clone, never a worktree.** A worktree shares `.git` with the checkout it came from, so a worker
+# could move the source's refs — the isolation this exists for, absent.
+#
+# Under the run, which already lives outside every repository it changes, so a session that dies
+# leaves the workspace as it was and the next `open` attaches to it.
+#
+open_workspace() {
+    dir=$(active_run) || exit 1
+    [ "$#" -eq 0 ] || { usage; exit 2; }
+
+    # A workspace is where mutation happens, so it may not exist for a run nobody authorised. One
+    # rule, two callers — `authorise` is idempotent once the selection is frozen, and re-running it
+    # here is how `open` refuses without restating any of its twelve reasons.
+    authorise
+
+    here=$(this_repository)
+    root=$(unit_workspace "$dir")
+    chosen=$(awk '!/^[ \t]*#/ && NF { print $1, $2 }' "$(unit_targets_file "$dir")" 2>/dev/null)
+
+    # A here-doc, not a pipe. `exit` inside a pipe leaves the subshell and the loop carries on, so a
+    # target that could not be checked out would be followed by one that could, and the run would go
+    # on believing it had a workspace.
+    while read -r identity ref; do
+        [ -n "$identity" ] || continue
+        check_out_target "$root" "$identity" "$ref" "$here"
+    done <<EOF
+$chosen
+EOF
+
+    printf '%s\n' "$root"
+}
+
+unit_workspace() { printf '%s/units/01/workspace' "$1"; }
+
+#
+# The directory one target takes. Not `slug`: it truncates at 40 characters, and
+# `https-github-com-attac-t-the-foundry-git` is exactly 40 — two long identities would name one
+# directory, which everywhere else is a tidy name and here is two targets in one checkout.
+#
+# The host stays, because `github.com/a/b` and `gitlab.com/a/b` are different repositories.
+#
+target_slot() { printf '%s' "$1" | sed 's#.*://##; s#\.git$##; s#[^A-Za-z0-9][^A-Za-z0-9]*#-#g'; }
+
+#
+# A target is an identity, never a path — §2.3 — so the only one this can clone is the one this
+# checkout already is. Any other is named and refused rather than guessed at: a URL rebuilt from an
+# identity carries no credential, and a private repository would fail at the network with a message
+# about the wrong thing.
+#
+check_out_target() {
+    slot="$1/$(target_slot "$2")"
+
+    [ -d "$slot/.git" ] && return 0
+    [ -e "$slot" ] && { note "[$slot] holds no checkout — remove it and open again"; exit 3; }
+    [ "$2" = "$4" ] || { note "no checkout here to clone [$2] from — one target, for now"; exit 5; }
+
+    mkdir -p "$1" 2>/dev/null || die_unwritable "$1"
+    clone_into "$slot" "$(repo_root)" "$2" "$3"
+}
+
+#
+# Local objects, remote identity. Cloning from the checkout is what makes this need no network; the
+# origin is then the identity the target names, so a branch pushed from here goes where the target
+# says rather than where this machine happened to be.
+#
+# `--no-hardlinks`, because a local clone shares object files by default and a workspace that shares
+# anything with the checkout it isolates from is worth the disk.
+#
+clone_into() {
+    git clone --quiet --no-hardlinks --branch "$4" "$2" "$1" 2>/dev/null \
+        || { note "could not check out [$3] at [$4]"; exit 3; }
+    git -C "$1" remote set-url origin "$3" 2>/dev/null
+}
 
 targets() {
     dir=$(active_run) || exit 1

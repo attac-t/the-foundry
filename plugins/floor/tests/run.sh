@@ -535,6 +535,31 @@ wreck_runner "a run nobody selected delivering anyway is caught" \
 wreck_runner "an introduced clause reported as another repository's is caught" \
   introducedaway 's#has_record "$file" pin "$id"#true#'
 
+# The isolation itself. A worktree shares `.git` with the checkout it came from, so a worker could
+# move the source's refs — and it leaves a `.git` file where a clone leaves a directory, which is
+# what the check sees.
+wreck_runner "a workspace sharing its git directory is caught" \
+  sharedgit 's#git clone --quiet --no-hardlinks --branch "$4" "$2" "$1"#git -C "$2" worktree add --quiet -f "$1" "$4"#'
+
+# A workspace is where mutation happens. Without this, a run nobody authorised gets a mutable
+# checkout of a target nobody allowed it.
+wreck_runner "a workspace opened for a run nobody authorised is caught" \
+  freeworkspace 's#^    authorise$##'
+
+# `slug` truncates at 40 characters, so two long identities name one directory — and here that is two
+# targets in one checkout rather than an untidy name.
+wreck_runner "a target directory named by a truncating slug is caught" \
+  slugslot 's#target_slot "$2"#slug "$2"#'
+
+# Idempotent, or `open` is not attach and a second session destroys the first one's work.
+wreck_runner "a workspace cloned over on every open is caught" \
+  reclone 's#    \[ -d "$slot/.git" \] && return 0##'
+
+# The origin is where a branch pushed from here goes. Left as the path it was cloned from, delivery
+# would land on this machine and nowhere else.
+wreck_runner "a workspace keeping the path it was cloned from is caught" \
+  localorigin 's#    git -C "$1" remote set-url origin "$3" 2>/dev/null##'
+
 # Invariant 4 describes a stamp. A run whose selection nobody recorded is a run the work source
 # cannot ask, because there is no one it may ask.
 wreck_runner "a run that records nobody selecting it is caught" \
