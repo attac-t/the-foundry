@@ -248,11 +248,19 @@ detector again:
 | `moved` | a pinned file's sha changed |
 | `resolves elsewhere` | the same gate name now yields a different command |
 | `deleted` | something derives that the charter no longer holds |
-| `unpinned` | a gate with no pin on this repository |
+| `unpinned` | a gate the detector yields, with no pin on this repository |
 | `unresolved` | a gate whose resolution record is gone |
 | `forged` | a clause whose text is not the text its id was made from |
 | `ambiguous` | one id naming two meanings |
+| `repeated` | one id holding two commands |
+| `unprovenanced` | a gate record with no pin at all |
+| `unclaused` | a gate record with no clause |
+| `notagate` | a gate resting on a clause that is not a `Gate` |
 | `uncheckable` | a pin on another repository — **printed, but the command still exits 0** |
+
+The last four read the charter alone. `unpinned` names a gate the **detector** yields;
+`unprovenanced` names a **record** in the file. Both are about a missing pin, and they are different
+questions — one asks what should be there, the other what is.
 
 `uncheckable` is the one finding that does not fail. Every multi-target charter has one, and failing
 on it would make `check` useless for the shape it exists to support.
@@ -290,15 +298,21 @@ record **as a record**: a gate whose id appears twice, or carries no pin, or no 
 that is not a `Gate`. Nothing outside the file answers those, so nothing outside it was asked — and
 for four rounds each of those tampers reached the gate stage instead, one refusal at a time.
 
-One identity throughout, and it is the string. `awk -v id=123` compared against a field is a strnum,
-so `$2 == id` matches `0123`: a gate could be pinned to one reader and unheard of by the next.
-`unsound` keys on subscripts, which are text, so the two answers cannot part again.
+`awk -v id=123` compared against a field is a strnum, so `$2 == id` matches `0123`: a gate is pinned
+to one reader and unheard of by the next. Five such comparisons are still in the runner. What changed
+is that the disagreement now refuses — `unsound` keys on subscripts, which are text, so it reports
+`unprovenanced` and `unclaused` for the id nobody wrote.
 
 ### What `check` still cannot see
 
 **A deleted introduced clause.** An introduced clause has no outside: nothing derived it, nothing
 pinned it, and the charter is the only record it existed. Delete the line and `check` reports
 nothing.
+
+**A clause, a pin and a gate written together.** `unsound` catches a record missing its half; a whole
+triple that agrees with itself contradicts nothing, and every other reader looks outside the file for
+an answer this one carries inside it. Writing all three is the same act as editing the charter and
+its pins together, which the boundary below already names.
 
 Closing that needs a ledger the charter cannot edit, which is the evidence stage. Until then a
 `Decided:` clause is exactly as durable as the file holding it.
