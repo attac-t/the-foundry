@@ -70,7 +70,7 @@ Seven gates. Run them before you open a pull request:
 ```bash
 sh bin/gates.sh                 # all seven, here
 sh bin/agree.sh                 # this table, the workflow and gates.sh name the same seven
-sh bin/gates-in-docker.sh       # all seven on Linux, where `sh` is dash
+sh bin/gates.sh linux           # the same seven where `sh` is dash
 ```
 
 CI runs the first two. Leave `agree` out of your run and a PR can still go red on a check the README
