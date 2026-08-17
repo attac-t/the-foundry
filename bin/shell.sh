@@ -6,8 +6,10 @@
 # history about a body too long to read, and each one cost a review round.
 #
 # Reads `plugins/*/bin`, `plugins/*/lib` and `plugins/*/hooks` — what a user runs. Not `tests/`: the
-# suites are bash on purpose and hold no such rule. Not `.awk`: `else` is idiomatic there, and
-# nothing here says otherwise.
+# suites are bash on purpose and hold no such rule. Not `.awk` either, where `else` is idiomatic.
+#
+# An awk `else` written inside a `.sh` still fails, because this reads files rather than languages.
+# An embedded program that wants a branch has outgrown a single-quoted string; move it to `lib`.
 #
 # The length half gates a number, not the rule. craft-sh says length is the *signal* that another
 # function is merited, and no exit code reads a signal. This gates one thing, and says so: no body
