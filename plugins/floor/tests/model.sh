@@ -1727,6 +1727,16 @@ a_digest_is_derived_from_the_identity_it_names() {
   two=$(basename "$(only_slot "$(floor "$tmp/dg2" open)")")
 
   differs "two identities take two digests" "${one#*-}" "${two#*-}"
+
+  # And the other half, or a digest of the run directory would pass the first. A second run over the
+  # same target takes the same digest: the identity is what it is made from.
+  floor_new_as "$tmp/dg1" ada@example.com "Digest 1 again" >/dev/null
+  floor "$tmp/dg1" charter derive >/dev/null 2>&1
+  floor "$tmp/dg1" policy authorize 'https://github.com/acme/dg1.git' >/dev/null 2>&1
+  floor "$tmp/dg1" targets add 'https://github.com/acme/dg1.git' main >/dev/null 2>&1
+  again=$(basename "$(only_slot "$(floor "$tmp/dg1" open)")")
+
+  is "one identity takes one digest, whichever run asks" "${again#*-}" "${one#*-}"
 }
 a_digest_is_derived_from_the_identity_it_names
 

@@ -470,34 +470,31 @@ open_workspace() {
     dir=$(active_run) || exit 1
     [ "$#" -eq 0 ] || { usage; exit 2; }
 
-    # A workspace is where mutation happens, so it may not exist for a run nobody authorised. One
-    # rule, two callers — `authorise` is idempotent once the selection is frozen, and re-running it
-    # here is how `open` refuses without restating any of its twelve reasons.
-    #
-    # Read before it runs. `refuse_unselectable` assigns `dir` too, and every variable here is
-    # global — the two hold the same path today, and that is a coincidence to stop relying on.
+    # Read before `authorise` runs: its callee `refuse_unselectable` assigns `dir` too, and every
+    # variable here is global.
     root=$(unit_workspace "$dir")
-    authorise
+    selection=$(unit_targets_file "$dir")
 
+    # A workspace is where mutation happens, so it may not exist for a run nobody authorised. One
+    # rule, two callers — idempotent once the selection is frozen, so `open` refuses without
+    # restating any of its twelve reasons.
+    authorise
     here=$(this_repository)
 
-    # A here-doc, not a pipe. `exit` inside a pipe leaves the subshell and the loop carries on, so a
-    # target that could not be checked out would be followed by one that could, and the run would go
-    # on believing it had a workspace.
+    # A here-doc, not a pipe: `exit` inside a pipe leaves the subshell, so a target that could not be
+    # checked out would be followed by one that could and the run would believe it had a workspace.
     while read -r identity ref; do
         [ -n "$identity" ] || continue
         check_out_target "$root" "$identity" "$ref" "$here"
     done <<EOF
-$(selected_targets "$dir")
+$(selected_targets "$selection")
 EOF
 
     printf '%s\n' "$root"
 }
 
 # What the unit selected, as `identity ref`. Comments and blank lines are not selections.
-selected_targets() {
-    awk '!/^[ \t]*#/ && NF { print $1, $2 }' "$(unit_targets_file "$1")" 2>/dev/null
-}
+selected_targets() { awk '!/^[ \t]*#/ && NF { print $1, $2 }' "$1" 2>/dev/null; }
 
 unit_workspace() { printf '%s/units/01/workspace' "$1"; }
 
