@@ -52,6 +52,9 @@ Seven lines, the whole story. The test: **can a stranger describe the script aft
    decided.
 8. **Comments carry discoveries, not narration.** `# herd start stops the data services` earns its
    line. `# ── Step 3 ──` above a line printing "Step 3" does not.
+   **Needing one is evidence against the function.** A comment explaining *what* a body does means
+   the name is wrong or the body is two jobs — fix that first, and the comment leaves on its own. A
+   preamble longer than the function it introduces is the clearest form of the tell.
 9. **`shellcheck` passes.** Not optional.
 10. **One name, one meaning.** Every variable is global unless you say otherwise, so a name that
     means two things is a bug waiting for a refactor.
