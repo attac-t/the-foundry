@@ -413,11 +413,10 @@ wreck_runner "a gate name that can hold a newline is caught" \
 wreck_runner "a ref read after the command ran is caught" \
   lateref 's#stamp "$dir" machine "$name" "$result" "$ref" "$why"#stamp "$dir" machine "$name" "$result" "$(delivered_ref)" "$why"#'
 
-# The other half of that line. Without the guard the ref is empty rather than refused, so a repo with
-# no commit records a gate against nothing — and `noref` cannot catch it, because it blanks the ref
-# where a commit exists and this one only differs where none does.
-wreck_runner "a record written before the first commit is caught" \
-  unbornref 's#ref=$(delivered_ref) || { note "no commit to record evidence against"; exit 1; }#ref=$(delivered_ref)#'
+# `unbornref` stood here: without a guard, a repository with no commit recorded a gate against an
+# empty ref. The guard is gone and so is the break, because the case moved rather than closed — a
+# repository with no commit can hold no workspace, and `attached` proves a HEAD before any tree is
+# named. `a_record_needs_a_commit_to_apply_to` asserts the refusal at its new place.
 
 # Grants are keyed by the run's id, so a renamed directory looks up a key nothing holds and `policy`
 # answered exit 0 with the bootstrap alone. Authority a human gave, gone, without a word.
@@ -463,7 +462,17 @@ wreck_runner "a ref taken once per gate is caught" \
 # §2.4's rule is the whole of what makes a gate unambiguous in a workspace. Without it a gate reads
 # whichever directory the caller happened to stand in.
 wreck_runner "a gate run somewhere other than its target's root is caught" \
-  gatecwd 's#    cd "$(repo_root)" || { note "no checkout to run gates in"; exit 1; }##'
+  gatecwd 's#    cd "$tree" || { note "cannot enter \[$tree\]"; exit 16; }##'
+
+# The fallback that looked defensible. The checkout Foundry was invoked from is a checkout of the
+# target, so grading it passes — for a tree the worker never wrote to.
+wreck_runner "gates falling back to the invoking checkout are caught" \
+  fallback 's#    note "no workspace holds \[$2\] at \[$3\].*#    { printf "%s" "$(repo_root)"; return 0; }#'
+
+# The predicate that makes a workspace this unit's. Accept any directory holding a checkout and a
+# gate grades one built for another target, or another ref.
+wreck_runner "a gate grading any checkout it finds is caught" \
+  anytree 's#    attached "$slot" "$2" "$3" && { printf .%s. "$slot"; return 0; }#    [ -d "$slot" ] \&\& { printf "%s" "$slot"; return 0; }#'
 
 # Green regardless. The records still land, so only the exit code carries the answer — and a caller
 # that branches on it would ship a red run as a finished one.

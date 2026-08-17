@@ -490,7 +490,24 @@ open_workspace() {
 $(selected_targets "$selection")
 EOF
 
+    point_slots_at_run "$root" "$(basename "$dir")"
     printf '%s\n' "$root"
+}
+
+#
+# §4's test of whether the decomposition was right: *a person can join by opening a shell in the
+# workspace and reading the run.* They could not — the pointer landed only in the checkout Foundry
+# was invoked from, so joining meant carrying `FOUNDRY_RUN` by hand, which is the new machinery §4
+# says would mean the nouns were wrong.
+#
+# On every open, attach included, so a pointer that went missing comes back. Writing the same id
+# twice is writing it once.
+#
+point_slots_at_run() {
+    for slot in "$1"/*/; do
+        [ -d "$slot/.git" ] || continue
+        printf '%s\n' "$2" > "$slot/.git/foundry-run" 2>/dev/null
+    done
 }
 
 # What the unit selected, as `identity ref`. Comments and blank lines are not selections.
@@ -905,9 +922,22 @@ record_gate() {
     # refused, because a gate whose name holds a newline is a mistake, not something to tidy up.
     is_one_line "$name" || { note "a gate's name is one line: [$name]"; exit 2; }
 
+    # The tree the gates grade, entered the way they enter it. Recorded against the checkout Foundry
+    # was invoked from, a sha `satisfied` compares to the workspace's never matched — a `machine`
+    # record that read as evidence and could satisfy nothing. Running the command anywhere but where
+    # the ref points is the same defect with the halves swapped.
+    #
+    # Nothing may run after this: the directory is not restored, and `evidence` ends here.
+    here=$(this_repository)
+    tree=$(work_tree "$dir" "$here" "$(selected_ref "$(unit_targets_file "$dir")" "$here")") || exit 16
+    cd "$tree" || { note "cannot enter [$tree]"; exit 16; }
+
     # Before the command runs. A recorded command that moves HEAD would otherwise stamp a sha whose
     # tree was never tested — evidence for work that did not exist when the work was graded.
-    ref=$(delivered_ref) || { note "no commit to record evidence against"; exit 1; }
+    #
+    # Unguarded: `attached` proved a HEAD before `work_tree` answered, and a repository with no
+    # commit can hold no workspace at all. One reader, not two.
+    ref=$(delivered_ref)
 
     stamp_command "$dir" "$ref" "$name" "$@"
 }
@@ -964,20 +994,36 @@ gates() {
     [ "$#" -eq 0 ] || { usage; exit 2; }
 
     check_charter "$dir"
-
-    # One ref for the whole run of them. Taken here rather than per gate, so a gate that commits
-    # cannot move the tree the gates after it are recorded against.
-    ref=$(delivered_ref) || { note "no commit to gate"; exit 1; }
-
-    run_pinned_gates "$dir" "$ref"
+    run_pinned_gates "$dir"
 }
 
 #
-# `pinned_command` answers with the first record for an id and `moved_resolutions` compares only that
-# one, so a second `gate` line under the same id is a command nothing validated — and `check` reads
-# the charter as clean. One line appended, no pin touched, which is less than the charter's own
-# threat model asks of a worker.
+# Where a gate runs — §2.4's *that target's checkout*, which since the workspace landed means the
+# workspace's and nothing else.
 #
+# **No fallback to the checkout Foundry was invoked from.** That is also a checkout of the target,
+# which is why grading it looked defensible; it is not the one the unit owns, so a gate would record
+# a `machine` result for a tree the worker never wrote to. `open` is a precondition, not a
+# convenience.
+#
+# `attached` and not a directory test: the same predicate that decides what `open` may attach to
+# decides what a gate may grade, so a workspace built for another target or another ref is refused
+# here for the reason it was refused there.
+#
+work_tree() {
+    slot="$(unit_workspace "$1")/$(target_slot "$2")"
+
+    attached "$slot" "$2" "$3" && { printf '%s' "$slot"; return 0; }
+    note "no workspace holds [$2] at [$3] — \`open\` one, and the gates grade what the work is in"
+    return 1
+}
+
+# The ref this run selected for one target. `"" ==` on both sides: an `-v` assignment is a numeric
+# string, and an identity that looked like a number would otherwise match a different one.
+selected_ref() {
+    awk -v want="$2" '!/^[ \t]*#/ && NF && $1 "" == want "" { print $2; exit }' "$1" 2>/dev/null
+}
+
 #
 # A gate runs where its pin says it came from. One checkout exists, so a gate pinned elsewhere has
 # nowhere to run — and running it here would grade this repository against another one's bar.
@@ -1006,19 +1052,24 @@ pinned_gates() {
 }
 
 run_pinned_gates() {
-    dir=$1; ref=$2
+    dir=$1
     failed=0
 
     pins=$(pinned_gates "$dir")
     [ -n "$pins" ] || { note "this charter pins no gate, so it grades nothing mechanically"; exit 8; }
     refuse_gates_from_elsewhere "$dir" "$pins" || exit 7
 
-    # §2.4: a gate runs with its target's checkout as the working directory. One checkout exists
-    # today — a gate named `tests` in a two-repo workspace is otherwise ambiguous.
-    #
+    here=$(this_repository)
+    tree=$(work_tree "$dir" "$here" "$(selected_ref "$(unit_targets_file "$dir")" "$here")") || exit 16
+
     # Not restored, and nothing may run after this. `gates` ends here and `main` dispatches nothing
     # afterwards; a caller added below this line would inherit a directory it did not choose.
-    cd "$(repo_root)" || { note "no checkout to run gates in"; exit 1; }
+    cd "$tree" || { note "cannot enter [$tree]"; exit 16; }
+
+    # One ref for the whole set, and it is the workspace's — taken after the move, so a gate that
+    # commits cannot shift the tree the gates behind it are recorded against. Unguarded, because
+    # `attached` proved a HEAD before this directory was named.
+    ref=$(delivered_ref)
 
     # A here-doc, not a pipe. A tally raised inside a pipe's subshell dies with it, and the tally is
     # the only thing this loop produces that the caller needs.
@@ -1139,9 +1190,14 @@ empty_selection() {
 unmet_clauses() {
     file=$(charter_file "$1")
     here=$(this_repository)
-    ref=$(delivered_ref)
 
-    [ -n "$ref" ] || { printf 'nothing delivered: this checkout has no commit to be graded at\n'; return; }
+    # The workspace's ref, found by the question the gates asked — so the two cannot answer about
+    # different trees. A run with no workspace has delivered nothing, whatever its checkout holds.
+    tree=$(work_tree "$1" "$here" "$(selected_ref "$(unit_targets_file "$1")" "$here")" 2>/dev/null) \
+        || { printf 'unopened: no workspace holds [%s], so nothing was delivered from one\n' "$here"; return; }
+
+    ref=$(git -C "$tree" rev-parse --verify --quiet HEAD 2>/dev/null)
+    [ -n "$ref" ] || { printf 'nothing delivered: the workspace holds no commit to be graded at\n'; return; }
 
     awk '$1 == "clause" { print $2 }' "$file" 2>/dev/null | while read -r id; do
         text=$(clause_text "$file" "$id")
