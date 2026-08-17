@@ -1025,12 +1025,6 @@ selected_ref() {
 }
 
 #
-# `pinned_command` answers with the first record for an id and `moved_resolutions` compares only that
-# one, so a second `gate` line under the same id is a command nothing validated — and `check` reads
-# the charter as clean. One line appended, no pin touched, which is less than the charter's own
-# threat model asks of a worker.
-#
-#
 # A gate runs where its pin says it came from. One checkout exists, so a gate pinned elsewhere has
 # nowhere to run — and running it here would grade this repository against another one's bar.
 #
