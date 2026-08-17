@@ -7,6 +7,12 @@
 # Set RUNNER to point these checks at a deliberately broken copy.
 
 set -u
+
+# Pinned, because a glob's order decides which directory `only_slot` yields — and a break whose kill
+# depends on the machine's collation is not an oracle.
+LC_ALL=C
+export LC_ALL
+
 here="$(cd "$(dirname "$0")/.." && pwd)"
 . "$here/tests/lib.sh"
 
@@ -43,6 +49,10 @@ floor_new_as() {
   ( cd "$dir" 2>/dev/null || exit 9
     FOUNDRY_HOME="$home" FOUNDRY_RUN="" FOUNDRY_WHO="$who" sh "$runner" new "$@" 2>/dev/null )
 }
+
+# The one checkout under a workspace. Its name is the runner's business — a test that recomputed it
+# would agree with a wrong answer, which is the whole failure mode here.
+only_slot() { set -- "$1"/*/; [ -d "$1" ] && printf '%s' "${1%/}"; }
 
 # Run any of the above and report only its exit code.
 code_of() { "$@" >/dev/null 2>&1; printf '%s' "$?"; }
@@ -1621,9 +1631,20 @@ a_workspace_is_isolated_from_the_checkout() {
   floor "$tmp/ws" targets add 'https://github.com/acme/ws.git' main >/dev/null 2>&1
 
   where=$(floor "$tmp/ws" open)
-  slot="$where/github-com-acme-ws"
+  slot=$(only_slot "$where")
 
   has "the workspace lives under the run"  "$where" "$d"
+
+  # **The digest is the identity; the readable half is decoration.** Folding punctuation to `-` made
+  # `acme/a-b`, `a/b`, `a.b` and `a_b` one directory — four repositories, one checkout — and a longer
+  # fold would only have moved the collision. The name is asserted for its shape, not its spelling.
+  matches "the slot is named by a digest, not by a fold of the identity" \
+          "$(basename "$slot")" "-[0-9a-f]{12}$"
+
+  # Published, not assembled: the build path is gone once the slot exists. Without this, a workspace
+  # built in place is caught only by whichever directory the glob happens to yield first.
+  is "publication leaves nothing beside the slot" \
+     "$(set -- "$where"/*/; printf '%s' $#)" "1"
   is  "and holds a checkout of the target" "$(code_of test -d "$slot/.git")" "0"
   is  "opening twice answers the same place, and clones nothing twice" \
       "$(floor "$tmp/ws" open)" "$where"
@@ -1680,6 +1701,117 @@ a_workspace_needs_authorisation() {
   absent "and nothing was checked out" "$d/units/01/workspace"
 }
 a_workspace_needs_authorisation
+
+#
+# A slot can hold a perfectly valid checkout of something else. `open` answered 0 for one holding
+# another repository entirely, and every gate after it would have graded that.
+#
+#
+# The shape of a digest proves nothing — a constant is twelve hex characters too. Two repositories,
+# two identities, and the names must differ in the half that is not decoration.
+#
+a_digest_is_derived_from_the_identity_it_names() {
+  for n in 1 2; do
+    make_repo "$tmp/dg$n" main && set_origin "$tmp/dg$n" "https://github.com/acme/dg$n.git" \
+      && mkdir -p "$tmp/dg$n/.foundry" \
+      && commit_file "$tmp/dg$n" .foundry/gates 'tests  true
+' || { skip "digest derivation — git could not make a repo here"; return; }
+
+    floor_new_as "$tmp/dg$n" ada@example.com "Digest $n" >/dev/null
+    floor "$tmp/dg$n" charter derive >/dev/null 2>&1
+    floor "$tmp/dg$n" policy authorize "https://github.com/acme/dg$n.git" >/dev/null 2>&1
+    floor "$tmp/dg$n" targets add "https://github.com/acme/dg$n.git" main >/dev/null 2>&1
+  done
+
+  one=$(basename "$(only_slot "$(floor "$tmp/dg1" open)")")
+  two=$(basename "$(only_slot "$(floor "$tmp/dg2" open)")")
+
+  differs "two identities take two digests" "${one#*-}" "${two#*-}"
+
+  # And the other half, or a digest of the run directory would pass the first. A second run over the
+  # same target takes the same digest: the identity is what it is made from.
+  floor_new_as "$tmp/dg1" ada@example.com "Digest 1 again" >/dev/null
+  floor "$tmp/dg1" charter derive >/dev/null 2>&1
+  floor "$tmp/dg1" policy authorize 'https://github.com/acme/dg1.git' >/dev/null 2>&1
+  floor "$tmp/dg1" targets add 'https://github.com/acme/dg1.git' main >/dev/null 2>&1
+  again=$(basename "$(only_slot "$(floor "$tmp/dg1" open)")")
+
+  is "one identity takes one digest, whichever run asks" "${again#*-}" "${one#*-}"
+}
+a_digest_is_derived_from_the_identity_it_names
+
+a_slot_holding_another_repository_is_refused() {
+  make_repo "$tmp/im" main && set_origin "$tmp/im" 'https://github.com/acme/im.git' \
+    && mkdir -p "$tmp/im/.foundry" \
+    && commit_file "$tmp/im" .foundry/gates 'tests  true
+' || { skip "imposter slot — git could not make a repo here"; return; }
+
+  floor_new_as "$tmp/im" ada@example.com "Imposter" >/dev/null
+  floor "$tmp/im" charter derive >/dev/null 2>&1
+  floor "$tmp/im" policy authorize 'https://github.com/acme/im.git' >/dev/null 2>&1
+  floor "$tmp/im" targets add 'https://github.com/acme/im.git' main >/dev/null 2>&1
+
+  slot=$(only_slot "$(floor "$tmp/im" open)")
+
+  git -C "$slot" remote set-url origin 'https://github.com/attacker/evil.git' 2>/dev/null
+  is  "a checkout of another repository is not this target's workspace" \
+      "$(code_of floor "$tmp/im" open)" "16"
+  has "and is named as not being one" "$(floor_says "$tmp/im" open)" "is not a checkout of"
+
+  # The same slot, the right repository, opened for a ref this run did not select.
+  git -C "$slot" remote set-url origin 'https://github.com/acme/im.git' 2>/dev/null
+  git -C "$slot" config foundry.ref elsewhere 2>/dev/null
+  is "nor is one opened for another ref" "$(code_of floor "$tmp/im" open)" "16"
+}
+a_slot_holding_another_repository_is_refused
+
+#
+# `foundry.ref` is compared against the run's frozen selection, never against a constant. A run that
+# selected `develop` records `develop`, so a workspace built for another ref cannot pass as this
+# run's — which is what makes the comparison worth making at all.
+#
+the_recorded_ref_is_the_one_the_run_selected() {
+  make_repo "$tmp/rf" develop && set_origin "$tmp/rf" 'https://github.com/acme/rf.git' \
+    && mkdir -p "$tmp/rf/.foundry" \
+    && commit_file "$tmp/rf" .foundry/gates 'tests  true
+' || { skip "selected ref — git could not make a repo here"; return; }
+
+  floor_new_as "$tmp/rf" ada@example.com "Selected" >/dev/null
+  floor "$tmp/rf" charter derive >/dev/null 2>&1
+  floor "$tmp/rf" policy authorize 'https://github.com/acme/rf.git' >/dev/null 2>&1
+  floor "$tmp/rf" targets add 'https://github.com/acme/rf.git' develop >/dev/null 2>&1
+
+  slot=$(only_slot "$(floor "$tmp/rf" open)")
+  is "the workspace records the ref this run selected" \
+     "$(git -C "$slot" config --get foundry.ref 2>/dev/null)" "develop"
+}
+the_recorded_ref_is_the_one_the_run_selected
+
+#
+# Built beside the slot, published into it. A creator that dies leaves recoverable garbage, and never
+# a slot another session could read as finished — or delete while the first is still filling it.
+#
+a_half_built_workspace_is_never_the_workspace() {
+  make_repo "$tmp/ab" main && set_origin "$tmp/ab" 'https://github.com/acme/ab.git' \
+    && mkdir -p "$tmp/ab/.foundry" \
+    && commit_file "$tmp/ab" .foundry/gates 'tests  true
+' || { skip "atomic publication — git could not make a repo here"; return; }
+
+  floor_new_as "$tmp/ab" ada@example.com "Atomic" >/dev/null
+  floor "$tmp/ab" charter derive >/dev/null 2>&1
+  floor "$tmp/ab" policy authorize 'https://github.com/acme/ab.git' >/dev/null 2>&1
+  floor "$tmp/ab" targets add 'https://github.com/acme/ab.git' main >/dev/null 2>&1
+
+  slot=$(only_slot "$(floor "$tmp/ab" open)")
+  rm -rf "$slot"
+  mkdir -p "$slot.building"                       # as a creator killed mid-clone leaves it
+
+  is     "a second opener does not take a slot being built" "$(code_of floor "$tmp/ab" open)" "16"
+  has    "and says what to remove if none is" "$(floor_says "$tmp/ab" open)" "if no session is"
+  is     "it deletes nothing of the first one's" "$(code_of test -d "$slot.building")" "0"
+  absent "and no slot exists to read as finished" "$slot"
+}
+a_half_built_workspace_is_never_the_workspace
 
 #
 # The invariant quantifies over **every** selected target. One checkout answers for one of them, so a

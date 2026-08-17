@@ -399,6 +399,36 @@ attaches to what is there and clones nothing again.
 **A clone, never a worktree.** A worktree shares `.git` with the checkout it came from, so a worker
 could move the source's refs — the isolation this exists for, absent.
 
+**Built beside the slot, renamed into it.** The slot does not exist until the checkout is whole, so
+nothing ever reads a half-made one as finished. A creator that dies leaves `<slot>.building`, which
+is recoverable and is never mistaken for a workspace. The `mkdir` on that path is what serialises two
+sessions — `mv` onto an existing directory moves the source *inside* it and exits 0, so a rename can
+never be the thing that refuses.
+
+**A slot's name is decoration; its digest is its identity.** Folding punctuation to `-` put
+`acme/a-b`, `a/b`, `a.b` and `a_b` in one directory.
+
+**Twelve characters do not make a collision impossible, and nothing claims they do.** They buy
+rarity. What makes a collision *safe* is that attaching compares the origin and finds another
+repository's checkout — two targets on one slot is refused, never shared. The guarantee holds at any
+prefix length; the length only decides how often a reader meets that refusal.
+
+**The base ref is a label, checked against the run's frozen selection.** It lives in a repository the
+worker owns, so a worker can write it — what it is compared against is not. That makes it the same
+kind of guard as the charter: it catches a workspace built for another ref, and it does not resist
+someone editing both sides. Containment is the runtime boundary's, and there isn't one.
+
+Everything `open` refuses answers **16** — the target was authorised and the home is writable, so 5
+and 3 would each name a remedy that changes nothing.
+
+| It says | Means |
+|---|---|
+| `is not a checkout of` | something else is at that path — yours to remove, not floor's |
+| `is being checked out` | another session holds the build path, or one died holding it |
+| `has no ref` | the target has no such branch, tag or sha |
+| `could not clone` | the objects could not be read from this checkout |
+| `appeared while it was being built` | another session published first |
+
 **It may not exist for a run nobody authorised.** `open` runs `authorise` rather than restating any
 of its twelve reasons; a workspace is where mutation happens.
 
