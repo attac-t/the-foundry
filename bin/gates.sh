@@ -30,8 +30,14 @@ on_linux() {
 
     docker build -q -t foundry-gates -f "$root/bin/gates.Dockerfile" "$root" >/dev/null || return 3
 
+    # `.git` is a file in a worktree, naming a host path the container cannot see, and every gate
+    # that shells out to git went red on it. The copy is a copy either way, so the repair is a
+    # repository of its own — `repeats` reads `git ls-files` and must list the copy.
+    #
+    # Two lanes patched around this by hand before anyone wrote it down.
     docker run --rm -v "$root:/src:ro" foundry-gates sh -c '
         cp -r /src ~/repo && cd ~/repo
+        [ -f .git ] && { rm -f .git; git init -q .; git add -A; }
         git config --global --add safe.directory ~/repo
         sh bin/gates.sh
     '
@@ -68,6 +74,8 @@ gate versions    bash bin/versions.sh
 # shellcheck disable=SC2046  # the file list is the argument, and none of these paths hold a space
 gate repeats     bash bin/repeats.sh \
     $(git ls-files 'plugins/panel/*.md' 'plugins/pest/*.md' 'plugins/signal/*.md')
+
+gate shell       bash bin/shell.sh
 
 for plugin in kernel signal floor panel; do
     gate "$plugin" bash "plugins/$plugin/tests/run.sh"

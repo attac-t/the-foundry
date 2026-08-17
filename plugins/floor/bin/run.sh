@@ -28,9 +28,8 @@
 #  13  the run directory was renamed, so the grants a human gave it are not there
 #  14  a gate the charter pins did not pass — an answer, not a refusal
 #  15  this run may not deliver yet — an answer too, and it names what is missing
-#  16  no workspace could be opened: nothing here to clone the target from, a slot holding something
-#      that is not a checkout, or a ref that is not there. The target was authorised and the home is
-#      writable — 5 and 3 would each send the reader to a remedy that changes nothing
+#  16  no workspace could be opened. The target was authorised and the home is writable, so 5 and 3
+#      would each send the reader to a remedy that changes nothing
 #  17  this run already sent the work source something else — another item, another branch, or the
 #      same question in other words. One remedy: a new run
 #
@@ -497,42 +496,72 @@ open_workspace() {
     dir=$(active_run) || exit 1
     [ "$#" -eq 0 ] || { usage; exit 2; }
 
-    # A workspace is where mutation happens, so it may not exist for a run nobody authorised. One
-    # rule, two callers — `authorise` is idempotent once the selection is frozen, and re-running it
-    # here is how `open` refuses without restating any of its twelve reasons.
-    authorise
-
-    here=$(this_repository)
+    # Read before `authorise` runs: its callee `refuse_unselectable` assigns `dir` too, and every
+    # variable here is global.
     root=$(unit_workspace "$dir")
+    selection=$(unit_targets_file "$dir")
 
-    # A here-doc, not a pipe. `exit` inside a pipe leaves the subshell and the loop carries on, so a
-    # target that could not be checked out would be followed by one that could, and the run would go
-    # on believing it had a workspace.
+    # A workspace is where mutation happens, so it may not exist for a run nobody authorised. One
+    # rule, two callers — idempotent once the selection is frozen, so `open` refuses without
+    # restating any of its twelve reasons.
+    authorise
+    here=$(this_repository)
+
+    # A here-doc, not a pipe: `exit` inside a pipe leaves the subshell, so a target that could not be
+    # checked out would be followed by one that could and the run would believe it had a workspace.
     while read -r identity ref; do
         [ -n "$identity" ] || continue
         check_out_target "$root" "$identity" "$ref" "$here"
     done <<EOF
-$(selected_targets "$dir")
+$(selected_targets "$selection")
 EOF
 
+    point_slots_at_run "$root" "$(basename "$dir")"
     printf '%s\n' "$root"
 }
 
-# What the unit selected, as `identity ref`. Comments and blank lines are not selections.
-selected_targets() {
-    awk '!/^[ \t]*#/ && NF { print $1, $2 }' "$(unit_targets_file "$1")" 2>/dev/null
+#
+# §4's test of whether the decomposition was right: *a person can join by opening a shell in the
+# workspace and reading the run.* They could not — the pointer landed only in the checkout Foundry
+# was invoked from, so joining meant carrying `FOUNDRY_RUN` by hand, which is the new machinery §4
+# says would mean the nouns were wrong.
+#
+# On every open, attach included, so a pointer that went missing comes back. Writing the same id
+# twice is writing it once.
+#
+point_slots_at_run() {
+    for slot in "$1"/*/; do
+        [ -d "$slot/.git" ] || continue
+        printf '%s\n' "$2" > "$slot/.git/foundry-run" 2>/dev/null
+    done
 }
+
+# What the unit selected, as `identity ref`. Comments and blank lines are not selections.
+selected_targets() { awk '!/^[ \t]*#/ && NF { print $1, $2 }' "$1" 2>/dev/null; }
 
 unit_workspace() { printf '%s/units/01/workspace' "$1"; }
 
 #
-# The directory one target takes. Not `slug`: it truncates at 40 characters, and
-# `https-github-com-attac-t-the-foundry-git` is exactly 40 — two long identities would name one
-# directory, which everywhere else is a tidy name and here is two targets in one checkout.
+# The directory one target takes: a name to read, and a digest to be right.
 #
-# The host stays, because `github.com/a/b` and `gitlab.com/a/b` are different repositories.
+# **The digest is the identity; the name is decoration.** Folding punctuation to `-` made
+# `acme/a-b`, `acme/a/b`, `acme/a.b` and `acme/a_b` one directory — four repositories, one checkout.
+# A longer fold would only move the collision.
 #
-target_slot() { printf '%s' "$1" | sed 's#.*://##; s#\.git$##; s#[^A-Za-z0-9][^A-Za-z0-9]*#-#g'; }
+# **Twelve characters do not make a collision impossible, and nothing here claims they do.** What
+# they buy is rarity; what makes a collision safe is `attached`, which compares the origin and finds
+# another repository's checkout. Two targets on one slot is refused, never shared — so the guarantee
+# holds at any prefix length, and the length is only how often a reader meets that refusal.
+#
+target_slot() { printf '%s-%s' "$(readable_name "$1")" "$(identity_digest "$1")"; }
+
+readable_name() { printf '%s' "$1" | sed 's#.*/##; s#\.git$##; s#[^A-Za-z0-9][^A-Za-z0-9]*#-#g'; }
+
+# `git hash-object`, because git is already declared and a checksum is not collision-resistant —
+# `clause_id` uses `cksum` to name a clause, which is a different job with a different bar.
+identity_digest() {
+    printf '%s' "$1" | git hash-object --stdin | awk '{ print substr($0, 1, 12) }'
+}
 
 #
 # A target is an identity, never a path — §2.3 — so the only one this can clone is the one this
@@ -543,29 +572,67 @@ target_slot() { printf '%s' "$1" | sed 's#.*://##; s#\.git$##; s#[^A-Za-z0-9][^A
 check_out_target() {
     slot="$1/$(target_slot "$2")"
 
-    # The oracle, not the report. A clone killed part-way leaves a `.git` directory behind — git's
-    # cleanup never runs — and a run would then attach to a checkout with no commit in it.
-    git -C "$slot" rev-parse --verify --quiet HEAD >/dev/null 2>&1 && return 0
-    # `-L` as well as `-e`: `[ -e ]` follows the link, so a dangling one reads as nothing there and
-    # falls through to the claim below, where the message would say another session was checking it
-    # out. It is a broken link, and the remedy is to remove it.
-    { [ -e "$slot" ] || [ -L "$slot" ]; } \
-        && { note "[$slot] holds no checkout — remove it and open again"; exit 16; }
+    attached "$slot" "$2" "$3" && return 0
+    refuse_occupied_slot "$slot" "$2"
     [ "$2" = "$4" ] || { note "no checkout here to clone [$2] from — one target, for now"; exit 16; }
 
-    mkdir -p "$1" 2>/dev/null || die_unwritable "$1"
+    build_and_publish "$slot" "$2" "$3"
+}
 
-    # Bare `mkdir`, the claim `claim_slot` made one stage earlier. `-p` reports a directory already
-    # there as a win, and two sessions would then clone into one path. `git clone` takes an empty
-    # directory, so claiming it first costs nothing and makes the race an answer.
-    #
-    # No break covers it, and this is why rather than an assertion that it is untestable: `-p`
-    # differs from `mkdir` only where the path is already a directory, or a link to one, and the
-    # guard above catches both. Measured, not assumed — on a dangling symlink the two agree, and both
-    # fail. What is left is a race, and the suite runs none.
-    mkdir "$slot" 2>/dev/null || { note "[$2] is already being checked out"; exit 16; }
+#
+# Ours, whole, and this target's. Three questions, because a slot can be a valid checkout of the
+# wrong repository: `open` answered 0 for one holding another repository entirely, and the gates
+# would then have graded it.
+#
+# `-d "$1/.git"` before anything else: `git -C` searches upward, so an empty slot would otherwise be
+# answered for by an ancestor repository. A clone, never a worktree, so the directory is exact.
+#
+# A killed clone is no longer among the cases — it dies inside the build path and never reaches a
+# slot. What is left is a slot damaged by hand, or by a worker.
+#
+attached() {
+    [ -d "$1/.git" ] || return 1
+    git -C "$1" rev-parse --verify --quiet HEAD >/dev/null 2>&1 || return 1
+    [ "$(git -C "$1" remote get-url origin 2>/dev/null)" = "$2" ] || return 1
+    [ "$(git -C "$1" config --get foundry.ref 2>/dev/null)" = "$3" ]
+}
 
-    clone_into "$slot" "$(repo_root)" "$2" "$3"
+#
+# Anything else at that path is neither ours to use nor ours to delete. `-L` as well as `-e`, because
+# `[ -e ]` follows the link and a dangling one would read as nothing there.
+#
+refuse_occupied_slot() {
+    { [ -e "$1" ] || [ -L "$1" ]; } || return 0
+    note "[$1] is not a checkout of [$2] — remove it and open again"
+    exit 16
+}
+
+#
+# Built beside the slot, published into it. **A reader never sees a half-built workspace**, because
+# the slot does not exist until the checkout is whole.
+#
+# `mkdir` on the build path is what serialises this, not the rename: measured, `mv` onto an existing
+# directory moves the source *inside* it and exits 0, so a rename cannot be the thing that refuses.
+# A creator that dies leaves `<slot>.building` — recoverable garbage, and never a slot.
+#
+build_and_publish() {
+    building="$1.building"
+
+    mkdir -p "$(dirname "$1")" 2>/dev/null || die_unwritable "$(dirname "$1")"
+    mkdir "$building" 2>/dev/null \
+        || { note "[$2] is being checked out — remove [$building] if no session is"; exit 16; }
+
+    clone_into "$building" "$(repo_root)" "$2" "$3" || { rm -rf "$building"; exit 16; }
+    publish_workspace "$building" "$1"
+}
+
+publish_workspace() {
+    [ -e "$2" ] && { rm -rf "$1"; note "[$2] appeared while it was being built"; exit 16; }
+
+    mv "$1" "$2" 2>/dev/null && return 0
+    rm -rf "$1"
+    note "could not publish [$2]"
+    exit 16
 }
 
 #
@@ -576,16 +643,38 @@ check_out_target() {
 # `--no-hardlinks`, because a local clone shares object files by default and a workspace that shares
 # anything with the checkout it isolates from is worth the disk.
 #
+#
+# Every step returns rather than exits, so `build_and_publish` can clear the build path before it
+# refuses. Left behind, `<slot>.building` makes every later `open` answer *being checked out* — a
+# typo in a ref would be diagnosed once and misdiagnosed for ever after.
+#
 clone_into() {
-    fetch_objects  "$1" "$2" "$3"
-    check_out_ref  "$1" "$3" "$4"
-    point_at_origin "$1" "$3"
+    fetch_objects   "$1" "$2" "$3" || return 1
+    check_out_ref   "$1" "$3" "$4" || return 1
+    point_at_origin "$1" "$3"      || return 1
+    record_base_ref "$1" "$4"
+}
+
+#
+# What it was opened for, in git's own config rather than a file of ours — a second store is a second
+# thing to drift.
+#
+# **Compared against the run's frozen selection, never against itself.** The value lives in a
+# repository the worker owns, so a worker can write it; what it is checked against does not. That
+# makes it the same kind of guard as the charter — it catches a workspace built for another ref, and
+# it does not resist someone editing both sides. Containment is the runtime boundary's, and there
+# isn't one.
+#
+record_base_ref() {
+    git -C "$1" config foundry.ref "$2" 2>/dev/null && return 0
+    note "could not record the base ref in [$1]"
+    return 1
 }
 
 fetch_objects() {
     git clone --quiet --no-hardlinks "$2" "$1" 2>/dev/null && return 0
     note "could not clone [$3]"
-    exit 16
+    return 1
 }
 
 #
@@ -596,13 +685,13 @@ fetch_objects() {
 check_out_ref() {
     git -C "$1" checkout --quiet "$3" 2>/dev/null && return 0
     note "[$2] has no ref [$3] to check out"
-    exit 16
+    return 1
 }
 
 point_at_origin() {
     git -C "$1" remote set-url origin "$2" 2>/dev/null && return 0
     note "could not point [$1] at [$2]"
-    exit 16
+    return 1
 }
 
 targets() {
@@ -859,9 +948,22 @@ record_gate() {
     # refused, because a gate whose name holds a newline is a mistake, not something to tidy up.
     is_one_line "$name" || { note "a gate's name is one line: [$name]"; exit 2; }
 
+    # The tree the gates grade, entered the way they enter it. Recorded against the checkout Foundry
+    # was invoked from, a sha `satisfied` compares to the workspace's never matched — a `machine`
+    # record that read as evidence and could satisfy nothing. Running the command anywhere but where
+    # the ref points is the same defect with the halves swapped.
+    #
+    # Nothing may run after this: the directory is not restored, and `evidence` ends here.
+    here=$(this_repository)
+    tree=$(work_tree "$dir" "$here" "$(selected_ref "$(unit_targets_file "$dir")" "$here")") || exit 16
+    cd "$tree" || { note "cannot enter [$tree]"; exit 16; }
+
     # Before the command runs. A recorded command that moves HEAD would otherwise stamp a sha whose
     # tree was never tested — evidence for work that did not exist when the work was graded.
-    ref=$(delivered_ref) || { note "no commit to record evidence against"; exit 1; }
+    #
+    # Unguarded: `attached` proved a HEAD before `work_tree` answered, and a repository with no
+    # commit can hold no workspace at all. One reader, not two.
+    ref=$(delivered_ref)
 
     stamp_command "$dir" "$ref" "$name" "$@"
 }
@@ -918,20 +1020,36 @@ gates() {
     [ "$#" -eq 0 ] || { usage; exit 2; }
 
     check_charter "$dir"
-
-    # One ref for the whole run of them. Taken here rather than per gate, so a gate that commits
-    # cannot move the tree the gates after it are recorded against.
-    ref=$(delivered_ref) || { note "no commit to gate"; exit 1; }
-
-    run_pinned_gates "$dir" "$ref"
+    run_pinned_gates "$dir"
 }
 
 #
-# `pinned_command` answers with the first record for an id and `moved_resolutions` compares only that
-# one, so a second `gate` line under the same id is a command nothing validated — and `check` reads
-# the charter as clean. One line appended, no pin touched, which is less than the charter's own
-# threat model asks of a worker.
+# Where a gate runs — §2.4's *that target's checkout*, which since the workspace landed means the
+# workspace's and nothing else.
 #
+# **No fallback to the checkout Foundry was invoked from.** That is also a checkout of the target,
+# which is why grading it looked defensible; it is not the one the unit owns, so a gate would record
+# a `machine` result for a tree the worker never wrote to. `open` is a precondition, not a
+# convenience.
+#
+# `attached` and not a directory test: the same predicate that decides what `open` may attach to
+# decides what a gate may grade, so a workspace built for another target or another ref is refused
+# here for the reason it was refused there.
+#
+work_tree() {
+    slot="$(unit_workspace "$1")/$(target_slot "$2")"
+
+    attached "$slot" "$2" "$3" && { printf '%s' "$slot"; return 0; }
+    note "no workspace holds [$2] at [$3] — \`open\` one, and the gates grade what the work is in"
+    return 1
+}
+
+# The ref this run selected for one target. `"" ==` on both sides: an `-v` assignment is a numeric
+# string, and an identity that looked like a number would otherwise match a different one.
+selected_ref() {
+    awk -v want="$2" '!/^[ \t]*#/ && NF && $1 "" == want "" { print $2; exit }' "$1" 2>/dev/null
+}
+
 #
 # A gate runs where its pin says it came from. One checkout exists, so a gate pinned elsewhere has
 # nowhere to run — and running it here would grade this repository against another one's bar.
@@ -960,19 +1078,24 @@ pinned_gates() {
 }
 
 run_pinned_gates() {
-    dir=$1; ref=$2
+    dir=$1
     failed=0
 
     pins=$(pinned_gates "$dir")
     [ -n "$pins" ] || { note "this charter pins no gate, so it grades nothing mechanically"; exit 8; }
     refuse_gates_from_elsewhere "$dir" "$pins" || exit 7
 
-    # §2.4: a gate runs with its target's checkout as the working directory. One checkout exists
-    # today — a gate named `tests` in a two-repo workspace is otherwise ambiguous.
-    #
+    here=$(this_repository)
+    tree=$(work_tree "$dir" "$here" "$(selected_ref "$(unit_targets_file "$dir")" "$here")") || exit 16
+
     # Not restored, and nothing may run after this. `gates` ends here and `main` dispatches nothing
     # afterwards; a caller added below this line would inherit a directory it did not choose.
-    cd "$(repo_root)" || { note "no checkout to run gates in"; exit 1; }
+    cd "$tree" || { note "cannot enter [$tree]"; exit 16; }
+
+    # One ref for the whole set, and it is the workspace's — taken after the move, so a gate that
+    # commits cannot shift the tree the gates behind it are recorded against. Unguarded, because
+    # `attached` proved a HEAD before this directory was named.
+    ref=$(delivered_ref)
 
     # A here-doc, not a pipe. A tally raised inside a pipe's subshell dies with it, and the tally is
     # the only thing this loop produces that the caller needs.
@@ -1093,9 +1216,14 @@ empty_selection() {
 unmet_clauses() {
     file=$(charter_file "$1")
     here=$(this_repository)
-    ref=$(delivered_ref)
 
-    [ -n "$ref" ] || { printf 'nothing delivered: this checkout has no commit to be graded at\n'; return; }
+    # The workspace's ref, found by the question the gates asked — so the two cannot answer about
+    # different trees. A run with no workspace has delivered nothing, whatever its checkout holds.
+    tree=$(work_tree "$1" "$here" "$(selected_ref "$(unit_targets_file "$1")" "$here")" 2>/dev/null) \
+        || { printf 'unopened: no workspace holds [%s], so nothing was delivered from one\n' "$here"; return; }
+
+    ref=$(git -C "$tree" rev-parse --verify --quiet HEAD 2>/dev/null)
+    [ -n "$ref" ] || { printf 'nothing delivered: the workspace holds no commit to be graded at\n'; return; }
 
     awk '$1 == "clause" { print $2 }' "$file" 2>/dev/null | while read -r id; do
         text=$(clause_text "$file" "$id")

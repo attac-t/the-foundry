@@ -7,6 +7,12 @@
 # Set RUNNER to point these checks at a deliberately broken copy.
 
 set -u
+
+# Pinned, because a glob's order decides which directory `only_slot` yields — and a break whose kill
+# depends on the machine's collation is not an oracle.
+LC_ALL=C
+export LC_ALL
+
 here="$(cd "$(dirname "$0")/.." && pwd)"
 . "$here/tests/lib.sh"
 
@@ -43,6 +49,21 @@ floor_new_as() {
   ( cd "$dir" 2>/dev/null || exit 9
     FOUNDRY_HOME="$home" FOUNDRY_RUN="" FOUNDRY_WHO="$who" sh "$runner" new "$@" 2>/dev/null )
 }
+
+# Everything a gate needs before it can run: a charter, a selection, and a workspace to grade. Four
+# calls in every test that reaches the gate stage, and the gate stage is most of them.
+ready_run() {
+  dir=$1; identity=$2; ref=${3:-main}
+  floor_new_as "$dir" ada@example.com "Ready" >/dev/null
+  floor "$dir" charter derive >/dev/null 2>&1
+  floor "$dir" policy authorize "$identity" >/dev/null 2>&1
+  floor "$dir" targets add "$identity" "$ref" >/dev/null 2>&1
+  floor "$dir" open >/dev/null 2>&1
+}
+
+# The one checkout under a workspace. Its name is the runner's business — a test that recomputed it
+# would agree with a wrong answer, which is the whole failure mode here.
+only_slot() { set -- "$1"/*/; [ -d "$1" ] && printf '%s' "${1%/}"; }
 
 # Run any of the above and report only its exit code.
 code_of() { "$@" >/dev/null 2>&1; printf '%s' "$?"; }
@@ -1110,10 +1131,15 @@ a_run_cannot_author_its_own_bar
 #
 evidence_is_what_happened() {
   make_repo "$tmp/ev" main && set_origin "$tmp/ev" 'https://github.com/acme/ev.git' \
-    && commit_file "$tmp/ev" README 'x
+    && mkdir -p "$tmp/ev/.foundry" \
+    && commit_file "$tmp/ev" .foundry/gates 'tests  true
 ' || { skip "evidence — git could not make a repo here"; return; }
 
   floor "$tmp/ev" new "Evidence" >/dev/null
+  floor "$tmp/ev" charter derive >/dev/null 2>&1
+  floor "$tmp/ev" policy authorize 'https://github.com/acme/ev.git' >/dev/null 2>&1
+  floor "$tmp/ev" targets add 'https://github.com/acme/ev.git' main >/dev/null 2>&1
+  floor "$tmp/ev" open >/dev/null 2>&1
 
   is "a gate that passes is recorded, and the exit code carries" \
      "$(code_of floor "$tmp/ev" evidence record tests true)" "0"
@@ -1140,10 +1166,15 @@ evidence_is_what_happened
 #
 a_name_cannot_forge_a_second_record() {
   make_repo "$tmp/ev4" main && set_origin "$tmp/ev4" 'https://github.com/acme/ev4.git' \
-    && commit_file "$tmp/ev4" README 'x
+    && mkdir -p "$tmp/ev4/.foundry" \
+    && commit_file "$tmp/ev4" .foundry/gates 'tests  true
 ' || { skip "forged record — git could not make a repo here"; return; }
 
   floor "$tmp/ev4" new "Forge" >/dev/null
+  floor "$tmp/ev4" charter derive >/dev/null 2>&1
+  floor "$tmp/ev4" policy authorize 'https://github.com/acme/ev4.git' >/dev/null 2>&1
+  floor "$tmp/ev4" targets add 'https://github.com/acme/ev4.git' main >/dev/null 2>&1
+  floor "$tmp/ev4" open >/dev/null 2>&1
 
   forged='tests	0	deadbeef
 types'
@@ -1159,10 +1190,15 @@ a_name_cannot_forge_a_second_record
 #
 the_ref_is_what_was_tested() {
   make_repo "$tmp/ev5" main && set_origin "$tmp/ev5" 'https://github.com/acme/ev5.git' \
-    && commit_file "$tmp/ev5" README 'x
+    && mkdir -p "$tmp/ev5/.foundry" \
+    && commit_file "$tmp/ev5" .foundry/gates 'tests  true
 ' || { skip "ref timing — git could not make a repo here"; return; }
 
   floor "$tmp/ev5" new "Timing" >/dev/null
+  floor "$tmp/ev5" charter derive >/dev/null 2>&1
+  floor "$tmp/ev5" policy authorize 'https://github.com/acme/ev5.git' >/dev/null 2>&1
+  floor "$tmp/ev5" targets add 'https://github.com/acme/ev5.git' main >/dev/null 2>&1
+  floor "$tmp/ev5" open >/dev/null 2>&1
   was=$(git -C "$tmp/ev5" rev-parse HEAD 2>/dev/null)
 
   floor "$tmp/ev5" evidence record tests sh -c \
@@ -1184,10 +1220,13 @@ a_record_needs_a_commit_to_apply_to() {
 
   floor "$tmp/ev6" new "Unborn" >/dev/null
 
+  # A repository with no commit cannot be cloned, so it can hold no workspace, so nothing can be
+  # recorded from one. The refusal moved when the tree did: `attached` proves a HEAD before a record
+  # is written, which is why nothing downstream tests for a missing one any more.
   is  "a gate recorded before the first commit is refused" \
-      "$(code_of floor "$tmp/ev6" evidence record tests true)" "1"
+      "$(code_of floor "$tmp/ev6" evidence record tests true)" "16"
   has "and says why" \
-      "$(floor_says "$tmp/ev6" evidence record tests true)" "no commit to record evidence against"
+      "$(floor_says "$tmp/ev6" evidence record tests true)" "no workspace holds"
   is  "and nothing was written" "$(floor "$tmp/ev6" evidence)" ""
 }
 a_record_needs_a_commit_to_apply_to
@@ -1198,10 +1237,15 @@ a_record_needs_a_commit_to_apply_to
 #
 a_result_is_not_something_you_pass() {
   make_repo "$tmp/ev2" main && set_origin "$tmp/ev2" 'https://github.com/acme/ev2.git' \
-    && commit_file "$tmp/ev2" README 'x
+    && mkdir -p "$tmp/ev2/.foundry" \
+    && commit_file "$tmp/ev2" .foundry/gates 'tests  true
 ' || { skip "no result parameter — git could not make a repo here"; return; }
 
   floor "$tmp/ev2" new "No Claim" >/dev/null
+  floor "$tmp/ev2" charter derive >/dev/null 2>&1
+  floor "$tmp/ev2" policy authorize 'https://github.com/acme/ev2.git' >/dev/null 2>&1
+  floor "$tmp/ev2" targets add 'https://github.com/acme/ev2.git' main >/dev/null 2>&1
+  floor "$tmp/ev2" open >/dev/null 2>&1
 
   is  "a name with no command is refused" "$(code_of floor "$tmp/ev2" evidence record tests)" "2"
   has "and says why" "$(floor_says "$tmp/ev2" evidence record tests)" "a result is not something you pass"
@@ -1220,10 +1264,15 @@ a_result_is_not_something_you_pass
 #
 a_failure_records_what_the_command_said() {
   make_repo "$tmp/ev3" main && set_origin "$tmp/ev3" 'https://github.com/acme/ev3.git' \
-    && commit_file "$tmp/ev3" README 'x
+    && mkdir -p "$tmp/ev3/.foundry" \
+    && commit_file "$tmp/ev3" .foundry/gates 'tests  true
 ' || { skip "failure detail — git could not make a repo here"; return; }
 
   floor "$tmp/ev3" new "Why" >/dev/null
+  floor "$tmp/ev3" charter derive >/dev/null 2>&1
+  floor "$tmp/ev3" policy authorize 'https://github.com/acme/ev3.git' >/dev/null 2>&1
+  floor "$tmp/ev3" targets add 'https://github.com/acme/ev3.git' main >/dev/null 2>&1
+  floor "$tmp/ev3" open >/dev/null 2>&1
   floor "$tmp/ev3" evidence record types sh -c 'printf "two\nerrors\n" >&2; exit 1' >/dev/null 2>&1
 
   held=$(floor "$tmp/ev3" evidence)
@@ -1244,6 +1293,9 @@ a_gate_runs_the_command_the_charter_pinned() {
 
   floor "$tmp/g1" new "Gates" >/dev/null
   floor "$tmp/g1" charter derive >/dev/null 2>&1
+  floor "$tmp/g1" policy authorize 'https://github.com/acme/g1.git' >/dev/null 2>&1
+  floor "$tmp/g1" targets add 'https://github.com/acme/g1.git' main >/dev/null 2>&1
+  floor "$tmp/g1" open >/dev/null 2>&1
 
   is "a charter whose gates all pass answers 0" "$(code_of floor "$tmp/g1" gates)" "0"
 
@@ -1267,6 +1319,9 @@ a_failing_gate_is_recorded_and_answered() {
 
   floor "$tmp/g2" new "Red" >/dev/null
   floor "$tmp/g2" charter derive >/dev/null 2>&1
+  floor "$tmp/g2" policy authorize 'https://github.com/acme/g2.git' >/dev/null 2>&1
+  floor "$tmp/g2" targets add 'https://github.com/acme/g2.git' main >/dev/null 2>&1
+  floor "$tmp/g2" open >/dev/null 2>&1
 
   is "a gate that did not pass answers 14" "$(code_of floor "$tmp/g2" gates)" "14"
   matches "and is recorded with what it returned" "$(floor "$tmp/g2" evidence)" "	tests	1	"
@@ -1286,6 +1341,9 @@ second  true
 
   floor "$tmp/g3" new "OneRef" >/dev/null
   floor "$tmp/g3" charter derive >/dev/null 2>&1
+  floor "$tmp/g3" policy authorize 'https://github.com/acme/g3.git' >/dev/null 2>&1
+  floor "$tmp/g3" targets add 'https://github.com/acme/g3.git' main >/dev/null 2>&1
+  floor "$tmp/g3" open >/dev/null 2>&1
   was=$(git -C "$tmp/g3" rev-parse HEAD 2>/dev/null)
 
   floor "$tmp/g3" gates >/dev/null 2>&1
@@ -1310,6 +1368,9 @@ a_drifted_charter_gates_nothing() {
 
   floor "$tmp/g4" new "Drift" >/dev/null
   floor "$tmp/g4" charter derive >/dev/null 2>&1
+  floor "$tmp/g4" policy authorize 'https://github.com/acme/g4.git' >/dev/null 2>&1
+  floor "$tmp/g4" targets add 'https://github.com/acme/g4.git' main >/dev/null 2>&1
+  floor "$tmp/g4" open >/dev/null 2>&1
 
   printf 'tests  false\n' > "$tmp/g4/.foundry/gates"
 
@@ -1330,6 +1391,9 @@ a_gate_runs_at_the_targets_root() {
 
   floor "$tmp/g5" new "Deep" >/dev/null
   floor "$tmp/g5" charter derive >/dev/null 2>&1
+  floor "$tmp/g5" policy authorize 'https://github.com/acme/g5.git' >/dev/null 2>&1
+  floor "$tmp/g5" targets add 'https://github.com/acme/g5.git' main >/dev/null 2>&1
+  floor "$tmp/g5" open >/dev/null 2>&1
 
   is "a gate run from a subdirectory still passes" "$(code_of floor "$tmp/g5/deep" gates)" "0"
 }
@@ -1348,6 +1412,9 @@ a_record_that_answers_to_nothing_is_caught() {
 
   d=$(floor "$tmp/g6" new "Hollow")
   floor "$tmp/g6" charter derive >/dev/null 2>&1
+  floor "$tmp/g6" policy authorize 'https://github.com/acme/g6.git' >/dev/null 2>&1
+  floor "$tmp/g6" targets add 'https://github.com/acme/g6.git' main >/dev/null 2>&1
+  floor "$tmp/g6" open >/dev/null 2>&1
   sound=$(cat "$(charter_of "$d")")
   id=$(awk '$1 == "gate" { print $2; exit }' "$(charter_of "$d")")
 
@@ -1399,6 +1466,9 @@ a_gate_with_no_command_is_refused() {
   floor "$tmp/g7" new "Empty" >/dev/null
 
   is "a gate naming no command still derives" "$(code_of floor "$tmp/g7" charter derive)" "0"
+  floor "$tmp/g7" policy authorize 'https://github.com/acme/g7.git' >/dev/null 2>&1
+  floor "$tmp/g7" targets add 'https://github.com/acme/g7.git' main >/dev/null 2>&1
+  floor "$tmp/g7" open >/dev/null 2>&1
   # Its own assertion, or the refusal below could come from `check` calling this drift and the guard
   # that refuses an empty command would never run.
   is "and reads as no drift, not as a moved resolution" \
@@ -1421,6 +1491,9 @@ second  true
 
   floor "$tmp/g8" new "Greedy" >/dev/null
   floor "$tmp/g8" charter derive >/dev/null 2>&1
+  floor "$tmp/g8" policy authorize 'https://github.com/acme/g8.git' >/dev/null 2>&1
+  floor "$tmp/g8" targets add 'https://github.com/acme/g8.git' main >/dev/null 2>&1
+  floor "$tmp/g8" open >/dev/null 2>&1
   floor "$tmp/g8" gates >/dev/null 2>&1
 
   held=$(floor "$tmp/g8" evidence)
@@ -1444,6 +1517,9 @@ a_clause_with_no_text_names_no_gate() {
 
   d=$(floor "$tmp/g9" new "Blank")
   floor "$tmp/g9" charter derive >/dev/null 2>&1
+  floor "$tmp/g9" policy authorize 'https://github.com/acme/g9.git' >/dev/null 2>&1
+  floor "$tmp/g9" targets add 'https://github.com/acme/g9.git' main >/dev/null 2>&1
+  floor "$tmp/g9" open >/dev/null 2>&1
   target=$(awk '$1 == "pin" { print $3; exit }' "$(charter_of "$d")")
   ref=$(awk '$1 == "pin" { print $4; exit }' "$(charter_of "$d")")
 
@@ -1475,6 +1551,9 @@ a_gate_pinned_elsewhere_does_not_run_here() {
 
   d=$(floor "$tmp/ga" new "Elsewhere")
   floor "$tmp/ga" charter derive >/dev/null 2>&1
+  floor "$tmp/ga" policy authorize 'https://github.com/acme/ga.git' >/dev/null 2>&1
+  floor "$tmp/ga" targets add 'https://github.com/acme/ga.git' main >/dev/null 2>&1
+  floor "$tmp/ga" open >/dev/null 2>&1
 
   rm -f "$tmp/ga/.foundry/gates"
   away=$(printf '%s' away | cksum | awk '{ print $1 }')
@@ -1507,6 +1586,7 @@ a_run_completes_only_when_every_clause_is_evidenced() {
 
   floor "$tmp/cp" policy authorize 'https://github.com/acme/cp.git' >/dev/null 2>&1
   floor "$tmp/cp" targets add 'https://github.com/acme/cp.git' main >/dev/null 2>&1
+  floor "$tmp/cp" open >/dev/null 2>&1
 
   is  "a clause nothing has evidenced may not deliver" "$(code_of floor "$tmp/cp" complete)" "15"
   has "and names the clause"                     "$(floor_says "$tmp/cp" complete)" "unmet: [tests]"
@@ -1518,9 +1598,19 @@ a_run_completes_only_when_every_clause_is_evidenced() {
   # The bar is met at a sha, not in general. This is the whole of what the invariant adds: gates
   # could pass at commit N, three commits land, and delivery proceed on evidence that no longer
   # applied.
+  # The checkout Foundry was invoked from moving changes nothing: the gates graded the workspace, and
+  # that is what completion reads. This is the isolation, stated as an outcome.
   commit_file "$tmp/cp" README 'later
 '
-  is  "a commit after the gate ran makes it undeliverable again" \
+  is "the source checkout moving does not unmake the delivery" \
+     "$(code_of floor "$tmp/cp" complete)" "0"
+
+  # The workspace moving does. A gate could pass at commit N, three commits land, and delivery
+  # proceed on evidence that no longer applied.
+  slot=$(only_slot "$(floor "$tmp/cp" open)")
+  git -C "$slot" -c user.email=w@w.w -c user.name=w commit -q --allow-empty -m later >/dev/null 2>&1
+
+  is  "a commit in the workspace after the gate ran makes it undeliverable again" \
       "$(code_of floor "$tmp/cp" complete)" "15"
   has "because the evidence names a sha this is not" \
       "$(floor_says "$tmp/cp" complete)" "unmet: [tests]"
@@ -1541,6 +1631,7 @@ a_run_nobody_selected_may_not_deliver() {
   floor "$tmp/cq" charter derive >/dev/null 2>&1
   floor "$tmp/cq" policy authorize 'https://github.com/acme/cq.git' >/dev/null 2>&1
   floor "$tmp/cq" targets add 'https://github.com/acme/cq.git' main >/dev/null 2>&1
+  floor "$tmp/cq" open >/dev/null 2>&1
   floor "$tmp/cq" gates >/dev/null 2>&1
 
   is "with every gate green it may deliver" "$(code_of floor "$tmp/cq" complete)" "0"
@@ -1566,11 +1657,15 @@ completion_refuses_what_is_only_vacuously_true() {
   floor_new_as "$tmp/cr" ada@example.com "Vacuous" >/dev/null
   floor "$tmp/cr" policy authorize 'https://github.com/acme/cr.git' >/dev/null 2>&1
   floor "$tmp/cr" targets add 'https://github.com/acme/cr.git' main >/dev/null 2>&1
+  floor "$tmp/cr" open >/dev/null 2>&1
 
   is  "a run with a target and no charter may not deliver" "$(code_of floor "$tmp/cr" complete)" "15"
   has "because nothing grades it" "$(floor_says "$tmp/cr" complete)" "nobar"
 
+  # Opened after the charter exists, because `open` runs `authorise` and a run with no charter has
+  # nothing to authorise.
   floor "$tmp/cr" charter derive >/dev/null 2>&1
+  floor "$tmp/cr" open >/dev/null 2>&1
   floor "$tmp/cr" gates >/dev/null 2>&1
 
   is  "a gate that ran and failed leaves its clause unmet" "$(code_of floor "$tmp/cr" complete)" "15"
@@ -1593,6 +1688,7 @@ an_introduced_clause_holds_delivery() {
   floor "$tmp/cs" charter derive >/dev/null 2>&1
   floor "$tmp/cs" policy authorize 'https://github.com/acme/cs.git' >/dev/null 2>&1
   floor "$tmp/cs" targets add 'https://github.com/acme/cs.git' main >/dev/null 2>&1
+  floor "$tmp/cs" open >/dev/null 2>&1
   floor "$tmp/cs" gates >/dev/null 2>&1
 
   is "every derived clause evidenced, it may deliver" "$(code_of floor "$tmp/cs" complete)" "0"
@@ -1621,9 +1717,20 @@ a_workspace_is_isolated_from_the_checkout() {
   floor "$tmp/ws" targets add 'https://github.com/acme/ws.git' main >/dev/null 2>&1
 
   where=$(floor "$tmp/ws" open)
-  slot="$where/github-com-acme-ws"
+  slot=$(only_slot "$where")
 
   has "the workspace lives under the run"  "$where" "$d"
+
+  # **The digest is the identity; the readable half is decoration.** Folding punctuation to `-` made
+  # `acme/a-b`, `a/b`, `a.b` and `a_b` one directory — four repositories, one checkout — and a longer
+  # fold would only have moved the collision. The name is asserted for its shape, not its spelling.
+  matches "the slot is named by a digest, not by a fold of the identity" \
+          "$(basename "$slot")" "-[0-9a-f]{12}$"
+
+  # Published, not assembled: the build path is gone once the slot exists. Without this, a workspace
+  # built in place is caught only by whichever directory the glob happens to yield first.
+  is "publication leaves nothing beside the slot" \
+     "$(set -- "$where"/*/; printf '%s' $#)" "1"
   is  "and holds a checkout of the target" "$(code_of test -d "$slot/.git")" "0"
   is  "opening twice answers the same place, and clones nothing twice" \
       "$(floor "$tmp/ws" open)" "$where"
@@ -1663,6 +1770,60 @@ a_workspace_is_isolated_from_the_checkout() {
 a_workspace_is_isolated_from_the_checkout
 
 #
+# §2.4, now that a workspace exists: a gate runs in the checkout the unit owns, and there is no
+# falling back to the one Foundry was invoked from. A gate that commits proves it twice — the record
+# names the workspace's sha, and the source repository has not moved.
+#
+a_gate_runs_where_the_unit_owns_the_checkout() {
+  make_repo "$tmp/gw" main && set_origin "$tmp/gw" 'https://github.com/acme/gw.git' \
+    && mkdir -p "$tmp/gw/.foundry" \
+    && commit_file "$tmp/gw" .foundry/gates 'tests  git -c user.email=g@g.g -c user.name=g commit -q --allow-empty -m gated
+' || { skip "gate cwd — git could not make a repo here"; return; }
+
+  floor_new_as "$tmp/gw" ada@example.com "Where" >/dev/null
+  floor "$tmp/gw" charter derive >/dev/null 2>&1
+  floor "$tmp/gw" policy authorize 'https://github.com/acme/gw.git' >/dev/null 2>&1
+  floor "$tmp/gw" targets add 'https://github.com/acme/gw.git' main >/dev/null 2>&1
+
+  is  "with no workspace open, a gate refuses rather than grading the wrong checkout" \
+      "$(code_of floor "$tmp/gw" gates)" "16"
+  has "and says which workspace is missing" "$(floor_says "$tmp/gw" gates)" "no workspace holds"
+  is  "recording nothing"                   "$(floor "$tmp/gw" evidence)" ""
+
+  slot=$(only_slot "$(floor "$tmp/gw" open)")
+  base=$(git -C "$slot" rev-parse HEAD)
+
+  # The source moves after the workspace was taken — the only way the two shas differ, since a clone
+  # starts where the source stood.
+  commit_file "$tmp/gw" MOVED 'the source moved on
+'
+  moved=$(git -C "$tmp/gw" rev-parse HEAD)
+
+  floor "$tmp/gw" gates >/dev/null 2>&1
+  held=$(floor "$tmp/gw" evidence)
+
+  has     "the record names the workspace's sha"        "$held" "$base"
+  lacks   "and not the source's, which has moved on"    "$held" "$moved"
+  is      "a gate that commits does not move the source" "$(git -C "$tmp/gw" rev-parse HEAD)" "$moved"
+  differs "though it moved the workspace"                "$(git -C "$slot" rev-parse HEAD)" "$base"
+
+  # The same predicate `open` attaches by. A slot that stopped being this target's is not one to
+  # grade — a directory test would have graded it, and recorded a `machine` result for a repository
+  # nobody selected.
+  git -C "$slot" remote set-url origin 'https://github.com/attacker/evil.git' 2>/dev/null
+  is "a workspace that is no longer this target's is not graded" \
+     "$(code_of floor "$tmp/gw" gates)" "16"
+  git -C "$slot" remote set-url origin 'https://github.com/acme/gw.git' 2>/dev/null
+
+  # Safe to retry: running again grades the workspace as it now stands, and records that too.
+  floor "$tmp/gw" gates >/dev/null 2>&1
+  is "running the gates again is two records, not a broken one" \
+     "$(floor "$tmp/gw" evidence | awk -F'\t' 'NF == 7' | grep -c .)" "2"
+  is "and the source still has not moved" "$(git -C "$tmp/gw" rev-parse HEAD)" "$moved"
+}
+a_gate_runs_where_the_unit_owns_the_checkout
+
+#
 # A workspace is where mutation happens, so it may not exist for a run nobody authorised. `authorise`
 # holds twelve reasons and this restates none of them.
 #
@@ -1682,6 +1843,117 @@ a_workspace_needs_authorisation() {
 a_workspace_needs_authorisation
 
 #
+# A slot can hold a perfectly valid checkout of something else. `open` answered 0 for one holding
+# another repository entirely, and every gate after it would have graded that.
+#
+#
+# The shape of a digest proves nothing — a constant is twelve hex characters too. Two repositories,
+# two identities, and the names must differ in the half that is not decoration.
+#
+a_digest_is_derived_from_the_identity_it_names() {
+  for n in 1 2; do
+    make_repo "$tmp/dg$n" main && set_origin "$tmp/dg$n" "https://github.com/acme/dg$n.git" \
+      && mkdir -p "$tmp/dg$n/.foundry" \
+      && commit_file "$tmp/dg$n" .foundry/gates 'tests  true
+' || { skip "digest derivation — git could not make a repo here"; return; }
+
+    floor_new_as "$tmp/dg$n" ada@example.com "Digest $n" >/dev/null
+    floor "$tmp/dg$n" charter derive >/dev/null 2>&1
+    floor "$tmp/dg$n" policy authorize "https://github.com/acme/dg$n.git" >/dev/null 2>&1
+    floor "$tmp/dg$n" targets add "https://github.com/acme/dg$n.git" main >/dev/null 2>&1
+  done
+
+  one=$(basename "$(only_slot "$(floor "$tmp/dg1" open)")")
+  two=$(basename "$(only_slot "$(floor "$tmp/dg2" open)")")
+
+  differs "two identities take two digests" "${one#*-}" "${two#*-}"
+
+  # And the other half, or a digest of the run directory would pass the first. A second run over the
+  # same target takes the same digest: the identity is what it is made from.
+  floor_new_as "$tmp/dg1" ada@example.com "Digest 1 again" >/dev/null
+  floor "$tmp/dg1" charter derive >/dev/null 2>&1
+  floor "$tmp/dg1" policy authorize 'https://github.com/acme/dg1.git' >/dev/null 2>&1
+  floor "$tmp/dg1" targets add 'https://github.com/acme/dg1.git' main >/dev/null 2>&1
+  again=$(basename "$(only_slot "$(floor "$tmp/dg1" open)")")
+
+  is "one identity takes one digest, whichever run asks" "${again#*-}" "${one#*-}"
+}
+a_digest_is_derived_from_the_identity_it_names
+
+a_slot_holding_another_repository_is_refused() {
+  make_repo "$tmp/im" main && set_origin "$tmp/im" 'https://github.com/acme/im.git' \
+    && mkdir -p "$tmp/im/.foundry" \
+    && commit_file "$tmp/im" .foundry/gates 'tests  true
+' || { skip "imposter slot — git could not make a repo here"; return; }
+
+  floor_new_as "$tmp/im" ada@example.com "Imposter" >/dev/null
+  floor "$tmp/im" charter derive >/dev/null 2>&1
+  floor "$tmp/im" policy authorize 'https://github.com/acme/im.git' >/dev/null 2>&1
+  floor "$tmp/im" targets add 'https://github.com/acme/im.git' main >/dev/null 2>&1
+
+  slot=$(only_slot "$(floor "$tmp/im" open)")
+
+  git -C "$slot" remote set-url origin 'https://github.com/attacker/evil.git' 2>/dev/null
+  is  "a checkout of another repository is not this target's workspace" \
+      "$(code_of floor "$tmp/im" open)" "16"
+  has "and is named as not being one" "$(floor_says "$tmp/im" open)" "is not a checkout of"
+
+  # The same slot, the right repository, opened for a ref this run did not select.
+  git -C "$slot" remote set-url origin 'https://github.com/acme/im.git' 2>/dev/null
+  git -C "$slot" config foundry.ref elsewhere 2>/dev/null
+  is "nor is one opened for another ref" "$(code_of floor "$tmp/im" open)" "16"
+}
+a_slot_holding_another_repository_is_refused
+
+#
+# `foundry.ref` is compared against the run's frozen selection, never against a constant. A run that
+# selected `develop` records `develop`, so a workspace built for another ref cannot pass as this
+# run's — which is what makes the comparison worth making at all.
+#
+the_recorded_ref_is_the_one_the_run_selected() {
+  make_repo "$tmp/rf" develop && set_origin "$tmp/rf" 'https://github.com/acme/rf.git' \
+    && mkdir -p "$tmp/rf/.foundry" \
+    && commit_file "$tmp/rf" .foundry/gates 'tests  true
+' || { skip "selected ref — git could not make a repo here"; return; }
+
+  floor_new_as "$tmp/rf" ada@example.com "Selected" >/dev/null
+  floor "$tmp/rf" charter derive >/dev/null 2>&1
+  floor "$tmp/rf" policy authorize 'https://github.com/acme/rf.git' >/dev/null 2>&1
+  floor "$tmp/rf" targets add 'https://github.com/acme/rf.git' develop >/dev/null 2>&1
+
+  slot=$(only_slot "$(floor "$tmp/rf" open)")
+  is "the workspace records the ref this run selected" \
+     "$(git -C "$slot" config --get foundry.ref 2>/dev/null)" "develop"
+}
+the_recorded_ref_is_the_one_the_run_selected
+
+#
+# Built beside the slot, published into it. A creator that dies leaves recoverable garbage, and never
+# a slot another session could read as finished — or delete while the first is still filling it.
+#
+a_half_built_workspace_is_never_the_workspace() {
+  make_repo "$tmp/ab" main && set_origin "$tmp/ab" 'https://github.com/acme/ab.git' \
+    && mkdir -p "$tmp/ab/.foundry" \
+    && commit_file "$tmp/ab" .foundry/gates 'tests  true
+' || { skip "atomic publication — git could not make a repo here"; return; }
+
+  floor_new_as "$tmp/ab" ada@example.com "Atomic" >/dev/null
+  floor "$tmp/ab" charter derive >/dev/null 2>&1
+  floor "$tmp/ab" policy authorize 'https://github.com/acme/ab.git' >/dev/null 2>&1
+  floor "$tmp/ab" targets add 'https://github.com/acme/ab.git' main >/dev/null 2>&1
+
+  slot=$(only_slot "$(floor "$tmp/ab" open)")
+  rm -rf "$slot"
+  mkdir -p "$slot.building"                       # as a creator killed mid-clone leaves it
+
+  is     "a second opener does not take a slot being built" "$(code_of floor "$tmp/ab" open)" "16"
+  has    "and says what to remove if none is" "$(floor_says "$tmp/ab" open)" "if no session is"
+  is     "it deletes nothing of the first one's" "$(code_of test -d "$slot.building")" "0"
+  absent "and no slot exists to read as finished" "$slot"
+}
+a_half_built_workspace_is_never_the_workspace
+
+#
 # The invariant quantifies over **every** selected target. One checkout answers for one of them, so a
 # second selected target is graded by nothing — and a run would deliver on evidence that never
 # mentioned the repository half its clauses govern. §8's two-target experiment is meant to fail here.
@@ -1696,6 +1968,7 @@ a_second_target_is_graded_by_nothing_and_says_so() {
   floor "$tmp/ct" charter derive >/dev/null 2>&1
   floor "$tmp/ct" policy authorize 'https://github.com/acme/ct.git' >/dev/null 2>&1
   floor "$tmp/ct" targets add 'https://github.com/acme/ct.git' main >/dev/null 2>&1
+  floor "$tmp/ct" open >/dev/null 2>&1
   floor "$tmp/ct" gates >/dev/null 2>&1
 
   is "one target, evidenced, may deliver" "$(code_of floor "$tmp/ct" complete)" "0"
@@ -1724,6 +1997,7 @@ a_selection_edited_by_hand_grades_nothing() {
   floor "$tmp/cu" charter derive >/dev/null 2>&1
   floor "$tmp/cu" policy authorize 'https://github.com/acme/cu.git' >/dev/null 2>&1
   floor "$tmp/cu" targets add 'https://github.com/acme/cu.git' main >/dev/null 2>&1
+  floor "$tmp/cu" open >/dev/null 2>&1
   floor "$tmp/cu" gates >/dev/null 2>&1
 
   is "as selected, it may deliver" "$(code_of floor "$tmp/cu" complete)" "0"
