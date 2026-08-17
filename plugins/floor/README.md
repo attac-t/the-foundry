@@ -406,7 +406,7 @@ Local objects, remote identity: cloning from the checkout needs no network, and 
 the identity the target names — so a branch pushed from here goes where the target says rather than
 where this machine happened to be.
 
-**One adapter is not a proven seam.** §5 holds a seam unproven until two adapters satisfy it, and
+**One adapter is not a proven seam.** §3 holds a seam unproven until two adapters satisfy it, and
 this is one — a clone, on this machine, of a target this checkout already is. It says nothing about
 containers, VMs or sandboxes. A target this checkout is not is named and refused rather than guessed
 at: a URL rebuilt from an identity carries no credential.

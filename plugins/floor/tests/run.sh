@@ -551,8 +551,8 @@ wreck_runner "an introduced clause reported as another repository's is caught" \
 # The isolation itself. A worktree shares `.git` with the checkout it came from, so a worker could
 # move the source's refs — and it leaves a `.git` file where a clone leaves a directory, which is
 # what the check sees.
-wreck_runner "a workspace sharing its git directory is caught" \
-  sharedgit 's#git clone --quiet --no-hardlinks --branch "$4" "$2" "$1"#git -C "$2" worktree add --quiet -f "$1" "$4"#'
+wreck_runner "a workspace sharing objects with the checkout it came from is caught" \
+  sharedobjects 's#git clone --quiet --no-hardlinks#git clone --quiet --shared#'
 
 # A workspace is where mutation happens. Without this, a run nobody authorised gets a mutable
 # checkout of a target nobody allowed it.
@@ -566,18 +566,23 @@ wreck_runner "a target directory named by a truncating slug is caught" \
 
 # Idempotent, or `open` is not attach and a second session destroys the first one's work.
 wreck_runner "a workspace cloned over on every open is caught" \
-  reclone 's#    \[ -d "$slot/.git" \] && return 0##'
+  reclone 's#    git -C "$slot" rev-parse --verify --quiet HEAD >/dev/null 2>&1 && return 0##'
 
 # The origin is where a branch pushed from here goes. Left as the path it was cloned from, delivery
 # would land on this machine and nowhere else.
 wreck_runner "a workspace keeping the path it was cloned from is caught" \
-  localorigin 's#    git -C "$1" remote set-url origin "$3" 2>/dev/null##'
+  localorigin 's#    git -C "$1" remote set-url origin "$2" 2>/dev/null \&\& return 0#    return 0#'
 
 # A slot with no checkout is a clone that failed or one another session is filling. Cloning over it
 # destroys whichever it is, and `git clone` into a directory holding files fails with a message about
 # the wrong thing.
 wreck_runner "a half-made checkout cloned over is caught" \
-  halfclone 's#    \[ -e "$slot" \] && { note "\[$slot\] holds no checkout — remove it and open again"; exit 3; }##'
+  halfclone 's#{ \[ -e "$slot" \] || \[ -L "$slot" \]; }#false#'
+
+# `[ -e ]` follows the link. Without `-L` a dangling slot reads as nothing there, reaches the claim,
+# and is reported as a session in flight — a remedy of waiting, for a thing that needs removing.
+wreck_runner "a dangling slot reported as a session in flight is caught" \
+  danglingslot 's#\[ -e "$slot" \] || \[ -L "$slot" \]#[ -e "$slot" ]#'
 
 # Invariant 4 describes a stamp. A run whose selection nobody recorded is a run the work source
 # cannot ask, because there is no one it may ask.

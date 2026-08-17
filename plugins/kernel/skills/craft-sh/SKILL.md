@@ -31,9 +31,15 @@ Seven lines, the whole story. The test: **can a stranger describe the script aft
 
 ## The Standard
 
-1. **One job per function.** If the name needs "and", split it. `ensure_database_answers` must not
-   also copy an `.env`.
+1. **One job per function, and few lines.** If the name needs "and", split it.
+   **Length is the signal.** When a function grows, the verbosity has already started — that is the
+   moment another function is merited, not once it is unreadable. The test is the call site:
+   `fetch_objects; check_out_ref; point_at_origin` reads as English. A body you have to assemble does
+   not.
 2. **Early return. Never `else`.** Guard, return, carry on. Zero `else` reads downward, not sideways.
+   **An `else` is a function you have not named yet** — it holds a second job, which is why it needed
+   a second branch. Extract it and the `else` disappears on its own. Same for `elif`, once per arm.
+   In a loop, `continue` is the early return.
 3. **A condition is a named predicate.** `herd_is_listening` beats `nc -z 127.0.0.1 443`. The name
    holds the meaning; the command is detail.
 4. **Verbs act, `ensure_` guards.** `install_vendor` works. `ensure_site_is_secured` makes something
@@ -59,7 +65,8 @@ Seven lines, the whole story. The test: **can a stranger describe the script aft
 | Don't                          | Do                              | Why                                    |
 | ------------------------------ | ------------------------------- | -------------------------------------- |
 | 200 top-level lines            | `main` plus named steps         | No shape, no reading                   |
-| `if … elif … else`             | Guard clauses                   | Nesting hides the path                 |
+| `if … elif … else`             | Guard clauses, or a new function | Each branch is a job that wanted a name |
+| A function you scroll to read  | The same steps, named            | Verbosity starts long before it hurts  |
 | A raw test inside `if`         | A named predicate               | The name is the documentation          |
 | Trusting a tool's message      | Poll what it claims             | Tools lie about themselves             |
 | A banner above a labelled step | The label alone                 | The script says it twice               |

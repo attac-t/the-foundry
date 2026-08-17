@@ -1628,9 +1628,19 @@ a_workspace_is_isolated_from_the_checkout() {
   is  "opening twice answers the same place, and clones nothing twice" \
       "$(floor "$tmp/ws" open)" "$where"
 
-  # The isolation, by execution rather than by assertion.
+  # The isolation, by execution rather than by assertion. A file proves only that two working trees
+  # differ, which a shared worktree would also pass — so a ref is written too, and refs are the thing
+  # a worktree shares.
   printf 'worker\n' > "$slot/WORKER"
   absent "what a worker writes there is not in the checkout it came from" "$tmp/ws/WORKER"
+
+  git -C "$slot" update-ref refs/heads/probe HEAD 2>/dev/null
+  is "and a ref it makes is not in that repository either" \
+     "$(git -C "$tmp/ws" rev-parse --verify --quiet refs/heads/probe 2>/dev/null)" ""
+
+  # A local clone shares object files unless told not to, and a shared object store is a checkout the
+  # workspace cannot be pruned independently of.
+  absent "it borrows no objects from that repository" "$slot/.git/objects/info/alternates"
 
   is "the origin is the target's identity, never this machine's path" \
      "$(git -C "$slot" remote get-url origin 2>/dev/null)" "https://github.com/acme/ws.git"
@@ -1639,8 +1649,15 @@ a_workspace_is_isolated_from_the_checkout() {
   # Cloning over it would destroy whichever it is.
   rm -rf "$slot/.git"
   is  "a slot holding no checkout is refused, not cloned over" \
-      "$(code_of floor "$tmp/ws" open)" "3"
+      "$(code_of floor "$tmp/ws" open)" "16"
   has "and says what to do about it" \
+      "$(floor_says "$tmp/ws" open)" "remove it and open again"
+
+  # `[ -e ]` follows the link, so a dangling one reads as nothing there. Left to the claim below it,
+  # the message would name a session that is not running.
+  rm -rf "$slot"
+  ln -s /nonexistent-target "$slot" 2>/dev/null || { skip "a dangling slot — this filesystem has no symlinks"; return; }
+  has "a slot that is a dangling link is named for what it is" \
       "$(floor_says "$tmp/ws" open)" "remove it and open again"
 }
 a_workspace_is_isolated_from_the_checkout
@@ -1658,8 +1675,8 @@ a_workspace_needs_authorisation() {
   d=$(floor_new_as "$tmp/wt" ada@example.com "Unauthorised")
   floor "$tmp/wt" charter derive >/dev/null 2>&1
 
-  lacks "a run selecting nothing gets no workspace" \
-        "$(code_of floor "$tmp/wt" open)" "0"
+  differs "a run selecting nothing gets no workspace" \
+          "$(code_of floor "$tmp/wt" open)" "0"
   absent "and nothing was checked out" "$d/units/01/workspace"
 }
 a_workspace_needs_authorisation
