@@ -13,6 +13,7 @@ in your context, read it.
 
 | Rule | Owns |
 |---|---|
+| [economy](.claude/rules/economy.md) | saying and doing more with less, decided before writing |
 | [guidance](.claude/rules/guidance.md) | which file a new instruction belongs in — a rule, a skill or a README |
 | [writing](.claude/rules/writing.md) | issues, pull requests, RFCs, READMEs, commits, comments |
 | [plugins](.claude/rules/plugins.md) | version bumps, stack plugins, the dependency contract |

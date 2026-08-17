@@ -4,6 +4,10 @@
 
 Agents write too much. This cuts it by ten, and holds the cut with two hooks.
 
+They also build too much — a noun no failing case forced, a fourth guard where one reader was
+missing. Same reflex, and the hooks cannot see it, because it is decided before a reply exists. The
+`economy` skill asks for both **before** writing; the hooks below catch only what got said.
+
 One speaks before the reply exists and states the budget. One reads what came back. Only the first
 can keep a long reply off your screen. `Stop` fires after the reply is written and shown. Handing it
 back never takes it away. It puts a second reply beside the first.

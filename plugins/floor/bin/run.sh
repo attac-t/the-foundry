@@ -27,6 +27,9 @@
 #  13  the run directory was renamed, so the grants a human gave it are not there
 #  14  a gate the charter pins did not pass — an answer, not a refusal
 #  15  this run may not deliver yet — an answer too, and it names what is missing
+#  16  no workspace could be opened: nothing here to clone the target from, a slot holding something
+#      that is not a checkout, or a ref that is not there. The target was authorised and the home is
+#      writable — 5 and 3 would each send the reader to a remedy that changes nothing
 #
 # Eight through twelve are one stage and five remedies: write a requirement down, select a target it
 # governs, or start again. Collapsing them would make the exit code say *authorisation refused* and
@@ -52,6 +55,7 @@ main() {
         charter)   charter "$@" ;;
         evidence)  evidence "$@" ;;
         gates)     gates "$@" ;;
+        open)      open_workspace "$@" ;;
         complete)  complete "$@" ;;
         authorise) authorise ;;
         *)         usage; exit 2 ;;
@@ -80,6 +84,7 @@ floor — where work happens.
                                   run it, and stamp what happened
   run.sh gates                    run every gate the charter pins, and record each — exit 14 if any
                                   did not pass
+  run.sh open                     check out every selected target in isolation, and print where
   run.sh complete                 may this run deliver? exit 15 names what is missing
   run.sh authorise                refuse a run that describes no work, or whose selection moved
                                   — exit 1, 5, 8, 9, 10, 11 or 12
@@ -447,6 +452,132 @@ print_bootstrap() {
 
 # Under the unit, not the run root: a workspace belongs to a unit, and targets belong to a workspace.
 unit_targets_file() { printf '%s/units/01/targets' "$1"; }
+
+#
+# The workspace — one isolated checkout per selected target, under the unit that owns it.
+#
+# **One adapter is not a proven seam.** §2.6 leaves this contract deliberately unwritten, and §3
+# holds a seam unproven until two adapters satisfy it. This is one: a clone, on this machine, of a
+# target this checkout already is. It exists because nothing downstream can run without isolation,
+# and it claims nothing about container, VM or sandbox adapters.
+#
+# **A clone, never a worktree.** A worktree shares `.git` with the checkout it came from, so a worker
+# could move the source's refs — the isolation this exists for, absent.
+#
+# Under the run, which already lives outside every repository it changes, so a session that dies
+# leaves the workspace as it was and the next `open` attaches to it.
+#
+open_workspace() {
+    dir=$(active_run) || exit 1
+    [ "$#" -eq 0 ] || { usage; exit 2; }
+
+    # A workspace is where mutation happens, so it may not exist for a run nobody authorised. One
+    # rule, two callers — `authorise` is idempotent once the selection is frozen, and re-running it
+    # here is how `open` refuses without restating any of its twelve reasons.
+    authorise
+
+    here=$(this_repository)
+    root=$(unit_workspace "$dir")
+
+    # A here-doc, not a pipe. `exit` inside a pipe leaves the subshell and the loop carries on, so a
+    # target that could not be checked out would be followed by one that could, and the run would go
+    # on believing it had a workspace.
+    while read -r identity ref; do
+        [ -n "$identity" ] || continue
+        check_out_target "$root" "$identity" "$ref" "$here"
+    done <<EOF
+$(selected_targets "$dir")
+EOF
+
+    printf '%s\n' "$root"
+}
+
+# What the unit selected, as `identity ref`. Comments and blank lines are not selections.
+selected_targets() {
+    awk '!/^[ \t]*#/ && NF { print $1, $2 }' "$(unit_targets_file "$1")" 2>/dev/null
+}
+
+unit_workspace() { printf '%s/units/01/workspace' "$1"; }
+
+#
+# The directory one target takes. Not `slug`: it truncates at 40 characters, and
+# `https-github-com-attac-t-the-foundry-git` is exactly 40 — two long identities would name one
+# directory, which everywhere else is a tidy name and here is two targets in one checkout.
+#
+# The host stays, because `github.com/a/b` and `gitlab.com/a/b` are different repositories.
+#
+target_slot() { printf '%s' "$1" | sed 's#.*://##; s#\.git$##; s#[^A-Za-z0-9][^A-Za-z0-9]*#-#g'; }
+
+#
+# A target is an identity, never a path — §2.3 — so the only one this can clone is the one this
+# checkout already is. Any other is named and refused rather than guessed at: a URL rebuilt from an
+# identity carries no credential, and a private repository would fail at the network with a message
+# about the wrong thing.
+#
+check_out_target() {
+    slot="$1/$(target_slot "$2")"
+
+    # The oracle, not the report. A clone killed part-way leaves a `.git` directory behind — git's
+    # cleanup never runs — and a run would then attach to a checkout with no commit in it.
+    git -C "$slot" rev-parse --verify --quiet HEAD >/dev/null 2>&1 && return 0
+    # `-L` as well as `-e`: `[ -e ]` follows the link, so a dangling one reads as nothing there and
+    # falls through to the claim below, where the message would say another session was checking it
+    # out. It is a broken link, and the remedy is to remove it.
+    { [ -e "$slot" ] || [ -L "$slot" ]; } \
+        && { note "[$slot] holds no checkout — remove it and open again"; exit 16; }
+    [ "$2" = "$4" ] || { note "no checkout here to clone [$2] from — one target, for now"; exit 16; }
+
+    mkdir -p "$1" 2>/dev/null || die_unwritable "$1"
+
+    # Bare `mkdir`, the claim `claim_slot` made one stage earlier. `-p` reports a directory already
+    # there as a win, and two sessions would then clone into one path. `git clone` takes an empty
+    # directory, so claiming it first costs nothing and makes the race an answer.
+    #
+    # No break covers it, and this is why rather than an assertion that it is untestable: `-p`
+    # differs from `mkdir` only where the path is already a directory, or a link to one, and the
+    # guard above catches both. Measured, not assumed — on a dangling symlink the two agree, and both
+    # fail. What is left is a race, and the suite runs none.
+    mkdir "$slot" 2>/dev/null || { note "[$2] is already being checked out"; exit 16; }
+
+    clone_into "$slot" "$(repo_root)" "$2" "$3"
+}
+
+#
+# Local objects, remote identity. Cloning from the checkout is what makes this need no network; the
+# origin is then the identity the target names, so a branch pushed from here goes where the target
+# says rather than where this machine happened to be.
+#
+# `--no-hardlinks`, because a local clone shares object files by default and a workspace that shares
+# anything with the checkout it isolates from is worth the disk.
+#
+clone_into() {
+    fetch_objects  "$1" "$2" "$3"
+    check_out_ref  "$1" "$3" "$4"
+    point_at_origin "$1" "$3"
+}
+
+fetch_objects() {
+    git clone --quiet --no-hardlinks "$2" "$1" 2>/dev/null && return 0
+    note "could not clone [$3]"
+    exit 16
+}
+
+#
+# After cloning, never by `--branch`, which takes a branch or a tag and refuses a sha. §2.3 permits
+# all three, and `base_ref` records a sha whenever the checkout is detached — so `--branch` made a
+# legal target unopenable and said so in a message about the wrong thing.
+#
+check_out_ref() {
+    git -C "$1" checkout --quiet "$3" 2>/dev/null && return 0
+    note "[$2] has no ref [$3] to check out"
+    exit 16
+}
+
+point_at_origin() {
+    git -C "$1" remote set-url origin "$2" 2>/dev/null && return 0
+    note "could not point [$1] at [$2]"
+    exit 16
+}
 
 targets() {
     dir=$(active_run) || exit 1

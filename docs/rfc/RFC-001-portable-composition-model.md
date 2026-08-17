@@ -900,7 +900,7 @@ Named as adapters or seams so none of it becomes ontology.
 
 | Concern | v1 choice | Status |
 |---|---|---|
-| Workspace | git worktree | **seam.** A container, VM or cloud sandbox is equally valid |
+| Workspace | git clone | **seam.** A container, VM or cloud sandbox is equally valid. A worktree shares `.git` with the checkout it came from, so a worker could move that repository's refs — the shipped adapter refuses one by name |
 | "Which run am I in" | a pointer inside the git directory — never committed, per-worktree by construction | **adapter detail**, not the model's answer |
 | Transport | files under a Foundry home | **v1 transport.** See below |
 | Runtime | `sh` and `awk`, no `jq`, no `python` | repo constraint — `plugins/kernel/README.md` |

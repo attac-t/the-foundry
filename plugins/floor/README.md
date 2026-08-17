@@ -56,7 +56,8 @@ ${FOUNDRY_HOME:-$HOME/.foundry}/runs/<date>-<slug>-<short id>/
 └── units/
     └── 01/
         ├── memory/
-        └── targets    authoritative
+        ├── targets    authoritative
+        └── workspace/ one isolated checkout per selected target
 ```
 
 The short id is the first free slot. It says nothing about the work, and exists only to stop two
@@ -383,6 +384,32 @@ not the terminal: a gate that opens `/dev/tty` still finds one.
 A gate runs where its pin says it came from. One checkout exists, so a gate pinned to another
 repository has nowhere to run, and one of them refuses the set. Whether the charter's records hold
 together at all is `check`'s question, not this one — see **What `check` reads**.
+
+---
+
+## The workspace
+
+```bash
+sh bin/run.sh open
+```
+
+One isolated checkout per selected target, under the unit that owns it. Prints where. Opening twice
+attaches to what is there and clones nothing again.
+
+**A clone, never a worktree.** A worktree shares `.git` with the checkout it came from, so a worker
+could move the source's refs — the isolation this exists for, absent.
+
+**It may not exist for a run nobody authorised.** `open` runs `authorise` rather than restating any
+of its twelve reasons; a workspace is where mutation happens.
+
+Local objects, remote identity: cloning from the checkout needs no network, and the origin is then
+the identity the target names — so a branch pushed from here goes where the target says rather than
+where this machine happened to be.
+
+**One adapter is not a proven seam.** §3 holds a seam unproven until two adapters satisfy it, and
+this is one — a clone, on this machine, of a target this checkout already is. It says nothing about
+containers, VMs or sandboxes. A target this checkout is not is named and refused rather than guessed
+at: a URL rebuilt from an identity carries no credential.
 
 ---
 
