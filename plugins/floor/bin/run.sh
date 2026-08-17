@@ -954,10 +954,16 @@ complete() {
     dir=$(active_run) || exit 1
     refuse_renamed_run "$dir"
 
+    # The same guard `targets` and `authorise` open with. Every clause is graded against every
+    # selected target, so a line put into the file by hand decides what this answers for — and the
+    # grader read it where the other two refuse it.
+    refuse_unselectable "$dir" "$(unit_targets_file "$dir")" || exit 5
+
     findings=$(
         unauthorised_run "$dir"
         empty_bar "$dir"
         empty_selection "$dir"
+        ungradable_targets "$dir"
         unmet_clauses "$dir"
     )
 
@@ -969,7 +975,9 @@ complete() {
 # Invariant 4. A run exists because a human selected the work item, and one that records nobody has
 # no authority to deliver — the stamp lands at `new`, so its absence is a run made before the rule.
 unauthorised_run() {
-    who=$(awk -F'\t' 'NF == 3 && $2 != "" { print $2; exit }' "$(authority_file "$1")" 2>/dev/null)
+    # `~ /[^ ]/`, not `!= ""`. `one_line` folds every tab and newline in the selector to a space, so a
+    # `FOUNDRY_WHO` holding one tab writes a field that is not empty and names nobody.
+    who=$(awk -F'\t' 'NF == 3 && $2 ~ /[^ ]/ { print $2; exit }' "$(authority_file "$1")" 2>/dev/null)
 
     [ -n "$who" ] && return 0
     printf 'unauthorised: nobody is recorded as having selected this run\n'
@@ -978,6 +986,23 @@ unauthorised_run() {
 empty_bar() {
     [ -n "$(awk '$1 == "clause" { print $2 }' "$(charter_file "$1")" 2>/dev/null)" ] && return 0
     printf 'nobar: the charter holds no clause, so it grades nothing\n'
+}
+
+#
+# The invariant quantifies over **every** selected target, and one checkout answers for one of them.
+# Without this, `unmet_clauses` grades what it can reach and a second selected target is never graded
+# at all — so a run delivers on evidence that never mentioned the repository half its clauses govern.
+#
+# §8's two-target experiment is meant to fail today. This is the sentence that fails it, rather than
+# the silence that used to pass it.
+#
+ungradable_targets() {
+    here=$(this_repository)
+
+    awk '!/^[ \t]*#/ && NF { print $1 }' "$(unit_targets_file "$1")" 2>/dev/null | while read -r identity; do
+        [ "$identity" = "$here" ] && continue
+        printf 'ungradable: [%s] has no checkout here, so nothing can be evidenced at its delivered ref\n' "$identity"
+    done
 }
 
 empty_selection() {

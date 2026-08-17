@@ -421,17 +421,25 @@ sh bin/run.sh complete
 
 Exit 0 means yes. Exit 15 names what is missing.
 
-> A run may deliver only when a human selected it, the charter holds at least one clause, at least
-> one target is selected, and every clause has satisfying evidence at the delivered ref of every
-> selected target it governs.
+§2.5 states three conjuncts:
+
+> A run may deliver only when the charter holds at least one clause, at least one target is selected,
+> and every charter clause has satisfying evidence stamped at the delivered ref of every selected
+> target it governs.
+
+A fourth is invariant 4's, which §2.5's shape supports without asserting: **a human selected this
+run.** Its absence is recorded, so completion can read it.
 
 **The bar is met at a sha, not in general.** Gates could pass at commit N, three commits land, and
 delivery proceed on evidence that no longer applied. That is the whole of what this adds.
 
-**The first three conjuncts close fail-opens, not edge cases.** Quantified over clauses and over
-targets, the rule is satisfied by an empty charter and by an empty selection — for free. Every fresh
-run has an empty selection, and any repository the detector reads no gate from produces an empty
-charter.
+**The first two close fail-opens, not edge cases.** Quantified over clauses and over targets, the
+rule is satisfied by an empty charter and by an empty selection — for free. Every fresh run has an
+empty selection, and any repository the detector reads no gate from produces an empty charter.
+
+**And `every selected target` means every one.** One checkout can answer for one of them, so a second
+selected target is reported `ungradable` rather than passed over. §8's two-target experiment is meant
+to fail today; this is the sentence that fails it.
 
 | Finding | Means |
 |---|---|
@@ -439,6 +447,7 @@ charter.
 | `nobar` | the charter holds no clause |
 | `nothing selected` | no target, so every clause is satisfied over nothing |
 | `unmet` | a clause with no passing record at the delivered ref |
+| `ungradable` | a selected target with no checkout here, so nothing can be evidenced at its ref |
 | `introduced` | a clause resting on no pin, which no ref can satisfy |
 | `unverifiable` | a clause pinned to a repository this checkout is not |
 | `nothing delivered` | this checkout has no commit to be graded at |
@@ -511,8 +520,12 @@ moved one exits 10 and does **not** re-freeze: quietly recording the new set wou
 be edited after the moment it was fixed, which is the entire thing the freeze exists to stop.
 
 **Who is authoritative moves here.** Before authorisation the selection file is the answer to *what
-does this run touch*. After it, the frozen record is, and the live file's authority ends — which is
-what lets completion grade against what was authorised rather than against what the file says now.
+does this run touch*. After it, the frozen record is, and the live file's authority ends.
+
+**`complete` does not read the frozen record.** It reads the live file, through the same
+`refuse_unselectable` guard `targets` and `authorise` use — so an edit is refused rather than graded,
+but the two answers are compared only by `authorise`, at exit 10. Closing that gap is a stage that
+does not exist; naming it is what this paragraph is for.
 
 **The same honest limit as policy and the charter.** The frozen record is a file the worker can write
 as the same user, and deleting it silently un-freezes the run — the next authorise records the new

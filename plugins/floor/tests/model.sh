@@ -20,7 +20,7 @@ trap 'rm -rf "$tmp"' EXIT
 floor_as() {
   dir=$1; home_dir=$2; run=$3; shift 3
   ( cd "$dir" 2>/dev/null || exit 9
-    FOUNDRY_HOME="$home_dir" FOUNDRY_RUN="$run" sh "$runner" "$@" 2>/dev/null )
+    FOUNDRY_HOME="$home_dir" FOUNDRY_RUN="$run" FOUNDRY_WHO="" sh "$runner" "$@" 2>/dev/null )
 }
 
 # The common case: this suite's home, and no run variable — or a developer with one exported answers
@@ -33,7 +33,7 @@ floor() { dir=$1; shift; floor_as "$dir" "$home" "" "$@"; }
 floor_says() {
   dir=$1; shift
   ( cd "$dir" 2>/dev/null || exit 9
-    FOUNDRY_HOME="$home" FOUNDRY_RUN="" sh "$runner" "$@" 2>&1 )
+    FOUNDRY_HOME="$home" FOUNDRY_RUN="" FOUNDRY_WHO="" sh "$runner" "$@" 2>&1 )
 }
 
 # A run someone selected. `new` records whoever the environment names, and a container names nobody —
@@ -258,6 +258,22 @@ a_run_nobody_claims_still_starts() {
           "$(cat "$nameless/authority" 2>/dev/null)" "Z		$(basename "$nameless")$"
 }
 a_run_nobody_claims_still_starts
+
+#
+# The other half of `selector`. `FOUNDRY_WHO` is for a harness acting on someone's behalf; git's
+# identity is what every checkout already carries, and without a check for it the fallback could be
+# deleted and the suite would not notice.
+#
+git_names_the_selector_when_nothing_else_does() {
+  make_repo "$tmp/who" main || { skip "git identity — git could not make a repo here"; return; }
+  git -C "$tmp/who" config user.email 'grace@example.com' >/dev/null 2>&1 \
+    || { skip "git identity — this git will not hold a config"; return; }
+
+  theirs=$(floor "$tmp/who" new "By Git")
+  has "with no FOUNDRY_WHO, the checkout's git identity is the selector" \
+      "$(cat "$theirs/authority" 2>/dev/null)" "grace@example.com"
+}
+git_names_the_selector_when_nothing_else_does
 
 a_repo_with_no_origin() {
   make_repo "$tmp/noremote" main || { skip "a repo with no origin — git could not make a repo here"; return; }
@@ -611,6 +627,7 @@ a_renamed_run_refuses_rather_than_losing_its_grants() {
   # whose grants were not there.
   is "targets refuses too"   "$(code_of floor "$tmp/ren" targets)" "13"
   is "and authorise refuses" "$(code_of floor "$tmp/ren" authorise)" "13"
+  is "and complete refuses"  "$(code_of floor "$tmp/ren" complete)" "13"
 
   # Moving it back is the remedy, and it costs nothing — the grants were never gone.
   mv "$(dirname "$moved")/renamed-by-hand" "$moved"
@@ -1638,6 +1655,60 @@ a_workspace_needs_authorisation() {
   absent "and nothing was checked out" "$d/units/01/workspace"
 }
 a_workspace_needs_authorisation
+
+#
+# The invariant quantifies over **every** selected target. One checkout answers for one of them, so a
+# second selected target is graded by nothing — and a run would deliver on evidence that never
+# mentioned the repository half its clauses govern. §8's two-target experiment is meant to fail here.
+#
+a_second_target_is_graded_by_nothing_and_says_so() {
+  make_repo "$tmp/ct" main && set_origin "$tmp/ct" 'https://github.com/acme/ct.git' \
+    && mkdir -p "$tmp/ct/.foundry" \
+    && commit_file "$tmp/ct" .foundry/gates 'tests  true
+' || { skip "two targets — git could not make a repo here"; return; }
+
+  floor_new_as "$tmp/ct" ada@example.com "Two" >/dev/null
+  floor "$tmp/ct" charter derive >/dev/null 2>&1
+  floor "$tmp/ct" policy authorize 'https://github.com/acme/ct.git' >/dev/null 2>&1
+  floor "$tmp/ct" targets add 'https://github.com/acme/ct.git' main >/dev/null 2>&1
+  floor "$tmp/ct" gates >/dev/null 2>&1
+
+  is "one target, evidenced, may deliver" "$(code_of floor "$tmp/ct" complete)" "0"
+
+  floor "$tmp/ct" policy authorize 'https://github.com/acme/other.git' >/dev/null 2>&1
+  floor "$tmp/ct" targets add 'https://github.com/acme/other.git' main >/dev/null 2>&1
+
+  is  "selecting a second one it cannot reach stops delivery" \
+      "$(code_of floor "$tmp/ct" complete)" "15"
+  has "and names the repository nothing graded" \
+      "$(floor_says "$tmp/ct" complete)" "ungradable: [https://github.com/acme/other.git]"
+}
+a_second_target_is_graded_by_nothing_and_says_so
+
+#
+# Every clause is graded against every selected target, so a line put into the file by hand decides
+# what the run answers for. `targets` and `authorise` both refuse such a line; the grader read it.
+#
+a_selection_edited_by_hand_grades_nothing() {
+  make_repo "$tmp/cu" main && set_origin "$tmp/cu" 'https://github.com/acme/cu.git' \
+    && mkdir -p "$tmp/cu/.foundry" \
+    && commit_file "$tmp/cu" .foundry/gates 'tests  true
+' || { skip "hand-edited selection — git could not make a repo here"; return; }
+
+  d=$(floor_new_as "$tmp/cu" ada@example.com "ByHand")
+  floor "$tmp/cu" charter derive >/dev/null 2>&1
+  floor "$tmp/cu" policy authorize 'https://github.com/acme/cu.git' >/dev/null 2>&1
+  floor "$tmp/cu" targets add 'https://github.com/acme/cu.git' main >/dev/null 2>&1
+  floor "$tmp/cu" gates >/dev/null 2>&1
+
+  is "as selected, it may deliver" "$(code_of floor "$tmp/cu" complete)" "0"
+
+  printf 'https://github.com/attacker/evil.git main\n' >> "$d/units/01/targets"
+  is  "a target nobody authorised is refused, not graded" \
+      "$(code_of floor "$tmp/cu" complete)" "5"
+  has "and named" "$(floor_says "$tmp/cu" complete)" "selected but not authorised"
+}
+a_selection_edited_by_hand_grades_nothing
 
 #
 # The same act with a quieter shape. Deleting a level-2 declaration drops detection a level, so the

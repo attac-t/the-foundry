@@ -131,12 +131,15 @@ wreck_runner "a layout with no units level is caught" \
 # `#` as the delimiter: the text being removed is a `||`, and sed reads the first one as the end of
 # the pattern.
 #
-# Five guards, not two. Every stage that writes during `new` adds one, and a mutant removing only the
-# ones it knew about is one the runner survives — the guard it missed exits 3 on its behalf and the
-# break proves nothing. It went red on Linux once, where nobody had run an audit in days; the
-# selection stamp caught it a second time. **Add a write to `new`, add a clause here.**
+# Every guard reachable from `new`, and the count is the point. A mutant removing only the ones it
+# knew about is one the runner survives — the guard it missed exits 3 on its behalf and the break
+# proves nothing. It went red on Linux once, where nobody had run an audit in days; the selection
+# stamp caught it a second time. **Add a write to `new`, add a clause here.**
+#
+# `write_bootstrap`'s is included though the audit runs where `bootstrap_here` returns before it. A
+# rule stated unconditionally and applied selectively is the shape that let the other two through.
 wreck_runner "a runner that ignores a home it cannot write to is caught" \
-  blind 's# *|| die_unwritable "$dir/item.md"$##; s# *|| die_unwritable "$dir"$##; s# *|| die_unwritable "$RUNS"$##; s# *|| die_unwritable "$1/id"##; s# *|| die_unwritable "$(authority_file "$1")"$##'
+  blind 's# *|| die_unwritable "$dir/item.md"$##; s# *|| die_unwritable "$dir"$##; s# *|| die_unwritable "$RUNS"$##; s# *|| die_unwritable "$1/id"##; s# *|| die_unwritable "$(authority_file "$1")"$##; s# *|| die_unwritable "$1/bootstrap"$##'
 
 wreck_runner "a runner that trusts an unset run directory is caught" \
   ghostvar 's|\[ -n "${FOUNDRY_RUN:-}" \] && \[ -d "$FOUNDRY_RUN" \]|\[ -n "${FOUNDRY_RUN:-}" \]|'
@@ -512,7 +515,7 @@ wreck_runner "a gate run against a repository it was not pinned to is caught" \
 # The whole of what the completion invariant adds. Gates could pass at commit N, three commits land,
 # and delivery proceed on evidence that no longer applied.
 wreck_runner "evidence that no longer applies to the delivered ref is caught" \
-  anyref 's#$4 "" == name "" \&\& $5 == "0" \&\& $6 "" == ref ""#$4 "" == name ""#'
+  staleref 's# \&\& $6 "" == ref ""##'
 
 # `satisfying` evidence is a record whose answer is yes. A record that a gate failed is a record.
 wreck_runner "a failing gate counted as satisfying its clause is caught" \
@@ -528,6 +531,16 @@ wreck_runner "an empty selection delivering vacuously is caught" \
 
 wreck_runner "a run nobody selected delivering anyway is caught" \
   unclaimed 's#        unauthorised_run "$dir"##'
+
+# Quantified over every selected target, and one checkout answers for one. Without this the second
+# is graded by nothing and the run delivers on evidence that never mentioned it.
+wreck_runner "a second selected target graded by nothing is caught" \
+  onetarget 's#        ungradable_targets "$dir"##'
+
+# `targets` and `authorise` refuse a hand-edited selection. The grader read it, and every clause is
+# graded against every selected target.
+wreck_runner "a grader reading a selection nobody authorised is caught" \
+  ungrated 's#    refuse_unselectable "$dir" "$(unit_targets_file "$dir")" || exit 5##'
 
 # Three ways a clause is not met, and they take different remedies. Collapse the first into the
 # second and an introduced clause reads as one belonging to another checkout — a reader sent looking
