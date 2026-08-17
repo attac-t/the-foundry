@@ -573,6 +573,12 @@ wreck_runner "a workspace cloned over on every open is caught" \
 wreck_runner "a workspace keeping the path it was cloned from is caught" \
   localorigin 's#    git -C "$1" remote set-url origin "$3" 2>/dev/null##'
 
+# A slot with no checkout is a clone that failed or one another session is filling. Cloning over it
+# destroys whichever it is, and `git clone` into a directory holding files fails with a message about
+# the wrong thing.
+wreck_runner "a half-made checkout cloned over is caught" \
+  halfclone 's#    \[ -e "$slot" \] && { note "\[$slot\] holds no checkout — remove it and open again"; exit 3; }##'
+
 # Invariant 4 describes a stamp. A run whose selection nobody recorded is a run the work source
 # cannot ask, because there is no one it may ask.
 wreck_runner "a run that records nobody selecting it is caught" \

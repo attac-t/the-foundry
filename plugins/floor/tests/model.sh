@@ -1634,6 +1634,14 @@ a_workspace_is_isolated_from_the_checkout() {
 
   is "the origin is the target's identity, never this machine's path" \
      "$(git -C "$slot" remote get-url origin 2>/dev/null)" "https://github.com/acme/ws.git"
+
+  # A slot with no checkout in it is a clone that failed, or one another session is still filling.
+  # Cloning over it would destroy whichever it is.
+  rm -rf "$slot/.git"
+  is  "a slot holding no checkout is refused, not cloned over" \
+      "$(code_of floor "$tmp/ws" open)" "3"
+  has "and says what to do about it" \
+      "$(floor_says "$tmp/ws" open)" "remove it and open again"
 }
 a_workspace_is_isolated_from_the_checkout
 

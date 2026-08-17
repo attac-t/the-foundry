@@ -515,6 +515,16 @@ check_out_target() {
     [ "$2" = "$4" ] || { note "no checkout here to clone [$2] from — one target, for now"; exit 5; }
 
     mkdir -p "$1" 2>/dev/null || die_unwritable "$1"
+
+    # Bare `mkdir`, the claim `claim_slot` made one stage earlier. `-p` reports a directory already
+    # there as a win, and two sessions would then clone into one path. `git clone` takes an empty
+    # directory, so claiming it first costs nothing and makes the race an answer.
+    #
+    # No break covers it, and the guard above is why: a slot that exists is refused before this line
+    # is reached, so only a true race arrives here and the suite runs none. `eight_at_once` is what
+    # such a check would look like, one stage earlier.
+    mkdir "$slot" 2>/dev/null || { note "[$2] is already being checked out"; exit 3; }
+
     clone_into "$slot" "$(repo_root)" "$2" "$3"
 }
 
