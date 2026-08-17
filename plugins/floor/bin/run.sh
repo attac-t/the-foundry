@@ -500,13 +500,21 @@ selected_targets() {
 unit_workspace() { printf '%s/units/01/workspace' "$1"; }
 
 #
-# The directory one target takes. Not `slug`: it truncates at 40 characters, and
-# `https-github-com-attac-t-the-foundry-git` is exactly 40 — two long identities would name one
-# directory, which everywhere else is a tidy name and here is two targets in one checkout.
+# The directory one target takes: a name to read, and a digest to be right.
 #
-# The host stays, because `github.com/a/b` and `gitlab.com/a/b` are different repositories.
+# **The digest is the identity; the name is decoration.** Folding punctuation to `-` made
+# `acme/a-b`, `acme/a/b`, `acme/a.b` and `acme/a_b` one directory — four repositories, one checkout.
+# A longer fold would only move the collision.
 #
-target_slot() { printf '%s' "$1" | sed 's#.*://##; s#\.git$##; s#[^A-Za-z0-9][^A-Za-z0-9]*#-#g'; }
+target_slot() { printf '%s-%s' "$(readable_name "$1")" "$(identity_digest "$1")"; }
+
+readable_name() { printf '%s' "$1" | sed 's#.*/##; s#\.git$##; s#[^A-Za-z0-9][^A-Za-z0-9]*#-#g'; }
+
+# `git hash-object`, because git is already declared and a checksum is not collision-resistant —
+# `clause_id` uses `cksum` to name a clause, which is a different job with a different bar.
+identity_digest() {
+    printf '%s' "$1" | git hash-object --stdin | awk '{ print substr($0, 1, 12) }'
+}
 
 #
 # A target is an identity, never a path — §2.3 — so the only one this can clone is the one this
@@ -517,29 +525,62 @@ target_slot() { printf '%s' "$1" | sed 's#.*://##; s#\.git$##; s#[^A-Za-z0-9][^A
 check_out_target() {
     slot="$1/$(target_slot "$2")"
 
-    # The oracle, not the report. A clone killed part-way leaves a `.git` directory behind — git's
-    # cleanup never runs — and a run would then attach to a checkout with no commit in it.
-    git -C "$slot" rev-parse --verify --quiet HEAD >/dev/null 2>&1 && return 0
-    # `-L` as well as `-e`: `[ -e ]` follows the link, so a dangling one reads as nothing there and
-    # falls through to the claim below, where the message would say another session was checking it
-    # out. It is a broken link, and the remedy is to remove it.
-    { [ -e "$slot" ] || [ -L "$slot" ]; } \
-        && { note "[$slot] holds no checkout — remove it and open again"; exit 16; }
+    attached "$slot" "$2" "$3" && return 0
+    refuse_occupied_slot "$slot" "$2"
     [ "$2" = "$4" ] || { note "no checkout here to clone [$2] from — one target, for now"; exit 16; }
 
-    mkdir -p "$1" 2>/dev/null || die_unwritable "$1"
+    build_and_publish "$slot" "$2" "$3"
+}
 
-    # Bare `mkdir`, the claim `claim_slot` made one stage earlier. `-p` reports a directory already
-    # there as a win, and two sessions would then clone into one path. `git clone` takes an empty
-    # directory, so claiming it first costs nothing and makes the race an answer.
-    #
-    # No break covers it, and this is why rather than an assertion that it is untestable: `-p`
-    # differs from `mkdir` only where the path is already a directory, or a link to one, and the
-    # guard above catches both. Measured, not assumed — on a dangling symlink the two agree, and both
-    # fail. What is left is a race, and the suite runs none.
-    mkdir "$slot" 2>/dev/null || { note "[$2] is already being checked out"; exit 16; }
+#
+# Ours, whole, and this target's. Three questions, because a slot can be a valid checkout of the
+# wrong repository: `open` answered 0 for one holding another repository entirely, and the gates
+# would then have graded it.
+#
+# HEAD first — a clone killed part-way leaves a `.git` directory, git's cleanup never having run.
+#
+attached() {
+    git -C "$1" rev-parse --verify --quiet HEAD >/dev/null 2>&1 || return 1
+    [ "$(git -C "$1" remote get-url origin 2>/dev/null)" = "$2" ] || return 1
+    [ "$(git -C "$1" config --get foundry.ref 2>/dev/null)" = "$3" ]
+}
 
-    clone_into "$slot" "$(repo_root)" "$2" "$3"
+#
+# Anything else at that path is neither ours to use nor ours to delete. `-L` as well as `-e`, because
+# `[ -e ]` follows the link and a dangling one would read as nothing there.
+#
+refuse_occupied_slot() {
+    { [ -e "$1" ] || [ -L "$1" ]; } || return 0
+    note "[$1] is not a checkout of [$2] — remove it and open again"
+    exit 16
+}
+
+#
+# Built beside the slot, published into it. **A reader never sees a half-built workspace**, because
+# the slot does not exist until the checkout is whole.
+#
+# `mkdir` on the build path is what serialises this, not the rename: measured, `mv` onto an existing
+# directory moves the source *inside* it and exits 0, so a rename cannot be the thing that refuses.
+# A creator that dies leaves `<slot>.building` — recoverable garbage, and never a slot.
+#
+build_and_publish() {
+    building="$1.building"
+
+    mkdir -p "$(dirname "$1")" 2>/dev/null || die_unwritable "$(dirname "$1")"
+    mkdir "$building" 2>/dev/null \
+        || { note "[$2] is being checked out — remove [$building] if no session is"; exit 16; }
+
+    clone_into "$building" "$(repo_root)" "$2" "$3"
+    publish_workspace "$building" "$1"
+}
+
+publish_workspace() {
+    [ -e "$2" ] && { rm -rf "$1"; note "[$2] appeared while it was being built"; exit 16; }
+
+    mv "$1" "$2" 2>/dev/null && return 0
+    rm -rf "$1"
+    note "could not publish [$2]"
+    exit 16
 }
 
 #
@@ -551,9 +592,18 @@ check_out_target() {
 # anything with the checkout it isolates from is worth the disk.
 #
 clone_into() {
-    fetch_objects  "$1" "$2" "$3"
-    check_out_ref  "$1" "$3" "$4"
+    fetch_objects   "$1" "$2" "$3"
+    check_out_ref   "$1" "$3" "$4"
     point_at_origin "$1" "$3"
+    record_base_ref "$1" "$4"
+}
+
+# What it was opened for, in git's own config rather than a file of ours — `attached` reads it back to
+# refuse a slot built for another ref, and a second store is a second thing to drift.
+record_base_ref() {
+    git -C "$1" config foundry.ref "$2" 2>/dev/null && return 0
+    note "could not record the base ref in [$1]"
+    exit 16
 }
 
 fetch_objects() {

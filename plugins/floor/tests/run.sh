@@ -560,13 +560,16 @@ wreck_runner "a workspace opened for a run nobody authorised is caught" \
   freeworkspace 's#^    authorise$##'
 
 # `slug` truncates at 40 characters, so two long identities name one directory — and here that is two
-# targets in one checkout rather than an untidy name.
+# targets in one checkout rather than an untidy name. `foldedslot` below covers the same property
+# through the digest, which is the thing that actually prevents it.
 wreck_runner "a target directory named by a truncating slug is caught" \
-  slugslot 's#target_slot "$2"#slug "$2"#'
+  slugslot 's#"$(readable_name "$1")" "$(identity_digest "$1")"#"$(slug "$1")" ""#'
 
 # Idempotent, or `open` is not attach and a second session destroys the first one's work.
+# Attaching is what makes `open` idempotent. Never attach and a published workspace is refused as
+# something occupying its own slot.
 wreck_runner "a workspace cloned over on every open is caught" \
-  reclone 's#    git -C "$slot" rev-parse --verify --quiet HEAD >/dev/null 2>&1 && return 0##'
+  reclone 's#^attached() {#attached() { return 1;#'
 
 # The origin is where a branch pushed from here goes. Left as the path it was cloned from, delivery
 # would land on this machine and nowhere else.
@@ -577,12 +580,29 @@ wreck_runner "a workspace keeping the path it was cloned from is caught" \
 # destroys whichever it is, and `git clone` into a directory holding files fails with a message about
 # the wrong thing.
 wreck_runner "a half-made checkout cloned over is caught" \
-  halfclone 's#{ \[ -e "$slot" \] || \[ -L "$slot" \]; }#false#'
+  halfclone 's#{ \[ -e "$1" \] || \[ -L "$1" \]; } || return 0#return 0#'
 
 # `[ -e ]` follows the link. Without `-L` a dangling slot reads as nothing there, reaches the claim,
 # and is reported as a session in flight — a remedy of waiting, for a thing that needs removing.
 wreck_runner "a dangling slot reported as a session in flight is caught" \
-  danglingslot 's#\[ -e "$slot" \] || \[ -L "$slot" \]#[ -e "$slot" ]#'
+  danglingslot 's#\[ -e "$1" \] || \[ -L "$1" \]#[ -e "$1" ]#'
+
+# A slot can hold a valid checkout of another repository. Attaching on HEAD alone hands the run a
+# workspace belonging to someone else, and every gate after it grades that.
+wreck_runner "a workspace belonging to another repository is caught" \
+  anyorigin 's#    \[ "$(git -C "$1" remote get-url origin 2>/dev/null)" = "$2" \] || return 1##'
+
+wreck_runner "a workspace opened for another ref is caught" \
+  anybaseref 's#    \[ "$(git -C "$1" config --get foundry.ref 2>/dev/null)" = "$3" \]#    :#'
+
+# The identity, not the decoration. Fold punctuation and four repositories share one checkout.
+wreck_runner "a slot named by folding punctuation alone is caught" \
+  foldedslot 's#printf .%s-%s. "$(readable_name "$1")" "$(identity_digest "$1")"#readable_name "$1"#'
+
+# Built beside the slot and published into it, or a reader sees a half-made checkout as the finished
+# one — and is told to remove what another session is still filling.
+wreck_runner "a workspace assembled in the slot rather than published into it is caught" \
+  assembled 's#    clone_into "$building" "$(repo_root)" "$2" "$3"#    clone_into "$1" "$(repo_root)" "$2" "$3"; return 0#'
 
 # Invariant 4 describes a stamp. A run whose selection nobody recorded is a run the work source
 # cannot ask, because there is no one it may ask.
