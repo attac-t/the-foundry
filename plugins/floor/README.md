@@ -35,6 +35,10 @@ sh bin/run.sh charter check
 sh bin/run.sh evidence
 sh bin/run.sh evidence record tests ./check
 sh bin/run.sh gates
+sh bin/run.sh source read 7
+sh bin/run.sh source publish work/gift-cards "Gift card flow"
+sh bin/run.sh source ask authorisation tests "May this clause exist? …"
+sh bin/run.sh source receive authorisation tests
 ```
 
 `new` makes a run and points this checkout at it. `path` prints the active run, or exits 1.
@@ -48,6 +52,7 @@ sh bin/run.sh gates
 ```
 ${FOUNDRY_HOME:-$HOME/.foundry}/runs/<date>-<slug>-<short id>/
 ├── item.md            what someone wants, and advisory targets
+├── source             which item this run reads — one line, and never a provider
 ├── bootstrap          the repo Foundry was invoked from — 0 or 1
 ├── authority          who selected this work item, and when
 ├── evidence           one line per gate that ran, tab-separated
@@ -63,17 +68,18 @@ ${FOUNDRY_HOME:-$HOME/.foundry}/runs/<date>-<slug>-<short id>/
 The short id is the first free slot. It says nothing about the work, and exists only to stop two
 runs from one title on one day landing in one directory.
 
-**Slots are reused, but never while anything still speaks for one.** Delete a run and the next one
-with that date and title takes its number back, so a pointer that outlived its run resolves to a
-different attempt.
+**A name is never minted twice.** Every run reserves its slot under `policy/`, which outlives the
+run directory — so deleting a run frees nothing, and the second run in a day can land on `0001` with
+no `0000` in sight.
 
-That was harmless while nothing outlived a run. Grants do: they live under `policy/`, not under the
-run, and deleting a run leaves them. A reclaimed slot therefore used to hand the next run an
-allowlist nobody granted it. A slot is now free only when neither `runs/` nor `policy/runs/` holds
-it, which is why the second run in a day can land on `0001` with no `0000` in sight.
+Reserving on the first grant was not enough. A run that authorised nothing gave its name back, the
+same base minted the same id and the same clause id, and a later run derived an earlier one's
+question byte for byte — so an answer left where it outlives a run would match the wrong one. Grants
+had the milder form of the same defect first: a reclaimed slot handed the next run an allowlist
+nobody granted it.
 
-Anything else that outlives a run must join that check. The evidence ledger does not — it lives
-inside the run and is deleted with it, so a reclaimed slot inherits no record it did not write.
+The evidence ledger needs no such care. It lives inside the run and is deleted with it, so nothing
+can inherit a record it did not write.
 
 `units/` holds one unit today. The level is there from the first run because adding it later would
 move every path in every adapter.
@@ -538,17 +544,90 @@ Condition 3 is `underived_gates`, which `check` already reports. Condition 4 is 
 through the read-side check. Authorisation asks neither question a second time — a third writing of
 either is the tell that the boundary is wrong.
 
-**Condition 1 blocks rather than asking.** An introduced clause is a bar nobody authorised; the run
-cannot proceed on it and cannot ask about it, because asking needs a work source. §2.1 already says
-what a source that cannot ask does — it forces every ask to block — so that is what happens, visibly
-and with the clause named.
+**Condition 1 blocks rather than asking.** An introduced clause is a bar nobody authorised, and this
+stage does not put the question. A channel exists — `source ask` — and nothing here reads an answer
+back, so the run stops visibly with the clause named rather than proceeding on a bar it wrote itself.
 
 **Condition 2 collapses into it.** No judge exists, so nothing reaches the semantic path: every
 clause the mechanical path cannot establish arrives as introduced instead. The gate therefore blocks
 more often than it eventually will, never less. Nothing durable records the ambiguity, because there
 is nothing yet that could answer it.
 
-**Not here yet:** the ask, and the answer.
+**Not here yet:** reading an answer. `source ask` carries a question and `source receive` brings one
+back; nothing in this stage looks.
+
+---
+
+## The work source
+
+Where a work item comes from, where a delivery is reported, and where a human is asked.
+
+Four verbs, and **transport is all they are**. What an item means is planning's. What an answer means
+belongs to the stage that asked — this carries the words and reads none of them.
+
+| Verb | Carries | Refuses |
+|---|---|---|
+| `read` | the item's words, into the run | a second, different item |
+| `publish` | this run's delivery, answering with its identity | a second, different branch |
+| `ask` | a question about one clause | the same question in other words |
+| `receive` | the answer, or nothing | an answer handed to it |
+
+### There is no parameter for what a human supplies
+
+`read` names an item and never says what it holds. `receive` names a question and never says what
+came back. That is `evidence record`'s shape one stage over: a worker produces a human's answer only
+by writing it where a human's answer lives, and §2.5 already says what that gap is worth.
+
+Silence never returns as an answer — nothing on stdout, and a code saying nothing is there. A refusal
+comes back exactly as an approval does, because deciding which one it is belongs to whoever asked.
+
+### A question is derived, never issued
+
+```
+question = run + stage + clause
+```
+
+| Term | Is | So an answer cannot |
+|---|---|---|
+| `run` | the run that asked, unique over all time | reach a later run |
+| `stage` | the reader — `authorisation` or `completion` | satisfy a clause whose existence it authorised |
+| `clause` | its text, so an edit is a new clause | answer a requirement that has since changed |
+
+A resumed run recomputes all three and finds what it already asked, so **nothing holds a list of
+outstanding questions.** Such a list is the parallel ledger the charter refuses, and the source is
+where the question already lives.
+
+### Nothing here authorises anything
+
+An answer arriving widens no allowlist, moves no clause and selects no target. An introduced clause
+still blocks, with the clause named, whether the source holds a yes, a no or nothing at all.
+
+A work source is not a target either. An item naming a repository is advisory — that repository is
+authorised by a human or not at all.
+
+### Two adapters, because one proves nothing
+
+| Adapter | Needs | Holds |
+|---|---|---|
+| `lib/source-dir.sh` | `sh` | files a person opens in an editor |
+| `lib/source-github.sh` | `gh` | issues, and comments under them |
+
+`lib/source.sh` chooses between them, and those three files are the only ones in floor that may know
+where a work item lives. Nothing above them learns which answered: the run records the item's id and
+the item's own words, so a run carried to a machine with neither installed still means what it meant.
+
+`FOUNDRY_SOURCE` names another adapter. `FOUNDRY_SOURCE_DIR` moves the directory one, which otherwise
+sits in the Foundry home.
+
+**What this does not prove.** The second adapter has been driven only by a stand-in on the path,
+never by the service — so its own conventions run for real and the service's do not. And an answer
+there is one line where a directory holds a whole file: the contract says nothing about an answer's
+shape, and the two adapters do not agree on one.
+
+**Who answered is not checked.** RFC-001 §2.1 wants an attributed answer and §7 names one person who
+may give it — whoever selected the work item. Attribution is the source's: a file is attributed by
+who may write it, a comment by whoever left it, and neither is the identity `authority` records. So
+floor carries the words and adds nothing, and the rule lands with the stage that reads them.
 
 ---
 
