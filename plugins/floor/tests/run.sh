@@ -131,10 +131,15 @@ wreck_runner "a layout with no units level is caught" \
 # `#` as the delimiter: the text being removed is a `||`, and sed reads the first one as the end of
 # the pattern.
 #
-# Three guards, not two. The slot claim added the third, and a mutant removing only the ones it knew
-# about is one the runner survives. It went red on Linux, where nobody had run an audit in days.
+# Every guard reachable from `new`, and the count is the point. A mutant removing only the ones it
+# knew about is one the runner survives — the guard it missed exits 3 on its behalf and the break
+# proves nothing. It went red on Linux once, where nobody had run an audit in days; the selection
+# stamp caught it a second time. **Add a write to `new`, add a clause here.**
+#
+# `write_bootstrap`'s is included though the audit runs where `bootstrap_here` returns before it. A
+# rule stated unconditionally and applied selectively is the shape that let the other two through.
 wreck_runner "a runner that ignores a home it cannot write to is caught" \
-  blind 's# *|| die_unwritable "$dir/item.md"$##; s# *|| die_unwritable "$dir"$##; s# *|| die_unwritable "$RUNS"$##; s# *|| die_unwritable "$1/id"##'
+  blind 's# *|| die_unwritable "$dir/item.md"$##; s# *|| die_unwritable "$dir"$##; s# *|| die_unwritable "$RUNS"$##; s# *|| die_unwritable "$1/id"##; s# *|| die_unwritable "$(authority_file "$1")"$##; s# *|| die_unwritable "$1/bootstrap"$##'
 
 wreck_runner "a runner that trusts an unset run directory is caught" \
   ghostvar 's|\[ -n "${FOUNDRY_RUN:-}" \] && \[ -d "$FOUNDRY_RUN" \]|\[ -n "${FOUNDRY_RUN:-}" \]|'
@@ -507,6 +512,57 @@ wreck_runner "a gate run against a repository it was not pinned to is caught" \
 
 # The list the loop reads is the command's stdin. A gate that reads it swallows the gates behind it,
 # and they read as never having failed.
+# The whole of what the completion invariant adds. Gates could pass at commit N, three commits land,
+# and delivery proceed on evidence that no longer applied.
+wreck_runner "evidence that no longer applies to the delivered ref is caught" \
+  staleref 's# \&\& $6 "" == ref ""##'
+
+# `satisfying` evidence is a record whose answer is yes. A record that a gate failed is a record.
+wreck_runner "a failing gate counted as satisfying its clause is caught" \
+  anyresult 's#\&\& $5 == "0" \&\& $6 "" == ref ""#\&\& $6 "" == ref ""#'
+
+# Quantified over clauses and over targets, so each empty set satisfies it for free. These two are
+# the fail-opens, and neither is an edge case: every fresh run has an empty selection.
+wreck_runner "an empty charter delivering vacuously is caught" \
+  vacuousbar 's#        empty_bar "$dir"##'
+
+wreck_runner "an empty selection delivering vacuously is caught" \
+  vacuousselection 's#        empty_selection "$dir"##'
+
+wreck_runner "a run nobody selected delivering anyway is caught" \
+  unclaimed 's#        unauthorised_run "$dir"##'
+
+# Quantified over every selected target, and one checkout answers for one. Without this the second
+# is graded by nothing and the run delivers on evidence that never mentioned it.
+wreck_runner "a second selected target graded by nothing is caught" \
+  onetarget 's#        ungradable_targets "$dir"##'
+
+# `targets` and `authorise` refuse a hand-edited selection. The grader read it, and every clause is
+# graded against every selected target.
+wreck_runner "a grader reading a selection nobody authorised is caught" \
+  ungrated 's#    refuse_unselectable "$dir" "$(unit_targets_file "$dir")" || exit 5##'
+
+# Three ways a clause is not met, and they take different remedies. Collapse the first into the
+# second and an introduced clause reads as one belonging to another checkout — a reader sent looking
+# for a workspace, where the answer is a human's.
+wreck_runner "an introduced clause reported as another repository's is caught" \
+  introducedaway 's#has_record "$file" pin "$id"#true#'
+
+# Invariant 4 describes a stamp. A run whose selection nobody recorded is a run the work source
+# cannot ask, because there is no one it may ask.
+wreck_runner "a run that records nobody selecting it is caught" \
+  noauthority 's#    stamp_selection "$dir" "$(selector)" "$id"##'
+
+# §2.5 keeps the two apart by shape, and the shape only holds if they are kept apart by store. Three
+# fields in the pool completion reads existentially would be a record with no ref, satisfying nothing
+# and looking like it could.
+wreck_runner "a selection written into the evidence ledger is caught" \
+  authorityinledger 's#>> "$(authority_file "$1")"#>> "$(evidence_file "$1")"#'
+
+# Attribution records who, never whether they may — so a name nobody gave is worse than no name.
+wreck_runner "a selector invented when nobody is named is caught" \
+  inventedwho 's#${FOUNDRY_WHO:-$(git config user.email 2>/dev/null)}#${FOUNDRY_WHO:-nobody}#'
+
 wreck_runner "a gate that eats the gates after it is caught" \
   eatstdin 's#why=$("$@" </dev/null 2>&1)#why=$("$@" 2>\&1)#'
 

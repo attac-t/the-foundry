@@ -20,7 +20,7 @@ trap 'rm -rf "$tmp"' EXIT
 floor_as() {
   dir=$1; home_dir=$2; run=$3; shift 3
   ( cd "$dir" 2>/dev/null || exit 9
-    FOUNDRY_HOME="$home_dir" FOUNDRY_RUN="$run" sh "$runner" "$@" 2>/dev/null )
+    FOUNDRY_HOME="$home_dir" FOUNDRY_RUN="$run" FOUNDRY_WHO="" sh "$runner" "$@" 2>/dev/null )
 }
 
 # The common case: this suite's home, and no run variable — or a developer with one exported answers
@@ -33,7 +33,15 @@ floor() { dir=$1; shift; floor_as "$dir" "$home" "" "$@"; }
 floor_says() {
   dir=$1; shift
   ( cd "$dir" 2>/dev/null || exit 9
-    FOUNDRY_HOME="$home" FOUNDRY_RUN="" sh "$runner" "$@" 2>&1 )
+    FOUNDRY_HOME="$home" FOUNDRY_RUN="" FOUNDRY_WHO="" sh "$runner" "$@" 2>&1 )
+}
+
+# A run someone selected. `new` records whoever the environment names, and a container names nobody —
+# so a test about delivery has to say who, because invariant 4 is one of its conjuncts.
+floor_new_as() {
+  dir=$1; who=$2; shift 2
+  ( cd "$dir" 2>/dev/null || exit 9
+    FOUNDRY_HOME="$home" FOUNDRY_RUN="" FOUNDRY_WHO="$who" sh "$runner" new "$@" 2>/dev/null )
 }
 
 # Run any of the above and report only its exit code.
@@ -217,6 +225,55 @@ a_password_holding_an_at
 outside=$(floor "$tmp/bare" new "No Origin")
 absent "a run started outside a repo records no bootstrap target" "$outside/bootstrap"
 is     "and asking for it exits 1" "$(code_of floor "$tmp/bare" bootstrap)" "1"
+
+#
+# Invariant 4: a run exists because a human selected the work item. That act is stamped where the run
+# begins, and it is not evidence — it names no clause, so it can satisfy none.
+#
+the_selection_is_stamped() {
+  chose=$( cd "$tmp/bare" 2>/dev/null || exit 9
+           FOUNDRY_HOME="$home" FOUNDRY_RUN="" FOUNDRY_WHO="ada@example.com" \
+           sh "$runner" new "Chosen" 2>/dev/null )
+
+  held=$(cat "$chose/authority" 2>/dev/null)
+  matches "the selection names when, who, and the run it authorised" \
+          "$held" "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:]+Z	ada@example.com	$(basename "$chose")$"
+  is "three fields, where evidence has seven" \
+     "$(printf '%s\n' "$held" | awk -F'\t' 'NF != 3' | grep -c .)" "0"
+  is "and it is not in the ledger completion reads" "$(cat "$chose/evidence" 2>/dev/null)" ""
+}
+the_selection_is_stamped
+
+#
+# Nobody is an answer, written as one. `new` changes nothing in any repository, so demanding a name
+# here would refuse a local act; the bar belongs at delivery, where an unattributable run matters.
+#
+a_run_nobody_claims_still_starts() {
+  nameless=$( cd "$tmp/bare" 2>/dev/null || exit 9
+              HOME="$tmp/nogit" FOUNDRY_HOME="$home" FOUNDRY_RUN="" FOUNDRY_WHO="" \
+              sh "$runner" new "Unclaimed" 2>/dev/null )
+
+  is "a run with no selector still starts" "$(code_of test -d "$nameless")" "0"
+  matches "and the stamp says so, rather than inventing one" \
+          "$(cat "$nameless/authority" 2>/dev/null)" "Z		$(basename "$nameless")$"
+}
+a_run_nobody_claims_still_starts
+
+#
+# The other half of `selector`. `FOUNDRY_WHO` is for a harness acting on someone's behalf; git's
+# identity is what every checkout already carries, and without a check for it the fallback could be
+# deleted and the suite would not notice.
+#
+git_names_the_selector_when_nothing_else_does() {
+  make_repo "$tmp/who" main || { skip "git identity — git could not make a repo here"; return; }
+  git -C "$tmp/who" config user.email 'grace@example.com' >/dev/null 2>&1 \
+    || { skip "git identity — this git will not hold a config"; return; }
+
+  theirs=$(floor "$tmp/who" new "By Git")
+  has "with no FOUNDRY_WHO, the checkout's git identity is the selector" \
+      "$(cat "$theirs/authority" 2>/dev/null)" "grace@example.com"
+}
+git_names_the_selector_when_nothing_else_does
 
 a_repo_with_no_origin() {
   make_repo "$tmp/noremote" main || { skip "a repo with no origin — git could not make a repo here"; return; }
@@ -570,6 +627,7 @@ a_renamed_run_refuses_rather_than_losing_its_grants() {
   # whose grants were not there.
   is "targets refuses too"   "$(code_of floor "$tmp/ren" targets)" "13"
   is "and authorise refuses" "$(code_of floor "$tmp/ren" authorise)" "13"
+  is "and complete refuses"  "$(code_of floor "$tmp/ren" complete)" "13"
 
   # Moving it back is the remedy, and it costs nothing — the grants were never gone.
   mv "$(dirname "$moved")/renamed-by-hand" "$moved"
@@ -1429,6 +1487,177 @@ a_gate_pinned_elsewhere_does_not_run_here() {
   is "so nothing is recorded"          "$(floor "$tmp/ga" evidence)" ""
 }
 a_gate_pinned_elsewhere_does_not_run_here
+
+#
+# Completion — RFC-001 §2.5. A run may deliver only when a human selected it, the charter holds a
+# clause, a target is selected, and every clause has satisfying evidence at that target's delivered
+# ref. One case, carried forward, with each conjunct met in turn.
+#
+a_run_completes_only_when_every_clause_is_evidenced() {
+  make_repo "$tmp/cp" main && set_origin "$tmp/cp" 'https://github.com/acme/cp.git' \
+    && mkdir -p "$tmp/cp/.foundry" \
+    && commit_file "$tmp/cp" .foundry/gates 'tests  true
+' || { skip "completion — git could not make a repo here"; return; }
+
+  floor_new_as "$tmp/cp" ada@example.com "Complete" >/dev/null
+  floor "$tmp/cp" charter derive >/dev/null 2>&1
+
+  is  "a run with no target selected may not deliver" "$(code_of floor "$tmp/cp" complete)" "15"
+  has "and says the selection is what is empty" "$(floor_says "$tmp/cp" complete)" "nothing selected"
+
+  floor "$tmp/cp" policy authorize 'https://github.com/acme/cp.git' >/dev/null 2>&1
+  floor "$tmp/cp" targets add 'https://github.com/acme/cp.git' main >/dev/null 2>&1
+
+  is  "a clause nothing has evidenced may not deliver" "$(code_of floor "$tmp/cp" complete)" "15"
+  has "and names the clause"                     "$(floor_says "$tmp/cp" complete)" "unmet: [tests]"
+
+  floor "$tmp/cp" gates >/dev/null 2>&1
+  is "once the gate has run and passed, it may"  "$(code_of floor "$tmp/cp" complete)" "0"
+  is "and has nothing left to say"               "$(floor "$tmp/cp" complete)" ""
+
+  # The bar is met at a sha, not in general. This is the whole of what the invariant adds: gates
+  # could pass at commit N, three commits land, and delivery proceed on evidence that no longer
+  # applied.
+  commit_file "$tmp/cp" README 'later
+'
+  is  "a commit after the gate ran makes it undeliverable again" \
+      "$(code_of floor "$tmp/cp" complete)" "15"
+  has "because the evidence names a sha this is not" \
+      "$(floor_says "$tmp/cp" complete)" "unmet: [tests]"
+}
+a_run_completes_only_when_every_clause_is_evidenced
+
+#
+# Invariant 4 is a conjunct of the invariant, not a note beside it. A run nobody is recorded as
+# having selected has no authority to deliver, however green its gates are.
+#
+a_run_nobody_selected_may_not_deliver() {
+  make_repo "$tmp/cq" main && set_origin "$tmp/cq" 'https://github.com/acme/cq.git' \
+    && mkdir -p "$tmp/cq/.foundry" \
+    && commit_file "$tmp/cq" .foundry/gates 'tests  true
+' || { skip "unauthorised delivery — git could not make a repo here"; return; }
+
+  d=$(floor_new_as "$tmp/cq" ada@example.com "Unclaimed")
+  floor "$tmp/cq" charter derive >/dev/null 2>&1
+  floor "$tmp/cq" policy authorize 'https://github.com/acme/cq.git' >/dev/null 2>&1
+  floor "$tmp/cq" targets add 'https://github.com/acme/cq.git' main >/dev/null 2>&1
+  floor "$tmp/cq" gates >/dev/null 2>&1
+
+  is "with every gate green it may deliver" "$(code_of floor "$tmp/cq" complete)" "0"
+
+  rm -f "$d/authority"
+  is  "and with nobody recorded as selecting it, it may not" \
+      "$(code_of floor "$tmp/cq" complete)" "15"
+  has "which is what it says" "$(floor_says "$tmp/cq" complete)" "unauthorised"
+}
+a_run_nobody_selected_may_not_deliver
+
+#
+# Two conjuncts that close fail-opens rather than edge cases. Quantified over clauses and over
+# targets, the invariant is satisfied by an empty charter and by an empty selection — vacuously, and
+# every fresh run has the second.
+#
+completion_refuses_what_is_only_vacuously_true() {
+  make_repo "$tmp/cr" main && set_origin "$tmp/cr" 'https://github.com/acme/cr.git' \
+    && mkdir -p "$tmp/cr/.foundry" \
+    && commit_file "$tmp/cr" .foundry/gates 'tests  false
+' || { skip "vacuous completion — git could not make a repo here"; return; }
+
+  floor_new_as "$tmp/cr" ada@example.com "Vacuous" >/dev/null
+  floor "$tmp/cr" policy authorize 'https://github.com/acme/cr.git' >/dev/null 2>&1
+  floor "$tmp/cr" targets add 'https://github.com/acme/cr.git' main >/dev/null 2>&1
+
+  is  "a run with a target and no charter may not deliver" "$(code_of floor "$tmp/cr" complete)" "15"
+  has "because nothing grades it" "$(floor_says "$tmp/cr" complete)" "nobar"
+
+  floor "$tmp/cr" charter derive >/dev/null 2>&1
+  floor "$tmp/cr" gates >/dev/null 2>&1
+
+  is  "a gate that ran and failed leaves its clause unmet" "$(code_of floor "$tmp/cr" complete)" "15"
+  has "and the record it wrote does not satisfy it" "$(floor_says "$tmp/cr" complete)" "unmet: [tests]"
+}
+completion_refuses_what_is_only_vacuously_true
+
+#
+# A clause nothing pinned is invariant 1's *introduced*. No ref can satisfy it, because no artifact
+# established it — the answer that can is a human's, and the work source that would carry one does
+# not exist. Until it does, such a run holds rather than delivers.
+#
+an_introduced_clause_holds_delivery() {
+  make_repo "$tmp/cs" main && set_origin "$tmp/cs" 'https://github.com/acme/cs.git' \
+    && mkdir -p "$tmp/cs/.foundry" \
+    && commit_file "$tmp/cs" .foundry/gates 'tests  true
+' || { skip "introduced clause — git could not make a repo here"; return; }
+
+  floor_new_as "$tmp/cs" ada@example.com "Introduced" >/dev/null
+  floor "$tmp/cs" charter derive >/dev/null 2>&1
+  floor "$tmp/cs" policy authorize 'https://github.com/acme/cs.git' >/dev/null 2>&1
+  floor "$tmp/cs" targets add 'https://github.com/acme/cs.git' main >/dev/null 2>&1
+  floor "$tmp/cs" gates >/dev/null 2>&1
+
+  is "every derived clause evidenced, it may deliver" "$(code_of floor "$tmp/cs" complete)" "0"
+
+  floor "$tmp/cs" charter introduce Decided "ship on friday" >/dev/null 2>&1
+
+  is  "and a clause a human introduced holds it" "$(code_of floor "$tmp/cs" complete)" "15"
+  has "named for why no ref can answer it" \
+      "$(floor_says "$tmp/cs" complete)" "introduced: [ship on friday]"
+}
+an_introduced_clause_holds_delivery
+
+#
+# The invariant quantifies over **every** selected target. One checkout answers for one of them, so a
+# second selected target is graded by nothing — and a run would deliver on evidence that never
+# mentioned the repository half its clauses govern. §8's two-target experiment is meant to fail here.
+#
+a_second_target_is_graded_by_nothing_and_says_so() {
+  make_repo "$tmp/ct" main && set_origin "$tmp/ct" 'https://github.com/acme/ct.git' \
+    && mkdir -p "$tmp/ct/.foundry" \
+    && commit_file "$tmp/ct" .foundry/gates 'tests  true
+' || { skip "two targets — git could not make a repo here"; return; }
+
+  floor_new_as "$tmp/ct" ada@example.com "Two" >/dev/null
+  floor "$tmp/ct" charter derive >/dev/null 2>&1
+  floor "$tmp/ct" policy authorize 'https://github.com/acme/ct.git' >/dev/null 2>&1
+  floor "$tmp/ct" targets add 'https://github.com/acme/ct.git' main >/dev/null 2>&1
+  floor "$tmp/ct" gates >/dev/null 2>&1
+
+  is "one target, evidenced, may deliver" "$(code_of floor "$tmp/ct" complete)" "0"
+
+  floor "$tmp/ct" policy authorize 'https://github.com/acme/other.git' >/dev/null 2>&1
+  floor "$tmp/ct" targets add 'https://github.com/acme/other.git' main >/dev/null 2>&1
+
+  is  "selecting a second one it cannot reach stops delivery" \
+      "$(code_of floor "$tmp/ct" complete)" "15"
+  has "and names the repository nothing graded" \
+      "$(floor_says "$tmp/ct" complete)" "ungradable: [https://github.com/acme/other.git]"
+}
+a_second_target_is_graded_by_nothing_and_says_so
+
+#
+# Every clause is graded against every selected target, so a line put into the file by hand decides
+# what the run answers for. `targets` and `authorise` both refuse such a line; the grader read it.
+#
+a_selection_edited_by_hand_grades_nothing() {
+  make_repo "$tmp/cu" main && set_origin "$tmp/cu" 'https://github.com/acme/cu.git' \
+    && mkdir -p "$tmp/cu/.foundry" \
+    && commit_file "$tmp/cu" .foundry/gates 'tests  true
+' || { skip "hand-edited selection — git could not make a repo here"; return; }
+
+  d=$(floor_new_as "$tmp/cu" ada@example.com "ByHand")
+  floor "$tmp/cu" charter derive >/dev/null 2>&1
+  floor "$tmp/cu" policy authorize 'https://github.com/acme/cu.git' >/dev/null 2>&1
+  floor "$tmp/cu" targets add 'https://github.com/acme/cu.git' main >/dev/null 2>&1
+  floor "$tmp/cu" gates >/dev/null 2>&1
+
+  is "as selected, it may deliver" "$(code_of floor "$tmp/cu" complete)" "0"
+
+  printf 'https://github.com/attacker/evil.git main\n' >> "$d/units/01/targets"
+  is  "a target nobody authorised is refused, not graded" \
+      "$(code_of floor "$tmp/cu" complete)" "5"
+  has "and named" "$(floor_says "$tmp/cu" complete)" "selected but not authorised"
+}
+a_selection_edited_by_hand_grades_nothing
 
 #
 # The same act with a quieter shape. Deleting a level-2 declaration drops detection a level, so the

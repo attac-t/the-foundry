@@ -49,6 +49,7 @@ sh bin/run.sh gates
 ${FOUNDRY_HOME:-$HOME/.foundry}/runs/<date>-<slug>-<short id>/
 ├── item.md            what someone wants, and advisory targets
 ├── bootstrap          the repo Foundry was invoked from — 0 or 1
+├── authority          who selected this work item, and when
 ├── evidence           one line per gate that ran, tab-separated
 ├── memory/            working.md, blueprint.md, spec.md, adr/
 ├── planning/          scratch space for planning
@@ -333,6 +334,26 @@ wearing provenance.
 
 ---
 
+## Who the run answers to
+
+A run exists because a human selected the work item. `new` stamps that, once, in `authority`:
+
+```
+2026-08-16T21:14:03Z	ada@example.com	2026-08-16-ship-the-flow-0000
+```
+
+`FOUNDRY_WHO` names them; `git config user.email` is the fallback every checkout already has.
+
+**Three fields, where evidence has seven, and it is a different file.** This names no clause, so it
+can satisfy none — and a record with no `ref` cannot satisfy the completion invariant, which reads
+its ledger existentially. Keeping them apart by store is what makes that true; a field to sort by
+would not.
+
+**Nobody is an answer, and is written as one.** `new` changes nothing in any repository, so it is the
+wrong place to demand a name. Delivery is the right one, and it does not exist yet.
+
+---
+
 ## Gates
 
 ```bash
@@ -362,6 +383,56 @@ not the terminal: a gate that opens `/dev/tty` still finds one.
 A gate runs where its pin says it came from. One checkout exists, so a gate pinned to another
 repository has nowhere to run, and one of them refuses the set. Whether the charter's records hold
 together at all is `check`'s question, not this one — see **What `check` reads**.
+
+---
+
+## May this run deliver?
+
+```bash
+sh bin/run.sh complete
+```
+
+Exit 0 means yes. Exit 15 names what is missing.
+
+§2.5 states three conjuncts:
+
+> A run may deliver only when the charter holds at least one clause, at least one target is selected,
+> and every charter clause has satisfying evidence stamped at the delivered ref of every selected
+> target it governs.
+
+A fourth is invariant 4's, which §2.5's shape supports without asserting: **a human selected this
+run.** Its absence is recorded, so completion can read it.
+
+**The bar is met at a sha, not in general.** Gates could pass at commit N, three commits land, and
+delivery proceed on evidence that no longer applied. That is the whole of what this adds.
+
+**The first two close fail-opens, not edge cases.** Quantified over clauses and over targets, the
+rule is satisfied by an empty charter and by an empty selection — for free. Every fresh run has an
+empty selection, and any repository the detector reads no gate from produces an empty charter.
+
+**And `every selected target` means every one.** One checkout can answer for one of them, so a second
+selected target is reported `ungradable` rather than passed over. §8's two-target experiment is meant
+to fail today; this is the sentence that fails it.
+
+| Finding | Means |
+|---|---|
+| `unauthorised` | nobody is recorded as having selected this run |
+| `nobar` | the charter holds no clause |
+| `nothing selected` | no target, so every clause is satisfied over nothing |
+| `unmet` | a clause with no passing record at the delivered ref |
+| `ungradable` | a selected target with no checkout here, so nothing can be evidenced at its ref |
+| `introduced` | a clause resting on no pin, which no ref can satisfy |
+| `unverifiable` | a clause pinned to a repository this checkout is not |
+| `nothing delivered` | this checkout has no commit to be graded at |
+
+The last three are not failures and not passes. **They take different remedies, which is why they are
+different words.** An `introduced` clause was established by nobody, so the answer is a human's, and
+the work source that would carry one does not exist yet. An `unverifiable` one belongs to a checkout
+that does — the workspace seam is what turns it into an answer.
+
+**It keeps no record of its own.** `new` stamped the selection, the charter holds the clauses, unit 01
+holds the selection, the ledger holds what ran. A second copy of any of them is a second thing to
+drift.
 
 ---
 
@@ -422,8 +493,12 @@ moved one exits 10 and does **not** re-freeze: quietly recording the new set wou
 be edited after the moment it was fixed, which is the entire thing the freeze exists to stop.
 
 **Who is authoritative moves here.** Before authorisation the selection file is the answer to *what
-does this run touch*. After it, the frozen record is, and the live file's authority ends — which is
-what lets completion grade against what was authorised rather than against what the file says now.
+does this run touch*. After it, the frozen record is, and the live file's authority ends.
+
+**`complete` does not read the frozen record.** It reads the live file, through the same
+`refuse_unselectable` guard `targets` and `authorise` use — so an edit is refused rather than graded,
+but the two answers are compared only by `authorise`, at exit 10. Closing that gap is a stage that
+does not exist; naming it is what this paragraph is for.
 
 **The same honest limit as policy and the charter.** The frozen record is a file the worker can write
 as the same user, and deleting it silently un-freezes the run — the next authorise records the new

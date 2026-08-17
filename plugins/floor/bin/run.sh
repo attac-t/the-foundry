@@ -26,6 +26,7 @@
 #  12  the detector yields a gate the charter holds no clause for — re-derive
 #  13  the run directory was renamed, so the grants a human gave it are not there
 #  14  a gate the charter pins did not pass — an answer, not a refusal
+#  15  this run may not deliver yet — an answer too, and it names what is missing
 #
 # Eight through twelve are one stage and five remedies: write a requirement down, select a target it
 # governs, or start again. Collapsing them would make the exit code say *authorisation refused* and
@@ -51,6 +52,7 @@ main() {
         charter)   charter "$@" ;;
         evidence)  evidence "$@" ;;
         gates)     gates "$@" ;;
+        complete)  complete "$@" ;;
         authorise) authorise ;;
         *)         usage; exit 2 ;;
     esac
@@ -78,6 +80,7 @@ floor — where work happens.
                                   run it, and stamp what happened
   run.sh gates                    run every gate the charter pins, and record each — exit 14 if any
                                   did not pass
+  run.sh complete                 may this run deliver? exit 15 names what is missing
   run.sh authorise                refuse a run that describes no work, or whose selection moved
                                   — exit 1, 5, 8, 9, 10, 11 or 12
 EOF
@@ -115,6 +118,7 @@ make_run() {
     write_id "$dir" "$id"
     write_item "$dir" "$title" || die_unwritable "$dir/item.md"
     write_bootstrap "$dir"
+    stamp_selection "$dir" "$(selector)" "$id"
     point_this_checkout_at "$id"
 
     printf '%s\n' "$dir"
@@ -122,6 +126,33 @@ make_run() {
 
 # `<date>-<slug>-<first free slot>`.
 mint_id() { claim_free_slot "$(date +%Y-%m-%d)-$(slug "$1")"; }
+
+authority_file() { printf '%s/authority' "$1"; }
+
+#
+# Who selected the work item, and which run it authorised — RFC-001 invariant 4.
+#
+# **Not evidence, and not in that ledger.** It names no clause, so it can satisfy none. §2.5 keeps
+# the two apart by giving this a different shape rather than the evidence record a field to sort by:
+# three columns, and neither `unit` nor `ref` is one of them. A record with no `ref` cannot satisfy
+# the completion invariant, which is the separation stated in the shape instead of in a sentence.
+#
+# It happens before the run does, so it lands with the layout and names the run it authorised.
+#
+stamp_selection() {
+    printf '%s\t%s\t%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$(one_line "$2")" "$3" \
+        >> "$(authority_file "$1")" 2>/dev/null || die_unwritable "$(authority_file "$1")"
+}
+
+#
+# The human this run answers to. `FOUNDRY_WHO` first: a harness knows who it is acting for, and git
+# knows only whose checkout this is.
+#
+# Nobody is a real answer and is written as one. `new` changes nothing in any repository, so it is
+# the wrong place to demand a name — completion is, where a run nobody selected is a run nobody may
+# deliver.
+#
+selector() { printf '%s' "${FOUNDRY_WHO:-$(git config user.email 2>/dev/null)}"; }
 
 #
 # `<base>-NNNN`, counting up from zero until nothing holds that name.
@@ -820,6 +851,127 @@ gate_held() {
     [ -n "$command" ] || { note "the charter pins no command for [$name]"; exit 7; }
 
     stamp_command "$dir" "$ref" "$name" sh -c "$command"
+}
+
+#
+# May this run deliver? — RFC-001 §2.5's completion invariant.
+#
+# Every conjunct answers from state something else already wrote: `new` stamped the selection, the
+# charter holds the clauses, unit 01 holds the selection, the ledger holds what ran. Nothing here
+# keeps a record of its own, because a second copy of any of them is a second thing to drift.
+#
+# The first two conjuncts close fail-opens, not edge cases: the invariant quantifies over clauses and
+# over targets, so an empty charter and an empty selection each satisfy it vacuously. Every fresh run
+# has the second, and any repository the detector reads no gate from produces the first.
+#
+complete() {
+    [ "$#" -eq 0 ] || { usage; exit 2; }
+
+    dir=$(active_run) || exit 1
+    refuse_renamed_run "$dir"
+
+    # The same guard `targets` and `authorise` open with. Every clause is graded against every
+    # selected target, so a line put into the file by hand decides what this answers for — and the
+    # grader read it where the other two refuse it.
+    refuse_unselectable "$dir" "$(unit_targets_file "$dir")" || exit 5
+
+    findings=$(
+        unauthorised_run "$dir"
+        empty_bar "$dir"
+        empty_selection "$dir"
+        ungradable_targets "$dir"
+        unmet_clauses "$dir"
+    )
+
+    [ -n "$findings" ] || return 0
+    printf '%s\n' "$findings"
+    exit 15
+}
+
+# Invariant 4. A run exists because a human selected the work item, and one that records nobody has
+# no authority to deliver — the stamp lands at `new`, so its absence is a run made before the rule.
+unauthorised_run() {
+    # `~ /[^ ]/`, not `!= ""`. `one_line` folds every tab and newline in the selector to a space, so a
+    # `FOUNDRY_WHO` holding one tab writes a field that is not empty and names nobody.
+    who=$(awk -F'\t' 'NF == 3 && $2 ~ /[^ ]/ { print $2; exit }' "$(authority_file "$1")" 2>/dev/null)
+
+    [ -n "$who" ] && return 0
+    printf 'unauthorised: nobody is recorded as having selected this run\n'
+}
+
+empty_bar() {
+    [ -n "$(awk '$1 == "clause" { print $2 }' "$(charter_file "$1")" 2>/dev/null)" ] && return 0
+    printf 'nobar: the charter holds no clause, so it grades nothing\n'
+}
+
+#
+# The invariant quantifies over **every** selected target, and one checkout answers for one of them.
+# Without this, `unmet_clauses` grades what it can reach and a second selected target is never graded
+# at all — so a run delivers on evidence that never mentioned the repository half its clauses govern.
+#
+# §8's two-target experiment is meant to fail today. This is the sentence that fails it, rather than
+# the silence that used to pass it.
+#
+ungradable_targets() {
+    here=$(this_repository)
+
+    awk '!/^[ \t]*#/ && NF { print $1 }' "$(unit_targets_file "$1")" 2>/dev/null | while read -r identity; do
+        [ "$identity" = "$here" ] && continue
+        printf 'ungradable: [%s] has no checkout here, so nothing can be evidenced at its delivered ref\n' "$identity"
+    done
+}
+
+empty_selection() {
+    [ -n "$(awk '!/^[ \t]*#/ && NF { print $1 }' "$(unit_targets_file "$1")" 2>/dev/null)" ] && return 0
+    printf 'nothing selected: no target, so every clause is satisfied over nothing\n'
+}
+
+#
+# The invariant itself, per target — there is no run-level ref. A clause spanning two targets is
+# satisfied against each one's delivered sha, and "the delivered ref" names neither.
+#
+# One checkout has a delivered ref. A clause pinned anywhere else is reported, never assumed
+# satisfied: the alternative is a run that delivers because nobody could check it.
+#
+unmet_clauses() {
+    file=$(charter_file "$1")
+    here=$(this_repository)
+    ref=$(delivered_ref)
+
+    [ -n "$ref" ] || { printf 'nothing delivered: this checkout has no commit to be graded at\n'; return; }
+
+    awk '$1 == "clause" { print $2 }' "$file" 2>/dev/null | while read -r id; do
+        text=$(clause_text "$file" "$id")
+
+        # Three ways a clause is not met, and they take different remedies. A clause nothing pinned
+        # is invariant 1's *introduced*: no ref makes it true, and the answer that does is a human's,
+        # which the work source does not carry yet. Naming it `unverifiable` would send a reader
+        # looking for a checkout.
+        has_record "$file" pin "$id" \
+            || { printf 'introduced: [%s] rests on no pin, so no ref can satisfy it\n' "$text"; continue; }
+
+        has_local_pin "$file" "$id" "$here" \
+            || { printf 'unverifiable: [%s] is pinned to a repository this checkout is not\n' "$text"; continue; }
+
+        satisfied "$1" "$text" "$ref" && continue
+        printf 'unmet: [%s] at %s@%s\n' "$text" "$here" "$ref"
+    done
+}
+
+#
+# A record answering *was this clause met* with yes, at the ref delivered.
+#
+# One yes outranks any number of noes, because the ledger is append-only and satisfaction is read
+# existentially. §7 holds that open; it is harmless while every record is a command's exit code and
+# stops being so once a human can answer and a second human can disagree.
+#
+# `""` on both sides of each comparison. An `-v` assignment is a numeric string, so a clause named
+# `123` would match a record named `0123` — the identity defect §2.2 already paid for once.
+#
+satisfied() {
+    awk -F'\t' -v name="$2" -v ref="$3" \
+        '$4 "" == name "" && $5 == "0" && $6 "" == ref "" { seen = 1 } END { exit !seen }' \
+        "$(evidence_file "$1")" 2>/dev/null
 }
 
 #
