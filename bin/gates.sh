@@ -69,6 +69,8 @@ gate versions    bash bin/versions.sh
 gate repeats     bash bin/repeats.sh \
     $(git ls-files 'plugins/panel/*.md' 'plugins/pest/*.md' 'plugins/signal/*.md')
 
+gate shell       bash bin/shell.sh
+
 for plugin in kernel signal floor panel; do
     gate "$plugin" bash "plugins/$plugin/tests/run.sh"
 done

@@ -39,6 +39,14 @@ jobs:
       - name: No sentence appears twice
         run: bash bin/repeats.sh $(git ls-files 'plugins/panel/*.md' 'plugins/pest/*.md' 'plugins/signal/*.md')
 
+      # Two craft-sh rules that only human attention held. Both were caught by hand three times in
+      # one day, which is the moment a judgement becomes an exit code.
+      #
+      # The length half gates a number; craft-sh's rule is a signal no exit code reads. bin/shell.sh
+      # says which is which, and names the two bodies already past the number.
+      - name: Shipped shell reads down, not sideways
+        run: bash bin/shell.sh
+
   # The gates above read files. This one runs the plugins that ship code, on each operating system a
   # user installs them on, because that is where both of them broke last: signal's hook was not
   # executable, so it died before reading a word, and kernel's nine hooks named a bare path with no
