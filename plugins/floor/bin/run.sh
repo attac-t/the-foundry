@@ -27,9 +27,8 @@
 #  13  the run directory was renamed, so the grants a human gave it are not there
 #  14  a gate the charter pins did not pass — an answer, not a refusal
 #  15  this run may not deliver yet — an answer too, and it names what is missing
-#  16  no workspace could be opened: nothing here to clone the target from, a slot holding something
-#      that is not a checkout, or a ref that is not there. The target was authorised and the home is
-#      writable — 5 and 3 would each send the reader to a remedy that changes nothing
+#  16  no workspace could be opened. The target was authorised and the home is writable, so 5 and 3
+#      would each send the reader to a remedy that changes nothing
 #
 # Eight through twelve are one stage and five remedies: write a requirement down, select a target it
 # governs, or start again. Collapsing them would make the exit code say *authorisation refused* and
@@ -474,10 +473,13 @@ open_workspace() {
     # A workspace is where mutation happens, so it may not exist for a run nobody authorised. One
     # rule, two callers — `authorise` is idempotent once the selection is frozen, and re-running it
     # here is how `open` refuses without restating any of its twelve reasons.
+    #
+    # Read before it runs. `refuse_unselectable` assigns `dir` too, and every variable here is
+    # global — the two hold the same path today, and that is a coincidence to stop relying on.
+    root=$(unit_workspace "$dir")
     authorise
 
     here=$(this_repository)
-    root=$(unit_workspace "$dir")
 
     # A here-doc, not a pipe. `exit` inside a pipe leaves the subshell and the loop carries on, so a
     # target that could not be checked out would be followed by one that could, and the run would go
@@ -505,6 +507,11 @@ unit_workspace() { printf '%s/units/01/workspace' "$1"; }
 # **The digest is the identity; the name is decoration.** Folding punctuation to `-` made
 # `acme/a-b`, `acme/a/b`, `acme/a.b` and `acme/a_b` one directory — four repositories, one checkout.
 # A longer fold would only move the collision.
+#
+# **Twelve characters do not make a collision impossible, and nothing here claims they do.** What
+# they buy is rarity; what makes a collision safe is `attached`, which compares the origin and finds
+# another repository's checkout. Two targets on one slot is refused, never shared — so the guarantee
+# holds at any prefix length, and the length is only how often a reader meets that refusal.
 #
 target_slot() { printf '%s-%s' "$(readable_name "$1")" "$(identity_digest "$1")"; }
 
@@ -537,9 +544,14 @@ check_out_target() {
 # wrong repository: `open` answered 0 for one holding another repository entirely, and the gates
 # would then have graded it.
 #
-# HEAD first — a clone killed part-way leaves a `.git` directory, git's cleanup never having run.
+# `-d "$1/.git"` before anything else: `git -C` searches upward, so an empty slot would otherwise be
+# answered for by an ancestor repository. A clone, never a worktree, so the directory is exact.
+#
+# A killed clone is no longer among the cases — it dies inside the build path and never reaches a
+# slot. What is left is a slot damaged by hand, or by a worker.
 #
 attached() {
+    [ -d "$1/.git" ] || return 1
     git -C "$1" rev-parse --verify --quiet HEAD >/dev/null 2>&1 || return 1
     [ "$(git -C "$1" remote get-url origin 2>/dev/null)" = "$2" ] || return 1
     [ "$(git -C "$1" config --get foundry.ref 2>/dev/null)" = "$3" ]
@@ -570,7 +582,7 @@ build_and_publish() {
     mkdir "$building" 2>/dev/null \
         || { note "[$2] is being checked out — remove [$building] if no session is"; exit 16; }
 
-    clone_into "$building" "$(repo_root)" "$2" "$3"
+    clone_into "$building" "$(repo_root)" "$2" "$3" || { rm -rf "$building"; exit 16; }
     publish_workspace "$building" "$1"
 }
 
@@ -591,25 +603,38 @@ publish_workspace() {
 # `--no-hardlinks`, because a local clone shares object files by default and a workspace that shares
 # anything with the checkout it isolates from is worth the disk.
 #
+#
+# Every step returns rather than exits, so `build_and_publish` can clear the build path before it
+# refuses. Left behind, `<slot>.building` makes every later `open` answer *being checked out* — a
+# typo in a ref would be diagnosed once and misdiagnosed for ever after.
+#
 clone_into() {
-    fetch_objects   "$1" "$2" "$3"
-    check_out_ref   "$1" "$3" "$4"
-    point_at_origin "$1" "$3"
+    fetch_objects   "$1" "$2" "$3" || return 1
+    check_out_ref   "$1" "$3" "$4" || return 1
+    point_at_origin "$1" "$3"      || return 1
     record_base_ref "$1" "$4"
 }
 
-# What it was opened for, in git's own config rather than a file of ours — `attached` reads it back to
-# refuse a slot built for another ref, and a second store is a second thing to drift.
+#
+# What it was opened for, in git's own config rather than a file of ours — a second store is a second
+# thing to drift.
+#
+# **Compared against the run's frozen selection, never against itself.** The value lives in a
+# repository the worker owns, so a worker can write it; what it is checked against does not. That
+# makes it the same kind of guard as the charter — it catches a workspace built for another ref, and
+# it does not resist someone editing both sides. Containment is the runtime boundary's, and there
+# isn't one.
+#
 record_base_ref() {
     git -C "$1" config foundry.ref "$2" 2>/dev/null && return 0
     note "could not record the base ref in [$1]"
-    exit 16
+    return 1
 }
 
 fetch_objects() {
     git clone --quiet --no-hardlinks "$2" "$1" 2>/dev/null && return 0
     note "could not clone [$3]"
-    exit 16
+    return 1
 }
 
 #
@@ -620,13 +645,13 @@ fetch_objects() {
 check_out_ref() {
     git -C "$1" checkout --quiet "$3" 2>/dev/null && return 0
     note "[$2] has no ref [$3] to check out"
-    exit 16
+    return 1
 }
 
 point_at_origin() {
     git -C "$1" remote set-url origin "$2" 2>/dev/null && return 0
     note "could not point [$1] at [$2]"
-    exit 16
+    return 1
 }
 
 targets() {

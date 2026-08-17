@@ -582,8 +582,9 @@ wreck_runner "a workspace keeping the path it was cloned from is caught" \
 wreck_runner "a half-made checkout cloned over is caught" \
   halfclone 's#{ \[ -e "$1" \] || \[ -L "$1" \]; } || return 0#return 0#'
 
-# `[ -e ]` follows the link. Without `-L` a dangling slot reads as nothing there, reaches the claim,
-# and is reported as a session in flight — a remedy of waiting, for a thing that needs removing.
+# `[ -e ]` follows the link. Without `-L` a dangling slot reads as nothing there, so the build runs
+# and `publish_workspace` refuses the rename onto it — "could not publish", for a thing that needs
+# removing.
 wreck_runner "a dangling slot reported as a session in flight is caught" \
   danglingslot 's#\[ -e "$1" \] || \[ -L "$1" \]#[ -e "$1" ]#'
 

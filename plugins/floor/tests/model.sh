@@ -7,6 +7,12 @@
 # Set RUNNER to point these checks at a deliberately broken copy.
 
 set -u
+
+# Pinned, because a glob's order decides which directory `only_slot` yields — and a break whose kill
+# depends on the machine's collation is not an oracle.
+LC_ALL=C
+export LC_ALL
+
 here="$(cd "$(dirname "$0")/.." && pwd)"
 . "$here/tests/lib.sh"
 
@@ -1634,6 +1640,11 @@ a_workspace_is_isolated_from_the_checkout() {
   # fold would only have moved the collision. The name is asserted for its shape, not its spelling.
   matches "the slot is named by a digest, not by a fold of the identity" \
           "$(basename "$slot")" "-[0-9a-f]{12}$"
+
+  # Published, not assembled: the build path is gone once the slot exists. Without this, a workspace
+  # built in place is caught only by whichever directory the glob happens to yield first.
+  is "publication leaves nothing beside the slot" \
+     "$(set -- "$where"/*/; printf '%s' $#)" "1"
   is  "and holds a checkout of the target" "$(code_of test -d "$slot/.git")" "0"
   is  "opening twice answers the same place, and clones nothing twice" \
       "$(floor "$tmp/ws" open)" "$where"
@@ -1695,6 +1706,30 @@ a_workspace_needs_authorisation
 # A slot can hold a perfectly valid checkout of something else. `open` answered 0 for one holding
 # another repository entirely, and every gate after it would have graded that.
 #
+#
+# The shape of a digest proves nothing — a constant is twelve hex characters too. Two repositories,
+# two identities, and the names must differ in the half that is not decoration.
+#
+a_digest_is_derived_from_the_identity_it_names() {
+  for n in 1 2; do
+    make_repo "$tmp/dg$n" main && set_origin "$tmp/dg$n" "https://github.com/acme/dg$n.git" \
+      && mkdir -p "$tmp/dg$n/.foundry" \
+      && commit_file "$tmp/dg$n" .foundry/gates 'tests  true
+' || { skip "digest derivation — git could not make a repo here"; return; }
+
+    floor_new_as "$tmp/dg$n" ada@example.com "Digest $n" >/dev/null
+    floor "$tmp/dg$n" charter derive >/dev/null 2>&1
+    floor "$tmp/dg$n" policy authorize "https://github.com/acme/dg$n.git" >/dev/null 2>&1
+    floor "$tmp/dg$n" targets add "https://github.com/acme/dg$n.git" main >/dev/null 2>&1
+  done
+
+  one=$(basename "$(only_slot "$(floor "$tmp/dg1" open)")")
+  two=$(basename "$(only_slot "$(floor "$tmp/dg2" open)")")
+
+  differs "two identities take two digests" "${one#*-}" "${two#*-}"
+}
+a_digest_is_derived_from_the_identity_it_names
+
 a_slot_holding_another_repository_is_refused() {
   make_repo "$tmp/im" main && set_origin "$tmp/im" 'https://github.com/acme/im.git' \
     && mkdir -p "$tmp/im/.foundry" \
@@ -1719,6 +1754,28 @@ a_slot_holding_another_repository_is_refused() {
   is "nor is one opened for another ref" "$(code_of floor "$tmp/im" open)" "16"
 }
 a_slot_holding_another_repository_is_refused
+
+#
+# `foundry.ref` is compared against the run's frozen selection, never against a constant. A run that
+# selected `develop` records `develop`, so a workspace built for another ref cannot pass as this
+# run's — which is what makes the comparison worth making at all.
+#
+the_recorded_ref_is_the_one_the_run_selected() {
+  make_repo "$tmp/rf" develop && set_origin "$tmp/rf" 'https://github.com/acme/rf.git' \
+    && mkdir -p "$tmp/rf/.foundry" \
+    && commit_file "$tmp/rf" .foundry/gates 'tests  true
+' || { skip "selected ref — git could not make a repo here"; return; }
+
+  floor_new_as "$tmp/rf" ada@example.com "Selected" >/dev/null
+  floor "$tmp/rf" charter derive >/dev/null 2>&1
+  floor "$tmp/rf" policy authorize 'https://github.com/acme/rf.git' >/dev/null 2>&1
+  floor "$tmp/rf" targets add 'https://github.com/acme/rf.git' develop >/dev/null 2>&1
+
+  slot=$(only_slot "$(floor "$tmp/rf" open)")
+  is "the workspace records the ref this run selected" \
+     "$(git -C "$slot" config --get foundry.ref 2>/dev/null)" "develop"
+}
+the_recorded_ref_is_the_one_the_run_selected
 
 #
 # Built beside the slot, published into it. A creator that dies leaves recoverable garbage, and never
