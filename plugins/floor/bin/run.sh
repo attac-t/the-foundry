@@ -10,7 +10,8 @@
 # refusals off stderr and the ledger, never off the code.
 #
 #   0  answered
-#   1  nothing to answer with — no run is active, no bootstrap target, or no charter yet
+#   1  nothing to answer with — no run is active, no bootstrap target, no charter yet, or the work
+#      source holds no item, no clause by that name, and no answer
 #   2  asked for something this does not do
 #   3  nowhere to put a run, or the home cannot be written to
 #   4  a target was refused: no portable identity, or a ref that is not one
@@ -29,6 +30,8 @@
 #  15  this run may not deliver yet — an answer too, and it names what is missing
 #  16  no workspace could be opened. The target was authorised and the home is writable, so 5 and 3
 #      would each send the reader to a remedy that changes nothing
+#  17  this run already sent the work source something else — another item, another branch, or the
+#      same question in other words. One remedy: a new run
 #
 # Eight through twelve are one stage and five remedies: write a requirement down, select a target it
 # governs, or start again. Collapsing them would make the exit code say *authorisation refused* and
@@ -57,6 +60,7 @@ main() {
         open)      open_workspace "$@" ;;
         complete)  complete "$@" ;;
         authorise) authorise ;;
+        source)    work_source "$@" ;;
         *)         usage; exit 2 ;;
     esac
 }
@@ -87,6 +91,13 @@ floor — where work happens.
   run.sh complete                 may this run deliver? exit 15 names what is missing
   run.sh authorise                refuse a run that describes no work, or whose selection moved
                                   — exit 1, 5, 8, 9, 10, 11 or 12
+  run.sh source read <item>       pull the item's words into this run
+  run.sh source publish <branch> <title>
+                                  report this run's delivery, and print its identity
+  run.sh source ask <stage> <clause> <question>
+                                  ask a human about one clause, and print the question's identity
+  run.sh source receive <stage> <clause>
+                                  print the answer to that question, or exit 1
 EOF
 }
 
@@ -118,6 +129,7 @@ make_run() {
     id=$(mint_id "$title") || die_unwritable "$RUNS"
     dir="$RUNS/$id"
 
+    reserve_name "$id"         || die_unwritable "$GRANTS/$id"
     build_layout "$dir"        || die_unwritable "$dir"
     write_id "$dir" "$id"
     write_item "$dir" "$title" || die_unwritable "$dir/item.md"
@@ -169,6 +181,20 @@ selector() { printf '%s' "${FOUNDRY_WHO:-$(git config user.email 2>/dev/null)}";
 # Grants outlive the run directory by design, so a slot reclaimed after `rm -rf` would hand the next
 # run the deleted run's allowlist — authority no human gave it.
 slot_is_reserved() { [ -e "$GRANTS/$1" ]; }
+
+#
+# A run's name, held for good.
+#
+# Reserving it on the first grant left a run that authorised nothing free to give its name back when
+# its directory went, and the same base then minted the same id and the same clause id — so a later
+# run derives an earlier one's question byte for byte, and an answer left where it outlives a run
+# matches the wrong one. RFC-001 §2.1 asks for a run unique over all time; this is what makes it one.
+#
+# Reserved after the slot is claimed, never inside the loop that claims it. A reservation that can
+# fail while the run directory already exists leaves the loop counting past a failure counting cannot
+# fix, which is the hang `claim_free_slot` refuses by name.
+#
+reserve_name() { mkdir -p "$GRANTS/$1" 2>/dev/null; }
 
 slot_is_taken() { slot_is_reserved "$1" || [ -e "$RUNS/$1" ]; }
 
@@ -261,7 +287,7 @@ refuse_renamed_run() {
     exit 13
 }
 
-# A placeholder until the work-source contract lands in #74.
+# The title, until a work source is asked for the item's own words. `source read` replaces this.
 write_item() {
     cat > "$1/item.md" <<EOF
 ---
@@ -1332,8 +1358,8 @@ authorise() {
         printf '%s\n' "$introduced" | while read -r _ id kind text; do
             note "clause $id is introduced: $kind $text"
         done
-        note "nothing derives it, so a human must authorise it — and this run has no channel to ask through"
-        note "the channel arrives with the work source; until then only a derived clause can authorise"
+        note "nothing derives it, so a human must authorise it — and this stage does not ask"
+        note "a channel exists now, and nothing here reads an answer back; until it does, only a derived clause can authorise"
         exit 11
     }
 
@@ -2020,6 +2046,243 @@ introduce_clause() {
 
     [ -f "$file" ] || : > "$file" || die_unwritable "$file"
     put_clause "$file" "$id" "$kind" "$text"
+}
+
+#
+# The work source — RFC-001 §2.1. Where a work item comes from, where a delivery is reported, and
+# where a human is asked.
+#
+# **Transport, and nothing else.** It carries an item's words, a delivery's identity, a question and
+# an answer. It reads none of them. What an item means is planning's; what an answer means belongs to
+# the stage that asked it, and §2.5 keeps those two apart by which store the record lands in.
+#
+# **Nothing here authorises anything.** An answer arriving widens no allowlist, moves no clause and
+# selects no target. Reading one is the authorisation stage's, and that stage does not read one yet —
+# `evidence record` shipped the same way, one stage ahead of the gate that consumes it.
+#
+# The rename guard, because a question's identity is the run's name: a renamed run derives a
+# different question and asks a human the same thing twice.
+#
+work_source() {
+    dir=$(active_run) || exit 1
+    refuse_renamed_run "$dir"
+    refuse_missing_source
+
+    case "${1:-}" in
+        read)    shift; read_work_item   "$dir" "$@" ;;
+        publish) shift; publish_delivery "$dir" "$@" ;;
+        ask)     shift; ask_about        "$dir" "$@" ;;
+        receive) shift; receive_answer   "$dir" "$@" ;;
+        *)       usage; exit 2 ;;
+    esac
+}
+
+#
+# The source is an adapter, and an adapter you cannot replace without editing its caller is not one.
+# `FOUNDRY_SOURCE` names another; the shipped one is the default, and it is the only file here
+# permitted to know a provider exists. Nothing above this line learns which source answered.
+#
+source_resolver() { printf '%s' "${FOUNDRY_SOURCE:-$(dirname "$0")/../lib/source.sh}"; }
+
+# A source that is not there answers "no item", and no item is what an unread run looks like.
+#
+# Checked here rather than inside `source_says`, whose callers all run in a command substitution —
+# where `exit` leaves the subshell and the caller carries on reporting nothing.
+refuse_missing_source() {
+    [ -f "$(source_resolver)" ] || { note "no work source at [$(source_resolver)]"; exit 3; }
+}
+
+# The one place floor speaks to a work source. Its refusals explain themselves on stderr, so nothing
+# swallows them here.
+source_says() { sh "$(source_resolver)" "$@"; }
+
+#
+# What the source answered, in floor's terms.
+#
+# One refusal an adapter reports and floor does not: this run already sent something else under that
+# name. The remedy is the same for every verb — a run is bound to what it has already sent, and one
+# item has many runs.
+#
+refuse_unless_answered() {
+    [ "$1" -eq 0 ] && return 0
+
+    [ "$1" -eq 4 ] && {
+        note "this run already sent the work source another $2"
+        note "send the one it sent, or start a new run"
+        exit 17
+    }
+
+    note "the work source could not carry that $2"
+    exit 1
+}
+
+#
+# Pull the item's words into the run.
+#
+# **There is no parameter for the words.** The caller names an item and the source says what it
+# holds — the shape that makes `evidence record` take a command and no result. A worker puts words in
+# `item.md` only by putting them where the source can be asked for them.
+#
+read_work_item() {
+    dir=$1; item=${2:-}
+
+    [ "$#" -le 2 ] || { note "read names an item — its words are the source's to say, not yours"; exit 2; }
+    [ -n "$item" ]  || { note "read needs an item to read"; exit 2; }
+    refuse_another_item "$dir" "$item"
+
+    said=$(source_says read "$item") || { note "the work source holds no item [$item]"; exit 1; }
+
+    printf '%s\n' "$said" > "$dir/item.md" 2>/dev/null || die_unwritable "$dir/item.md"
+    printf '%s\n' "$item" > "$(source_file "$dir")" 2>/dev/null || die_unwritable "$(source_file "$dir")"
+    printf '%s\n' "$said"
+}
+
+#
+# Which item this run reads. One line, beside `bootstrap`, which records the same kind of fact about
+# a repository — and **not the same kind of thing**. A work source never becomes a target because an
+# item arrived from it, so nothing here touches the allowlist or the selection.
+#
+source_file() { printf '%s/source' "$1"; }
+
+item_id() { [ -f "$(source_file "$1")" ] && read -r held < "$(source_file "$1")" && printf '%s' "$held"; }
+
+#
+# A run reads one item. A second, different one is refused: a delivery and a question are both
+# addressed to the item, so swapping it mid-run sends this run's work somewhere nobody asked for.
+#
+refuse_another_item() {
+    held=$(item_id "$1")
+    [ -z "$held" ] && return 0
+    [ "$held" = "$2" ] && return 0
+
+    note "this run reads item [$held], not [$2]"
+    note "start a new run — one item has many runs, and a second item is one of them"
+    exit 17
+}
+
+# A question and a delivery are both addressed to the item, so a run that has read none has nowhere
+# to put either.
+refuse_unaddressed() {
+    [ -n "$(item_id "$1")" ] && return 0
+
+    note "this run has read no item, so there is nowhere to address that"
+    exit 1
+}
+
+#
+# Report this run's delivery, and answer with the identity the source gave it.
+#
+# **Floor keeps no copy of that identity.** The source is where a delivery lives, so asking again is
+# how a resumed run gets a true answer instead of a stale one. The run holds the branch, because one
+# run has one delivery and a second branch is a second delivery.
+#
+# Publishing the branch itself is the delivery seam's, and §9 orders it after this stage.
+#
+publish_delivery() {
+    dir=$1; branch=${2:-}; title=${3:-}
+
+    [ "$#" -le 3 ] || { usage; exit 2; }
+    [ -n "$branch" ] && [ -n "$title" ] || { note "publish needs a branch and a title"; exit 2; }
+    refuse_unaddressed "$dir"
+
+    said=$(source_says publish "$(item_id "$dir")" "$(basename "$dir")" "$branch" "$title")
+    refuse_unless_answered "$?" delivery
+
+    printf '%s\n' "$said"
+}
+
+#
+# Ask a human about one clause, where they already are.
+#
+# The caller says what to put, because what makes a question worth answering — the decision, the
+# evidence, what each option causes — is known by the stage that found it and by nothing here.
+#
+# **`receive` carries nothing back**, and that asymmetry is the whole of it: a run may put a question
+# and may never put its answer.
+#
+ask_about() {
+    dir=$1; stage=${2:-}; clause=${3:-}; text=${4:-}
+
+    [ "$#" -le 4 ] || { usage; exit 2; }
+    [ -n "$text" ] || { note "ask needs a stage, a clause and the question to put"; exit 2; }
+    refuse_impossible_question "$dir" "$stage" "$clause"
+
+    id=$(question_id "$dir" "$stage" "$clause")
+
+    source_says ask "$(item_id "$dir")" "$id" "$text"
+    refuse_unless_answered "$?" question
+
+    printf '%s\n' "$id"
+}
+
+#
+# The answer a human left, and no reading of it.
+#
+# **There is no parameter for the answer.** A worker puts one here only by putting it where a human's
+# answer lives, which is the gap §2.5 names for the evidence ledger and closes no further.
+#
+# Silence never comes back as an answer: nothing on stdout and a code that says nothing is there. A
+# refusal comes back exactly as an approval does, because deciding which one it is belongs to
+# whoever asked — a transport that read the words would be answering for the human.
+#
+receive_answer() {
+    dir=$1; stage=${2:-}; clause=${3:-}
+
+    [ "$#" -le 3 ] || { note "receive names a stage and a clause — an answer is not something you pass"; exit 2; }
+    refuse_impossible_question "$dir" "$stage" "$clause"
+
+    source_says receive "$(item_id "$dir")" "$(question_id "$dir" "$stage" "$clause")" || exit 1
+}
+
+#
+# `run + stage + clause`, and nothing else — RFC-001 §2.1.
+#
+# Derived, never issued. A resumed run recomputes all three from where it is, which stage is asking
+# and the clause's text, so it finds the question it already asked rather than asking a second one —
+# and nothing stores a pending question, which is the ledger §2.2 refuses.
+#
+# Each term keeps one wrong answer away from a reader:
+#
+#     run      unique over all time, so no later run derives an earlier one's question
+#     stage    the reader, so the answer permitting a clause never says the clause was met
+#     clause   its text, so an edited requirement is a different question
+#
+question_id() { printf '%s.%s.%s' "$(basename "$1")" "$2" "$(clause_id "$3")"; }
+
+#
+# A question nothing could ever read is refused before it is put anywhere.
+#
+# Called, never captured: each of these exits, and an `exit` inside a command substitution leaves the
+# subshell and lets the caller carry on.
+#
+refuse_impossible_question() {
+    is_stage "$2" || { note "a question is asked at authorisation or at completion, not at [$2]"; exit 2; }
+
+    refuse_unheld_clause "$1" "$3"
+    refuse_unaddressed "$1"
+}
+
+#
+# Authorisation or completion — §2.1's stage is the reader, never the moment. Authorisation is
+# re-evaluated at completion, so a clock would stamp both questions alike and collide them.
+#
+# A third name is a reader nothing has: the question goes out, a human answers it, and the run never
+# looks there again.
+#
+is_stage() {
+    case "$1" in
+        authorisation | completion) return 0 ;;
+    esac
+    return 1
+}
+
+# A question names a clause this run's charter holds. Both stages ask about the charter's clauses, so
+# a question about anything else is the same silence — asked, answered, and never read.
+refuse_unheld_clause() {
+    [ -n "$(clause_kind "$(charter_file "$1")" "$(clause_id "$2")")" ] && return 0
+
+    note "this run's charter holds no clause [$2], so nothing would ever read an answer about it"
+    exit 1
 }
 
 main "$@"

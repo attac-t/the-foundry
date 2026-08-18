@@ -878,8 +878,8 @@ a_charter_derives_from_the_repository_it_is_run_in() {
   floor "$tmp/ch" charter introduce Judged 'the interface is understandable' >/dev/null 2>&1
   is "an introduced clause cannot authorise cleanly" \
      "$(code_of floor "$tmp/ch" authorise)" "11"
-  has "and the refusal names the clause and the missing channel" \
-      "$(floor_says "$tmp/ch" authorise)" "no channel to ask through"
+  has "and the refusal names the clause and says this stage does not ask" \
+      "$(floor_says "$tmp/ch" authorise)" "this stage does not ask"
 
   grep -v 'the interface is understandable' "$(charter_of "$chrun")" > "$chrun/c.tmp" \
     && mv "$chrun/c.tmp" "$(charter_of "$chrun")"
@@ -2344,6 +2344,302 @@ a_missing_resolver_is_not_silence() {
 a_missing_resolver_is_not_silence
 
 is "charter with no run exits 1" "$(code_of floor "$tmp/bare" charter)" "1"
+
+# --- the work source ---
+#
+# RFC-001 §2.1. Four verbs, and the properties that make them a contract rather than a call to one
+# provider.
+#
+# Nothing here names a source. The adapter is chosen by `lib/source.sh`, and with no `gh` on this
+# machine the directory answers — needing nothing floor does not already declare, and reading its
+# root out of the home this suite already sets. That is the portability claim, executed.
+
+# Where the shipped adapter looks with nothing configured: floor's own home, which this suite sets.
+src="$home/source"
+
+# The first run, addressed explicitly. Later checks make a second run in the same checkout, which
+# moves the pointer — and every check above it would then quietly be about the wrong run.
+ws() { floor_as "$tmp/wsrc" "$home" "$wsrun" "$@"; }
+
+# Where a person leaves an answer. The adapter's own layout, and the suite writes it by hand on
+# purpose: a human answering is not something floor can be asked to do.
+answer_with() {
+  mkdir -p "$src/answers/7"
+  printf '%s\n' "$2" > "$src/answers/7/$1"
+}
+
+the_work_source() {
+  make_repo "$tmp/wsrc" main && set_origin "$tmp/wsrc" 'https://gitlab.com/acme/ws.git' \
+    && commit_file "$tmp/wsrc" Makefile 'test:
+	echo ok
+' || { skip "work source — git could not make a repo here"; return; }
+
+  mkdir -p "$src/items"
+  printf 'Make the thing\n\ntargets: https://gitlab.com/acme/items.git\n' > "$src/items/7"
+  printf 'Make another thing\n' > "$src/items/8"
+
+  wsrun=$(floor "$tmp/wsrc" new "Work source")
+  wsid=$(basename "$wsrun")
+
+  # Absence first, and against a run that has read nothing: a refused read must leave the run unread,
+  # or every check after this one is about an item the source never held.
+  is "an item the source does not hold is an absence" "$(code_of ws source read 9)" "1"
+  absent "and the run records no item for it" "$wsrun/source"
+
+  has "read carries the item's own words" "$(ws source read 7)" "targets: https://gitlab.com/acme/items.git"
+  has "and they land in the run"          "$(cat "$wsrun/item.md" 2>/dev/null)" "Make the thing"
+
+  # There is no parameter for the words — `evidence record`'s shape, one stage over. A worker puts
+  # words in `item.md` only by putting them where the source can be asked for them.
+  is "read names an item and never says what it holds" "$(code_of ws source read 7 'I say what it is')" "2"
+  is "and a run reads one item"                        "$(code_of ws source read 8)" "17"
+
+  #
+  # A work source is not a target. An item is written by whoever can file one, so what it names is
+  # advisory — the sequence is refused, granted, accepted, because the weak form of this check passes
+  # with no policy at all.
+  #
+  lacks "an item's words authorise no target" "$(ws policy)"  "acme/items"
+  lacks "and select none"                     "$(ws targets)" "acme/items"
+  is    "so the repository it names is refused" \
+        "$(code_of ws targets add https://gitlab.com/acme/items.git main)" "5"
+
+  ws charter derive >/dev/null 2>&1
+}
+the_work_source
+
+# A question is `run + stage + clause`, derived and never issued — §2.1. A resumed run recomputes it
+# and finds what it already asked, which is why nothing anywhere holds a list of pending questions.
+a_question_is_derived_not_issued() {
+  [ -n "${wsrun:-}" ] || { skip "questions — no work source run"; return; }
+
+  q=$(ws source ask authorisation tests 'May this clause exist?')
+
+  matches "a question names the run, the stage and the clause" \
+          "$q" "^$wsid\.authorisation\.$(clause_of tests)\$"
+  is "asking again derives the same question" \
+     "$(ws source ask authorisation tests 'May this clause exist?')" "$q"
+  is "and the source still holds one" \
+     "$(find "$src/questions/7" -type f 2>/dev/null | grep -c .)" "1"
+
+  # Someone may be holding the first. Rewriting it under them is not a resume.
+  is "the same question in other words is refused" \
+     "$(code_of ws source ask authorisation tests 'Something else entirely?')" "17"
+
+  # A stage is a reader, and there are two. A third is a question that goes out, gets answered, and
+  # is never looked at again.
+  is "a stage nothing reads is refused"                "$(code_of ws source ask later tests 'x')" "2"
+  is "and a clause the charter does not hold is too"   "$(code_of ws source ask authorisation nosuch 'x')" "1"
+
+  #
+  # The human is asked where they already are — a file a person can open, in the source. Nothing is
+  # written into the run, because a store of outstanding questions is the parallel ledger §2.2
+  # refuses, and nothing waits on a terminal.
+  #
+  exists "the question is in the source, where a person already is" "$src/questions/7/$q"
+  is "and the run holds no note that one is outstanding" \
+     "$(grep -rl -- "$q" "$wsrun" 2>/dev/null | grep -c .)" "0"
+  is "asking reads no terminal" \
+     "$( cd "$tmp/wsrc" && FOUNDRY_HOME="$home" FOUNDRY_RUN="$wsrun" FOUNDRY_WHO="" \
+         sh "$runner" source ask authorisation tests 'May this clause exist?' </dev/null 2>/dev/null )" "$q"
+}
+a_question_is_derived_not_issued
+
+# `receive` carries an answer and decides nothing about it. There is no parameter for one, so a
+# worker can produce a human's answer only by writing it where a human's answer lives.
+an_answer_is_carried_never_minted() {
+  [ -n "${q:-}" ] || { skip "answers — no question"; return; }
+
+  is "an unanswered question is not an answer"  "$(code_of ws source receive authorisation tests)" "1"
+  is "and it comes back saying nothing at all"  "$(ws source receive authorisation tests)" ""
+
+  answer_with "$q" 'no — not like this'
+
+  is "a human's answer comes back as they wrote it" \
+     "$(ws source receive authorisation tests)" "no — not like this"
+  is "receive names a stage and a clause, never an answer" \
+     "$(code_of ws source receive authorisation tests yes)" "2"
+  is "replaying it says the same thing" \
+     "$(ws source receive authorisation tests)" "no — not like this"
+
+  # The stage is what keeps an answer permitting a clause from ever saying the clause was met.
+  is "an answer at one stage is no answer at the other" \
+     "$(code_of ws source receive completion tests)" "1"
+}
+an_answer_is_carried_never_minted
+
+#
+# Silence is not approval, and neither is a refusal, and neither is a yes. Authorisation reads no
+# answer yet — this stage carries questions and nothing more — so the only thing that could change
+# what a run may do is a human editing an artifact.
+#
+an_answer_authorises_nothing() {
+  [ -n "${wsrun:-}" ] || { skip "authorisation — no work source run"; return; }
+
+  ws charter introduce Judged 'the interface is understandable' >/dev/null 2>&1
+  is "an introduced clause leaves the run unauthorised" "$(code_of ws authorise)" "11"
+
+  qi=$(ws source ask authorisation 'the interface is understandable' 'May this clause exist?')
+
+  answer_with "$qi" 'yes, go ahead'
+  is "an approval sitting in the source authorises nothing" "$(code_of ws authorise)" "11"
+  is "and it comes back as an answer, no more" \
+     "$(ws source receive authorisation 'the interface is understandable')" "yes, go ahead"
+
+  answer_with "$qi" 'no'
+  is "a refusal leaves it exactly as unauthorised" "$(code_of ws authorise)" "11"
+
+  # The same code and the same shape for yes and for no. Deciding which one it is is the reader's,
+  # and a transport that could tell them apart would be answering for the human.
+  is "and comes back the same way an approval does" \
+     "$(code_of ws source receive authorisation 'the interface is understandable')" "0"
+
+  lacks "an answer widens no allowlist" "$(ws policy)" "acme/items"
+  is    "and grants no target"          "$(code_of ws targets add https://gitlab.com/acme/items.git main)" "5"
+}
+an_answer_authorises_nothing
+
+# A delivery is addressed to the item and belongs to the run — one item has many runs, and each
+# delivers its own. Floor keeps no copy of the identity: the source is where a delivery lives, so a
+# resumed run asks again and gets a true answer rather than a stale one.
+one_item_has_many_runs() {
+  [ -n "${wsrun:-}" ] || { skip "deliveries — no work source run"; return; }
+
+  first=$(ws source publish work/first 'The first attempt')
+  exists "publishing answers with the delivery's identity" "$first"
+  is "and resuming answers with the same one" "$(ws source publish work/first 'The first attempt')" "$first"
+  is "a second branch is a second delivery, so it is refused" \
+     "$(code_of ws source publish work/second 'The first attempt')" "17"
+
+  unread=$(floor "$tmp/bare" new "Unread")
+  is "a run that has read no item can address no delivery" \
+     "$(code_of floor_as "$tmp/bare" "$home" "$unread" source publish work/x 'A title')" "1"
+
+  # The second run, in the same checkout. `new` moves the pointer, so everything above this line
+  # addressed its run by name.
+  second=$(floor "$tmp/wsrc" new "Work source")
+  differs "a second run is never the first run's name" "$second" "$wsrun"
+
+  is "a second run reads the same item"      "$(code_of floor "$tmp/wsrc" source read 7)" "0"
+  differs "and publishes its own delivery"   "$(floor "$tmp/wsrc" source publish work/second 'The second attempt')" "$first"
+
+  # Run ids are unique over all time, so the first run's key can never be derived again — which is
+  # what keeps an answer left in a source from reaching a run that was not asked.
+  floor "$tmp/wsrc" charter derive >/dev/null 2>&1
+  is "the first run's answer is not the second run's" \
+     "$(code_of floor "$tmp/wsrc" source receive authorisation tests)" "1"
+}
+one_item_has_many_runs
+
+# Grants reserve a name and a run that authorised nothing used to hand its back, so the same base
+# minted the same id, the same clause id, and a question byte-identical to one already answered.
+a_deleted_run_never_lends_its_name() {
+  gone=$(floor "$tmp/bare" new "Never again")
+  rm -rf "$gone"
+  differs "a deleted run's name is never minted again" "$(floor "$tmp/bare" new "Never again")" "$gone"
+}
+a_deleted_run_never_lends_its_name
+
+# A source that is not there answers "no item", and no item is what an unread run looks like.
+a_missing_source_is_not_silence() {
+  [ -n "${wsrun:-}" ] || { skip "missing source — no work source run"; return; }
+
+  is "a work source that is not there stops the command" \
+     "$( cd "$tmp/wsrc" && FOUNDRY_HOME="$home" FOUNDRY_RUN="$wsrun" FOUNDRY_SOURCE="$tmp/no-such" \
+         sh "$runner" source read 7 >/dev/null 2>&1; printf '%s' "$?" )" "3"
+}
+a_missing_source_is_not_silence
+
+#
+# The second adapter, driven by a `gh` that is not GitHub. It answers from files, so the adapter's
+# own conventions run for real — the marker line, the digest, the search for this run's delivery.
+#
+# **What it cannot say is whether the service behaves that way.** Nothing here has spoken to it, and
+# a suite that needs a network and a token is a suite nobody runs.
+#
+fake_gh() {
+  mkdir -p "$1" || return 1
+  cat > "$1/gh" <<'STUB'
+#!/bin/sh
+# Not GitHub. It answers from $GH_STORE so the adapter's conventions can be exercised offline.
+set -u
+store=${GH_STORE:?}
+mkdir -p "$store"
+
+case "$*" in
+  "issue view"*--comments*) cat "$store/comments" 2>/dev/null ;;
+  "issue view"*)            cat "$store/item" 2>/dev/null ;;
+  "issue comment"*)         printf '%s\n' "$5" >> "$store/comments" ;;
+  "pr list"*)               awk -v run="${6%% *}" '$3 == run { print $1, $2 }' "$store/prs" 2>/dev/null ;;
+  "pr create"*)             url="https://example.invalid/pr/$(cat "$store/prs" 2>/dev/null | grep -c .)"
+                            run=$(printf '%s' "$8" | awk '$1 == "floor-run:" { print $2 }')
+                            printf '%s %s %s\n' "$4" "$url" "$run" >> "$store/prs"
+                            printf '%s\n' "$url" ;;
+  *) exit 2 ;;
+esac
+STUB
+  chmod +x "$1/gh"
+}
+
+the_other_adapter() {
+  make_repo "$tmp/gh" main && set_origin "$tmp/gh" 'https://github.com/acme/gh.git' \
+    && commit_file "$tmp/gh" Makefile 'test:
+	echo ok
+' || { skip "the other adapter — git could not make a repo here"; return; }
+
+  fake_gh "$tmp/ghbin" || { skip "the other adapter — could not put a gh on the path"; return; }
+  export GH_STORE="$tmp/ghstore"
+  mkdir -p "$GH_STORE"
+  printf 'Make the other thing\n\nAnd make it well.\n' > "$GH_STORE/item"
+
+  ghrun=$( cd "$tmp/gh" && PATH="$tmp/ghbin:$PATH" FOUNDRY_HOME="$home" FOUNDRY_RUN="" FOUNDRY_WHO="" \
+           sh "$runner" new "Other adapter" 2>/dev/null )
+  gh_floor() { ( cd "$tmp/gh" && PATH="$tmp/ghbin:$PATH" FOUNDRY_HOME="$home" FOUNDRY_RUN="$ghrun" \
+                 FOUNDRY_WHO="" sh "$runner" "$@" 2>/dev/null ); }
+
+  has "the other adapter reads an item" "$(gh_floor source read 12)" "And make it well"
+
+  # The run records which item, never which source said it. A run carried to a machine with neither
+  # adapter installed still means what it meant, and this file is the only one that could say otherwise.
+  is "the run records the item, not the source that answered" "$(cat "$ghrun/source" 2>/dev/null)" "12"
+
+  gh_floor charter derive >/dev/null 2>&1
+
+  gq=$(gh_floor source ask authorisation tests 'May this clause exist?')
+  is "and derives the same question there" "$gq" "$(basename "$ghrun").authorisation.$(clause_of tests)"
+  is "asking twice is one question"  "$(gh_floor source ask authorisation tests 'May this clause exist?')" "$gq"
+  is "and the source holds one"      "$(grep -c 'floor-question' "$GH_STORE/comments" 2>/dev/null)" "1"
+  is "other words under one question are refused" \
+     "$(code_of gh_floor source ask authorisation tests 'Something else entirely?')" "17"
+
+  is "an unanswered question is not an answer" "$(code_of gh_floor source receive authorisation tests)" "1"
+  printf 'floor-answer: %s yes, go ahead\n' "$gq" >> "$GH_STORE/comments"
+  is "and a human's answer comes back as they wrote it" \
+     "$(gh_floor source receive authorisation tests)" "yes, go ahead"
+
+  gd=$(gh_floor source publish work/other 'The other attempt')
+  matches "publishing answers with the delivery's identity" "$gd" '^https://'
+  is "and resuming answers with the same one" "$(gh_floor source publish work/other 'The other attempt')" "$gd"
+  is "a second branch is refused there too" \
+     "$(code_of gh_floor source publish work/third 'The other attempt')" "17"
+
+  unset GH_STORE
+}
+the_other_adapter
+
+# Level 1 has two halves and this is the second one: a repository whose remote is GitHub, on a
+# machine with no `gh`, still has a work source. Skipped where a real `gh` would answer instead.
+a_remote_with_no_gh_still_has_a_source() {
+  [ -n "${ghrun:-}" ] || { skip "no gh — the other adapter did not run"; return; }
+  command -v gh >/dev/null 2>&1 && { skip "a remote with no gh — this machine has one"; return; }
+
+  mkdir -p "$src/items"
+  printf 'Read from a directory\n' > "$src/items/12"
+
+  has "with no gh, a directory answers for a GitHub remote" \
+      "$(floor_as "$tmp/gh" "$home" "$ghrun" source read 12)" "Read from a directory"
+}
+a_remote_with_no_gh_still_has_a_source
 
 # --- asking for the wrong thing ---
 
