@@ -1960,11 +1960,13 @@ a_half_built_workspace_is_never_the_workspace() {
 a_half_built_workspace_is_never_the_workspace
 
 #
-# The invariant quantifies over **every** selected target. One checkout answers for one of them, so a
-# second selected target is graded by nothing — and a run would deliver on evidence that never
-# mentioned the repository half its clauses govern. §8's two-target experiment is meant to fail here.
+# Selecting after the freeze. The set was fixed when it was authorised, so adding to it makes a run
+# nobody authorised — §4's remedy is a new run, never this one carrying on.
 #
-a_second_target_is_graded_by_nothing_and_says_so() {
+# It used to be reported as an ungradable target, which sent a reader to open a workspace for it. The
+# selection moving is the earlier fact and the one with a remedy.
+#
+a_target_selected_after_the_freeze_is_a_new_run() {
   make_repo "$tmp/ct" main && set_origin "$tmp/ct" 'https://github.com/acme/ct.git' \
     && mkdir -p "$tmp/ct/.foundry" \
     && commit_file "$tmp/ct" .foundry/gates 'tests  true
@@ -1982,12 +1984,12 @@ a_second_target_is_graded_by_nothing_and_says_so() {
   floor "$tmp/ct" policy authorize 'https://github.com/acme/other.git' >/dev/null 2>&1
   floor "$tmp/ct" targets add 'https://github.com/acme/other.git' main >/dev/null 2>&1
 
-  is  "selecting a second one it cannot reach stops delivery" \
-      "$(code_of floor "$tmp/ct" complete)" "15"
-  has "and names the repository nothing graded" \
-      "$(floor_says "$tmp/ct" complete)" "ungradable: [https://github.com/acme/other.git]"
+  is  "selecting a second one after the freeze stops delivery" \
+      "$(code_of floor "$tmp/ct" complete)" "10"
+  has "and says which run this is no longer" \
+      "$(floor_says "$tmp/ct" complete)" "no longer the one that was authorised"
 }
-a_second_target_is_graded_by_nothing_and_says_so
+a_target_selected_after_the_freeze_is_a_new_run
 
 #
 # Every clause is graded against every selected target, so a line put into the file by hand decides
@@ -2014,6 +2016,39 @@ a_selection_edited_by_hand_grades_nothing() {
   has "and named" "$(floor_says "$tmp/cu" complete)" "selected but not authorised"
 }
 a_selection_edited_by_hand_grades_nothing
+
+#
+# The same act with nothing left behind. `refuse_unselectable` cannot see an absence, so the frozen
+# record is the only thing that still remembers the line was selected — and authorisation was the
+# only stage reading it.
+#
+a_target_deleted_after_the_freeze_is_still_selected() {
+  make_repo "$tmp/cw" main && set_origin "$tmp/cw" 'https://github.com/acme/cw.git' \
+    && mkdir -p "$tmp/cw/.foundry" \
+    && commit_file "$tmp/cw" .foundry/gates 'tests  true
+' || { skip "deleted target — git could not make a repo here"; return; }
+
+  d=$(floor_new_as "$tmp/cw" ada@example.com "Deleted")
+  floor "$tmp/cw" charter derive >/dev/null 2>&1
+  floor "$tmp/cw" policy authorize 'https://github.com/acme/cw.git' >/dev/null 2>&1
+  floor "$tmp/cw" policy authorize 'https://github.com/acme/gone.git' >/dev/null 2>&1
+  floor "$tmp/cw" targets add 'https://github.com/acme/cw.git' main >/dev/null 2>&1
+  floor "$tmp/cw" targets add 'https://github.com/acme/gone.git' main >/dev/null 2>&1
+  floor "$tmp/cw" open >/dev/null 2>&1
+  floor "$tmp/cw" gates >/dev/null 2>&1
+
+  is "two selected and one ungradable, it may not deliver" \
+     "$(code_of floor "$tmp/cw" complete)" "15"
+
+  grep -v 'gone.git' "$d/units/01/targets" > "$d/units/01/rest" \
+    && mv "$d/units/01/rest" "$d/units/01/targets"
+
+  is  "deleting the one it cannot grade does not make it deliverable" \
+      "$(code_of floor "$tmp/cw" complete)" "10"
+  has "and says the selection is no longer the authorised one" \
+      "$(floor_says "$tmp/cw" complete)" "no longer the one that was authorised"
+}
+a_target_deleted_after_the_freeze_is_still_selected
 
 #
 # The same act with a quieter shape. Deleting a level-2 declaration drops detection a level, so the
