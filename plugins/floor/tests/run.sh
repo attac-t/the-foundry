@@ -316,9 +316,10 @@ wreck_runner "an identity that may hold a newline is caught" \
 wreck_runner "a slot reclaimed with grants behind it is caught" \
   inherit 's#slot_is_reserved() { \[ -e "$GRANTS/$1" \]; }#slot_is_reserved() { false; }#'
 
-# The bootstrap is an effective grant. Copied, it becomes a second place the truth lives.
+# The bootstrap is an effective grant. Copied, it becomes a second place the truth lives — and the
+# short-circuit this blinds is the one both grants share, so it catches any grant recorded twice.
 wreck_runner "a bootstrap copied into the grants is caught" \
-  copyboot 's|is_authorised "$dir" "$identity" && return 0|is_authorised "$dir" "$identity" \&\& [ 1 -eq 0 ] \&\& return 0|'
+  copyboot 's|"$holds" "$dir" "$identity" && return 0|"$holds" "$dir" "$identity" \&\& [ 1 -eq 0 ] \&\& return 0|'
 
 # A bootstrap file naming nothing must read as no bootstrap, or `policy` lists a nameless entry.
 wreck_runner "a bootstrap that names nothing is caught" \
@@ -456,18 +457,17 @@ wreck_runner "a guard that refuses a run made before it is caught" \
   nogrand 's#named=$(recorded_id "$1") || return 0#named=$(recorded_id "$1") || exit 13#'
 
 #
-# Grading a repository and writing to one are two powers, and these are the two ways the second
-# collapses into the first.
+# Grading a repository and writing to one are two powers, and one break covers every way the second
+# collapses into the first — a grant that forgives the bootstrap target and a grant nothing reads
+# both make `may_deliver_to` true, and one assertion kills both. A second break was written and
+# deleted: it failed on the same three checks with the same values.
 #
-# `bootdeliver` is the one that matters. Every run is bootstrapped somewhere, so a delivery grant
-# that forgave the bootstrap target would grant delivery everywhere — and no test that grants
-# delivery before asking can see it.
+# **What the assertion's position does, the break cannot.** Every run is bootstrapped somewhere, so
+# delivery inheriting the allowlist would grant delivery everywhere — and a check made *after* a
+# grant exists cannot see that. `model.sh` asks before granting for exactly this reason.
 #
 wreck_runner "a delivery nobody granted is caught" \
-  ungranted   '/^may_deliver_to()/,/^}/ s#    \[ -f "$file" \] || return 1#    return 0#'
-
-wreck_runner "a delivery grant that forgives the bootstrap target is caught" \
-  bootdeliver 's#^may_deliver_to() {#may_deliver_to() { is_authorised "$1" "$2" \&\& return 0;#'
+  ungranted '/^may_deliver_to()/,/^}/ s#    \[ -f "$file" \] || return 1#    return 0#'
 
 wreck_runner "a check blind to a gate resolving elsewhere is caught" \
   blindres   's|^        moved_resolutions "$file"$|        :|'
