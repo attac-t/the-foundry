@@ -51,6 +51,10 @@ The trade: short unusual words like `whilst` and `hence` pass the counts.
 
 Out of scope: files the agent writes, subagent replies, and any language but English.
 
+Also unscored: every message but the last. A turn can show you three replies and only the third
+is counted. `Stop` is handed one message, so nothing can see the others. The brief asks the agent
+to hold its answer for the last one. Nothing marks it.
+
 ---
 
 ## Before the reply exists
@@ -117,17 +121,17 @@ them in your shell. Score a file by hand with
 bash plugins/signal/tests/run.sh
 ```
 
-147 checks, then twenty deliberate breaks that must each turn the suite red. Needs a clone of
+155 checks, then twenty-one deliberate breaks that must each turn the suite red. Needs a clone of
 this repo. Takes a few seconds.
 
-Eight of those breaks target the install, not the scoring. That is where the last one hid. The
+Nine of those breaks target the install, not the scoring. That is where the last one hid. The
 shipped hook was not executable, so it died before it read a word. Every other suite stayed green.
 Each one called the hook itself, instead of reading how Claude Code is told to call it. So
 `tests/install.sh` reads the command out of `hooks/hooks.json` and hands it to a shell.
 
-Three of the eight break the forward correction, at each end and in the middle. Unwired, signal
-still scores every reply and still blocks the tail. It looks alive while the half that runs first
-is gone. A green suite would have said nothing.
+Four of the nine break the forward correction: at each end, in the middle, and at the turn rule.
+Unwired, signal still scores every reply and still blocks the tail. It looks alive while the half
+that runs first is gone. A green suite would have said nothing.
 
 One check guards against the way the gate last came apart. Every default lives in `lib/score.awk`.
 The hook named them a second time. Raising the block lines in the scorer moved half the gate, and

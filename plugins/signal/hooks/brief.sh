@@ -5,6 +5,9 @@
 # The half signal was missing. `Stop` arrives too late to keep a long reply off the screen, so every
 # first draft was written blind and 78% of them blocked. This is the only moment that can help.
 #
+# Then where the answer goes. `Stop` is handed one message, so a turn that answered twice scores as
+# one reply and passes. Nothing can mark the shape, so this is the only place it can be asked for.
+#
 # Then the last reply's numbers, because a standing rule the agent has already broken reads as
 # wallpaper, where "you just ran 288 words against 120" does not.
 #
@@ -48,6 +51,7 @@ report=$(budget)
 printf 'signal: hold your reply to %s words, no sentence over %s, and long words under %s%%.\n' \
   "$(field words_warn)" "$(field sent_warn)" "$(field long_warn)"
 printf 'Code, paths and tables do not count. The bar is a ten-year-old reading it once — see signal:plain-english.\n'
+printf 'Say the answer once, in your last message. Anything you write before a tool call is already read, so keep it to progress.\n'
 
 [ -n "$last" ] && printf 'Your last reply came in at %s. Cut harder this time.\n' "$last"
 

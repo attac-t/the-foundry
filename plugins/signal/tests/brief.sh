@@ -43,6 +43,10 @@ has "the brief names the bar"              "$out" 'ten-year-old'
 has "the brief points at the skill"        "$out" 'signal:plain-english'
 has "the brief says what does not count"   "$out" 'Code, paths and tables'
 
+# Where the answer goes. `Stop` sees one message, so a turn that answered twice passes the count.
+has "the brief says which message answers" "$out" 'in your last message'
+has "the brief names the cost of speaking early" "$out" 'before a tool call'
+
 # The agent reads this, so it must not arrive wrapped in JSON it would quote back.
 lacks "the brief is plain text, not JSON" "$out" '{"'
 
