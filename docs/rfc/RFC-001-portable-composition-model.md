@@ -1,6 +1,6 @@
 # RFC-001: The Portable Composition Model
 
-**Status:** Accepted — revision 14
+**Status:** Accepted — revision 15
 **Plugin:** `floor`
 **Author:** Christian Attard
 **Date:** 2026-08-12
@@ -1319,6 +1319,24 @@ designed into a stage nobody has built. Every reordering in this document is rec
 have been the first that was not, because nobody noticed it was one.
 
 
+### Revision 15 — a debt outlived by the text describing it
+
+Found by reading §7 against shipped code rather than against the last revision. Nothing here changes
+the model; the document had begun to describe a stage that exists.
+
+| Was | Is | What falsified it |
+|---|---|---|
+| §7 q9 owing a `who` floor does not write | written at `new`, and completion refuses a run without one | `selector` and `unauthorised_run`. The note survived the stage it was waiting for, which is the failure mode a revision log cannot catch — nothing was reordered and no claim was wrong when written |
+
+**What the record still is not.** `FOUNDRY_WHO` is whatever the environment says, so attribution
+names who claimed the selection rather than who made it. §2.3 already places that boundary with the
+provider; this only stops the document implying floor closed it.
+
+**Revision 14's own text is left alone.** It says invariant 4 describes a stamp nothing writes, which
+was true when written. A revision log is dated history, and correcting it would destroy the record
+that the debt ever existed.
+
+
 ## 7. Unresolved questions
 
 **Closed since revision 2:** `policy` stays; the target allowlist is its first instance and is
@@ -1380,9 +1398,11 @@ required by §2.3, not speculative.
    The first run that legitimately needs a second person is the evidence that would justify an
    allowlist — building one now is guessing.
 
-   **What this owes:** floor writes `source: cli` and records no `who`, so the selector exists here
-   and not in code. Invariant 4 describes something nothing writes, and the work source cannot be
-   built until it does.
+   **Paid.** `selector` records the human at `new`, completion refuses a run naming nobody, and the
+   work source is built. Invariant 4 describes something written.
+
+   **The residual:** the record says who claimed the selection, never who provably made it —
+   `FOUNDRY_WHO` is whatever the environment says. Attribution here is a record, not a credential.
 
 10. **What does a second, contradicting answer mean?** First wins is racy. Last wins lets a late
     commenter overwrite. Refusing matches §2.2's *ambiguous escalates* and turns one disagreement into
