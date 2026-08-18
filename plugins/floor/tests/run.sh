@@ -327,7 +327,7 @@ wreck_runner "a bootstrap that names nothing is caught" \
 
 # Policy state is read by eye and outlives the run. A password stored here is a password on disk.
 wreck_runner "a grant that stores credentials is caught" \
-  grantcreds 's|printf .%s\\n. "$identity" >> "$grants"|printf "%s\\n" "$repo" >> "$grants"|'
+  grantcreds 's|record_grant "$file" "$identity"|record_grant "$file" "$repo"|'
 
 # The charter lives in the run, so nothing can inherit one. Move it beside the runs and a reclaimed
 # slot would carry a dead run's definition of good — the bug policy shipped with.
