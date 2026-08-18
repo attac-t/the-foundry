@@ -70,6 +70,11 @@ forget
 out=$(run "$(payload false "$blocking" p1)")
 has "the first stop blocks" "$out" '"decision":"block"'
 
+# Two audiences. `reason` is the agent's and never reaches the reader, who is left holding two
+# replies with nothing saying which one was sent.
+has "and the reader is told it went back" "$out" '"systemMessage"'
+has "in words that say which reply to read" "$out" 'The next one is the answer'
+
 out=$(run "$(payload true "$blocking" p1)")
 has   "a rewrite still over budget tells you" "$out" '"systemMessage"'
 lacks "the second stop does not block"        "$out" '"decision"'

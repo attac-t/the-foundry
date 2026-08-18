@@ -65,8 +65,15 @@ safe() { printf '%s' "$1" | awk -f "$root/lib/jsonsafe.awk"; }
 # handing the numbers to the only party who cannot act on them. That goes to the note.
 warn() { printf '{"systemMessage":"signal: %s"}\n' "$(safe "$1")"; }
 
-# Hand the reply back to the agent to write again.
-block() { printf '{"decision":"block","reason":"%s"}\n' "$(safe "$1")"; }
+# Hand the reply back to the agent to write again, and tell the reader it went back.
+#
+# Two audiences, one object. `reason` reaches the agent and `systemMessage` reaches the reader, which
+# is why `warn` above needs the second one — and why blocking without it leaves a reader holding two
+# replies with nothing saying which was sent.
+block() {
+    printf '{"decision":"block","reason":"%s","systemMessage":"%s"}\n' \
+        "$(safe "$1")" "signal: that reply went back to be said again. The next one is the answer."
+}
 
 # Get the rewrite instructions. ASCII only: jsonsafe.awk drops an em dash and leaves its two spaces.
 advice() { printf '%s' "They have already read the long one, so do not write it again. Answer first, in one line, and drop the route you took. Keep every fact. Cut the words. For every word, ask whether a ten-year-old would use it, and whether a plainer word means the same. Read the signal:plain-english skill, which names the standard."; }

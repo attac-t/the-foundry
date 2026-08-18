@@ -141,6 +141,7 @@ unship()  { rm -f "$1/lib/score.awk"; }
 rewire()  { sed 's|hooks/signal.sh|hooks/gone.sh|' "$1/hooks/hooks.json" | rewrite "$1/hooks/hooks.json"; }
 unbrief() { sed 's|hooks/brief.sh|hooks/gone.sh|'  "$1/hooks/hooks.json" | rewrite "$1/hooks/hooks.json"; }
 unnote()  { sed 's|^note |: |'                     "$1/hooks/signal.sh"  | rewrite "$1/hooks/signal.sh"; }
+unsay()   { sed 's|,"systemMessage":"%s"||'        "$1/hooks/signal.sh"  | rewrite "$1/hooks/signal.sh"; }
 unread()  { sed 's|^last=.*|last=|'                "$1/hooks/brief.sh"   | rewrite "$1/hooks/brief.sh"; }
 unturn()  { sed '/in your last message/d'          "$1/hooks/brief.sh"   | rewrite "$1/hooks/brief.sh"; }
 
@@ -164,6 +165,10 @@ wreck "hooks.json pointing at nothing is caught"      nofile rewire
 #
 wreck "a brief that lost its wire is caught"          nobrief unbrief
 wreck "a Stop hook that leaves no note is caught"     nonote  unnote guarded
+
+# The block that shipped for months. The agent was told to write again and the reader was told
+# nothing, so two replies arrived and only one of them counted.
+wreck "a block the reader never hears is caught"      nosay   unsay  guarded
 wreck "a brief that never reads the note is caught"   noread  unread briefed
 
 #
