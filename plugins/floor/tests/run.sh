@@ -230,8 +230,8 @@ wreck_runner "a clause grading nothing that authorises anyway is caught" \
   nobar 's|ungoverned=$(ungoverning_clauses "$run_dir" "$charter_path" "$selection_path")|ungoverned=|'
 
 #
-# The freeze. Four breaks, because it makes four separate promises: the set is written down, a
-# moved set is refused, the record holds the lines, and the stage that grades reads it too.
+# The freeze. Five breaks, because it makes five separate promises: the set is written down, a
+# moved set is refused, the record holds the lines, and the stages that grade and record both read it.
 #
 # `unfrozen` is aimed at the write. Blinding the comparison alone leaves a suite that would still
 # pass if nothing were ever recorded — the comparison has nothing to disagree with.
@@ -241,11 +241,18 @@ wreck_runner "a selected set that is never written down is caught" \
 
 wreck_runner "a selection that moved and authorises anyway is caught" \
   drifted 's|\[ "$(normalised_selection "$2")" = "$(cat "$frozen")" \] && return 0|return 0|'
-
-# `drifted` blinds the comparison for both readers. This blinds one call site, so only a check that
-# completes can catch it — which is where the record was going unread.
+# `drifted` blinds the comparison for both readers. These blind one call site each, and each is a
+# different claim — so each sed is anchored to the function it is about. Unanchored, one break would
+# blind every caller and stop being a claim about any of them.
 wreck_runner "a completion that grades the live selection is caught" \
-  livesel 's#    refuse_moved_selection "$dir" "$(unit_targets_file "$dir")" || exit 10#    :#'
+  livesel '/^complete()/,/^}/ s#    refuse_moved_selection "$dir" "$(unit_targets_file "$dir")" || exit 10#    :#'
+
+#
+# The recorder reads it too. A grader that misreads answers wrongly once; a recorder writes a row the
+# ledger keeps, so it needs the guard for a reason the grader does not have.
+#
+wreck_runner "a recorder that stamps for a moved selection is caught" \
+  movedgate '/^gates()/,/^}/ s#    refuse_moved_selection "$dir" "$(unit_targets_file "$dir")" || exit 10#    :#'
 
 # A digest answers "something moved" where a diff answers "what". The record has to hold the lines.
 #
@@ -430,11 +437,15 @@ wreck_runner "a ref read after the command ran is caught" \
 # Grants are keyed by the run's id, so a renamed directory looks up a key nothing holds and `policy`
 # answered exit 0 with the bootstrap alone. Authority a human gave, gone, without a word.
 #
-# Three call sites, and deliberately so: `policy`, `targets` and `authorise` each read the grants for
-# authority, and the rule is that no reader softens it. It does not prove any one of the three alone
-# is caught — `model.sh` asserts each separately for that.
+# Every command that acts on the run, blinded at once. It does not prove any one of them is caught —
+# `model.sh` asserts each separately for that, and `namedgate` below takes the one that writes.
 wreck_runner "a renamed run that loses its grants in silence is caught" \
   renamed 's#    refuse_renamed_run "$dir"##; s#    refuse_renamed_run "$run_dir"##'
+
+# The recorder alone. `renamed` blinds every caller, so it is killed by whichever check runs first
+# and says nothing about the stage that stamps a row into a run the others refuse.
+wreck_runner "a recorder that stamps into a renamed run is caught" \
+  namedgate '/^gates()/,/^}/ s#    refuse_renamed_run "$dir"#    :#'
 
 # The other direction. Failing open on a missing `id` is what lets a run made before this rule keep
 # working, and closing it breaks every one of them at once — silently, because nothing asked.

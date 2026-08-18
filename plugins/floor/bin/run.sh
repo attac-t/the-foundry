@@ -1014,6 +1014,12 @@ gates() {
     dir=$(active_run) || exit 1
     [ "$#" -eq 0 ] || { usage; exit 2; }
 
+    # The ledger is append-only, so the recorder needs the guards the graders have and one reason
+    # more: a grader that reads a run it should have refused answers wrongly once, and a recorder
+    # writes a row nothing takes back. Both of these refused everywhere but here.
+    refuse_renamed_run "$dir"
+    refuse_moved_selection "$dir" "$(unit_targets_file "$dir")" || exit 10
+
     check_charter "$dir"
     run_pinned_gates "$dir"
 }
