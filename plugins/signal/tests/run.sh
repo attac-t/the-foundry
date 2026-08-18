@@ -142,6 +142,7 @@ rewire()  { sed 's|hooks/signal.sh|hooks/gone.sh|' "$1/hooks/hooks.json" | rewri
 unbrief() { sed 's|hooks/brief.sh|hooks/gone.sh|'  "$1/hooks/hooks.json" | rewrite "$1/hooks/hooks.json"; }
 unnote()  { sed 's|^note |: |'                     "$1/hooks/signal.sh"  | rewrite "$1/hooks/signal.sh"; }
 unread()  { sed 's|^last=.*|last=|'                "$1/hooks/brief.sh"   | rewrite "$1/hooks/brief.sh"; }
+unturn()  { sed '/in your last message/d'          "$1/hooks/brief.sh"   | rewrite "$1/hooks/brief.sh"; }
 
 audit_the_executable_bit() {
   records_exec || {
@@ -164,6 +165,12 @@ wreck "hooks.json pointing at nothing is caught"      nofile rewire
 wreck "a brief that lost its wire is caught"          nobrief unbrief
 wreck "a Stop hook that leaves no note is caught"     nonote  unnote guarded
 wreck "a brief that never reads the note is caught"   noread  unread briefed
+
+#
+# The turn rule, which nothing else can mark. `Stop` is handed one message, so a turn that answered
+# twice scores as one reply and passes. Drop the line and every count stays green.
+#
+wreck "a brief that dropped the turn rule is caught"  noturn  unturn briefed
 
 echo
 echo "audit — the run leaves nothing behind"

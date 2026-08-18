@@ -59,7 +59,10 @@ so counting beats will never catch them.
 
 ## The rules
 
-1. **Answer first.** One line. Then the why, if they need it.
+A turn can hold several messages, and your reader reads them all. So each one is a reply, and the
+answer belongs in the last.
+
+1. **Answer first.** One line, at the top of that last message. Then the why, if they need it.
 2. **Short words.** Under three beats, unless the test says keep it.
 3. **Short sentences.** Under 20 words, one thought each.
 4. **No wind-up.** Cut `great question`. Start at the point.
