@@ -32,6 +32,10 @@
 #      would each send the reader to a remedy that changes nothing
 #  17  this run already sent the work source something else — another item, another branch, or the
 #      same question in other words. One remedy: a new run
+#  18  nobody said this run may deliver to that target. `policy authorize` grants grading, and
+#      writing to a repository is a second act a human takes
+#  19  the delivery could not be sent. The grant was there and the work was done, so 18 and 15
+#      would each send the reader to a remedy that changes nothing
 #
 # Eight through twelve are one stage and five remedies: write a requirement down, select a target it
 # governs, or start again. Collapsing them would make the exit code say *authorisation refused* and
@@ -59,6 +63,7 @@ main() {
         gates)     gates "$@" ;;
         open)      open_workspace "$@" ;;
         complete)  complete "$@" ;;
+        deliver)   deliver "$@" ;;
         authorise) authorise ;;
         source)    work_source "$@" ;;
         *)         usage; exit 2 ;;
@@ -89,6 +94,7 @@ floor — where work happens.
                                   did not pass
   run.sh open                     check out every selected target in isolation, and print where
   run.sh complete                 may this run deliver? exit 15 names what is missing
+  run.sh deliver <title>          push the work and tell the source where it is
   run.sh authorise                refuse a run that describes no work, or whose selection moved
                                   — exit 1, 5, 8, 9, 10, 11 or 12
   run.sh source read <item>       pull the item's words into this run
@@ -726,9 +732,10 @@ policy() {
     refuse_renamed_run "$dir"
 
     case "${1:-}" in
-        '')        list_policy "$dir" ;;
-        authorize) shift; authorize "$dir" "${1:-}" ;;
-        *)         usage; exit 2 ;;
+        '')         list_policy "$dir" ;;
+        authorize)  shift; authorize  "$dir" "${1:-}" ;;
+        deliver-to) shift; deliver_to "$dir" "${1:-}" ;;
+        *)          usage; exit 2 ;;
     esac
 }
 
@@ -776,28 +783,56 @@ is_authorised() {
 list_policy() {
     boot=$(bootstrap_identity "$1") && printf '%s\tbootstrap\n' "$boot"
 
-    grants=$(grants_file "$1")
-    [ -f "$grants" ] || return 0
-    awk '!/^[ \t]*#/ && NF { print $0 "\tgranted" }' "$grants"
+    list_grants "$(grants_file "$1")"     granted
+    list_grants "$(deliveries_file "$1")" deliver
 }
 
-authorize() {
-    dir=$1
-    repo=$2
+list_grants() {
+    [ -f "$1" ] || return 0
+    awk -v held="$2" '!/^[ \t]*#/ && NF { print $0 "\t" held }' "$1"
+}
 
-    [ -n "$repo" ] || { note "policy authorize needs a repo"; exit 2; }
+#
+# Beside the allowlist, never merged into it. One file holding both would make `policy authorize`
+# grant the second power as well.
+#
+deliveries_file() { printf '%s/%s/deliveries' "$GRANTS" "$(basename "$1")"; }
+
+#
+# **No bootstrap exemption, and that asymmetry is the separation.** `is_authorised` passes the
+# repository Foundry was invoked in; standing somewhere is not permission to write there, and every
+# run is bootstrapped somewhere.
+#
+may_deliver_to() {
+    file=$(deliveries_file "$1")
+    [ -f "$file" ] || return 1
+    grep -Fxq -- "$2" "$file"
+}
+
+#
+# Both grants are one act on two files, and the predicate is the whole difference.
+#
+grant() {
+    dir=$1; file=$2; holds=$3; repo=${4:-}
+
+    [ -n "$repo" ] || { note "a grant names a repo"; exit 2; }
 
     identity=$(repo_identity "$repo") || {
         note "no portable identity for [$repo] — needs a remote url, no local path, no space, no .."
         exit 4
     }
 
-    is_authorised "$dir" "$identity" && return 0
-
-    grants=$(grants_file "$dir")
-    mkdir -p "$(dirname "$grants")" || die_unwritable "$grants"
-    printf '%s\n' "$identity" >> "$grants" || die_unwritable "$grants"
+    "$holds" "$dir" "$identity" && return 0
+    record_grant "$file" "$identity"
 }
+
+record_grant() {
+    mkdir -p "$(dirname "$1")" || die_unwritable "$1"
+    printf '%s\n' "$2" >> "$1" || die_unwritable "$1"
+}
+
+authorize()  { grant "$1" "$(grants_file "$1")"     is_authorised  "${2:-}"; }
+deliver_to() { grant "$1" "$(deliveries_file "$1")" may_deliver_to "${2:-}"; }
 
 list_targets() {
     [ -f "$1" ] || return 0
@@ -959,7 +994,7 @@ refuse_unrecordable() {
 enter_work_tree() {
     here=$(this_repository)
 
-    tree=$(work_tree "$1" "$here" "$(selected_ref "$(unit_targets_file "$1")" "$here")") || exit 16
+    tree=$(unit_work_tree "$1" "$here") || exit 16
     cd "$tree" || { note "cannot enter [$tree]"; exit 16; }
 }
 
@@ -1047,6 +1082,12 @@ work_tree() {
 
     note "no workspace holds [$2] at [$3] — \`open\` one, and the gates grade what the work is in"
     return 1
+}
+
+# The workspace this unit owns. The ref comes from the selection rather than the caller, so no two
+# stages can answer about different trees — three asked the same three-part question before this.
+unit_work_tree() {
+    work_tree "$1" "$2" "$(selected_ref "$(unit_targets_file "$1")" "$2")"
 }
 
 # The ref this run selected for one target. `"" ==` on both sides: an `-v` assignment is a numeric
@@ -1147,29 +1188,98 @@ complete() {
     [ "$#" -eq 0 ] || { usage; exit 2; }
 
     dir=$(active_run) || exit 1
-    refuse_renamed_run "$dir"
+    refuse_unreadable_run "$dir"
 
-    # The same guard `targets` and `authorise` open with. Every clause is graded against every
-    # selected target, so a line put into the file by hand decides what this answers for — and the
-    # grader read it where the other two refuse it.
-    refuse_unselectable "$dir" "$(unit_targets_file "$dir")" || exit 5
-
-    # `refuse_unselectable` cannot see an absence, and the frozen record is the only thing that still
-    # remembers a deleted line was selected. Authorisation read it; the stage that grades did not.
-    refuse_moved_selection "$dir" "$(unit_targets_file "$dir")" || exit 10
-
-    findings=$(
-        unauthorised_run "$dir"
-        empty_bar "$dir"
-        empty_selection "$dir"
-        ungradable_targets "$dir"
-        unmet_clauses "$dir"
-    )
+    findings=$(unmet_for_delivery "$dir")
 
     [ -n "$findings" ] || return 0
     printf '%s\n' "$findings"
     exit 15
 }
+
+#
+# The guards both readers of the invariant open with.
+#
+# The same guard `targets` and `authorise` use. Every clause is graded against every selected target,
+# so a line put into the file by hand decides what the run answers for — and the grader read it where
+# the other two refuse it.
+#
+# `refuse_unselectable` cannot see an absence, and the frozen record is the only thing that still
+# remembers a deleted line was selected. Authorisation read it; the stage that grades did not.
+#
+refuse_unreadable_run() {
+    refuse_renamed_run "$1"
+    refuse_unselectable "$1" "$(unit_targets_file "$1")" || exit 5
+    refuse_moved_selection "$1" "$(unit_targets_file "$1")" || exit 10
+}
+
+# §2.5's three conjuncts, and invariant 4's. One definition, because `complete` answers whether a run
+# may deliver and `deliver` acts on that answer — two copies would let them disagree.
+unmet_for_delivery() {
+    unauthorised_run "$1"
+    empty_bar "$1"
+    empty_selection "$1"
+    ungradable_targets "$1"
+    unmet_clauses "$1"
+}
+
+#
+# Completed work, made reviewable.
+#
+# **Authority first, because it is answerable before the work is.** Telling someone their clauses are
+# unmet when the real answer is that nobody granted delivery sends them to a remedy that changes
+# nothing.
+#
+deliver() {
+    title=${1:-}
+    [ "$#" -le 1 ] || { usage; exit 2; }
+    [ -n "$title" ] || { note "deliver names the change"; exit 2; }
+
+    dir=$(active_run) || exit 1
+    here=$(this_repository)
+
+    refuse_unreadable_run "$dir"
+    refuse_ungranted_delivery "$dir" "$here"
+    refuse_incomplete "$dir"
+
+    send_delivery "$dir" "$here" "$title"
+}
+
+refuse_ungranted_delivery() {
+    may_deliver_to "$1" "$2" && return 0
+
+    note "nobody said this run may deliver to [$2] — \`policy deliver-to\` is what says so"
+    exit 18
+}
+
+refuse_incomplete() {
+    findings=$(unmet_for_delivery "$1")
+
+    [ -n "$findings" ] || return 0
+    printf '%s\n' "$findings"
+    exit 15
+}
+
+# Push, then say so. A source told about a delivery nobody can fetch is worse than silence, so the
+# order is not a preference.
+send_delivery() {
+    branch=$(delivery_branch "$1")
+
+    push_workspace "$1" "$2" "$branch"
+    publish_delivery "$1" "$branch" "$3"
+}
+
+push_workspace() {
+    tree=$(unit_work_tree "$1" "$2") || exit 16
+
+    why=$(git -C "$tree" push origin "HEAD:refs/heads/$3" 2>&1) && return 0
+    note "could not deliver [$3] to [$2]: $why"
+    exit 19
+}
+
+# Derived, never chosen. A branch a worker names is a branch a retry can rename, and then the source
+# holds two deliveries for one run.
+delivery_branch() { printf 'foundry/%s' "$(basename "$1")"; }
 
 # Invariant 4. A run exists because a human selected the work item, and one that records nobody has
 # no authority to deliver — the stamp lands at `new`, so its absence is a run made before the rule.
@@ -1222,7 +1332,7 @@ unmet_clauses() {
 
     # The workspace's ref, found by the question the gates asked — so the two cannot answer about
     # different trees. A run with no workspace has delivered nothing, whatever its checkout holds.
-    tree=$(work_tree "$1" "$here" "$(selected_ref "$(unit_targets_file "$1")" "$here")" 2>/dev/null) \
+    tree=$(unit_work_tree "$1" "$here" 2>/dev/null) \
         || { printf 'unopened: no workspace holds [%s], so nothing was delivered from one\n' "$here"; return; }
 
     ref=$(git -C "$tree" rev-parse --verify --quiet HEAD 2>/dev/null)

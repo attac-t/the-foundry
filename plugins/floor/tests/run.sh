@@ -241,11 +241,14 @@ wreck_runner "a selected set that is never written down is caught" \
 
 wreck_runner "a selection that moved and authorises anyway is caught" \
   drifted 's|\[ "$(normalised_selection "$2")" = "$(cat "$frozen")" \] && return 0|return 0|'
-# `drifted` blinds the comparison for both readers. These blind one call site each, and each is a
-# different claim — so each sed is anchored to the function it is about. Unanchored, one break would
-# blind every caller and stop being a claim about any of them.
-wreck_runner "a completion that grades the live selection is caught" \
-  livesel '/^complete()/,/^}/ s#    refuse_moved_selection "$dir" "$(unit_targets_file "$dir")" || exit 10#    :#'
+# `drifted` blinds the comparison itself. These blind one call site each, and each is a different
+# claim — so each sed is anchored to the function it is about. Unanchored, one break would blind
+# every caller and stop being a claim about any of them.
+#
+# `complete` and `deliver` share this guard: one decides whether a run may deliver and the other acts
+# on that answer, so a freeze either binds both or is worth nothing.
+wreck_runner "readers of the invariant that skip the freeze are caught" \
+  livesel '/^refuse_unreadable_run()/,/^}/ s#    refuse_moved_selection "$1" "$(unit_targets_file "$1")" || exit 10#    :#'
 
 #
 # The recorder reads it too. A grader that misreads answers wrongly once; a recorder writes a row the
@@ -451,6 +454,20 @@ wreck_runner "a recorder that stamps into a renamed run is caught" \
 # working, and closing it breaks every one of them at once — silently, because nothing asked.
 wreck_runner "a guard that refuses a run made before it is caught" \
   nogrand 's#named=$(recorded_id "$1") || return 0#named=$(recorded_id "$1") || exit 13#'
+
+#
+# Grading a repository and writing to one are two powers, and these are the two ways the second
+# collapses into the first.
+#
+# `bootdeliver` is the one that matters. Every run is bootstrapped somewhere, so a delivery grant
+# that forgave the bootstrap target would grant delivery everywhere — and no test that grants
+# delivery before asking can see it.
+#
+wreck_runner "a delivery nobody granted is caught" \
+  ungranted   '/^may_deliver_to()/,/^}/ s#    \[ -f "$file" \] || return 1#    return 0#'
+
+wreck_runner "a delivery grant that forgives the bootstrap target is caught" \
+  bootdeliver 's#^may_deliver_to() {#may_deliver_to() { is_authorised "$1" "$2" \&\& return 0;#'
 
 wreck_runner "a check blind to a gate resolving elsewhere is caught" \
   blindres   's|^        moved_resolutions "$file"$|        :|'
