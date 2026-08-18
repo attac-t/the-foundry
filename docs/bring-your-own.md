@@ -5,6 +5,8 @@
 skills, rules, tools, tests and conventions?
 **Method:** discovery, not confirmation. Claims are marked FACT, INFERENCE, HYPOTHESIS, DECISION or
 UNKNOWN.
+Issue texts and the three external systems were read live over the network; none of those claims
+is re-verifiable from this checkout alone.
 
 ---
 
@@ -292,8 +294,8 @@ Ordered by cost. Each names what it falsifies.
   operate its own reviewers — and build none of it beyond what convening already requires.
 - Product doctrine gets one durable goal issue; the words in the eventual artifact are a human's.
 - Before #118, and nothing else before #118: this repo declares its gates (E2); authorisation
-  consumes `receive` (#93/#97's remainder); a minimal delivery pushes the branch; the placement rule
-  is decided.
+  consumes `receive` (#97's remainder — #93 closed with the refusals shipped); a minimal delivery
+  pushes the branch; the placement rule is decided.
 - Do not build: a coordinator, a registry, a capability marketplace or scoring, a context compiler,
   a universal agent schema, a harness wrapper. Each was re-examined against the reference systems
   and none acquired an executable need — the closest, the liveness watcher, has E4 to earn it.
