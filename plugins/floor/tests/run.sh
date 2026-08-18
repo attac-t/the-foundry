@@ -41,19 +41,23 @@ model_caught() {
 }
 
 #
-# Break one rule in the runner and require the model suite to notice.
+# Break one rule in the runner — or in a file the runner resolves through — and require the model
+# suite to notice.
 #
 # Three ways a mutant proves nothing, all seen for real in this repo: sed fails, the output comes
 # out empty, or the pattern never matched. `cmp` alone catches only the third — an empty file
 # differs from the original too.
 #
+# The fourth argument names the file, because an adapter carries rules of its own and a rule only the
+# caller can break is one the adapter is free to drop.
+#
 wreck_runner() {
-  local name="$1" tag="$2" mutation="$3"
+  local name="$1" tag="$2" mutation="$3" file="${4:-bin/run.sh}"
 
   rm -rf "${tmp:?}/$tag" && cp -R "$root" "$tmp/$tag" || { bad "$name — could not copy the plugin"; return; }
-  sed "$mutation" "$root/bin/run.sh" > "$tmp/$tag/bin/run.sh" || { bad "$name — sed failed, so this proves nothing"; return; }
-  [ -s "$tmp/$tag/bin/run.sh" ] || { bad "$name — the mutant is empty, so the suite failed for the wrong reason"; return; }
-  cmp -s "$tmp/$tag/bin/run.sh" "$root/bin/run.sh" && { bad "$name — the break did not apply, so this proves nothing"; return; }
+  sed "$mutation" "$root/$file" > "$tmp/$tag/$file" || { bad "$name — sed failed, so this proves nothing"; return; }
+  [ -s "$tmp/$tag/$file" ] || { bad "$name — the mutant is empty, so the suite failed for the wrong reason"; return; }
+  cmp -s "$tmp/$tag/$file" "$root/$file" && { bad "$name — the break did not apply, so this proves nothing"; return; }
   model_caught "$tag" || { bad "$name — the suite passed against a broken runner"; return; }
 
   printf '  ok    %s\n' "$name"
@@ -139,7 +143,7 @@ wreck_runner "a layout with no units level is caught" \
 # `write_bootstrap`'s is included though the audit runs where `bootstrap_here` returns before it. A
 # rule stated unconditionally and applied selectively is the shape that let the other two through.
 wreck_runner "a runner that ignores a home it cannot write to is caught" \
-  blind 's# *|| die_unwritable "$dir/item.md"$##; s# *|| die_unwritable "$dir"$##; s# *|| die_unwritable "$RUNS"$##; s# *|| die_unwritable "$1/id"##; s# *|| die_unwritable "$(authority_file "$1")"$##; s# *|| die_unwritable "$1/bootstrap"$##'
+  blind 's# *|| die_unwritable "$dir/item.md"$##; s# *|| die_unwritable "$dir"$##; s# *|| die_unwritable "$RUNS"$##; s# *|| die_unwritable "$1/id"##; s# *|| die_unwritable "$(authority_file "$1")"$##; s# *|| die_unwritable "$1/bootstrap"$##; s# *|| die_unwritable "$GRANTS/$id"$##'
 
 wreck_runner "a runner that trusts an unset run directory is caught" \
   ghostvar 's|\[ -n "${FOUNDRY_RUN:-}" \] && \[ -d "$FOUNDRY_RUN" \]|\[ -n "${FOUNDRY_RUN:-}" \]|'
@@ -631,6 +635,62 @@ wreck_runner "a selector invented when nobody is named is caught" \
 
 wreck_runner "a gate that eats the gates after it is caught" \
   eatstdin 's#why=$("$@" </dev/null 2>&1)#why=$("$@" 2>\&1)#'
+
+#
+# The work source. **Two verbs take no argument for what a human is supposed to supply**, and these
+# are the breaks that put those arguments back — `read` saying what an item holds, `receive` saying
+# what a human answered. Everything else in this stage rests on them.
+#
+# `%` as the delimiter: the line being matched holds `$#`, and sed reads that `#` as the end of the
+# pattern.
+wreck_runner "a read that lets the caller say what the item holds is caught" \
+  srcwords 's%\[ "$#" -le 2 \]%[ "$#" -le 3 ]%'
+
+wreck_runner "a receive that takes an answer is caught" \
+  srcanswer 's#-le 3 \] || { note "receive#-le 9 ] || { note "receive#'
+
+#
+# A question is `run + stage + clause`. Each term keeps one wrong answer away from a reader, so each
+# gets its own break — dropping the run lets a later run derive an earlier one's question, and the
+# other two let a question be asked that no stage will ever look for.
+#
+wreck_runner "a question that does not name its run is caught" \
+  srcrun 's#"$(basename "$1")" "$2" "$(clause_id "$3")"#"$2" "$(clause_id "$3")" ""#'
+
+wreck_runner "a stage nothing reads is caught" \
+  srcstage 's#authorisation | completion) return 0 ;;#*) return 0 ;;#'
+
+wreck_runner "a question about a clause the charter does not hold is caught" \
+  srcclause 's#\[ -n "$(clause_kind "$(charter_file "$1")" "$(clause_id "$2")")" \] && return 0#return 0#'
+
+# A run reads one item, because a delivery and a question are both addressed to it.
+wreck_runner "a run that reads a second item is caught" \
+  srcitem 's#\[ "$held" = "$2" \] && return 0#return 0#'
+
+wreck_runner "a question with nothing to address it to is caught" \
+  srcaddr 's#\[ -n "$(item_id "$1")" \] && return 0#return 0#'
+
+# Grants reserved a name; a run that authorised nothing gave its back, and the next run derived the
+# deleted run's question byte for byte.
+wreck_runner "a run name that can be minted twice is caught" \
+  srcslot 's#reserve_name() { mkdir -p "$GRANTS/$1" 2>/dev/null; }#reserve_name() { :; }#'
+
+# A source that is not there answers "no item", and no item is what an unread run looks like.
+wreck_runner "a work source that is not there passing for one is caught" \
+  nosource 's#\[ -f "$(source_resolver)" \] ||#true ||#'
+
+#
+# The adapter's own rules, and the file is the point: floor cannot enforce these from above. It keeps
+# no copy of what it sent, so what a resume gets back is whatever the source says it already holds.
+#
+wreck_runner "a delivery that absorbs a second branch is caught" \
+  dirbranch 's#delivered "$file" "$3" || return 4#:#' lib/source-dir.sh
+
+wreck_runner "a question rewritten under a human is caught" \
+  dirwords 's#same_question "$file" "$3" || return 4#:#' lib/source-dir.sh
+
+wreck_runner "silence answered as an answer is caught" \
+  dirsilence 's#\[ -f "$root/answers/$1/$2" \] || return 1#\[ -f "$root/answers/$1/$2" \] || return 0#' lib/source-dir.sh
 
 # --- break the install ---
 
