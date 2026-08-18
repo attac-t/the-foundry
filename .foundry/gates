@@ -1,0 +1,7 @@
+# What this repository is checked with. `README.md` states the same bar in prose; this is the
+# machine-readable half, and `bin/agree.sh` exists because the two drifted once.
+#
+# `gates` is the eight. `agree` grades the eight and is not one of them.
+
+gates  sh bin/gates.sh
+agree  sh bin/agree.sh
