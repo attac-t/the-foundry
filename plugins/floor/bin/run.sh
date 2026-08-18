@@ -1155,6 +1155,10 @@ complete() {
     # grader read it where the other two refuse it.
     refuse_unselectable "$dir" "$(unit_targets_file "$dir")" || exit 5
 
+    # `refuse_unselectable` cannot see an absence, and the frozen record is the only thing that still
+    # remembers a deleted line was selected. Authorisation read it; the stage that grades did not.
+    refuse_moved_selection "$dir" "$(unit_targets_file "$dir")" || exit 10
+
     findings=$(
         unauthorised_run "$dir"
         empty_bar "$dir"
