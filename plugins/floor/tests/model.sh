@@ -645,10 +645,12 @@ a_renamed_run_refuses_rather_than_losing_its_grants() {
 
   # Every reader of the grants, not the one that happened to be tested. `policy` refusing alone let a
   # rename onto a deleted run's id add a target at exit 0, and let `authorise` freeze a selection
-  # whose grants were not there.
+  # whose grants were not there. `gates` is the one that writes, and it stamped a passing record into
+  # a run the other four refuse.
   is "targets refuses too"   "$(code_of floor "$tmp/ren" targets)" "13"
   is "and authorise refuses" "$(code_of floor "$tmp/ren" authorise)" "13"
   is "and complete refuses"  "$(code_of floor "$tmp/ren" complete)" "13"
+  is "and so does gates, which writes" "$(code_of floor "$tmp/ren" gates)" "13"
 
   # Moving it back is the remedy, and it costs nothing — the grants were never gone.
   mv "$(dirname "$moved")/renamed-by-hand" "$moved"
@@ -2047,6 +2049,13 @@ a_target_deleted_after_the_freeze_is_still_selected() {
       "$(code_of floor "$tmp/cw" complete)" "10"
   has "and says the selection is no longer the authorised one" \
       "$(floor_says "$tmp/cw" complete)" "no longer the one that was authorised"
+
+  # The recorder too, and for a sharper reason than the grader: `complete` refusing only means the
+  # evidence cannot deliver. `gates` writing means the ledger gains a passing row for a run nobody
+  # authorised, and the ledger is append-only.
+  rows=$(wc -l < "$d/evidence")
+  is "and gates refuses rather than recording" "$(code_of floor "$tmp/cw" gates)" "10"
+  is "so the ledger did not grow" "$(wc -l < "$d/evidence")" "$rows"
 }
 a_target_deleted_after_the_freeze_is_still_selected
 
