@@ -940,32 +940,27 @@ evidence() {
 record_gate() {
     dir=$1; name=${2:-}; [ "$#" -gt 0 ] && shift; [ "$#" -gt 0 ] && shift
 
+    refuse_unrecordable "$name" "$@"
+    enter_work_tree "$dir"
+    stamp_command "$dir" "$(delivered_ref)" "$name" "$@"
+}
+
+# A newline in a name writes a second record whose result the caller chose. `why` is flattened; a
+# name is refused, because a gate named across two lines is a mistake, not something to tidy up.
+refuse_unrecordable() {
+    name=$1; shift
+
     [ -n "$name" ] || { note "record needs a name and a command"; exit 2; }
     [ "$#" -gt 0 ] || { note "record needs a command to run — a result is not something you pass"; exit 2; }
-
-    # A name is one line, or a newline in it writes a second record whose result the caller chose —
-    # which is the one thing this stage exists to make impossible. `why` is flattened; a name is
-    # refused, because a gate whose name holds a newline is a mistake, not something to tidy up.
     is_one_line "$name" || { note "a gate's name is one line: [$name]"; exit 2; }
+}
 
-    # The tree the gates grade, entered the way they enter it. Recorded against the checkout Foundry
-    # was invoked from, a sha `satisfied` compares to the workspace's never matched — a `machine`
-    # record that read as evidence and could satisfy nothing. Running the command anywhere but where
-    # the ref points is the same defect with the halves swapped.
-    #
-    # Nothing may run after this: the directory is not restored, and `evidence` ends here.
+# The directory is not restored: nothing may run after this, and both callers end with it.
+enter_work_tree() {
     here=$(this_repository)
-    tree=$(work_tree "$dir" "$here" "$(selected_ref "$(unit_targets_file "$dir")" "$here")") || exit 16
+
+    tree=$(work_tree "$1" "$here" "$(selected_ref "$(unit_targets_file "$1")" "$here")") || exit 16
     cd "$tree" || { note "cannot enter [$tree]"; exit 16; }
-
-    # Before the command runs. A recorded command that moves HEAD would otherwise stamp a sha whose
-    # tree was never tested — evidence for work that did not exist when the work was graded.
-    #
-    # Unguarded: `attached` proved a HEAD before `work_tree` answered, and a repository with no
-    # commit can hold no workspace at all. One reader, not two.
-    ref=$(delivered_ref)
-
-    stamp_command "$dir" "$ref" "$name" "$@"
 }
 
 #
@@ -1036,10 +1031,14 @@ gates() {
 # decides what a gate may grade, so a workspace built for another target or another ref is refused
 # here for the reason it was refused there.
 #
+# Asked, never computed. Naming the directory here made core reach for `git hash-object`, so a
+# container or a sandbox would have to be git to put its workspace where core looks. `attached` is
+# already the question; the name is the adapter's business.
 work_tree() {
-    slot="$(unit_workspace "$1")/$(target_slot "$2")"
+    for slot in "$(unit_workspace "$1")"/*/; do
+        attached "${slot%/}" "$2" "$3" && { printf '%s' "${slot%/}"; return 0; }
+    done
 
-    attached "$slot" "$2" "$3" && { printf '%s' "$slot"; return 0; }
     note "no workspace holds [$2] at [$3] — \`open\` one, and the gates grade what the work is in"
     return 1
 }
@@ -1085,16 +1084,10 @@ run_pinned_gates() {
     [ -n "$pins" ] || { note "this charter pins no gate, so it grades nothing mechanically"; exit 8; }
     refuse_gates_from_elsewhere "$dir" "$pins" || exit 7
 
-    here=$(this_repository)
-    tree=$(work_tree "$dir" "$here" "$(selected_ref "$(unit_targets_file "$dir")" "$here")") || exit 16
+    enter_work_tree "$dir"
 
-    # Not restored, and nothing may run after this. `gates` ends here and `main` dispatches nothing
-    # afterwards; a caller added below this line would inherit a directory it did not choose.
-    cd "$tree" || { note "cannot enter [$tree]"; exit 16; }
-
-    # One ref for the whole set, and it is the workspace's — taken after the move, so a gate that
-    # commits cannot shift the tree the gates behind it are recorded against. Unguarded, because
-    # `attached` proved a HEAD before this directory was named.
+    # One ref for the whole set — taken after the move, so a gate that commits cannot shift the tree
+    # the gates behind it are recorded against.
     ref=$(delivered_ref)
 
     # A here-doc, not a pipe. A tally raised inside a pipe's subshell dies with it, and the tally is

@@ -481,7 +481,12 @@ wreck_runner "gates falling back to the invoking checkout are caught" \
 # The predicate that makes a workspace this unit's. Accept any directory holding a checkout and a
 # gate grades one built for another target, or another ref.
 wreck_runner "a gate grading any checkout it finds is caught" \
-  anytree 's#    attached "$slot" "$2" "$3" && { printf .%s. "$slot"; return 0; }#    [ -d "$slot" ] \&\& { printf "%s" "$slot"; return 0; }#'
+  anytree 's#        attached "${slot%/}" "$2" "$3" && { printf .%s. "${slot%/}"; return 0; }#        [ -d "${slot%/}" ] \&\& { printf "%s" "${slot%/}"; return 0; }#'
+
+# Core naming the directory is core reaching for `git hash-object` — a container adapter would have
+# to be git to put its workspace where core looks. It asks each checkout instead.
+wreck_runner "core computing the workspace path rather than asking is caught" \
+  namedslot 's#    for slot in "$(unit_workspace "$1")"/\*/; do#    for slot in "$(unit_workspace "$1")/$(target_slot "$2")"; do#'
 
 # Green regardless. The records still land, so only the exit code carries the answer — and a caller
 # that branches on it would ship a red run as a finished one.

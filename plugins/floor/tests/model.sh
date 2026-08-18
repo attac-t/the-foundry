@@ -1820,6 +1820,12 @@ a_gate_runs_where_the_unit_owns_the_checkout() {
   is "running the gates again is two records, not a broken one" \
      "$(floor "$tmp/gw" evidence | awk -F'\t' 'NF == 7' | grep -c .)" "2"
   is "and the source still has not moved" "$(git -C "$tmp/gw" rev-parse HEAD)" "$moved"
+
+  # The adapter names the directory. Renamed, a core that computes the name loses a workspace a core
+  # that asks still finds — which is what a container or a sandbox would need it to do.
+  mv "$slot" "$(dirname "$slot")/named-by-something-else"
+  is "the workspace is found wherever it was put, not where core would name it" \
+     "$(code_of floor "$tmp/gw" gates)" "0"
 }
 a_gate_runs_where_the_unit_owns_the_checkout
 
