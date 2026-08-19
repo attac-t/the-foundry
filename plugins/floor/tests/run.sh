@@ -811,6 +811,11 @@ wreck_runner "a question rewritten under a human is caught" \
 wreck_runner "silence answered as an answer is caught" \
   dirsilence 's#\[ -f "$root/answers/$1/$2" \] || return 1#\[ -f "$root/answers/$1/$2" \] || return 0#' lib/source-dir.sh
 
+# The question names the clause it asks about, so a reader that starts at the marker hands the question
+# back as its answer — and a human who has not replied yet reads as having agreed.
+wreck_runner "a question answering itself is caught" \
+  ghself 's#mine = index($0, mark) > 0; want = 0#mine = index($0, mark) > 0; want = 1#' lib/source-github.sh
+
 report_breaks
 
 # --- break the install ---
