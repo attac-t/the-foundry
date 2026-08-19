@@ -798,10 +798,33 @@ refuse_second_ref() {
 #
 is_authorised() {
     [ "$(bootstrap_identity "$1")" = "$2" ] && return 0
+    standing grade "$1" "$2" && return 0
 
     grants=$(grants_file "$1")
     [ -f "$grants" ] || return 1
     grep -Fxq -- "$2" "$grants"
+}
+
+#
+# What a human said Foundry may do here without asking again — §2.3's allowlist, declared once
+# instead of granted per run.
+#
+# **Read at the base commit, never the working tree.** A worker can edit this file, and a worker
+# editing it must grant itself nothing: invariant 1's rule, that a run's own work may invalidate
+# authority and never create it. A human commits it; a later run reads it.
+#
+standing() {
+    base=$(bootstrap_base "$2") || return 1
+
+    practice_at_base "$base" | awk -v verb="$1" -v id="$3" '$1 == verb && $2 "" == id ""' | grep -q .
+}
+
+practice_at_base() {
+    scratch="${TMPDIR:-/tmp}/floor-practice-$$"
+
+    git worktree add --detach --quiet "$scratch" "$1" >/dev/null 2>&1 || return 1
+    [ -f "$scratch/.foundry/practice" ] && awk '!/^[ \t]*#/ && NF' "$scratch/.foundry/practice"
+    git worktree remove --force "$scratch" >/dev/null 2>&1
 }
 
 list_policy() {
@@ -828,6 +851,8 @@ deliveries_file() { printf '%s/%s/deliveries' "$GRANTS" "$(basename "$1")"; }
 # run is bootstrapped somewhere.
 #
 may_deliver_to() {
+    standing deliver "$1" "$2" && return 0
+
     file=$(deliveries_file "$1")
     [ -f "$file" ] || return 1
     grep -Fxq -- "$2" "$file"
@@ -920,6 +945,16 @@ add_advised() {
 # source meant by the rest is the source's.
 advised_targets() { awk '$1 == "targets:" { print $2 }' "$1/item.md" 2>/dev/null; }
 
+# Selecting one repository twice. `ungradable_targets` counts selected targets, so a duplicate is one
+# repository reported twice and every clause graded against it twice — invisible until something
+# counted.
+refuse_selected_twice() {
+    list_targets "$1" | awk -v id="$2" '$1 "" == id ""' | grep -q . || return 0
+
+    note "already selected: [$2]"
+    exit 4
+}
+
 add_target() {
     dir=$1
     file=$2
@@ -935,6 +970,7 @@ add_target() {
 
     is_usable_ref "$ref" || { note "not a usable ref: [$ref]"; exit 4; }
     refuse_second_ref "$dir" "$identity" "$ref"
+    refuse_selected_twice "$file" "$identity"
 
     # Every guard runs before the append, so a refusal leaves the file byte-identical. This is where
     # selection happens until planning exists, so this is where policy has to bite.

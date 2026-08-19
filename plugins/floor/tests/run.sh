@@ -829,3 +829,15 @@ wreck_runner "an unanswered clause that authorises anyway is caught" \
 # let anyone who can file an item choose what the run may touch.
 wreck_runner "an advised target that skips the allowlist is caught" \
   advised 's#        add_target "$1" "$2" "$repo" "$(bootstrap_ref "$1")"#        printf "%s %s\n" "$repo" "$(bootstrap_ref "$1")" >> "$2"#'
+
+#
+# Standing authority, and the break is the surface it opens. Practice lives in the target, a worker
+# owns the checkout, and a run reading the working tree would let a worker grant itself anything.
+#
+wreck_runner "a practice read from the worker's tree is caught" \
+  livepractice 's#    base=$(bootstrap_base "$2") || return 1#    base=HEAD#'
+
+# One repository twice. `ungradable_targets` counts selected targets, so a duplicate is one
+# repository reported twice and every clause graded against it twice.
+wreck_runner "a repository selected twice is caught" \
+  twiceover 's#    refuse_selected_twice "$file" "$identity"#    :#'

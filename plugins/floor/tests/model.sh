@@ -493,12 +493,14 @@ a_refusal_writes_nothing
 targets_add_never_grants() {
   [ -n "${polrun:-}" ] || { skip "the self-authorisation proof — no run with a bootstrap"; return; }
 
+  # Granted, and not selected yet. Every guard returns before the append, so the write this is about
+  # is only reachable by an add that passes all of them — `sneaky` is refused for want of a grant and
+  # `evil` for being selected already, and neither would arrive.
+  floor "$tmp/pol" policy authorize 'https://github.com/acme/fresh.git' >/dev/null 2>&1
   grants_before=$(cat "$(policy_for "$polrun")" 2>/dev/null)
 
-  # Both paths. A refused add returns before the append, so only the second one — already granted
-  # above, so it succeeds — reaches the line where a write to the grants could actually happen.
   floor "$tmp/pol" targets add 'https://github.com/sneaky/repo.git' main >/dev/null 2>&1
-  floor "$tmp/pol" targets add 'https://github.com/attacker/evil.git' main >/dev/null 2>&1
+  floor "$tmp/pol" targets add 'https://github.com/acme/fresh.git' main >/dev/null 2>&1
 
   is "targets add cannot add to the allowlist" \
      "$(cat "$(policy_for "$polrun")" 2>/dev/null)" "$grants_before"
@@ -2890,3 +2892,51 @@ is "new with no title exits 2"  "$(code_of floor "$tmp/bare" new)" "2"
 is "an unknown command exits 2" "$(code_of floor "$tmp/bare" fly)" "2"
 
 summary "model"
+
+#
+# Standing authority — §2.3's allowlist declared once instead of granted per run.
+#
+# **Read at the base commit, never the working tree.** A worker can edit the file, and editing it
+# must grant nothing: invariant 1's rule that a run's own work may invalidate authority and never
+# create it.
+#
+practice_grants_without_asking_again() {
+  make_repo "$tmp/st" main && set_origin "$tmp/st" 'https://gitlab.com/acme/st.git' \
+    && mkdir -p "$tmp/st/.foundry" \
+    && commit_file "$tmp/st" .foundry/practice 'grade    https://gitlab.com/acme/friend.git
+' || { skip "standing authority — git could not make a repo here"; return; }
+
+  floor "$tmp/st" new "Standing" >/dev/null
+
+  is "a repository the practice grades needs no per-run grant" \
+     "$(code_of floor "$tmp/st" targets add 'https://gitlab.com/acme/friend.git' main)" "0"
+  is "one it does not name is still refused" \
+     "$(code_of floor "$tmp/st" targets add 'https://gitlab.com/acme/nope.git' main)" "5"
+
+  # The same-run attack. A worker owns the checkout, so it can write anything into the file — and the
+  # run reads the base, where a human put what a human meant.
+  printf 'grade    https://gitlab.com/acme/nope.git\n' >> "$tmp/st/.foundry/practice"
+  is "a worker adding itself to the practice grants nothing" \
+     "$(code_of floor "$tmp/st" targets add 'https://gitlab.com/acme/nope.git' main)" "5"
+}
+practice_grants_without_asking_again
+
+#
+# One repository, selected once. Nothing deduped, so `ungradable_targets` reported it twice and every
+# clause was graded against it twice — invisible until something counted.
+#
+a_repository_is_selected_once() {
+  make_repo "$tmp/dp" main && set_origin "$tmp/dp" 'https://gitlab.com/acme/dp.git' \
+    || { skip "duplicate selection — git could not make a repo here"; return; }
+
+  floor "$tmp/dp" new "Twice" >/dev/null
+
+  is  "the first selection is taken" \
+      "$(code_of floor "$tmp/dp" targets add 'https://gitlab.com/acme/dp.git' main)" "0"
+  is  "the second is refused" \
+      "$(code_of floor "$tmp/dp" targets add 'https://gitlab.com/acme/dp.git' main)" "4"
+  has "and names what is already there" \
+      "$(floor_says "$tmp/dp" targets add 'https://gitlab.com/acme/dp.git' main)" "already selected"
+  is  "and the file is left as it was" "$(floor "$tmp/dp" targets | wc -l | tr -d ' ')" "1"
+}
+a_repository_is_selected_once
