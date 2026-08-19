@@ -2902,8 +2902,6 @@ a_remote_with_no_gh_still_has_a_source
 is "new with no title exits 2"  "$(code_of floor "$tmp/bare" new)" "2"
 is "an unknown command exits 2" "$(code_of floor "$tmp/bare" fly)" "2"
 
-summary "model"
-
 #
 # Standing authority — §2.3's allowlist declared once instead of granted per run.
 #
@@ -2928,6 +2926,14 @@ practice_grants_without_asking_again() {
   # run reads the base, where a human put what a human meant.
   printf 'grade    https://gitlab.com/acme/nope.git\n' >> "$tmp/st/.foundry/practice"
   is "a worker adding itself to the practice grants nothing" \
+     "$(code_of floor "$tmp/st" targets add 'https://gitlab.com/acme/nope.git' main)" "5"
+
+  # And committing it. Owning the checkout means owning its history too, so every commit-based read
+  # except the base's grants this — which is the whole of why the base is what gets read.
+  commit_file "$tmp/st" .foundry/practice 'grade    https://gitlab.com/acme/friend.git
+grade    https://gitlab.com/acme/nope.git
+'
+  is "nor does committing it" \
      "$(code_of floor "$tmp/st" targets add 'https://gitlab.com/acme/nope.git' main)" "5"
 }
 practice_grants_without_asking_again
@@ -3002,3 +3008,5 @@ a_disagreement_is_not_a_satisfaction() {
       "$(floor_says "$tmp/dg" complete)" "unmet: [tests]"
 }
 a_disagreement_is_not_a_satisfaction
+
+summary "model"
