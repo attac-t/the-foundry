@@ -39,6 +39,12 @@ sh bin/run.sh source read 7
 sh bin/run.sh source publish work/gift-cards "Gift card flow"
 sh bin/run.sh source ask authorisation tests "May this clause exist? …"
 sh bin/run.sh source receive authorisation tests
+sh bin/run.sh charter introduce Decided "pricing copy signed off"
+sh bin/run.sh authorise
+sh bin/run.sh open
+sh bin/run.sh complete
+sh bin/run.sh policy deliver-to https://github.com/acme/api.git
+sh bin/run.sh deliver "Gift card flow"
 ```
 
 `new` makes a run and points this checkout at it. `path` prints the active run, or exits 1.
@@ -330,7 +336,7 @@ Closing that needs a ledger the charter cannot edit, which is the evidence stage
 The charter is a file the worker can write, as the same user. `check` catches accident and
 unattended drift. It does not resist a worker editing the charter and its pins together.
 
-Containment is the workspace boundary's, and it does not exist yet.
+Containment is the workspace boundary's, and `open` holds it.
 
 ### Only this repository, for now
 
@@ -357,7 +363,7 @@ its ledger existentially. Keeping them apart by store is what makes that true; a
 would not.
 
 **Nobody is an answer, and is written as one.** `new` changes nothing in any repository, so it is the
-wrong place to demand a name. Delivery is the right one, and it does not exist yet.
+wrong place to demand a name. Delivery is the right one, and `complete` reads what `new` stamped.
 
 ---
 
@@ -490,7 +496,7 @@ to fail today; this is the sentence that fails it.
 
 The last three are not failures and not passes. **They take different remedies, which is why they are
 different words.** An `introduced` clause was established by nobody, so the answer is a human's, and
-the work source that would carry one does not exist yet. An `unverifiable` one belongs to a checkout
+the work source carries one. An `unverifiable` clause belongs to a checkout
 that does — the workspace seam is what turns it into an answer.
 
 **It keeps no record of its own.** `new` stamped the selection, the charter holds the clauses, unit 01
