@@ -1497,13 +1497,13 @@ authorise() {
     # clause nobody authorised into a real bar, then tell them afterwards it had no provenance.
     # Provenance is the earlier question.
     #
-    introduced=$(introduced_clauses "$charter_path")
+    introduced=$(unauthorised_clauses "$run_dir" "$charter_path")
     [ -z "$introduced" ] || {
-        printf '%s\n' "$introduced" | while read -r _ id kind text; do
-            note "clause $id is introduced: $kind $text"
+        printf '%s\n' "$introduced" | while read -r id text; do
+            note "clause $id is introduced, and nothing derives it: $text"
+            ask_to_authorise "$run_dir" "$text"
         done
-        note "nothing derives it, so a human must authorise it — and this stage does not ask"
-        note "a channel exists now, and nothing here reads an answer back; until it does, only a derived clause can authorise"
+        note "a human owns this. Answer where the item is, naming the clause, and authorise again"
         exit 11
     }
 
@@ -1948,6 +1948,40 @@ introduced_clauses() {
     awk '$1 == "clause" { held[$2] = $0 }
          $1 == "pin"    { pinned[$2] = 1 }
          END { for (id in held) if (!(id in pinned)) print held[id] }' "$1"
+}
+
+# Introduced, and still unanswered. §2.2's authorisation answer says the clause may exist — nothing
+# about whether it was met, which is completion's and arrives through the same channel.
+unauthorised_clauses() {
+    introduced_clauses "$2" | while read -r _ id _ text; do
+        authorised_by_a_human "$1" "$text" || printf '%s %s\n' "$id" "$text"
+    done
+}
+
+#
+# **The source is the store.** A resumed run re-reads rather than remembering, so replaying changes
+# nothing and no second ledger appears — §2.2 refuses one, and an answer that outlived its run is
+# what a stored pending question would let through.
+#
+# The answer names the clause or it authorises nothing. Silence is not approval and neither is a
+# decline; both leave the run exactly where it was.
+#
+authorised_by_a_human() {
+    said=$(source_says receive "$(item_id "$1")" "$(question_id "$1" authorisation "$2")" 2>/dev/null) || return 1
+
+    case "$said" in
+        *"$(clause_id "$2")"*) return 0 ;;
+    esac
+
+    return 1
+}
+
+# Put the question where the human already is. Asking twice with the same words is one question, so
+# a blocked run that authorises again does not pile them up.
+ask_to_authorise() {
+    source_says ask "$(item_id "$1")" "$(question_id "$1" authorisation "$2")" \
+        "May this clause exist? Nothing derives it: $2. Answer with $(clause_id "$2") to authorise it." \
+        >/dev/null 2>&1
 }
 
 #
