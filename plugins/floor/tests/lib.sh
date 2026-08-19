@@ -12,8 +12,22 @@ failed=0
 # Record a passing check.
 ok() { passed=$((passed + 1)); printf '  ok    %s\n' "$1"; }
 
+#
 # Record a failing check.
-bad() { failed=$((failed + 1)); printf '  FAIL  %s\n' "$1"; }
+#
+# `FOUNDRY_FAIL_FAST` leaves at the first one. The audit runs this suite once per break and reads
+# only whether it went red — an answer settled by the first failure, after which every remaining
+# assertion is paid for and discarded. A person reading a suite wants the tally; the audit never
+# does, so only the audit sets it.
+#
+bad() {
+  failed=$((failed + 1))
+  printf '  FAIL  %s\n' "$1"
+
+  [ -n "${FOUNDRY_FAIL_FAST:-}" ] || return 0
+  printf '%s — stopped at the first failure\n' "${suite:-suite}"
+  exit 1
+}
 
 # Note a check this platform cannot answer. Counts as neither, and says why out loud — a skip that
 # reads as a pass is how a suite ends up certifying a platform it never tested.

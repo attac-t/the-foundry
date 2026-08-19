@@ -35,9 +35,9 @@ model_caught() {
   local broken="$tmp/$1/bin/run.sh"
 
   command -v timeout >/dev/null 2>&1 \
-    && { ! RUNNER="$broken" timeout 300 bash "$root/tests/model.sh" >/dev/null 2>&1; return; }
+    && { ! RUNNER="$broken" FOUNDRY_FAIL_FAST=1 timeout 300 bash "$root/tests/model.sh" >/dev/null 2>&1; return; }
 
-  ! RUNNER="$broken" bash "$root/tests/model.sh" >/dev/null 2>&1
+  ! RUNNER="$broken" FOUNDRY_FAIL_FAST=1 bash "$root/tests/model.sh" >/dev/null 2>&1
 }
 
 #
