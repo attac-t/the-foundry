@@ -575,23 +575,23 @@ wreck_runner "a failing gate counted as satisfying its clause is caught" \
 # Quantified over clauses and over targets, so each empty set satisfies it for free. These two are
 # the fail-opens, and neither is an edge case: every fresh run has an empty selection.
 wreck_runner "an empty charter delivering vacuously is caught" \
-  vacuousbar 's#        empty_bar "$dir"##'
+  vacuousbar 's#    empty_bar "$1"##'
 
 wreck_runner "an empty selection delivering vacuously is caught" \
-  vacuousselection 's#        empty_selection "$dir"##'
+  vacuousselection 's#    empty_selection "$1"##'
 
 wreck_runner "a run nobody selected delivering anyway is caught" \
-  unclaimed 's#        unauthorised_run "$dir"##'
+  unclaimed 's#    unauthorised_run "$1"##'
 
 # Quantified over every selected target, and one checkout answers for one. Without this the second
 # is graded by nothing and the run delivers on evidence that never mentioned it.
 wreck_runner "a second selected target graded by nothing is caught" \
-  onetarget 's#        ungradable_targets "$dir"##'
+  onetarget 's#    ungradable_targets "$1"##'
 
 # `targets` and `authorise` refuse a hand-edited selection. The grader read it, and every clause is
 # graded against every selected target.
 wreck_runner "a grader reading a selection nobody authorised is caught" \
-  ungrated 's#    refuse_unselectable "$dir" "$(unit_targets_file "$dir")" || exit 5##'
+  ungrated 's#    refuse_unselectable "$1" "$(unit_targets_file "$1")" || exit 5##'
 
 # Three ways a clause is not met, and they take different remedies. Collapse the first into the
 # second and an introduced clause reads as one belonging to another checkout — a reader sent looking
