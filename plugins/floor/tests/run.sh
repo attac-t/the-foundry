@@ -841,3 +841,8 @@ wreck_runner "a practice read from the worker's tree is caught" \
 # repository reported twice and every clause graded against it twice.
 wreck_runner "a repository selected twice is caught" \
   twiceover 's#    refuse_selected_twice "$file" "$identity"#    :#'
+
+# Silence read as success. Derive found nothing, said nothing, and the refusal arrived two stages
+# later about a file the reader thought was fine.
+wreck_runner "a derive that says nothing is caught" \
+  mutederive 's#    say_what_derived "$file"#    :#'

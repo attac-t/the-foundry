@@ -2940,3 +2940,27 @@ a_repository_is_selected_once() {
   is  "and the file is left as it was" "$(floor "$tmp/dp" targets | wc -l | tr -d ' ')" "1"
 }
 a_repository_is_selected_once
+
+#
+# Silence read as success. Derive on a repository declaring no gate wrote an empty charter and said
+# nothing, so *found nothing* and *worked* looked the same — and the refusal arrived two stages later
+# about a file the reader thought was fine.
+#
+derive_says_what_it_found() {
+  make_repo "$tmp/sd" main && set_origin "$tmp/sd" 'https://gitlab.com/acme/sd.git' \
+    && commit_file "$tmp/sd" README.md 'nothing here declares a gate
+' || { skip "derive says — git could not make a repo here"; return; }
+
+  floor "$tmp/sd" new "Silent" >/dev/null
+
+  is  "an empty charter is not a refusal" "$(code_of floor "$tmp/sd" charter derive)" "0"
+  has "and it says the charter is empty" \
+      "$(floor_says "$tmp/sd" charter derive)" "the charter is empty"
+  has "and names what puts a bar in it" \
+      "$(floor_says "$tmp/sd" charter derive)" "charter introduce"
+
+  floor "$tmp/sd" charter introduce Decided 'ship it' >/dev/null 2>&1
+  has "one clause is one clause" \
+      "$(floor_says "$tmp/sd" charter derive)" "holds one clause"
+}
+derive_says_what_it_found
