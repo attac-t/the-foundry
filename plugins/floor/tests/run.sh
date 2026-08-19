@@ -836,3 +836,8 @@ wreck_runner "an advised target that skips the allowlist is caught" \
 #
 wreck_runner "a practice read from the worker's tree is caught" \
   livepractice 's#    base=$(bootstrap_base "$2") || return 1#    base=HEAD#'
+
+# One repository twice. `ungradable_targets` counts selected targets, so a duplicate is one
+# repository reported twice and every clause graded against it twice.
+wreck_runner "a repository selected twice is caught" \
+  twiceover 's#    refuse_selected_twice "$file" "$identity"#    :#'

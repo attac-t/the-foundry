@@ -945,6 +945,16 @@ add_advised() {
 # source meant by the rest is the source's.
 advised_targets() { awk '$1 == "targets:" { print $2 }' "$1/item.md" 2>/dev/null; }
 
+# Selecting one repository twice. `ungradable_targets` counts selected targets, so a duplicate is one
+# repository reported twice and every clause graded against it twice — invisible until something
+# counted.
+refuse_selected_twice() {
+    list_targets "$1" | awk -v id="$2" '$1 "" == id ""' | grep -q . || return 0
+
+    note "already selected: [$2]"
+    exit 4
+}
+
 add_target() {
     dir=$1
     file=$2
@@ -960,6 +970,7 @@ add_target() {
 
     is_usable_ref "$ref" || { note "not a usable ref: [$ref]"; exit 4; }
     refuse_second_ref "$dir" "$identity" "$ref"
+    refuse_selected_twice "$file" "$identity"
 
     # Every guard runs before the append, so a refusal leaves the file byte-identical. This is where
     # selection happens until planning exists, so this is where policy has to bite.
