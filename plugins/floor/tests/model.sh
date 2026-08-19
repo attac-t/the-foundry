@@ -2520,6 +2520,53 @@ the_work_source() {
 }
 the_work_source
 
+#
+# §2.5's `human` evidence, and the stage is what makes it that. The same answer read at authorisation
+# says the clause may exist; read at completion it says the clause was met.
+#
+# The answer names the clause or it is not one. `receive` carries whatever a human wrote — "no"
+# included — so an answer satisfying by merely existing would turn every reply into a yes.
+#
+a_human_answer_can_satisfy_a_clause() {
+  make_repo "$tmp/hv" main && set_origin "$tmp/hv" 'https://gitlab.com/acme/hv.git' \
+    && commit_file "$tmp/hv" Makefile 'test:
+	echo ok
+' || { skip "human evidence — git could not make a repo here"; return; }
+
+  mkdir -p "$src/items" && printf 'Ship it\n' > "$src/items/11"
+
+  floor "$tmp/hv" new "Human evidence" >/dev/null
+  floor "$tmp/hv" source read 11 >/dev/null 2>&1
+  floor "$tmp/hv" charter derive >/dev/null 2>&1
+  floor "$tmp/hv" policy authorize 'https://gitlab.com/acme/hv.git' >/dev/null 2>&1
+  floor "$tmp/hv" targets add 'https://gitlab.com/acme/hv.git' main >/dev/null 2>&1
+  floor "$tmp/hv" open >/dev/null 2>&1
+
+  # After the workspace, and it has to be. An introduced clause exits `authorise` at 11, and `open`
+  # runs `authorise` — so a clause introduced first is a run that can never hold a workspace.
+  floor "$tmp/hv" charter introduce Decided "pricing copy signed off" >/dev/null 2>&1
+  floor "$tmp/hv" source ask completion "pricing copy signed off" "Is it?" >/dev/null 2>&1
+
+  q=$(ls "$src/questions/11" 2>/dev/null | head -1)
+  id=$(printf '%s' "pricing copy signed off" | cksum | awk '{ print $1 }')
+
+  printf 'no, hold it back\n' > "$src/answers/11/$q" 2>/dev/null \
+    || { mkdir -p "$src/answers/11" && printf 'no, hold it back\n' > "$src/answers/11/$q"; }
+  floor "$tmp/hv" source receive completion "pricing copy signed off" >/dev/null 2>&1
+
+  is "an answer that does not name the clause satisfies nothing" \
+     "$(floor "$tmp/hv" evidence 2>/dev/null | grep -c human)" "0"
+
+  printf 'yes, %s is signed off\n' "$id" > "$src/answers/11/$q"
+  floor "$tmp/hv" source receive completion "pricing copy signed off" >/dev/null 2>&1
+
+  is  "an answer that names it is human evidence" \
+      "$(floor "$tmp/hv" evidence 2>/dev/null | grep -c human)" "1"
+  has "and completion reads it" \
+      "$(floor "$tmp/hv" complete 2>&1)" ""
+}
+a_human_answer_can_satisfy_a_clause
+
 # A question is `run + stage + clause`, derived and never issued — §2.1. A resumed run recomputes it
 # and finds what it already asked, which is why nothing anywhere holds a list of pending questions.
 a_question_is_derived_not_issued() {

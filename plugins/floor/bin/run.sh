@@ -2375,7 +2375,32 @@ receive_answer() {
     [ "$#" -le 3 ] || { note "receive names a stage and a clause — an answer is not something you pass"; exit 2; }
     refuse_impossible_question "$dir" "$stage" "$clause"
 
-    source_says receive "$(item_id "$dir")" "$(question_id "$dir" "$stage" "$clause")" || exit 1
+    said=$(source_says receive "$(item_id "$dir")" "$(question_id "$dir" "$stage" "$clause")") || exit 1
+    printf '%s\n' "$said"
+
+    [ "$stage" = completion ] && accept_answer "$dir" "$clause" "$said"
+    return 0
+}
+
+#
+# §2.5's `human` evidence, and the only writer of it. The stage already decided the meaning — an
+# answer read at completion says the clause was met, where the same answer read at authorisation says
+# only that it may exist.
+#
+# **The answer names the clause or it is not one.** `receive` carries whatever a human wrote, "no"
+# included, so an answer that satisfied by merely existing would turn every reply into a yes. Naming
+# the id is the difference between deciding and being present.
+#
+accept_answer() {
+    id=$(clause_id "$2")
+
+    case "$3" in
+        *"$id"*) ;;
+        *) note "the answer does not name [$id], so nothing here says the clause was met"; return 0 ;;
+    esac
+
+    enter_work_tree "$1"
+    stamp "$1" human "$2" 0 "$(delivered_ref)" "$3"
 }
 
 #

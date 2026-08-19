@@ -692,6 +692,11 @@ wreck_runner "a read that lets the caller say what the item holds is caught" \
 wreck_runner "a receive that takes an answer is caught" \
   srcanswer 's#-le 3 \] || { note "receive#-le 9 ] || { note "receive#'
 
+# An answer satisfying by merely existing. `receive` carries whatever a human wrote, "no" included,
+# so the clause's own id is what separates a decision from a presence.
+wreck_runner "an answer that satisfies without naming the clause is caught" \
+  anyanswer 's#        \*"$id"\*) ;;#        *) ;;#'
+
 #
 # A question is `run + stage + clause`. Each term keeps one wrong answer away from a reader, so each
 # gets its own break — dropping the run lets a later run derive an earlier one's question, and the
