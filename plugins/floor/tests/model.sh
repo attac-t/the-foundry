@@ -1620,6 +1620,39 @@ a_run_completes_only_when_every_clause_is_evidenced() {
 a_run_completes_only_when_every_clause_is_evidenced
 
 #
+# Grading a repository and writing to one are different powers, and the allowlist only ever meant the
+# first. `is_authorised` passes the bootstrap target because someone invoked Foundry there — standing
+# in a repository is not permission to push to it, and a run that widened its own allowlist would
+# otherwise have granted itself one.
+#
+delivering_somewhere_is_a_grant_of_its_own() {
+  make_repo "$tmp/dl" main && set_origin "$tmp/dl" 'https://github.com/acme/dl.git' \
+    || { skip "delivery grant — git could not make a repo here"; return; }
+
+  floor_new_as "$tmp/dl" ada@example.com "Deliver" >/dev/null
+
+  is "a delivery with nothing to call it is refused" \
+     "$(code_of floor "$tmp/dl" deliver)" "2"
+
+  is "the bootstrap target may be graded" \
+     "$(code_of floor "$tmp/dl" targets add 'https://github.com/acme/dl.git' main)" "0"
+  is  "and may not be delivered to" \
+      "$(code_of floor "$tmp/dl" deliver 'a change')" "18"
+  has "which says what is missing" \
+      "$(floor_says "$tmp/dl" deliver 'a change')" "nobody said this run may deliver"
+
+  floor "$tmp/dl" policy deliver-to 'https://github.com/acme/dl.git' >/dev/null 2>&1
+  has "a delivery grant is listed apart from the allowlist" \
+      "$(floor "$tmp/dl" policy)" "deliver"
+
+  is "authorising a repo to be graded does not grant delivery" \
+     "$(code_of floor "$tmp/dl" policy deliver-to 'https://github.com/acme/other.git')" "0"
+  is  "and a repo nobody authorised at all is refused" \
+      "$(code_of floor "$tmp/dl" policy deliver-to 'not-a-repo')" "4"
+}
+delivering_somewhere_is_a_grant_of_its_own
+
+#
 # Invariant 4 is a conjunct of the invariant, not a note beside it. A run nobody is recorded as
 # having selected has no authority to deliver, however green its gates are.
 #

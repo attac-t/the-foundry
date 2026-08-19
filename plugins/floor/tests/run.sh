@@ -241,11 +241,14 @@ wreck_runner "a selected set that is never written down is caught" \
 
 wreck_runner "a selection that moved and authorises anyway is caught" \
   drifted 's|\[ "$(normalised_selection "$2")" = "$(cat "$frozen")" \] && return 0|return 0|'
-# `drifted` blinds the comparison for both readers. These blind one call site each, and each is a
-# different claim — so each sed is anchored to the function it is about. Unanchored, one break would
-# blind every caller and stop being a claim about any of them.
-wreck_runner "a completion that grades the live selection is caught" \
-  livesel '/^complete()/,/^}/ s#    refuse_moved_selection "$dir" "$(unit_targets_file "$dir")" || exit 10#    :#'
+# `drifted` blinds the comparison itself. These blind one call site each, and each is a different
+# claim — so each sed is anchored to the function it is about. Unanchored, one break would blind
+# every caller and stop being a claim about any of them.
+#
+# `complete` and `deliver` share this guard: one decides whether a run may deliver and the other acts
+# on that answer, so a freeze either binds both or is worth nothing.
+wreck_runner "readers of the invariant that skip the freeze are caught" \
+  livesel '/^refuse_unreadable_run()/,/^}/ s#    refuse_moved_selection "$1" "$(unit_targets_file "$1")" || exit 10#    :#'
 
 #
 # The recorder reads it too. A grader that misreads answers wrongly once; a recorder writes a row the
@@ -313,9 +316,10 @@ wreck_runner "an identity that may hold a newline is caught" \
 wreck_runner "a slot reclaimed with grants behind it is caught" \
   inherit 's#slot_is_reserved() { \[ -e "$GRANTS/$1" \]; }#slot_is_reserved() { false; }#'
 
-# The bootstrap is an effective grant. Copied, it becomes a second place the truth lives.
+# The bootstrap is an effective grant. Copied, it becomes a second place the truth lives — and the
+# short-circuit this blinds is the one both grants share, so it catches any grant recorded twice.
 wreck_runner "a bootstrap copied into the grants is caught" \
-  copyboot 's|is_authorised "$dir" "$identity" && return 0|is_authorised "$dir" "$identity" \&\& [ 1 -eq 0 ] \&\& return 0|'
+  copyboot 's|"$holds" "$dir" "$identity" && return 0|"$holds" "$dir" "$identity" \&\& [ 1 -eq 0 ] \&\& return 0|'
 
 # A bootstrap file naming nothing must read as no bootstrap, or `policy` lists a nameless entry.
 wreck_runner "a bootstrap that names nothing is caught" \
@@ -323,7 +327,7 @@ wreck_runner "a bootstrap that names nothing is caught" \
 
 # Policy state is read by eye and outlives the run. A password stored here is a password on disk.
 wreck_runner "a grant that stores credentials is caught" \
-  grantcreds 's|printf .%s\\n. "$identity" >> "$grants"|printf "%s\\n" "$repo" >> "$grants"|'
+  grantcreds 's|record_grant "$file" "$identity"|record_grant "$file" "$repo"|'
 
 # The charter lives in the run, so nothing can inherit one. Move it beside the runs and a reclaimed
 # slot would carry a dead run's definition of good — the bug policy shipped with.
@@ -452,6 +456,19 @@ wreck_runner "a recorder that stamps into a renamed run is caught" \
 wreck_runner "a guard that refuses a run made before it is caught" \
   nogrand 's#named=$(recorded_id "$1") || return 0#named=$(recorded_id "$1") || exit 13#'
 
+#
+# Grading a repository and writing to one are two powers, and one break covers every way the second
+# collapses into the first — a grant that forgives the bootstrap target and a grant nothing reads
+# both make `may_deliver_to` true, and one assertion kills both. A second break was written and
+# deleted: it failed on the same three checks with the same values.
+#
+# **What the assertion's position does, the break cannot.** Every run is bootstrapped somewhere, so
+# delivery inheriting the allowlist would grant delivery everywhere — and a check made *after* a
+# grant exists cannot see that. `model.sh` asks before granting for exactly this reason.
+#
+wreck_runner "a delivery nobody granted is caught" \
+  ungranted '/^may_deliver_to()/,/^}/ s#    \[ -f "$file" \] || return 1#    return 0#'
+
 wreck_runner "a check blind to a gate resolving elsewhere is caught" \
   blindres   's|^        moved_resolutions "$file"$|        :|'
 wreck_runner "a check blind to a pinned file that moved is caught" \
@@ -558,23 +575,23 @@ wreck_runner "a failing gate counted as satisfying its clause is caught" \
 # Quantified over clauses and over targets, so each empty set satisfies it for free. These two are
 # the fail-opens, and neither is an edge case: every fresh run has an empty selection.
 wreck_runner "an empty charter delivering vacuously is caught" \
-  vacuousbar 's#        empty_bar "$dir"##'
+  vacuousbar 's#    empty_bar "$1"##'
 
 wreck_runner "an empty selection delivering vacuously is caught" \
-  vacuousselection 's#        empty_selection "$dir"##'
+  vacuousselection 's#    empty_selection "$1"##'
 
 wreck_runner "a run nobody selected delivering anyway is caught" \
-  unclaimed 's#        unauthorised_run "$dir"##'
+  unclaimed 's#    unauthorised_run "$1"##'
 
 # Quantified over every selected target, and one checkout answers for one. Without this the second
 # is graded by nothing and the run delivers on evidence that never mentioned it.
 wreck_runner "a second selected target graded by nothing is caught" \
-  onetarget 's#        ungradable_targets "$dir"##'
+  onetarget 's#    ungradable_targets "$1"##'
 
 # `targets` and `authorise` refuse a hand-edited selection. The grader read it, and every clause is
 # graded against every selected target.
 wreck_runner "a grader reading a selection nobody authorised is caught" \
-  ungrated 's#    refuse_unselectable "$dir" "$(unit_targets_file "$dir")" || exit 5##'
+  ungrated 's#    refuse_unselectable "$1" "$(unit_targets_file "$1")" || exit 5##'
 
 # Three ways a clause is not met, and they take different remedies. Collapse the first into the
 # second and an introduced clause reads as one belonging to another checkout — a reader sent looking
