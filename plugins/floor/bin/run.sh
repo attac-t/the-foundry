@@ -1947,6 +1947,23 @@ derive_charter() {
     }
 
     mv "$draft" "$file" || die_unwritable "$file"
+    say_what_derived "$file"
+}
+
+#
+# Silence read as success. Derive on a repository declaring no gates wrote an empty charter and said
+# nothing, so *found nothing* and *worked* looked identical — and the refusal arrived two stages
+# later, at `authorise` exit 8, about a file the reader thought was fine.
+#
+# Not a refusal. An empty charter is a legitimate step: derive finds nothing mechanical, a human
+# introduces a clause, and the charter is real. Only the silence was wrong.
+#
+say_what_derived() {
+    held=$(awk '$1 == "clause"' "$1" 2>/dev/null | wc -l | tr -d ' ')
+
+    [ "$held" = 1 ] && { note "the charter holds one clause"; return 0; }
+    [ "$held" = 0 ] || { note "the charter holds $held clauses"; return 0; }
+    note "nothing here declares a gate, so the charter is empty — \`charter introduce\` puts a bar in it"
 }
 
 #
