@@ -218,6 +218,11 @@ wreck_runner "a selection read without checking policy is caught" \
 wreck_runner "a selection line that is not a repo and a ref is caught" \
   anyshape 's#NF && NF != 2#NF \&\& 0#'
 
+# A pin captured somewhere the gates will never run. The charter reads as provenanced throughout —
+# a real artifact at a real commit — so nothing downstream can tell.
+wreck_runner "a bar derived off the graded ref is caught" \
+  elsewhere 's#    refuse_second_ref "$dir" "$identity" "$ref"#    :#'
+
 #
 # Authorisation refuses a run that describes no work. Two refusals, two breaks: an empty charter
 # grades nothing at all, and a clause that governs no selected target is a bar over nothing. A

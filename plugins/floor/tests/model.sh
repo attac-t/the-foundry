@@ -2026,6 +2026,41 @@ a_target_selected_after_the_freeze_is_a_new_run() {
 }
 a_target_selected_after_the_freeze_is_a_new_run
 
+
+#
+# The bar is captured where it will be graded, or not at all.
+#
+# `bootstrap` records the ref the invoker stood on; the selection names the ref the run chose; the
+# charter pins the first and the workspace checks out the second. Nothing compared them, so a run
+# derived its definition of good from a tree it would never grade — and invariant 2 read as satisfied
+# the whole way, because a pin was captured, just not from there.
+#
+# Found by the first self-hosted run, which was started on a branch and selected `main`.
+#
+a_bar_derived_somewhere_else_is_refused() {
+  make_repo "$tmp/px" main && set_origin "$tmp/px" 'https://github.com/acme/px.git' \
+    && mkdir -p "$tmp/px/.foundry" \
+    && commit_file "$tmp/px" .foundry/gates 'tests  true
+' || { skip "pinned elsewhere — git could not make a repo here"; return; }
+
+  git -C "$tmp/px" checkout -q -b side 2>/dev/null
+
+  floor_new_as "$tmp/px" ada@example.com "Elsewhere" >/dev/null
+  floor "$tmp/px" charter derive >/dev/null 2>&1
+  floor "$tmp/px" policy authorize 'https://github.com/acme/px.git' >/dev/null 2>&1
+
+  is "selecting the ref the run was started on is fine" \
+     "$(code_of floor "$tmp/px" targets add 'https://github.com/acme/px.git' side)" "0"
+
+  d=$(floor "$tmp/px" path)
+  grep -v ' side$' "$d/units/01/targets" > "$d/units/01/t" && mv "$d/units/01/t" "$d/units/01/targets"
+
+  is  "selecting another ref of the same repository is refused" \
+      "$(code_of floor "$tmp/px" targets add 'https://github.com/acme/px.git' main)" "4"
+  has "and says the bar came from elsewhere" \
+      "$(floor_says "$tmp/px" targets add 'https://github.com/acme/px.git' main)" "derived at [side]"
+}
+a_bar_derived_somewhere_else_is_refused
 #
 # Every clause is graded against every selected target, so a line put into the file by hand decides
 # what the run answers for. `targets` and `authorise` both refuse such a line; the grader read it.

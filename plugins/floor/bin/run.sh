@@ -766,6 +766,29 @@ bootstrap_base() {
     awk 'NR == 1 && $3 != "" { printf "%s", $3; found = 1 } END { exit !found }' "$1/bootstrap"
 }
 
+# The ref the invoker stood on, and so where the bar came from — whatever the selection later names.
+bootstrap_ref() {
+    [ -f "$1/bootstrap" ] || return 1
+    awk 'NR == 1 && $2 != "" { printf "%s", $2; found = 1 } END { exit !found }' "$1/bootstrap"
+}
+
+#
+#
+# One target, one ref. The charter pins at the bootstrap's commit and `open` checks out the ref the
+# selection names, so a second ref derives the bar from a tree nothing grades — and invariant 2 reads
+# as satisfied throughout, because a pin was captured, just not from there.
+#
+refuse_second_ref() {
+    from=$(bootstrap_ref "$1") || return 0
+
+    [ "$(bootstrap_identity "$1")" = "$2" ] || return 0
+    [ "$from" != "$3" ] || return 0
+
+    note "the bar was derived at [$from], so [$3] would be graded against a tree it never read"
+    note "start a run there, or select [$from]"
+    exit 4
+}
+
 #
 # Authorised because someone invoked Foundry there, or because someone said so since.
 #
@@ -888,6 +911,7 @@ add_target() {
     }
 
     is_usable_ref "$ref" || { note "not a usable ref: [$ref]"; exit 4; }
+    refuse_second_ref "$dir" "$identity" "$ref"
 
     # Every guard runs before the append, so a refusal leaves the file byte-identical. This is where
     # selection happens until planning exists, so this is where policy has to bite.
