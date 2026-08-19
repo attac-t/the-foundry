@@ -824,3 +824,8 @@ wreck_runner "an answer that authorises without naming the clause is caught" \
 
 wreck_runner "an unanswered clause that authorises anyway is caught" \
   nowordneeded 's#    said=$(source_says receive "$(item_id "$1")" "$(question_id "$1" authorisation "$2")" 2>/dev/null) || return 1#    return 0#'
+
+# The item proposes and the allowlist decides. A run that took an advised target as authorised would
+# let anyone who can file an item choose what the run may touch.
+wreck_runner "an advised target that skips the allowlist is caught" \
+  advised 's#        add_target "$1" "$2" "$repo" "$(bootstrap_ref "$1")"#        printf "%s %s\n" "$repo" "$(bootstrap_ref "$1")" >> "$2"#'
