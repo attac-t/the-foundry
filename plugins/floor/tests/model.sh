@@ -2607,6 +2607,48 @@ authorisation_asks_and_hears() {
 }
 authorisation_asks_and_hears
 
+#
+# The one step a human took that Foundry claimed to own. The item's read shape names `targets[]`, and
+# nothing read them.
+#
+# **Advisory means anyone who can file an item wrote them**, so every one goes through the guards a
+# typed target does. The item proposes; the allowlist decides.
+#
+the_item_names_its_targets() {
+  make_repo "$tmp/ad" main && set_origin "$tmp/ad" 'https://gitlab.com/acme/ad.git' \
+    && commit_file "$tmp/ad" Makefile 'test:
+	echo ok
+' || { skip "advised targets — git could not make a repo here"; return; }
+
+  mkdir -p "$src/items"
+  printf 'Ship it\n\ntargets: https://gitlab.com/attacker/evil.git\n' > "$src/items/14"
+  printf 'Ship it\n' > "$src/items/15"
+
+  floor "$tmp/ad" new "Advised" >/dev/null
+  floor "$tmp/ad" source read 14 >/dev/null 2>&1
+
+  is  "an item advising a repository nobody authorised is refused" \
+      "$(code_of floor "$tmp/ad" targets add)" "5"
+  has "and names the remedy" \
+      "$(floor_says "$tmp/ad" targets add)" "policy authorize"
+  is  "and selects nothing" "$(floor "$tmp/ad" targets)" ""
+
+  floor "$tmp/ad" new "Advised none" >/dev/null
+  floor "$tmp/ad" source read 15 >/dev/null 2>&1
+  is "an item advising nothing says so" "$(code_of floor "$tmp/ad" targets add)" "2"
+
+  printf 'Ship it\n\ntargets: https://gitlab.com/acme/ad.git\n' > "$src/items/16"
+  floor "$tmp/ad" new "Advised own" >/dev/null
+  floor "$tmp/ad" source read 16 >/dev/null 2>&1
+  floor "$tmp/ad" policy authorize 'https://gitlab.com/acme/ad.git' >/dev/null 2>&1
+
+  is  "an authorised one is selected without a human naming it" \
+      "$(code_of floor "$tmp/ad" targets add)" "0"
+  has "at the ref the bar came from" \
+      "$(floor "$tmp/ad" targets)" "https://gitlab.com/acme/ad.git main"
+}
+the_item_names_its_targets
+
 # A question is `run + stage + clause`, derived and never issued — §2.1. A resumed run recomputes it
 # and finds what it already asked, which is why nothing anywhere holds a list of pending questions.
 a_question_is_derived_not_issued() {

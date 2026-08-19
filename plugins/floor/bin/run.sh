@@ -711,6 +711,7 @@ targets() {
              list_targets "$file" ;;
         add) shift
              refuse_unselectable "$dir" "$file" || exit 5
+             [ "$#" -eq 0 ] && { add_advised "$dir" "$file"; return; }
              add_target "$dir" "$file" "${1:-}" "${2:-}" ;;
         *)   usage; exit 2 ;;
     esac
@@ -896,6 +897,28 @@ refuse_unselectable() {
 
     return "$status"
 }
+
+#
+# What the item advised, selected — the one step a human took that Foundry claimed to own.
+#
+# **Advisory means anyone who can file an item wrote them**, so every one goes through the guards a
+# typed target does. The item proposes; the allowlist decides, and exit 5 is where it says so.
+#
+# The bootstrap's ref, because a target read from an item names no ref and `refuse_second_ref` holds
+# the bar and the graded tree to one anyway.
+#
+add_advised() {
+    advised=$(advised_targets "$1")
+    [ -n "$advised" ] || { note "the item advises no target, so name one"; exit 2; }
+
+    for repo in $advised; do
+        add_target "$1" "$2" "$repo" "$(bootstrap_ref "$1")"
+    done
+}
+
+# The `targets:` lines in the item's own words. Floor reads a repository and nothing else — what the
+# source meant by the rest is the source's.
+advised_targets() { awk '$1 == "targets:" { print $2 }' "$1/item.md" 2>/dev/null; }
 
 add_target() {
     dir=$1
