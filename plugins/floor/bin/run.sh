@@ -678,8 +678,8 @@ record_base_ref() {
 }
 
 fetch_objects() {
-    git clone --quiet --no-hardlinks "$2" "$1" 2>/dev/null && return 0
-    note "could not clone [$3]"
+    why=$(git clone --quiet --no-hardlinks "$2" "$1" 2>&1) && return 0
+    note "could not clone [$3]: $why"
     return 1
 }
 
