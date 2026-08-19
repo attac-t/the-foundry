@@ -293,7 +293,7 @@ wreck_runner "authorising for whatever repository you stand in is caught" \
 # test — a test that always passes leaves the capture running and the mutant reading identically.
 #
 wreck_runner "a run that authorises over introduced meaning is caught" \
-  ownbar 's|    introduced=$(introduced_clauses "$charter_path")|    introduced=|'
+  ownbar 's|    introduced=$(unauthorised_clauses "$run_dir" "$charter_path")|    introduced=|'
 
 # The whole line, anchored: the capture holds a pipe, and a `|`-delimited expression would end at it.
 # The guard that keeps a never-derived run from being told it lost a clause. It had no break, and a
