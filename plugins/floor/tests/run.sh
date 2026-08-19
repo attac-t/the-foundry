@@ -35,9 +35,9 @@ model_caught() {
   local broken="$tmp/$1/bin/run.sh"
 
   command -v timeout >/dev/null 2>&1 \
-    && { ! RUNNER="$broken" timeout 300 bash "$root/tests/model.sh" >/dev/null 2>&1; return; }
+    && { ! RUNNER="$broken" FOUNDRY_FAIL_FAST=1 timeout 300 bash "$root/tests/model.sh" >/dev/null 2>&1; return; }
 
-  ! RUNNER="$broken" bash "$root/tests/model.sh" >/dev/null 2>&1
+  ! RUNNER="$broken" FOUNDRY_FAIL_FAST=1 bash "$root/tests/model.sh" >/dev/null 2>&1
 }
 
 #
@@ -691,6 +691,11 @@ wreck_runner "a read that lets the caller say what the item holds is caught" \
 
 wreck_runner "a receive that takes an answer is caught" \
   srcanswer 's#-le 3 \] || { note "receive#-le 9 ] || { note "receive#'
+
+# An answer satisfying by merely existing. `receive` carries whatever a human wrote, "no" included,
+# so the clause's own id is what separates a decision from a presence.
+wreck_runner "an answer that satisfies without naming the clause is caught" \
+  anyanswer 's#        \*"$id"\*) ;;#        *) ;;#'
 
 #
 # A question is `run + stage + clause`. Each term keeps one wrong answer away from a reader, so each
