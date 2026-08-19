@@ -873,15 +873,15 @@ a_charter_derives_from_the_repository_it_is_run_in() {
   printf 'https://github.com/acme/ch.git develop\n' > "$frozen"
 
   #
-  # Condition 1. An introduced clause is a bar nobody authorised, and there is no channel to ask
-  # through — so the gate blocks rather than passing. Condition 2 arrives here too: with no judge,
-  # every clause the mechanical path cannot establish is introduced.
+  # Condition 1. An introduced clause is a bar nobody authorised, so the stage asks and blocks until
+  # someone answers. Condition 2 arrives here too: with no judge, every clause the mechanical path
+  # cannot establish is introduced.
   #
   floor "$tmp/ch" charter introduce Judged 'the interface is understandable' >/dev/null 2>&1
   is "an introduced clause cannot authorise cleanly" \
      "$(code_of floor "$tmp/ch" authorise)" "11"
-  has "and the refusal names the clause and says this stage does not ask" \
-      "$(floor_says "$tmp/ch" authorise)" "this stage does not ask"
+  has "and the refusal names the clause and who owns it" \
+      "$(floor_says "$tmp/ch" authorise)" "a human owns this"
 
   grep -v 'the interface is understandable' "$(charter_of "$chrun")" > "$chrun/c.tmp" \
     && mv "$chrun/c.tmp" "$(charter_of "$chrun")"
@@ -2567,6 +2567,46 @@ a_human_answer_can_satisfy_a_clause() {
 }
 a_human_answer_can_satisfy_a_clause
 
+#
+# §2.2's authorisation answer. The same channel as satisfaction, and a different meaning: this one
+# says the clause may exist, never that it was met.
+#
+# **The source is the store.** A resumed run re-reads instead of remembering, so replaying changes
+# nothing and no second ledger appears — which is what §2.2 refuses.
+#
+authorisation_asks_and_hears() {
+  make_repo "$tmp/aa" main && set_origin "$tmp/aa" 'https://gitlab.com/acme/aa.git' \
+    && commit_file "$tmp/aa" Makefile 'test:
+	echo ok
+' || { skip "authorisation ask — git could not make a repo here"; return; }
+
+  mkdir -p "$src/items" && printf 'Ship it\n' > "$src/items/12"
+
+  floor "$tmp/aa" new "Ask" >/dev/null
+  floor "$tmp/aa" source read 12 >/dev/null 2>&1
+  floor "$tmp/aa" charter derive >/dev/null 2>&1
+  floor "$tmp/aa" policy authorize 'https://gitlab.com/acme/aa.git' >/dev/null 2>&1
+  floor "$tmp/aa" targets add 'https://gitlab.com/acme/aa.git' main >/dev/null 2>&1
+  floor "$tmp/aa" charter introduce Decided "ship on friday" >/dev/null 2>&1
+
+  is "an introduced clause blocks" "$(code_of floor "$tmp/aa" authorise)" "11"
+  is "and the question is where the human is" \
+     "$(ls "$src/questions/12" 2>/dev/null | wc -l | tr -d ' ')" "1"
+
+  q=$(ls "$src/questions/12" | head -1)
+  id=$(printf '%s' "ship on friday" | cksum | awk '{ print $1 }')
+  mkdir -p "$src/answers/12"
+
+  printf 'no, not friday\n' > "$src/answers/12/$q"
+  is "a decline is not approval" "$(code_of floor "$tmp/aa" authorise)" "11"
+
+  printf 'yes, %s may exist\n' "$id" > "$src/answers/12/$q"
+  is "an answer naming the clause authorises it" "$(code_of floor "$tmp/aa" authorise)" "0"
+  is "and asking again asks nothing new" \
+     "$(ls "$src/questions/12" | wc -l | tr -d ' ')" "1"
+}
+authorisation_asks_and_hears
+
 # A question is `run + stage + clause`, derived and never issued — §2.1. A resumed run recomputes it
 # and finds what it already asked, which is why nothing anywhere holds a list of pending questions.
 a_question_is_derived_not_issued() {
@@ -2638,7 +2678,9 @@ an_answer_authorises_nothing() {
   ws charter introduce Judged 'the interface is understandable' >/dev/null 2>&1
   is "an introduced clause leaves the run unauthorised" "$(code_of ws authorise)" "11"
 
-  qi=$(ws source ask authorisation 'the interface is understandable' 'May this clause exist?')
+  # The stage asked when it blocked, so nothing here asks again — a second ask in other words under
+  # one identity is refused, which is what keeps a resumed run from piling questions up.
+  qi=$(ls "$src/questions/7" | head -1)
 
   answer_with "$qi" 'yes, go ahead'
   is "an approval sitting in the source authorises nothing" "$(code_of ws authorise)" "11"

@@ -808,3 +808,19 @@ audit_the_executable_bit
 echo
 [ "$failed" -eq 0 ] && echo "ALL GREEN" || echo "FAILURES ABOVE"
 exit $failed
+
+#
+# The authorisation join, and its three claims are three breaks: the stage asks, an answer that does
+# not name the clause authorises nothing, and an unanswered clause still blocks.
+#
+# `anyword` is the one that matters. `receive` carries whatever a human wrote, "no" included, so a
+# run that took any answer as approval would read a refusal as a yes.
+#
+wreck_runner "a stage that blocks without asking is caught" \
+  silentblock 's#            ask_to_authorise "$run_dir" "$text"#            :#'
+
+wreck_runner "an answer that authorises without naming the clause is caught" \
+  anyword 's#        \*"$(clause_id "$2")"\*) return 0 ;;#        *) return 0 ;;#'
+
+wreck_runner "an unanswered clause that authorises anyway is caught" \
+  nowordneeded 's#    said=$(source_says receive "$(item_id "$1")" "$(question_id "$1" authorisation "$2")" 2>/dev/null) || return 1#    return 0#'
