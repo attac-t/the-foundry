@@ -1,10 +1,14 @@
 # RFC-001: The Portable Composition Model
 
-**Status:** Accepted — revision 15
+**Status:** Accepted — revision 15, 2026-08-18
 **Plugin:** `floor`
 **Author:** Christian Attard
 **Date:** 2026-08-12
 **Issue:** [#66](https://github.com/attac-t/the-foundry/issues/66)
+
+The contracts here bind until a revision changes them. Every claim about what is *built* is dated
+at the revision above — code ships between revisions, so `plugins/floor` (README, tests, code)
+answers what runs now, and §6's revision log is history, never current state.
 
 ---
 
@@ -1412,7 +1416,7 @@ required by §2.3, not speculative.
 
 ## 8. Falsifiable experiments
 
-| # | Experiment | Falsifies | Today |
+| # | Experiment | Falsifies | At revision 15 |
 |---|---|---|---|
 | 1 | Rewrite a gate script to `exit 0`; confirm the clause downgrades to `judged` | the pinning invariant | not built — **and this is the one that matters** |
 | 1b | Ten ordinary runs — a dependency bump, a new test, a refactor; count how many downgrade | that downgrade is rare enough to mean something | not built |
