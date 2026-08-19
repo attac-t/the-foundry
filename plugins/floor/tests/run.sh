@@ -17,6 +17,24 @@ failed=0
 # Record a failing audit.
 bad() { failed=1; printf '  FAIL  %s\n' "$1"; }
 
+#
+# The line that ends a suite is its last line.
+#
+# A file grows at its end, and the end is below the line that ends it. Eight breaks sat below this
+# file's `exit` across seven pull requests, and `model.sh`'s tally sat ninety-nine lines above its own
+# last case — so that suite exited with the last check's status and never the tally's, and no failure
+# it printed could reach the gate.
+#
+# Nothing else notices. Both were found by reading, twice, months apart.
+#
+ends_on() {
+  [ "$(awk '!/^[ \t]*#/ && NF { last = $0 } END { print last }' "$1")" = "$2" ]
+}
+
+ends_on "$root/tests/run.sh"     'exit $failed'      || bad "tests/run.sh declares breaks below its exit, and nothing runs them"
+ends_on "$root/tests/model.sh"   'summary "model"'   || bad "tests/model.sh runs cases below its tally, and nothing counts them"
+ends_on "$root/tests/install.sh" 'summary "install"' || bad "tests/install.sh runs cases below its tally, and nothing counts them"
+
 for suite in model install; do
   bash "$root/tests/$suite.sh" || failed=1
   echo
@@ -816,6 +834,49 @@ wreck_runner "silence answered as an answer is caught" \
 wreck_runner "a question answering itself is caught" \
   ghself 's#mine = index($0, mark) > 0; want = 0#mine = index($0, mark) > 0; want = 1#' lib/source-github.sh
 
+#
+# The authorisation join, and its three claims are three breaks: the stage asks, an answer that does
+# not name the clause authorises nothing, and an unanswered clause still blocks.
+#
+# `anyword` is the one that matters. `receive` carries whatever a human wrote, "no" included, so a
+# run that took any answer as approval would read a refusal as a yes.
+#
+wreck_runner "a stage that blocks without asking is caught" \
+  silentblock 's#            ask_to_authorise "$run_dir" "$text"#            :#'
+
+wreck_runner "an answer that authorises without naming the clause is caught" \
+  anyword 's#        \*"$(clause_id "$2")"\*) return 0 ;;#        *) return 0 ;;#'
+
+wreck_runner "an unanswered clause that authorises anyway is caught" \
+  nowordneeded 's#    said=$(source_says receive "$(item_id "$1")" "$(question_id "$1" authorisation "$2")" 2>/dev/null) || return 1#    return 0#'
+
+# The item proposes and the allowlist decides. A run that took an advised target as authorised would
+# let anyone who can file an item choose what the run may touch.
+wreck_runner "an advised target that skips the allowlist is caught" \
+  advised 's#        add_target "$1" "$2" "$repo" "$(bootstrap_ref "$1")"#        printf "%s %s\n" "$repo" "$(bootstrap_ref "$1")" >> "$2"#'
+
+#
+# Standing authority, and the break is the surface it opens. Practice lives in the target, a worker
+# owns the checkout, and a run reading the working tree would let a worker grant itself anything.
+#
+wreck_runner "a practice read from the worker's tree is caught" \
+  livepractice 's#    base=$(bootstrap_base "$2") || return 1#    base=HEAD#'
+
+# One repository twice. `ungradable_targets` counts selected targets, so a duplicate is one
+# repository reported twice and every clause graded against it twice.
+wreck_runner "a repository selected twice is caught" \
+  twiceover 's#    refuse_selected_twice "$file" "$identity"#    :#'
+
+# Silence read as success. Derive found nothing, said nothing, and the refusal arrived two stages
+# later about a file the reader thought was fine.
+wreck_runner "a derive that says nothing is caught" \
+  mutederive 's#    say_what_derived "$file"#    :#'
+
+# One yes outranking a no. While every record was an exit code this was invisible: one tree gives one
+# answer. A human answering makes a second, contradicting record possible.
+wreck_runner "a yes that outranks a no is caught" \
+  onlyyes 's#        $5 != "0" { no  = 1 }#        $5 != "0" { }#'
+
 report_breaks
 
 # --- break the install ---
@@ -891,46 +952,3 @@ report_breaks
 echo
 [ "$failed" -eq 0 ] && echo "ALL GREEN" || echo "FAILURES ABOVE"
 exit $failed
-
-#
-# The authorisation join, and its three claims are three breaks: the stage asks, an answer that does
-# not name the clause authorises nothing, and an unanswered clause still blocks.
-#
-# `anyword` is the one that matters. `receive` carries whatever a human wrote, "no" included, so a
-# run that took any answer as approval would read a refusal as a yes.
-#
-wreck_runner "a stage that blocks without asking is caught" \
-  silentblock 's#            ask_to_authorise "$run_dir" "$text"#            :#'
-
-wreck_runner "an answer that authorises without naming the clause is caught" \
-  anyword 's#        \*"$(clause_id "$2")"\*) return 0 ;;#        *) return 0 ;;#'
-
-wreck_runner "an unanswered clause that authorises anyway is caught" \
-  nowordneeded 's#    said=$(source_says receive "$(item_id "$1")" "$(question_id "$1" authorisation "$2")" 2>/dev/null) || return 1#    return 0#'
-
-# The item proposes and the allowlist decides. A run that took an advised target as authorised would
-# let anyone who can file an item choose what the run may touch.
-wreck_runner "an advised target that skips the allowlist is caught" \
-  advised 's#        add_target "$1" "$2" "$repo" "$(bootstrap_ref "$1")"#        printf "%s %s\n" "$repo" "$(bootstrap_ref "$1")" >> "$2"#'
-
-#
-# Standing authority, and the break is the surface it opens. Practice lives in the target, a worker
-# owns the checkout, and a run reading the working tree would let a worker grant itself anything.
-#
-wreck_runner "a practice read from the worker's tree is caught" \
-  livepractice 's#    base=$(bootstrap_base "$2") || return 1#    base=HEAD#'
-
-# One repository twice. `ungradable_targets` counts selected targets, so a duplicate is one
-# repository reported twice and every clause graded against it twice.
-wreck_runner "a repository selected twice is caught" \
-  twiceover 's#    refuse_selected_twice "$file" "$identity"#    :#'
-
-# Silence read as success. Derive found nothing, said nothing, and the refusal arrived two stages
-# later about a file the reader thought was fine.
-wreck_runner "a derive that says nothing is caught" \
-  mutederive 's#    say_what_derived "$file"#    :#'
-
-# One yes outranking a no. While every record was an exit code this was invisible: one tree gives one
-# answer. A human answering makes a second, contradicting record possible.
-wreck_runner "a yes that outranks a no is caught" \
-  onlyyes 's#        $5 != "0" { no  = 1 }#        $5 != "0" { }#'
