@@ -1442,17 +1442,23 @@ unmet_clauses() {
 #
 # A record answering *was this clause met* with yes, at the ref delivered.
 #
-# One yes outranks any number of noes, because the ledger is append-only and satisfaction is read
-# existentially. §7 holds that open; it is harmless while every record is a command's exit code and
-# stops being so once a human can answer and a second human can disagree.
+# A yes and a no at one ref is a disagreement, not a satisfaction. §7 q10 held this open while every
+# record was a command's exit code — one tree, one answer, and a second record could only repeat it.
+# A human can answer now, and a second human can disagree, so the condition that made it harmless is
+# gone. §2.2's rule for ambiguity is that it escalates: delivering on the yes would be choosing which
+# of them was right.
+#
+# One tree still gives one answer, so a machine disagreement is a flaky gate saying so out loud.
 #
 # `""` on both sides of each comparison. An `-v` assignment is a numeric string, so a clause named
 # `123` would match a record named `0123` — the identity defect §2.2 already paid for once.
 #
 satisfied() {
-    awk -F'\t' -v name="$2" -v ref="$3" \
-        '$4 "" == name "" && $5 == "0" && $6 "" == ref "" { seen = 1 } END { exit !seen }' \
-        "$(evidence_file "$1")" 2>/dev/null
+    awk -F'\t' -v name="$2" -v ref="$3" '
+        $4 "" != name "" || $6 "" != ref "" { next }
+        $5 == "0" { yes = 1 }
+        $5 != "0" { no  = 1 }
+        END { exit !(yes && !no) }' "$(evidence_file "$1")" 2>/dev/null
 }
 
 #
