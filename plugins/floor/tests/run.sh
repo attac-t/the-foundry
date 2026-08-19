@@ -571,11 +571,11 @@ wreck_runner "a gate run against a repository it was not pinned to is caught" \
 # The whole of what the completion invariant adds. Gates could pass at commit N, three commits land,
 # and delivery proceed on evidence that no longer applied.
 wreck_runner "evidence that no longer applies to the delivered ref is caught" \
-  staleref 's# \&\& $6 "" == ref ""##'
+  staleref 's# || $6 "" != ref ""##'
 
 # `satisfying` evidence is a record whose answer is yes. A record that a gate failed is a record.
 wreck_runner "a failing gate counted as satisfying its clause is caught" \
-  anyresult 's#\&\& $5 == "0" \&\& $6 "" == ref ""#\&\& $6 "" == ref ""#'
+  anyresult 's#        $5 != "0" { no  = 1 }#        $5 != "0" { yes = 1 }#'
 
 # Quantified over clauses and over targets, so each empty set satisfies it for free. These two are
 # the fail-opens, and neither is an edge case: every fresh run has an empty selection.
@@ -846,3 +846,8 @@ wreck_runner "a repository selected twice is caught" \
 # later about a file the reader thought was fine.
 wreck_runner "a derive that says nothing is caught" \
   mutederive 's#    say_what_derived "$file"#    :#'
+
+# One yes outranking a no. While every record was an exit code this was invisible: one tree gives one
+# answer. A human answering makes a second, contradicting record possible.
+wreck_runner "a yes that outranks a no is caught" \
+  onlyyes 's#        $5 != "0" { no  = 1 }#        $5 != "0" { }#'

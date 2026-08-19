@@ -2964,3 +2964,30 @@ derive_says_what_it_found() {
       "$(floor_says "$tmp/sd" charter derive)" "holds one clause"
 }
 derive_says_what_it_found
+
+#
+# A yes and a no at one ref. §7 q10 held this open while every record was a command's exit code — one
+# tree gives one answer, so a second record could only repeat the first. A human can answer now, and
+# a second human can disagree.
+#
+a_disagreement_is_not_a_satisfaction() {
+  make_repo "$tmp/dg" main && set_origin "$tmp/dg" 'https://gitlab.com/acme/dg.git' \
+    && mkdir -p "$tmp/dg/.foundry" \
+    && commit_file "$tmp/dg" .foundry/gates 'tests  true
+' || { skip "disagreement — git could not make a repo here"; return; }
+
+  ready_run "$tmp/dg" 'https://gitlab.com/acme/dg.git'
+  floor "$tmp/dg" gates >/dev/null 2>&1
+  is "a gate that passed satisfies its clause" "$(code_of floor "$tmp/dg" complete)" "0"
+
+  # The same tree, answered twice and differently. Written by hand: nothing floor ships can produce
+  # it, which is the point — the second answer is a human's.
+  d=$(floor "$tmp/dg" path)
+  ref=$(awk -F'\t' 'NR == 1 { print $6 }' "$d/evidence")
+  printf '%s\thuman\t01\ttests\t1\t%s\tnot in my view\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$ref" >> "$d/evidence"
+
+  is  "a no at the same ref stops it" "$(code_of floor "$tmp/dg" complete)" "15"
+  has "and names the clause nobody agrees on" \
+      "$(floor_says "$tmp/dg" complete)" "unmet: [tests]"
+}
+a_disagreement_is_not_a_satisfaction
