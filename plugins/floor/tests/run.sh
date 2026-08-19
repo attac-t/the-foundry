@@ -44,13 +44,23 @@ done
 
 echo "audit — break the runner, the model suite must notice"
 
-# How many breaks run at once. `getconf` knows the name on Linux and macOS, where `nproc` is GNU
-# only; busybox knows it the other way round. Either can answer with a word rather than a number, so
-# the answer is read before it becomes a pool size.
+#
+# How many breaks run at once.
+#
+# Git Bash forks by copying its own heap, and one worker per processor exhausts it: `dofork: child
+# died unexpectedly`, then `fork: Resource temporarily unavailable`, and the audit stops having
+# reported nothing at all. Twelve killed it in seconds; four ran five minutes clean. Two, because
+# what a high guess costs is every verdict, and the clock this pool exists for is Docker's.
+#
+# `getconf` knows the processor count on Linux and macOS, where `nproc` is GNU only; busybox knows it
+# the other way round. Either can answer with a word rather than a number, so the answer is read
+# before it becomes a pool size.
+#
 worker_count() {
   local count
-  count=$(getconf _NPROCESSORS_ONLN 2>/dev/null || nproc 2>/dev/null)
+  case "${OSTYPE:-}" in msys*|cygwin*) printf '2'; return ;; esac
 
+  count=$(getconf _NPROCESSORS_ONLN 2>/dev/null || nproc 2>/dev/null)
   case "$count" in ''|*[!0-9]*|0) printf '4'; return ;; esac
   printf '%s' "$count"
 }
