@@ -9,7 +9,7 @@
 set -u
 root="$(cd "$(dirname "$0")/.." && pwd)"
 tmp="${TMPDIR:-/tmp}/floor-audit-$$"
-mkdir -p "$tmp"
+mkdir -p "$tmp/verdict"
 trap 'rm -rf "$tmp"' EXIT
 
 failed=0
@@ -26,13 +26,28 @@ done
 
 echo "audit — break the runner, the model suite must notice"
 
+# How many breaks run at once. `getconf` knows the name on Linux and macOS, where `nproc` is GNU
+# only; busybox knows it the other way round. Either can answer with a word rather than a number, so
+# the answer is read before it becomes a pool size.
+worker_count() {
+  local count
+  count=$(getconf _NPROCESSORS_ONLN 2>/dev/null || nproc 2>/dev/null)
+
+  case "$count" in ''|*[!0-9]*|0) printf '4'; return ;; esac
+  printf '%s' "$count"
+}
+
+workers=${FOUNDRY_AUDIT_WORKERS:-$(worker_count)}
+queued=0
+reported=0
+
 # Determine if the model suite fails against a broken runner.
 #
 # Bounded where `timeout` exists. A break can hang rather than answer wrongly — one removes the only
 # refusal from a counting loop — and an unbounded audit stops on those instead of reporting them. A
 # stopped audit reads as a slow one.
 model_caught() {
-  local broken="$tmp/$1/bin/run.sh"
+  local broken="$1/bin/run.sh"
 
   command -v timeout >/dev/null 2>&1 \
     && { ! RUNNER="$broken" FOUNDRY_FAIL_FAST=1 timeout 300 bash "$root/tests/model.sh" >/dev/null 2>&1; return; }
@@ -42,25 +57,81 @@ model_caught() {
 
 #
 # Break one rule in the runner — or in a file the runner resolves through — and require the model
-# suite to notice.
+# suite to notice. It speaks and does not count: `bad`'s counter dies with the process, so the line
+# it prints is the whole of what a break returns.
 #
 # Three ways a mutant proves nothing, all seen for real in this repo: sed fails, the output comes
 # out empty, or the pattern never matched. `cmp` alone catches only the third — an empty file
 # differs from the original too.
 #
-# The fourth argument names the file, because an adapter carries rules of its own and a rule only the
+# The last argument names the file, because an adapter carries rules of its own and a rule only the
 # caller can break is one the adapter is free to drop.
 #
-wreck_runner() {
-  local name="$1" tag="$2" mutation="$3" file="${4:-bin/run.sh}"
+break_verdict() {
+  local slot="$1" name="$2" tag="$3" mutation="$4" file="${5:-bin/run.sh}"
+  local mutant="$tmp/$slot-$tag"
 
-  rm -rf "${tmp:?}/$tag" && cp -R "$root" "$tmp/$tag" || { bad "$name — could not copy the plugin"; return; }
-  sed "$mutation" "$root/$file" > "$tmp/$tag/$file" || { bad "$name — sed failed, so this proves nothing"; return; }
-  [ -s "$tmp/$tag/$file" ] || { bad "$name — the mutant is empty, so the suite failed for the wrong reason"; return; }
-  cmp -s "$tmp/$tag/$file" "$root/$file" && { bad "$name — the break did not apply, so this proves nothing"; return; }
-  model_caught "$tag" || { bad "$name — the suite passed against a broken runner"; return; }
+  rm -rf "${mutant:?}" && cp -R "$root" "$mutant" || { bad "$name — could not copy the plugin"; return; }
+  sed "$mutation" "$root/$file" > "$mutant/$file" || { bad "$name — sed failed, so this proves nothing"; return; }
+  [ -s "$mutant/$file" ] || { bad "$name — the mutant is empty, so the suite failed for the wrong reason"; return; }
+  cmp -s "$mutant/$file" "$root/$file" && { bad "$name — the break did not apply, so this proves nothing"; return; }
+  model_caught "$mutant" || { bad "$name — the suite passed against a broken runner"; return; }
 
   printf '  ok    %s\n' "$name"
+}
+
+#
+# Report one break's verdict, and count it.
+#
+# The verdict is the line the break wrote, never `wait`'s exit code: `wait` answers for one job out
+# of many, and a status read from the wrong break is a verdict invented for it. Anything but the word
+# a held break prints counts as a failure, so a format changed here goes red and loud.
+#
+report_verdict() {
+  local verdict
+  verdict=$(cat "$tmp/verdict/$1")
+
+  printf '%s\n' "$verdict"
+  case "$verdict" in '  ok    '*) return ;; esac
+  failed=1
+}
+
+# Hold the pool to its size. `wait -n` would say the moment a worker came free and is bash 4.3 —
+# macOS ships 3.2 — so the running count is polled. Waiting in batches instead would idle the whole
+# pool on every batch's slowest break, and the breaks run from under a second to half a minute.
+await_a_free_worker() {
+  while [ "$(jobs -pr | wc -l)" -ge "$workers" ]; do sleep 1; done
+}
+
+# Report every break, in the order they were declared rather than the order they finished. The same
+# eight gates have to read the same way twice.
+report_breaks() {
+  wait
+
+  while [ "$reported" -lt "$queued" ]; do
+    reported=$((reported + 1))
+    report_verdict "$reported"
+  done
+}
+
+#
+# Start a break, once a worker is free. A break's verdict rests on nothing another break did, which
+# is what lets them run at once — and the slot it is handed, rather than its tag, is what keeps its
+# mutant its own. Two breaks are tagged `elsewhere`, and one directory for two workers is one worker
+# reading a tree the other is deleting.
+#
+# The verdict on disk reads *reported nothing* until the break replaces it, and the replacement is a
+# rename, so it lands whole or not at all. A worker killed at any point leaves the first verdict
+# standing — **a lost process reads as a failure and can never read as a pass.**
+#
+wreck_runner() {
+  await_a_free_worker
+
+  queued=$((queued + 1))
+  printf '  FAIL  %s — the break reported nothing\n' "$1" > "$tmp/verdict/$queued"
+
+  ( break_verdict "$queued" "$@" > "$tmp/verdict/$queued.said" 2>&1
+    mv "$tmp/verdict/$queued.said" "$tmp/verdict/$queued" ) &
 }
 
 #
@@ -740,6 +811,8 @@ wreck_runner "a question rewritten under a human is caught" \
 wreck_runner "silence answered as an answer is caught" \
   dirsilence 's#\[ -f "$root/answers/$1/$2" \] || return 1#\[ -f "$root/answers/$1/$2" \] || return 0#' lib/source-dir.sh
 
+report_breaks
+
 # --- break the install ---
 
 echo
@@ -804,6 +877,11 @@ audit_the_executable_bit() {
   wreck "a hook that lost its executable bit is caught" nox unhook
 }
 audit_the_executable_bit
+
+# Nothing is left queued. This file grows at its end, so a break added below the drain above would
+# run with nobody waiting for it and nobody reading what it said — and a verdict nobody reads is the
+# one thing this audit may never produce.
+report_breaks
 
 echo
 [ "$failed" -eq 0 ] && echo "ALL GREEN" || echo "FAILURES ABOVE"
