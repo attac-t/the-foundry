@@ -5,19 +5,17 @@
 # Needs `gh`, which floor does not declare — so floor reaches this only where the remote is GitHub
 # *and* `gh` is there, and `source-dir.sh` answers otherwise. §3's level 1, both halves.
 #
-# A question is a comment; its answer is a comment replying to it. The human is asked where they
-# already are, and the marker line is how one question is addressed among many:
+# A question is a comment; its answer is what people wrote after it. The human is asked where they
+# already are, and one marker line addresses one question among many:
 #
 #     floor-question: <question> <digest of the words>
-#     floor-answer:   <question> the words a human wrote
 #
 # **The marker carries a digest, not the words.** Asking twice with the same words is one question
 # and different words are refused, and comparing them means recovering the first ones out of a
 # transcript GitHub formats however it likes. A digest needs no recovery and no parser.
 #
-# An answer is the rest of its marker's line. That is narrower than the directory adapter, which
-# holds a whole file, and it is what makes finding one robust against everything GitHub prints
-# around it.
+# **Only the question is marked.** An answer is whatever a person wrote next — a marker they have to
+# type is a command language, and the first person who met one answered and went unheard.
 #
 # Usage: sh source-github.sh read    <issue>
 #        sh source-github.sh publish <issue> <run> <branch> <title>
@@ -81,12 +79,35 @@ post_question() {
 $4" >/dev/null || return 3
 }
 
-# A human's answer, as they wrote it. Nothing here reads it — what an answer means belongs to
-# whoever asked, and a transport that decided would be answering for them.
+#
+# A human's answer, as they wrote it. Nothing here reads it — what an answer means belongs to whoever
+# asked, and a transport that decided would be answering for them.
+#
 read_answer() {
-    said=$(after_marker "$1" "floor-answer: $2 ")
+    said=$(said_after "$1" "floor-question: $2 ")
     [ -n "$said" ] || return 1
     printf '%s\n' "$said"
+}
+
+#
+# What people said after this question, and never another question.
+#
+# `gh` lays each comment out as its metadata, a rule, then its body. So the marker is followed by the
+# rest of the ask, which names the clause — reading from there would authorise it with itself.
+#
+# Questions bound this at both ends. One is asked per unauthorised clause, so several stand open at
+# once, and the next one beginning means this one was passed over rather than answered.
+#
+said_after() {
+    gh issue view "$1" --comments 2>/dev/null \
+        | awk -v mark="$2" '
+            /^floor-question: / { mine = index($0, mark) > 0; want = 0; next }
+            !mine               { next }
+            /^author:/          { meta = 1; next }
+            meta && $0 == "--"  { meta = 0; want = 1; next }
+            meta                { next }
+            $0 == "--"          { next }
+            want && NF          { print }'
 }
 
 # The words after a marker, in the first comment carrying it. One pass over the transcript, so

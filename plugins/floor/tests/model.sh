@@ -2814,7 +2814,9 @@ mkdir -p "$store"
 case "$*" in
   "issue view"*--comments*) cat "$store/comments" 2>/dev/null ;;
   "issue view"*)            cat "$store/item" 2>/dev/null ;;
-  "issue comment"*)         printf '%s\n' "$5" >> "$store/comments" ;;
+  # A comment is its metadata, a rule, then its body. GitHub's shape, because a fixture that agrees
+  # with the adapter instead of the service is a suite grading itself.
+  "issue comment"*)         printf '\n--\nauthor:\tnobody\n--\n%s\n' "$5" >> "$store/comments" ;;
   "pr list"*)               awk -v run="${6%% *}" '$3 == run { print $1, $2 }' "$store/prs" 2>/dev/null ;;
   "pr create"*)             url="https://example.invalid/pr/$(cat "$store/prs" 2>/dev/null | grep -c .)"
                             run=$(printf '%s' "$8" | awk '$1 == "floor-run:" { print $2 }')
@@ -2858,8 +2860,17 @@ the_other_adapter() {
      "$(code_of gh_floor source ask authorisation tests 'Something else entirely?')" "17"
 
   is "an unanswered question is not an answer" "$(code_of gh_floor source receive authorisation tests)" "1"
-  printf 'floor-answer: %s yes, go ahead\n' "$gq" >> "$GH_STORE/comments"
+  # A person comments. No marker — one they have to type is a command language nobody told them.
+  printf '\n--\nauthor:\tnobody\n--\nyes, go ahead\n' >> "$GH_STORE/comments"
   is "and a human's answer comes back as they wrote it" \
+     "$(gh_floor source receive authorisation tests)" "yes, go ahead"
+
+  # One question is asked per unauthorised clause, so several stand open at once. The one below is not
+  # an answer to the one above, and the one above is still answered.
+  gh_floor source ask completion tests 'And was it met?' >/dev/null 2>&1
+  is "a later question is no answer to an earlier one" \
+     "$(code_of gh_floor source receive completion tests)" "1"
+  is "and the answer above it still stands" \
      "$(gh_floor source receive authorisation tests)" "yes, go ahead"
 
   gd=$(gh_floor source publish work/other 'The other attempt')
