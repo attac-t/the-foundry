@@ -63,6 +63,18 @@ Verify the install: `/evaluate`
 
 ---
 
+## What is true here
+
+This tree answers what is true now; GitHub answers how it got here. Issues hold goals and open
+questions, pull requests hold the reasoning, history keeps every deleted page. A merged page is
+read as operative by the next agent — so a proposal starts as an issue, and a thinking pass ends
+as a PR, not in the tree.
+
+The one exception stands marked: `docs/rfc/` is an accepted design still being implemented. Its
+contracts bind, its revision log is history, and what runs now is each plugin's README.
+
+---
+
 ## Contributing
 
 Eight gates. Run them before you open a pull request:
