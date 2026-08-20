@@ -2437,6 +2437,7 @@ read_work_item() {
 # item arrived from it, so nothing here touches the allowlist or the selection.
 #
 source_file() { printf '%s/source' "$1"; }
+delivery_file() { printf '%s/delivery' "$1"; }
 
 item_id() { [ -f "$(source_file "$1")" ] && read -r held < "$(source_file "$1")" && printf '%s' "$held"; }
 
@@ -2466,9 +2467,17 @@ refuse_unaddressed() {
 #
 # Report this run's delivery, and answer with the identity the source gave it.
 #
-# **Floor keeps no copy of that identity.** The source is where a delivery lives, so asking again is
-# how a resumed run gets a true answer instead of a stale one. The run holds the branch, because one
-# run has one delivery and a second branch is a second delivery.
+# **The run answers before the source does.** This reverses what stood here — *floor keeps no copy* —
+# and the reason it stood is still true of the wrong noun. A delivery's *state* goes stale, so floor
+# never asks for it. Its *identity* cannot: a pull request URL is fixed at birth.
+#
+# What forced the reversal is that the source cannot always answer. GitHub's body index is eventually
+# consistent, so a lookup seconds after a delivery says *nothing* — truthfully — and nothing is what
+# the adapter reads as *not delivered yet*. It answers by opening a second one. Only GitHub refusing a
+# duplicate head has been stopping that, and a merged delivery is not refused.
+#
+# A run holding no record still asks. That is a run made before this rule, and a source lookup is the
+# right answer for it.
 #
 # Publishing the branch itself is the delivery seam's, and §9 orders it after this stage.
 #
@@ -2478,9 +2487,43 @@ publish_delivery() {
     [ "$#" -le 3 ] || { usage; exit 2; }
     [ -n "$branch" ] && [ -n "$title" ] || { note "publish needs a branch and a title"; exit 2; }
     refuse_unaddressed "$dir"
+    refuse_a_second_branch "$dir" "$branch"
 
-    said=$(source_says publish "$(item_id "$dir")" "$(basename "$dir")" "$branch" "$title")
+    delivered_already "$dir" && return
+
+    send_and_record "$dir" "$branch" "$title"
+}
+
+# `<branch> <url>`, and a branch holds no space — the adapter's shape, so one reader fits both.
+recorded_delivery() { cat "$(delivery_file "$1")" 2>/dev/null; }
+
+# One run, one delivery. The source's own refusal, because a record that answers first must never
+# answer differently.
+refuse_a_second_branch() {
+    had=$(recorded_delivery "$1")
+
+    [ -n "$had" ] || return 0
+    [ "${had% *}" = "$2" ] && return 0
+
+    refuse_unless_answered 4 delivery
+}
+
+delivered_already() {
+    had=$(recorded_delivery "$1")
+    [ -n "$had" ] || return 1
+
+    printf '%s\n' "${had##* }"
+}
+
+# Written after the send, so it can only ever describe a delivery that happened. One that cannot be
+# written is said out loud and not fatal — asking the source is the fallback, and it is what every run
+# had before this.
+send_and_record() {
+    said=$(source_says publish "$(item_id "$1")" "$(basename "$1")" "$2" "$3")
     refuse_unless_answered "$?" delivery
+
+    printf '%s %s\n' "$2" "$said" > "$(delivery_file "$1")" \
+        || note "delivered [$said], but this run could not record it — a resume will ask the source"
 
     printf '%s\n' "$said"
 }
