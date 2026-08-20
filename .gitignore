@@ -4,8 +4,8 @@
 # Review artifacts: charters and verdicts stay local to the branch that produced them
 .claude/panel/
 
-# Local settings (may contain local paths)
-.claude/settings.json
+# Personal overrides. `.claude/settings.json` is the project's and is committed — it names the
+# marketplace by repository rather than by a path on one machine, so it holds nothing local.
 .claude/settings.local.json
 
 # Self-development symlink (created during plugin development)

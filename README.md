@@ -61,6 +61,15 @@ Enable the opinionated voice:
 
 Verify the install: `/evaluate`
 
+### Working on this repository
+
+A clone brings `kernel`, `signal` and `floor` with it — `.claude/settings.json` names the marketplace
+and enables all three. The rules in `.claude/rules/` assume them, and a skill that is not installed is
+a rule pointing at nothing.
+
+`signal` is the one that is easy to skip and expensive to. It states a word budget before each reply
+rather than marking one afterwards — measured at 78% of first drafts blocked without it.
+
 ---
 
 ## What is true here

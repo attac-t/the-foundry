@@ -1,0 +1,15 @@
+{
+  "extraKnownMarketplaces": {
+    "the-foundry": {
+      "source": {
+        "source": "github",
+        "repo": "attac-t/the-foundry"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "kernel@the-foundry": true,
+    "signal@the-foundry": true,
+    "floor@the-foundry": true
+  }
+}
