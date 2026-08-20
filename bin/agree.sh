@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# The README, the workflow and `bin/gates.sh` name the same gates.
+# `CONTRIBUTING.md`, the workflow and `bin/gates.sh` name the same gates.
 #
 #   sh bin/agree.sh         check
 #   sh bin/agree.sh audit   break it four ways, require each to go red
@@ -13,7 +13,7 @@ main() {
     [ "${1:-check}" = audit ] && { audit; exit $?; }
 
     gates_run > "$listed"
-    disagree README  "$(named_in_readme)"
+    disagree CONTRIBUTING "$(named_in_contributing)"
     disagree workflow "$(named_in_workflow)"
 
     verdict
@@ -26,12 +26,12 @@ root() { cd "$(dirname "$0")/.." && pwd; }
 gates_run() { sh bin/gates.sh list | sort -u; }
 
 # The rows of the table under the gate heading, first cell only.
-named_in_readme() {
+named_in_contributing() {
     awk '
         /^\| Gate \| Fails when \|/ { table = 1; next }
         table && !/^\|/             { exit }
         table && /^\| `/            { gsub(/[`|]/, "", $2); print $2 }
-    ' README.md
+    ' CONTRIBUTING.md
 }
 
 #
@@ -90,7 +90,7 @@ audit() {
     caught "a gate missing from CI"                workflow 's/, panel\]/]/'
     caught "a gate swapped for another"            workflow 's/panel\]/pest]/'
     caught "a duplicate hiding a gate"             workflow 's/, panel\]/, floor]/'
-    caught "a gate dropped from the README"        readme   '/^| `versions` |/d'
+    caught "a gate dropped from CONTRIBUTING"      contributing '/^| `versions` |/d'
 
     [ "$disagreed" -eq 0 ] || return 1
     printf 'THE CHECK CAN FAIL\n'
@@ -115,7 +115,7 @@ fresh_lab() {
 }
 
 break_it() {
-    file="$lab/README.md"
+    file="$lab/CONTRIBUTING.md"
     [ "$1" = workflow ] && file="$lab/.github/workflows/gates.yml"
 
     sed "$2" "$file" > "$file.broken" && mv "$file.broken" "$file"
