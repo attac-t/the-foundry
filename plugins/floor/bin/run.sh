@@ -566,7 +566,9 @@ readable_name() { printf '%s' "$1" | sed 's#.*/##; s#\.git$##; s#[^A-Za-z0-9][^A
 # `git hash-object`, because git is already declared and a checksum is not collision-resistant —
 # `clause_id` uses `cksum` to name a clause, which is a different job with a different bar.
 identity_digest() {
-    printf '%s' "$1" | git hash-object --stdin | awk '{ print substr($0, 1, 12) }'
+    sha=$(printf '%s' "$1" | git hash-object --stdin) || return 1
+
+    printf '%s' "$sha" | awk '{ print substr($0, 1, 12) }'
 }
 
 #
