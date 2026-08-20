@@ -45,6 +45,16 @@ on_linux() {
 
 [ "$mode" = linux ] && { on_linux; exit $?; }
 
+# What a gate's exit code means, repo-wide. `bin/shell.sh` named these first; floor's audit answers
+# 3 when its experiments never ran. A number is only legible to whoever already knows the table.
+why_failed() {
+    case "$1" in
+        1) printf 'a rule broken'     ;;
+        3) printf 'it could not read' ;;
+        *) printf 'it did not run'    ;;
+    esac
+}
+
 # One list, two readers. `agree` compares names against the README and the workflow, and a list it
 # could not obtain from here would be a fourth place to keep them in step.
 gate() {
@@ -55,7 +65,10 @@ gate() {
 
     "$@" >/dev/null 2>&1 && { printf '  PASS  %s\n' "$name"; return; }
 
-    printf '  FAIL  %s (exit %s)\n' "$name" "$?"
+    code=$?
+
+    printf '  FAIL  %s — %s (exit %s)
+' "$name" "$(why_failed "$code")" "$code"
     failed=$((failed + 1))
 }
 

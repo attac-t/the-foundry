@@ -14,8 +14,15 @@ trap 'rm -rf "$tmp"' EXIT
 
 failed=0
 
-# Record a failing audit.
-bad() { failed=1; printf '  FAIL  %s\n' "$1"; }
+# Two ways an audit ends badly, and they take different remedies.
+#
+# `bad` is a rule broken: a break survived, or a suite went red. `moot` is an experiment that never
+# ran — a sed that matched nothing, a mutant that came out empty, a worker that died. The audit says
+# which in words already; these are what carry it to the exit code.
+#
+# Neither is a pass, and a `moot` never downgrades a `bad`.
+bad()  { failed=1; printf '  FAIL  %s\n' "$1"; }
+moot() { [ "$failed" -eq 0 ] && failed=3; printf '  MOOT  %s\n' "$1"; }
 
 #
 # The line that ends a suite is its last line.
@@ -30,6 +37,25 @@ bad() { failed=1; printf '  FAIL  %s\n' "$1"; }
 ends_on() {
   [ "$(awk '!/^[ \t]*#/ && NF { last = $0 } END { print last }' "$1")" = "$2" ]
 }
+
+# One recorder, run over a verdict already there, and what it leaves for `exit`.
+leaves() {
+  ( failed="$2"; "$1" - >/dev/null; exit "$failed" )
+  left=$?
+
+  [ "$left" = "$3" ] || { bad "$1 over $2 left $left, not $3"; return; }
+  printf '  ok    %s over %s leaves %s
+' "$1" "$2" "$3"
+}
+
+# The audit's two failures stay two. Every line above says which in words; `bin/gates.sh` branches on
+# the number, so collapsing them back into one exit code is the change nothing else would notice.
+audit_says_which() {
+  leaves moot 0 3
+  leaves bad  0 1
+  leaves moot 1 1
+}
+audit_says_which
 
 ends_on "$root/tests/run.sh"     'exit $failed'      || bad "tests/run.sh declares breaks below its exit, and nothing runs them"
 ends_on "$root/tests/model.sh"   'summary "model"'   || bad "tests/model.sh runs cases below its tally, and nothing counts them"
@@ -99,10 +125,10 @@ break_verdict() {
   local slot="$1" name="$2" tag="$3" mutation="$4" file="${5:-bin/run.sh}"
   local mutant="$tmp/$slot-$tag"
 
-  rm -rf "${mutant:?}" && cp -R "$root" "$mutant" || { bad "$name — could not copy the plugin"; return; }
-  sed "$mutation" "$root/$file" > "$mutant/$file" || { bad "$name — sed failed, so this proves nothing"; return; }
-  [ -s "$mutant/$file" ] || { bad "$name — the mutant is empty, so the suite failed for the wrong reason"; return; }
-  cmp -s "$mutant/$file" "$root/$file" && { bad "$name — the break did not apply, so this proves nothing"; return; }
+  rm -rf "${mutant:?}" && cp -R "$root" "$mutant" || { moot "$name — could not copy the plugin"; return; }
+  sed "$mutation" "$root/$file" > "$mutant/$file" || { moot "$name — sed failed, so this proves nothing"; return; }
+  [ -s "$mutant/$file" ] || { moot "$name — the mutant is empty, so the suite failed for the wrong reason"; return; }
+  cmp -s "$mutant/$file" "$root/$file" && { moot "$name — the break did not apply, so this proves nothing"; return; }
   model_caught "$mutant" || { bad "$name — the suite passed against a broken runner"; return; }
 
   printf '  ok    %s\n' "$name"
@@ -112,15 +138,19 @@ break_verdict() {
 # Report one break's verdict, and count it.
 #
 # The verdict is the line the break wrote, never `wait`'s exit code: `wait` answers for one job out
-# of many, and a status read from the wrong break is a verdict invented for it. Anything but the word
-# a held break prints counts as a failure, so a format changed here goes red and loud.
+# of many, and a status read from the wrong break is a verdict invented for it. Anything but the two
+# words a break can print counts as a rule broken, so a format changed here goes red and loud.
 #
 report_verdict() {
   local verdict
   verdict=$(cat "$tmp/verdict/$1")
 
   printf '%s\n' "$verdict"
-  case "$verdict" in '  ok    '*) return ;; esac
+  case "$verdict" in
+      '  ok    '*) return ;;
+      '  MOOT  '*) [ "$failed" -eq 0 ] && failed=3; return ;;
+  esac
+
   failed=1
 }
 
@@ -150,13 +180,13 @@ report_breaks() {
 #
 # The verdict on disk reads *reported nothing* until the break replaces it, and the replacement is a
 # rename, so it lands whole or not at all. A worker killed at any point leaves the first verdict
-# standing — **a lost process reads as a failure and can never read as a pass.**
+# standing — **a lost process reads as an experiment that never ran, and never as a pass.**
 #
 wreck_runner() {
   await_a_free_worker
 
   queued=$((queued + 1))
-  printf '  FAIL  %s — the break reported nothing\n' "$1" > "$tmp/verdict/$queued"
+  printf '  MOOT  %s — the break reported nothing\n' "$1" > "$tmp/verdict/$queued"
 
   ( break_verdict "$queued" "$@" > "$tmp/verdict/$queued.said" 2>&1
     mv "$tmp/verdict/$queued.said" "$tmp/verdict/$queued" ) &
@@ -996,5 +1026,7 @@ audit_the_executable_bit
 report_breaks
 
 echo
-[ "$failed" -eq 0 ] && echo "ALL GREEN" || echo "FAILURES ABOVE"
+[ "$failed" -eq 0 ] && echo "ALL GREEN"
+[ "$failed" -eq 1 ] && echo "FAILURES ABOVE"
+[ "$failed" -eq 3 ] && echo "PROVED NOTHING — the experiments above never ran"
 exit $failed
