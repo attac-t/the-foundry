@@ -860,6 +860,11 @@ wreck_runner "a failed lookup passing for an absence is caught" \
 wreck_runner "a question lookup that failed asking again is caught" \
   ghasked 's#asked=$(after_marker "$1" "floor-question: $2 ") || return 3#asked=$(after_marker "$1" "floor-question: $2 ")#' lib/source-github.sh
 
+# A delivery that publishes without pushing. The pull request is opened, points at a branch no remote
+# has, and the run reads as delivered — the one outcome `deliver` exists to make true.
+wreck_runner "a delivery that never pushed is caught" \
+  nopush 's#    push_workspace "$1" "$2" "$branch"#    :#'
+
 # Git says why a clone failed and floor is the only thing that hears it. A refusal that keeps the exit
 # code and drops the words leaves a worker with a workspace that will not build and no way to know why.
 wreck_runner "a clone that swallows git's words is caught" \
