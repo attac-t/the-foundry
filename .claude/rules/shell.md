@@ -3,10 +3,10 @@
 Shipped shell is `plugins/*/bin`, `lib` and `hooks`. Not `tests/` — those are bash on purpose and
 hold no such rule.
 
-**Invoke `kernel:craft-sh` before editing one.** The standard lives there. This exists because nobody
-goes looking for a standard while already writing, and the same corrections keep arriving in review
-instead.
+**Invoke `kernel:craft-sh` before the first character.** Its standard is generative: `main` reading as
+the whole story, one job to a function, an `else` extracted before it exists. Those are decisions
+taken while writing. Taken afterwards, each is a rewrite of something already load-bearing.
 
-`bin/shell.sh` gates an `else` and a body past forty lines. It cannot gate the one that recurs most —
-a preamble longer than the function it introduces — because a comment is only wrong when it says what
-the code already says, and no exit code reads that. So that one is a reading, every time.
+`bin/shell.sh` gates an `else` and a body past forty lines, and both are the after. The one that
+matters most it cannot gate at all: a comment saying what the code already says means the name is
+wrong, and no exit code reads a name.
