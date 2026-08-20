@@ -15,6 +15,10 @@ mkdir -p "$tmp"
 trap 'rm -rf "$tmp"' EXIT
 
 chain() { sh "$runner" "$@" 2>/dev/null; }
+
+# Like `chain`, but keeps what it said while answering. The sentence this is about goes to stderr,
+# which `chain` drops — so an outer `2>&1` at the call site captures nothing.
+chain_says() { sh "$runner" "$@" 2>&1; }
 code_of() { "$@" >/dev/null 2>&1; printf '%s' "$?"; }
 
 # A verdict as `/verdict` records one: numbered, roled, and naming what it judged.
@@ -32,6 +36,10 @@ b=$tmp/review-b
 # --- numbering ---
 
 is "an empty chain starts at round 1" "$(chain next "$a")" "001"
+
+# A chain with no rounds and a mistyped path are the same directory to `next`, and `001` is the one
+# round `prior` exempts. It cannot tell them apart — it can say which one it thinks this is.
+has   "and says it is a new chain" "$(chain_says next "$a")" "this is a new chain"
 
 verdict "$a" 001 adversary "the charter"
 is "and counts on from what is there" "$(chain next "$a")" "002"
@@ -85,8 +93,10 @@ is "even though a round 1 file is sitting right there" \
 
 d=$tmp/recorded
 
+# `2>/dev/null` because this is the first record of a new chain and `next_round` says so, which is
+# the point of it and not what this check is asking about.
 is "the first record lands at round 1" \
-   "$(printf 'body\n' | sh "$runner" record "$d" adversary 'the charter' | sed 's|.*/||')" \
+   "$(printf 'body\n' | sh "$runner" record "$d" adversary 'the charter' 2>/dev/null | sed 's|.*/||')" \
    "001-adversary-verdict.md"
 
 is "and the next one counts on" \
