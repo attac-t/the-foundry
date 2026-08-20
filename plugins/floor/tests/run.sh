@@ -925,6 +925,11 @@ wreck_runner "a question lookup that failed asking again is caught" \
 # Neither half alone is the rule. Read-only leaves nothing to read; write-only asks GitHub anyway, and
 # GitHub's body index is eventually consistent — a lookup seconds after a delivery says nothing, which
 # is what opens a second delivery.
+
+# Invariant 4 already refuses this run at `complete`. The break is the silence, not the refusal: a
+# second machine that hears it only after the work has done the work.
+wreck_runner "a run nobody selected made in silence is caught" \
+  quietwho 's#^    say_if_nobody_selected$#    :#'
 #
 wreck_runner "a delivery record the run never reads is caught" \
   noread 's#delivered_already "$dir" && return#:#'

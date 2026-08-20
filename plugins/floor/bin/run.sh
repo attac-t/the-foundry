@@ -143,6 +143,7 @@ make_run() {
     write_item "$dir" "$title" || die_unwritable "$dir/item.md"
     write_bootstrap "$dir"
     stamp_selection "$dir" "$(selector)" "$id"
+    say_if_nobody_selected
     point_this_checkout_at "$id"
 
     printf '%s\n' "$dir"
@@ -177,6 +178,15 @@ stamp_selection() {
 # deliver.
 #
 selector() { printf '%s' "${FOUNDRY_WHO:-$(git config user.email 2>/dev/null)}"; }
+
+# Nobody is a real answer and the run is still made — `selector` says why `new` is the wrong place to
+# demand a name. What it may not do is stay quiet: a second machine that learns this at `complete` has
+# already done the work.
+say_if_nobody_selected() {
+    [ -n "$(selector)" ] && return 0
+
+    note "nobody is recorded as having selected this run — set FOUNDRY_WHO, or it may not deliver"
+}
 
 #
 # `<base>-NNNN`, counting up from zero until nothing holds that name.

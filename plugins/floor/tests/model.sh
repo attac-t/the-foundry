@@ -1897,6 +1897,22 @@ a_gate_runs_where_the_unit_owns_the_checkout
 # A workspace is where mutation happens, so it may not exist for a run nobody authorised. `authorise`
 # holds twelve reasons and this restates none of them.
 #
+# Nobody is a real answer, and `new` makes the run anyway. It says so first.
+#
+# `HOME` is emptied because `selector` falls back to `git config user.email`, which reads the global
+# file — a developer's own identity would answer here for the container that has none.
+#
+a_run_nobody_selected_says_so() {
+  mkdir -p "$tmp/nohome"
+  said=$( cd "$tmp/bare" 2>/dev/null \
+          && HOME="$tmp/nohome" FOUNDRY_HOME="$home" FOUNDRY_RUN="" FOUNDRY_WHO="" \
+             sh "$runner" new "Nobody" 2>&1 >/dev/null )
+
+  has "a run nobody selected says so at new" "$said" "nobody is recorded"
+}
+a_run_nobody_selected_says_so
+
+#
 a_workspace_needs_authorisation() {
   make_repo "$tmp/wt" main && set_origin "$tmp/wt" 'https://github.com/acme/wt.git' \
     && mkdir -p "$tmp/wt/.foundry" \
