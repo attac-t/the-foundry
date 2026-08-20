@@ -882,6 +882,11 @@ wreck_runner "an advised target that skips the allowlist is caught" \
 wreck_runner "a practice read from the worker's tree is caught" \
   livepractice 's#    base=$(bootstrap_base "$2") || return 1#    base=HEAD#'
 
+# A practice nobody could read, reported as one granting nothing. The human grants what they already
+# granted, it works, and the base stays broken.
+wreck_runner "a practice that could not be read passing for an empty one is caught" \
+  mutepractice 's#        note "could not read the practice at \[$1\]: $why"#        :#'
+
 # One repository twice. `ungradable_targets` counts selected targets, so a duplicate is one
 # repository reported twice and every clause graded against it twice.
 wreck_runner "a repository selected twice is caught" \

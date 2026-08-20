@@ -761,6 +761,9 @@ commit_file() {
   git -C "$1" -c user.email=a@b.c -c user.name=a commit -qm x >/dev/null 2>&1
 }
 
+# Where a loose object lives, so a test can take one away.
+loose_object() { printf '%s/.git/objects/%.2s/%s' "$1" "$2" "${2#??}"; }
+
 a_charter_derives_from_the_repository_it_is_run_in() {
   make_repo "$tmp/ch" develop && set_origin "$tmp/ch" 'https://github.com/acme/ch.git' \
     && commit_file "$tmp/ch" Makefile 'test:
@@ -2923,7 +2926,11 @@ practice_grants_without_asking_again() {
   make_repo "$tmp/st" main && set_origin "$tmp/st" 'https://gitlab.com/acme/st.git' \
     && mkdir -p "$tmp/st/.foundry" \
     && commit_file "$tmp/st" .foundry/practice 'grade    https://gitlab.com/acme/friend.git
+grade    https://gitlab.com/acme/second.git
 ' || { skip "standing authority — git could not make a repo here"; return; }
+
+  # The base, taken before the worker's commit below moves HEAD off it.
+  base=$(git -C "$tmp/st" rev-parse HEAD)
 
   floor "$tmp/st" new "Standing" >/dev/null
 
@@ -2945,6 +2952,18 @@ grade    https://gitlab.com/acme/nope.git
 '
   is "nor does committing it" \
      "$(code_of floor "$tmp/st" targets add 'https://gitlab.com/acme/nope.git' main)" "5"
+
+  # A practice nobody can read is not a practice granting nothing. Refusing either way is right; the
+  # human told to grant what they already granted goes and grants it, and the broken base stays broken.
+  #
+  # `second.git` because the practice grants it and no check above has selected it — a repository
+  # already selected is refused for that first, and would prove nothing about reading the practice.
+  rm -f "$(loose_object "$tmp/st" "$base")"
+
+  said=$(floor_says "$tmp/st" targets add 'https://gitlab.com/acme/second.git' main)
+  is  "a practice that cannot be read still refuses" \
+      "$(code_of floor "$tmp/st" targets add 'https://gitlab.com/acme/second.git' main)" "5"
+  has "and says what git said about it" "$said" "could not read the practice"
 }
 practice_grants_without_asking_again
 
@@ -3018,9 +3037,6 @@ a_disagreement_is_not_a_satisfaction() {
       "$(floor_says "$tmp/dg" complete)" "unmet: [tests]"
 }
 a_disagreement_is_not_a_satisfaction
-
-# Where a loose object lives, so a test can take one away.
-loose_object() { printf '%s/.git/objects/%.2s/%s' "$1" "$2" "${2#??}"; }
 
 #
 # A clone that cannot finish, and what floor says about it.
