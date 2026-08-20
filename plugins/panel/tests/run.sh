@@ -62,7 +62,7 @@ wreck "a chain that always reports round 1 is caught" \
 # A new chain and a mistyped path are the same directory to `next`, and `001` is the round `prior`
 # exempts. It cannot tell them apart; staying quiet about which it chose is what let it matter.
 wreck "a new chain that says nothing is caught" \
-  quietstart 's|^    \[ "$last" -eq 0 \] && note .*$|    :|'
+  quietstart 's|note "no rounds at |: "|'
 
 # The stamp is the whole reason `prior` can tell one chain from another. A recorder that omits it
 # writes verdicts that fail the next honest round.

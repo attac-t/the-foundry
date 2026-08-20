@@ -45,27 +45,22 @@ note() { printf 'panel: %s\n' "$1" >&2; }
 # Verdict files are `NNN-<role>-verdict.md`. The number is the round.
 rounds() { ls "$1" 2>/dev/null | sed -n 's/^\([0-9][0-9]*\)-.*-verdict\.md$/\1/p'; }
 
-#
 # The round after the last one recorded.
 #
-# **A chain with no rounds says so, and still answers.** Refusing would be wrong — a coordinator asks
-# this before the directory exists, so nothing there is what a new review looks like. But a path with
-# a typo in it looks exactly the same, and `001` is the one round `prior_round` exempts: the answer
-# that starts a fresh chain is the answer a mistyped continuation gets.
-#
-# The number is unchanged and goes to stdout, so nothing reading it notices. The sentence goes where a
-# person will see it, and a person is the only one who knows which of the two they meant.
-#
+# **It says which, and still answers.** Refusing is wrong: a coordinator asks this before the
+# directory exists, so nothing there is what a new review looks like. A mistyped path looks the same,
+# and `001` is the one round `prior_round` exempts.
 next_round() {
     [ -n "$1" ] || { note "next needs a verdicts directory"; exit 2; }
 
-    last=$(rounds "$1" | sort -n | tail -1 | sed 's/^0*//')
-    [ -n "$last" ] || last=0
-
-    [ "$last" -eq 0 ] && note "no rounds at [$1] — this is a new chain"
+    last=$(last_round "$1")
+    [ -n "$last" ] || { note "no rounds at [$1] — this is a new chain"; last=0; }
 
     printf '%03d\n' "$(( last + 1 ))"
 }
+
+# The highest round recorded, or nothing. Nothing is what a chain with no rounds looks like.
+last_round() { rounds "$1" | sort -n | tail -1 | sed 's/^0*//'; }
 
 #
 # The verdict round N must have read, or a refusal.
