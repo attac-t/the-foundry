@@ -30,11 +30,20 @@ FILE=$(printf '%s' "$FILE" | tr '\\' '/')
 # Skip non-code files (tests, docs, config)
 printf '%s' "$FILE" | grep -qE '(^|/)tests?/|\.test\.|\.spec\.|\.md$|\.json$|\.ya?ml$|\.env' && exit 0
 
-cat <<'EOF'
-{
+# What was edited decides which standard is worth naming. A rule loads once a session; the shape is
+# decided at the edit, and by then nobody re-reads a rule.
+advice() {
+    case "$1" in
+        plugins/*/bin/*.sh|plugins/*/lib/*.sh|plugins/*/hooks/*.sh)
+            printf 'You modified shipped shell. Its standard is generative → run `craft-sh` before the next edit, not after the review.' ;;
+        *)  printf 'You modified code. If this involved a pattern choice, package choice, or schema design → run `craft-adr`.' ;;
+    esac
+}
+
+printf '{
   "hookSpecificOutput": {
     "hookEventName": "PostToolUse",
-    "additionalContext": "**Consider**: You modified code. If this involved a pattern choice, package choice, or schema design → run `craft-adr`."
+    "additionalContext": "**Consider**: %s"
   }
 }
-EOF
+' "$(advice "$FILE")"
