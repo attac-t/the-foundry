@@ -1834,6 +1834,10 @@ detect_gates_at_base() {
 # and is `refuse_moved_from_base`'s to report; a source that appears is `no sha`'s. Widen this past
 # the case nothing else covers and it answers first for all three, in the vaguest of the words.
 refuse_moved_resolution() {
+    # A base nobody can read yields no declaration, and this passes. It is the pin check that refuses
+    # that case — it reads the same base for a sha and cannot get one. Measured: remove the base
+    # commit's object and the run is refused by `no sha ... pin refused`, never by this. Safe because
+    # of a neighbour, so the neighbour is checked.
     declared=$(detect_gates_at_base "$1") || return 0
 
     moved=$(printf '%s\n' "$declared" | awk -v now="$(detect_gates)" '
