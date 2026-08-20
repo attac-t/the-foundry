@@ -30,10 +30,25 @@ set -u
 
 command -v gh >/dev/null 2>&1 || { echo "source-github: gh is not here" >&2; exit 2; }
 
+#
 # The issue's own words, and no interpretation of them. A transport carries; it does not read.
+#
+# **A source that could not be asked is not an item that is not there.** `gh` exits 1 for both, so its
+# message is not what tells them apart. A second question is: a repository cannot be absent and an
+# issue can — measured, bad credentials fail both, and a missing issue fails only the first.
+#
+# One case survives this and is not caught: a token that reads the repository and not its issues
+# probes as reachable, and answers *nothing there* wrongly.
+#
 read_item() {
-    gh issue view "$1" --json title,body --jq '.title, "", .body' || return 1
+    gh issue view "$1" --json title,body --jq '.title, "", .body' && return 0
+
+    repository_answers || return 3
+    return 1
 }
+
+# Something that cannot be absent, asked only when the item could not be read.
+repository_answers() { gh repo view --json name >/dev/null 2>&1; }
 
 #
 # What one run published, and the identity of it.
@@ -98,8 +113,9 @@ $4" >/dev/null || return 3
 # asked, and a transport that decided would be answering for them.
 #
 read_answer() {
-    said=$(said_after "$1" "floor-question: $2 ")
+    said=$(said_after "$1" "floor-question: $2 ") || return 3
     [ -n "$said" ] || return 1
+
     printf '%s\n' "$said"
 }
 
@@ -112,8 +128,16 @@ read_answer() {
 # Questions bound this at both ends. One is asked per unauthorised clause, so several stand open at
 # once, and the next one beginning means this one was passed over rather than answered.
 #
+# Captured before the pipe, which reports `awk` and not `gh`. **A lookup that failed is not a human
+# who has not answered** — that one is fail-safe, and it still states a fact nobody observed.
+#
 said_after() {
-    gh issue view "$1" --comments 2>/dev/null \
+    seen=$(gh issue view "$1" --comments 2>&1) || {
+        printf 'source-github: could not ask what was answered: %s\n' "$seen" >&2
+        return 3
+    }
+
+    printf '%s\n' "$seen" \
         | awk -v mark="$2" '
             /^floor-question: / { mine = index($0, mark) > 0; want = 0; next }
             !mine               { next }

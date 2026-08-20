@@ -2869,7 +2869,13 @@ case "$*" in
   # exits 1, which the readers now read as a failed lookup — correctly, and not what GitHub does here.
   "issue view"*--comments*) [ -f "$store/reads-fail" ] && { echo "could not resolve host: api.github.com" >&2; exit 1; }
                             cat "$store/comments" 2>/dev/null || true ;;
-  "issue view"*)            cat "$store/item" 2>/dev/null ;;
+  # An item nobody filed and a source nobody could ask both fail here, and only the probe below tells
+  # them apart. GitHub answers 1 for each.
+  "issue view"*)            [ -f "$store/reads-fail" ] && { echo "HTTP 401: Bad credentials" >&2; exit 1; }
+                            cat "$store/item" 2>/dev/null ;;
+  # The probe. A repository cannot be absent, so failing here is the host and never the item.
+  "repo view"*)             [ -f "$store/reads-fail" ] && { echo "HTTP 401: Bad credentials" >&2; exit 1; }
+                            printf '{"name":"gh"}\n' ;;
   # A comment is its metadata, a rule, then its body. GitHub's shape, because a fixture that agrees
   # with the adapter instead of the service is a suite grading itself.
   "issue comment"*)         printf '\n--\nauthor:\tnobody\n--\n%s\n' "$5" >> "$store/comments" ;;
@@ -2905,6 +2911,20 @@ the_other_adapter() {
 
   has "the other adapter reads an item" "$(gh_floor source read 12)" "And make it well"
 
+  #
+  # An item nobody filed, and a source nobody could ask, are two answers. Both used to be *no item*.
+  #
+  # `gh` exits 1 for each, so the probe is what separates them: the fixture fails a repository read
+  # only when it fails everything, which is what a credential GitHub refuses looks like.
+  #
+  : > "$GH_STORE/reads-fail"
+  is "a source that could not be asked refuses" "$(code_of gh_floor source read 12)" "20"
+
+  rm -f "$GH_STORE/reads-fail"
+  mv "$GH_STORE/item" "$GH_STORE/away"
+  is "and an item nobody filed is still absent" "$(code_of gh_floor source read 12)" "1"
+  mv "$GH_STORE/away" "$GH_STORE/item"
+
   # The run records which item, never which source said it. A run carried to a machine with neither
   # adapter installed still means what it meant, and this file is the only one that could say otherwise.
   is "the run records the item, not the source that answered" "$(cat "$ghrun/source" 2>/dev/null)" "12"
@@ -2925,6 +2945,13 @@ the_other_adapter() {
      "$(gh_floor source receive authorisation tests)" "yes, go ahead"
 
   # One question is asked per unauthorised clause, so several stand open at once. The one below is not
+  # The same rule where an answer is read. This one is fail-safe — the run waits rather than proceeds
+  # — and it still reported a human who had not answered when nobody could be asked.
+  : > "$GH_STORE/reads-fail"
+  is "an answer that could not be read refuses" \
+     "$(code_of gh_floor source receive authorisation tests)" "20"
+  rm -f "$GH_STORE/reads-fail"
+
   # an answer to the one above, and the one above is still answered.
   gh_floor source ask completion tests 'And was it met?' >/dev/null 2>&1
   is "a later question is no answer to an earlier one" \
@@ -3004,6 +3031,14 @@ a_remote_with_no_gh_still_has_a_source() {
           && FOUNDRY_HOME="$home" FOUNDRY_RUN="$ghrun" FOUNDRY_WHO="" \
              sh "$runner" source read 12 2>/dev/null )" \
       "Read from a directory"
+
+  # And says which half is missing. A directory answering *no item* for a GitHub remote is right about
+  # the directory and wrong about the item, and only this line lets a reader tell.
+  has "and says which half of level 1 is missing" \
+      "$( cd "$tmp/gh" 2>/dev/null \
+          && FOUNDRY_HOME="$home" FOUNDRY_RUN="$ghrun" FOUNDRY_WHO="" \
+             sh "$runner" source read 12 2>&1 >/dev/null )" \
+      "gh is not here"
 }
 a_remote_with_no_gh_still_has_a_source
 
