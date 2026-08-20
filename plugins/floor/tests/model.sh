@@ -2599,8 +2599,13 @@ authorisation_asks_and_hears() {
   id=$(printf '%s' "ship on friday" | cksum | awk '{ print $1 }')
   mkdir -p "$src/answers/12"
 
+  # A refused stage banks nothing. One that kept a partial authorisation would carry it into the next
+  # attempt, where nobody asked for it — and evidence, a selection and a pending note all land here.
+  held=$(ls "$(floor "$tmp/aa" path)" | sort | tr '\n' ' ')
+
   printf 'no, not friday\n' > "$src/answers/12/$q"
   is "a decline is not approval" "$(code_of floor "$tmp/aa" authorise)" "11"
+  is "and it banks nothing"      "$(ls "$(floor "$tmp/aa" path)" | sort | tr '\n' ' ')" "$held"
 
   printf 'yes, %s may exist\n' "$id" > "$src/answers/12/$q"
   is "an answer naming the clause authorises it" "$(code_of floor "$tmp/aa" authorise)" "0"
