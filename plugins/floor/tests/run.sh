@@ -857,9 +857,9 @@ wreck_runner "a work source that is not there passing for one is caught" \
   nosource 's#\[ -f "$(source_resolver)" \] ||#true ||#'
 
 #
-# The adapter's own rules, and the file is the point: floor cannot enforce these from above. It keeps
-# no copy of what it sent, so what a resume gets back is whatever the source says it already holds.
-#
+# The adapter's own rules, and the file is the point: an adapter is a program of its own and floor
+# is not its only caller. Floor now records what it sent and refuses from that first, so the checks
+# these break reach the adapter only once the record is off.
 wreck_runner "a delivery that absorbs a second branch is caught" \
   dirbranch 's#delivered "$file" "$3" || return 4#:#' lib/source-dir.sh
 
@@ -889,6 +889,19 @@ wreck_runner "a failed lookup passing for an absence is caught" \
 # answers by asking — so a resumed run whose lookup failed put the question to the human twice.
 wreck_runner "a question lookup that failed asking again is caught" \
   ghasked 's#asked=$(after_marker "$1" "floor-question: $2 ") || return 3#asked=$(after_marker "$1" "floor-question: $2 ")#' lib/source-github.sh
+
+#
+# The record is read before the source is asked, and written when the source answers.
+#
+# Neither half alone is the rule. Read-only leaves nothing to read; write-only asks GitHub anyway, and
+# GitHub's body index is eventually consistent — a lookup seconds after a delivery says nothing, which
+# is what opens a second delivery.
+#
+wreck_runner "a delivery record the run never reads is caught" \
+  noread 's#delivered_already "$dir" && return#:#'
+
+wreck_runner "a delivery the run never records is caught" \
+  nowrite 's#> "$(delivery_file "$1")"#> /dev/null#'
 
 # A delivery that publishes without pushing. The pull request is opened, points at a branch no remote
 # has, and the run reads as delivered — the one outcome `deliver` exists to make true.

@@ -2793,14 +2793,19 @@ an_answer_authorises_nothing() {
 an_answer_authorises_nothing
 
 # A delivery is addressed to the item and belongs to the run — one item has many runs, and each
-# delivers its own. Floor keeps no copy of the identity: the source is where a delivery lives, so a
-# resumed run asks again and gets a true answer rather than a stale one.
+# delivers its own.
+#
+# The run records the identity it was given and refuses a second branch from that, before the source
+# is asked at all. The adapter holds the same rule and keeps it, because floor is not its only
+# caller — so the record comes off below to reach it.
 one_item_has_many_runs() {
   [ -n "${wsrun:-}" ] || { skip "deliveries — no work source run"; return; }
 
   first=$(ws source publish work/first 'The first attempt')
   exists "publishing answers with the delivery's identity" "$first"
   is "and resuming answers with the same one" "$(ws source publish work/first 'The first attempt')" "$first"
+
+  rm -f "$wsrun/delivery"
   is "a second branch is a second delivery, so it is refused" \
      "$(code_of ws source publish work/second 'The first attempt')" "17"
 
@@ -2930,6 +2935,30 @@ the_other_adapter() {
   gd=$(gh_floor source publish work/other 'The other attempt')
   matches "publishing answers with the delivery's identity" "$gd" '^https://'
   is "and resuming answers with the same one" "$(gh_floor source publish work/other 'The other attempt')" "$gd"
+
+  #
+  # The run answers before the source does. GitHub's body index is eventually consistent, so a lookup
+  # seconds after a delivery says *nothing* — truthfully — and nothing is what opens a second one.
+  #
+  # `reads-fail` makes asking impossible, so an answer below came from the run and nowhere else.
+  #
+  opened=$(grep -c . "$GH_STORE/prs" 2>/dev/null)
+  : > "$GH_STORE/reads-fail"
+
+  is "a run says what it delivered with the source unreachable" \
+     "$(gh_floor source publish work/other 'The other attempt')" "$gd"
+  is "and opens nothing to find out" "$(grep -c . "$GH_STORE/prs" 2>/dev/null)" "$opened"
+  is "a second branch is refused from the run's own record" \
+     "$(code_of gh_floor source publish work/third 'The other attempt')" "17"
+
+  # A run made before this rule holds no record, and the source is the right answer for it. Removed by
+  # hand below wherever that is the run under test.
+  rm -f "$GH_STORE/reads-fail" "$ghrun/delivery"
+
+  is "a run holding no record asks the source instead" \
+     "$(gh_floor source publish work/other 'The other attempt')" "$gd"
+
+  rm -f "$ghrun/delivery"
   is "a second branch is refused there too" \
      "$(code_of gh_floor source publish work/third 'The other attempt')" "17"
 
@@ -2941,10 +2970,9 @@ the_other_adapter() {
   # body exists to make impossible.
   #
   : > "$GH_STORE/reads-fail"
-  had=$(grep -c . "$GH_STORE/prs" 2>/dev/null)
 
   is "a delivery lookup that failed refuses"      "$(code_of gh_floor source publish work/other 'The other attempt')" "1"
-  is "and opens nothing while it cannot tell"      "$(grep -c . "$GH_STORE/prs" 2>/dev/null)" "$had"
+  is "and opens nothing while it cannot tell"      "$(grep -c . "$GH_STORE/prs" 2>/dev/null)" "$opened"
 
   # The same shape one function over. Empty is what `put_question` reads as *not asked yet*, and it
   # answers by asking — so a resumed run whose lookup failed put the question to the human twice.

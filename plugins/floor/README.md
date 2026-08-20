@@ -633,6 +633,18 @@ A resumed run recomputes all three and finds what it already asked, so **nothing
 outstanding questions.** Such a list is the parallel ledger the charter refuses, and the source is
 where the question already lives.
 
+
+### A delivery's identity is kept, a question's is derived
+
+`run + stage + clause` recomputes, so a resumed run finds its own question and nothing holds a list.
+A pull request URL does not recompute — the source assigns it. So the run records it at `publish` and
+answers from that before asking.
+
+Not a cache. A delivery's *state* goes stale and floor never asks for it; its *identity* is fixed at
+birth. Asking again was the original decision, and it fails on a source that is truthful and still
+cannot answer: GitHub's body index is eventually consistent, so *nothing yet* reads as *nothing at
+all* — and that is what opens a second delivery.
+
 ### Nothing here authorises anything
 
 An answer arriving widens no allowlist, moves no clause and selects no target. An introduced clause
