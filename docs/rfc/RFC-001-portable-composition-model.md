@@ -661,6 +661,12 @@ types       vendor/bin/phpstan analyse
 Whitespace-separated, so there are no invisible tabs to lose. `#` comments, blank lines ignored.
 `awk` reads it in one line: `{ name = $1; $1 = ""; cmd = $0 }`.
 
+**The file is one answer, and the thing that answers is replaceable.** A resolver takes a directory
+and prints one `name source command` per line; the shipped one reads this file, falls back to
+detection when it finds none, and `FOUNDRY_GATES` names a different one. It is the only place an
+ecosystem may be known — which is what makes replacing it cheaper than extending it, and why a
+resolver that understands a build system nobody here has heard of changes nothing above it.
+
 **Gates are declared per target and run with that target's checkout as the working directory.** A
 workspace holds N checkouts; `composer test` in a two-repo workspace is otherwise ambiguous.
 Revision 2 dropped `panel.yml`'s `workdir` column and made workspaces multi-target in the same pass,
