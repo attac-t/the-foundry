@@ -2606,6 +2606,11 @@ authorisation_asks_and_hears() {
   is "an answer naming the clause authorises it" "$(code_of floor "$tmp/aa" authorise)" "0"
   is "and asking again asks nothing new" \
      "$(ls "$src/questions/12" | wc -l | tr -d ' ')" "1"
+
+  # Allowed to exist is not met. A stage that satisfied what it permitted would let a run write its
+  # own bar, allow it, and clear it, in three commands nobody else read.
+  lacks "and satisfies nothing by permitting it" \
+        "$(cat "$(floor "$tmp/aa" path)/evidence" 2>/dev/null)" "$id"
 }
 authorisation_asks_and_hears
 
