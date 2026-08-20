@@ -30,11 +30,19 @@ FILE=$(printf '%s' "$FILE" | tr '\\' '/')
 # Skip non-code files (tests, docs, config)
 printf '%s' "$FILE" | grep -qE '(^|/)tests?/|\.test\.|\.spec\.|\.md$|\.json$|\.ya?ml$|\.env' && exit 0
 
-cat <<'EOF'
-{
+# Which standard governs what was edited. Naming it is the whole job — what it asks for is its own,
+# and a copy here would be a second one to keep true.
+standard_for() {
+    case "$1" in
+        plugins/*/bin/*.sh|plugins/*/lib/*.sh|plugins/*/hooks/*.sh) printf 'craft-sh'  ;;
+        *)                                                          printf 'craft-adr' ;;
+    esac
+}
+
+printf '{
   "hookSpecificOutput": {
     "hookEventName": "PostToolUse",
-    "additionalContext": "**Consider**: You modified code. If this involved a pattern choice, package choice, or schema design → run `craft-adr`."
+    "additionalContext": "**Consider**: `%s` governs what you just edited. Read it before the next one — afterwards is a rewrite."
   }
 }
-EOF
+' "$(standard_for "$FILE")"
