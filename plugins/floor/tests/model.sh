@@ -794,8 +794,11 @@ a_charter_derives_from_the_repository_it_is_run_in() {
   # Authorisation's two refusals. Neither asks anything, which is why they can ship before a work
   # source exists — and why they fire with no human present.
   #
-  is "nothing selected, so the clause grades nothing" \
-     "$(code_of floor "$tmp/ch" authorise)" "9"
+  said=$(floor_says "$tmp/ch" authorise)
+  is    "nothing selected, so the clause grades nothing" \
+        "$(code_of floor "$tmp/ch" authorise)" "9"
+  has   "and says that is what is wrong" "$said" "grades no selected target"
+  lacks "and not that something is introduced" "$said" "nothing derives it"
 
   floor "$tmp/ch" targets add 'https://github.com/acme/ch.git' develop >/dev/null 2>&1
   is "the bootstrap selected and its gate declared authorises" \
@@ -973,8 +976,11 @@ an_empty_charter_is_refused() {
      "$(code_of floor "$tmp/nogate" charter derive)" "0"
   is "and the charter it wrote is empty" \
      "$(wc -c < "$(charter_of "$norun")" | tr -d ' ')" "0"
-  is "which authorisation refuses" \
-     "$(code_of floor "$tmp/nogate" authorise)" "8"
+  said=$(floor_says "$tmp/nogate" authorise)
+  is    "which authorisation refuses" \
+        "$(code_of floor "$tmp/nogate" authorise)" "8"
+  has   "and says the charter is what is empty" "$said" "holds no clause"
+  lacks "and names no clause of its own"        "$said" "grades no selected target"
 }
 
 an_empty_charter_is_refused
