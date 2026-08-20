@@ -43,6 +43,7 @@ main() {
 
     report 'an else is a function nobody named' "$(branches)"
     report "a body past $MAX lines"             "$(overlong)"
+    report 'a pipe that hides a failure'        "$(piped)"
 
     verdict
 }
@@ -72,6 +73,29 @@ branches() {
         awk '
             /^[ \t]*#/ { next }
             /(^|[;&|{(])[ \t]*el(se|if)([ \t;&|)}]|$)/ { printf "  %s:%d %s\n", FILENAME, FNR, $0 }
+        ' "$file"
+    done < "$files"
+}
+
+# --- the pipe ---
+
+# A command a pipe reports for, and a failure nobody sees.
+#
+# A pipeline answers with its last stage, so `gh ... | awk` is awk's verdict — and awk succeeds on
+# nothing at all. Seven times across three plugins a read that failed has been taken for an absence,
+# and twice the answer to that absence was to write: a second delivery opened, a human asked again.
+#
+# Only where the tool is not last. `printf | git hash-object` reports git, which is the point of
+# writing it that way, and `printf` and `echo` are absent because they cannot fail in a way anyone
+# would act on.
+#
+# `[^|]*\|[^|]` is what tells a pipe from an `||`: the second bar of an `||` has the first before it,
+# and `[^|]*` cannot reach past the first to find it.
+piped() {
+    while IFS= read -r file; do
+        awk '
+            /^[ \t]*#/ { next }
+            /(^|[ \t;&|{(])(gh|git|curl|wget)[ \t][^|]*\|[^|]/ { printf "  %s:%d %s\n", FILENAME, FNR, $0 }
         ' "$file"
     done < "$files"
 }
