@@ -3009,4 +3009,33 @@ a_disagreement_is_not_a_satisfaction() {
 }
 a_disagreement_is_not_a_satisfaction
 
+# Where a loose object lives, so a test can take one away.
+loose_object() { printf '%s/.git/objects/%.2s/%s' "$1" "$2" "${2#??}"; }
+
+#
+# A clone that cannot finish, and what floor says about it.
+#
+# **Delete an object the checkout needs.** The workspace is cloned from the checkout, which is a
+# repository by construction, so nothing about the target can make the clone fail. `rm` bites on every
+# platform; `chmod` does not bite on Windows, and an empty repository clones fine.
+#
+# The blob is named rather than whichever object came first, so the failure is the same one twice.
+#
+a_failed_clone_says_what_git_said() {
+  make_repo "$tmp/bc" main && set_origin "$tmp/bc" 'https://gitlab.com/acme/bc.git'     && commit_file "$tmp/bc" Makefile 'test:
+	echo ok
+' || { skip "a failed clone — git could not make a repo here"; return; }
+
+  floor_new_as "$tmp/bc" ada@example.com "Broken clone" >/dev/null
+  floor "$tmp/bc" charter derive >/dev/null 2>&1
+  floor "$tmp/bc" policy authorize 'https://gitlab.com/acme/bc.git' >/dev/null 2>&1
+  floor "$tmp/bc" targets add 'https://gitlab.com/acme/bc.git' main >/dev/null 2>&1
+
+  rm -f "$(loose_object "$tmp/bc" "$(git -C "$tmp/bc" rev-parse HEAD:Makefile)")"
+
+  is  "a clone that cannot finish refuses" "$(code_of floor "$tmp/bc" open)" "16"
+  has "and carries git's own words"        "$(floor_says "$tmp/bc" open)" "fatal"
+}
+a_failed_clone_says_what_git_said
+
 summary "model"

@@ -844,6 +844,11 @@ wreck_runner "silence answered as an answer is caught" \
 wreck_runner "a question answering itself is caught" \
   ghself 's#mine = index($0, mark) > 0; want = 0#mine = index($0, mark) > 0; want = 1#' lib/source-github.sh
 
+# Git says why a clone failed and floor is the only thing that hears it. A refusal that keeps the exit
+# code and drops the words leaves a worker with a workspace that will not build and no way to know why.
+wreck_runner "a clone that swallows git's words is caught" \
+  clonesilent 's#    note "could not clone \[$3\]: $why"#    note "could not clone [$3]"#'
+
 #
 # The authorisation join, and its three claims are three breaks: the stage asks, an answer that does
 # not name the clause authorises nothing, and an unanswered clause still blocks.
