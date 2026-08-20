@@ -1798,6 +1798,14 @@ pinned_command() {
 # one. `FOUNDRY_GATES` names another; the shipped one is the default, and it is the only file here
 # permitted to know an ecosystem exists. Nothing above this line learns which resolver answered.
 #
+# **It is never the target's.** `FOUNDRY_GATES` belongs to whoever runs this, who can already run
+# anything. A repository supplies data — `.foundry/gates` — and the resolver reads it and executes
+# nothing.
+#
+# What it yields *is* executed, by `gate_held`, and that is the job. From the charter, pinned when it
+# was derived and compared against the base ever after: a worker owning the checkout can change what
+# the file says and cannot change what runs, because the run refuses instead of running it.
+#
 gate_resolver() { printf '%s' "${FOUNDRY_GATES:-$(dirname "$0")/../lib/detect-gates.sh}"; }
 
 #
