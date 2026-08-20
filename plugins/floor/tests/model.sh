@@ -2860,8 +2860,10 @@ store=${GH_STORE:?}
 mkdir -p "$store"
 
 case "$*" in
+  # An issue with no comments yet answers, and answers with nothing. `cat` on a file that is not there
+  # exits 1, which the readers now read as a failed lookup — correctly, and not what GitHub does here.
   "issue view"*--comments*) [ -f "$store/reads-fail" ] && { echo "could not resolve host: api.github.com" >&2; exit 1; }
-                            cat "$store/comments" 2>/dev/null ;;
+                            cat "$store/comments" 2>/dev/null || true ;;
   "issue view"*)            cat "$store/item" 2>/dev/null ;;
   # A comment is its metadata, a rule, then its body. GitHub's shape, because a fixture that agrees
   # with the adapter instead of the service is a suite grading itself.
@@ -2869,7 +2871,7 @@ case "$*" in
   # A read that cannot answer. GitHub fails this way for a network, a token or a rate limit, and none
   # of them mean "nothing is there yet" — which is what both readers below used to conclude.
   "pr list"*)               [ -f "$store/reads-fail" ] && { echo "could not resolve host: api.github.com" >&2; exit 1; }
-                            awk -v run="${6%% *}" '$3 == run { print $1, $2 }' "$store/prs" 2>/dev/null ;;
+                            awk -v run="${6%% *}" '$3 == run { print $1, $2 }' "$store/prs" 2>/dev/null || true ;;
   "pr create"*)             url="https://example.invalid/pr/$(cat "$store/prs" 2>/dev/null | grep -c .)"
                             run=$(printf '%s' "$8" | awk '$1 == "floor-run:" { print $2 }')
                             printf '%s %s %s\n' "$4" "$url" "$run" >> "$store/prs"
