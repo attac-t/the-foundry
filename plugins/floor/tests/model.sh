@@ -3211,7 +3211,10 @@ a_delivery_that_succeeds() {
 
   mkdir -p "$src/items" && printf 'Deliver it\n' > "$src/items/42"
 
-  dvrun=$(floor "$tmp/dv" new "Delivering")
+  # Named, not inherited. `complete` refuses a run nobody selected, and `floor` runs with an empty
+  # `FOUNDRY_WHO` — so this passed on my machine, which has a git identity, and refused on one that
+  # does not. The same defect #176 is about, written into a check for it.
+  dvrun=$(floor_new_as "$tmp/dv" ada@example.com "Delivering")
   floor "$tmp/dv" source read 42 >/dev/null 2>&1
   floor "$tmp/dv" charter derive >/dev/null 2>&1
   floor "$tmp/dv" policy authorize  'https://github.com/acme/dv.git' >/dev/null 2>&1
