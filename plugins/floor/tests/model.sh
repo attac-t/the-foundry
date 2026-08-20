@@ -3188,4 +3188,56 @@ a_named_source_answers() {
 }
 a_named_source_answers
 
+#
+# A delivery that succeeds, which nothing has ever checked.
+#
+# `deliver` appears twice above and both are refusals, so `send_delivery` — the push, the branch it
+# derives, and the publish that follows — has never run here. It is the only verb that writes to a
+# repository other people can see.
+#
+# It was untestable for a reason: `point_at_origin` sets the workspace's origin to the target's
+# identity, and §2.3 refuses a local path as a target, so there was nowhere to push. `pushInsteadOf`
+# sends the push somewhere else and leaves `get-url` alone — `insteadOf` rewrites that too, and floor
+# would then see a local path and refuse its own target.
+#
+a_delivery_that_succeeds() {
+  git init -q --bare "$tmp/dvremote.git" 2>/dev/null \
+    || { skip "a delivery that succeeds — git could not make a bare repo here"; return; }
+
+  make_repo "$tmp/dv" main && set_origin "$tmp/dv" 'https://github.com/acme/dv.git' \
+    && mkdir -p "$tmp/dv/.foundry" \
+    && commit_file "$tmp/dv" .foundry/gates 'tests  true
+' || { skip "a delivery that succeeds — git could not make a repo here"; return; }
+
+  mkdir -p "$src/items" && printf 'Deliver it\n' > "$src/items/42"
+
+  # Named, not inherited. `complete` refuses a run nobody selected, and `floor` runs with an empty
+  # `FOUNDRY_WHO` — so this passed on my machine, which has a git identity, and refused on one that
+  # does not. The same defect #176 is about, written into a check for it.
+  dvrun=$(floor_new_as "$tmp/dv" ada@example.com "Delivering")
+  floor "$tmp/dv" source read 42 >/dev/null 2>&1
+  floor "$tmp/dv" charter derive >/dev/null 2>&1
+  floor "$tmp/dv" policy authorize  'https://github.com/acme/dv.git' >/dev/null 2>&1
+  floor "$tmp/dv" policy deliver-to 'https://github.com/acme/dv.git' >/dev/null 2>&1
+  floor "$tmp/dv" targets add       'https://github.com/acme/dv.git' main >/dev/null 2>&1
+  floor "$tmp/dv" authorise >/dev/null 2>&1
+
+  ws=$(floor "$tmp/dv" open) || { skip "a delivery that succeeds — no workspace"; return; }
+  co=$(find "$ws" -maxdepth 1 -mindepth 1 -type d | head -1)
+
+  # The clone has its own config, so the redirect is set where the push happens.
+  git -C "$co" config "url.$tmp/dvremote.git.pushInsteadOf" 'https://github.com/acme/dv.git'
+
+  floor "$tmp/dv" gates >/dev/null 2>&1
+  is "with its gate green it may deliver" "$(code_of floor "$tmp/dv" complete)" "0"
+
+  is    "and delivering answers" "$(code_of floor "$tmp/dv" deliver 'A change worth reading')" "0"
+  has   "the commit reached the remote" \
+        "$(git -C "$tmp/dvremote.git" branch --format='%(refname:short)' 2>/dev/null)" \
+        "foundry/$(basename "$dvrun")"
+  is    "and delivering again answers the same way" \
+        "$(code_of floor "$tmp/dv" deliver 'A change worth reading')" "0"
+}
+a_delivery_that_succeeds
+
 summary "model"
