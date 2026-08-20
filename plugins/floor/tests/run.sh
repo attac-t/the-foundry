@@ -849,6 +849,12 @@ wreck_runner "a work source that cannot be named is caught" \
 wreck_runner "a question answering itself is caught" \
   ghself 's#mine = index($0, mark) > 0; want = 0#mine = index($0, mark) > 0; want = 1#' lib/source-github.sh
 
+# A lookup that could not answer, read as a delivery that is not there — whose remedy is to open one.
+# The run lives in the body so that one run cannot open a second delivery, and this is the check that
+# enforces it failing open.
+wreck_runner "a failed lookup passing for an absence is caught" \
+  ghlookup 's#had=$(delivery_of "$2") || return 3#had=$(delivery_of "$2")#' lib/source-github.sh
+
 # Git says why a clone failed and floor is the only thing that hears it. A refusal that keeps the exit
 # code and drops the words leaves a worker with a workspace that will not build and no way to know why.
 wreck_runner "a clone that swallows git's words is caught" \
