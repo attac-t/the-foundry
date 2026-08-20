@@ -2146,6 +2146,7 @@ a_run_cannot_change_what_the_gates_resolve_to() {
 ' || { skip "resolution authority — git could not make a repo here"; return; }
 
   d=$(floor "$tmp/drop" new "Drop")
+  base=$(git -C "$tmp/drop" rev-parse HEAD)
   floor "$tmp/drop" charter derive >/dev/null 2>&1
   has "the declared bar is what derives" "$(cat "$(charter_of "$d")" 2>/dev/null)" "echo STRICT"
 
@@ -2158,6 +2159,16 @@ a_run_cannot_change_what_the_gates_resolve_to() {
       "$(floor_says "$tmp/drop" charter derive)" "declares these gates elsewhere"
   has "the bar the human declared still stands" \
       "$(cat "$(charter_of "$d")" 2>/dev/null)" "echo STRICT"
+
+  # A base nobody can read. `refuse_moved_resolution` passes on one — it yields no declaration to
+  # compare — and the pin check refuses it instead, reading the same base for a sha it cannot get.
+  # That guard is why the fall-through above is safe, so it is checked rather than assumed.
+  rm -f "$(loose_object "$tmp/drop" "$base")"
+
+  is  "a base nobody can read is still refused" \
+      "$(code_of floor "$tmp/drop" charter derive)" "6"
+  has "and says the pin is what refused it" \
+      "$(floor_says "$tmp/drop" charter derive)" "pin refused"
 }
 a_run_cannot_change_what_the_gates_resolve_to
 
