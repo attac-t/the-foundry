@@ -822,7 +822,11 @@ standing() {
 practice_at_base() {
     scratch="${TMPDIR:-/tmp}/floor-practice-$$"
 
-    git worktree add --detach --quiet "$scratch" "$1" >/dev/null 2>&1 || return 1
+    why=$(git worktree add --detach --quiet "$scratch" "$1" 2>&1) || {
+        note "could not read the practice at [$1]: $why"
+        return 1
+    }
+
     [ -f "$scratch/.foundry/practice" ] && awk '!/^[ \t]*#/ && NF' "$scratch/.foundry/practice"
     git worktree remove --force "$scratch" >/dev/null 2>&1
 }
