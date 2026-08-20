@@ -918,8 +918,14 @@ a_charter_derives_from_the_repository_it_is_run_in() {
   # governing nothing, which is what that refusal is actually for.
   #
   floor "$tmp/ch" charter introduce Gate nosuch >/dev/null 2>&1
+  said=$(floor_says "$tmp/ch" authorise)
   is "an introduced Gate is stopped for its provenance, not its coverage" \
      "$(code_of floor "$tmp/ch" authorise)" "11"
+
+  # The exit code alone does not say the later refusal stayed quiet, and a condition that started
+  # firing early would take this case with the same code and a remedy that edits the wrong thing.
+  has   "and says what it is stopped for"  "$said" "nothing derives it"
+  lacks "and never the coverage remedy"    "$said" "grades no selected target"
 
   # Refusing must not be the answer to everything: the run above still holds a clause that does
   # govern, so a green authorise has to be reachable again once the ungoverning one is gone.
