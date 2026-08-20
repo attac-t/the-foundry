@@ -23,10 +23,22 @@ mkdir -p "$tmp/bare"
 trap 'rm -rf "$tmp"' EXIT
 
 # Run the shipped CLI from a directory, with an explicit home and run variable.
+#
+# The directory adapter, named rather than detected.
+#
+# Almost every repository below has a `github.com` origin, so on a machine with `gh` the checks that
+# reach `source ask` addressed the real provider about issues that do not exist. `the_other_adapter`
+# sets its own and is the only place the GitHub one is exercised.
+#
+# Beside the runner under test, never beside this file: `wreck_runner` breaks a copy of the plugin and
+# points `RUNNER` at it, so naming the original's adapter would hand every mutant an unbroken one.
+#
+dir_source="$(dirname "$runner")/../lib/source-dir.sh"
+
 floor_as() {
   dir=$1; home_dir=$2; run=$3; shift 3
   ( cd "$dir" 2>/dev/null || exit 9
-    FOUNDRY_HOME="$home_dir" FOUNDRY_RUN="$run" FOUNDRY_WHO="" sh "$runner" "$@" 2>/dev/null )
+    FOUNDRY_HOME="$home_dir" FOUNDRY_RUN="$run" FOUNDRY_WHO=""       FOUNDRY_SOURCE="$dir_source" sh "$runner" "$@" 2>/dev/null )
 }
 
 # The common case: this suite's home, and no run variable — or a developer with one exported answers
@@ -39,7 +51,7 @@ floor() { dir=$1; shift; floor_as "$dir" "$home" "" "$@"; }
 floor_says() {
   dir=$1; shift
   ( cd "$dir" 2>/dev/null || exit 9
-    FOUNDRY_HOME="$home" FOUNDRY_RUN="" FOUNDRY_WHO="" sh "$runner" "$@" 2>&1 )
+    FOUNDRY_HOME="$home" FOUNDRY_RUN="" FOUNDRY_WHO=""       FOUNDRY_SOURCE="$dir_source" sh "$runner" "$@" 2>&1 )
 }
 
 # A run someone selected. `new` records whoever the environment names, and a container names nobody —
@@ -3119,5 +3131,27 @@ a_question_that_never_arrived_is_not_asked() {
   lacks "and sends nobody to answer where it is not"    "$said" "Answer where the item is"
 }
 a_question_that_never_arrived_is_not_asked
+
+#
+# A work source named rather than detected.
+#
+# `FOUNDRY_SOURCE` was already there and nothing used it, so nothing held it. Detection is level 1 and
+# stays the default — but with no way to override it, which adapter answers rests on what the machine
+# happens to have installed, and this suite's own checks changed answer on a machine with `gh`.
+#
+a_named_source_answers() {
+  make_repo "$tmp/ns" main && set_origin "$tmp/ns" 'https://github.com/acme/ns.git' \
+    || { skip "a named source — git could not make a repo here"; return; }
+
+  printf '#!/bin/sh\nprintf "a source nobody detected\n"\n' > "$tmp/named-source.sh"
+  floor "$tmp/ns" new "Named" >/dev/null
+
+  is "a named source answers instead of the detected one" \
+     "$( cd "$tmp/ns" 2>/dev/null \
+         && FOUNDRY_HOME="$home" FOUNDRY_RUN="" FOUNDRY_WHO="" \
+            FOUNDRY_SOURCE="$tmp/named-source.sh" sh "$runner" source read 1 2>/dev/null )" \
+     "a source nobody detected"
+}
+a_named_source_answers
 
 summary "model"
