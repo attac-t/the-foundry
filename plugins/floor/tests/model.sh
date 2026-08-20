@@ -2940,8 +2940,13 @@ a_remote_with_no_gh_still_has_a_source() {
   mkdir -p "$src/items"
   printf 'Read from a directory\n' > "$src/items/12"
 
+  # Not through `floor_as`, which names the adapter. Detection is the whole of what this asks about,
+  # and a check that pins the answer it is testing for passes whether or not detection still works.
   has "with no gh, a directory answers for a GitHub remote" \
-      "$(floor_as "$tmp/gh" "$home" "$ghrun" source read 12)" "Read from a directory"
+      "$( cd "$tmp/gh" 2>/dev/null \
+          && FOUNDRY_HOME="$home" FOUNDRY_RUN="$ghrun" FOUNDRY_WHO="" \
+             sh "$runner" source read 12 2>/dev/null )" \
+      "Read from a directory"
 }
 a_remote_with_no_gh_still_has_a_source
 
