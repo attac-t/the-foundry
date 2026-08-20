@@ -43,7 +43,7 @@ read_item() {
 # by publishing a second branch, which is the case a resume must never look like.
 #
 publish_delivery() {
-    had=$(delivery_of "$2")
+    had=$(delivery_of "$2") || return 3
 
     [ -z "$had" ] && { open_delivery "$1" "$2" "$3" "$4"; return $?; }
 
@@ -52,9 +52,23 @@ publish_delivery() {
     printf '%s\n' "${had##* }"
 }
 
+#
+# What GitHub says it already has, or nothing — and the two are told apart.
+#
+# A search that failed used to return empty, which `publish_delivery` reads as *no delivery yet* and
+# answers by opening one. A resumed run whose lookup hit a network, a token or a rate limit published
+# a second delivery for work that already had one.
+#
+# Captured before the pipe: a pipeline reports its last stage, and `head` succeeds on nothing at all.
+#
 delivery_of() {
-    gh pr list --state all --search "$1 in:body" --json headRefName,url \
-        --jq '.[] | .headRefName + " " + .url' 2>/dev/null | head -1
+    found=$(gh pr list --state all --search "$1 in:body" --json headRefName,url \
+                --jq '.[] | .headRefName + " " + .url' 2>&1) || {
+        printf 'source-github: could not ask what is already delivered: %s\n' "$found" >&2
+        return 3
+    }
+
+    printf '%s\n' "$found" | head -1
 }
 
 # `Closes #<issue>` makes the delivery answer the item. `floor-run` is what makes it this run's.
