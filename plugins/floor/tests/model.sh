@@ -2860,14 +2860,15 @@ store=${GH_STORE:?}
 mkdir -p "$store"
 
 case "$*" in
-  "issue view"*--comments*) cat "$store/comments" 2>/dev/null ;;
+  "issue view"*--comments*) [ -f "$store/reads-fail" ] && { echo "could not resolve host: api.github.com" >&2; exit 1; }
+                            cat "$store/comments" 2>/dev/null ;;
   "issue view"*)            cat "$store/item" 2>/dev/null ;;
   # A comment is its metadata, a rule, then its body. GitHub's shape, because a fixture that agrees
   # with the adapter instead of the service is a suite grading itself.
   "issue comment"*)         printf '\n--\nauthor:\tnobody\n--\n%s\n' "$5" >> "$store/comments" ;;
-  # A lookup that cannot answer. GitHub fails this way for a network, a token or a rate limit, and
-  # none of them mean "nothing is delivered yet".
-  "pr list"*)               [ -f "$store/lookup-fails" ] && { echo "could not resolve host: api.github.com" >&2; exit 1; }
+  # A read that cannot answer. GitHub fails this way for a network, a token or a rate limit, and none
+  # of them mean "nothing is there yet" — which is what both readers below used to conclude.
+  "pr list"*)               [ -f "$store/reads-fail" ] && { echo "could not resolve host: api.github.com" >&2; exit 1; }
                             awk -v run="${6%% *}" '$3 == run { print $1, $2 }' "$store/prs" 2>/dev/null ;;
   "pr create"*)             url="https://example.invalid/pr/$(cat "$store/prs" 2>/dev/null | grep -c .)"
                             run=$(printf '%s' "$8" | awk '$1 == "floor-run:" { print $2 }')
@@ -2937,13 +2938,20 @@ the_other_adapter() {
   # rate limit published a second delivery for work that already had one — the case the run in the
   # body exists to make impossible.
   #
-  : > "$GH_STORE/lookup-fails"
+  : > "$GH_STORE/reads-fail"
   had=$(grep -c . "$GH_STORE/prs" 2>/dev/null)
 
   is "a delivery lookup that failed refuses"      "$(code_of gh_floor source publish work/other 'The other attempt')" "1"
   is "and opens nothing while it cannot tell"      "$(grep -c . "$GH_STORE/prs" 2>/dev/null)" "$had"
 
-  rm -f "$GH_STORE/lookup-fails"
+  # The same shape one function over. Empty is what `put_question` reads as *not asked yet*, and it
+  # answers by asking — so a resumed run whose lookup failed put the question to the human twice.
+  asked=$(grep -c 'floor-question' "$GH_STORE/comments" 2>/dev/null)
+
+  is "a question lookup that failed refuses"      "$(code_of gh_floor source ask authorisation tests 'May this clause exist?')" "1"
+  is "and asks nobody twice while it cannot tell"      "$(grep -c 'floor-question' "$GH_STORE/comments" 2>/dev/null)" "$asked"
+
+  rm -f "$GH_STORE/reads-fail"
   is "and the delivery it already had comes back once it can"      "$(gh_floor source publish work/other 'The other attempt')" "$gd"
 
   unset GH_STORE
