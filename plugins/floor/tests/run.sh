@@ -849,6 +849,11 @@ wreck_runner "a question answering itself is caught" \
 wreck_runner "a clone that swallows git's words is caught" \
   clonesilent 's#    note "could not clone \[$3\]: $why"#    note "could not clone [$3]"#'
 
+# A question nobody could deliver, and a run that says a human was asked anyway. The human answers
+# where nothing was written, and waits for one that has nowhere to arrive.
+wreck_runner "a stage that reports asking without asking is caught" \
+  silentask 's#        ask_about_each "$run_dir" "$introduced" || exit 1#        ask_about_each "$run_dir" "$introduced"#'
+
 #
 # The authorisation join, and its three claims are three breaks: the stage asks, an answer that does
 # not name the clause authorises nothing, and an unanswered clause still blocks.
@@ -857,7 +862,7 @@ wreck_runner "a clone that swallows git's words is caught" \
 # run that took any answer as approval would read a refusal as a yes.
 #
 wreck_runner "a stage that blocks without asking is caught" \
-  silentblock 's#            ask_to_authorise "$run_dir" "$text"#            :#'
+  silentblock 's#        ask_to_authorise "$1" "$text" || return 1#        :#'
 
 wreck_runner "an answer that authorises without naming the clause is caught" \
   anyword 's#        \*"$(clause_id "$2")"\*) return 0 ;;#        *) return 0 ;;#'

@@ -1564,10 +1564,7 @@ authorise() {
     #
     introduced=$(unauthorised_clauses "$run_dir" "$charter_path")
     [ -z "$introduced" ] || {
-        printf '%s\n' "$introduced" | while read -r id text; do
-            note "clause $id is introduced, and nothing derives it: $text"
-            ask_to_authorise "$run_dir" "$text"
-        done
+        ask_about_each "$run_dir" "$introduced" || exit 1
         note "a human owns this. Answer where the item is, naming the clause, and authorise again"
         exit 11
     }
@@ -2058,12 +2055,31 @@ authorised_by_a_human() {
     return 1
 }
 
+#
+# Every introduced clause, asked about.
+#
+# One question that did not arrive is the whole stage failing. Reporting *a human owns this* after
+# putting the question nowhere sends someone to answer where nothing was written, and the run blocks
+# for ever with nothing saying why.
+#
+ask_about_each() {
+    while read -r id text; do
+        note "clause $id is introduced, and nothing derives it: $text"
+        ask_to_authorise "$1" "$text" || return 1
+    done <<CLAUSES
+$2
+CLAUSES
+}
+
 # Put the question where the human already is. Asking twice with the same words is one question, so
 # a blocked run that authorises again does not pile them up.
 ask_to_authorise() {
-    source_says ask "$(item_id "$1")" "$(question_id "$1" authorisation "$2")" \
-        "May this clause exist? Nothing derives it: $2. Answer with $(clause_id "$2") to authorise it." \
-        >/dev/null 2>&1
+    said=$(source_says ask "$(item_id "$1")" "$(question_id "$1" authorisation "$2")" \
+        "May this clause exist? Nothing derives it: $2. Answer with $(clause_id "$2") to authorise it." 2>&1) \
+        && return 0
+
+    note "the work source could not carry that question: $said"
+    return 1
 }
 
 #
