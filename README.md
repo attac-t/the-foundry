@@ -63,14 +63,9 @@ Verify the install: `/evaluate`
 
 ### Working on this repository
 
-The rules in `.claude/rules/` name skills, and a skill that is not installed is a rule pointing at
-nothing. `kernel`, `signal` and `floor` are all three needed here, whatever a user of Foundry chooses:
-
-```
-/plugin install kernel@the-foundry
-/plugin install signal@the-foundry
-/plugin install floor@the-foundry
-```
+A clone brings `kernel`, `signal` and `floor` with it — `.claude/settings.json` names the marketplace
+and enables all three. The rules in `.claude/rules/` assume them, and a skill that is not installed is
+a rule pointing at nothing.
 
 `signal` is the one that is easy to skip and expensive to. It states a word budget before each reply
 rather than marking one afterwards — measured at 78% of first drafts blocked without it.
