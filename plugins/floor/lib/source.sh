@@ -18,9 +18,7 @@
 set -u
 here=$(dirname "$0")
 
-github_serves() {
-    command -v gh >/dev/null 2>&1 || return 1
-
+remote_is_github() {
     case "$(git remote get-url origin 2>/dev/null)" in
         *github.com*) return 0 ;;
     esac
@@ -28,6 +26,18 @@ github_serves() {
     return 1
 }
 
+github_serves() { command -v gh >/dev/null 2>&1 && remote_is_github; }
+
 github_serves && exec sh "$here/source-github.sh" "$@"
+
+#
+# **A GitHub remote whose `gh` is missing is half of level 1.** The directory answers, correctly — `gh`
+# is not in the dependency contract — but a directory has never heard of Issues, so its *nothing
+# there* is the same words as an item that exists and cannot be reached.
+#
+# Said once, on stderr, and the exit code stays the adapter's. Naming the missing half is all floor
+# can do without declaring a dependency it deliberately does not have.
+#
+remote_is_github && echo "source: the remote is GitHub and gh is not here — a directory is answering" >&2
 
 exec sh "$here/source-dir.sh" "$@"

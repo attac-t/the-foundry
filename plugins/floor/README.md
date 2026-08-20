@@ -608,6 +608,17 @@ belongs to the stage that asked — this carries the words and reads none of the
 | `ask` | a question about one clause | the same question in other words |
 | `receive` | the answer, or nothing | an answer handed to it |
 
+
+### An absence is observed, never assumed
+
+*The item is not there* and *the source could not be asked* are different answers, and each has its
+own code — 1 and 20. `gh` exits 1 for both, so the adapter asks a second question: a repository
+cannot be absent and an issue can.
+
+A GitHub remote on a machine with no `gh` is answered by the directory adapter, which has never heard
+of Issues. That is right — `gh` is not a floor dependency — and it is now said out loud, because a
+missing tool otherwise reads as a missing item.
+
 ### There is no parameter for what a human supplies
 
 `read` names an item and never says what it holds. `receive` names a question and never says what

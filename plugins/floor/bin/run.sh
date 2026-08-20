@@ -36,6 +36,8 @@
 #      writing to a repository is a second act a human takes
 #  19  the delivery could not be sent. The grant was there and the work was done, so 18 and 15
 #      would each send the reader to a remedy that changes nothing
+#  20  the work source could not be asked — a tool that is not there, a credential it refused, a
+#      network. Not 1: that is the source answering, and answering that nothing is there
 #
 # Eight through twelve are one stage and five remedies: write a requirement down, select a target it
 # governs, or start again. Collapsing them would make the exit code say *authorisation refused* and
@@ -2391,6 +2393,18 @@ refuse_missing_source() {
 source_says() { sh "$(source_resolver)" "$@"; }
 
 #
+# **The source could not be asked.** Distinct from every answer it gives, *nothing there* included: a
+# run that reads an unreachable source as an empty one states a fact nobody observed, and sends the
+# reader to a work item when the remedy is a host.
+#
+refuse_unasked() {
+    [ "$1" -eq 3 ] || return 0
+
+    note "the work source could not be asked for that $2"
+    exit 20
+}
+
+#
 # What the source answered, in floor's terms.
 #
 # One refusal an adapter reports and floor does not: this run already sent something else under that
@@ -2424,7 +2438,9 @@ read_work_item() {
     [ -n "$item" ]  || { note "read needs an item to read"; exit 2; }
     refuse_another_item "$dir" "$item"
 
-    said=$(source_says read "$item") || { note "the work source holds no item [$item]"; exit 1; }
+    said=$(source_says read "$item"); code=$?
+    refuse_unasked "$code" "item [$item]"
+    [ "$code" -eq 0 ] || { note "the work source holds no item [$item]"; exit 1; }
 
     printf '%s\n' "$said" > "$dir/item.md" 2>/dev/null || die_unwritable "$dir/item.md"
     printf '%s\n' "$item" > "$(source_file "$dir")" 2>/dev/null || die_unwritable "$(source_file "$dir")"
@@ -2568,7 +2584,9 @@ receive_answer() {
     [ "$#" -le 3 ] || { note "receive names a stage and a clause — an answer is not something you pass"; exit 2; }
     refuse_impossible_question "$dir" "$stage" "$clause"
 
-    said=$(source_says receive "$(item_id "$dir")" "$(question_id "$dir" "$stage" "$clause")") || exit 1
+    said=$(source_says receive "$(item_id "$dir")" "$(question_id "$dir" "$stage" "$clause")"); code=$?
+    refuse_unasked "$code" answer
+    [ "$code" -eq 0 ] || exit 1
     printf '%s\n' "$said"
 
     [ "$stage" = completion ] && accept_answer "$dir" "$clause" "$said"

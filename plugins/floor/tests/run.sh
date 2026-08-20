@@ -863,6 +863,35 @@ wreck_runner "a work source that is not there passing for one is caught" \
 wreck_runner "a delivery that absorbs a second branch is caught" \
   dirbranch 's#delivered "$file" "$3" || return 4#:#' lib/source-dir.sh
 
+#
+# The rules that keep an absence observed.
+#
+# Three places answer *nothing there*, and each has a way to be wrong about it: the adapter's probe,
+# floor's mapping of what the adapter said, and the resolver naming the half of level 1 that is
+# missing. A break on any one of them puts a false fact back.
+#
+wreck_runner "a bad credential passing for a missing item is caught" \
+  ghprobe 's#repository_answers || return 3#:#' lib/source-github.sh
+
+wreck_runner "an answer that could not be read passing for silence is caught" \
+  ghanswer '/could not ask what was answered/{n;s/return 3/return 0/}' lib/source-github.sh
+
+wreck_runner "a source that could not be asked reported as empty is caught" \
+  unasked 's#exit 20#exit 1#'
+
+# The check this breaks is the one skipped where `gh` is installed, so this is skipped there too. Both
+# run under `sh bin/gates.sh linux`, whose image has no `gh` — which is the whole point of the rule.
+audit_the_missing_half() {
+  command -v gh >/dev/null 2>&1 && {
+    printf '  skip  a directory answering silently for a GitHub remote — this machine has gh\n'
+    return
+  }
+
+  wreck_runner "a directory answering silently for a GitHub remote is caught" \
+    quietfall '/remote_is_github && echo/d' lib/source.sh
+}
+audit_the_missing_half
+
 wreck_runner "a question rewritten under a human is caught" \
   dirwords 's#same_question "$file" "$3" || return 4#:#' lib/source-dir.sh
 
