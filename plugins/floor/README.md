@@ -18,7 +18,41 @@ Working memory used to live in the repo being changed. That breaks three ways.
 
 ---
 
-## Use
+## From a clone to a delivery
+
+Eleven verbs, in this order, and a standing practice answers for two of them.
+
+```bash
+sh bin/run.sh new "Ship the gift card flow"          # a run, and this checkout points at it
+sh bin/run.sh source read 7                          # the item's own words, if a source can answer
+sh bin/run.sh charter derive                         # the bar, pinned at the base commit
+sh bin/run.sh policy authorize https://github.com/acme/api.git
+sh bin/run.sh targets add https://github.com/acme/api.git main
+sh bin/run.sh authorise                              # refuses, or says who must answer what
+sh bin/run.sh open                                   # prints the workspace — the work happens there
+
+# ... a worker commits in the workspace ...
+
+sh bin/run.sh gates                                  # every gate the charter pins, each recorded
+sh bin/run.sh complete                               # may this run deliver? 15 names what is missing
+sh bin/run.sh policy deliver-to https://github.com/acme/api.git
+sh bin/run.sh deliver "Gift card flow"               # push, then tell the source where it is
+```
+
+The two `policy` lines are a human granting this run one repository, once. A `.foundry/practice`
+that already names it grants the same thing standing, and then the run reaches `open` with nothing
+asked at all.
+
+**Every verb refuses on its own and can be run again.** That is what lets a resumed run re-enter
+anywhere, and it is why nothing here runs the eleven for you.
+
+Two need a host. `source read` needs a work source that can answer — otherwise a directory does, and
+says so. `deliver` needs credentials to push, and says so at exit 19. A machine with `sh`, `awk` and
+`git` and no more runs everything between them.
+
+---
+
+## Every verb
 
 ```bash
 sh bin/run.sh new "Ship the gift card flow"
