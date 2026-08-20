@@ -30,20 +30,19 @@ FILE=$(printf '%s' "$FILE" | tr '\\' '/')
 # Skip non-code files (tests, docs, config)
 printf '%s' "$FILE" | grep -qE '(^|/)tests?/|\.test\.|\.spec\.|\.md$|\.json$|\.ya?ml$|\.env' && exit 0
 
-# What was edited decides which standard is worth naming. A rule loads once a session; the shape is
-# decided at the edit, and by then nobody re-reads a rule.
-advice() {
+# Which standard governs what was edited. Naming it is the whole job — what it asks for is its own,
+# and a copy here would be a second one to keep true.
+standard_for() {
     case "$1" in
-        plugins/*/bin/*.sh|plugins/*/lib/*.sh|plugins/*/hooks/*.sh)
-            printf 'You modified shipped shell. Its standard is generative → run `craft-sh` before the next edit, not after the review.' ;;
-        *)  printf 'You modified code. If this involved a pattern choice, package choice, or schema design → run `craft-adr`.' ;;
+        plugins/*/bin/*.sh|plugins/*/lib/*.sh|plugins/*/hooks/*.sh) printf 'craft-sh'  ;;
+        *)                                                          printf 'craft-adr' ;;
     esac
 }
 
 printf '{
   "hookSpecificOutput": {
     "hookEventName": "PostToolUse",
-    "additionalContext": "**Consider**: %s"
+    "additionalContext": "**Consider**: `%s` governs what you just edited. Read it before the next one — afterwards is a rewrite."
   }
 }
-' "$(advice "$FILE")"
+' "$(standard_for "$FILE")"
