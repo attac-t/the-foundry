@@ -3038,4 +3038,37 @@ a_failed_clone_says_what_git_said() {
 }
 a_failed_clone_says_what_git_said
 
+#
+# A question that could be put nowhere.
+#
+# `mkdir` refuses a directory where a file already is, on every platform — `chmod` does not bite on
+# Windows. Its own home, because the file this needs where a directory belongs would break every other
+# check reading the shared one.
+#
+a_question_that_never_arrived_is_not_asked() {
+  h2="$tmp/home2"
+  mkdir -p "$h2/source/items" && printf 'Ship it
+' > "$h2/source/items/12"
+  printf '' > "$h2/source/questions"
+
+  make_repo "$tmp/nq" main && set_origin "$tmp/nq" 'https://gitlab.com/acme/nq.git'     && commit_file "$tmp/nq" Makefile 'test:
+	echo ok
+' || { skip "a question that never arrived — git could not make a repo here"; return; }
+
+  nq() { floor_as "$tmp/nq" "$h2" "" "$@"; }
+  nq new "No question" >/dev/null
+  nq source read 12 >/dev/null 2>&1
+  nq charter derive >/dev/null 2>&1
+  nq policy authorize 'https://gitlab.com/acme/nq.git' >/dev/null 2>&1
+  nq targets add 'https://gitlab.com/acme/nq.git' main >/dev/null 2>&1
+  nq charter introduce Decided 'ship on friday' >/dev/null 2>&1
+
+  said=$( cd "$tmp/nq" 2>/dev/null           && FOUNDRY_HOME="$h2" FOUNDRY_RUN="" FOUNDRY_WHO="" sh "$runner" authorise 2>&1 )
+
+  is    "a question that can be put nowhere refuses"    "$(code_of nq authorise)" "1"
+  has   "and says the source could not carry it"        "$said" "could not carry"
+  lacks "and sends nobody to answer where it is not"    "$said" "Answer where the item is"
+}
+a_question_that_never_arrived_is_not_asked
+
 summary "model"
