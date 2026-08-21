@@ -91,6 +91,7 @@ floor — where work happens.
   run.sh targets add <repo> <ref> add one
   run.sh policy                   list what this run may change
   run.sh policy authorize <repo>  let this run change one more
+  run.sh policy deliver-to <repo> let this run write to one — a second act, and grading is not it
   run.sh charter                  print what must be true for this run to be good
   run.sh charter derive           derive clauses from this repository, pinned at its base
   run.sh charter check            report clauses that drifted from their pins, or went missing
