@@ -1442,15 +1442,15 @@ required by §2.3, not speculative.
 
 ## 8. Falsifiable experiments
 
-| # | Experiment | Falsifies | At revision 15 |
+| # | Experiment | Falsifies | At revision 16 |
 |---|---|---|---|
-| 1 | Rewrite a gate script to `exit 0`; confirm the clause downgrades to `judged` | the pinning invariant | not built — **and this is the one that matters** |
-| 1b | Ten ordinary runs — a dependency bump, a new test, a refactor; count how many downgrade | that downgrade is rare enough to mean something | not built |
+| 1 | Rewrite a gate script to `exit 0`; confirm the clause downgrades to `judged` | the pinning invariant | **run 2026-08-22 — falsified.** No downgrade exists; §2.2 records why. `charter check` answered 0 because the pin is on the declaration, and `complete` went 15 → 0. A run lowered its own bar and reached deliverable. Open on #66 |
+| 1b | Ten ordinary runs — a dependency bump, a new test, a refactor; count how many downgrade | that downgrade is rare enough to mean something | moot — there is nothing to count |
 | 2 | Two targets, one run, one ledger | the run/target split | fails |
 | 2b | A two-target run where only the bootstrap declares `tests`; confirm completion blocks on the other target | that a `Gate:` clause on an unreadable target cannot be evidenced | not built |
-| 3 | Two runs, same branch name, same machine | workspace isolation | collides |
-| 4 | A directory of markdown files as a source — `read` under twenty lines, plus `ask` and `receive` | the work-source contract | no contract to satisfy |
-| 5 | A run where all clauses derive; confirm no human is asked | the authorisation gate is not ceremony | not built |
+| 3 | Two runs, same branch name, same machine | workspace isolation | **passes.** Two concurrent `open` calls: one built, one refused at 16, one whole checkout, no leftover. `mkdir` serialises the claim |
+| 4 | A directory of markdown files as a source — `read` under twenty lines, plus `ask` and `receive` | the work-source contract | **passes.** `lib/source-dir.sh` ships all four verbs, and the two-adapter rule is met for this contract alone |
+| 5 | A run where all clauses derive; confirm no human is asked | the authorisation gate is not ceremony | **passes**, on every self-hosted run to date |
 | 6 | A run that introduces one clause with no provenance; confirm exactly one question is asked | invariant 1 | not built |
 | 6b | The worker asserts its own provenance for an invented clause; confirm it is treated as introduced | the independence constraint | not built |
 | 6c | A clause entailed only by `CLAUDE.md` prose; confirm the judge establishes it and no human is asked | the semantic path earns its place | not built |
@@ -1460,22 +1460,22 @@ required by §2.3, not speculative.
 | 6g | A judge answers *ambiguous*; the run asks and stops; resume it with a judge rigged to answer *entailed*; confirm the question still derives identically and the human's answer still matches | that recording the verdict makes condition two resumable — a flipped judge is exactly what replay must survive | not built |
 | 6h | Kill the run **between the verdict and the ask**, then resume with the judge rigged to flip | the write-ordering, which 6g cannot reach — it resumes a run that already asked | not built |
 | 6i | Answer condition one for a `Decided:` clause, then run completion with that answer as the only `human` record naming it; confirm delivery refuses | revision 12's headline separation — an authorisation answer is not satisfaction evidence. 6f tests the same shape for a judge's record | not built |
-| 7 | Move a run directory to another machine and resume it | the portability rule | fails as of revision 1 |
+| 7 | Move a run directory to another machine and resume it | the portability rule | **passes.** A run made in a Linux container resumed on Windows; later runs were opened, graded and delivered across Windows and WSL with no container |
 | 8 | Items in repo A, code in repo B, Foundry installed globally | source/target independence | untested |
-| 9 | A work item naming a repo outside the allowlist; confirm refusal | `policy` | not built |
+| 9 | A work item naming a repo outside the allowlist; confirm refusal | `policy` | **passes.** Exit 5, and `run.sh` says so at its own line 986 |
 | 9b | A work item filed in `acme/issues` that names `acme/issues` as a target; confirm refusal — **run it from somewhere other than a clone of the source**, or the bootstrap authorises it and the experiment answers a different question | source is not a target | not built |
-| 10 | Deliver after gates pass, then land a commit; confirm completion refuses | the completion invariant | not built |
-| 10b | A run whose charter derives no clause, and one whose units select no target; confirm both refuse to deliver | the two non-empty conjuncts | not built — **and both would deliver today** |
+| 10 | Deliver after gates pass, then land a commit; confirm completion refuses | the completion invariant | **passes.** `satisfied` matches evidence on the ref it named, so a commit after grading unbinds it. Hit for real on 2026-08-21 |
+| 10b | A run whose charter derives no clause, and one whose units select no target; confirm both refuse to deliver | the two non-empty conjuncts | **passes.** `unmet_for_delivery` runs `empty_bar` and `empty_selection` |
 | 11 | Detection across ten unfamiliar repos — right, wrong, and *says it cannot tell* | Level 1 convention | untested |
 | 12 | Open a shell in a workspace and take over mid-run | the session decomposition | untested |
 | 13 | Two units in one run, in parallel, no interference | the unit/workspace split | not built |
 | 14 | Skill narrowing vs. kernel's claimed 84% activation | the discovery convention | unmeasured |
 | 15 | Panel's own kill criterion — ten runs | whether Panel earns its cost | never run |
 
-Experiments 1, 5, 6 and 9 test the properties this RFC claims most loudly. **Experiment 1 would
-falsify the headline.** Experiments 6c–6e decide whether the semantic path earns its place: if 6e
-shows it reached on nearly every clause, ordering has failed and it *has* become a general approval
-step — cut it and go back to mechanical-only.
+Experiments 1, 5, 6 and 9 test the properties this RFC claims most loudly. **Experiment 1 ran, and it
+falsified the headline** — see row 1 and §2.2. Experiments 6c–6e decide whether the semantic path
+earns its place: if 6e shows it reached on nearly every clause, ordering has failed and it *has*
+become a general approval step — cut it and go back to mechanical-only.
 
 ---
 
