@@ -43,7 +43,7 @@
       "name": "signal",
       "source": "./plugins/signal",
       "description": "Plain English harness. States the budget before the agent writes, and reads what came back.",
-      "version": "0.4.2"
+      "version": "0.4.3"
     },
     {
       "name": "floor",

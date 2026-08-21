@@ -91,6 +91,16 @@ claim p-earlier
 out=$(run "$(payload true "$blocking" p1)")
 has "a marker from an earlier turn does not silence us" "$out" '"decision":"block"'
 
+# `keepable` asks whether the directory is writable, which is a proxy for whether the marker
+# landed. A directory in the marker's place is the case it misses: the write fails
+# and the temp stays fine, so every turn blocks and nothing ends.
+rm -f "$mark"
+mkdir "$mark"
+out=$(run "$(payload false "$blocking" p9)")
+lacks "a block it cannot remember is not taken" "$out" '"decision"'
+has   "and the reader is told why"              "$out" 'could not be tracked'
+rmdir "$mark"
+
 # No prompt id to key on. We cannot tell our own block from anyone else's, so warn, never block.
 forget
 out=$(printf '{"session_id":"%s","stop_hook_active":true,"last_assistant_message":"%s"}' "$session" "$blocking" | bash "$hook" 2>/dev/null)

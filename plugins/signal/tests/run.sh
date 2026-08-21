@@ -138,6 +138,7 @@ unhook()  { chmod -x "$1/hooks/signal.sh"; }
 crlf()    { awk '{ printf "%s\r\n", $0 }' "$1/hooks/signal.sh" | rewrite "$1/hooks/signal.sh"; }
 unquote() { sed 's/\\"//g' "$1/hooks/hooks.json" | rewrite "$1/hooks/hooks.json"; }
 unship()  { rm -f "$1/lib/score.awk"; }
+untrust() { sed 's#^remember || {#remember; false \&\& {#' "$1/hooks/signal.sh" | rewrite "$1/hooks/signal.sh"; }
 rewire()  { sed 's|hooks/signal.sh|hooks/gone.sh|' "$1/hooks/hooks.json" | rewrite "$1/hooks/hooks.json"; }
 unbrief() { sed 's|hooks/brief.sh|hooks/gone.sh|'  "$1/hooks/hooks.json" | rewrite "$1/hooks/hooks.json"; }
 unnote()  { sed 's|^note |: |'                     "$1/hooks/signal.sh"  | rewrite "$1/hooks/signal.sh"; }
@@ -169,6 +170,7 @@ wreck "a Stop hook that leaves no note is caught"     nonote  unnote guarded
 # The block that shipped for months. The agent was told to write again and the reader was told
 # nothing, so two replies arrived and only one of them counted.
 wreck "a block the reader never hears is caught"      nosay   unsay  guarded
+wreck "a block taken on trust is caught"              notrust untrust guarded
 wreck "a brief that never reads the note is caught"   noread  unread briefed
 
 #
