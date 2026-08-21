@@ -800,7 +800,7 @@ a_charter_derives_from_the_repository_it_is_run_in() {
           "$held" "pin $(clause_of tests) https://github.com/acme/ch.git [0-9a-f]{40} Makefile"
   has "and the command it resolved to"      "$held" "gate $(clause_of tests) make test"
 
-  is "a run whose clauses all derive asks nobody" "$(code_of floor "$tmp/ch" charter check)" "0"
+  is "a charter whose pins all still derive checks clean" "$(code_of floor "$tmp/ch" charter check)" "0"
 
   #
   # Authorisation's two refusals. Neither asks anything, which is why they can ship before a work
@@ -2643,6 +2643,16 @@ authorisation_asks_and_hears() {
   floor "$tmp/aa" charter derive >/dev/null 2>&1
   floor "$tmp/aa" policy authorize 'https://gitlab.com/acme/aa.git' >/dev/null 2>&1
   floor "$tmp/aa" targets add 'https://gitlab.com/acme/aa.git' main >/dev/null 2>&1
+  #
+  # Nothing is introduced yet, and a work source is right there to be asked. **A run that asks when
+  # nothing blocks breaks #66's test** — mark work, work runs — and until now nothing here would have
+  # noticed: the check that carried this name asserted `charter check` exits 0, which never asks
+  # anybody under any circumstances.
+  #
+  is "a run whose clauses all derive authorises" "$(code_of floor "$tmp/aa" authorise)" "0"
+  is "and asks nobody" \
+     "$(ls "$src/questions/12" 2>/dev/null | wc -l | tr -d ' ')" "0"
+
   floor "$tmp/aa" charter introduce Decided "ship on friday" >/dev/null 2>&1
 
   is "an introduced clause blocks" "$(code_of floor "$tmp/aa" authorise)" "11"
@@ -3086,6 +3096,8 @@ grade    https://gitlab.com/acme/second.git
      "$(code_of floor "$tmp/st" targets add 'https://gitlab.com/acme/friend.git' main)" "0"
   is "one it does not name is still refused" \
      "$(code_of floor "$tmp/st" targets add 'https://gitlab.com/acme/nope.git' main)" "5"
+  has "and names the one command that grants it" \
+      "$(floor_says "$tmp/st" targets add 'https://gitlab.com/acme/nope.git' main)" "policy authorize"
 
   # The same-run attack. A worker owns the checkout, so it can write anything into the file — and the
   # run reads the base, where a human put what a human meant.
