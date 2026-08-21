@@ -1277,6 +1277,13 @@ audit_the_executable_bit
 # one thing this audit may never produce.
 report_breaks
 
+
+# The tally every check reports through. A break that empties a
+# suite used to turn it green, and no audit could see it,
+# because the audit reads the same exit code.
+( . "$root/tests/lib.sh"; summary 'a suite that ran nothing' ) >/dev/null 2>&1 \
+  && bad "a suite that ran nothing passed" \
+  || printf '  ok    a suite that ran nothing does not pass\n'
 echo
 [ "$failed" -eq 0 ] && echo "ALL GREEN"
 [ "$failed" -eq 1 ] && echo "FAILURES ABOVE"

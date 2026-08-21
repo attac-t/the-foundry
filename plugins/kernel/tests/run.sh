@@ -26,6 +26,7 @@ main() {
   audit_the_lib_scripts
   audit_the_install
   audit_the_cleanup "$strays_before"
+  audit_the_tally
 
   report
 }
@@ -279,6 +280,16 @@ strays() { ls "${TMPDIR:-/tmp}"/kernel-preflight-*.md 2>/dev/null | sort; }
 
 # Count the lines in a list, treating the empty list as none.
 tally() { printf '%s\n' "$1" | grep -c . ; }
+
+
+# The tally every check reports through. A break that empties a
+# suite used to turn it green, and no audit could see it,
+# because the audit reads the same exit code.
+audit_the_tally() {
+  ( . "$root/tests/lib.sh"; summary 'a suite that ran nothing' ) >/dev/null 2>&1 \
+    && bad "a suite that ran nothing passed" \
+    || printf '  ok    a suite that ran nothing does not pass\n'
+}
 
 # Say how it went, and leave with the verdict.
 report() {

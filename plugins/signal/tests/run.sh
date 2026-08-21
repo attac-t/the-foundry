@@ -194,6 +194,13 @@ marks_after=$(strays)
   && printf '  ok    no suite left a marker behind\n' \
   || bad "a suite left markers in ${TMPDIR:-/tmp} — $(tally "$marks_before") before, $(tally "$marks_after") now"
 
+
+# The tally every check reports through. A break that empties a
+# suite used to turn it green, and no audit could see it,
+# because the audit reads the same exit code.
+( . "$root/tests/lib.sh"; summary 'a suite that ran nothing' ) >/dev/null 2>&1 \
+  && bad "a suite that ran nothing passed" \
+  || printf '  ok    a suite that ran nothing does not pass\n'
 echo
 [ "$failed" -eq 0 ] && echo "ALL GREEN" || echo "FAILURES ABOVE"
 exit $failed
