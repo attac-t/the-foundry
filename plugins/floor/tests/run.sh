@@ -928,6 +928,18 @@ wreck_runner "a question lookup that failed asking again is caught" \
 
 
 # Two ways a run reaches the ask, and only one of them may. Inverting the guard asks about a clause
+
+#
+# A question a human can act on, and one only its own run can read.
+#
+# Condition 3 asking is not broken separately: `alwaysask` above makes every authorise ask, and the
+# check that counts questions after a condition-3 refusal goes red with it.
+#
+wreck_runner "a question carrying nothing a human can act on is caught" \
+  blankask 's#"May this clause exist?.*to authorise it."#"Please answer."#'
+
+wreck_runner "a question any run can answer is caught" \
+  sharedask 's#printf .%s.%s.%s. "$(basename "$1")"#printf "%s.%s.%s" "shared"#'
 # nobody introduced, which is #66's test failing — and the check that used to hold this ground read
 # `charter check`, a verb with no question in it.
 wreck_runner "a run asking when nothing blocks is caught" \

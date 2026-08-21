@@ -2662,6 +2662,15 @@ authorisation_asks_and_hears() {
   q=$(ls "$src/questions/12" | head -1)
   id=$(printf '%s' "ship on friday" | cksum | awk '{ print $1 }')
   mkdir -p "$src/answers/12"
+  #
+  # The ask's own words, and nothing read them back. A question carrying no clause, no reason and no
+  # way to answer it is one a human cannot act on — and the count above would still say one.
+  #
+  asked=$(cat "$src/questions/12/$q" 2>/dev/null)
+  has "the ask carries the clause"   "$asked" "ship on friday"
+  has "and why it blocked"           "$asked" "Nothing derives it"
+  has "and what an answer must name" "$asked" "$id"
+
 
   # A refused stage banks nothing. One that kept a partial authorisation would carry it into the next
   # attempt, where nobody asked for it — and evidence, a selection and a pending note all land here.
@@ -2680,6 +2689,33 @@ authorisation_asks_and_hears() {
   # own bar, allow it, and clear it, in three commands nobody else read.
   lacks "and satisfies nothing by permitting it" \
         "$(cat "$(floor "$tmp/aa" path)/evidence" 2>/dev/null)" "$id"
+
+  #
+  # Condition 3 refuses and never asks, and **this is the only run that can tell.** Every other run
+  # exercising conditions 3 and 4 has no work source at all, so a stray question had nowhere to land
+  # and nothing to be counted against.
+  #
+  aarun=$(floor "$tmp/aa" path)
+  cp "$(charter_of "$aarun")" "$aarun/charter.keep"
+  grep -v '^clause .* Gate tests$' "$aarun/charter.keep" > "$(charter_of "$aarun")"
+
+  is "a clause the pins still derive, removed, refuses" "$(code_of floor "$tmp/aa" authorise)" "12"
+  is "and asks nothing to do it" \
+     "$(ls "$src/questions/12" | wc -l | tr -d ' ')" "1"
+  cp "$aarun/charter.keep" "$(charter_of "$aarun")"
+
+  #
+  # An answer outlives the run that asked, and belongs to it. A second run over the same item derives
+  # the same clause and a different question — `run + stage + clause` — so the answer sitting in the
+  # source above is not its to read.
+  #
+  floor "$tmp/aa" new "Ask again" >/dev/null
+  floor "$tmp/aa" source read 12 >/dev/null 2>&1
+  floor "$tmp/aa" charter derive >/dev/null 2>&1
+  floor "$tmp/aa" charter introduce Decided "ship on friday" >/dev/null 2>&1
+
+  is "an answer to an earlier run is not this run's" \
+     "$(code_of floor "$tmp/aa" source receive authorisation 'ship on friday')" "1"
 }
 authorisation_asks_and_hears
 
