@@ -63,6 +63,26 @@ next_round() {
 last_round() { rounds "$1" | sort -n | tail -1 | sed 's/^0*//'; }
 
 #
+# A round is a positive whole number.
+#
+# **Anything else reached round one's exemption**, which is the one round that needs no prior — so a
+# malformed round skipped the check by being malformed. `000` and `-1` computed a `want` below 1 and
+# returned 0; a word made the arithmetic read it as a variable name and `set -u` refused with a shell
+# error and exit 1, which this file's header reserves for *a prior was claimed and no verdict records
+# it*.
+#
+refuse_unless_a_round() {
+    case "$1" in ''|*[!0-9]*) not_a_round "$1" ;; esac
+
+    [ -n "$(printf '%s' "$1" | sed 's/^0*//')" ] || not_a_round "$1"
+}
+
+not_a_round() {
+    note "a round is a positive whole number, not [$1]"
+    exit 2
+}
+
+#
 # The verdict round N must have read, or a refusal.
 #
 # Round 1 has no prior, so it answers nothing and exits 0. Every later round must find a record that
@@ -75,7 +95,9 @@ prior_round() {
     [ -n "$dir" ] && [ -n "$round" ] && [ -n "$review" ] \
         || { note "prior needs a directory, a round and a review"; exit 2; }
 
-    want=$(( $(printf '%s' "$round" | sed 's/^0*//;s/^$/0/') - 1 ))
+    refuse_unless_a_round "$round"
+
+    want=$(( $(printf '%s' "$round" | sed 's/^0*//') - 1 ))
     [ "$want" -ge 1 ] || return 0
 
     file=$(find_verdict "$dir" "$want")
