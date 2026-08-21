@@ -1,7 +1,7 @@
 #!/bin/sh
 #
-# A work source that is a directory of files. **The second adapter, and the reason the first one is
-# not the model.**
+# A work source that is a directory of files. The second adapter, and the reason the first one is
+# not the model.
 #
 # `sh` only — no `gh`, no network, no parser. Floor declares `sh`, `awk` and `git`, so this is the
 # adapter that can always answer, and GitHub is the conditional one.
@@ -40,15 +40,9 @@ read_item() {
     cat "$root/items/$1"
 }
 
-#
-# What one run published, and the identity of it.
-#
-# **Keyed by the run, never by the item.** One item has many runs and each delivers its own, so an
-# item-keyed delivery would hand the second run the first one's answer.
-#
-# Resuming asks again and gets the same identity back. **A different branch is refused, not
-# absorbed** — returning the first delivery there would answer a question nobody asked.
-#
+# What one run published, and the identity of it. Keyed by the run and never by the item, because
+# one item has many runs and each delivers its own. Resuming asks again and gets the
+# same identity back; a different branch is refused rather than absorbed.
 publish_delivery() {
     file="$root/deliveries/$2"
 
@@ -68,13 +62,9 @@ record_delivery() {
 # what is answered with is what landed rather than what was meant to.
 delivered() { [ "$(awk 'NR == 1 { print $1 }' "$1")" = "$2" ]; }
 
-#
-# Put a question where the human already is, once.
-#
-# A resumed run derives the same identity and asks again with the same words, and that must stay one
-# question. **Different words under one identity are refused**: someone may be holding the first, and
-# rewriting it under them is not a resume.
-#
+# Put a question where the human already is, once. A resumed run derives the same identity
+# and asks again with the same words, and that stays one question. Different words
+# under one identity are refused: someone may be holding the first.
 put_question() {
     file="$root/questions/$1/$2"
 

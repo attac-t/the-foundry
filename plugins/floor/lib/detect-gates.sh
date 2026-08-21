@@ -2,7 +2,7 @@
 #
 # Resolve a repository's gates: what it can be checked with, and what said so.
 #
-# **This is the only file in floor that may know an ecosystem exists.** The charter records a gate's
+# This is the only file in floor that may know an ecosystem exists. The charter records a gate's
 # name and what this printed. It never learns why. Adding a language here changes nothing above.
 #
 # One line per gate, whitespace separated:

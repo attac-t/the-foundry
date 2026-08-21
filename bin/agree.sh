@@ -25,14 +25,9 @@ root() { cd "$(dirname "$0")/.." && pwd; }
 
 # --- the three lists ---
 
-#
-# **A list that could not be produced is not a list nobody disagrees with.** Two empty lists have
-# nothing in one and not the other, so `disagree` passed both and `verdict` printed `AGREED — 0
-# gates`. The gate that binds the gate list said yes over an empty set.
-#
-# Captured before the pipe, which reports `sort` and not `sh` — #185's family, in the one interpreter
-# `bin/shell.sh`'s pattern does not name.
-#
+# A list that could not be produced is not a list nobody disagrees with. Two empty lists have
+# nothing in one and not the other, so `disagree` passed both and `verdict` printed AGREED
+# over an empty set. Captured before the pipe, which reports `sort` and not `sh`.
 gates_run() {
     said=$(sh bin/gates.sh list) || return 1
     [ -n "$said" ] || return 1
