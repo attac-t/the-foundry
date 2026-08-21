@@ -1952,6 +1952,43 @@ a_gate_cannot_write_its_own_record() {
 a_gate_cannot_write_its_own_record
 
 #
+# What a pin covers, and what it does not. **This records a residual, not a guarantee.**
+#
+# The pin is on the file the detector read — `.foundry/gates`. The script the command names is what
+# the command *reaches*, and §2.2 calls that the workspace boundary's to close. Under Level 1 the
+# gate's own implementation is inside it: `tests sh check.sh` pins `.foundry/gates` and never
+# `check.sh`, so a worker rewriting `check.sh` lowers the bar it is graded by and `check` says
+# nothing. §6's headline challenge, unmitigated, in the shape Level 1 makes ordinary.
+#
+# **If this goes red the residual was closed.** Read it, then rewrite it — never restore it.
+#
+a_pin_covers_what_the_detector_read() {
+  make_repo "$tmp/pn" main && set_origin "$tmp/pn" 'https://gitlab.com/acme/pn.git' \
+    && mkdir -p "$tmp/pn/.foundry" \
+    && commit_file "$tmp/pn" .foundry/gates 'tests  sh check.sh
+' \
+    && commit_file "$tmp/pn" check.sh 'exit 1
+' || { skip "what a pin covers — git could not make a repo here"; return; }
+
+  ready_run "$tmp/pn" 'https://gitlab.com/acme/pn.git'
+
+  is "the pin names the file the detector read" \
+     "$(floor "$tmp/pn" charter | awk '$1 == "pin" { print $5 }')" ".foundry/gates"
+  is "and the bar fails as it was authorised" "$(code_of floor "$tmp/pn" gates)" "14"
+
+  # The worker rewrites the script its own gate names. `.foundry/gates` is untouched, so the pin is.
+  slot=$(only_slot "$(floor "$tmp/pn" open)")
+  printf 'exit 0\n' > "$slot/check.sh"
+  git -C "$slot" add -A >/dev/null 2>&1
+  git -C "$slot" -c user.email=w@x -c user.name=w commit -qm lowered >/dev/null 2>&1
+
+  is "a rewritten gate script moves no pin"  "$(code_of floor "$tmp/pn" charter check)" "0"
+  is "so the bar the worker wrote is the bar" "$(code_of floor "$tmp/pn" gates)" "0"
+  is "and the run may deliver on it"          "$(code_of floor "$tmp/pn" complete)" "0"
+}
+a_pin_covers_what_the_detector_read
+
+#
 # A workspace is where mutation happens, so it may not exist for a run nobody authorised. `authorise`
 # holds twelve reasons and this restates none of them.
 #
