@@ -135,3 +135,36 @@ read_env() {                                     # read_env KEY [DEFAULT]
 
 MYSQL=(mysql -h "$(read_env DB_HOST 127.0.0.1)" -P "$(read_env DB_PORT 3306)" -u "$(read_env DB_USERNAME root)")
 ```
+
+## A Docbloc, Shaped
+
+Both hold the same facts and only one is read.
+
+```bash
+#
+# **A GitHub remote whose `gh` is missing is half of level 1.** The directory answers, correctly —
+# `gh` is not in the dependency contract — but a directory has never heard of Issues, so its *nothing
+# there* is the same words as an item that exists and cannot be reached.
+#
+# Said once, on stderr, and the exit code stays the adapter's.
+#
+remote_is_github && echo "source: the remote is GitHub and gh is not here" >&2
+```
+
+```bash
+# A GitHub remote with no `gh` is answered by a directory, which never heard of
+# Issues, so its nothing-there reads the same as an item nobody could
+# reach. Said on stderr, and the exit code stays the adapter's.
+remote_is_github && echo "source: the remote is GitHub and gh is not here" >&2
+```
+
+Four lines shorter for the same facts. What went: two fence lines the blank line above already drew,
+a bold that shouted the sentence it sat in, and a paragraph that restated the first.
+
+What arrived is the taper — **79, 69, 63**. The block narrows to a point, so the eye finds its end
+without counting, and the third line is short enough that a fourth would look wrong. That is the
+whole mechanism: the shape refuses the rambling before you write it.
+
+**Nothing measures it.** Break where the sentence lets you. If a line will not shorten without losing
+a fact, the fact stays and the block is two lines — a distinction lost to a shape is the failure
+`economy` names, never the saving.
