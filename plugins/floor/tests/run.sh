@@ -61,14 +61,32 @@ ends_on "$root/tests/run.sh"     'exit $failed'      || bad "tests/run.sh declar
 ends_on "$root/tests/model.sh"   'summary "model"'   || bad "tests/model.sh runs cases below its tally, and nothing counts them"
 ends_on "$root/tests/install.sh" 'summary "install"' || bad "tests/install.sh runs cases below its tally, and nothing counts them"
 
+#
+# The clean suite's own time. **Every deadline below is measured from it.**
+#
+# 300 seconds was one machine's number, and the same suite takes minutes on another — so two breaks
+# exceeded it there and, inverted, read as caught. A mutant is either caught early by `FOUNDRY_FAIL_FAST`
+# or runs about as long as a clean pass. Anything far past that is stuck on any machine.
+#
 for suite in model install; do
+  began=$(date +%s)
   bash "$root/tests/$suite.sh" || failed=1
+  [ "$suite" = model ] && clean=$(( $(date +%s) - began ))
   echo
 done
 
+# Five clean passes, and never under two minutes.
+#
+# A mutant runs alone here and under the pool's load there, so the measure needs headroom: `gateref`
+# takes 226s by itself on a machine whose clean pass is about 535s, and past 300s once two workers
+# share the machine. Generous on purpose — **a deadline reached too early is a `MOOT` nobody earned**,
+# and the thing it guards against is rare.
+deadline=$(( ${clean:-0} * 5 ))
+[ "$deadline" -lt 120 ] && deadline=120
+
 # --- break the runner ---
 
-echo "audit — break the runner, the model suite must notice"
+printf 'audit — break the runner, the model suite must notice. A mutant has %ss.\n' "$deadline"
 
 #
 # How many breaks run at once.
@@ -94,19 +112,91 @@ worker_count() {
 workers=${FOUNDRY_AUDIT_WORKERS:-$(worker_count)}
 queued=0
 reported=0
-
-# Determine if the model suite fails against a broken runner.
 #
-# Bounded where `timeout` exists. A break can hang rather than answer wrongly — one removes the only
-# refusal from a counting loop — and an unbounded audit stops on those instead of reporting them. A
-# stopped audit reads as a slow one.
+# Run a command with a deadline, and answer **2 when the deadline passed** — never the command's own
+# status, because a command that never answered did not answer badly.
+#
+# `timeout` exits 124 when it kills one. `!` used to invert that to 0, which is this file's word for
+# *the suite noticed the break*, so **a mutant that hung was recorded `ok`** — a false green in the
+# thing that grades every other gate.
+#
+bounded() {
+  local seconds="$1"
+  shift
+
+  command -v timeout >/dev/null 2>&1 && { timed "$seconds" "$@"; return; }
+
+  polled "$seconds" "$@"
+}
+
+timed() {
+  local seconds="$1" said
+  shift
+
+  timeout "$seconds" "$@" >/dev/null 2>&1
+  said=$?
+
+  [ "$said" -eq 124 ] && return 2
+  return "$said"
+}
+
+# The same deadline without `timeout`. **macOS is the platform that needs this** — it ships no
+# `timeout` unless someone installed GNU coreutils, and without one there is no bound at all.
+#
+# Polled the way `await_a_free_worker` polls: `wait -n` with a deadline is bash 4.3, and macOS ships
+# 3.2. The same platform, twice, for the same reason.
+polled() {
+  local seconds="$1" job waited=0
+  shift
+
+  "$@" >/dev/null 2>&1 &
+  job=$!
+
+  while kill -0 "$job" 2>/dev/null; do
+    [ "$waited" -ge "$seconds" ] && { kill -9 "$job" 2>/dev/null; wait "$job" 2>/dev/null; return 2; }
+    sleep 1
+    waited=$((waited + 1))
+  done
+
+  wait "$job"
+}
+
+#
+# What a deadline answers, and it is not what an answer answers. Three seconds, and the only check
+# here that grades this file rather than the plugin.
+#
+a_deadline_is_not_an_answer() {
+  bounded 5 true;     answered 0 "a command that passes"
+  bounded 5 false;    answered 1 "a command that fails"
+  bounded 2 sleep 30; answered 2 "a command that never answers"
+}
+
+# `$?` from the line above. Called immediately after `bounded`, because anything between them is the
+# status this would read instead.
+answered() {
+  local got=$?
+
+  [ "$got" = "$1" ] || { bad "$2 left $got, not $1"; return; }
+  printf '  ok    %s leaves %s\n' "$2" "$1"
+}
+a_deadline_is_not_an_answer
+
+#
+# Does the model suite fail against a broken runner?
+#
+#   0  caught · 1  it passed against a broken one · 2  the mutant never answered
+#
+# `env`, because `bounded` runs its arguments and an inline assignment would not reach them.
+#
 model_caught() {
-  local broken="$1/bin/run.sh"
+  local said
+  bounded "$deadline" env RUNNER="$1/bin/run.sh" FOUNDRY_FAIL_FAST=1 bash "$root/tests/model.sh"
+  said=$?
 
-  command -v timeout >/dev/null 2>&1 \
-    && { ! RUNNER="$broken" FOUNDRY_FAIL_FAST=1 timeout 300 bash "$root/tests/model.sh" >/dev/null 2>&1; return; }
+  [ "$said" -eq 2 ] && return 2
+  [ "$said" -eq 0 ] && return 1
 
-  ! RUNNER="$broken" FOUNDRY_FAIL_FAST=1 bash "$root/tests/model.sh" >/dev/null 2>&1
+  return 0
 }
 
 #
@@ -129,7 +219,9 @@ break_verdict() {
   sed "$mutation" "$root/$file" > "$mutant/$file" || { moot "$name — sed failed, so this proves nothing"; return; }
   [ -s "$mutant/$file" ] || { moot "$name — the mutant is empty, so the suite failed for the wrong reason"; return; }
   cmp -s "$mutant/$file" "$root/$file" && { moot "$name — the break did not apply, so this proves nothing"; return; }
-  model_caught "$mutant" || { bad "$name — the suite passed against a broken runner"; return; }
+  model_caught "$mutant"; local answer=$?
+  [ "$answer" -eq 2 ] && { moot "$name — the mutant never answered, so this proves nothing"; return; }
+  [ "$answer" -eq 0 ] || { bad "$name — the suite passed against a broken runner"; return; }
 
   printf '  ok    %s\n' "$name"
 }
