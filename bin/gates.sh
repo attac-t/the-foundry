@@ -84,9 +84,7 @@ gate() {
 gate frontmatter bash bin/frontmatter.sh
 gate versions    bash bin/versions.sh
 
-# shellcheck disable=SC2046  # the file list is the argument, and none of these paths hold a space
-gate repeats     bash bin/repeats.sh \
-    $(git ls-files 'plugins/panel/*.md' 'plugins/pest/*.md' 'plugins/signal/*.md')
+gate repeats     bash bin/repeats.sh
 
 gate shell       bash bin/shell.sh
 

@@ -5,7 +5,7 @@
 # Promoted from a judgement that recurred six times in a single review. A judgement costs a review
 # round. An oracle costs an exit code and never gets tired.
 #
-# Usage: bin/repeats.sh [files...]   (defaults to every tracked markdown file)
+# Usage: bin/repeats.sh [files...]   (defaults to what CI grades — see DEBT)
 #
 # Exit: 0 clean, 1 a rule broken, 3 the gate could not read.
 
@@ -17,11 +17,23 @@ readonly MIN=35 MAX=400
 # Code and link fragments. A URL truncated at its first dot is noise, not a repeat.
 readonly NOISE='://|::|\[|\]|[{}$]|->|=>'
 
+# `.claude/` is Claude-local, and a pull request template is a form rather than prose.
+readonly SKIP='^\.claude/|PULL_REQUEST_TEMPLATE'
+
+# The trees this does not reach yet. Named here and not in a caller's
+# arguments, because that is what let a bare run and CI
+# disagree by 22 repeats nobody could act on.
+#
+# An exclusion, never an inclusion. A plugin added tomorrow is
+# graded without anyone editing this line, where an
+# inclusion list would have skipped it.
+readonly DEBT='^docs/|^plugins/floor/|^plugins/kernel/|^plugins/laravel-ddd/|^plugins/laravel-playbook/'
+
 files=("$@")
 if [ "$#" -eq 0 ]; then
   while IFS= read -r line; do
     files+=("$line")
-  done < <(git ls-files '*.md' | grep -v -e '^\.claude/' -e 'PULL_REQUEST_TEMPLATE')
+  done < <(git ls-files '*.md' | grep -Ev "$SKIP|$DEBT")
 fi
 # An empty list is not a list nobody repeats a sentence in. `git ls-files` answers empty from
 # outside a repository and from one holding no markdown, and both used to read as clean.
