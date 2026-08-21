@@ -985,6 +985,19 @@ records_unreadable() {
 }
 
 # A declaration and a guess are different ranks. `awk` exits non-zero for a file naming no gate and
+
+# A file that is there and cannot be read is not a file nobody wrote. #200 taught the other adapter
+# this; the contract is unproven until two satisfy it — RFC-001 §8.
+audit_the_unreadable_item() {
+  records_unreadable || {
+    printf '  skip  an unreadable item read as an absent one — this filesystem records no read bit\n'
+    return
+  }
+
+  wreck_runner "an unreadable item read as one nobody filed is caught" \
+    diritem 's#\[ -r "$root/items/$1" \] || return 3##' lib/source-dir.sh
+}
+audit_the_unreadable_item
 # for one it could not open, and dropping the read guard puts both back on the same footing — so a
 # repository's bar becomes whatever detection finds.
 audit_the_unreadable_declaration() {

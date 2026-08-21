@@ -2706,6 +2706,23 @@ the_work_source() {
   is "and a run reads one item"                        "$(code_of ws source read 8)" "17"
 
   #
+  # Absent, empty and unreadable are three answers, and the adapter separated two of them. `[ -f ]`
+  # asked whether the file exists and `cat` then failed for another reason, so a file that is there
+  # and cannot be read was reported as an item nobody filed.
+  #
+  # #200 taught the other adapter this. RFC-001 §8 says a contract is unproven until two satisfy it.
+  #
+  if records_unreadable; then
+    chmod 000 "$src/items/7"
+    is "an item that cannot be read is not one nobody filed" "$(code_of ws source read 7)" "20"
+    chmod 644 "$src/items/7"
+    is "and it reads normally once it can be"                "$(code_of ws source read 7)" "0"
+  else
+    skip "an unreadable item — this filesystem records no read bit"
+  fi
+
+
+  #
   # A work source is not a target. An item is written by whoever can file one, so what it names is
   # advisory — the sequence is refused, granted, accepted, because the weak form of this check passes
   # with no policy at all.

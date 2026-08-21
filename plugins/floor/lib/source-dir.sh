@@ -19,8 +19,8 @@
 #        sh source-dir.sh ask     <item> <question> <text>
 #        sh source-dir.sh receive <item> <question>
 #
-# Exit: 0 answered · 1 nothing there · 2 asked for something this does not do · 3 cannot write
-#       4 this run already sent something else under that name
+# Exit: 0 answered · 1 nothing there · 2 asked for something this does not do · 3 it could not
+#       read or write what it needs · 4 this run already sent something else under that name
 #
 
 set -u
@@ -30,9 +30,13 @@ set -u
 # caller is not one you can replace.
 root=${FOUNDRY_SOURCE_DIR:-${FOUNDRY_HOME:-${HOME:-.}/.foundry}/source}
 
-# What someone wants, as they wrote it. Absent is an answer, and a different one from empty.
+# What someone wants, as they wrote it. Absent is an answer and empty is a different one —
+# a file that is there and cannot be read is neither, and `cat` failing after
+# `[ -f ]` passed reported it as the first.
 read_item() {
     [ -f "$root/items/$1" ] || return 1
+    [ -r "$root/items/$1" ] || return 3
+
     cat "$root/items/$1"
 }
 
@@ -49,6 +53,7 @@ publish_delivery() {
     file="$root/deliveries/$2"
 
     [ -f "$file" ] || record_delivery "$file" "$3" "$1" "$4" || return 3
+    [ -r "$file" ] || return 3
     delivered "$file" "$3" || return 4
 
     printf '%s\n' "$file"
@@ -74,6 +79,7 @@ put_question() {
     file="$root/questions/$1/$2"
 
     [ -f "$file" ] || record_question "$1" "$file" "$3" || return 3
+    [ -r "$file" ] || return 3
     same_question "$file" "$3" || return 4
 }
 
@@ -84,10 +90,13 @@ record_question() {
 
 same_question() { [ "$(cat "$1")" = "$2" ]; }
 
-# A human's answer, as they left it. Nothing here reads it — what an answer means belongs to whoever
-# asked, and a transport that decided would be answering for them.
+# A human's answer, as they left it. Nothing here reads it — what an answer means belongs
+# to whoever asked, and a transport that decided would answer for them. One that
+# cannot be read is not a human who has not replied.
 read_answer() {
     [ -f "$root/answers/$1/$2" ] || return 1
+    [ -r "$root/answers/$1/$2" ] || return 3
+
     cat "$root/answers/$1/$2"
 }
 
