@@ -3194,7 +3194,8 @@ case "$*" in
                               exact && $3 == run                      { print $1, $2; next }
                               !exact && index($3, substr(run, 1, 10)) { print $1, $2 }
                             ' "$store/prs" 2>/dev/null || true ;;
-  "pr create"*)             url="https://example.invalid/pr/$(cat "$store/prs" 2>/dev/null | grep -c .)"
+  "pr create"*)             [ -f "$store/writes-fail" ] && { echo "GraphQL: Head sha can't be blank (createPullRequest)" >&2; exit 1; }
+                            url="https://example.invalid/pr/$(cat "$store/prs" 2>/dev/null | grep -c .)"
                             run=$(printf '%s' "$8" | awk '$1 == "floor-run:" { print $2 }')
                             printf '%s %s %s\n' "$4" "$url" "$run" >> "$store/prs"
                             printf '%s\n' "$url" ;;
@@ -3341,7 +3342,7 @@ the_other_adapter() {
   #
   : > "$GH_STORE/reads-fail"
 
-  is "a delivery lookup that failed refuses"      "$(code_of gh_floor source publish work/other 'The other attempt')" "1"
+  is "a delivery lookup that failed refuses"      "$(code_of gh_floor source publish work/other 'The other attempt')" "19"
   is "and opens nothing while it cannot tell"      "$(grep -c . "$GH_STORE/prs" 2>/dev/null)" "$opened"
 
   # The same shape one function over. Empty is what `put_question` reads as *not asked yet*, and it
@@ -3353,6 +3354,21 @@ the_other_adapter() {
 
   rm -f "$GH_STORE/reads-fail"
   is "and the delivery it already had comes back once it can"      "$(gh_floor source publish work/other 'The other attempt')" "$gd"
+
+  # The other half of the same verb.  already exits 19 when the push is refused; the
+  # publish half left by exit 1, which reads as no run, no charter, nothing to send —
+  # and sends the reader to a remedy for a run that does not exist.
+  #
+  # Nothing already delivered, or  answers first and the create is never
+  # reached. The store is put back because the checks above spent effort filling it.
+  mv "$GH_STORE/prs" "$GH_STORE/prs.held"
+  rm -f "$ghrun/delivery"
+  : > "$GH_STORE/writes-fail"
+
+  is "a delivery the source refused costs what a delivery costs"      "$(code_of gh_floor source publish work/fourth 'The other attempt')" "19"
+
+  rm -f "$GH_STORE/writes-fail"
+  mv "$GH_STORE/prs.held" "$GH_STORE/prs"
 
   unset GH_STORE
 }
