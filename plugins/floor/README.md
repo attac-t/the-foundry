@@ -47,8 +47,11 @@ asked at all.
 anywhere, and it is why nothing here runs the eleven for you.
 
 Two need a host. `source read` needs a work source that can answer — otherwise a directory does, and
-says so. `deliver` needs credentials to push, and says so at exit 19. A machine with `sh`, `awk` and
-`git` and no more runs everything between them.
+says so. `deliver` needs credentials to push, and says so at exit 19.
+
+A machine with `sh`, `awk` and `git` runs every verb here. **What a gate command needs is the
+charter's, not floor's** — this repository's own gates reach for `python3`, and on a host without it
+`gates` refuses at 21 naming the command rather than recording a failure that poisons the ref.
 
 ---
 
