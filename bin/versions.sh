@@ -18,32 +18,56 @@ cd "$(dirname "$0")/.."
 python3 - <<'PY'
 import json, pathlib, sys
 
+# Read one JSON file, or say which one and leave at 3. Bad JSON
+# and a missing key both used to leave by traceback at 1,
+# the code this repository reads as a rule broken.
+def read_json(path, what):
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as why:
+        print(f"FAIL — {what} could not be read: {why}. This gate read nothing.")
+        sys.exit(3)
+
+
+def unreadable(what):
+    print(f"FAIL — {what}. This gate read nothing.")
+    sys.exit(3)
+
+
 manifest_file = pathlib.Path(".claude-plugin/marketplace.json")
 
-# A manifest that is not there used to leave by traceback at exit 1, which this repository reads as
-# a rule broken. Nothing was broken and nothing was read. An empty plugin list is the same
-# answer one level in: every plugin in it agrees, and there are none.
+# Said plainly, because it is the case a stranger meets: they ran the gate from the wrong directory.
 if not manifest_file.is_file():
-    print("FAIL — no plugin manifest found. This gate read nothing.")
-    sys.exit(3)
+    unreadable("no plugin manifest found")
 
-manifest = json.loads(manifest_file.read_text())
+plugins = read_json(manifest_file, "the plugin manifest").get("plugins")
 
-if not manifest["plugins"]:
-    print("FAIL — the manifest lists no plugins. This gate read nothing.")
-    sys.exit(3)
+# An empty list is the same answer one level in: every plugin in it agrees, and there are none.
+if not plugins:
+    unreadable("the manifest lists no plugins")
 
 drift = []
 
-for entry in manifest["plugins"]:
+for entry in plugins:
+    named = entry.get("source")
+    if not named:
+        unreadable("a manifest entry names no source")
+
+    source = pathlib.Path(named) / ".claude-plugin/plugin.json"
+    actual = read_json(source, f"{named}'s plugin.json").get("version")
+
+    # Two files silent about a version agree, and agree about nothing. The
+    # manifest may omit one and drift; the plugin it names may
+    # not, because that file is where the answer lives.
+    if actual is None:
+        unreadable(f"{named} declares no version")
+
     listed = entry.get("version")
-    source = pathlib.Path(entry["source"]) / ".claude-plugin/plugin.json"
-    actual = json.loads(source.read_text())["version"]
     if listed != actual:
-        drift.append((entry["name"], listed, actual))
+        drift.append((entry.get("name", named), listed, actual))
 
 if not drift:
-    print(f"PASS — {len(manifest['plugins'])} plugins agree with the manifest.")
+    print(f"PASS — {len(plugins)} plugins agree with the manifest.")
     sys.exit(0)
 
 print("FAIL — the manifest disagrees with the plugin it points at.")
