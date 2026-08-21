@@ -1200,6 +1200,11 @@ wreck_runner "a derive that says nothing is caught" \
 wreck_runner "a yes that outranks a no is caught" \
   onlyyes 's#        $5 != "0" { no  = 1 }#        $5 != "0" { }#'
 
+# Both halves of `send_delivery` answer 19 now. Sharing 1 with `ask` put a rejected delivery and a
+# run that was never made behind one code.
+wreck_runner "a delivery refusal wearing another verb's code is caught" \
+  onecode 's#    exit "$3"#    exit 1#'
+
 report_breaks
 
 # --- break the install ---

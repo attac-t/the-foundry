@@ -34,8 +34,9 @@
 #      same question in other words. One remedy: a new run
 #  18  nobody said this run may deliver to that target. `policy authorize` grants grading, and
 #      writing to a repository is a second act a human takes
-#  19  the delivery could not be sent. The grant was there and the work was done, so 18 and 15
-#      would each send the reader to a remedy that changes nothing
+#  19  the delivery could not be sent — the push was refused, or the source was. The grant was there
+#      and the work was done, so 18 and 15 would each send the reader to a remedy that changes
+#      nothing
 #  20  the work source could not be asked — a tool that is not there, a credential it refused, a
 #      network. Not 1: that is the source answering, and answering that nothing is there
 #  21  a gate's command is not on this host, so nothing was graded and nothing is recorded. Not 14:
@@ -2487,11 +2488,9 @@ refuse_unasked() {
 
 #
 # What the source answered, in floor's terms.
-#
-# One refusal an adapter reports and floor does not: this run already sent something else under that
-# name. The remedy is the same for every verb — a run is bound to what it has already sent, and one
-# item has many runs.
-#
+# The caller names what a refusal costs. A delivery the source rejected and
+# a run that never existed both left by the same door, and 1 is the
+# door marked nothing to answer with. 4 stays floor's own.
 refuse_unless_answered() {
     [ "$1" -eq 0 ] && return 0
 
@@ -2502,7 +2501,7 @@ refuse_unless_answered() {
     }
 
     note "the work source could not carry that $2"
-    exit 1
+    exit "$3"
 }
 
 #
@@ -2602,7 +2601,7 @@ refuse_a_second_branch() {
     [ -n "$had" ] || return 0
     [ "${had% *}" = "$2" ] && return 0
 
-    refuse_unless_answered 4 delivery
+    refuse_unless_answered 4 delivery 19
 }
 
 delivered_already() {
@@ -2617,7 +2616,7 @@ delivered_already() {
 # had before this.
 send_and_record() {
     said=$(source_says publish "$(item_id "$1")" "$(basename "$1")" "$2" "$3")
-    refuse_unless_answered "$?" delivery
+    refuse_unless_answered "$?" delivery 19
 
     printf '%s %s\n' "$2" "$said" > "$(delivery_file "$1")" \
         || note "delivered [$said], but this run could not record it — a resume will ask the source"
@@ -2644,7 +2643,7 @@ ask_about() {
     id=$(question_id "$dir" "$stage" "$clause")
 
     source_says ask "$(item_id "$dir")" "$id" "$text"
-    refuse_unless_answered "$?" question
+    refuse_unless_answered "$?" question 1
 
     printf '%s\n' "$id"
 }
