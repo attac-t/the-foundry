@@ -874,7 +874,7 @@ wreck_runner "a bad credential passing for a missing item is caught" \
   ghprobe 's#repository_answers || return 3#:#' lib/source-github.sh
 
 wreck_runner "an answer that could not be read passing for silence is caught" \
-  ghanswer '/could not ask what was answered/{n;s/return 3/return 0/}' lib/source-github.sh
+  ghanswer '/could not read the comments/{n;s/return 3/return 0/}' lib/source-github.sh
 
 wreck_runner "a source that could not be asked reported as empty is caught" \
   unasked 's#exit 20#exit 1#'
@@ -929,6 +929,16 @@ wreck_runner "a question lookup that failed asking again is caught" \
 
 # Two ways a run reaches the ask, and only one of them may. Inverting the guard asks about a clause
 
+
+#
+# The boundary between two comments is the adapter's, not `gh`'s.
+#
+# Without it `said_after` cannot tell where the question's own body ends, and reads either nothing or
+# the words that asked. The layout it used to recognise — `author:` and a rule — is what GitHub
+# stopped serving to an older client at all.
+#
+wreck_runner "a comment boundary read out of a rendering is caught" \
+  noboundary 's#"floor-comment:", .body#.body#' lib/source-github.sh
 #
 # A question a human can act on, and one only its own run can read.
 #
