@@ -78,6 +78,13 @@ wreck "a recorder that does not stamp the review is caught" \
 wreck "a recorder that always writes round 1 is caught" \
   sameslot 's|^    round=$(next_round "$dir")$|    round=001|'
 
+
+# The tally every check reports through. A break that empties a
+# suite used to turn it green, and no audit could see it,
+# because the audit reads the same exit code.
+( . "$root/tests/lib.sh"; summary 'a suite that ran nothing' ) >/dev/null 2>&1 \
+  && bad "a suite that ran nothing passed" \
+  || printf '  ok    a suite that ran nothing does not pass\n'
 echo
 [ "$failed" -eq 0 ] && echo "ALL GREEN" || echo "FAILURES ABOVE"
 exit $failed
