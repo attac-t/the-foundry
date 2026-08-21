@@ -119,51 +119,66 @@ read_answer() {
     printf '%s\n' "$said"
 }
 
+
+#
+# Every comment on the item, as bodies, with a boundary this file chose.
+#
+# **`--comments` is `gh`'s human transcript, and a layout is not a contract.** It changes without
+# notice, and on a client old enough for GitHub to reject its GraphQL it stopped being fetchable at
+# all — `projectCards`, which nothing here asked for. `--json comments` returns the field on every
+# client tested, and `--jq` is `gh`'s own, so this declares no parser.
+#
+# **A body holding a line that is exactly the boundary spoofs one.** The transcript had the same
+# exposure through `author:` and its rule line; the difference is that this line is ours to change.
+#
+# Captured before it is handed anywhere: a pipeline reports its last stage, and `awk` succeeds on
+# nothing at all.
+#
+comments_of() {
+    # The `|` here is jq's, not the shell's — named so the line that runs `gh` holds no pipe at all,
+    # which is the only thing `bin/shell.sh` can tell apart without a parser.
+    shape='.comments[] | "floor-comment:", .body'
+
+    seen=$(gh issue view "$1" --json comments --jq "$shape" 2>&1) || {
+        printf 'source-github: could not read the comments: %s\n' "$seen" >&2
+        return 3
+    }
+
+    printf '%s\n' "$seen"
+}
+
+#
+# The words after a marker, in the first comment carrying it. No boundary is needed — the first line
+# holding the mark is the one.
+#
+# **A read that failed is not a question nobody asked.** Empty is what `put_question` reads as *not
+# asked yet*, and it answers by asking — so a resumed run whose lookup hit a network put the question
+# to the human twice.
+#
+after_marker() {
+    seen=$(comments_of "$1") || return 3
+
+    printf '%s\n' "$seen" \
+        | awk -v mark="$2" 'index($0, mark) { print substr($0, index($0, mark) + length(mark)); exit }'
+}
+
 #
 # What people said after this question, and never another question.
 #
-# `gh` lays each comment out as its metadata, a rule, then its body. So the marker is followed by the
-# rest of the ask, which names the clause — reading from there would authorise it with itself.
+# The marked comment holds the ask, so its own body is skipped — reading it would authorise a clause
+# with the words that asked about it. The answer is whatever the **next** comment says.
 #
 # Questions bound this at both ends. One is asked per unauthorised clause, so several stand open at
 # once, and the next one beginning means this one was passed over rather than answered.
 #
-# Captured before the pipe, which reports `awk` and not `gh`. **A lookup that failed is not a human
-# who has not answered** — that one is fail-safe, and it still states a fact nobody observed.
-#
 said_after() {
-    seen=$(gh issue view "$1" --comments 2>&1) || {
-        printf 'source-github: could not ask what was answered: %s\n' "$seen" >&2
-        return 3
-    }
+    seen=$(comments_of "$1") || return 3
 
     printf '%s\n' "$seen" \
         | awk -v mark="$2" '
-            /^floor-question: / { mine = index($0, mark) > 0; want = 0; next }
-            !mine               { next }
-            /^author:/          { meta = 1; next }
-            meta && $0 == "--"  { meta = 0; want = 1; next }
-            meta                { next }
-            $0 == "--"          { next }
-            want && NF          { print }'
-}
-
-#
-# The words after a marker, in the first comment carrying it. One pass over the transcript, so nothing
-# here depends on how GitHub lays a comment out.
-#
-# **A read that failed is not a question nobody asked.** Empty is what `put_question` reads as *not
-# asked yet*, and it answers by asking — so a resumed run whose lookup hit a network put the question
-# to the human twice. Captured before the pipe, which reports `awk` and not `gh`.
-#
-after_marker() {
-    seen=$(gh issue view "$1" --comments 2>&1) || {
-        printf 'source-github: could not ask what was already asked: %s\n' "$seen" >&2
-        return 3
-    }
-
-    printf '%s\n' "$seen" \
-        | awk -v mark="$2" 'index($0, mark) { print substr($0, index($0, mark) + length(mark)); exit }'
+            $0 == "floor-comment:" { want = want || mine; mine = 0; next }
+            /^floor-question: /    { mine = index($0, mark) > 0; want = 0; next }
+            want && NF             { print }'
 }
 
 # 32 bits, so two texts can share one. A collision lets a rewritten question pass for the one already

@@ -3022,10 +3022,17 @@ store=${GH_STORE:?}
 mkdir -p "$store"
 
 case "$*" in
-  # An issue with no comments yet answers, and answers with nothing. `cat` on a file that is not there
-  # exits 1, which the readers now read as a failed lookup — correctly, and not what GitHub does here.
-  "issue view"*--comments*) [ -f "$store/reads-fail" ] && { echo "could not resolve host: api.github.com" >&2; exit 1; }
-                            cat "$store/comments" 2>/dev/null || true ;;
+  # The comments, as `gh` returns them: a list of bodies. **`gh` evaluates `--jq` itself**, so this
+  # honours the one expression the adapter sends — a chosen line before each body — and emits bodies
+  # alone if it stops asking for one. A fixture that printed the boundary regardless would be
+  # agreeing with the adapter instead of the service.
+  "issue view"*"--json comments"*) [ -f "$store/reads-fail" ] && { echo "could not resolve host: api.github.com" >&2; exit 1; }
+                            case "$*" in *floor-comment*) mark='floor-comment:' ;; *) mark='' ;; esac
+                            for body in "$store/comments"/*; do
+                                [ -f "$body" ] || continue
+                                [ -n "$mark" ] && printf '%s\n' "$mark"
+                                cat "$body"
+                            done ;;
   # An item nobody filed and a source nobody could ask both fail here, and only the probe below tells
   # them apart. GitHub answers 1 for each.
   "issue view"*)            [ -f "$store/reads-fail" ] && { echo "HTTP 401: Bad credentials" >&2; exit 1; }
@@ -3033,9 +3040,11 @@ case "$*" in
   # The probe. A repository cannot be absent, so failing here is the host and never the item.
   "repo view"*)             [ -f "$store/reads-fail" ] && { echo "HTTP 401: Bad credentials" >&2; exit 1; }
                             printf '{"name":"gh"}\n' ;;
-  # A comment is its metadata, a rule, then its body. GitHub's shape, because a fixture that agrees
-  # with the adapter instead of the service is a suite grading itself.
-  "issue comment"*)         printf '\n--\nauthor:\tnobody\n--\n%s\n' "$5" >> "$store/comments" ;;
+  # One comment, one body, in order. GitHub keeps a list and the adapter asks for the field, so the
+  # fixture keeps a list too — a single file with separators in it would be a rendering nobody serves.
+  "issue comment"*)         mkdir -p "$store/comments"
+                            printf '%s\n' "$5" > "$store/comments/$(printf '%03d' \
+                                "$(find "$store/comments" -type f | grep -c .)")" ;;
   # A read that cannot answer. GitHub fails this way for a network, a token or a rate limit, and none
   # of them mean "nothing is there yet" — which is what both readers below used to conclude.
   "pr list"*)               [ -f "$store/reads-fail" ] && { echo "could not resolve host: api.github.com" >&2; exit 1; }
@@ -3048,6 +3057,14 @@ case "$*" in
 esac
 STUB
   chmod +x "$1/gh"
+}
+
+# A person comments, and order is what makes an answer come *after* a question. Numbered the way the
+# stub numbers them, because a name that sorts differently is a transcript nobody wrote.
+gh_says() {
+  mkdir -p "$GH_STORE/comments"
+  printf '%s\n' "$1" \
+    > "$GH_STORE/comments/$(printf '%03d' "$(find "$GH_STORE/comments" -type f | grep -c .)")"
 }
 
 the_other_adapter() {
@@ -3091,17 +3108,26 @@ the_other_adapter() {
   gq=$(gh_floor source ask authorisation tests 'May this clause exist?')
   is "and derives the same question there" "$gq" "$(basename "$ghrun").authorisation.$(clause_of tests)"
   is "asking twice is one question"  "$(gh_floor source ask authorisation tests 'May this clause exist?')" "$gq"
-  is "and the source holds one"      "$(grep -c 'floor-question' "$GH_STORE/comments" 2>/dev/null)" "1"
+  is "and the source holds one"      "$(grep -rl 'floor-question' "$GH_STORE/comments" 2>/dev/null | grep -c .)" "1"
   is "other words under one question are refused" \
      "$(code_of gh_floor source ask authorisation tests 'Something else entirely?')" "17"
 
   is "an unanswered question is not an answer" "$(code_of gh_floor source receive authorisation tests)" "1"
   # A person comments. No marker — one they have to type is a command language nobody told them.
-  printf '\n--\nauthor:\tnobody\n--\nyes, go ahead\n' >> "$GH_STORE/comments"
+  gh_says 'yes, go ahead'
   is "and a human's answer comes back as they wrote it" \
      "$(gh_floor source receive authorisation tests)" "yes, go ahead"
 
-  # One question is asked per unauthorised clause, so several stand open at once. The one below is not
+  # Two people answer, and both are the answer. `want` survives a comment boundary and only a later
+  # question clears it — a reader stopping at the first boundary takes one voice for all of them, and
+  # a fixture holding one reply cannot tell.
+  gh_says 'and a second person agrees'
+  has "everything said after the question comes back, not just the first" \
+      "$(gh_floor source receive authorisation tests)" "a second person agrees"
+  has "and the first is still there"  \
+      "$(gh_floor source receive authorisation tests)" "yes, go ahead"
+
+
   # The same rule where an answer is read. This one is fail-safe — the run waits rather than proceeds
   # — and it still reported a human who had not answered when nobody could be asked.
   : > "$GH_STORE/reads-fail"
@@ -3109,11 +3135,12 @@ the_other_adapter() {
      "$(code_of gh_floor source receive authorisation tests)" "20"
   rm -f "$GH_STORE/reads-fail"
 
+  # One question is asked per unauthorised clause, so several stand open at once. The one below is not
   # an answer to the one above, and the one above is still answered.
   gh_floor source ask completion tests 'And was it met?' >/dev/null 2>&1
   is "a later question is no answer to an earlier one" \
      "$(code_of gh_floor source receive completion tests)" "1"
-  is "and the answer above it still stands" \
+  has "and the answer above it still stands" \
      "$(gh_floor source receive authorisation tests)" "yes, go ahead"
 
   gd=$(gh_floor source publish work/other 'The other attempt')
@@ -3160,10 +3187,10 @@ the_other_adapter() {
 
   # The same shape one function over. Empty is what `put_question` reads as *not asked yet*, and it
   # answers by asking — so a resumed run whose lookup failed put the question to the human twice.
-  asked=$(grep -c 'floor-question' "$GH_STORE/comments" 2>/dev/null)
+  asked=$(grep -rl 'floor-question' "$GH_STORE/comments" 2>/dev/null | grep -c .)
 
   is "a question lookup that failed refuses"      "$(code_of gh_floor source ask authorisation tests 'May this clause exist?')" "1"
-  is "and asks nobody twice while it cannot tell"      "$(grep -c 'floor-question' "$GH_STORE/comments" 2>/dev/null)" "$asked"
+  is "and asks nobody twice while it cannot tell"      "$(grep -rl 'floor-question' "$GH_STORE/comments" 2>/dev/null | grep -c .)" "$asked"
 
   rm -f "$GH_STORE/reads-fail"
   is "and the delivery it already had comes back once it can"      "$(gh_floor source publish work/other 'The other attempt')" "$gd"
