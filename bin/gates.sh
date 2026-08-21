@@ -84,9 +84,14 @@ gate() {
 gate frontmatter bash bin/frontmatter.sh
 gate versions    bash bin/versions.sh
 
+# The three root files are here because their whole job is to say different things: `CLAUDE.md`
+# routes and holds no rules, `CONTRIBUTING` holds procedure, `README` holds the front
+# page. Kernel and floor markdown hold 19 repeats and are a lane of their own.
+#
 # shellcheck disable=SC2046  # the file list is the argument, and none of these paths hold a space
 gate repeats     bash bin/repeats.sh \
-    $(git ls-files 'plugins/panel/*.md' 'plugins/pest/*.md' 'plugins/signal/*.md')
+    $(git ls-files 'plugins/panel/*.md' 'plugins/pest/*.md' 'plugins/signal/*.md' \
+                   README.md CONTRIBUTING.md CLAUDE.md)
 
 gate shell       bash bin/shell.sh
 
