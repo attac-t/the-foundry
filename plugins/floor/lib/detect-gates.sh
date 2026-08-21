@@ -20,15 +20,17 @@
 set -u
 dir=${1:-.}
 
-# The gates a repository declares for itself. `name command...`, `#` comments, blanks ignored.
+# The gates a repository declares: `name command...`, with `#` comments and blanks ignored. A
+# file naming no gate yields nothing so detection still runs — returning 0 for one
+# that is only comments made an empty declaration outrank every guess, and
+# left `check` a charter with nothing to compare.
 #
-# Yields nothing when the file names no gate, so detection still runs.
-#
-# Returning 0 for a file that is only comments made an empty declaration outrank every guess, and a
-# charter with no gates has nothing for `check` to compare — the whole surface went quiet.
-#
+# `-r` as well as `-f`, because `awk` exits non-zero for a file that names no gate and
+# for one it could not open, and the caller reads both as nothing declared.
 declared() {
     [ -f "$dir/.foundry/gates" ] || return 1
+    [ -r "$dir/.foundry/gates" ] || return 22
+
     awk '!/^[ \t]*#/ && NF { printf "%s .foundry/gates", $1; $1 = ""; print; found = 1 }
          END { exit !found }' "$dir/.foundry/gates"
 }
@@ -52,4 +54,17 @@ detected() {
     return 1
 }
 
-declared || detected || exit 1
+# A declaration that is there and cannot be read is neither a declaration nor an absence.
+# Falling to `detected` derives a bar the repository never asked for and pins the file
+# it guessed from, so the declaration goes invisible and every later check agrees.
+refuse_unreadable() {
+    printf 'detect-gates: [%s] is there and cannot be read\n' "$dir/.foundry/gates" >&2
+    exit 22
+}
+
+declared; said=$?
+
+[ "$said" -eq 22 ] && refuse_unreadable
+[ "$said" -eq 0 ] && exit 0
+
+detected || exit 1

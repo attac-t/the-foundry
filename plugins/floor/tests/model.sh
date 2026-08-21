@@ -1156,6 +1156,54 @@ a_run_cannot_author_its_own_bar() {
 }
 a_run_cannot_author_its_own_bar
 
+# Whether `chmod 000` means anything here. Windows records no read bit and root ignores
+# the one it finds, so a check about an unreadable file would pass for a
+# reason that is not the rule.
+records_unreadable() {
+  probe="$tmp/read-probe"
+  : > "$probe"
+  chmod 000 "$probe" 2>/dev/null
+  unreadable=1; [ -r "$probe" ] && unreadable=0
+  chmod 644 "$probe" 2>/dev/null
+
+  [ "$unreadable" -eq 1 ]
+}
+
+#
+# A declaration outranks a guess — §3's ladder, level 1 guesses and level 2 corrects it. One that
+# cannot be read used to run the ladder backwards: `awk` exits non-zero for a file naming no gate
+# and for one it could not open, and `||` read both as nothing declared.
+#
+# The bar then changed silently. A repository asking for `sh bin/check.sh` was graded with
+# `make test`, pinned to the `Makefile` it guessed from — so `check` compared that file ever after
+# and the declaration was invisible to everything downstream.
+#
+a_declaration_it_cannot_read_is_not_a_guess() {
+  records_unreadable || { skip "an unreadable declaration — this filesystem records no read bit"; return; }
+
+  make_repo "$tmp/ur" main && set_origin "$tmp/ur" 'https://github.com/acme/ur.git' \
+    && mkdir -p "$tmp/ur/.foundry" \
+    && commit_file "$tmp/ur" Makefile 'test:
+	echo guessed
+' \
+    && commit_file "$tmp/ur" .foundry/gates 'tests  echo DECLARED
+' || { skip "an unreadable declaration — git could not make a repo here"; return; }
+
+  floor "$tmp/ur" new "Unreadable" >/dev/null
+  chmod 000 "$tmp/ur/.foundry/gates"
+
+  said=$(floor_says "$tmp/ur" charter derive)
+  is  "a declaration that cannot be read refuses"  "$(code_of floor "$tmp/ur" charter derive)" "22"
+  has "and names the file"                         "$said" ".foundry/gates"
+  lacks "and derives no bar from a guess"          "$said" "make test"
+
+  chmod 644 "$tmp/ur/.foundry/gates"
+  is  "and derives normally once it can be read"   "$(code_of floor "$tmp/ur" charter derive)" "0"
+  has "with the bar the repository declared" \
+      "$(cat "$(charter_of "$(floor "$tmp/ur" path)")" 2>/dev/null)" "echo DECLARED"
+}
+a_declaration_it_cannot_read_is_not_a_guess
+
 #
 # Evidence is stamped, never claimed — RFC-001 §2.5. The recorder takes a command, runs it, and
 # records what happened, so a worker proves a gate passed only by making it pass.
