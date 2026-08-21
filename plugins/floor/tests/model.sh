@@ -2072,6 +2072,41 @@ a_workspace_needs_authorisation() {
 a_workspace_needs_authorisation
 
 #
+# §4's join test is the run pointer in each slot's own `.git` — *a person can join by opening a shell
+# in the workspace and reading the run*. A write that failed left `open` printing a path and exiting
+# 0 over a checkout no later process could attribute to a run.
+#
+# `records_unreadable` answers for writing too: a filesystem that honours one mode bit honours the
+# other, and root ignores both.
+#
+a_slot_nobody_can_join_is_not_a_workspace() {
+  records_unreadable || { skip "an unwritable slot — this filesystem records no mode bits"; return; }
+
+  make_repo "$tmp/nj" main && set_origin "$tmp/nj" 'https://github.com/acme/nj.git' \
+    && mkdir -p "$tmp/nj/.foundry" \
+    && commit_file "$tmp/nj" .foundry/gates 'tests  true
+' || { skip "a slot nobody can join — git could not make a repo here"; return; }
+
+  ready_run "$tmp/nj" 'https://github.com/acme/nj.git'
+  slot=$(only_slot "$(floor "$tmp/nj" open)")
+
+  is "the pointer is there to start with" \
+     "$(cat "$slot/.git/foundry-run" 2>/dev/null)" "$(basename "$(floor "$tmp/nj" path)")"
+
+  rm -f "$slot/.git/foundry-run"
+  chmod 500 "$slot/.git"
+
+  is  "a slot whose pointer cannot be written refuses" "$(code_of floor "$tmp/nj" open)" "16"
+  has "and names the workspace"                        "$(floor_says "$tmp/nj" open)" "nobody can join"
+
+  chmod 700 "$slot/.git"
+  is "and opens again once it can be written" "$(code_of floor "$tmp/nj" open)" "0"
+  is "with the pointer back" \
+     "$(cat "$slot/.git/foundry-run" 2>/dev/null)" "$(basename "$(floor "$tmp/nj" path)")"
+}
+a_slot_nobody_can_join_is_not_a_workspace
+
+#
 # A slot can hold a perfectly valid checkout of something else. `open` answered 0 for one holding
 # another repository entirely, and every gate after it would have graded that.
 #
