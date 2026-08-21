@@ -940,6 +940,12 @@ wreck_runner "a question carrying nothing a human can act on is caught" \
 
 wreck_runner "a question any run can answer is caught" \
   sharedask 's#printf .%s.%s.%s. "$(basename "$1")"#printf "%s.%s.%s" "shared"#'
+
+# A gate that could not run, stamped as one that failed. The ledger is append-only and read
+# conjunctively, so the row it writes is the run's ref for good — every gate green afterwards and
+# still nothing to deliver from.
+wreck_runner "a gate that could not run recorded as one that failed is caught" \
+  ranfail 's#never_ran "$result" && #false \&\& #'
 # nobody introduced, which is #66's test failing — and the check that used to hold this ground read
 # `charter check`, a verb with no question in it.
 wreck_runner "a run asking when nothing blocks is caught" \
