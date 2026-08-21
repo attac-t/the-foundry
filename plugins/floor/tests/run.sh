@@ -941,6 +941,11 @@ wreck_runner "a question carrying nothing a human can act on is caught" \
 wreck_runner "a question any run can answer is caught" \
   sharedask 's#printf .%s.%s.%s. "$(basename "$1")"#printf "%s.%s.%s" "shared"#'
 
+# The last field of a tab-separated row is a gate's own output. Unflattened, a gate writes rows — and
+# for a clause no gate grades, nothing would ever stand beside the one it wrote.
+wreck_runner "a gate whose output becomes a record is caught" \
+  forgedrow 's#"$(one_line "$6")"#"$6"#'
+
 # A gate that could not run, stamped as one that failed. The ledger is append-only and read
 # conjunctively, so the row it writes is the run's ref for good — every gate green afterwards and
 # still nothing to deliver from.

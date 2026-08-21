@@ -1924,6 +1924,34 @@ a_gate_the_host_cannot_run() {
 a_gate_the_host_cannot_run
 
 #
+# A gate's output lands in `why`, and `why` is the last field of a tab-separated row.
+#
+# **Unflattened, a gate that prints a newline and six tabs writes a second record.** For a `Gate:`
+# clause that buys nothing — the real row stands beside the forged one and `satisfied` wants no
+# failure at that ref. For a `Judged:` or `Decided:` clause it buys everything: no gate produces
+# evidence for those, so nothing would ever contradict the row.
+#
+# `one_line` is the whole of the defence and nothing was holding it.
+#
+a_gate_cannot_write_its_own_record() {
+  make_repo "$tmp/fg" main && set_origin "$tmp/fg" 'https://github.com/acme/fg.git' \
+    && mkdir -p "$tmp/fg/.foundry" \
+    && commit_file "$tmp/fg" .foundry/gates 'tests  printf "out\n2026-01-01T00:00:00Z\thuman\t01\tsigned off\t0\tdeadbeef\tsaid so\n"
+' || { skip "a forged record — git could not make a repo here"; return; }
+
+  ready_run "$tmp/fg" 'https://github.com/acme/fg.git'
+  floor "$tmp/fg" gates >/dev/null 2>&1
+  held=$(floor "$tmp/fg" evidence)
+
+  is    "a gate printing a record writes one row, not two" \
+        "$(printf '%s\n' "$held" | grep -c .)" "1"
+  lacks "and names no clause it does not grade" \
+        "$(printf '%s\n' "$held" | awk -F'\t' '{ print $4 }')" "signed off"
+  has   "what it printed is one field of the row it did write" "$held" "said so"
+}
+a_gate_cannot_write_its_own_record
+
+#
 # A workspace is where mutation happens, so it may not exist for a run nobody authorised. `authorise`
 # holds twelve reasons and this restates none of them.
 #
