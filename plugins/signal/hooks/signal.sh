@@ -33,7 +33,9 @@ ours() { [ "$(cat "$(markfile)" 2>/dev/null)" = "$prompt" ]; }
 # Determine if the temp directory can hold a marker.
 keepable() { [ -w "$temp" ]; }
 
-# Record that we blocked this prompt.
+# Record that we blocked this prompt, and answer whether it
+# stuck. A block we cannot remember is one we take
+# again next turn, and every turn after it.
 remember() { printf '%s' "$prompt" > "$(markfile)" 2>/dev/null; }
 
 # Get the path to this session's note.
@@ -114,6 +116,7 @@ spent && { warn "rewrite still over: $why. One block per turn, so this one ships
 # Over the working line, under the tail. The note has it. Anything more costs a second reply.
 [ "$verdict" -eq 1 ] && exit 0
 
-remember
+remember || { warn "over the line, and this block could not be tracked: $why"; exit 0; }
+
 block "Say that again in plain English. $why. $(advice)"
 exit 0
