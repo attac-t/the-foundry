@@ -68,17 +68,17 @@ publish_delivery() {
 }
 
 #
-# What GitHub says it already has, or nothing — and the two are told apart.
+# What GitHub says it already has, or nothing, and the two are told apart. A search that
+# failed used to return empty, which reads as no delivery yet and answers by
+# opening a second one for work that already had one.
 #
-# A search that failed used to return empty, which `publish_delivery` reads as *no delivery yet* and
-# answers by opening one. A resumed run whose lookup hit a network, a token or a rate limit published
-# a second delivery for work that already had one.
-#
-# Captured before the pipe: a pipeline reports its last stage, and `head` succeeds on nothing at all.
-#
+# GitHub matches words in a body and not substrings, so two runs made the same day share three
+# tokens of four and each other's pull requests come back. The search narrows;
+# the marker floor wrote is what decides. Named, so the `gh` line holds no pipe.
 delivery_of() {
-    found=$(gh pr list --state all --search "$1 in:body" --json headRefName,url \
-                --jq '.[] | .headRefName + " " + .url' 2>&1) || {
+    shape=".[] | select(.body | contains(\"floor-run: $1\")) | .headRefName + \" \" + .url"
+
+    found=$(gh pr list --state all --search "$1 in:body" --json headRefName,url,body --jq "$shape" 2>&1) || {
         printf 'source-github: could not ask what is already delivered: %s\n' "$found" >&2
         return 3
     }

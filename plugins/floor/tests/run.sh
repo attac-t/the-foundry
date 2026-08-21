@@ -1125,7 +1125,12 @@ wreck_runner "a refusal that names no remedy is caught" \
 # second machine that hears it only after the work has done the work.
 wreck_runner "a run nobody selected made in silence is caught" \
   quietwho 's#^    say_if_nobody_selected$#    :#'
-#
+
+# A search narrows and a marker decides. Dropping the marker lets another run's pull request come
+# back on shared date tokens, and `publish` then refuses a run that never delivered.
+wreck_runner "a delivery matched on tokens rather than its marker is caught" \
+  bodymark 's#select(.body | contains(\\"floor-run: $1\\")) | ##' lib/source-github.sh
+
 wreck_runner "a delivery record the run never reads is caught" \
   noread 's#delivered_already "$dir" && return#:#'
 

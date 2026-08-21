@@ -3184,8 +3184,16 @@ case "$*" in
                                 "$(find "$store/comments" -type f | grep -c .)")" ;;
   # A read that cannot answer. GitHub fails this way for a network, a token or a rate limit, and none
   # of them mean "nothing is there yet" — which is what both readers below used to conclude.
+  # `gh` matches words in a body, so a run made the same day as another comes back on shared tokens.
+  # The stub answers the same way, and evaluates the `--jq` the adapter sends rather than
+  # filtering for it — a fixture that pre-filtered would grade its own assumption.
   "pr list"*)               [ -f "$store/reads-fail" ] && { echo "could not resolve host: api.github.com" >&2; exit 1; }
-                            awk -v run="${6%% *}" '$3 == run { print $1, $2 }' "$store/prs" 2>/dev/null || true ;;
+                            want=${6%% *}
+                            case "$*" in *"floor-run: $want"*) exact=1 ;; *) exact=0 ;; esac
+                            awk -v run="$want" -v exact="$exact" '
+                              exact && $3 == run                      { print $1, $2; next }
+                              !exact && index($3, substr(run, 1, 10)) { print $1, $2 }
+                            ' "$store/prs" 2>/dev/null || true ;;
   "pr create"*)             url="https://example.invalid/pr/$(cat "$store/prs" 2>/dev/null | grep -c .)"
                             run=$(printf '%s' "$8" | awk '$1 == "floor-run:" { print $2 }')
                             printf '%s %s %s\n' "$4" "$url" "$run" >> "$store/prs"
@@ -3283,6 +3291,20 @@ the_other_adapter() {
   gd=$(gh_floor source publish work/other 'The other attempt')
   matches "publishing answers with the delivery's identity" "$gd" '^https://'
   is "and resuming answers with the same one" "$(gh_floor source publish work/other 'The other attempt')" "$gd"
+
+  # Two runs made the same day share three tokens of four, and GitHub matches words. Another run's
+  # pull request came back as this one's delivery, so `publish` compared branches,
+  # found them different, and refused a run that had never delivered.
+  decoy='foundry/2026-08-21-item-219-0000 https://example.invalid/pr/9 2026-08-21-item-219-0000'
+  { echo "$decoy"; cat "$GH_STORE/prs"; } > "$GH_STORE/prs.new"
+  mv "$GH_STORE/prs.new" "$GH_STORE/prs"
+  # The record answers before the source does, so it comes off to reach the adapter at all.
+  rm -f "$ghrun/delivery"
+
+  is "a delivery lookup matching another run's tokens is not this run's" \
+     "$(code_of gh_floor source publish work/other 'The other attempt')" "0"
+  is "and it is still this run's own delivery" \
+     "$(gh_floor source publish work/other 'The other attempt')" "$gd"
 
   #
   # The run answers before the source does. GitHub's body index is eventually consistent, so a lookup
