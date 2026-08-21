@@ -1,6 +1,6 @@
 # RFC-001: The Portable Composition Model
 
-**Status:** Accepted — revision 15, 2026-08-18
+**Status:** Accepted — revision 16, 2026-08-22
 **Plugin:** `floor`
 **Author:** Christian Attard
 **Date:** 2026-08-12
@@ -314,13 +314,33 @@ at delivery   run it again — the answer moved, or a file it read moved  →  d
 Foundry never reads `composer.json` for meaning. It records what it read and whether its own answer
 changed. Level 2 covers detection being wrong.
 
+**Revision 16: the code refuses, and the downgrade above never shipped.** `check_charter` runs first
+and exits 7 on drift — a moved pin is a command nobody authorised. Refusal is stricter than the
+paragraph below asks for, and it is the honest form of a downgrade with nowhere to go: `judged`
+names an independent judge as its producer, v1 has none, and a clause routed to nobody can never be
+satisfied. Refusing says so at once and names the remedy. Downgrading would have said it later, from
+a stage that cannot answer.
+
+The paragraph below stands as the reasoning, not as the contract. A judge existing changes which is
+right, and nothing else does.
+
 Downgraded, not voided. Legitimate work changes test scripts — adding a suite is good. Voiding would
 punish it. Downgrading says the exit code no longer speaks for itself and something that is not the
 author must look. One `git diff`, no machinery.
 
-**The residual.** A worker can leave the command intact and change what it reaches — `phpunit.xml`,
-a bootstrap, an environment file. That is the workspace boundary's to close, and why this is
-correctness rather than containment.
+**The residual, and it is wider than this section claimed.** A worker can leave the command intact
+and change what it reaches — `phpunit.xml`, a bootstrap, an environment file. **It can also change
+the gate's own script.** The comparison above is between two resolved command *strings*;
+`sh bin/check.sh` is the same string whichever way that file is written.
+
+Run on 2026-08-22 against `main`, in a throwaway repository with one declared gate: the gate failed
+(`gates` 14, `complete` 15), the worker rewrote the script to `exit 0` and committed inside the run,
+`charter check` answered 0 because the pinned declaration never moved, and `gates` and `complete`
+both answered 0. **A run lowered its own bar and reached deliverable**, which invariant 1 forbids.
+
+Neither refusal nor the downgrade reaches it. Closing it is a choice between refusing a run that
+edits its own evaluator, grading such a run with the base copy of that evaluator, or recording the
+move and finding something able to act on it — open on #66, and nothing is built until it is answered.
 
 #### Pinned is not governed
 
