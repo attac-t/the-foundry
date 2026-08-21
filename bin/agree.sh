@@ -12,7 +12,9 @@ main() {
 
     [ "${1:-check}" = audit ] && { audit; exit $?; }
 
-    gates_run > "$listed"
+    gates_run > "$listed" \
+        || { printf 'FAIL — no gates run here. This gate read nothing.\n'; exit 3; }
+
     disagree CONTRIBUTING "$(named_in_contributing)"
     disagree workflow "$(named_in_workflow)"
 
@@ -23,7 +25,20 @@ root() { cd "$(dirname "$0")/.." && pwd; }
 
 # --- the three lists ---
 
-gates_run() { sh bin/gates.sh list | sort -u; }
+#
+# **A list that could not be produced is not a list nobody disagrees with.** Two empty lists have
+# nothing in one and not the other, so `disagree` passed both and `verdict` printed `AGREED — 0
+# gates`. The gate that binds the gate list said yes over an empty set.
+#
+# Captured before the pipe, which reports `sort` and not `sh` — #185's family, in the one interpreter
+# `bin/shell.sh`'s pattern does not name.
+#
+gates_run() {
+    said=$(sh bin/gates.sh list) || return 1
+    [ -n "$said" ] || return 1
+
+    printf '%s\n' "$said" | sort -u
+}
 
 # The rows of the table under the gate heading, first cell only.
 named_in_contributing() {
@@ -84,13 +99,17 @@ verdict() {
 # would report every break caught and exit 0.
 #
 audit() {
-    caught "the lab agrees before anything is broken" none '' \
-        || { printf '  FAIL  the lab does not work, so nothing below proves anything\n'; return 1; }
+    caught "the lab agrees before anything is broken" 0 none ''
 
-    caught "a gate missing from CI"                workflow 's/, panel\]/]/'
-    caught "a gate swapped for another"            workflow 's/panel\]/pest]/'
-    caught "a duplicate hiding a gate"             workflow 's/, panel\]/, floor]/'
-    caught "a gate dropped from CONTRIBUTING"      contributing '/^| `versions` |/d'
+    caught "a gate missing from CI"                1 workflow 's/, panel\]/]/'
+    caught "a gate swapped for another"            1 workflow 's/panel\]/pest]/'
+    caught "a duplicate hiding a gate"             1 workflow 's/, panel\]/, floor]/'
+    caught "a gate dropped from CONTRIBUTING"      1 contributing '/^| `versions` |/d'
+
+    # A gate list that could not be produced is not a list nobody disagrees with, and it is not a
+    # rule broken either. The two exits are different remedies: one edits a document, the other
+    # says the list itself did not come.
+    caught "a gate list that could not be produced" 3 gates '1a exit 9'
 
     [ "$disagreed" -eq 0 ] || return 1
     printf 'THE CHECK CAN FAIL\n'
@@ -98,25 +117,40 @@ audit() {
 
 # `sed` to a new file: the in-place flag is GNU's, and BSD reads its argument as a backup suffix.
 caught() {
-    fresh_lab || { printf '  FAIL  %s — no lab\n' "$1"; disagreed=$((disagreed + 1)); return 1; }
+    name=$1; want=$2; target=$3; mutation=$4
 
-    [ "$2" = none ] || break_it "$2" "$3" \
-        || { printf '  FAIL  %s — the break did not apply\n' "$1"; disagreed=$((disagreed + 1)); return 1; }
+    fresh_lab || { note_failure "$name — no lab"; return 1; }
+
+    [ "$target" = none ] || break_it "$target" "$mutation" \
+        || { note_failure "$name — the break did not apply"; return 1; }
 
     sh "$lab/bin/agree.sh" >/dev/null 2>&1; agreed=$?
-    [ "$2" = none ] && { want=0; } || { want=1; }
 
-    [ "$agreed" -ne "$want" ] && { printf '  FAIL  %s\n' "$1"; disagreed=$((disagreed + 1)); return 1; }
-    printf '  ok    %s\n' "$1"
+    [ "$agreed" -eq "$want" ] || { note_failure "$name — exited $agreed, not $want"; return 1; }
+    printf '  ok    %s\n' "$name"
+}
+
+note_failure() {
+    printf '  FAIL  %s\n' "$1"
+    disagreed=$((disagreed + 1))
 }
 
 fresh_lab() {
     rm -rf "$lab" && mkdir -p "$lab" && cp -R "$(root)"/. "$lab"/ 2>/dev/null
 }
 
+# Which file a break edits. Named rather than branched: a third target turned two `&&` lines into a
+# ladder.
+broken_file() {
+    case "$1" in
+        workflow) printf '%s' "$lab/.github/workflows/gates.yml" ;;
+        gates)    printf '%s' "$lab/bin/gates.sh" ;;
+        *)        printf '%s' "$lab/CONTRIBUTING.md" ;;
+    esac
+}
+
 break_it() {
-    file="$lab/CONTRIBUTING.md"
-    [ "$1" = workflow ] && file="$lab/.github/workflows/gates.yml"
+    file=$(broken_file "$1")
 
     sed "$2" "$file" > "$file.broken" && mv "$file.broken" "$file"
 }

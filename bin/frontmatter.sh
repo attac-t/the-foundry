@@ -62,6 +62,12 @@ checked = (
     + len(list(pathlib.Path("plugins").glob("*/commands/*.md")))
 )
 
+# Nothing to check is not a clean check. `bin/shell.sh` wrote this convention and floor uses it in
+# three places: a gate given nothing to read exits 3 and says so.
+if not checked:
+    print("FAIL — no plugin components found. This gate read nothing.")
+    sys.exit(3)
+
 if not failures:
     print(f"PASS — {checked} components carry the frontmatter that registers them.")
     sys.exit(0)

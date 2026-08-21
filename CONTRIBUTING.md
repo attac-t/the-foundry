@@ -28,6 +28,9 @@ eight and is not one of them. `panel` was advertised here and absent from CI for
 | `floor` | the plugin does not run — checked on Linux, macOS and Windows |
 | `panel` | a review round accepts a prior verdict that does not exist, or belongs to another review |
 
+**A gate that could not read its inputs exits 3, and says so.** It never reports a pass over an
+empty set — nothing to check is not a clean check. `bin/shell.sh`'s header holds the codes.
+
 `shell` reads `plugins/*/bin`, `lib` and `hooks` — never `tests/`, which are bash on purpose. It
 gates a number, not craft-sh's rule: length is the *signal* that another function is merited, and no
 exit code reads a signal. Two bodies in `floor` are past 40 already and named in the gate as debt,
