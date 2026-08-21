@@ -6,6 +6,8 @@
 # round. An oracle costs an exit code and never gets tired.
 #
 # Usage: bin/repeats.sh [files...]   (defaults to every tracked markdown file)
+#
+# Exit: 0 clean, 1 a rule broken, 3 the gate could not read.
 
 set -euo pipefail
 
@@ -21,7 +23,9 @@ if [ "$#" -eq 0 ]; then
     files+=("$line")
   done < <(git ls-files '*.md' | grep -v -e '^\.claude/' -e 'PULL_REQUEST_TEMPLATE')
 fi
-[ "${#files[@]}" -gt 0 ] || { echo "No files to check."; exit 0; }
+# An empty list is not a list nobody repeats a sentence in. `git ls-files` answers empty from
+# outside a repository and from one holding no markdown, and both used to read as clean.
+[ "${#files[@]}" -gt 0 ] || { echo "FAIL — no markdown found. This gate read nothing."; exit 3; }
 
 # Collapse newlines so a wrapped sentence still matches — but only within a paragraph. Fences,
 # headings and blank lines emit "." to end a sentence rather than fuse the text either side of them.
