@@ -57,14 +57,20 @@ cut_up() {
 
 # One line per sentence, tab, the file it came from. Tagging via awk, not sed — BSD sed emits a
 # literal "t" for \t and would corrupt the delimiter without failing.
+# `grep` answers 1 when it filters everything out, which is what a file holding no sentence
+# between MIN and MAX looks like. Under `pipefail` that ended the script at whichever
+# file sorted last, silently. 2 is a real failure and still is.
+without_noise() {
+  grep -Ev "$NOISE" || [ "$?" -eq 1 ]
+}
+
 sentences=$(
   for file in "${files[@]}"; do
     [ -f "$file" ] || continue
     paragraphs "$file" \
       | cut_up \
       | sed 's/  */ /g; s/^ //' \
-      | grep -Ev "$NOISE" \
-      | awk -v file="$file" '{ print $0 "\t" file }'
+      | without_noise \n      | awk -v file="$file" '{ print $0 "\t" file }'
   done
 )
 
