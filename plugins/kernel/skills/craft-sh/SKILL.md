@@ -55,6 +55,9 @@ Seven lines, the whole story. The test: **can a stranger describe the script aft
    **Needing one is evidence against the function.** A comment explaining *what* a body does means
    the name is wrong or the body is two jobs — fix that first, and the comment leaves on its own. A
    preamble longer than the function it introduces is the clearest form of the tell.
+   **Three lines, tapering.** No `#` fence and no bold — the blank line already separated it, and a
+   sentence that matters goes first instead. Each line is shorter than the one above, so the block
+   narrows to a point and the eye finds its end without counting.
 9. **`shellcheck` passes.** Not optional.
 10. **One name, one meaning.** Every variable is global unless you say otherwise, so a name that
     means two things is a bug waiting for a refactor.
@@ -75,6 +78,8 @@ Seven lines, the whole story. The test: **can a stranger describe the script aft
 | A banner above a labelled step | The label alone                 | The script says it twice               |
 | Inlining a helper used once    | Naming it anyway                | The call-site reads as a sentence      |
 | A comment that counts lines    | Say what the code does          | It rots the next time one moves        |
+| A `#` fence around a comment   | The comment                     | The blank line already separated it    |
+| A block that widens as it goes | Break the lines so it narrows   | A taper ends; a wall has to be scanned |
 | A name that hides what returns | `unit_targets_file`             | The call-site should read as what it gets |
 | `echo` everywhere              | `step`, `note`, `fail`          | One voice, one place to change         |
 | Bare `exit 1`                  | Documented exit codes           | The caller cannot branch on "it broke" |
