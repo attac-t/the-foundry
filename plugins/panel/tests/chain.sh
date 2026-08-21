@@ -44,6 +44,19 @@ has   "and says it is a new chain" "$(chain_says next "$a")" "this is a new chai
 verdict "$a" 001 adversary "the charter"
 is "and counts on from what is there" "$(chain next "$a")" "002"
 
+# --- what a round is ---
+
+#
+# A round is a positive whole number, and every other shape used to reach round one's exemption —
+# the one round `prior` lets through without a record.
+#
+is "a round that is a word is refused"     "$(code_of chain prior "$a" abc 'the charter')" "2"
+is "a round of zero is refused"            "$(code_of chain prior "$a" 000 'the charter')" "2"
+is "a negative round is refused"           "$(code_of chain prior "$a" -5  'the charter')" "2"
+has "and says what a round is"             "$(chain_says prior "$a" abc 'the charter')" "positive whole number"
+
+is "round one still needs no prior"        "$(code_of chain prior "$a" 001 'the charter')" "0"
+
 # --- round 1 has no history ---
 
 is "round 1 asks for no prior"  "$(chain prior "$a" 001 'the charter')" ""

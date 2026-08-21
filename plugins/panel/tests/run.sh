@@ -51,6 +51,11 @@ wreck "a chain that answers without a prior verdict is caught" \
 wreck "a chain that accepts any review's verdict is caught" \
   anyreview 's|grep -Fq -- "$review" "$file"|true|'
 
+# A round that is not a round reached the exemption round 1 has. Exit 2 is *asked for something this
+# does not do*; 1 is *a prior was claimed and nothing records it*. Different remedies.
+wreck "a round that is not a round answered as round one is caught" \
+  anyround 's|^    refuse_unless_a_round "$round"$|    :|'
+
 # Round 1 has no prior and must not be made to invent one; every later round must look.
 wreck "a chain where no round ever looks back is caught" \
   neverlook 's#^    \[ "$want" -ge 1 \] .*$#    return 0#'
