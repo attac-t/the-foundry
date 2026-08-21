@@ -61,6 +61,7 @@ main() {
         new)       make_run "${1:-}" ;;
         path)      print_active_run ;;
         home)      print_home ;;
+        runs)      list_runs "$@" ;;
         bootstrap) print_bootstrap ;;
         targets)   targets "$@" ;;
         policy)    policy "$@" ;;
@@ -83,6 +84,7 @@ floor — where work happens.
   run.sh new <title>              make a run, and point this checkout at it
   run.sh path                     print the active run's directory, or exit 1
   run.sh home                     print the Foundry home
+  run.sh runs                     every run this home holds, and how far each one got
   run.sh bootstrap                print the run's bootstrap target, or exit 1
   run.sh targets                  list unit 01's targets
   run.sh targets add <repo> <ref> add one
@@ -133,6 +135,33 @@ foundry_home() {
 }
 
 print_home() { printf '%s\n' "$HOME_DIR"; }
+
+# Every run this home holds, and how far each one got. The only verb not
+# scoped to the active run — selection lived in whoever was
+# driving because nothing could answer what work exists.
+list_runs() {
+    [ "$#" -eq 0 ] || { usage; exit 2; }
+    [ -d "$RUNS" ] || return 0
+
+    for dir in "$RUNS"/*/; do
+        [ -d "$dir" ] || continue
+        printf '%s\t%s\n' "$(how_far "${dir%/}")" "$(basename "$dir")"
+    done
+}
+
+# The furthest thing a run's own files say about it, read downward so the first
+# that holds wins. A position and never a verdict: waiting needs the
+# work source, and a reader that reaches the network is not one.
+how_far() {
+    [ -s "$(delivery_file "$1")" ] && { printf 'delivered'; return; }
+    [ -s "$(evidence_file "$1")" ] && { printf 'graded';    return; }
+
+    [ -n "$(ls "$(unit_workspace "$1")" 2>/dev/null)" ]      && { printf 'open';     return; }
+    [ -n "$(selected_targets "$(unit_targets_file "$1")")" ] && { printf 'selected'; return; }
+    [ -s "$(charter_file "$1")" ]                            && { printf 'charted';  return; }
+
+    printf 'new'
+}
 
 make_run() {
     title=$1

@@ -58,6 +58,7 @@ says so. `deliver` needs credentials to push, and says so at exit 19. A machine 
 sh bin/run.sh new "Ship the gift card flow"
 sh bin/run.sh path
 sh bin/run.sh home
+sh bin/run.sh runs
 sh bin/run.sh bootstrap
 sh bin/run.sh targets
 sh bin/run.sh targets add https://github.com/acme/api.git main

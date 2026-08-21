@@ -2055,6 +2055,43 @@ a_run_nobody_selected_says_so() {
 }
 a_run_nobody_selected_says_so
 
+# How far each run got, from files other verbs already wrote. The only verb not scoped
+# to the active run, and the reason selection could live nowhere but in
+# whoever was driving — nothing else could say what work exists.
+a_home_says_what_it_holds() {
+  make_repo "$tmp/rl" main && set_origin "$tmp/rl" 'https://github.com/acme/rl.git' \
+    && mkdir -p "$tmp/rl/.foundry" \
+    && commit_file "$tmp/rl" .foundry/gates 'tests  true
+' || { skip "what a home holds — git could not make a repo here"; return; }
+
+  empty="$tmp/emptyhome"
+  is "a home with no runs answers nothing" \
+     "$( cd "$tmp/rl" && FOUNDRY_HOME="$empty" FOUNDRY_RUN="" sh "$runner" runs 2>/dev/null )" ""
+  is "and it is not an error"  "$(code_of floor_as "$tmp/rl" "$empty" "" runs)" "0"
+  is "runs takes no argument"  "$(code_of floor "$tmp/rl" runs 01)" "2"
+
+  # The ladder, one rung at a time, against the run this walks forward.
+  id=$(basename "$(floor_new_as "$tmp/rl" ada@example.com "Ladder")")
+  rung() { floor "$tmp/rl" runs | awk -v id="$id" '$2 == id { print $1 }'; }
+
+  is "a run with no charter is new"        "$(rung)" "new"
+  floor "$tmp/rl" charter derive >/dev/null 2>&1
+  is "a charter makes it charted"          "$(rung)" "charted"
+  floor "$tmp/rl" policy authorize 'https://github.com/acme/rl.git' >/dev/null 2>&1
+  floor "$tmp/rl" targets add 'https://github.com/acme/rl.git' main >/dev/null 2>&1
+  is "a selected target makes it selected"  "$(rung)" "selected"
+  floor "$tmp/rl" open >/dev/null 2>&1
+  is "a workspace makes it open"            "$(rung)" "open"
+  floor "$tmp/rl" gates >/dev/null 2>&1
+  is "a stamped gate makes it graded"       "$(rung)" "graded"
+
+  # `delivery` is the source's answer, and nothing else writes it — so this is the one rung a test
+  # writes by hand rather than earning. What it proves is the ladder's order, not the delivery.
+  printf 'work/x https://example.invalid/1\n' > "$(floor "$tmp/rl" path)/delivery"
+  is "and a recorded delivery outranks all of it" "$(rung)" "delivered"
+}
+a_home_says_what_it_holds
+
 #
 a_workspace_needs_authorisation() {
   make_repo "$tmp/wt" main && set_origin "$tmp/wt" 'https://github.com/acme/wt.git' \
