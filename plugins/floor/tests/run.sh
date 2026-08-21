@@ -926,6 +926,18 @@ wreck_runner "a question lookup that failed asking again is caught" \
 # GitHub's body index is eventually consistent — a lookup seconds after a delivery says nothing, which
 # is what opens a second delivery.
 
+
+# Two ways a run reaches the ask, and only one of them may. Inverting the guard asks about a clause
+# nobody introduced, which is #66's test failing — and the check that used to hold this ground read
+# `charter check`, a verb with no question in it.
+wreck_runner "a run asking when nothing blocks is caught" \
+  alwaysask 's#\[ -z "$introduced" \] ||#false ||#'
+
+# The exit code was checked and the sentence was not, so the one command that grants a target could
+# be dropped from the refusal and every check stayed green. The whole message goes, because the
+# remedy is written with backticks and GNU sed reads a backslashed one as the start of the buffer.
+wreck_runner "a refusal that names no remedy is caught" \
+  noremedy 's#note "not authorised for this run.*#note "not authorised"#'
 # Invariant 4 already refuses this run at `complete`. The break is the silence, not the refusal: a
 # second machine that hears it only after the work has done the work.
 wreck_runner "a run nobody selected made in silence is caught" \
