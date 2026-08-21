@@ -538,7 +538,10 @@ open_workspace() {
 $(selected_targets "$selection")
 EOF
 
-    point_slots_at_run "$root" "$(basename "$dir")"
+    point_slots_at_run "$root" "$(basename "$dir")" || {
+        note "[$root] holds a checkout nobody can join — its run pointer could not be written"
+        exit 16
+    }
     printf '%s\n' "$root"
 }
 
@@ -554,7 +557,7 @@ EOF
 point_slots_at_run() {
     for slot in "$1"/*/; do
         [ -d "$slot/.git" ] || continue
-        printf '%s\n' "$2" > "$slot/.git/foundry-run" 2>/dev/null
+        printf '%s\n' "$2" > "$slot/.git/foundry-run" || return 1
     done
 }
 
@@ -2071,9 +2074,9 @@ while_reading_gates() {
 
         refuse_moved_from_base "$source" "$sha" "$ref" || return 1
 
-        print_clause "$id" Gate "$name" >> "$draft"
-        print_pin    "$id" "$target" "$ref" "$source" "$sha" >> "$draft"
-        print_gate   "$id" "$command" >> "$draft"
+        print_clause "$id" Gate "$name" >> "$draft" || return 1
+        print_pin    "$id" "$target" "$ref" "$source" "$sha" >> "$draft" || return 1
+        print_gate   "$id" "$command" >> "$draft" || return 1
     done
     return 0
 }

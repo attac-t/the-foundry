@@ -986,6 +986,20 @@ records_unreadable() {
 
 # A declaration and a guess are different ranks. `awk` exits non-zero for a file naming no gate and
 
+
+# The run pointer is §4's join test, and `open` discarded the status that says it landed. The inner
+# guard matters for its own reason: with several slots only the last one's status survives a loop,
+# so the first failure has to stick.
+audit_the_unjoinable_slot() {
+  records_unreadable || {
+    printf '  skip  a slot nobody can join — this filesystem records no mode bits\n'
+    return
+  }
+
+  wreck_runner "a workspace whose pointer never landed is caught" \
+    nopointer 's#point_slots_at_run "$root" "$(basename "$dir")" || {#point_slots_at_run "$root" "$(basename "$dir")"; : || {#'
+}
+audit_the_unjoinable_slot
 # A file that is there and cannot be read is not a file nobody wrote. #200 taught the other adapter
 # this; the contract is unproven until two satisfy it — RFC-001 §8.
 audit_the_unreadable_item() {
