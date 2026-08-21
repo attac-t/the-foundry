@@ -1,7 +1,7 @@
 #!/bin/sh
 # Extracts objective from working.md
 #
-# Matches: **Objective**: text
+# Matches: Objective: text
 #
 # Usage: extract-objective.sh <path-to-working.md>
 # Output: objective text (or empty)

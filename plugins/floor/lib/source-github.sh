@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# A work source that is GitHub Issues. **The first adapter, and not the model.**
+# A work source that is GitHub Issues. The first adapter, and not the model.
 #
 # Needs `gh`, which floor does not declare — so floor reaches this only where the remote is GitHub
 # *and* `gh` is there, and `source-dir.sh` answers otherwise. §3's level 1, both halves.
@@ -10,11 +10,11 @@
 #
 #     floor-question: <question> <digest of the words>
 #
-# **The marker carries a digest, not the words.** Asking twice with the same words is one question
+# The marker carries a digest, not the words. Asking twice with the same words is one question
 # and different words are refused, and comparing them means recovering the first ones out of a
 # transcript GitHub formats however it likes. A digest needs no recovery and no parser.
 #
-# **Only the question is marked.** An answer is whatever a person wrote next — a marker they have to
+# Only the question is marked. An answer is whatever a person wrote next — a marker they have to
 # type is a command language, and the first person who met one answered and went unheard.
 #
 # Usage: sh source-github.sh read    <issue>
@@ -33,7 +33,7 @@ command -v gh >/dev/null 2>&1 || { echo "source-github: gh is not here" >&2; exi
 #
 # The issue's own words, and no interpretation of them. A transport carries; it does not read.
 #
-# **A source that could not be asked is not an item that is not there.** `gh` exits 1 for both, so its
+# A source that could not be asked is not an item that is not there. `gh` exits 1 for both, so its
 # message is not what tells them apart. A second question is: a repository cannot be absent and an
 # issue can — measured, bad credentials fail both, and a missing issue fails only the first.
 #
@@ -123,12 +123,12 @@ read_answer() {
 #
 # Every comment on the item, as bodies, with a boundary this file chose.
 #
-# **`--comments` is `gh`'s human transcript, and a layout is not a contract.** It changes without
+# `--comments` is `gh`'s human transcript, and a layout is not a contract. It changes without
 # notice, and on a client old enough for GitHub to reject its GraphQL it stopped being fetchable at
 # all — `projectCards`, which nothing here asked for. `--json comments` returns the field on every
 # client tested, and `--jq` is `gh`'s own, so this declares no parser.
 #
-# **A body holding a line that is exactly the boundary spoofs one.** The transcript had the same
+# A body holding a line that is exactly the boundary spoofs one. The transcript had the same
 # exposure through `author:` and its rule line; the difference is that this line is ours to change.
 #
 # Captured before it is handed anywhere: a pipeline reports its last stage, and `awk` succeeds on
@@ -151,7 +151,7 @@ comments_of() {
 # The words after a marker, in the first comment carrying it. No boundary is needed — the first line
 # holding the mark is the one.
 #
-# **A read that failed is not a question nobody asked.** Empty is what `put_question` reads as *not
+# A read that failed is not a question nobody asked. Empty is what `put_question` reads as *not
 # asked yet*, and it answers by asking — so a resumed run whose lookup hit a network put the question
 # to the human twice.
 #
@@ -166,7 +166,7 @@ after_marker() {
 # What people said after this question, and never another question.
 #
 # The marked comment holds the ask, so its own body is skipped — reading it would authorise a clause
-# with the words that asked about it. The answer is whatever the **next** comment says.
+# with the words that asked about it. The answer is whatever the next comment says.
 #
 # Questions bound this at both ends. One is asked per unauthorised clause, so several stand open at
 # once, and the next one beginning means this one was passed over rather than answered.

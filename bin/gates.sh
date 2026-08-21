@@ -17,7 +17,7 @@ mode=${1:-run}
 failed=0
 
 #
-# The same gates, on Linux. Not a convenience: on macOS and under Git Bash `sh` **is** bash and takes
+# The same gates, on Linux. Not a convenience: on macOS and under Git Bash `sh` is bash and takes
 # `&>` and `[[ =~ ]]` without a word, and every runner here opens `#!/bin/sh`.
 #
 # Copied in, not written through the mount — the suites write, and their leavings would land in your

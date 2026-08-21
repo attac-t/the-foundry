@@ -45,11 +45,9 @@ note() { printf 'panel: %s\n' "$1" >&2; }
 # Verdict files are `NNN-<role>-verdict.md`. The number is the round.
 rounds() { ls "$1" 2>/dev/null | sed -n 's/^\([0-9][0-9]*\)-.*-verdict\.md$/\1/p'; }
 
-# The round after the last one recorded.
-#
-# **It says which, and still answers.** Refusing is wrong: a coordinator asks this before the
-# directory exists, so nothing there is what a new review looks like. A mistyped path looks the same,
-# and `001` is the one round `prior_round` exempts.
+# The round after the last one recorded. It says which and still answers: a coordinator asks this
+# before the directory exists, so nothing there is what a new review looks like. A
+# mistyped path looks the same, and `001` is the round `prior_round` exempts.
 next_round() {
     [ -n "$1" ] || { note "next needs a verdicts directory"; exit 2; }
 
@@ -62,15 +60,10 @@ next_round() {
 # The highest round recorded, or nothing. Nothing is what a chain with no rounds looks like.
 last_round() { rounds "$1" | sort -n | tail -1 | sed 's/^0*//'; }
 
-#
-# A round is a positive whole number.
-#
-# **Anything else reached round one's exemption**, which is the one round that needs no prior — so a
-# malformed round skipped the check by being malformed. `000` and `-1` computed a `want` below 1 and
-# returned 0; a word made the arithmetic read it as a variable name and `set -u` refused with a shell
-# error and exit 1, which this file's header reserves for *a prior was claimed and no verdict records
-# it*.
-#
+# A round is a positive whole number. Anything else reached round one's exemption, the one round
+# that needs no prior, so a malformed round skipped the check by being malformed. `000` and
+# `-1` computed a want below 1; a word made `set -u` refuse with a shell error at
+# exit 1, which this file's header reserves for a prior nothing records.
 refuse_unless_a_round() {
     case "$1" in ''|*[!0-9]*) not_a_round "$1" ;; esac
 
