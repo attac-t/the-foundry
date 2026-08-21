@@ -1894,6 +1894,36 @@ a_gate_runs_where_the_unit_owns_the_checkout() {
 a_gate_runs_where_the_unit_owns_the_checkout
 
 #
+# A gate whose command is not on this host never ran. Recording that as a failure costs the run the
+# ref: `satisfied` wants one pass and no failure there, the ledger is append-only, and a new commit
+# is the only way out. So the work is unreachable from the commit it was done on.
+#
+a_gate_the_host_cannot_run() {
+  make_repo "$tmp/nr" main && set_origin "$tmp/nr" 'https://github.com/acme/nr.git' \
+    && mkdir -p "$tmp/nr/.foundry" \
+    && commit_file "$tmp/nr" .foundry/gates 'tests  notonanyhost --run
+' || { skip "a gate the host cannot run — git could not make a repo here"; return; }
+
+  ready_run "$tmp/nr" 'https://github.com/acme/nr.git'
+
+  is  "a gate whose command is not here refuses on its own code" \
+      "$(code_of floor "$tmp/nr" gates)" "21"
+  has "and says which command"  "$(floor_says "$tmp/nr" gates)" "notonanyhost"
+  is  "and stamps nothing at that ref" "$(floor "$tmp/nr" evidence)" ""
+
+  # Give the host the tool it never had. Nothing else changes — same run, same workspace, same ref.
+  mkdir -p "$tmp/nrbin"
+  printf '#!/bin/sh\nexit 0\n' > "$tmp/nrbin/notonanyhost"
+  chmod +x "$tmp/nrbin/notonanyhost"
+
+  is "with the command installed, the same ref passes" \
+     "$( PATH="$tmp/nrbin:$PATH"; code_of floor "$tmp/nr" gates )" "0"
+  is "and the run may deliver from it" \
+     "$( PATH="$tmp/nrbin:$PATH"; code_of floor "$tmp/nr" complete )" "0"
+}
+a_gate_the_host_cannot_run
+
+#
 # A workspace is where mutation happens, so it may not exist for a run nobody authorised. `authorise`
 # holds twelve reasons and this restates none of them.
 #

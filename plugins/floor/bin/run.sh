@@ -38,6 +38,8 @@
 #      would each send the reader to a remedy that changes nothing
 #  20  the work source could not be asked — a tool that is not there, a credential it refused, a
 #      network. Not 1: that is the source answering, and answering that nothing is there
+#  21  a gate's command is not on this host, so nothing was graded and nothing is recorded. Not 14:
+#      that is a gate answering, and its answer stands at that ref for good
 #
 # Eight through twelve are one stage and five remedies: write a requirement down, select a target it
 # governs, or start again. Collapsing them would make the exit code say *authorisation refused* and
@@ -1100,6 +1102,20 @@ enter_work_tree() {
 }
 
 #
+# A command this host could not run, told from one that ran and lost.
+#
+# **Stamping the first as the second poisons the ref for good.** `satisfied` reads the ledger
+# conjunctively — one pass and no failure at that ref — and the ledger is append-only, so a row
+# saying a gate failed can never be taken back. Install the missing tool, watch every gate pass,
+# and the run still refuses to deliver at the commit the work was done on.
+#
+# POSIX gives the shell 127 for a command it could not find and 126 for one it could not execute.
+# **A gate choosing either as its own failure code is misread here**, and that costs a run which
+# says *unmet* where it should say *failed* — blocked either way, and recoverable rather than not.
+#
+never_ran() { [ "$1" -eq 126 ] || [ "$1" -eq 127 ]; }
+
+#
 # Run it, and stamp what happened. The only path to a `machine` record, and it takes the ref rather
 # than reading one — `gates` grades every gate against the tree it asked about, not against whatever
 # an earlier gate left behind.
@@ -1113,6 +1129,8 @@ stamp_command() {
     # the run answered 0. Closing it here rather than at the loop covers `evidence record` too — a
     # recorded command that reads the caller's terminal is evidence of something nobody can repeat.
     why=$("$@" </dev/null 2>&1); result=$?
+
+    never_ran "$result" && { note "[$name] could not run on this host: $why"; exit 21; }
 
     stamp "$dir" machine "$name" "$result" "$ref" "$why"
     return "$result"
