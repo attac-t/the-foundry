@@ -971,6 +971,32 @@ wreck_runner "an answer that could not be read passing for silence is caught" \
 wreck_runner "a source that could not be asked reported as empty is caught" \
   unasked 's#exit 20#exit 1#'
 
+
+# Whether `chmod 000` means anything here. Windows records no read bit and root ignores the one it
+# finds, so the break below would report a rule held for a reason that is not the rule.
+records_unreadable() {
+  probe="$tmp/read-probe"
+  : > "$probe"
+  chmod 000 "$probe" 2>/dev/null
+  unreadable=1; [ -r "$probe" ] && unreadable=0
+  chmod 644 "$probe" 2>/dev/null
+
+  [ "$unreadable" -eq 1 ]
+}
+
+# A declaration and a guess are different ranks. `awk` exits non-zero for a file naming no gate and
+# for one it could not open, and dropping the read guard puts both back on the same footing — so a
+# repository's bar becomes whatever detection finds.
+audit_the_unreadable_declaration() {
+  records_unreadable || {
+    printf '  skip  a declaration read as a guess — this filesystem records no read bit\n'
+    return
+  }
+
+  wreck_runner "a declaration it could not read becoming a guess is caught" \
+    unreadable 's#\[ -r "$dir/.foundry/gates" \] || return 22##' lib/detect-gates.sh
+}
+audit_the_unreadable_declaration
 # The check this breaks is the one skipped where `gh` is installed, so this is skipped there too. Both
 # run under `sh bin/gates.sh linux`, whose image has no `gh` — which is the whole point of the rule.
 audit_the_missing_half() {

@@ -40,6 +40,8 @@
 #      network. Not 1: that is the source answering, and answering that nothing is there
 #  21  a gate's command is not on this host, so nothing was graded and nothing is recorded. Not 14:
 #      that is a gate answering, and its answer stands at that ref for good
+#  22  the repository declares a bar in a file that is there and cannot be read. Not 8: that is a
+#      charter holding no clause, and this is one nobody could derive. The remedy is the file
 #
 # Eight through twelve are one stage and five remedies: write a requirement down, select a target it
 # governs, or start again. Collapsing them would make the exit code say *authorisation refused* and
@@ -1539,6 +1541,7 @@ authorise() {
     # is untouched.
     refuse_wrong_repository "$run_dir"
     refuse_missing_resolver
+    refuse_unreadable_declaration
 
     #
     # Condition 3 — a clause the pins still derive is gone. `underived_gates` already computes it and
@@ -1847,7 +1850,23 @@ gate_resolver() { printf '%s' "${FOUNDRY_GATES:-$(dirname "$0")/../lib/detect-ga
 # `charter derive` one level down found no gates, wrote an empty charter, and exited 0 — the silent
 # emptying `dropped_clauses` exists to refuse, arriving through the front door instead.
 #
-detect_gates() { sh "$(gate_resolver)" "$(repo_root)" 2>/dev/null; }
+detect_gates() { sh "$(gate_resolver)" "$(repo_root)"; }
+
+#
+# A bar the repository declares and nothing here can read.
+#
+# Beside `refuse_missing_resolver` at all three readers, because the answer is the same shape: the
+# resolver cannot do its job, and a stage that carries on grades against a guess. In `derive` it is
+# also ahead of `refuse_moved_resolution`, which sees a base declaring gates this checkout does not
+# and reports a move — true of the answer, wrong about the cause, and it names the wrong remedy.
+#
+refuse_unreadable_declaration() {
+    detect_gates >/dev/null
+    [ "$?" -ne 22 ] && return 0
+
+    note "the bar this repository declares cannot be read"
+    exit 22
+}
 
 #
 # The same question, asked of the base. A temporary worktree, because the resolver reads a directory
@@ -1857,7 +1876,7 @@ detect_gates_at_base() {
     scratch="${TMPDIR:-/tmp}/floor-base-$$"
 
     git worktree add --detach --quiet "$scratch" "$1" >/dev/null 2>&1 || return 1
-    sh "$(gate_resolver)" "$scratch" 2>/dev/null
+    sh "$(gate_resolver)" "$scratch"
     git worktree remove --force "$scratch" >/dev/null 2>&1
 }
 
@@ -1959,6 +1978,7 @@ derive_charter() {
     }
     refuse_wrong_repository "$dir"
     refuse_missing_resolver
+    refuse_unreadable_declaration
 
     # The base, not the branch. Derive through a name and a worker that commits has rewritten the
     # artifact its own bar comes from — RFC-001 invariant 1, issue #99.
@@ -2164,6 +2184,7 @@ check_charter() {
     # here, so without it the answer depends on which directory you happened to be in.
     refuse_wrong_repository "$dir"
     refuse_missing_resolver
+    refuse_unreadable_declaration
 
     # Captured, not accumulated in a variable: every reader below walks a pipe, and a count raised
     # inside one dies with its subshell. Output survives; a flag would not.
