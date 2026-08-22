@@ -1,6 +1,6 @@
 {
   "name": "floor",
-  "version": "0.25.0",
+  "version": "0.25.2",
   "description": "Where work happens. A run is one attempt at one work item, held outside every repository it changes.",
   "author": {
     "name": "Christian Attard",
