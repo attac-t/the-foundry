@@ -12,6 +12,10 @@ description: How to craft an atomic skill. Includes templates and registration.
 - **Atomicity**: One concept per file. If it does two things, split it.
 - **Brevity**: Less is more. No verbose explanations.
 - **Expertise**: Write *how an expert thinks*, not checklists.
+- **Eighty lines**: front matter and all. A skill is read into attention whole, so its length is what
+  crowds out the next one. Past the ceiling it is two skills, and the split is the fix.
+- **Atomic examples**: one subject per file, named for it, linked from the rule that needs it. A
+  single `examples.md` grows without limit because nothing about it is atomic.
 
 ## Choose a Template
 
@@ -27,7 +31,8 @@ description: How to craft an atomic skill. Includes templates and registration.
 ```
 plugins/{plugin-name}/skills/{skill-name}/
 ├── SKILL.md        # The skill definition
-└── examples.md     # Concrete code examples (if needed)
+├── shape.md        # One subject per file, named for it
+└── traps.md        # Another subject, another file
 ```
 
 **Naming**: Flat directories with prefix. `ground-vue/` not `ground/vue/`.
