@@ -27,6 +27,7 @@ main() {
     report_home
     report_work_source
     report_what_the_repository_carries
+    report_skills_the_rules_name
     say "joined."
 }
 
@@ -150,6 +151,49 @@ count_lines() {
     [ -r "$1" ] || { printf 'none'; return; }
 
     printf '%s' "$(grep -cv '^[[:space:]]*\(#\|$\)' "$1" 2>/dev/null || printf '0')"
+}
+
+
+#
+# The skills this repository's rules name, and whether this host can reach them.
+#
+# A rule saying "invoke `kernel:craft-sh` before the first character" does nothing on a host where
+# kernel is not enabled, and nothing said so. The session read the rule, could not
+# reach the skill, and carried on — the silent failure this command exists for.
+#
+# The repository states the need by naming skills in its rules. The host states what it has. Neither
+# is written into the other, and nothing here installs anything.
+#
+report_skills_the_rules_name() {
+    root=$(git rev-parse --show-toplevel)
+    named=$(skills_named_in "$root/.claude/rules")
+
+    [ -n "$named" ] || { say "skills  none named in .claude/rules"; return; }
+
+    for skill in $named; do
+        say "skill   $skill$(reachable "${skill%%:*}")"
+    done
+}
+
+# `plugin:skill`, wherever a rule writes one. A rule is prose, so the mention is the declaration —
+# there is no second list to drift from it.
+skills_named_in() {
+    [ -d "$1" ] || return 0
+
+    grep -rhoE '[a-z][a-z-]*:[a-z][a-z-]*' "$1" 2>/dev/null \
+        | grep -vE '^(https?|file|note|usage|exit|see|why|no):' \
+        | sort -u
+}
+
+# Enabled, not merely installed: an installed plugin that is switched off is a skill nobody can
+# invoke. Read from the settings file rather than the plugin directory for that reason.
+reachable() {
+    settings="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/settings.json"
+
+    [ -r "$settings" ] || { printf '  — cannot tell, no %s' "$settings"; return; }
+    grep -q "\"$1@" "$settings" && return
+
+    printf '  — NOT enabled on this host'
 }
 
 say() { printf '%s\n' "$1"; }

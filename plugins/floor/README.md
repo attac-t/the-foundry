@@ -37,11 +37,17 @@ who     you@example.com
 source  a directory, and the remote is GitHub. Install gh, or Issues stay unreachable.
 grants  2 in .foundry/practice
 gates   1 in .foundry/gates
+skill   kernel:craft-sh
+skill   signal:economy  — NOT enabled on this host
 joined.
 ```
 
-The host's half is above the line, the repository's below it. Neither is written into the other, and
-this command writes neither.
+The host's half is above the line, the repository's below it. Neither is written into the other,
+and this command writes neither.
+
+A rule that names a skill is the declaration — there is no second list. `shell.md` says *invoke
+`kernel:craft-sh` before the first character*, and on a host where kernel is off that rule does
+nothing and says nothing. Now it says.
 
 Exit 1 is something the host must supply. Exit 3 is not a repository this can join.
 
