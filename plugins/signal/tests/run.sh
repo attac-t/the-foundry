@@ -74,7 +74,8 @@ done
 echo "audit — break it on purpose, the suite must notice"
 
 audit "a scorer that never blocks is caught"     's/^  exit (verdict.*/  exit 0/'                      nostop
-audit "a dead long-word check is caught"         's/^  if (long_pct > long_block).*/  dead = 0/'       longblock
+audit "a dead long-word check is caught"         's/^  if (long_pct > long_block.*/  dead = 0/'       longblock
+audit "a block with no minimum count is caught"   's/ \&\& hard_words >= long_min//'                  nomincount
 audit "a dead sentence check is caught"          's/^  if (longest  > sent_block).*/  dead = 0/'       sentblock
 audit "a dead word-budget check is caught"       's/^  if (prose_words > words_block).*/  dead = 0/'   wordblock
 audit "a dead long-word warn band is caught"     's/^  if (long_pct > long_warn).*/  dead = 0/'        longwarn
