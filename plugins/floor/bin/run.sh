@@ -365,8 +365,36 @@ point_this_checkout_at() {
 }
 
 active_run() {
-    named_run && return 0
-    pointed_run
+    named_run     && return 0
+    pointed_run   && return 0
+    enclosing_run
+}
+
+#
+# The run this shell is standing in. A workspace lives inside its run, so a person handed
+# only that path can act on it — RFC-001 §4 calls that the test of whether the
+# decomposition was right, and it answered nothing before this.
+#
+# Last, never first. A named run and a pointed checkout are both something a human chose; this is
+# only where the shell happens to be, and it must not outrank either.
+#
+enclosing_run() {
+    dir=$(pwd -P 2>/dev/null) || return 1
+
+    while [ "$dir" != "/" ] && [ -n "$dir" ]; do
+        is_a_run "$dir" && { printf '%s' "$dir"; return 0; }
+        dir=$(dirname "$dir")
+    done
+
+    return 1
+}
+
+# The run's own name for itself, matching the directory holding it. A copy under another parent keeps
+# its name and passes here, which is the same hole `refuse_renamed_run` records — closing it
+# needs an identity the filesystem cannot supply.
+is_a_run() {
+    [ -f "$1/id" ] || return 1
+    [ "$(recorded_id "$1")" = "$(basename "$1")" ]
 }
 
 # `-d` matches the check kernel makes before it moves memory. Drop it and floor calls a run active

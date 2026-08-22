@@ -1201,6 +1201,11 @@ wreck_runner "a derive that says nothing is caught" \
 wreck_runner "a yes that outranks a no is caught" \
   onlyyes 's#        $5 != "0" { no  = 1 }#        $5 != "0" { }#'
 
+# A shell standing in a run that cannot name it. Joining needed no new noun, only this lookup, and
+# without it a workspace handed to a second person answers nothing.
+wreck_runner "a run that cannot be found from inside it is caught" \
+  nofeet 's#^    enclosing_run$#    return 1#'
+
 # Both halves of `send_delivery` answer 19 now. Sharing 1 with `ask` put a rejected delivery and a
 # run that was never made behind one code.
 wreck_runner "a delivery refusal wearing another verb's code is caught" \

@@ -191,6 +191,45 @@ is "a variable pointing at nothing falls through to the pointer" \
 is "and with no pointer either, it is no run" \
    "$(floor_as "$tmp/bare" "$home" "$tmp/never" path)" ""
 
+
+#
+# A shell standing inside a run, handed nothing else.
+#
+# RFC-001 §4 calls this the test of whether the decomposition was right — a person joins by opening a
+# shell in the workspace and reading the run. The nouns were right and the verb answered
+# nothing: `path` was silent there and `gates` refused.
+#
+# Last of the three, never first. A named run and a pointed checkout are what a human chose; this is
+# where a shell happens to be.
+#
+a_shell_standing_in_a_run() {
+  inside=$( cd "$first/units/01" 2>/dev/null \
+            && FOUNDRY_HOME="$home" FOUNDRY_RUN="" FOUNDRY_WHO="" sh "$runner" path 2>/dev/null )
+
+  is "a shell inside a run names it with nothing set" "$inside" "$first"
+
+  outside=$( cd "$tmp" 2>/dev/null \
+             && FOUNDRY_HOME="$home" FOUNDRY_RUN="" FOUNDRY_WHO="" sh "$runner" path 2>/dev/null )
+
+  is "and outside every run it is still no run" "$outside" ""
+
+  # A run answers to its own name. A directory copied under another parent keeps the name and passes
+  # here, which is the hole `refuse_renamed_run` already records.
+  moved="$tmp/moved-run"
+  rm -rf "$moved" && cp -R "$first" "$moved"
+
+  renamed=$( cd "$moved" 2>/dev/null \
+             && FOUNDRY_HOME="$home" FOUNDRY_RUN="" FOUNDRY_WHO="" sh "$runner" path 2>/dev/null )
+
+  is "a run whose directory was renamed is not one" "$renamed" ""
+
+  # The variable is what a human chose, so it wins over the floor underfoot.
+  named=$( cd "$first/units/01" 2>/dev/null \
+           && FOUNDRY_HOME="$home" FOUNDRY_RUN="$second" FOUNDRY_WHO="" sh "$runner" path 2>/dev/null )
+
+  is "a named run outranks the one being stood in" "$named" "$second"
+}
+a_shell_standing_in_a_run
 # A stale pointer is not a crash. The run it names was deleted; the answer is absence.
 a_pointer_at_a_deleted_run() {
   [ -d "$tmp/repo/.git" ] || { skip "a pointer at a deleted run — git could not make a repo here"; return; }
