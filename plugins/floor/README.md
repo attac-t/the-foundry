@@ -385,9 +385,18 @@ by the gate it agreed to.
 The base blob is planted in a tree holding the work, not the base tree checked out. That is why no
 gate changes: a script anchoring to its own root still lands on the work.
 
-**What a command reaches without naming is still open.** `bin/gates.sh` calls `bin/shell.sh` by
-relative path, and rewriting that second file is invisible to a substitution on the first. Closure is
-the hard half, and it is not built.
+**A command reaches more than it names.** So the substitution follows what a script *runs* — `sh x`,
+`bash x`, `. x`, `source x`, `awk -f x` — and what those run, to a fixed point. `bin/gates.sh` names
+no gate script; every one of them is reached this way.
+
+What a script only *mentions* is left alone. A gate naming a file in a message would otherwise have
+the run's own work graded as the base wrote it, which is the opposite failure — work nobody could
+ever pass.
+
+**A path built from a variable is not followed, and that is where this stops.** Here the boundary
+falls between the gate harness and the suites it invokes by expansion. A plugin's own suite is as
+often a run's work as it is its bar, so following it would make adding a test impossible. That is
+luck rather than design, and it is the residual.
 
 ### Monotonicity
 

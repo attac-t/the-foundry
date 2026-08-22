@@ -1352,11 +1352,88 @@ pinned_base() {
 }
 
 #
-# Every file a pinned command runs that this run has since changed, as `base<TAB>path`.
+# Every file a pinned command runs, and every file those run — to a fixed point.
 #
-# A command names its own script and nothing deeper, so this is what a pin can see. `bin/gates.sh`
-# invokes `bin/shell.sh` by relative path, and rewriting that stays invisible here — the closure
-# problem, named in the README rather than solved.
+# **What a script runs, never what it mentions.** A gate naming `README.md` in a message would have
+# the run's own README graded as the base wrote it, which is the opposite failure: work nobody could
+# ever pass.
+#
+# Only a literal path. A path built from a variable is not followed, and that boundary is where this
+# stops — stated in the README, because here it happens to fall between the gate harness and the
+# suites the harness invokes, which are as often a run's work as they are its bar.
+#
+closure_of() {
+    base=$1
+    shift
+    held=$(printf '%s\n' "$@" | sort -u)
+
+    while :; do
+        grown=$(printf '%s\n' "$held" | while read -r path; do
+                    [ -n "$path" ] || continue
+                    printf '%s\n' "$path"
+                    files_run_by "$base" "$path"
+                done | sort -u)
+
+        [ "$grown" = "$held" ] && break
+        held=$grown
+    done
+
+    printf '%s\n' "$held"
+}
+
+# Read from the base and from the work, both. A run that adds a call to a helper is invisible in the
+# base's copy, and one that removes a call is invisible in its own.
+#
+# Only what the base holds is yielded. A helper the run added has nothing to restore, and the script
+# that would call it is restored to a version that does not.
+files_run_by() {
+    named=$(both_versions "$1" "$2" | runs_these)
+
+    # A here-doc, and not a pipe. A path this yields is one the base holds, and a pipeline would
+    # answer for the loop rather than for the reads behind it.
+    while read -r path; do
+        [ -n "$path" ] || continue
+        git cat-file -e "$1:$path" 2>/dev/null && printf '%s
+' "$path"
+    done <<EOF
+$named
+EOF
+}
+
+# Both copies, as text. Either may be missing — a file the run added, or one it deleted — and a
+# missing copy is nothing to read rather than a failure to report.
+both_versions() {
+    base=$(git show "$1:$2" 2>/dev/null)
+    work=$(cat "$2" 2>/dev/null)
+
+    printf '%s
+%s
+' "$base" "$work"
+}
+
+# `sh x`, `bash x`, `. x`, `source x`, `awk -f x`. A word in one of those positions and nowhere else.
+runs_these() {
+    awk '{
+        for (i = 1; i < NF; i++) {
+            word = ""
+            if ($i == "sh" || $i == "bash" || $i == "." || $i == "source") word = $(i + 1)
+            if ($i == "-f" && i > 1 && $(i - 1) ~ /awk$/)                  word = $(i + 1)
+
+            gsub(/^[\047\042]|[\047\042]$/, "", word)
+            if (word ~ /^[A-Za-z0-9_.\/-]+$/) print word
+        }
+    }'
+}
+
+# The files a command names outright. A word that is no file here is an option, or the interpreter.
+named_files() {
+    for word in "$@"; do
+        [ -f "$word" ] && printf '%s\n' "$word"
+    done
+}
+
+#
+# Every file a pinned command reaches that this run has since changed, as `base<TAB>path`.
 #
 moved_gate_scripts() {
     printf '%s\n' "$2" | while read -r id command; do
@@ -1364,10 +1441,10 @@ moved_gate_scripts() {
         base=$(pinned_base "$1" "$id")
         [ -n "$base" ] || continue
 
-        for word in $command; do
-            [ -f "$word" ] || continue
-            git diff --quiet "$base" -- "$word" 2>/dev/null && continue
-            printf '%s\t%s\n' "$base" "$word"
+        for path in $(closure_of "$base" $(named_files $command)); do
+            git cat-file -e "$base:$path" 2>/dev/null || continue
+            git diff --quiet "$base" -- "$path" 2>/dev/null && continue
+            printf '%s\t%s\n' "$base" "$path"
         done
     done | sort -u
 }
