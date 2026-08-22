@@ -353,6 +353,23 @@ on it would make `check` useless for the shape it exists to support.
 Both drift findings exist because they catch different hands. Editing `.foundry/gates` moves a sha.
 Adding a file the detector prefers moves the answer while every pinned sha still matches.
 
+### A gate is graded as the base wrote it
+
+The pin covers `.foundry/gates`, the file the detector read. It does not cover `check.sh`, the file
+the command runs — so a run could rewrite the script grading it, record a pass, and deliver, while
+`check` answered 0 the whole time. Nothing a pin covers had moved.
+
+`gates` now takes each of those files from the base before it runs anything. **Only the gate's own
+file.** Everything else the run changed is still what is graded, and a run improving a gate is graded
+by the gate it agreed to.
+
+The base blob is planted in a tree holding the work, not the base tree checked out. That is why no
+gate changes: a script anchoring to its own root still lands on the work.
+
+**What a command reaches without naming is still open.** `bin/gates.sh` calls `bin/shell.sh` by
+relative path, and rewriting that second file is invisible to a substitution on the first. Closure is
+the hard half, and it is not built.
+
 ### Monotonicity
 
 The set of requirements may grow. It may never shrink.

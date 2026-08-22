@@ -1216,6 +1216,10 @@ wreck_runner "a delivery refusal wearing another verb's code is caught" \
 wreck_runner "a pass handed over for a pinned gate is caught" \
   handedover 's#^    refuse_a_pinned_name.*#    :#'
 
+# A run that rewrote the script its gate names recorded a pass and reached deliverable.
+wreck_runner "a gate the run rewrote itself is caught" \
+  basegate 's#^    enter_base_gates.*#    :#'
+
 report_breaks
 
 # --- break the install ---
