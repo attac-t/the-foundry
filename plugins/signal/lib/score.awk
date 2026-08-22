@@ -26,6 +26,13 @@ BEGIN {
   if (sent_block  == "") sent_block  = 45
   if (words_warn  == "") words_warn  = 120
   if (words_block == "") words_block = 600
+
+  # A share needs something to be a share of. Three long words in eleven is 27% and one word moves
+  # that nine points, so a terse line blocked for being terse — which is what the
+  # standard asks for. Five in fifteen is dense; three in eleven is a sentence.
+  #
+  # Four, and only on block. A warn costs nothing, so it keeps firing on the share alone.
+  if (long_min    == "") long_min    = 4
   fence = 0
 
   # A block edge. END turns each one into a full stop, so no sentence runs across one.
@@ -154,11 +161,11 @@ END {
         : 0
 
   verdict = "pass"; reason = ""
-  if (long_pct > long_warn)      { verdict = "warn"; reason = reason sep() sprintf("%.0f%% long words, aim for %d%%", long_pct, long_warn) }
+  if (long_pct > long_warn)  { verdict = "warn"; reason = reason sep() sprintf("%.0f%% long words, aim for %d%%", long_pct, long_warn) }
   if (longest  > sent_warn)      { verdict = "warn"; reason = reason sep() sprintf("longest sentence %d words, aim for %d", longest, sent_warn) }
   if (prose_words > words_warn)  { verdict = "warn"; reason = reason sep() sprintf("%d words, aim for %d", prose_words, words_warn) }
 
-  if (long_pct > long_block)     verdict = "block"
+  if (long_pct > long_block && hard_words >= long_min) verdict = "block"
   if (longest  > sent_block)     verdict = "block"
   if (prose_words > words_block) verdict = "block"
 
@@ -174,6 +181,7 @@ END {
   printf "words_warn=%d\n", words_warn
   printf "sent_warn=%d\n",  sent_warn
   printf "long_warn=%d\n",  long_warn
+  printf "long_min=%d\n", long_min
 
   printf "words=%d\n",      prose_words
   printf "measured=%d\n",   measured_words

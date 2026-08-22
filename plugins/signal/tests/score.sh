@@ -76,6 +76,26 @@ is "and nothing else fired" "$(without sent "$sentwarn")"    0
 is "the word count warns"   "$(verdict "$budgetwarn")"      1
 is "and nothing else fired" "$(without words "$budgetwarn")" 0
 
+
+#
+# A percentage over eleven words is arithmetic, not measurement.
+#
+# This reply was blocked at 27% long words. Three long words in eleven, and one word moves that nine
+# points. It was blocked for being short and dense, which is what the standard asks
+# for — `plain-english` says answer in one line and cut the words.
+#
+short='Nine PRs, main unmoved, and every open issue needs your decision — idling.'
+
+is "a short reply warns but does not block"    "$(verdict "$short")" 1
+is "and the ratio is still reported"           "$(field "$short" long_pct)" 27.3
+
+# The floor lifts nothing else. A short reply with one long sentence is still a long sentence.
+onesentence=$(for i in $(seq 1 46); do printf 'one '; done)
+is "a long sentence still blocks under the floor" "$(verdict "$onesentence")" 2
+
+# Above the floor the ratio decides as it always did.
+long=$(for i in $(seq 1 12); do printf 'Independent verification demonstrates considerable architectural sophistication throughout. '; done)
+is "a long reply still blocks on the ratio" "$(verdict "$long")" 2
 # --- the dodges ---
 
 fragmented='The elephant.
@@ -129,9 +149,9 @@ The elephant ate a banana. My family had a holiday. The computer rang the teleph
 is "an unclosed fence still counts" "$(verdict "$unclosed")" 2
 
 # A wall of product names must not water the share down. Names leave both sides of the fraction, so
-# the two long words here still carry it past the line. Left in the denominator alone, the same
-# text reads 20% and never blocks.
-dilution='We use PostgreSQL, TypeScript, MySQL and GraphQL comprehensively and additionally.'
+# the four long words here still carry it past the line. Left in the denominator alone, the same
+# text reads under 25% and never blocks.
+dilution='We use PostgreSQL, TypeScript, MySQL and GraphQL comprehensively, additionally, extensively and consistently.'
 is "names cannot dilute the share" "$(verdict "$dilution")" 2
 
 # --- what gets stripped ---
