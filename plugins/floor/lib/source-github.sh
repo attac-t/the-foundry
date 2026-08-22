@@ -226,13 +226,32 @@ land_delivery() {
     return 3
 }
 
+#
+# What the source says this work is. **The only place `foundry:` exists.**
+#
+# A repository Foundry does not own already has `bug`, `enhancement`, `blocked`. Reinterpreting those
+# makes a stranger's vocabulary into Foundry's authority, so a namespace is what keeps them apart —
+# `foundry:*` is Foundry's, everything else is the repository's, and nothing crosses.
+#
+# Core is told `defect`. How a source spells it is the adapter's, and that is the whole of the seam.
+#
+kind_of_item() {
+    said=$(gh issue view "$1" --json labels --jq '.labels[].name' 2>&1) || {
+        repository_answers || return 3
+        return 1
+    }
+
+    printf '%s\n' "$said" | awk '/^foundry:/ { sub(/^foundry:/, ""); print }'
+}
+
 case "${1:-}" in
     read)    shift; read_item        "${1:-}" ;;
+    kind)    shift; kind_of_item     "${1:-}" ;;
     publish) shift; publish_delivery "${1:-}" "${2:-}" "${3:-}" "${4:-}" ;;
     ask)     shift; put_question     "${1:-}" "${2:-}" "${3:-}" ;;
     receive) shift; read_answer      "${1:-}" "${2:-}" ;;
     state)   shift; delivery_state   "${1:-}" ;;
     land)    shift; land_delivery    "${1:-}" ;;
-    *)       echo "source-github: read <issue> | publish <issue> <run> <branch> <title> | ask <issue> <question> <text> | receive <issue> <question> | state <run> | land <run>" >&2
+    *)       echo "source-github: read <issue> | kind <issue> | publish <issue> <run> <branch> <title> | ask <issue> <question> <text> | receive <issue> <question> | state <run> | land <run>" >&2
              exit 2 ;;
 esac
