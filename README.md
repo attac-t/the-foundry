@@ -77,6 +77,8 @@ contracts bind, its revision log is history, and what runs now is each plugin's 
 
 Read [CONTRIBUTING.md](CONTRIBUTING.md). Eight gates, and they run before a pull request, not after.
 
+Found a security problem? [SECURITY.md](SECURITY.md) — report it privately, never as an issue.
+
 ---
 
 *Forged with intention.*
