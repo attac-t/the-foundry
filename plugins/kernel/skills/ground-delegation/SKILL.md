@@ -52,62 +52,14 @@ All yes → `sub-agent`. Any no → check if `team` fits.
 
 If none → `self`.
 
-## Privilege Attenuation
+## Deeper
 
-> Every delegation narrows scope. Never widens it.
-
-**Sub-agents** receive **less** authority than the parent:
-- Only the files they need
-- Only the conventions that apply
-- Only the tools the task requires
-
-Broad access → task isn't bounded. Decompose further.
-
-**Teammates** inherit full project context. Scope via **task boundaries** — each teammate owns distinct files.
-
-## Authority Gradient
-
-> Sub-agents don't push back. They execute. Silently.
-
-A flawed brief produces flawed output. No resistance, no warning.
-
-Include in every sub-agent briefing:
-> "Flag anything in this brief that seems inconsistent, incomplete, or wrong."
-
-A false flag costs nothing. Silent compliance wastes the run.
-
-Teams solve this structurally — teammates challenge each other by design.
-
-## The Sub-agent Briefing
-
-```
-Task: [one-sentence description]
-Files: [list of files to read/modify]
-Constraints: [boundaries, conventions, ADRs]
-Success: [how to verify completion]
-Challenge: "Flag anything in this brief that seems wrong."
-```
-
-## The Team Briefing
-
-- **Separate file ownership** — no two teammates edit the same file
-- **Distinct lenses** — each role sees the problem differently
-- **Explicit deliverables** — what each teammate produces
-- **Delegate mode** — lead orchestrates, not implements
-
-## The Workflow
-
-1. **Assess**: Apply criteria to each task. Choose primitive.
-2. **Delegate**: Spawn agent or team with briefing. Mark status `delegated`.
-3. **Review**: When complete, review output. Mark `in-review`.
-4. **Integrate**: Commit if good. Re-delegate with context if not.
-
-## Parallel Execution
-
-- **Sub-agents**: Up to 3 simultaneously (soft limit).
-- **Agent teams**: 5-6 tasks per teammate keeps everyone productive.
-- No dependencies between in-flight work.
-- Track all delegated tasks in blueprint.
+| | |
+|---|---|
+| [authority](authority.md) | privilege attenuation, and the authority gradient |
+| [briefings](briefings.md) | what a sub-agent is told, and what a team is told |
+| [running](running.md) | the workflow, and running in parallel |
+| [examples](examples.md) | delegations that worked, and one that did not |
 
 ## The Anti-Patterns
 
@@ -117,5 +69,4 @@ Challenge: "Flag anything in this brief that seems wrong."
 - **Fire and forget**: Not reviewing output before committing.
 - **Scope inflation**: Broader access than the task requires.
 - **Blind obedience**: Executing flawed briefs without questioning. The `Challenge` line prevents this.
-- **Wrong primitive**: Sub-agents when teammates need to talk. Teams when a single agent suffices.
 - **File collisions**: Two teammates, same file. Split the work.
