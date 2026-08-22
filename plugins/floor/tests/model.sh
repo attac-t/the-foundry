@@ -1475,6 +1475,40 @@ a_failing_gate_is_recorded_and_answered() {
 }
 a_failing_gate_is_recorded_and_answered
 
+
+#
+# The other direction, and the one a substitution gets wrong. **The work is what is graded.** Check
+# out the base tree instead of planting the base blob in this one, and the gate grades a repository
+# the run never wrote to — where nothing it did can fail, and every run passes.
+#
+# The base gate asks for a file only the run adds, so it passes for one reason: the base's script
+# ran, and it ran against the work.
+#
+the_substituted_tree_still_holds_the_work() {
+  make_repo "$tmp/sub2" main && set_origin "$tmp/sub2" 'https://github.com/acme/sub2.git' \
+    && commit_file "$tmp/sub2" check.sh 'test -f added
+' && mkdir -p "$tmp/sub2/.foundry" \
+    && commit_file "$tmp/sub2" .foundry/gates 'tests  sh check.sh
+' || { skip "the work is graded — git could not make a repo here"; return; }
+
+  floor "$tmp/sub2" new "Both" >/dev/null
+  floor "$tmp/sub2" charter derive >/dev/null 2>&1
+  floor "$tmp/sub2" policy authorize 'https://github.com/acme/sub2.git' >/dev/null 2>&1
+  floor "$tmp/sub2" targets add 'https://github.com/acme/sub2.git' main >/dev/null 2>&1
+  work=$(only_slot "$(floor "$tmp/sub2" open)")
+
+  is "the base's gate wants what the base does not hold" "$(code_of floor "$tmp/sub2" gates)" "14"
+
+  printf 'ok\n' > "$work/added"
+  printf 'exit 1\n' > "$work/check.sh"
+  git -C "$work" add added
+  git -C "$work" -c user.email=a@b.c -c user.name=a commit -aqm "the work, and a gate that refuses it"
+
+  is "and the run's work satisfies it, through the base's own script" \
+     "$(code_of floor "$tmp/sub2" gates)" "0"
+}
+the_substituted_tree_still_holds_the_work
+
 #
 # One ref for the whole set. A gate that commits would otherwise move the tree the gates after it are
 # recorded against, and the ledger would name a sha nobody gated.
@@ -2074,9 +2108,13 @@ a_gate_cannot_write_its_own_record
 # the command *reaches*, and §2.2 calls that the workspace boundary's to close. Under Level 1 the
 # gate's own implementation is inside it: `tests sh check.sh` pins `.foundry/gates` and never
 # `check.sh`, so a worker rewriting `check.sh` lowers the bar it is graded by and `check` says
-# nothing. §6's headline challenge, unmitigated, in the shape Level 1 makes ordinary.
+# nothing. §6's headline challenge, and the shape Level 1 makes ordinary.
 #
-# **If this goes red the residual was closed.** Read it, then rewrite it — never restore it.
+# **The pin did not close it and still does not.** A gate's own file is taken from the base before
+# the gates run, so the rewrite sits in the tree and never grades it. `check` answering 0 below is
+# right: nothing a pin covers has moved.
+#
+# What a command reaches without naming is still open — `check.sh` calling a second script.
 #
 a_pin_covers_what_the_detector_read() {
   make_repo "$tmp/pn" main && set_origin "$tmp/pn" 'https://gitlab.com/acme/pn.git' \
@@ -2099,8 +2137,8 @@ a_pin_covers_what_the_detector_read() {
   git -C "$slot" -c user.email=w@x -c user.name=w commit -qm lowered >/dev/null 2>&1
 
   is "a rewritten gate script moves no pin"  "$(code_of floor "$tmp/pn" charter check)" "0"
-  is "so the bar the worker wrote is the bar" "$(code_of floor "$tmp/pn" gates)" "0"
-  is "and the run may deliver on it"          "$(code_of floor "$tmp/pn" complete)" "0"
+  is "and the bar the worker wrote is not the bar" "$(code_of floor "$tmp/pn" gates)" "14"
+  is "so it may not deliver on it"                "$(code_of floor "$tmp/pn" complete)" "15"
 }
 a_pin_covers_what_the_detector_read
 
