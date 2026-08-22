@@ -16,10 +16,11 @@ description: What a comment is for, what shape it takes, and the space around co
    preamble longer than what it introduces is the clearest form of the tell.
 3. **One sentence, when one sentence does it.** No fence and no bold — the blank line already
    separated it, and the sentence that matters goes first.
-4. **Three lines, tapering,** once there is more than one sentence to say. Each line shorter than the
-   one above, so the block narrows to a point and the eye finds its end without counting.
-   **Three is a shape, never a target.** Padding one sentence into three to make it narrow is the
-   waste `economy` names, wearing craft.
+4. **Three lines, narrowing evenly,** once there is more than one sentence to say. The two steps
+   stay within three of each other, so the block reads as one shape rather than three accidents.
+   `taper.md` carries the loop, and the measurement behind the number.
+   **Three lines is a shape, never a target.** Padding one sentence into three to make it narrow is
+   the waste `economy` names, wearing craft.
 5. **Let it breathe.** Blank lines inside a body group steps into thoughts, so it reads as three
    moves rather than eleven lines. A body with no blank line is held breath.
    **Breathing is space, not words** — the opposite mistake is filling the space that was doing the
@@ -31,4 +32,4 @@ description: What a comment is for, what shape it takes, and the space around co
 
 ## Examples
 
-See [comments](../craft-sh/comments.md) — the taper and breathing, before and after.
+See [taper](taper.md) for the loop, and [comments](../craft-sh/comments.md) for before and after.
