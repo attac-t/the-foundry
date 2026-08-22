@@ -1260,20 +1260,20 @@ evidence_is_what_happened() {
   floor "$tmp/ev" open >/dev/null 2>&1
 
   is "a gate that passes is recorded, and the exit code carries" \
-     "$(code_of floor "$tmp/ev" evidence record tests true)" "0"
+     "$(code_of floor "$tmp/ev" evidence record aside true)" "0"
   is "a gate that fails is recorded too, and so does that" \
-     "$(code_of floor "$tmp/ev" evidence record types false)" "1"
+     "$(code_of floor "$tmp/ev" evidence record apart false)" "1"
 
   held=$(floor "$tmp/ev" evidence)
-  matches "the passing record says machine, and zero" "$held" "machine.*tests.*	0	"
-  matches "the failing record says machine, and one"  "$held" "machine.*types.*	1	"
+  matches "the passing record says machine, and zero" "$held" "machine.*aside.*	0	"
+  matches "the failing record says machine, and one"  "$held" "machine.*apart.*	1	"
   matches "each record names the ref it applies to"   "$held" "	[0-9a-f]{40}	"
 
   # The shape is the artifact, and nothing reads it yet. Seven fields, in the order §2.5 names.
   is "every record has seven fields" \
      "$(printf '%s\n' "$held" | awk -F'\t' 'NF != 7' | grep -c .)" "0"
   matches "and they are in order — at, trust, unit, name, result, ref" \
-          "$held" "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:]+Z	machine	01	tests	0	[0-9a-f]{40}"
+          "$held" "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:]+Z	machine	01	aside	0	[0-9a-f]{40}"
 }
 evidence_is_what_happened
 
@@ -1283,6 +1283,35 @@ evidence_is_what_happened
 # flattened.
 #
 a_name_cannot_forge_a_second_record() {
+
+#
+# A clause pinned to a command is that command's to answer.
+#
+# `evidence record gates true` ran `true`, stamped a machine pass under the gate's name, and
+# `satisfied` took it. A run that never ran its gate reached complete = 0 — with no
+# failing row to contradict it, one honest record stood for a different command.
+#
+a_pinned_name_is_not_recordable() {
+  make_repo "$tmp/ev7" main && set_origin "$tmp/ev7" 'https://github.com/acme/ev7.git' \n    && mkdir -p "$tmp/ev7/.foundry" \n    && commit_file "$tmp/ev7" .foundry/gates 'tests  false
+' || { skip "a pinned name — git could not make a repo here"; return; }
+
+  floor "$tmp/ev7" new "Pinned" >/dev/null
+  floor "$tmp/ev7" charter derive >/dev/null 2>&1
+  floor "$tmp/ev7" policy authorize 'https://github.com/acme/ev7.git' >/dev/null 2>&1
+  floor "$tmp/ev7" targets add 'https://github.com/acme/ev7.git' main >/dev/null 2>&1
+  floor "$tmp/ev7" open >/dev/null 2>&1
+
+  is "a name the charter pins to a gate is refused" \
+     "$(code_of floor "$tmp/ev7" evidence record tests true)" "2"
+  has "and says which command owns it" \
+      "$(floor_says "$tmp/ev7" evidence record tests true)" "only \`gates\` may answer it"
+  is "so nothing was written" "$(floor "$tmp/ev7" evidence)" ""
+
+  # The verb exists for a check no gate expresses, and that is untouched.
+  is "a name it does not pin is still recordable" \
+     "$(code_of floor "$tmp/ev7" evidence record "a check no gate expresses" true)" "0"
+}
+a_pinned_name_is_not_recordable
   make_repo "$tmp/ev4" main && set_origin "$tmp/ev4" 'https://github.com/acme/ev4.git' \
     && mkdir -p "$tmp/ev4/.foundry" \
     && commit_file "$tmp/ev4" .foundry/gates 'tests  true
@@ -1319,7 +1348,7 @@ the_ref_is_what_was_tested() {
   floor "$tmp/ev5" open >/dev/null 2>&1
   was=$(git -C "$tmp/ev5" rev-parse HEAD 2>/dev/null)
 
-  floor "$tmp/ev5" evidence record tests sh -c \
+  floor "$tmp/ev5" evidence record "a check no gate expresses" sh -c \
     "cd '$tmp/ev5' && date > moved && git add -A && git -c user.email=a@b.c -c user.name=a commit -qm moved" \
     >/dev/null 2>&1
 
