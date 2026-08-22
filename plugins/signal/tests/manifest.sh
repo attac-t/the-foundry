@@ -45,7 +45,9 @@ esac
 mentions "$market" '"name": "signal"' \
   && ok "the marketplace lists signal" \
   || bad "the marketplace does not list signal"
-is "the two versions agree" "$(listed)" "$version"
+# The manifest names plugins and where they live, and carries no version. A second copy of one
+# number made a line every branch edits, so plugin work collided for packaging reasons.
+is "the marketplace carries no version" "$(listed)" ""
 
 mentions "$repo/README.md" 'plugins/signal/README.md' \
   && ok "the root README lists signal" \
