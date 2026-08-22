@@ -1,6 +1,6 @@
 # RFC-001: The Portable Composition Model
 
-**Status:** Accepted — revision 15, 2026-08-18
+**Status:** Accepted — revision 16, 2026-08-22
 **Plugin:** `floor`
 **Author:** Christian Attard
 **Date:** 2026-08-12
@@ -314,13 +314,33 @@ at delivery   run it again — the answer moved, or a file it read moved  →  d
 Foundry never reads `composer.json` for meaning. It records what it read and whether its own answer
 changed. Level 2 covers detection being wrong.
 
+**Revision 16: the code refuses, and the downgrade above never shipped.** `check_charter` runs first
+and exits 7 on drift — a moved pin is a command nobody authorised. Refusal is stricter than the
+paragraph below asks for, and it is the honest form of a downgrade with nowhere to go: `judged`
+names an independent judge as its producer, v1 has none, and a clause routed to nobody can never be
+satisfied. Refusing says so at once and names the remedy. Downgrading would have said it later, from
+a stage that cannot answer.
+
+The paragraph below stands as the reasoning, not as the contract. A judge existing changes which is
+right, and nothing else does.
+
 Downgraded, not voided. Legitimate work changes test scripts — adding a suite is good. Voiding would
 punish it. Downgrading says the exit code no longer speaks for itself and something that is not the
 author must look. One `git diff`, no machinery.
 
-**The residual.** A worker can leave the command intact and change what it reaches — `phpunit.xml`,
-a bootstrap, an environment file. That is the workspace boundary's to close, and why this is
-correctness rather than containment.
+**The residual, and it is wider than this section claimed.** A worker can leave the command intact
+and change what it reaches — `phpunit.xml`, a bootstrap, an environment file. **It can also change
+the gate's own script.** The comparison above is between two resolved command *strings*;
+`sh bin/check.sh` is the same string whichever way that file is written.
+
+Run on 2026-08-22 against `main`, in a throwaway repository with one declared gate: the gate failed
+(`gates` 14, `complete` 15), the worker rewrote the script to `exit 0` and committed inside the run,
+`charter check` answered 0 because the pinned declaration never moved, and `gates` and `complete`
+both answered 0. **A run lowered its own bar and reached deliverable**, which invariant 1 forbids.
+
+Neither refusal nor the downgrade reaches it. Closing it is a choice between refusing a run that
+edits its own evaluator, grading such a run with the base copy of that evaluator, or recording the
+move and finding something able to act on it — open on #66, and nothing is built until it is answered.
 
 #### Pinned is not governed
 
@@ -935,6 +955,15 @@ One thing works in v1 with zero code: because the workspace holds the checkouts 
 ledger, **a person can join by opening a shell in the workspace and reading the run.** That is the
 test of whether the decomposition was right — if joining required new machinery, the nouns were wrong.
 
+**Revision 16: run, and the nouns held.** A person can read the run, because the workspace sits inside
+it and the ledger is four levels up. **Floor cannot.** `active_run` reads `FOUNDRY_RUN` or the
+invoking checkout's pointer, and never where it is standing — so a shell opened in the workspace gets
+nothing from `path` and exit 1 from `gates`. The checkout records `foundry.ref`, the ref it was opened
+for, and nothing that names the run.
+
+That is the sentence above holding and its promise not being kept. Joining needs no new noun; it needs
+`active_run` to look down at its own feet, which is one lookup and belongs to #115.
+
 ### Units: named now, one shipped
 
 v1 creates runs with exactly one unit. The layout accommodates N from the start. Naming it now costs
@@ -1422,15 +1451,15 @@ required by §2.3, not speculative.
 
 ## 8. Falsifiable experiments
 
-| # | Experiment | Falsifies | At revision 15 |
+| # | Experiment | Falsifies | At revision 16 |
 |---|---|---|---|
-| 1 | Rewrite a gate script to `exit 0`; confirm the clause downgrades to `judged` | the pinning invariant | not built — **and this is the one that matters** |
-| 1b | Ten ordinary runs — a dependency bump, a new test, a refactor; count how many downgrade | that downgrade is rare enough to mean something | not built |
+| 1 | Rewrite a gate script to `exit 0`; confirm the clause downgrades to `judged` | the pinning invariant | **run 2026-08-22 — falsified.** No downgrade exists; §2.2 records why. `charter check` answered 0 because the pin is on the declaration, and `complete` went 15 → 0. A run lowered its own bar and reached deliverable. Open on #66 |
+| 1b | Ten ordinary runs — a dependency bump, a new test, a refactor; count how many downgrade | that downgrade is rare enough to mean something | moot — there is nothing to count |
 | 2 | Two targets, one run, one ledger | the run/target split | fails |
 | 2b | A two-target run where only the bootstrap declares `tests`; confirm completion blocks on the other target | that a `Gate:` clause on an unreadable target cannot be evidenced | not built |
-| 3 | Two runs, same branch name, same machine | workspace isolation | collides |
-| 4 | A directory of markdown files as a source — `read` under twenty lines, plus `ask` and `receive` | the work-source contract | no contract to satisfy |
-| 5 | A run where all clauses derive; confirm no human is asked | the authorisation gate is not ceremony | not built |
+| 3 | Two runs, same branch name, same machine | workspace isolation | **passes.** Two concurrent `open` calls: one built, one refused at 16, one whole checkout, no leftover. `mkdir` serialises the claim |
+| 4 | A directory of markdown files as a source — `read` under twenty lines, plus `ask` and `receive` | the work-source contract | **passes.** `lib/source-dir.sh` ships all four verbs, and the two-adapter rule is met for this contract alone |
+| 5 | A run where all clauses derive; confirm no human is asked | the authorisation gate is not ceremony | **passes**, on every self-hosted run to date |
 | 6 | A run that introduces one clause with no provenance; confirm exactly one question is asked | invariant 1 | not built |
 | 6b | The worker asserts its own provenance for an invented clause; confirm it is treated as introduced | the independence constraint | not built |
 | 6c | A clause entailed only by `CLAUDE.md` prose; confirm the judge establishes it and no human is asked | the semantic path earns its place | not built |
@@ -1440,22 +1469,22 @@ required by §2.3, not speculative.
 | 6g | A judge answers *ambiguous*; the run asks and stops; resume it with a judge rigged to answer *entailed*; confirm the question still derives identically and the human's answer still matches | that recording the verdict makes condition two resumable — a flipped judge is exactly what replay must survive | not built |
 | 6h | Kill the run **between the verdict and the ask**, then resume with the judge rigged to flip | the write-ordering, which 6g cannot reach — it resumes a run that already asked | not built |
 | 6i | Answer condition one for a `Decided:` clause, then run completion with that answer as the only `human` record naming it; confirm delivery refuses | revision 12's headline separation — an authorisation answer is not satisfaction evidence. 6f tests the same shape for a judge's record | not built |
-| 7 | Move a run directory to another machine and resume it | the portability rule | fails as of revision 1 |
-| 8 | Items in repo A, code in repo B, Foundry installed globally | source/target independence | untested |
-| 9 | A work item naming a repo outside the allowlist; confirm refusal | `policy` | not built |
+| 7 | Move a run directory to another machine and resume it | the portability rule | **passes.** A run made in a Linux container resumed on Windows; later runs were opened, graded and delivered across Windows and WSL with no container |
+| 8 | Items in repo A, code in repo B, Foundry installed globally | source/target independence | **falsified 2026-08-22 — structurally.** `open` builds every workspace by cloning the checkout floor was invoked in, then pointing origin at the target's identity. A target that is not the bootstrap has no source of objects. That is not missing plumbing: cloning locally is what makes `open` need no network, and it is written down as such |
+| 9 | A work item naming a repo outside the allowlist; confirm refusal | `policy` | **passes.** Exit 5, and `run.sh` says so at its own line 986 |
 | 9b | A work item filed in `acme/issues` that names `acme/issues` as a target; confirm refusal — **run it from somewhere other than a clone of the source**, or the bootstrap authorises it and the experiment answers a different question | source is not a target | not built |
-| 10 | Deliver after gates pass, then land a commit; confirm completion refuses | the completion invariant | not built |
-| 10b | A run whose charter derives no clause, and one whose units select no target; confirm both refuse to deliver | the two non-empty conjuncts | not built — **and both would deliver today** |
+| 10 | Deliver after gates pass, then land a commit; confirm completion refuses | the completion invariant | **passes.** `satisfied` matches evidence on the ref it named, so a commit after grading unbinds it. Hit for real on 2026-08-21 |
+| 10b | A run whose charter derives no clause, and one whose units select no target; confirm both refuse to deliver | the two non-empty conjuncts | **passes.** `unmet_for_delivery` runs `empty_bar` and `empty_selection` |
 | 11 | Detection across ten unfamiliar repos — right, wrong, and *says it cannot tell* | Level 1 convention | untested |
-| 12 | Open a shell in a workspace and take over mid-run | the session decomposition | untested |
+| 12 | Open a shell in a workspace and take over mid-run | the session decomposition | **run 2026-08-22 — the nouns hold, the verb does not.** A person can read the run: the workspace sits inside it, four levels down, and the ledger is right there. Floor cannot. `active_run` reads `FOUNDRY_RUN` or the invoking checkout's pointer and never where it is standing, so from the workspace `path` answers nothing and `gates` exits 1. The workspace records `foundry.ref` and no run. Joining needs no new noun — it needs `active_run` to look down at its own feet. #115 |
 | 13 | Two units in one run, in parallel, no interference | the unit/workspace split | not built |
 | 14 | Skill narrowing vs. kernel's claimed 84% activation | the discovery convention | unmeasured |
 | 15 | Panel's own kill criterion — ten runs | whether Panel earns its cost | never run |
 
-Experiments 1, 5, 6 and 9 test the properties this RFC claims most loudly. **Experiment 1 would
-falsify the headline.** Experiments 6c–6e decide whether the semantic path earns its place: if 6e
-shows it reached on nearly every clause, ordering has failed and it *has* become a general approval
-step — cut it and go back to mechanical-only.
+Experiments 1, 5, 6 and 9 test the properties this RFC claims most loudly. **Experiment 1 ran, and it
+falsified the headline** — see row 1 and §2.2. Experiments 6c–6e decide whether the semantic path
+earns its place: if 6e shows it reached on nearly every clause, ordering has failed and it *has*
+become a general approval step — cut it and go back to mechanical-only.
 
 ---
 
