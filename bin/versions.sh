@@ -1,10 +1,14 @@
 #!/usr/bin/env bash
 #
-# Fails when marketplace.json and a plugin.json disagree about a version.
+# Fails when a plugin the manifest lists cannot say what version it is.
 #
-# Promoted after panel was bumped six times in one session and the manifest was synced zero times.
-# CLAUDE.md already says to bump on every change; it does not say where, and the second place is
-# the one that gets forgotten.
+# It used to compare two copies of the same number, because `marketplace.json` carried a version
+# beside every plugin. That made one shared line the whole repository edits, so two branches touching
+# different plugins collided by construction and work was stacked for packaging reasons.
+#
+# The field is optional and Claude Code falls back to `plugin.json`, so the second copy is gone and
+# there is nothing left to disagree. What remains is the fault that actually breaks an install: a
+# listed plugin whose own manifest is missing, malformed, or silent about its version.
 #
 # Exit: 0 clean, 1 a rule broken, 3 the gate could not read.
 
@@ -42,11 +46,11 @@ if not manifest_file.is_file():
 
 plugins = read_json(manifest_file, "the plugin manifest").get("plugins")
 
-# An empty list is the same answer one level in: every plugin in it agrees, and there are none.
+# An empty list is the same answer one level in: every plugin in it is fine, and there are none.
 if not plugins:
     unreadable("the manifest lists no plugins")
 
-drift = []
+silent = []
 
 for entry in plugins:
     named = entry.get("source")
@@ -54,27 +58,20 @@ for entry in plugins:
         unreadable("a manifest entry names no source")
 
     source = pathlib.Path(named) / ".claude-plugin/plugin.json"
-    actual = read_json(source, f"{named}'s plugin.json").get("version")
+    if read_json(source, f"{named}'s plugin.json").get("version") is None:
+        silent.append(named)
 
-    # Two files silent about a version agree, and agree about nothing. The
-    # manifest may omit one and drift; the plugin it names may
-    # not, because that file is where the answer lives.
-    if actual is None:
-        unreadable(f"{named} declares no version")
+    # A version here would be a second copy of the same fact, and a line every branch edits.
+    if "version" in entry:
+        print(f"FAIL — {named} carries a version in the manifest. It belongs in its plugin.json alone.")
+        sys.exit(1)
 
-    listed = entry.get("version")
-    if listed != actual:
-        drift.append((entry.get("name", named), listed, actual))
-
-if not drift:
-    print(f"PASS — {len(plugins)} plugins agree with the manifest.")
+if not silent:
+    print(f"PASS — {len(plugins)} plugins each say what version they are.")
     sys.exit(0)
 
-print("FAIL — the manifest disagrees with the plugin it points at.")
-print()
-for name, listed, actual in drift:
-    print(f"  {name}")
-    print(f"      marketplace.json  {listed}")
-    print(f"      plugin.json       {actual}")
+print("FAIL — a listed plugin does not say what version it is.")
+for named in silent:
+    print(f"      {named}")
 sys.exit(1)
 PY

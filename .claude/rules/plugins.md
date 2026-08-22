@@ -4,14 +4,14 @@
 
 After modifying **any** file inside a plugin, bump it via `craft-plugin-update`.
 
-Both places: `plugin.json` **and** the plugin's entry in `.claude-plugin/marketplace.json`. Nothing
-surfaces a mismatch — the plugin installs and reports the wrong version. `bin/versions.sh` exists
-because this shipped.
+One place: the plugin's own `plugin.json`. `marketplace.json` names plugins and where they live, and
+carries no version — the field is optional and Claude Code falls back to `plugin.json`.
 
 Patch for a fix or docs. Minor for a new skill or command. Major for a break.
 
-Every plugin change edits `marketplace.json`, so two plugin branches off `main` collide there by
-construction. Open the second on the first via `craft-pr-stack`.
+**That is why two plugin branches no longer collide.** The version used to sit in a shared file, so
+branches touching different plugins conflicted anyway and work was stacked for packaging reasons.
+`craft-pr-stack` is for work that genuinely builds on work.
 
 ## Shipped code
 

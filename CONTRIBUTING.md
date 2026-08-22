@@ -20,7 +20,7 @@ eight and is not one of them. `panel` was advertised here and absent from CI for
 | Gate | Fails when |
 |------|------------|
 | `frontmatter` | a skill, agent or command is missing the frontmatter that registers it |
-| `versions` | `marketplace.json` and a `plugin.json` disagree on a version |
+| `versions` | a plugin the manifest lists cannot say what version it is |
 | `repeats` | a sentence appears verbatim in two files — scoped to `panel`, `pest` and `signal` |
 | `shell` | shipped shell takes an `else`, or a function body passes 40 lines |
 | `kernel` | the plugin does not run — checked on Linux, macOS and Windows |
