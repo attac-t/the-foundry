@@ -342,6 +342,30 @@ Neither refusal nor the downgrade reaches it. Closing it is a choice between ref
 edits its own evaluator, grading such a run with the base copy of that evaluator, or recording the
 move and finding something able to act on it — open on #66, and nothing is built until it is answered.
 
+**Revision 17: the second option was chosen and built.** `gates` takes every file a pinned command
+reaches from the base commit before it runs anything, so a run that rewrites its own evaluator is
+graded by the evaluator it agreed to. Only those files. Everything else the run changed is still what
+is graded, and a run improving a gate delivers on its other work.
+
+The base blob is planted in a tree holding the work rather than the base tree being checked out. No
+gate changes, here or anywhere: a script anchoring to its own root still lands on the work, because
+the script sits inside it.
+
+**Reach, not mention.** `sh bin/gates.sh` names one file and runs five more, so the substitution
+follows `sh x`, `bash x`, `. x`, `source x` and `awk -f x` to a fixed point. What a script only
+mentions is left alone — a gate naming a file in a message would otherwise have the run's own work
+graded against the base, which is the same failure pointing the other way.
+
+**A second path was open and is closed too.** `evidence record` ran any command under any name, so
+`evidence record gates true` wrote a machine pass for a gate that never ran and `satisfied` took it.
+That needed no edit and left no diff. A name the charter pins to a gate is now refused, exit 2, and
+only `gates` may answer it.
+
+**What is still open.** A path built from a variable is not followed. Here that boundary falls
+between the gate harness and the suites the harness invokes by expansion — and a plugin's suite is as
+often a run's work as it is its bar, so following it would make adding a test impossible. That is
+luck rather than design.
+
 #### Pinned is not governed
 
 §2.3 separates *authorised* from *selected*. Provenance needs the same separation from coverage.
@@ -1376,6 +1400,34 @@ was true when written. A revision log is dated history, and correcting it would 
 that the debt ever existed.
 
 
+### Revision 17 — the evaluator residual is closed, and a second one with it
+
+Revision 16 recorded a run lowering its own bar and reaching deliverable, and left the fix open on a
+choice of three. The second was chosen: **grade with the base copy of the evaluator.**
+
+| Was | Is | What decided it |
+|---|---|---|
+| a run may rewrite the script its gate names | every file a pinned command reaches comes from the base | the experiment in §2.2, re-run against the substitution |
+| a pin covers the declaration the detector read | it still does, and reach is covered separately | a pin is provenance; what a command touches is not a sha |
+| `evidence record` writes a machine pass under any name | a name the charter pins is refused, exit 2 | one command, no edit, no diff — cheaper than the hole above it |
+| completion ends the run | `merge` is a stage past it, and refuses anything that is not the graded ref | #246 |
+| a source carries words | it also carries what the work *is*, and core never learns the spelling | #163 |
+| nothing says whether two deliveries join | `reconcile` does, without a coordinator | #119 |
+
+**Two are merged and four are delivered.** `evidence record`'s refusal and the base substitution are
+in `main`. Closure, `merge`, the work kind and `reconcile` are open pull requests, graded green under
+dash. This section records what is built; §9 records what is in the trunk.
+
+**Invariant 1 holds where it did not.** *A run's own work may invalidate authority and never create
+it* was false for two days: a run could create the authority to deliver by editing the thing that
+judged it, or by writing a record for a command that never ran. Both paths are closed, and the one
+that remains is named in §2.2 rather than left for a later reader to find.
+
+**What this does not claim.** Floor is still not a security boundary. A worker holding the same shell
+can edit the charter, the practice and the grants, and nothing here stops it. These close accidents
+and the ordinary shape of a worker taking the easy path — not an adversary.
+
+
 ## 7. Unresolved questions
 
 **Closed since revision 2:** `policy` stays; the target allowlist is its first instance and is
@@ -1451,10 +1503,12 @@ required by §2.3, not speculative.
 
 ## 8. Falsifiable experiments
 
-| # | Experiment | Falsifies | At revision 16 |
+| # | Experiment | Falsifies | At revision 17 |
 |---|---|---|---|
-| 1 | Rewrite a gate script to `exit 0`; confirm the clause downgrades to `judged` | the pinning invariant | **run 2026-08-22 — falsified.** No downgrade exists; §2.2 records why. `charter check` answered 0 because the pin is on the declaration, and `complete` went 15 → 0. A run lowered its own bar and reached deliverable. Open on #66 |
+| 1 | Rewrite a gate script to `exit 0`; confirm the run is still graded by the bar it agreed to | the pinning invariant | **falsified 2026-08-22, closed 2026-08-23.** It fell for the reason §2.2 records: the pin is on the declaration, so `charter check` answered 0 and `complete` went 15 → 0. `gates` now takes every file a pinned command reaches from the base first. Re-run with `bin/gates.sh` rewritten to `exit 0`: the base's copy ran and the suite went red |
 | 1b | Ten ordinary runs — a dependency bump, a new test, a refactor; count how many downgrade | that downgrade is rare enough to mean something | moot — there is nothing to count |
+| 1c | Hand a pass over for a pinned gate without running it — `evidence record gates true` — then complete | that a record and a claim are different things | **falsified 2026-08-22, closed the same day.** It reached `complete` 0 with no edit and no diff. A name the charter pins is refused at exit 2, and only `gates` may answer it |
+| 1d | Rewrite a file the gate runs but never names, three deep | that a pin covers what a command reaches | **passes.** The substitution follows what a script runs to a fixed point. A path built from a variable is not followed, and §2.2 says where that leaves it |
 | 2 | Two targets, one run, one ledger | the run/target split | fails |
 | 2b | A two-target run where only the bootstrap declares `tests`; confirm completion blocks on the other target | that a `Gate:` clause on an unreadable target cannot be evidenced | not built |
 | 3 | Two runs, same branch name, same machine | workspace isolation | **passes.** Two concurrent `open` calls: one built, one refused at 16, one whole checkout, no leftover. `mkdir` serialises the claim |
@@ -1478,11 +1532,13 @@ required by §2.3, not speculative.
 | 11 | Detection across ten unfamiliar repos — right, wrong, and *says it cannot tell* | Level 1 convention | untested |
 | 12 | Open a shell in a workspace and take over mid-run | the session decomposition | **run 2026-08-22 — the nouns hold, the verb does not.** A person can read the run: the workspace sits inside it, four levels down, and the ledger is right there. Floor cannot. `active_run` reads `FOUNDRY_RUN` or the invoking checkout's pointer and never where it is standing, so from the workspace `path` answers nothing and `gates` exits 1. The workspace records `foundry.ref` and no run. Joining needs no new noun — it needs `active_run` to look down at its own feet. #115 |
 | 13 | Two units in one run, in parallel, no interference | the unit/workspace split | not built |
+| 13b | Two deliveries against one target; confirm each is told whether it can join the other | that separation needs no coordinator | **passes.** `reconcile` asks the source what else is open and tries the merge beside the run. No scheduler, no lock, and no run reads another's workspace. Proved on this repository's own queue: three of five clashed |
 | 14 | Skill narrowing vs. kernel's claimed 84% activation | the discovery convention | unmeasured |
 | 15 | Panel's own kill criterion — ten runs | whether Panel earns its cost | never run |
 
-Experiments 1, 5, 6 and 9 test the properties this RFC claims most loudly. **Experiment 1 ran, and it
-falsified the headline** — see row 1 and §2.2. Experiments 6c–6e decide whether the semantic path
+Experiments 1, 5, 6 and 9 test the properties this RFC claims most loudly. **Experiment 1 falsified
+the headline and no longer does** — see row 1 and §2.2. It cost two shipped mechanisms and left one
+residual, which is what a falsifying experiment is for. Experiments 6c–6e decide whether the semantic path
 earns its place: if 6e shows it reached on nearly every clause, ordering has failed and it *has*
 become a general approval step — cut it and go back to mechanical-only.
 
