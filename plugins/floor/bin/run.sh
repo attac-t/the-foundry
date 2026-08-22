@@ -1332,6 +1332,106 @@ pinned_gates() {
     awk '$1 == "gate" { $1 = ""; sub(/^ /, ""); print }' "$(charter_file "$1")" 2>/dev/null
 }
 
+#
+# The commit a clause was pinned at. Every clause carries its own: a charter may pin two gates at two
+# bases, and reading one for the other grades against a tree nobody agreed to.
+#
+pinned_base() {
+    awk -v want="$2" '$1 == "pin" && $2 == want { print $4; exit }' "$(charter_file "$1")" 2>/dev/null
+}
+
+#
+# Every file a pinned command runs that this run has since changed, as `base<TAB>path`.
+#
+# A command names its own script and nothing deeper, so this is what a pin can see. `bin/gates.sh`
+# invokes `bin/shell.sh` by relative path, and rewriting that stays invisible here — the closure
+# problem, named in the README rather than solved.
+#
+moved_gate_scripts() {
+    printf '%s\n' "$2" | while read -r id command; do
+        [ -n "$id" ] || continue
+        base=$(pinned_base "$1" "$id")
+        [ -n "$base" ] || continue
+
+        for word in $command; do
+            [ -f "$word" ] || continue
+            git diff --quiet "$base" -- "$word" 2>/dev/null && continue
+            printf '%s\t%s\n' "$base" "$word"
+        done
+    done | sort -u
+}
+
+#
+# A worktree holding this run's work, with each named file as the base wrote it.
+#
+# **The work is what is graded.** Only the gate's own file comes from the base, so a run improving a
+# gate is still graded by the gate it agreed to, and every other change it made stands.
+#
+# The base blob is planted in a tree holding the work rather than the base tree being checked out.
+# That is the whole of why no gate changes: `dirname $0/..` still lands on the work, because the
+# script sits inside it.
+#
+tree_with_base_gates() {
+    where=$(base_gates_tree "$1")
+    forget_base_gates "$where"
+
+    index=$(mktemp) && rm -f "$index" || return 1
+    export GIT_INDEX_FILE="$index"
+    git read-tree HEAD >/dev/null 2>&1 || return 1
+
+    plant_base_blobs "$2" || return 1
+
+    tree=$(git write-tree) || return 1
+    commit=$(printf 'the gates as the base wrote them\n' | git commit-tree "$tree" -p HEAD) || return 1
+    unset GIT_INDEX_FILE
+
+    git worktree add --detach "$where" "$commit" >/dev/null 2>&1 || return 1
+    printf '%s' "$where"
+}
+
+# The mode travels with the blob. A gate restored without its executable bit exits 126, which this
+# reads as a host that could not run it — a refusal where the answer is a substitution that went wrong.
+plant_base_blobs() {
+    printf '%s\n' "$1" | while IFS="$(printf '\t')" read -r base path; do
+        [ -n "$path" ] || continue
+        entry=$(git ls-tree "$base" -- "$path") || return 1
+        git update-index --cacheinfo \
+            "$(printf '%s' "$entry" | awk '{ print $1 "," $3 }'),$path" || return 1
+    done
+}
+
+# Beside the charter, not in a temp directory. A substitution that graded wrong is worth reading, and
+# a fixed path is one a person can be told to open.
+base_gates_tree() { printf '%s/gates-tree' "$1"; }
+
+# git's worktree, so git forgets it. Left registered, the next `add` refuses a path that is gone.
+forget_base_gates() {
+    git worktree remove --force "$1" >/dev/null 2>&1
+    rm -rf "$1"
+}
+
+#
+# Where the gates run. The workspace, unless this run changed a gate that grades it.
+#
+# A run could rewrite `bin/gates.sh` to `exit 0`, record eight passes and deliver. The pin does not
+# catch it: `.foundry/gates` is a clause's source and never moved, while the script it names is what
+# executes.
+#
+# Nearly every run touches no gate and takes the first line out.
+#
+enter_base_gates() {
+    moved=$(moved_gate_scripts "$1" "$2")
+    [ -n "$moved" ] || return 0
+
+    tree=$(tree_with_base_gates "$1" "$moved") || {
+        note "the gates this run changed could not be restored from the base"
+        exit 16
+    }
+
+    note "grading with the base's own gates: $(printf '%s\n' "$moved" | cut -f2 | tr '\n' ' ')"
+    cd "$tree" || { note "cannot enter [$tree]"; exit 16; }
+}
+
 run_pinned_gates() {
     dir=$1
     failed=0
@@ -1343,8 +1443,11 @@ run_pinned_gates() {
     enter_work_tree "$dir"
 
     # One ref for the whole set — taken after the move, so a gate that commits cannot shift the tree
-    # the gates behind it are recorded against.
+    # the gates behind it are recorded against. Taken before the substitution too: what a run
+    # delivers is its own work, never the tree the gates were run in.
     ref=$(delivered_ref)
+
+    enter_base_gates "$dir" "$pins"
 
     # A here-doc, not a pipe. A tally raised inside a pipe's subshell dies with it, and the tally is
     # the only thing this loop produces that the caller needs.
