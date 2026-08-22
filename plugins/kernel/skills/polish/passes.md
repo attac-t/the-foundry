@@ -1,10 +1,5 @@
-# Polish: Examples
+# Before and after, per pass
 
-Universal patterns. Language-agnostic.
-
----
-
-## Pass 1: Docblocks
 
 ### The Trial
 **Why?** If the signature tells the story, the docblock is noise.
@@ -201,50 +196,3 @@ function process(order) {
 
 ---
 
-## Report Template
-
-```markdown
-# Polish: {Scope}
-
-**Date:** YYYY-MM-DD
-**Files in Scope:** N
-**Files Polished:** N
-**Files Already Clean:** N
-**Tests:** All passing (N tests, N assertions)
-
-## File Manifest
-
-| # | File | Status | Changes |
-|---|------|--------|---------|
-| 1 | `path/to/File.ext` | polished | Removed 2 docblocks, renamed 1 var |
-| 2 | `path/to/Other.ext` | clean | — |
-
-## Changes by Category
-
-### Docblocks Removed/Rewritten
-| File | Method | Reason |
-|------|--------|--------|
-
-### Names Changed
-| File | Before | After | Reason |
-|------|--------|-------|--------|
-
-### Methods Extracted/Shortened
-| File | Method | LOC Before | LOC After | What Changed |
-|------|--------|-----------|----------|--------------|
-
-### Framework Upgrades
-| File | Before | After | Feature |
-|------|--------|-------|---------|
-
-### Conditional Flattening
-| File | Method | Nesting Before | Nesting After |
-|------|--------|---------------|---------------|
-
-### Test Polish
-| File | Test | Change |
-|------|------|--------|
-
-## Unchanged
-[Files that needed no polish — and why they were already good]
-```
