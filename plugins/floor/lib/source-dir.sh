@@ -106,9 +106,29 @@ kind_of_item() {
          $1 == "kind:" { for (i = 2; i <= NF; i++) print $i }' "$root/items/$1"
 }
 
+
+#
+# Every delivery this directory holds but this run's. It holds no
+# notion of open, because nothing here merges anything,
+# so every delivery it recorded is reported.
+open_deliveries() {
+    [ -d "$root/deliveries" ] || return 0
+
+    for file in "$root/deliveries"/*; do
+        [ -f "$file" ] || continue
+
+        branch=$(awk 'NR == 1 { print $1 }' "$file")
+        [ -n "$branch" ] || continue
+        [ "$branch" = "$1" ] && continue
+
+        printf '%s\t%s\n' "$branch" "$file"
+    done
+}
+
 case "${1:-}" in
     read)    shift; read_item        "${1:-}" ;;
     kind)    shift; kind_of_item     "${1:-}" ;;
+    open)    shift; open_deliveries  "${1:-}" ;;
     publish) shift; publish_delivery "${1:-}" "${2:-}" "${3:-}" "${4:-}" ;;
     ask)     shift; put_question     "${1:-}" "${2:-}" "${3:-}" ;;
     receive) shift; read_answer      "${1:-}" "${2:-}" ;;

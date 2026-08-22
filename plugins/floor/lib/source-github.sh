@@ -244,9 +244,27 @@ kind_of_item() {
     printf '%s\n' "$said" | awk '/^foundry:/ { sub(/^foundry:/, ""); print }'
 }
 
+
+#
+# Every delivery open against this source but this run's. A
+# run never reads another run's workspace. The source is
+# what knows, and a branch name is all that crosses.
+open_deliveries() {
+    # Named, because a `gh` line holding a pipe reads as one to the gate that grades this file.
+    shape='.[] | .headRefName + "	" + .url'
+
+    said=$(gh pr list --state open --json headRefName,url --jq "$shape" 2>&1) || {
+        printf 'source-github: could not ask what else is open: %s\n' "$said" >&2
+        return 3
+    }
+
+    printf '%s\n' "$said" | awk -F'\t' -v mine="$1" '$1 != mine && NF'
+}
+
 case "${1:-}" in
     read)    shift; read_item        "${1:-}" ;;
     kind)    shift; kind_of_item     "${1:-}" ;;
+    open)    shift; open_deliveries  "${1:-}" ;;
     publish) shift; publish_delivery "${1:-}" "${2:-}" "${3:-}" "${4:-}" ;;
     ask)     shift; put_question     "${1:-}" "${2:-}" "${3:-}" ;;
     receive) shift; read_answer      "${1:-}" "${2:-}" ;;

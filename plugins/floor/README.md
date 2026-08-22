@@ -59,6 +59,7 @@ Eleven verbs, in this order, and a standing practice answers for two of them.
 sh bin/run.sh new "Ship the gift card flow"          # a run, and this checkout points at it
 sh bin/run.sh source read 7                          # the item's own words, if a source can answer
 sh bin/run.sh source kind
+sh bin/run.sh reconcile
 sh bin/run.sh charter derive                         # the bar, pinned at the base commit
 sh bin/run.sh policy authorize https://github.com/acme/api.git
 sh bin/run.sh policy merge-to https://github.com/acme/api.git
@@ -290,6 +291,22 @@ this is a correctness mechanism, not a containment one.
 
 Policy state holds portable identities and nothing else — no local path, no credential. It outlives
 the run that wrote it and it gets read by eye.
+
+### Two deliveries, and whether they join
+
+`reconcile` asks the source what else is open against this target, and tries the merge in a tree
+beside the run. It names the deliveries it clashes with and the files they both change, and answers
+26. Clean, or nothing else open, answers 0.
+
+**Nothing coordinates them.** No scheduler, no lock, and no run reads another run's workspace — a
+branch name is all that crosses, and the source is what knows it.
+
+**It never reads as clean when it could not say.** A branch nobody could fetch and a merge nobody
+could try are both counted with the clashes. The question was whether these join, and a run that
+cannot answer has not answered yes.
+
+Reported, never refused. A clash is a fact about two deliveries and a fault in neither, so delivery
+stays exactly where it was.
 
 ### Merging is a third grant
 

@@ -2988,6 +2988,71 @@ a_work_kind_survives_the_adapter() {
 a_work_kind_survives_the_adapter
 
 #
+# Two deliveries against one target, and whether they can be brought together. Nothing coordinates
+# them — the source is asked what else is open, and a branch name is all that crosses.
+#
+# A host nobody answers on, so the fetch fails at once and the tracking refs the clone left behind
+# are what answer. That is the offline half of the same path, and it is the half a fixture can run.
+#
+two_deliveries_reconcile_or_say_they_cannot() {
+  make_repo "$tmp/rc" main && set_origin "$tmp/rc" 'https://127.0.0.1:1/acme/rc.git' \
+    && commit_file "$tmp/rc" a 'one
+' && commit_file "$tmp/rc" b 'one
+' && mkdir -p "$tmp/rc/.foundry"     && commit_file "$tmp/rc" .foundry/gates 'tests  true
+' || { skip "reconcile — git could not make a repo here"; return; }
+
+  git -C "$tmp/rc" checkout -qb work/apart     >/dev/null 2>&1
+  commit_file "$tmp/rc" b 'apart
+'
+  git -C "$tmp/rc" checkout -qb work/elsewhere main >/dev/null 2>&1
+  commit_file "$tmp/rc" a 'elsewhere
+'
+  git -C "$tmp/rc" checkout -q main >/dev/null 2>&1
+
+  mkdir -p "$src/items" "$src/deliveries"
+  printf 'Bring them together\n' > "$src/items/41"
+
+  rc=$(floor "$tmp/rc" new "Reconcile")
+  floor "$tmp/rc" source read 41 >/dev/null 2>&1
+  floor "$tmp/rc" charter derive >/dev/null 2>&1
+  floor "$tmp/rc" policy authorize 'https://127.0.0.1:1/acme/rc.git' >/dev/null 2>&1
+  floor "$tmp/rc" targets add      'https://127.0.0.1:1/acme/rc.git' main >/dev/null 2>&1
+  work=$(only_slot "$(floor "$tmp/rc" open)")
+
+  printf 'mine\n' > "$work/a"
+  git -C "$work" -c user.email=a@b.c -c user.name=a commit -aqm "this run changes a"
+
+  is "with nothing else open, there is nothing to bring together" \
+     "$(code_of floor "$tmp/rc" reconcile)" "0"
+
+  # A delivery from a run that is not this one, touching a file this one leaves alone.
+  printf 'work/apart\t41\tSomeone else\n' > "$src/deliveries/2026-01-01-item-41-0000"
+  is "a delivery that touches other files joins cleanly" \
+     "$(code_of floor "$tmp/rc" reconcile)" "0"
+
+  printf 'work/elsewhere\t41\tThe other one\n' > "$src/deliveries/2026-01-02-item-41-0000"
+  is "and one that changes the same file cannot" \
+     "$(code_of floor "$tmp/rc" reconcile)" "26"
+  # The identity is the source's, and a directory's is a path. GitHub hands back a URL, and core
+  # prints whichever it was given rather than deciding what a delivery is called.
+  has "it says which delivery" \
+      "$(floor_says "$tmp/rc" reconcile)" "2026-01-02-item-41-0000"
+  has "and names the file rather than the fact" \
+      "$(floor_says "$tmp/rc" reconcile)" "both change: a"
+
+  # This run's own delivery is not something to reconcile with.
+  printf 'foundry/%s\t41\tThis one\n' "$(basename "$rc")" > "$src/deliveries/$(basename "$rc")"
+  is "a run does not reconcile with itself" \
+     "$(printf '%s' "$(floor_says "$tmp/rc" reconcile)" | grep -c 'This one')" "0"
+
+  # Never clean when it could not say. A branch nobody can fetch is not a branch that joins.
+  printf 'work/nowhere\t41\tNobody can fetch this\n' > "$src/deliveries/2026-01-03-item-41-0000"
+  has "a branch nobody could fetch is not one that reconciles" \
+      "$(floor_says "$tmp/rc" reconcile)" "could not be fetched"
+}
+two_deliveries_reconcile_or_say_they_cannot
+
+#
 # `foundry:` is what GitHub calls a work kind. Core calls it a kind, and a literal anywhere else is
 # portability already leaked — which is the thing to catch rather than the thing to hope for.
 #
