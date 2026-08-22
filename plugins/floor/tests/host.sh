@@ -16,10 +16,11 @@ tmp="${TMPDIR:-/tmp}/floor-host-$$"
 mkdir -p "$tmp"
 trap 'rm -rf "$tmp"' EXIT
 
-# One host, one answer. `env -u` rather than an empty value: unset and empty are the same to
-# `join.sh` and only one of them is what a fresh machine looks like.
-joined() { ( cd "$1" && shift && env -u FOUNDRY_HOME "$@" sh "$join" 2>&1 ); }
-code_of() { ( cd "$1" && shift && env -u FOUNDRY_HOME "$@" sh "$join" >/dev/null 2>&1; echo $?; ); }
+# One host, one answer, and this suite decides what the host is. `env -u` rather than an empty
+# value: unset and empty read alike to `join.sh`, and only one of them is what a fresh machine
+# looks like. Both variables go, or the caller's own authority answers a check about not having one.
+joined()  { ( cd "$1" && shift && env -u FOUNDRY_HOME -u FOUNDRY_WHO "$@" sh "$join" 2>&1 ); }
+code_of() { ( cd "$1" && shift && env -u FOUNDRY_HOME -u FOUNDRY_WHO "$@" sh "$join" >/dev/null 2>&1; echo $?; ); }
 
 # A repository with nothing a host supplies. Each check below adds one piece back.
 bare() {
