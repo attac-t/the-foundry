@@ -1220,6 +1220,10 @@ wreck_runner "a pass handed over for a pinned gate is caught" \
 wreck_runner "a gate the run rewrote itself is caught" \
   basegate 's#^    enter_base_gates.*#    :#'
 
+# A run whose delivery moved after it was graded landed a tree nothing answered for.
+wreck_runner "a merge that lands a moved head is caught" \
+  movedhead 's#^    refuse_a_moved_head.*#    :#'
+
 report_breaks
 
 # --- break the install ---
