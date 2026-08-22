@@ -1143,8 +1143,34 @@ record_gate() {
     dir=$1; name=${2:-}; [ "$#" -gt 0 ] && shift; [ "$#" -gt 0 ] && shift
 
     refuse_unrecordable "$name" "$@"
+    refuse_a_pinned_name "$dir" "$name"
     enter_work_tree "$dir"
     stamp_command "$dir" "$(delivered_ref)" "$name" "$@"
+}
+
+#
+# A clause the charter pins to a command is that command's to answer.
+#
+# `evidence record gates true` ran `true`, stamped a machine pass under the gate's name, and
+# `satisfied` took it — the clause was met by a run that never ran its gate. The row
+# was honest about the command it ran and silent about which one it stood for.
+#
+# Only a pinned name is refused. A check no gate expresses still has nowhere else to go, and that is
+# what this verb is for.
+#
+refuse_a_pinned_name() {
+    pinned_by_name "$1" "$2" || return 0
+
+    note "[$2] is pinned to a command, so only \`gates\` may answer it"
+    note "record a name the charter does not pin, or run \`gates\`"
+    exit 2
+}
+
+# Every name the charter pins a gate to. `Gate` clauses only — a `Judged:` or `Decided:` clause has
+# no command, so nothing about it is this verb's to refuse.
+pinned_by_name() {
+    awk -v want="$2" '$1 == "clause" && $3 == "Gate" && $4 == want { found = 1 }
+                      END { exit !found }' "$(charter_file "$1")" 2>/dev/null
 }
 
 # A newline in a name writes a second record whose result the caller chose. `why` is flattened; a

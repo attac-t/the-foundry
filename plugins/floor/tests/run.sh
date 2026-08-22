@@ -1211,6 +1211,11 @@ wreck_runner "a run that cannot be found from inside it is caught" \
 wreck_runner "a delivery refusal wearing another verb's code is caught" \
   onecode 's#    exit "$3"#    exit 1#'
 
+
+# A run that never ran its gate handed over a pass for it and reached complete = 0.
+wreck_runner "a pass handed over for a pinned gate is caught" \
+  handedover 's#^    refuse_a_pinned_name.*#    :#'
+
 report_breaks
 
 # --- break the install ---
