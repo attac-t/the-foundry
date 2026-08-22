@@ -1511,6 +1511,48 @@ the_substituted_tree_still_holds_the_work() {
 the_substituted_tree_still_holds_the_work
 
 #
+# A command names one file and reaches others. `sh check.sh` pins nothing about `deeper.sh`, so a run
+# rewriting the second file lowered the bar and every pin still matched.
+#
+# Three deep, because a fixed point is the claim. Two would pass with one step.
+#
+# `notes.md` is the other half. The base's gate reads it and nothing runs it, so it is the run's own
+# work — restoring it would grade this run against a tree it never wrote to.
+#
+a_gate_grades_from_the_base_however_deep_it_reaches() {
+  make_repo "$tmp/cl" main && set_origin "$tmp/cl" 'https://github.com/acme/cl.git' \
+    && commit_file "$tmp/cl" check.sh 'sh deeper.sh
+' && commit_file "$tmp/cl" deeper.sh 'sh deepest.sh
+' && commit_file "$tmp/cl" deepest.sh 'grep -q changed notes.md
+' && commit_file "$tmp/cl" notes.md 'original
+' && mkdir -p "$tmp/cl/.foundry" \
+    && commit_file "$tmp/cl" .foundry/gates 'tests  sh check.sh
+' || { skip "the closure — git could not make a repo here"; return; }
+
+  floor "$tmp/cl" new "Closure" >/dev/null
+  floor "$tmp/cl" charter derive >/dev/null 2>&1
+  floor "$tmp/cl" policy authorize 'https://github.com/acme/cl.git' >/dev/null 2>&1
+  floor "$tmp/cl" targets add 'https://github.com/acme/cl.git' main >/dev/null 2>&1
+  work=$(only_slot "$(floor "$tmp/cl" open)")
+
+  is "the gate three files down does not pass" "$(code_of floor "$tmp/cl" gates)" "14"
+
+  # Nothing pins `deepest.sh` and no command names it. Two files stand between it and the charter.
+  printf 'exit 0\n' > "$work/deepest.sh"
+  git -C "$work" -c user.email=a@b.c -c user.name=a commit -aqm "a file the charter never named"
+
+  is "and rewriting a file it reaches changes nothing" "$(code_of floor "$tmp/cl" gates)" "14"
+
+  # What the gate reads rather than runs. The base's own `deepest.sh` asks for this, and it must see
+  # what the run wrote.
+  printf 'changed\n' > "$work/notes.md"
+  git -C "$work" -c user.email=a@b.c -c user.name=a commit -aqm "the work the gate reads"
+
+  is "while a file it only reads is still the run's own work" "$(code_of floor "$tmp/cl" gates)" "0"
+}
+a_gate_grades_from_the_base_however_deep_it_reaches
+
+#
 # One ref for the whole set. A gate that commits would otherwise move the tree the gates after it are
 # recorded against, and the ledger would name a sha nobody gated.
 #

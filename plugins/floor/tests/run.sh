@@ -1224,6 +1224,10 @@ wreck_runner "a gate the run rewrote itself is caught" \
 wreck_runner "a merge that lands a moved head is caught" \
   movedhead 's#^    refuse_a_moved_head.*#    :#'
 
+# A run rewrote a file its gate runs and no command names. Nothing covered it.
+wreck_runner "a gate reaching a second file is caught" \
+  reaches 's#^        \[ "$grown".*#        break#'
+
 report_breaks
 
 # --- break the install ---
