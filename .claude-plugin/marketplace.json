@@ -12,44 +12,37 @@
     {
       "name": "kernel",
       "source": "./plugins/kernel",
-      "description": "Universal cognitive kernel. Stack-agnostic thinking patterns, memory management, and planning tools.",
-      "version": "1.14.0"
+      "description": "Universal cognitive kernel. Stack-agnostic thinking patterns, memory management, and planning tools."
     },
     {
       "name": "panel",
       "source": "./plugins/panel",
-      "description": "Adversarial agent teams. Verification that cannot be self-issued. Standalone; pairs well with kernel.",
-      "version": "0.9.1"
+      "description": "Adversarial agent teams. Verification that cannot be self-issued. Standalone; pairs well with kernel."
     },
     {
       "name": "laravel-ddd",
       "source": "./plugins/laravel-ddd",
-      "description": "Domain-driven design patterns for Laravel. Standalone; pairs well with kernel.",
-      "version": "1.4.2"
+      "description": "Domain-driven design patterns for Laravel. Standalone; pairs well with kernel."
     },
     {
       "name": "laravel-playbook",
       "source": "./plugins/laravel-playbook",
-      "description": "The package author's playbook. Ecosystem-wide patterns for crafting, shipping, and sustaining pinnacle Laravel packages.",
-      "version": "2.3.1"
+      "description": "The package author's playbook. Ecosystem-wide patterns for crafting, shipping, and sustaining pinnacle Laravel packages."
     },
     {
       "name": "pest",
       "source": "./plugins/pest",
-      "description": "Pest v3 testing syntax and patterns. Standalone; pairs well with kernel.",
-      "version": "2.1.1"
+      "description": "Pest v3 testing syntax and patterns. Standalone; pairs well with kernel."
     },
     {
       "name": "signal",
       "source": "./plugins/signal",
-      "description": "Plain English harness. States the budget before the agent writes, and reads what came back.",
-      "version": "0.4.4"
+      "description": "Plain English harness. States the budget before the agent writes, and reads what came back."
     },
     {
       "name": "floor",
       "source": "./plugins/floor",
-      "description": "Where work happens. A run is one attempt at one work item, held outside every repository it changes.",
-      "version": "0.25.0"
+      "description": "Where work happens. A run is one attempt at one work item, held outside every repository it changes."
     }
   ]
 }

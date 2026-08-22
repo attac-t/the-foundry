@@ -1,6 +1,6 @@
 ---
 name: craft-plugin-update
-description: Release a plugin version. Bump plugin.json and the marketplace manifest, then commit.
+description: Release a plugin version. Bump plugin.json, then commit.
 ---
 
 # Skill: Craft Plugin Update
@@ -13,14 +13,14 @@ Run this when releasing a new version of a plugin.
 
 ## The Protocol
 
-1. **Bump version in both places** — `plugin.json` *and* the plugin's entry in
-   `.claude-plugin/marketplace.json`
+1. **Bump the version** in the plugin's own `plugin.json`
    - Patch: bug fixes, docs
    - Minor: new skills, features
    - Major: breaking changes
 
-   The manifest is the one that gets forgotten, and nothing surfaces the mismatch: the plugin
-   installs fine and reports the wrong version. `bin/versions.sh` exists because this shipped.
+   One place. `marketplace.json` names plugins and where they live, and carries no version — the
+   field is optional and Claude Code falls back to `plugin.json`. A second copy made one shared line
+   every branch edits, so plugin work collided for packaging reasons.
 
 2. **Update changelog** (if exists)
    - Date + version header
