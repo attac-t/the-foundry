@@ -50,53 +50,25 @@ Seven lines, the whole story. The test: **can a stranger describe the script aft
    the loop never ends.
 7. **Decide `set -e` in writing.** It is on, or the header says why not. Silence means you never
    decided.
-8. **Comments carry discoveries, not narration.** `# herd start stops the data services` earns its
-   line. `# ── Step 3 ──` above a line printing "Step 3" does not.
-   **Needing one is evidence against the function.** A comment explaining *what* a body does means
-   the name is wrong or the body is two jobs — fix that first, and the comment leaves on its own. A
-   preamble longer than the function it introduces is the clearest form of the tell.
-   **Three lines, tapering.** No `#` fence and no bold — the blank line already separated it, and a
-   sentence that matters goes first instead. Each line is shorter than the one above, so the block
-   narrows to a point and the eye finds its end without counting.
+8. **Comments are their own skill.** See `kernel:craft-comment` — what earns a line, the taper,
+   and the space that means no comment was needed.
 9. **`shellcheck` passes.** Not optional.
 10. **One name, one meaning.** Every variable is global unless you say otherwise, so a name that
     means two things is a bug waiting for a refactor.
-11. **A split moves its comments.** After extracting, the parent keeps only what the parts do not
-    say. Facts left behind get read twice and edited once.
-12. **Say why a defensive line survives.** A guard with no reason reads as redundant, and redundant
-    is what gets simplified away.
+11. **A name says what it returns.** `unit_targets_file`, not `unit_targets` — the call-site should
+    read as the thing it gets.
+12. **One voice.** `step`, `note`, `fail` — never `echo` everywhere. One place to change how a script
+    speaks.
+13. **No bare `exit 1`.** Document the codes. A caller cannot branch on "it broke".
 
-## The Anti-Patterns
+## Examples
 
-| Don't                          | Do                              | Why                                    |
-| ------------------------------ | ------------------------------- | -------------------------------------- |
-| 200 top-level lines            | `main` plus named steps         | No shape, no reading                   |
-| `if … elif … else`             | Guard clauses, or a new function | Each branch is a job that wanted a name |
-| A function you scroll to read  | The same steps, named            | Verbosity starts long before it hurts  |
-| A raw test inside `if`         | A named predicate               | The name is the documentation          |
-| Trusting a tool's message      | Poll what it claims             | Tools lie about themselves             |
-| A banner above a labelled step | The label alone                 | The script says it twice               |
-| Inlining a helper used once    | Naming it anyway                | The call-site reads as a sentence      |
-| A comment that counts lines    | Say what the code does          | It rots the next time one moves        |
-| A `#` fence around a comment   | The comment                     | The blank line already separated it    |
-| A block that widens as it goes | Break the lines so it narrows   | A taper ends; a wall has to be scanned |
-| A name that hides what returns | `unit_targets_file`             | The call-site should read as what it gets |
-| `echo` everywhere              | `step`, `note`, `fail`          | One voice, one place to change         |
-| Bare `exit 1`                  | Documented exit codes           | The caller cannot branch on "it broke" |
+One subject per file. Open the one the rule sent you to.
 
-## Portability
-
-Write for the shell you have, and say so. These bite silently elsewhere:
-
-| BSD, so macOS-only            | Portable instead                      |
-| ----------------------------- | ------------------------------------- |
-| `sed -i ''`                   | `awk` to a temp file, then `mv`       |
-| `date -j -f`                  | Compare ISO dates as text — they sort |
-| `md5`                         | `shasum`, or drop the hash            |
-| `awk '{print $1}'` over paths | `--porcelain` output, or whole lines  |
-
-Bash is the floor. Windows needs WSL or Git Bash — say so in the skill that ships the script.
-
-## Real-World Examples
-
-See [examples.md](examples.md).
+| | |
+|---|---|
+| [shape](shape.md) | predicates, guard clauses, `ensure_` |
+| [oracles](oracles.md) | polling what a tool claims, guarding a flag value |
+| [voice](voice.md) | one voice, traps |
+| [comments](comments.md) | the taper, breathing |
+| [portability](portability.md) | what is BSD-only, and what to write instead |
