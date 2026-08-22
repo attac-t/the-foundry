@@ -1476,6 +1476,7 @@ a_failing_gate_is_recorded_and_answered() {
 a_failing_gate_is_recorded_and_answered
 
 
+
 #
 # The other direction, and the one a substitution gets wrong. **The work is what is graded.** Check
 # out the base tree instead of planting the base blob in this one, and the gate grades a repository
@@ -3300,6 +3301,13 @@ case "$*" in
                               exact && $3 == run                      { print $1, $2; next }
                               !exact && index($3, substr(run, 1, 10)) { print $1, $2 }
                             ' "$store/prs" 2>/dev/null || true ;;
+  # `gh` joins the four fields itself, so the fixture holds the answer already joined — the same
+  # shape the adapter's `--jq` produces, and one a test can move a head in.
+  "pr view"*)               [ -f "$store/reads-fail" ] && { echo "HTTP 502: Bad gateway" >&2; exit 1; }
+                            cat "$store/state" 2>/dev/null ;;
+  "pr merge"*)              [ -f "$store/reads-fail" ] && { echo "could not resolve host" >&2; exit 1; }
+                            printf '%s
+' "$3" >> "$store/merged" ;;
   "pr create"*)             [ -f "$store/writes-fail" ] && { echo "GraphQL: Head sha can't be blank (createPullRequest)" >&2; exit 1; }
                             url="https://example.invalid/pr/$(cat "$store/prs" 2>/dev/null | grep -c .)"
                             run=$(printf '%s' "$8" | awk '$1 == "floor-run:" { print $2 }')
@@ -3485,6 +3493,86 @@ the_other_adapter() {
   unset GH_STORE
 }
 the_other_adapter
+
+#
+# **The thing merged must be the thing graded.** Every other refusal here is worth less than that
+# one: a head that moved after grading is a tree nothing answered for, and landing it puts work in
+# the trunk no gate ever saw.
+#
+# Provider permission is not authority. Anything that can run `gh` can merge whatever the practice
+# says, so this grants intent and withholds nothing — which is why it is a grant of its own.
+#
+a_merge_lands_only_what_was_graded() {
+  make_repo "$tmp/mg" main && set_origin "$tmp/mg" 'https://github.com/acme/mg.git' \
+    && mkdir -p "$tmp/mg/.foundry" \
+    && commit_file "$tmp/mg" .foundry/gates 'tests  true
+' || { skip "merge — git could not make a repo here"; return; }
+
+  fake_gh "$tmp/mgbin" || { skip "merge — could not put a gh on the path"; return; }
+  store="$tmp/mgstore"
+  mkdir -p "$store"
+  printf 'Land it
+
+And only what was graded.
+' > "$store/item"
+
+  mg() { ( cd "$tmp/mg" && PATH="$tmp/mgbin:$PATH" GH_STORE="$store" FOUNDRY_HOME="$home" \
+           FOUNDRY_RUN="$mgrun" FOUNDRY_WHO=a@b sh "$runner" "$@" 2>/dev/null ); }
+  mgrun=$( cd "$tmp/mg" && PATH="$tmp/mgbin:$PATH" GH_STORE="$store" FOUNDRY_HOME="$home" \
+           FOUNDRY_RUN="" FOUNDRY_WHO=a@b sh "$runner" new "Merge" 2>/dev/null )
+
+  mg source read 12 >/dev/null 2>&1
+  mg charter derive >/dev/null 2>&1
+  mg policy authorize  'https://github.com/acme/mg.git' >/dev/null 2>&1
+  mg policy deliver-to 'https://github.com/acme/mg.git' >/dev/null 2>&1
+  mg targets add       'https://github.com/acme/mg.git' main >/dev/null 2>&1
+  work=$(only_slot "$(mg open)")
+  mg gates >/dev/null 2>&1
+
+  is "a run that may deliver may not merge" "$(code_of mg merge)" "23"
+
+  mg policy merge-to 'https://github.com/acme/mg.git' >/dev/null 2>&1
+  is "and a run that delivered nothing has nothing to land" "$(code_of mg merge)" "24"
+
+  mg source publish work/mg 'The work' >/dev/null 2>&1
+  graded=$(git -C "$work" rev-parse HEAD)
+
+  # The first falsifier. Grade one commit, move the delivery to another, merge.
+  printf '0000000000000000000000000000000000000000 OPEN MERGEABLE NONE\n' > "$store/state"
+  is "a delivery whose head moved is refused" "$(code_of mg merge)" "24"
+  is "and nothing was landed"                 "$(cat "$store/merged" 2>/dev/null)" ""
+
+  printf '%s OPEN MERGEABLE FAILURE\n' "$graded" > "$store/state"
+  is "a check that did not pass is refused"   "$(code_of mg merge)" "24"
+
+  # A pending rollup carries no failure, so a reader looking for one finds an empty list and calls it
+  # clean. Named separately because that is the shape it fails in.
+  printf '%s OPEN MERGEABLE PENDING\n' "$graded" > "$store/state"
+  is "and one that has not answered is not one that passed" "$(code_of mg merge)" "24"
+
+  printf '%s OPEN CONFLICTING NONE\n' "$graded" > "$store/state"
+  is "a source that will not take it is refused" "$(code_of mg merge)" "24"
+
+  printf '%s CLOSED MERGEABLE NONE\n' "$graded" > "$store/state"
+  is "and a delivery nobody left open is not merged" "$(code_of mg merge)" "24"
+
+  printf '%s OPEN MERGEABLE SUCCESS,SUCCESS\n' "$graded" > "$store/state"
+  is "the thing that was graded is merged" "$(code_of mg merge)" "0"
+  matches "and the source was told to land it" "$(cat "$store/merged" 2>/dev/null)" "^https://"
+
+  # A retry after a merge that landed. Refusing would read as a merge that never happened, and
+  # merging again is not something a source forgives twice.
+  printf '%s MERGED MERGEABLE SUCCESS\n' "$graded" > "$store/state"
+  is "a retry settles rather than landing twice" "$(code_of mg merge)" "0"
+  is "and the source was asked once"  "$(grep -c . "$store/merged" 2>/dev/null)" "1"
+
+  # Fail-safe, and the one that has to be said out loud: nobody answering is not the source saying
+  # yes.
+  : > "$store/reads-fail"
+  is "a lookup that failed never reads as safe to merge" "$(code_of mg merge)" "25"
+  rm -f "$store/reads-fail"
+}
+a_merge_lands_only_what_was_graded
 
 # Level 1 has two halves and this is the second one: a repository whose remote is GitHub, on a
 # machine with no `gh`, still has a work source. Skipped where a real `gh` would answer instead.
