@@ -955,6 +955,15 @@ One thing works in v1 with zero code: because the workspace holds the checkouts 
 ledger, **a person can join by opening a shell in the workspace and reading the run.** That is the
 test of whether the decomposition was right — if joining required new machinery, the nouns were wrong.
 
+**Revision 16: run, and the nouns held.** A person can read the run, because the workspace sits inside
+it and the ledger is four levels up. **Floor cannot.** `active_run` reads `FOUNDRY_RUN` or the
+invoking checkout's pointer, and never where it is standing — so a shell opened in the workspace gets
+nothing from `path` and exit 1 from `gates`. The checkout records `foundry.ref`, the ref it was opened
+for, and nothing that names the run.
+
+That is the sentence above holding and its promise not being kept. Joining needs no new noun; it needs
+`active_run` to look down at its own feet, which is one lookup and belongs to #115.
+
 ### Units: named now, one shipped
 
 v1 creates runs with exactly one unit. The layout accommodates N from the start. Naming it now costs
@@ -1467,7 +1476,7 @@ required by §2.3, not speculative.
 | 10 | Deliver after gates pass, then land a commit; confirm completion refuses | the completion invariant | **passes.** `satisfied` matches evidence on the ref it named, so a commit after grading unbinds it. Hit for real on 2026-08-21 |
 | 10b | A run whose charter derives no clause, and one whose units select no target; confirm both refuse to deliver | the two non-empty conjuncts | **passes.** `unmet_for_delivery` runs `empty_bar` and `empty_selection` |
 | 11 | Detection across ten unfamiliar repos — right, wrong, and *says it cannot tell* | Level 1 convention | untested |
-| 12 | Open a shell in a workspace and take over mid-run | the session decomposition | untested |
+| 12 | Open a shell in a workspace and take over mid-run | the session decomposition | **run 2026-08-22 — the nouns hold, the verb does not.** A person can read the run: the workspace sits inside it, four levels down, and the ledger is right there. Floor cannot. `active_run` reads `FOUNDRY_RUN` or the invoking checkout's pointer and never where it is standing, so from the workspace `path` answers nothing and `gates` exits 1. The workspace records `foundry.ref` and no run. Joining needs no new noun — it needs `active_run` to look down at its own feet. #115 |
 | 13 | Two units in one run, in parallel, no interference | the unit/workspace split | not built |
 | 14 | Skill narrowing vs. kernel's claimed 84% activation | the discovery convention | unmeasured |
 | 15 | Panel's own kill criterion — ten runs | whether Panel earns its cost | never run |
