@@ -60,6 +60,7 @@ audit_says_which
 ends_on "$root/tests/run.sh"     'exit $failed'      || bad "tests/run.sh declares breaks below its exit, and nothing runs them"
 ends_on "$root/tests/model.sh"   'summary "model"'   || bad "tests/model.sh runs cases below its tally, and nothing counts them"
 ends_on "$root/tests/install.sh" 'summary "install"' || bad "tests/install.sh runs cases below its tally, and nothing counts them"
+ends_on "$root/tests/host.sh"    'summary "host"'    || bad "tests/host.sh runs cases below its tally, and nothing counts them"
 
 #
 # The clean suite's own time. **Every deadline below is measured from it.**
@@ -68,7 +69,7 @@ ends_on "$root/tests/install.sh" 'summary "install"' || bad "tests/install.sh ru
 # exceeded it there and, inverted, read as caught. A mutant is either caught early by `FOUNDRY_FAIL_FAST`
 # or runs about as long as a clean pass. Anything far past that is stuck on any machine.
 #
-for suite in model install; do
+for suite in model install host; do
   began=$(date +%s)
   bash "$root/tests/$suite.sh" || failed=1
   [ "$suite" = model ] && clean=$(( $(date +%s) - began ))
@@ -1285,6 +1286,46 @@ report_breaks
   && bad "a suite that ran nothing passed" \
   || printf '  ok    a suite that ran nothing does not pass\n'
 echo
+
+# --- break the join, the host suite must notice ---
+
+echo
+echo "audit — break the join, the host suite must notice"
+
+# The same shape as the install audit above, reading the other suite's exit code.
+hosted() { ! PLUGIN_ROOT="$tmp/$1" bash "$root/tests/host.sh" >/dev/null 2>&1; }
+
+wreck_join() {
+  local name="$1" tag="$2" mutation="$3"
+
+  copy "$tag" || { bad "$name — could not copy the plugin, so this proves nothing"; return; }
+  sed "$mutation" "$root/bin/join.sh" | rewrite "$tmp/$tag/bin/join.sh"
+  cmp -s "$tmp/$tag/bin/join.sh" "$root/bin/join.sh" \
+    && { moot "$name — the break did not apply, so this proves nothing"; return; }
+  hosted "$tag" || { bad "$name — the suite passed against a broken join"; return; }
+
+  printf '  ok    %s\n' "$name"
+}
+
+# Each of the three that used to be silent, made silent again one at a time.
+wreck_join "a host with no git author waved through is caught" \
+  noauthor 's#^    refuse_without_an_author$#    :#'
+
+wreck_join "a host with no authority waved through is caught" \
+  noauthority 's#^    refuse_without_an_authority$#    :#'
+
+wreck_join "a repository that is not there waved through is caught" \
+  norepo 's#^    refuse_without_a_repository$#    :#'
+
+# The silent one this command exists for. Saying nothing about the source is what it replaced.
+wreck_join "a source that is chosen without a word is caught" \
+  mutesource 's#^    report_work_source$#    say "who     $FOUNDRY_WHO"#'
+
+# A count that reads comments and blank lines reports a repository authorising more than a human
+# wrote — the shape of the number matters as much as its presence.
+wreck_join "a grant count that counts comments is caught" \
+  loudcount 's#grep -cv#grep -c#'
+
 [ "$failed" -eq 0 ] && echo "ALL GREEN"
 [ "$failed" -eq 1 ] && echo "FAILURES ABOVE"
 [ "$failed" -eq 3 ] && echo "PROVED NOTHING — the experiments above never ran"

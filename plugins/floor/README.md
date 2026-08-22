@@ -18,6 +18,33 @@ Working memory used to live in the repo being changed. That breaks three ways.
 
 ---
 
+## Before the first run, on a host that never had one
+
+```bash
+sh bin/join.sh
+```
+
+It reports and exits. Nothing is installed and nothing is written to the repository.
+
+Six things stood between a clean machine and a working system, and three were silent when wrong: no
+`gh` picks a different work source, no git identity fails later at commit, and no `FOUNDRY_WHO`
+records an authority nobody granted. Each now names itself.
+
+```
+home    /home/you/.foundry-runs
+        derived from HOME. Set FOUNDRY_HOME to put it elsewhere.
+who     you@example.com
+source  a directory, and the remote is GitHub. Install gh, or Issues stay unreachable.
+grants  2 in .foundry/practice
+gates   1 in .foundry/gates
+joined.
+```
+
+The host's half is above the line, the repository's below it. Neither is written into the other, and
+this command writes neither.
+
+Exit 1 is something the host must supply. Exit 3 is not a repository this can join.
+
 ## From a clone to a delivery
 
 Eleven verbs, in this order, and a standing practice answers for two of them.
