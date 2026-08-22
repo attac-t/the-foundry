@@ -19,7 +19,7 @@
       "name": "panel",
       "source": "./plugins/panel",
       "description": "Adversarial agent teams. Verification that cannot be self-issued. Standalone; pairs well with kernel.",
-      "version": "0.8.4"
+      "version": "0.9.1"
     },
     {
       "name": "laravel-ddd",
