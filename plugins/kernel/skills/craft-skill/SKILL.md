@@ -13,8 +13,9 @@ description: How to craft an atomic skill. Includes templates and registration.
 - **Brevity**: Less is more. No verbose explanations.
 - **Expertise**: Write *how an expert thinks*, not checklists.
 - **Eighty lines, and it is ours**: front matter and all. Anthropic's published ceiling is 500, for
-  performance. Eighty is stricter and answers a different question — a skill is read into attention
-  whole, so its length is what crowds out the next one. Past it, a skill is two skills.
+  performance. Eighty is stricter and answers two questions it does not. A skill is read into
+  attention whole, so its length is what crowds out the next one — **and a person has to read it
+  too.** Eighty is a screen. Past it, a skill is two skills.
 - **Atomic examples**: one subject per file, named for it. Anthropic calls this **progressive
   disclosure**, and adds the rule that matters — **references stay one level deep from `SKILL.md`**,
   so a file it sends you to is read whole rather than chased.
