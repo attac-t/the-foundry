@@ -3296,9 +3296,15 @@ the_other_adapter() {
   # Two runs made the same day share three tokens of four, and GitHub matches words. Another run's
   # pull request came back as this one's delivery, so `publish` compared branches,
   # found them different, and refused a run that had never delivered.
-  decoy='foundry/2026-08-21-item-219-0000 https://example.invalid/pr/9 2026-08-21-item-219-0000'
+  #
+  # The day comes from the run under test. Written out, it was true for one
+  # day: past midnight the decoy shared no tokens, the adapter
+  # answered right for the wrong reason, and main went red.
+  day=$(basename "$ghrun" | cut -c1-10)
+  decoy="foundry/$day-item-219-0000 https://example.invalid/pr/9 $day-item-219-0000"
   { echo "$decoy"; cat "$GH_STORE/prs"; } > "$GH_STORE/prs.new"
   mv "$GH_STORE/prs.new" "$GH_STORE/prs"
+  { echo "GHRUN=[] DAY=[]"; echo "PRS:"; cat "/prs"; } >&2
   # The record answers before the source does, so it comes off to reach the adapter at all.
   rm -f "$ghrun/delivery"
 
