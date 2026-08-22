@@ -41,6 +41,14 @@
 #      network. Not 1: that is the source answering, and answering that nothing is there
 #  21  a gate's command is not on this host, so nothing was graded and nothing is recorded. Not 14:
 #      that is a gate answering, and its answer stands at that ref for good
+#  23  nobody said this run may merge into that repository. `policy deliver-to` grants proposing,
+#      and landing work in the trunk is a third act a human takes
+#  24  the delivery is not the thing that was graded, or the source will not take it. An answer
+#      about one delivery, never a fault in this run
+#  25  the source could not be asked about the delivery, or could not land it. Not 24: that is the
+#      source answering, and this is nobody answering
+#  26  an open delivery elsewhere cannot be brought together with this one. An answer about
+#      two deliveries, and a fault in neither
 #  22  the repository declares a bar in a file that is there and cannot be read. Not 8: that is a
 #      charter holding no clause, and this is one nobody could derive. The remedy is the file
 #
@@ -72,6 +80,8 @@ main() {
         open)      open_workspace "$@" ;;
         complete)  complete "$@" ;;
         deliver)   deliver "$@" ;;
+        merge)     merge_delivery "$@" ;;
+        reconcile) reconcile "$@" ;;
         authorise) authorise ;;
         source)    work_source "$@" ;;
         *)         usage; exit 2 ;;
@@ -92,6 +102,7 @@ floor — where work happens.
   run.sh policy                   list what this run may change
   run.sh policy authorize <repo>  let this run change one more
   run.sh policy deliver-to <repo> let this run write to one — a second act, and grading is not it
+  run.sh policy merge-to <repo>   let this run land what it delivered — a third act, absent by default
   run.sh charter                  print what must be true for this run to be good
   run.sh charter derive           derive clauses from this repository, pinned at its base
   run.sh charter check            report clauses that drifted from their pins, or went missing
@@ -105,9 +116,12 @@ floor — where work happens.
   run.sh open                     check out every selected target in isolation, and print where
   run.sh complete                 may this run deliver? exit 15 names what is missing
   run.sh deliver <title>          push the work and tell the source where it is
+  run.sh merge                    land what was graded, or say why it may not be
+  run.sh reconcile                whether every other open delivery can join this one
   run.sh authorise                refuse a run that describes no work, or whose selection moved
                                   — exit 1, 5, 8, 9, 10, 11 or 12
   run.sh source read <item>       pull the item's words into this run
+  run.sh source kind              what the source says this work is, or exit 1
   run.sh source publish <branch> <title>
                                   report this run's delivery, and print its identity
   run.sh source ask <stage> <clause> <question>
@@ -816,6 +830,7 @@ policy() {
         '')         list_policy "$dir" ;;
         authorize)  shift; authorize  "$dir" "${1:-}" ;;
         deliver-to) shift; deliver_to "$dir" "${1:-}" ;;
+        merge-to)   shift; merge_to   "$dir" "${1:-}" ;;
         *)          usage; exit 2 ;;
     esac
 }
@@ -966,6 +981,7 @@ record_grant() {
 
 authorize()  { grant "$1" "$(grants_file "$1")"     is_authorised  "${2:-}"; }
 deliver_to() { grant "$1" "$(deliveries_file "$1")" may_deliver_to "${2:-}"; }
+merge_to()   { grant "$1" "$(merges_file "$1")"     may_merge_to   "${2:-}"; }
 
 list_targets() {
     [ -f "$1" ] || return 0
@@ -1341,11 +1357,88 @@ pinned_base() {
 }
 
 #
-# Every file a pinned command runs that this run has since changed, as `base<TAB>path`.
+# Every file a pinned command runs, and every file those run — to a fixed point.
 #
-# A command names its own script and nothing deeper, so this is what a pin can see. `bin/gates.sh`
-# invokes `bin/shell.sh` by relative path, and rewriting that stays invisible here — the closure
-# problem, named in the README rather than solved.
+# **What a script runs, never what it mentions.** A gate naming `README.md` in a message would have
+# the run's own README graded as the base wrote it, which is the opposite failure: work nobody could
+# ever pass.
+#
+# Only a literal path. A path built from a variable is not followed, and that boundary is where this
+# stops — stated in the README, because here it happens to fall between the gate harness and the
+# suites the harness invokes, which are as often a run's work as they are its bar.
+#
+closure_of() {
+    base=$1
+    shift
+    held=$(printf '%s\n' "$@" | sort -u)
+
+    while :; do
+        grown=$(printf '%s\n' "$held" | while read -r path; do
+                    [ -n "$path" ] || continue
+                    printf '%s\n' "$path"
+                    files_run_by "$base" "$path"
+                done | sort -u)
+
+        [ "$grown" = "$held" ] && break
+        held=$grown
+    done
+
+    printf '%s\n' "$held"
+}
+
+# Read from the base and from the work, both. A run that adds a call to a helper is invisible in the
+# base's copy, and one that removes a call is invisible in its own.
+#
+# Only what the base holds is yielded. A helper the run added has nothing to restore, and the script
+# that would call it is restored to a version that does not.
+files_run_by() {
+    named=$(both_versions "$1" "$2" | runs_these)
+
+    # A here-doc, and not a pipe. A path this yields is one the base holds, and a pipeline would
+    # answer for the loop rather than for the reads behind it.
+    while read -r path; do
+        [ -n "$path" ] || continue
+        git cat-file -e "$1:$path" 2>/dev/null && printf '%s
+' "$path"
+    done <<EOF
+$named
+EOF
+}
+
+# Both copies, as text. Either may be missing — a file the run added, or one it deleted — and a
+# missing copy is nothing to read rather than a failure to report.
+both_versions() {
+    base=$(git show "$1:$2" 2>/dev/null)
+    work=$(cat "$2" 2>/dev/null)
+
+    printf '%s
+%s
+' "$base" "$work"
+}
+
+# `sh x`, `bash x`, `. x`, `source x`, `awk -f x`. A word in one of those positions and nowhere else.
+runs_these() {
+    awk '{
+        for (i = 1; i < NF; i++) {
+            word = ""
+            if ($i == "sh" || $i == "bash" || $i == "." || $i == "source") word = $(i + 1)
+            if ($i == "-f" && i > 1 && $(i - 1) ~ /awk$/)                  word = $(i + 1)
+
+            gsub(/^[\047\042]|[\047\042]$/, "", word)
+            if (word ~ /^[A-Za-z0-9_.\/-]+$/) print word
+        }
+    }'
+}
+
+# The files a command names outright. A word that is no file here is an option, or the interpreter.
+named_files() {
+    for word in "$@"; do
+        [ -f "$word" ] && printf '%s\n' "$word"
+    done
+}
+
+#
+# Every file a pinned command reaches that this run has since changed, as `base<TAB>path`.
 #
 moved_gate_scripts() {
     printf '%s\n' "$2" | while read -r id command; do
@@ -1353,10 +1446,10 @@ moved_gate_scripts() {
         base=$(pinned_base "$1" "$id")
         [ -n "$base" ] || continue
 
-        for word in $command; do
-            [ -f "$word" ] || continue
-            git diff --quiet "$base" -- "$word" 2>/dev/null && continue
-            printf '%s\t%s\n' "$base" "$word"
+        for path in $(closure_of "$base" $(named_files $command)); do
+            git cat-file -e "$base:$path" 2>/dev/null || continue
+            git diff --quiet "$base" -- "$path" 2>/dev/null && continue
+            printf '%s\t%s\n' "$base" "$path"
         done
     done | sort -u
 }
@@ -1542,6 +1635,239 @@ unmet_for_delivery() {
 # unmet when the real answer is that nobody granted delivery sends them to a remedy that changes
 # nothing.
 #
+#
+# Beside the other two, never merged into them. One file holding all three would make `policy
+# authorize` grant the third power as well.
+#
+merges_file() { printf '%s/%s/merges' "$GRANTS" "$(basename "$1")"; }
+
+#
+# No bootstrap exemption, for the reason `may_deliver_to` has none. Standing somewhere is not
+# permission to land work there, and every run is bootstrapped somewhere.
+#
+may_merge_to() {
+    standing merge "$1" "$2" && return 0
+
+    file=$(merges_file "$1")
+    [ -f "$file" ] || return 1
+    grep -Fxq -- "$2" "$file"
+}
+
+#
+# Merge what this run delivered.
+#
+# **The thing merged must be the thing graded.** Every other refusal here is worth less than that
+# one: a head that moved after grading is a tree nothing answered for, and landing it puts work in
+# the trunk that no gate ever saw.
+#
+# Provider permission is not authority, and neither implies the other. Anything that can run `gh` can
+# merge whatever the practice says — `.foundry/practice` opens by saying so. This records intent and
+# withholds nothing; the identity Foundry runs under is what refuses.
+#
+merge_delivery() {
+    [ "$#" -eq 0 ] || { usage; exit 2; }
+
+    dir=$(active_run) || exit 1
+    here=$(this_repository)
+
+    refuse_unreadable_run "$dir"
+    refuse_ungranted_merge "$dir" "$here"
+    refuse_incomplete "$dir"
+    refuse_missing_source
+
+    land_what_was_graded "$dir" "$(graded_ref "$dir" "$here")"
+}
+
+refuse_ungranted_merge() {
+    may_merge_to "$1" "$2" && return 0
+
+    note "nobody said this run may merge into [$2] — \`policy merge-to\` is what says so"
+    exit 23
+}
+
+# The commit the evidence names. `refuse_incomplete` has already passed, so every clause is met at
+# this ref — which is the whole of what a merge may land.
+graded_ref() {
+    tree=$(unit_work_tree "$1" "$2") || exit 16
+    git -C "$tree" rev-parse --verify --quiet HEAD
+}
+
+land_what_was_graded() {
+    said=$(source_says state "$(basename "$1")")
+    asked=$?
+
+    # A source that answered *nothing delivered* is not one that could not be asked.
+    [ "$asked" -eq 1 ] && { note "this run has delivered nothing, so there is nothing to merge"; exit 24; }
+    [ "$asked" -eq 0 ] || exit 25
+
+    read -r head state mergeable checks <<EOF
+$said
+EOF
+
+    # A retry after a merge that landed. Silence here would read as a second merge that worked, and
+    # a refusal would read as one that never happened.
+    [ "$state" = MERGED ] && { note "this delivery is already merged"; return 0; }
+
+    refuse_a_delivery_not_open   "$state"
+    refuse_a_moved_head          "$head" "$2"
+    refuse_a_source_that_will_not "$mergeable"
+    refuse_a_check_that_did_not_pass "$checks"
+
+    source_says land "$(basename "$1")" || exit 25
+    note "merged."
+}
+
+refuse_a_moved_head() {
+    [ "$1" = "$2" ] && return 0
+
+    note "the delivery is at [$1] and the evidence names [$2]"
+    note "the thing merged must be the thing graded — grade again, or deliver what was graded"
+    exit 24
+}
+
+refuse_a_delivery_not_open() {
+    [ "$1" = OPEN ] && return 0
+
+    note "the delivery is [$1], so there is nothing here to merge"
+    exit 24
+}
+
+# `UNKNOWN` is the source still working it out, and it is refused with the rest. A lookup that has
+# not finished is not a lookup that said yes.
+refuse_a_source_that_will_not() {
+    [ "$1" = MERGEABLE ] && return 0
+
+    note "the source says this delivery is [$1], so it will not take it"
+    exit 24
+}
+
+#
+# Every check, or none. **A check that did not answer is not a check that passed** — the whole reason
+# this is spelled out is that a pending rollup reads as an empty failure list.
+#
+refuse_a_check_that_did_not_pass() {
+    [ "$1" = NONE ] && return 0
+
+    printf '%s\n' "$1" | tr ',' '\n' | grep -qvx SUCCESS || return 0
+
+    note "a check the source requires did not pass: $1"
+    exit 24
+}
+
+
+#
+# Two deliveries against one target, and whether they can be brought
+# together. Nothing coordinates them: the source is asked what
+# else is open, and a branch name is all that crosses.
+#
+# **Nothing reads another run's workspace.** The merge is tried in a tree of this run's own, and a
+# branch name is the whole of what came from anywhere else.
+#
+# Reported, never refused. A clash is a fact about two deliveries and a fault in neither, so this
+# answers 26 and the delivery stays exactly where it was.
+#
+reconcile() {
+    [ "$#" -eq 0 ] || { usage; exit 2; }
+
+    dir=$(active_run) || exit 1
+    here=$(this_repository)
+
+    refuse_unreadable_run "$dir"
+    refuse_missing_source
+
+    others=$(source_says open "$(delivery_branch "$dir")") || exit 25
+    [ -n "$others" ] || { note "nothing else is open against this target"; return 0; }
+
+    report_clashes "$dir" "$here" "$others"
+}
+
+report_clashes() {
+    tree=$(unit_work_tree "$1" "$2") || exit 16
+    clashed=0
+
+    while IFS="$(printf '\t')" read -r branch identity; do
+        [ -n "$branch" ] || continue
+        name_the_clash "$1" "$tree" "$branch" "$identity" || clashed=$((clashed + 1))
+    done <<EOF
+$3
+EOF
+
+    [ "$clashed" -eq 0 ] && { note "every other open delivery reconciles with this one"; return 0; }
+
+    note "open deliveries this one cannot be brought together with: $clashed"
+    return 26
+}
+
+# A branch nobody could fetch is not a branch that reconciles, and neither is a merge that could not
+# be tried. Both are counted with the clashes: the question was whether these can be brought
+# together, and this run still cannot say they can.
+name_the_clash() {
+    theirs=$(their_head "$2" "$3")
+
+    [ -n "$theirs" ] || {
+        note "[$4] could not be fetched, so nothing here can say whether it reconciles"
+        return 1
+    }
+
+    named=$(clashing_files "$1" "$2" "$theirs")
+
+    [ "$named" = "?" ] && { note "[$4] could not be merged here, so this says nothing either way"; return 1; }
+    [ -n "$named" ] || return 0
+
+    note "[$4] and this one both change: $named"
+    return 1
+}
+
+# Fetched when the source answers, and the copy already here
+# when it does not. A host that is down is no reason
+# to stop, and a clone left the tracking ref.
+their_head() {
+    git -C "$1" fetch origin "$2" >/dev/null 2>&1
+    fetched=$(git -C "$1" rev-parse --verify --quiet FETCH_HEAD 2>/dev/null)
+
+    [ -n "$fetched" ] && { printf '%s' "$fetched"; return 0; }
+    git -C "$1" rev-parse --verify --quiet "origin/$2" 2>/dev/null
+}
+
+#
+# The merge, tried and thrown away. In the workspace it would leave
+# this run's work in conflict over a question
+# about someone else's.
+#
+# `FETCH_HEAD` is per worktree and this one was just made, so the sha travels rather than the name.
+#
+# **A merge that could not be tried says `?`.** Empty would mean nothing clashed, and a tree that
+# never existed would read as two deliveries joining cleanly.
+#
+clashing_files() {
+    where=$(reconcile_tree "$1")
+    forget_tree "$2" "$where"
+
+    git -C "$2" worktree add --detach "$where" HEAD >/dev/null 2>&1 || { printf '?'; return 0; }
+
+    git -C "$where" merge --no-commit --no-ff "$3" >/dev/null 2>&1
+    # Nothing conflicted is not one empty name. `printf` on an empty string still writes a line, and
+    # a space is what a clash and a clean merge then look alike as.
+    named=
+    left=$(git -C "$where" diff --name-only --diff-filter=U 2>/dev/null)
+    [ -n "$left" ] && named=$(printf '%s\n' "$left" | tr '\n' ' ')
+    git -C "$where" merge --abort >/dev/null 2>&1
+    forget_tree "$2" "$where"
+
+    printf '%s' "$named"
+}
+
+# Beside the charter, like the gates tree. A merge
+# that went wrong is worth reading, and a fixed
+# path is one a person can be told to open.
+reconcile_tree() { printf '%s/reconcile-tree' "$1"; }
+
+# git's worktree, so git forgets it. Left registered, the next `add` refuses a path that is gone.
+forget_tree() {
+    git -C "$1" worktree remove --force "$2" >/dev/null 2>&1
+    rm -rf "$2"
+}
+
 deliver() {
     title=${1:-}
     [ "$#" -le 1 ] || { usage; exit 2; }
@@ -2606,6 +2932,7 @@ work_source() {
 
     case "${1:-}" in
         read)    shift; read_work_item   "$dir" "$@" ;;
+        kind)    shift; work_kind        "$dir" ;;
         publish) shift; publish_delivery "$dir" "$@" ;;
         ask)     shift; ask_about        "$dir" "$@" ;;
         receive) shift; receive_answer   "$dir" "$@" ;;
@@ -2682,7 +3009,32 @@ read_work_item() {
 
     printf '%s\n' "$said" > "$dir/item.md" 2>/dev/null || die_unwritable "$dir/item.md"
     printf '%s\n' "$item" > "$(source_file "$dir")" 2>/dev/null || die_unwritable "$(source_file "$dir")"
+    record_kind "$dir" "$item"
     printf '%s\n' "$said"
+}
+
+#
+# What the source says this work is, in core's own word. GitHub carries a label and a directory
+# carries a field; both answer here in the same word, and core never learns either spelling.
+#
+# **A kind is not authority and not a bar.** Nothing here widens an allowlist, moves a clause or
+# selects a target — so a source that cannot say leaves the run with no kind, and nothing waits.
+#
+record_kind() {
+    kind_said=$(source_says kind "$2") || return 0
+    [ -n "$kind_said" ] || return 0
+
+    printf '%s\n' "$kind_said" > "$(kind_file "$1")" 2>/dev/null || die_unwritable "$(kind_file "$1")"
+}
+
+# Beside `source`, which records which item this run reads. This records what that item is.
+kind_file() { printf '%s/kind' "$1"; }
+
+# Nothing when the source said nothing. A run with no kind is ordinary — most sources classify
+# nothing — so this answers 1 rather than refusing.
+work_kind() {
+    [ -f "$(kind_file "$1")" ] || return 1
+    cat "$(kind_file "$1")"
 }
 
 #

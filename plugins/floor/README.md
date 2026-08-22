@@ -58,8 +58,11 @@ Eleven verbs, in this order, and a standing practice answers for two of them.
 ```bash
 sh bin/run.sh new "Ship the gift card flow"          # a run, and this checkout points at it
 sh bin/run.sh source read 7                          # the item's own words, if a source can answer
+sh bin/run.sh source kind
+sh bin/run.sh reconcile
 sh bin/run.sh charter derive                         # the bar, pinned at the base commit
 sh bin/run.sh policy authorize https://github.com/acme/api.git
+sh bin/run.sh policy merge-to https://github.com/acme/api.git
 sh bin/run.sh targets add https://github.com/acme/api.git main
 sh bin/run.sh authorise                              # refuses, or says who must answer what
 sh bin/run.sh open                                   # prints the workspace — the work happens there
@@ -289,6 +292,59 @@ this is a correctness mechanism, not a containment one.
 Policy state holds portable identities and nothing else — no local path, no credential. It outlives
 the run that wrote it and it gets read by eye.
 
+### Two deliveries, and whether they join
+
+`reconcile` asks the source what else is open against this target, and tries the merge in a tree
+beside the run. It names the deliveries it clashes with and the files they both change, and answers
+26. Clean, or nothing else open, answers 0.
+
+**Nothing coordinates them.** No scheduler, no lock, and no run reads another run's workspace — a
+branch name is all that crosses, and the source is what knows it.
+
+**It never reads as clean when it could not say.** A branch nobody could fetch and a merge nobody
+could try are both counted with the clashes. The question was whether these join, and a run that
+cannot answer has not answered yes.
+
+Reported, never refused. A clash is a fact about two deliveries and a fault in neither, so delivery
+stays exactly where it was.
+
+### Merging is a third grant
+
+`grade` reads and runs. `deliver` proposes. **Neither is landing work in the trunk**, so `merge` is a
+grant of its own and absent by default.
+
+`merge` refuses unless the run is authorised, complete, and the delivery's head is the commit its
+evidence names. That last one is the contract: a head that moved after grading is a tree nothing
+answered for. It also refuses a source that will not take the delivery, a required check that did not
+pass, and a check that has not answered — **a pending rollup carries no failure, and a reader looking
+for one calls it clean.**
+
+A retry after a merge that already landed says so and merges nothing twice.
+
+**Provider permission is not authority, and neither implies the other.** Anything that can run `gh`
+can merge whatever this file says. The grant records intent and withholds nothing; the identity
+Foundry runs under is what refuses. `.foundry/practice` opens by saying so, and a human adds the
+line — a run proposing its own authority is not a grant.
+
+---
+
+### A kind is the source's word, not Foundry's
+
+`source read` also asks the source what the work **is**. A directory carries `kind: defect` in
+frontmatter. GitHub carries a label called `foundry:defect`. Core is told `defect` by both and knows
+neither spelling — `source kind` prints it, and exits 1 when the source said nothing.
+
+**A repository's own labels are its own.** A tree Foundry does not own already has `bug`,
+`enhancement`, `blocked`. Reading those would make a stranger's vocabulary into Foundry's authority,
+so the namespace is the whole of the rule: `foundry:*` is Foundry's, everything else is the
+repository's, and nothing crosses without a human.
+
+The literal `foundry:` exists in one file, and floor's own suite fails when it appears in another.
+A prefix anywhere else is portability already leaked.
+
+**A kind is not authority and not a bar.** Nothing reads it yet. It widens no allowlist, moves no
+clause and selects no target, so a run without one is ordinary rather than blocked.
+
 ---
 
 ## The charter
@@ -366,9 +422,18 @@ by the gate it agreed to.
 The base blob is planted in a tree holding the work, not the base tree checked out. That is why no
 gate changes: a script anchoring to its own root still lands on the work.
 
-**What a command reaches without naming is still open.** `bin/gates.sh` calls `bin/shell.sh` by
-relative path, and rewriting that second file is invisible to a substitution on the first. Closure is
-the hard half, and it is not built.
+**A command reaches more than it names.** So the substitution follows what a script *runs* — `sh x`,
+`bash x`, `. x`, `source x`, `awk -f x` — and what those run, to a fixed point. `bin/gates.sh` names
+no gate script; every one of them is reached this way.
+
+What a script only *mentions* is left alone. A gate naming a file in a message would otherwise have
+the run's own work graded as the base wrote it, which is the opposite failure — work nobody could
+ever pass.
+
+**A path built from a variable is not followed, and that is where this stops.** Here the boundary
+falls between the gate harness and the suites it invokes by expansion. A plugin's own suite is as
+often a run's work as it is its bar, so following it would make adding a test impossible. That is
+luck rather than design, and it is the residual.
 
 ### Monotonicity
 

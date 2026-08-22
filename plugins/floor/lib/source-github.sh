@@ -185,11 +185,91 @@ said_after() {
 # asked — the cost is a human holding words that changed, never a bar that moved.
 digest() { printf '%s' "$1" | cksum | awk '{ print $1 }'; }
 
+#
+# What the source says about one run's delivery: `<head> <state> <mergeable> <checks>`.
+#
+# **Four questions in one call, because four calls are four moments.** A head that moves between them
+# is the case a merge exists to refuse, and asking twice is how it slips through.
+#
+# `headRefOid` and not the branch name. A branch is a pointer a push moves; the caller compares a
+# commit against the one its evidence names, and only a commit answers that.
+#
+# `NONE` when the source requires no check, told apart from a check that has not answered. A source
+# that runs nothing is not a source that is still thinking.
+#
+delivery_state() {
+    had=$(delivery_of "$1") || return 3
+    [ -n "$had" ] || return 1
+
+    shape='.headRefOid + " " + .state + " " + (.mergeable // "UNKNOWN") + " "
+           + ([.statusCheckRollup[]? | (.conclusion // .state // "PENDING")]
+              | if length == 0 then "NONE" else join(",") end)'
+
+    said=$(gh pr view "${had##* }" --json headRefOid,state,mergeable,statusCheckRollup \
+               --jq "$shape" 2>&1) || {
+        printf 'source-github: could not ask about the delivery: %s\n' "$said" >&2
+        return 3
+    }
+
+    printf '%s\n' "$said"
+}
+
+# `--merge`, never `--squash`. The delivery is the run's own history, and a squash throws away every
+# commit the evidence was recorded against.
+land_delivery() {
+    had=$(delivery_of "$1") || return 3
+    [ -n "$had" ] || return 1
+
+    why=$(gh pr merge "${had##* }" --merge 2>&1) && return 0
+
+    printf 'source-github: the merge was refused: %s\n' "$why" >&2
+    return 3
+}
+
+#
+# What the source says this work is. **The only place `foundry:` exists.**
+#
+# A repository Foundry does not own already has `bug`, `enhancement`, `blocked`. Reinterpreting those
+# makes a stranger's vocabulary into Foundry's authority, so a namespace is what keeps them apart —
+# `foundry:*` is Foundry's, everything else is the repository's, and nothing crosses.
+#
+# Core is told `defect`. How a source spells it is the adapter's, and that is the whole of the seam.
+#
+kind_of_item() {
+    said=$(gh issue view "$1" --json labels --jq '.labels[].name' 2>&1) || {
+        repository_answers || return 3
+        return 1
+    }
+
+    printf '%s\n' "$said" | awk '/^foundry:/ { sub(/^foundry:/, ""); print }'
+}
+
+
+#
+# Every delivery open against this source but this run's. A
+# run never reads another run's workspace. The source is
+# what knows, and a branch name is all that crosses.
+open_deliveries() {
+    # Named, because a `gh` line holding a pipe reads as one to the gate that grades this file.
+    shape='.[] | .headRefName + "	" + .url'
+
+    said=$(gh pr list --state open --json headRefName,url --jq "$shape" 2>&1) || {
+        printf 'source-github: could not ask what else is open: %s\n' "$said" >&2
+        return 3
+    }
+
+    printf '%s\n' "$said" | awk -F'\t' -v mine="$1" '$1 != mine && NF'
+}
+
 case "${1:-}" in
     read)    shift; read_item        "${1:-}" ;;
+    kind)    shift; kind_of_item     "${1:-}" ;;
+    open)    shift; open_deliveries  "${1:-}" ;;
     publish) shift; publish_delivery "${1:-}" "${2:-}" "${3:-}" "${4:-}" ;;
     ask)     shift; put_question     "${1:-}" "${2:-}" "${3:-}" ;;
     receive) shift; read_answer      "${1:-}" "${2:-}" ;;
-    *)       echo "source-github: read <issue> | publish <issue> <run> <branch> <title> | ask <issue> <question> <text> | receive <issue> <question>" >&2
+    state)   shift; delivery_state   "${1:-}" ;;
+    land)    shift; land_delivery    "${1:-}" ;;
+    *)       echo "source-github: read <issue> | kind <issue> | publish <issue> <run> <branch> <title> | ask <issue> <question> <text> | receive <issue> <question> | state <run> | land <run>" >&2
              exit 2 ;;
 esac
