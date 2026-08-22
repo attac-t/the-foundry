@@ -19,8 +19,14 @@ trap 'rm -rf "$tmp"' EXIT
 # One host, one answer, and this suite decides what the host is. `env -u` rather than an empty
 # value: unset and empty read alike to `join.sh`, and only one of them is what a fresh machine
 # looks like. Both variables go, or the caller's own authority answers a check about not having one.
-joined()  { ( cd "$1" && shift && env -u FOUNDRY_HOME -u FOUNDRY_WHO "$@" sh "$join" 2>&1 ); }
-code_of() { ( cd "$1" && shift && env -u FOUNDRY_HOME -u FOUNDRY_WHO "$@" sh "$join" >/dev/null 2>&1; echo $?; ); }
+#
+# Git's identity is not in the environment, so unsetting cannot reach it. A machine that took
+# `join.sh`'s own advice and ran `git config --global user.name` answered the check about having no
+# author, and floor's suite went red for following floor's instructions. `/dev/null` is an empty
+# config file, and the author each check wants is added back per repository.
+blind="GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_SYSTEM=/dev/null"
+joined()  { ( cd "$1" && shift && env -u FOUNDRY_HOME -u FOUNDRY_WHO $blind "$@" sh "$join" 2>&1 ); }
+code_of() { ( cd "$1" && shift && env -u FOUNDRY_HOME -u FOUNDRY_WHO $blind "$@" sh "$join" >/dev/null 2>&1; echo $?; ); }
 
 # A repository with nothing a host supplies. Each check below adds one piece back.
 bare() {
