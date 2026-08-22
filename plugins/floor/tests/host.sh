@@ -98,6 +98,42 @@ else
   has "and names what would change that"             "$remote" "gh"
 fi
 
+
+# --- the skills the rules name ---
+
+# A rule that names a skill nobody can invoke does nothing, and said nothing. The mention in the rule
+# is the declaration, so there is no second list to drift from it.
+mkdir -p "$tmp/one/.claude/rules" "$tmp/conf"
+printf 'Invoke `kernel:craft-sh` before the first character.\n' > "$tmp/one/.claude/rules/shell.md"
+printf 'The questions live in `signal:economy`.\n'              >> "$tmp/one/.claude/rules/shell.md"
+printf 'See https://example.invalid/thing for more.\n'          >> "$tmp/one/.claude/rules/shell.md"
+
+printf '{ "enabledPlugins": { "kernel@the-foundry": true } }\n' > "$tmp/conf/settings.json"
+rules=$(joined "$tmp/one" CLAUDE_CONFIG_DIR="$tmp/conf" FOUNDRY_WHO=a@b)
+
+has "a skill a rule names is listed"      "$rules" "skill   kernel:craft-sh"
+has "one from a plugin that is off says so" "$rules" "signal:economy  — NOT enabled"
+lacks "and an enabled one says nothing more" "$rules" "kernel:craft-sh  —"
+
+# A URL holds a colon and is not a skill. Counting one would report a need no rule has.
+lacks "a link is not a skill"             "$rules" "https:"
+
+# Enabled, not installed. A plugin switched off is a skill nobody can invoke, and the settings file
+# is the only place that distinction lives.
+printf '{ "enabledPlugins": { } }\n' > "$tmp/conf/settings.json"
+has "an empty list leaves both unreachable" \
+    "$(joined "$tmp/one" CLAUDE_CONFIG_DIR="$tmp/conf" FOUNDRY_WHO=a@b)" "kernel:craft-sh  — NOT enabled"
+
+# Unknown is not absence. A settings file this host cannot read says so rather than reporting
+# every skill as missing.
+cannot=$(joined "$tmp/one" CLAUDE_CONFIG_DIR="$tmp/nowhere-at-all" FOUNDRY_WHO=a@b)
+has "a settings file it cannot read says so" "$cannot" "cannot tell"
+lacks "and does not call the skill missing"  "$cannot" "NOT enabled"
+
+rm -rf "$tmp/one/.claude"
+has "a repository whose rules name nothing says so" \
+    "$(joined "$tmp/one" CLAUDE_CONFIG_DIR="$tmp/conf" FOUNDRY_WHO=a@b)" "skills  none named"
+
 extra=$( cd "$tmp/one" && FOUNDRY_WHO=a@b sh "$join" extra >/dev/null 2>&1; echo $? )
 is "an argument it does not take is refused" "$extra" "2"
 

@@ -1331,6 +1331,18 @@ wreck_join "a source that is chosen without a word is caught" \
 wreck_join "a grant count that counts comments is caught" \
   loudcount 's#grep -cv#grep -c#'
 
+# The whole point of the section: a rule naming a skill nobody can invoke used to say nothing.
+wreck_join "a skill the rules name that nobody reports is caught" \
+  muteskills 's#^    report_skills_the_rules_name$#    :#'
+
+wreck_join "a plugin that is off reported as reachable is caught" \
+  allreachable 's#^    grep -q "\\"\$1@" "\$settings" \&\& return$#    return#'
+
+# Unknown is not absence. Reporting a missing settings file as a missing plugin sends the reader to
+# install something they already have.
+wreck_join "a settings file it cannot read called a missing plugin is caught" \
+  blindsettings 's#^    \[ -r "\$settings" \] || { printf .  — cannot tell, no %s. "\$settings"; return; }$#    [ -r "$settings" ] || return#'
+
 [ "$failed" -eq 0 ] && echo "ALL GREEN"
 [ "$failed" -eq 1 ] && echo "FAILURES ABOVE"
 [ "$failed" -eq 3 ] && echo "PROVED NOTHING — the experiments above never ran"
