@@ -168,3 +168,52 @@ whole mechanism: the shape refuses the rambling before you write it.
 **Nothing measures it.** Break where the sentence lets you. If a line will not shorten without losing
 a fact, the fact stays and the block is two lines — a distinction lost to a shape is the failure
 `economy` names, never the saving.
+
+**Three is a shape, not a target.** Most facts are one sentence, and one sentence is the whole
+docbloc:
+
+```bash
+# Derived, never chosen. A branch a worker names is a branch a retry can rename.
+delivery_branch() { printf 'foundry/%s' "$(basename "$1")"; }
+```
+
+Padding that into three lines so it can narrow adds nothing and costs a reader two lines. The taper
+is for the block that already had more to say.
+
+## Let it breathe
+
+```bash
+main() {
+    [ "$#" -eq 0 ] || { usage; exit 2; }
+    refuse_without_a_repository
+    refuse_without_dependencies
+    refuse_without_an_author
+    refuse_without_an_authority
+    report_home
+    report_work_source
+    report_what_the_repository_carries
+    say "joined."
+}
+```
+
+```bash
+main() {
+    [ "$#" -eq 0 ] || { usage; exit 2; }
+
+    refuse_without_a_repository
+    refuse_without_dependencies
+    refuse_without_an_author
+    refuse_without_an_authority
+
+    report_home
+    report_work_source
+    report_what_the_repository_carries
+    say "joined."
+}
+```
+
+Same nine calls. The second reads as three moves — check the arguments, refuse what is missing, say
+what this host is — because two blank lines drew the boundaries the names only implied.
+
+**Breathing is space, not words.** The blank line does the grouping, so no comment has to. A body
+with none is held breath, and the eye scans it as one long move instead of three short ones.

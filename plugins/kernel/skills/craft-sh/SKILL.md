@@ -55,15 +55,21 @@ Seven lines, the whole story. The test: **can a stranger describe the script aft
    **Needing one is evidence against the function.** A comment explaining *what* a body does means
    the name is wrong or the body is two jobs — fix that first, and the comment leaves on its own. A
    preamble longer than the function it introduces is the clearest form of the tell.
-   **Three lines, tapering.** No `#` fence and no bold — the blank line already separated it, and a
-   sentence that matters goes first instead. Each line is shorter than the one above, so the block
-   narrows to a point and the eye finds its end without counting.
-9. **`shellcheck` passes.** Not optional.
-10. **One name, one meaning.** Every variable is global unless you say otherwise, so a name that
+   **One sentence, when one sentence does it.** No `#` fence and no bold — the blank line already
+   separated it, and the sentence that matters goes first. **Three lines, tapering** is what a block
+   does once it has more than one sentence to say: each line shorter than the one above, so it
+   narrows to a point and the eye finds its end without counting. Three is a shape, never a target.
+   Padding one sentence into three to make it narrow is the waste `economy` names, wearing craft.
+9. **Let it breathe.** Blank lines inside a body group steps into thoughts, so a function reads as
+   three moves rather than eleven lines. A body with no blank line is held breath.
+   **Breathing is space, not words** — the opposite mistake is filling the space that was doing the
+   work. Same instinct as rule 8, one level up.
+10. **`shellcheck` passes.** Not optional.
+11. **One name, one meaning.** Every variable is global unless you say otherwise, so a name that
     means two things is a bug waiting for a refactor.
-11. **A split moves its comments.** After extracting, the parent keeps only what the parts do not
+12. **A split moves its comments.** After extracting, the parent keeps only what the parts do not
     say. Facts left behind get read twice and edited once.
-12. **Say why a defensive line survives.** A guard with no reason reads as redundant, and redundant
+13. **Say why a defensive line survives.** A guard with no reason reads as redundant, and redundant
     is what gets simplified away.
 
 ## The Anti-Patterns
@@ -80,6 +86,8 @@ Seven lines, the whole story. The test: **can a stranger describe the script aft
 | A comment that counts lines    | Say what the code does          | It rots the next time one moves        |
 | A `#` fence around a comment   | The comment                     | The blank line already separated it    |
 | A block that widens as it goes | Break the lines so it narrows   | A taper ends; a wall has to be scanned |
+| One sentence padded to three  | The one sentence                | Narrow is a shape, not a target        |
+| A body with no blank line     | Steps grouped into thoughts     | Held breath reads as one long move     |
 | A name that hides what returns | `unit_targets_file`             | The call-site should read as what it gets |
 | `echo` everywhere              | `step`, `note`, `fail`          | One voice, one place to change         |
 | Bare `exit 1`                  | Documented exit codes           | The caller cannot branch on "it broke" |
