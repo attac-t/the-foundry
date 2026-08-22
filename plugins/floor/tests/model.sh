@@ -2958,6 +2958,48 @@ the_work_source() {
 the_work_source
 
 #
+# One kind, two adapters that spell it differently. A directory carries `kind: defect` in
+# frontmatter; GitHub carries a label called `foundry:defect`. Core is told `defect` by both and
+# knows neither spelling.
+#
+a_work_kind_survives_the_adapter() {
+  make_repo "$tmp/kd"  main && set_origin "$tmp/kd"  'https://gitlab.com/acme/kd.git'  \
+    && make_repo "$tmp/kdq" main && set_origin "$tmp/kdq" 'https://gitlab.com/acme/kdq.git' \
+    && make_repo "$tmp/kdp" main && set_origin "$tmp/kdp" 'https://gitlab.com/acme/kdp.git' \
+    || { skip "a work kind — git could not make a repo here"; return; }
+
+  mkdir -p "$src/items"
+  printf -- '---\nkind: defect\n---\n\nMend the thing\n'   > "$src/items/31"
+  printf 'Mend another thing\n'                            > "$src/items/32"
+  printf -- '---\nname: 33\n---\n\nkind: not a label\n'    > "$src/items/33"
+
+  floor "$tmp/kd"  new "Kinds" >/dev/null; floor "$tmp/kd"  source read 31 >/dev/null 2>&1
+  floor "$tmp/kdq" new "Quiet" >/dev/null; floor "$tmp/kdq" source read 32 >/dev/null 2>&1
+  floor "$tmp/kdp" new "Prose" >/dev/null; floor "$tmp/kdp" source read 33 >/dev/null 2>&1
+
+  is "a directory says what the work is" "$(floor "$tmp/kd" source kind)" "defect"
+
+  # Most sources classify nothing, and a run without a kind is ordinary rather than broken.
+  is "and a source that says nothing leaves none" "$(code_of floor "$tmp/kdq" source kind)" "1"
+
+  # `kind:` in the body is the item's prose. Reading it would make a sentence a classification.
+  is "a kind below the frontmatter is prose" "$(code_of floor "$tmp/kdp" source kind)" "1"
+}
+a_work_kind_survives_the_adapter
+
+#
+# `foundry:` is what GitHub calls a work kind. Core calls it a kind, and a literal anywhere else is
+# portability already leaked — which is the thing to catch rather than the thing to hope for.
+#
+the_providers_prefix_lives_in_one_file() {
+  leaked=$(grep -rl 'foundry:' "$here/bin" "$here/lib" "$here/hooks" 2>/dev/null \
+             | grep -v 'source-github\.sh')
+
+  is "the provider's label prefix lives in one file" "$leaked" ""
+}
+the_providers_prefix_lives_in_one_file
+
+#
 # §2.5's `human` evidence, and the stage is what makes it that. The same answer read at authorisation
 # says the clause may exist; read at completion it says the clause was met.
 #
@@ -3312,6 +3354,10 @@ case "$*" in
   # honours the one expression the adapter sends — a chosen line before each body — and emits bodies
   # alone if it stops asking for one. A fixture that printed the boundary regardless would be
   # agreeing with the adapter instead of the service.
+  # Labels a repository already had sit beside the ones Foundry owns. The adapter takes only its
+  # own, and the fixture carries both so it can be caught taking more.
+  "issue view"*"--json labels"*)   [ -f "$store/reads-fail" ] && { echo "HTTP 401: Bad credentials" >&2; exit 1; }
+                            cat "$store/labels" 2>/dev/null ;;
   "issue view"*"--json comments"*) [ -f "$store/reads-fail" ] && { echo "could not resolve host: api.github.com" >&2; exit 1; }
                             case "$*" in *floor-comment*) mark='floor-comment:' ;; *) mark='' ;; esac
                             for body in "$store/comments"/*; do
@@ -3379,6 +3425,7 @@ the_other_adapter() {
   export GH_STORE="$tmp/ghstore"
   mkdir -p "$GH_STORE"
   printf 'Make the other thing\n\nAnd make it well.\n' > "$GH_STORE/item"
+  printf 'foundry:defect\nbug\n' > "$GH_STORE/labels"
 
   ghrun=$( cd "$tmp/gh" && PATH="$tmp/ghbin:$PATH" FOUNDRY_HOME="$home" FOUNDRY_RUN="" FOUNDRY_WHO="" \
            sh "$runner" new "Other adapter" 2>/dev/null )
@@ -3386,6 +3433,9 @@ the_other_adapter() {
                  FOUNDRY_WHO="" sh "$runner" "$@" 2>/dev/null ); }
 
   has "the other adapter reads an item" "$(gh_floor source read 12)" "And make it well"
+
+  # The same word the directory answered with, and the repository's own `bug` left alone.
+  is "and says what the work is, in core's word" "$(gh_floor source kind)" "defect"
 
   #
   # An item nobody filed, and a source nobody could ask, are two answers. Both used to be *no item*.

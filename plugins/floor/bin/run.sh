@@ -117,6 +117,7 @@ floor — where work happens.
   run.sh authorise                refuse a run that describes no work, or whose selection moved
                                   — exit 1, 5, 8, 9, 10, 11 or 12
   run.sh source read <item>       pull the item's words into this run
+  run.sh source kind              what the source says this work is, or exit 1
   run.sh source publish <branch> <title>
                                   report this run's delivery, and print its identity
   run.sh source ask <stage> <clause> <question>
@@ -2813,6 +2814,7 @@ work_source() {
 
     case "${1:-}" in
         read)    shift; read_work_item   "$dir" "$@" ;;
+        kind)    shift; work_kind        "$dir" ;;
         publish) shift; publish_delivery "$dir" "$@" ;;
         ask)     shift; ask_about        "$dir" "$@" ;;
         receive) shift; receive_answer   "$dir" "$@" ;;
@@ -2889,7 +2891,32 @@ read_work_item() {
 
     printf '%s\n' "$said" > "$dir/item.md" 2>/dev/null || die_unwritable "$dir/item.md"
     printf '%s\n' "$item" > "$(source_file "$dir")" 2>/dev/null || die_unwritable "$(source_file "$dir")"
+    record_kind "$dir" "$item"
     printf '%s\n' "$said"
+}
+
+#
+# What the source says this work is, in core's own word. GitHub carries a label and a directory
+# carries a field; both answer here in the same word, and core never learns either spelling.
+#
+# **A kind is not authority and not a bar.** Nothing here widens an allowlist, moves a clause or
+# selects a target — so a source that cannot say leaves the run with no kind, and nothing waits.
+#
+record_kind() {
+    kind_said=$(source_says kind "$2") || return 0
+    [ -n "$kind_said" ] || return 0
+
+    printf '%s\n' "$kind_said" > "$(kind_file "$1")" 2>/dev/null || die_unwritable "$(kind_file "$1")"
+}
+
+# Beside `source`, which records which item this run reads. This records what that item is.
+kind_file() { printf '%s/kind' "$1"; }
+
+# Nothing when the source said nothing. A run with no kind is ordinary — most sources classify
+# nothing — so this answers 1 rather than refusing.
+work_kind() {
+    [ -f "$(kind_file "$1")" ] || return 1
+    cat "$(kind_file "$1")"
 }
 
 #

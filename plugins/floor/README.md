@@ -58,6 +58,7 @@ Eleven verbs, in this order, and a standing practice answers for two of them.
 ```bash
 sh bin/run.sh new "Ship the gift card flow"          # a run, and this checkout points at it
 sh bin/run.sh source read 7                          # the item's own words, if a source can answer
+sh bin/run.sh source kind
 sh bin/run.sh charter derive                         # the bar, pinned at the base commit
 sh bin/run.sh policy authorize https://github.com/acme/api.git
 sh bin/run.sh policy merge-to https://github.com/acme/api.git
@@ -307,6 +308,25 @@ A retry after a merge that already landed says so and merges nothing twice.
 can merge whatever this file says. The grant records intent and withholds nothing; the identity
 Foundry runs under is what refuses. `.foundry/practice` opens by saying so, and a human adds the
 line — a run proposing its own authority is not a grant.
+
+---
+
+### A kind is the source's word, not Foundry's
+
+`source read` also asks the source what the work **is**. A directory carries `kind: defect` in
+frontmatter. GitHub carries a label called `foundry:defect`. Core is told `defect` by both and knows
+neither spelling — `source kind` prints it, and exits 1 when the source said nothing.
+
+**A repository's own labels are its own.** A tree Foundry does not own already has `bug`,
+`enhancement`, `blocked`. Reading those would make a stranger's vocabulary into Foundry's authority,
+so the namespace is the whole of the rule: `foundry:*` is Foundry's, everything else is the
+repository's, and nothing crosses without a human.
+
+The literal `foundry:` exists in one file, and floor's own suite fails when it appears in another.
+A prefix anywhere else is portability already leaked.
+
+**A kind is not authority and not a bar.** Nothing reads it yet. It widens no allowlist, moves no
+clause and selects no target, so a run without one is ordinary rather than blocked.
 
 ---
 

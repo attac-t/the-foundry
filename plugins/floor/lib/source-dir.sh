@@ -90,8 +90,25 @@ read_answer() {
     cat "$root/answers/$1/$2"
 }
 
+#
+# What the source says this work is. A directory has no labels, so a field carries it — and the same
+# word reaches core either way, which is the seam this exists to prove.
+#
+# Frontmatter only. A `kind:` further down the file is the item's prose, and reading it would make a
+# sentence into a classification.
+#
+kind_of_item() {
+    [ -f "$root/items/$1" ] || return 1
+    [ -r "$root/items/$1" ] || return 3
+
+    awk 'NR == 1 && $0 != "---" { exit }
+         NR > 1  && $0 == "---" { exit }
+         $1 == "kind:" { for (i = 2; i <= NF; i++) print $i }' "$root/items/$1"
+}
+
 case "${1:-}" in
     read)    shift; read_item        "${1:-}" ;;
+    kind)    shift; kind_of_item     "${1:-}" ;;
     publish) shift; publish_delivery "${1:-}" "${2:-}" "${3:-}" "${4:-}" ;;
     ask)     shift; put_question     "${1:-}" "${2:-}" "${3:-}" ;;
     receive) shift; read_answer      "${1:-}" "${2:-}" ;;
