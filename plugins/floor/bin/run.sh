@@ -41,6 +41,12 @@
 #      network. Not 1: that is the source answering, and answering that nothing is there
 #  21  a gate's command is not on this host, so nothing was graded and nothing is recorded. Not 14:
 #      that is a gate answering, and its answer stands at that ref for good
+#  23  nobody said this run may merge into that repository. `policy deliver-to` grants proposing,
+#      and landing work in the trunk is a third act a human takes
+#  24  the delivery is not the thing that was graded, or the source will not take it. An answer
+#      about one delivery, never a fault in this run
+#  25  the source could not be asked about the delivery, or could not land it. Not 24: that is the
+#      source answering, and this is nobody answering
 #  22  the repository declares a bar in a file that is there and cannot be read. Not 8: that is a
 #      charter holding no clause, and this is one nobody could derive. The remedy is the file
 #
@@ -72,6 +78,7 @@ main() {
         open)      open_workspace "$@" ;;
         complete)  complete "$@" ;;
         deliver)   deliver "$@" ;;
+        merge)     merge_delivery "$@" ;;
         authorise) authorise ;;
         source)    work_source "$@" ;;
         *)         usage; exit 2 ;;
@@ -92,6 +99,7 @@ floor — where work happens.
   run.sh policy                   list what this run may change
   run.sh policy authorize <repo>  let this run change one more
   run.sh policy deliver-to <repo> let this run write to one — a second act, and grading is not it
+  run.sh policy merge-to <repo>   let this run land what it delivered — a third act, absent by default
   run.sh charter                  print what must be true for this run to be good
   run.sh charter derive           derive clauses from this repository, pinned at its base
   run.sh charter check            report clauses that drifted from their pins, or went missing
@@ -105,6 +113,7 @@ floor — where work happens.
   run.sh open                     check out every selected target in isolation, and print where
   run.sh complete                 may this run deliver? exit 15 names what is missing
   run.sh deliver <title>          push the work and tell the source where it is
+  run.sh merge                    land what was graded, or say why it may not be
   run.sh authorise                refuse a run that describes no work, or whose selection moved
                                   — exit 1, 5, 8, 9, 10, 11 or 12
   run.sh source read <item>       pull the item's words into this run
@@ -816,6 +825,7 @@ policy() {
         '')         list_policy "$dir" ;;
         authorize)  shift; authorize  "$dir" "${1:-}" ;;
         deliver-to) shift; deliver_to "$dir" "${1:-}" ;;
+        merge-to)   shift; merge_to   "$dir" "${1:-}" ;;
         *)          usage; exit 2 ;;
     esac
 }
@@ -966,6 +976,7 @@ record_grant() {
 
 authorize()  { grant "$1" "$(grants_file "$1")"     is_authorised  "${2:-}"; }
 deliver_to() { grant "$1" "$(deliveries_file "$1")" may_deliver_to "${2:-}"; }
+merge_to()   { grant "$1" "$(merges_file "$1")"     may_merge_to   "${2:-}"; }
 
 list_targets() {
     [ -f "$1" ] || return 0
@@ -1542,6 +1553,125 @@ unmet_for_delivery() {
 # unmet when the real answer is that nobody granted delivery sends them to a remedy that changes
 # nothing.
 #
+#
+# Beside the other two, never merged into them. One file holding all three would make `policy
+# authorize` grant the third power as well.
+#
+merges_file() { printf '%s/%s/merges' "$GRANTS" "$(basename "$1")"; }
+
+#
+# No bootstrap exemption, for the reason `may_deliver_to` has none. Standing somewhere is not
+# permission to land work there, and every run is bootstrapped somewhere.
+#
+may_merge_to() {
+    standing merge "$1" "$2" && return 0
+
+    file=$(merges_file "$1")
+    [ -f "$file" ] || return 1
+    grep -Fxq -- "$2" "$file"
+}
+
+#
+# Merge what this run delivered.
+#
+# **The thing merged must be the thing graded.** Every other refusal here is worth less than that
+# one: a head that moved after grading is a tree nothing answered for, and landing it puts work in
+# the trunk that no gate ever saw.
+#
+# Provider permission is not authority, and neither implies the other. Anything that can run `gh` can
+# merge whatever the practice says — `.foundry/practice` opens by saying so. This records intent and
+# withholds nothing; the identity Foundry runs under is what refuses.
+#
+merge_delivery() {
+    [ "$#" -eq 0 ] || { usage; exit 2; }
+
+    dir=$(active_run) || exit 1
+    here=$(this_repository)
+
+    refuse_unreadable_run "$dir"
+    refuse_ungranted_merge "$dir" "$here"
+    refuse_incomplete "$dir"
+    refuse_missing_source
+
+    land_what_was_graded "$dir" "$(graded_ref "$dir" "$here")"
+}
+
+refuse_ungranted_merge() {
+    may_merge_to "$1" "$2" && return 0
+
+    note "nobody said this run may merge into [$2] — \`policy merge-to\` is what says so"
+    exit 23
+}
+
+# The commit the evidence names. `refuse_incomplete` has already passed, so every clause is met at
+# this ref — which is the whole of what a merge may land.
+graded_ref() {
+    tree=$(unit_work_tree "$1" "$2") || exit 16
+    git -C "$tree" rev-parse --verify --quiet HEAD
+}
+
+land_what_was_graded() {
+    said=$(source_says state "$(basename "$1")")
+    asked=$?
+
+    # A source that answered *nothing delivered* is not one that could not be asked.
+    [ "$asked" -eq 1 ] && { note "this run has delivered nothing, so there is nothing to merge"; exit 24; }
+    [ "$asked" -eq 0 ] || exit 25
+
+    read -r head state mergeable checks <<EOF
+$said
+EOF
+
+    # A retry after a merge that landed. Silence here would read as a second merge that worked, and
+    # a refusal would read as one that never happened.
+    [ "$state" = MERGED ] && { note "this delivery is already merged"; return 0; }
+
+    refuse_a_delivery_not_open   "$state"
+    refuse_a_moved_head          "$head" "$2"
+    refuse_a_source_that_will_not "$mergeable"
+    refuse_a_check_that_did_not_pass "$checks"
+
+    source_says land "$(basename "$1")" || exit 25
+    note "merged."
+}
+
+refuse_a_moved_head() {
+    [ "$1" = "$2" ] && return 0
+
+    note "the delivery is at [$1] and the evidence names [$2]"
+    note "the thing merged must be the thing graded — grade again, or deliver what was graded"
+    exit 24
+}
+
+refuse_a_delivery_not_open() {
+    [ "$1" = OPEN ] && return 0
+
+    note "the delivery is [$1], so there is nothing here to merge"
+    exit 24
+}
+
+# `UNKNOWN` is the source still working it out, and it is refused with the rest. A lookup that has
+# not finished is not a lookup that said yes.
+refuse_a_source_that_will_not() {
+    [ "$1" = MERGEABLE ] && return 0
+
+    note "the source says this delivery is [$1], so it will not take it"
+    exit 24
+}
+
+#
+# Every check, or none. **A check that did not answer is not a check that passed** — the whole reason
+# this is spelled out is that a pending rollup reads as an empty failure list.
+#
+refuse_a_check_that_did_not_pass() {
+    [ "$1" = NONE ] && return 0
+
+    printf '%s\n' "$1" | tr ',' '\n' | grep -qvx SUCCESS || return 0
+
+    note "a check the source requires did not pass: $1"
+    exit 24
+}
+
 deliver() {
     title=${1:-}
     [ "$#" -le 1 ] || { usage; exit 2; }

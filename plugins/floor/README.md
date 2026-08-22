@@ -60,6 +60,7 @@ sh bin/run.sh new "Ship the gift card flow"          # a run, and this checkout 
 sh bin/run.sh source read 7                          # the item's own words, if a source can answer
 sh bin/run.sh charter derive                         # the bar, pinned at the base commit
 sh bin/run.sh policy authorize https://github.com/acme/api.git
+sh bin/run.sh policy merge-to https://github.com/acme/api.git
 sh bin/run.sh targets add https://github.com/acme/api.git main
 sh bin/run.sh authorise                              # refuses, or says who must answer what
 sh bin/run.sh open                                   # prints the workspace — the work happens there
@@ -288,6 +289,24 @@ this is a correctness mechanism, not a containment one.
 
 Policy state holds portable identities and nothing else — no local path, no credential. It outlives
 the run that wrote it and it gets read by eye.
+
+### Merging is a third grant
+
+`grade` reads and runs. `deliver` proposes. **Neither is landing work in the trunk**, so `merge` is a
+grant of its own and absent by default.
+
+`merge` refuses unless the run is authorised, complete, and the delivery's head is the commit its
+evidence names. That last one is the contract: a head that moved after grading is a tree nothing
+answered for. It also refuses a source that will not take the delivery, a required check that did not
+pass, and a check that has not answered — **a pending rollup carries no failure, and a reader looking
+for one calls it clean.**
+
+A retry after a merge that already landed says so and merges nothing twice.
+
+**Provider permission is not authority, and neither implies the other.** Anything that can run `gh`
+can merge whatever this file says. The grant records intent and withholds nothing; the identity
+Foundry runs under is what refuses. `.foundry/practice` opens by saying so, and a human adds the
+line — a run proposing its own authority is not a grant.
 
 ---
 
