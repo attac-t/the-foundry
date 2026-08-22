@@ -9,13 +9,8 @@ description: How to create a new Reflex (Hook) for the OS.
 
 ## 0. Read The Docs First
 
-> [!CRITICAL]
-> **Before writing any hook, read the official guide:**
-> https://code.claude.com/docs/en/hooks
->
-> This skill captures our learnings, but the official docs are the source of truth.
-> Anthropic may add events, change behavior, or deprecate features.
-> **Never assume. Always verify.**
+https://code.claude.com/docs/en/hooks is the source of truth. This skill is what we learned
+around it, and Anthropic adds events without asking us.
 
 ## 1. The Principles
 
@@ -63,78 +58,18 @@ HOOK RESPONSIBILITY              SKILL RESPONSIBILITY
 3. **Stop/SubagentStop**: Use `decision: "block"` with `reason` to force continuation.
 4. **PreCompact**: **Cannot inject to Claude at all.** Don't use for context preservation.
 
-### PostToolUse JSON Pattern
-
-```bash
-cat <<'EOF'
-{
-  "hookSpecificOutput": {
-    "hookEventName": "PostToolUse",
-    "additionalContext": "Your message to Claude here"
-  }
-}
-EOF
-```
-
-### Stop Hook Pattern (Prompt-Based)
-
-```json
-{
-  "hooks": {
-    "Stop": [{
-      "hooks": [{
-        "type": "prompt",
-        "prompt": "Check if task is complete. Return {\"ok\": false, \"reason\": \"...\"} to continue."
-      }]
-    }]
-  }
-}
-```
-
-## 3. The Thin Hook Template
-
-```bash
-#!/bin/bash
-# [Event]: [One-line purpose]
-# Thin hook → points to [skill-name] skill
-
-cat <<'EOF'
----
-[EMOJI] **[HOOK NAME]** ([skill-reference])
-
-[One-sentence context]
-→ Invoke `kernel:[skill-name]` for [what]
-
-⛔ [Blocking instruction if needed]
-EOF
-```
-
-## 4. SessionStart Matchers
-
-SessionStart fires on multiple sources. Use matchers to control when:
-
-```json
-{
-  "matcher": "startup|resume|clear",
-  "hooks": [{ "command": "remember.sh" }]
-}
-```
-
-| Matcher | When |
-|---------|------|
-| `startup` | New session |
-| `resume` | `--resume`, `--continue`, `/resume` |
-| `clear` | `/clear` |
-| `compact` | After context compaction |
-
-## 5. Implementation
+## 3. Implementation
 
 - **Location**: `hooks/hooks.json`
 - **Paths**: Use `${CLAUDE_PLUGIN_ROOT}` for portability
 - **Testing**: Verify with `claude --debug` to see hook execution
 
-## 6. Related Skills
+## 4. Deeper
 
-- **Architecture**: See `craft-plugin`
-- **Memory Protocol**: See `ground-recitation`
-- **ADR Recording**: See `craft-adr`
+| | |
+|---|---|
+| [patterns](patterns.md) | the PostToolUse JSON shape, and the Stop hook |
+| [template](template.md) | a thin hook, whole |
+| [matchers](matchers.md) | what SessionStart matches, and when |
+| `craft-plugin` | where a hook sits in a plugin |
+| `craft-adr` | recording why a hook exists |
