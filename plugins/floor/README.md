@@ -326,6 +326,16 @@ work item compose there without either having heard of the other, and neither ho
 
 Nothing is summed. The rows go out as they were written and the question is asked with `awk`.
 
+**A host is settled when no run holds a workspace.** `settled` answers 0 when nothing is in flight,
+and 29 with the runs that are.
+
+A workspace is the part a worker writes to, so replacing a host under one loses work nobody recorded.
+A run that only charted holds none, and a delivered one has finished.
+
+Three of the four conditions a safe boundary wants fall out of that single test — an attached session
+and a gate mid-run both hold a workspace. **The fourth is a transition floor has no word for**, and
+nothing here pretends otherwise.
+
 **A row names the runtime that wrote it.** `run.began` and `gate.finished` carry `runtime=floor/x.y.z`,
 read from the manifest beside the script rather than compiled in.
 
