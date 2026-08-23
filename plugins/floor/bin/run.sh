@@ -85,6 +85,7 @@ main() {
         open)      open_workspace "$@" ;;
         complete)  complete "$@" ;;
         deliver)   deliver "$@" ;;
+        aside)     aside "$@" ;;
         merge)     merge_delivery "$@" ;;
         reconcile) reconcile "$@" ;;
         authorise) authorise ;;
@@ -121,6 +122,7 @@ floor — where work happens.
   run.sh open                     check out every selected target in isolation, and print where
   run.sh complete                 may this run deliver? exit 15 names what is missing
   run.sh deliver <title>          push the work and tell the source where it is
+  run.sh aside [text]             record what this run cannot act on, or print what it has
   run.sh merge                    land what was graded, or say why it may not be
   run.sh reconcile                whether every other open delivery can join this one
   run.sh authorise                refuse a run that describes no work, or whose selection moved
@@ -1908,6 +1910,45 @@ forget_tree() {
     rm -rf "$2"
 }
 
+#
+# Something this run learned that its own bar does not cover. Recorded so it survives the
+# run, and it blocks nothing — a run that widened itself to act on
+# one would be doing work nobody selected.
+#
+# Never read by completion. An aside is not a clause, not evidence and not
+# a grant, and the only thing that changes because of
+# one is what a person does next.
+#
+aside() {
+    [ "$#" -le 1 ] || { usage; exit 2; }
+
+    dir=$(active_run) || exit 1
+    refuse_unreadable_run "$dir"
+
+    text=${1:-}
+    [ -n "$text" ] || { list_asides "$dir"; return 0; }
+
+    printf '%s\t%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$(one_line "$text")" \
+        >> "$(asides_file "$dir")" 2>/dev/null || die_unwritable "$(asides_file "$dir")"
+}
+
+asides_file() { printf '%s/asides' "$1"; }
+
+list_asides() { cat "$(asides_file "$1")" 2>/dev/null; }
+
+#
+# Printed after the delivery, never before it. A reader who has just been
+# told where the work went is the one who can act
+# on what it left behind.
+#
+say_the_asides() {
+    held=$(list_asides "$1")
+    [ -n "$held" ] || return 0
+
+    note "this run set aside:"
+    printf %s "$held" | while IFS="$(printf '\t')" read -r _ said; do note "  $said"; done
+}
+
 deliver() {
     title=${1:-}
     [ "$#" -le 1 ] || { usage; exit 2; }
@@ -1921,6 +1962,7 @@ deliver() {
     refuse_incomplete "$dir"
 
     send_delivery "$dir" "$here" "$title"
+    say_the_asides "$dir"
 }
 
 refuse_ungranted_delivery() {

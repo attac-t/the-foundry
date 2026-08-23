@@ -59,6 +59,7 @@ Eleven verbs, in this order, and a standing practice answers for two of them.
 sh bin/run.sh new "Ship the gift card flow"          # a run, and this checkout points at it
 sh bin/run.sh source read 7                          # the item's own words, if a source can answer
 sh bin/run.sh source kind
+sh bin/run.sh aside "a worktree is not a safe place to grade"
 sh bin/run.sh reconcile
 sh bin/run.sh charter derive                         # the bar, pinned at the base commit
 sh bin/run.sh policy authorize https://github.com/acme/api.git
@@ -291,6 +292,18 @@ this is a correctness mechanism, not a containment one.
 
 Policy state holds portable identities and nothing else — no local path, no credential. It outlives
 the run that wrote it and it gets read by eye.
+
+### An aside is kept, and blocks nothing
+
+A run learns things its own bar does not cover. `aside` records one, and `deliver` prints them after
+it says where the work went.
+
+**It is not a clause, not evidence and not a grant.** Completion never reads one, so a run holding
+ten still delivers, and a run holding none is not missing anything.
+
+The alternative was worse both ways. A run that widened itself to act on what it noticed would be
+doing work nobody selected. A run that dropped it loses what it learned, which is how the same
+discovery gets made three times.
 
 ### Two deliveries, and whether they join
 
