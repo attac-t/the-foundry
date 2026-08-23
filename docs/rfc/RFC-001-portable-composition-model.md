@@ -1506,6 +1506,35 @@ need, written first so that building one cannot invent it quietly.
 is a claim with no second implementation behind it.
 
 
+### Revision 20 — a run can be graded by two implementations, and nothing said so
+
+#301 asks what may change when a run begins under one runtime and finishes under another. The bar is
+pinned at a base commit, so the *standard* cannot move. **The thing applying it can.**
+
+That is not hypothetical. Two holes closed this week: a run could rewrite the gate judging it, and
+hand over a pass for a gate that never ran. Evidence recorded before those fixes was recorded by a
+grader now known to have been foolable, and nothing in the ledger says which grader wrote it.
+
+| Was | Is | What forced it |
+|---|---|---|
+| a row says what happened, and never what produced it | `run.began` and `gate.finished` name the runtime | #276 and #277 — the grader changed, and the rows could not tell |
+
+**Recorded, and not yet refused.** Nothing compares two runtimes and nothing blocks on one. The three
+answers #301 offers — pin the run to its runtime, allow a newer one under a contract, or allow some
+transitions — are all defensible, and choosing between them wants rows to argue from.
+
+**What would decide it.** A run whose gate rows name two runtimes, where the earlier one is known to
+have had a hole the later one closed. That is the case where *the same bar, applied twice* stops
+being a nicety. Until one exists, refusing would cost every run that spans a merge and buy nothing
+measured.
+
+**Read from the manifest, not compiled in.** A version in two places is one that goes stale, and the
+one that goes stale is the copy nobody edits.
+
+**Unproven.** The harness version and the host's tools are not recorded, only floor's. A run that
+moved between two Claude Code versions still cannot say so.
+
+
 ## 7. Unresolved questions
 
 **Closed since revision 2:** `policy` stays; the target allowlist is its first instance and is
