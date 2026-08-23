@@ -817,6 +817,17 @@ still blocks, with the clause named, whether the source holds a yes, a no or not
 A work source is not a target either. An item naming a repository is advisory — that repository is
 authorised by a human or not at all.
 
+**And advice may not name the repository the item was filed in.** The bootstrap authorises that one
+wherever the run stands, so advice alone would have selected it and nothing would have said so.
+`targets add` with no arguments refuses at **28** and names the path that still works.
+
+A human typing `targets add <repo> <ref>` is not advice, and it holds. Self-hosting is exactly this
+shape done deliberately: Foundry's own items are filed where its own work lands.
+
+The adapter is what knows. `source-github.sh` answers `where` with the repository it read from; a
+directory has none, so a run on that source is not refused here at all. **What nothing can name,
+nothing can refuse.**
+
 ### Two adapters, because one proves nothing
 
 | Adapter | Needs | Holds |

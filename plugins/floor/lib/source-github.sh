@@ -261,9 +261,26 @@ open_deliveries() {
     printf '%s\n' "$said" | awk -F'\t' -v mine="$1" '$1 != mine && NF'
 }
 
+#
+# Where the source read this item from, as a target identity. A directory
+# is not a repository and says nothing; only a source
+# that lives in one can answer.
+#
+# `.git` is appended because that is the identity floor compares against, and `gh` reports the
+# browse URL. One shape on both sides, or the comparison silently never matches.
+#
+where_from() {
+    said=$(gh repo view --json url --jq .url 2>&1) || return 1
+    [ -n "$said" ] || return 1
+
+    printf '%s.git
+' "$said"
+}
+
 case "${1:-}" in
     read)    shift; read_item        "${1:-}" ;;
     kind)    shift; kind_of_item     "${1:-}" ;;
+    where)   shift; where_from ;;
     open)    shift; open_deliveries  "${1:-}" ;;
     publish) shift; publish_delivery "${1:-}" "${2:-}" "${3:-}" "${4:-}" ;;
     ask)     shift; put_question     "${1:-}" "${2:-}" "${3:-}" ;;
