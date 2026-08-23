@@ -3157,6 +3157,38 @@ two_runs_over_one_item_compose() {
 two_runs_over_one_item_compose
 
 #
+# Exactly one host may take an item. Two seeing the same one
+# and both starting is the failure, and almost never
+# is not a claim — it is money spent twice.
+#
+exactly_one_host_takes_an_item() {
+  make_repo "$tmp/clm" main && set_origin "$tmp/clm" 'https://gitlab.com/acme/clm.git' \
+    || { skip "the claim — git could not make a repo here"; return; }
+
+  mkdir -p "$src/items"
+  printf 'Race for it\n' > "$src/items/71"
+  floor "$tmp/clm" new "Raced for it" >/dev/null 2>&1
+  allowed=$(floor "$tmp/clm" policy)
+
+  # Exclusivity is `mkdir` being one step, which POSIX gives and this
+  # does not show. Two process races in one suite starve this
+  # machine, and a race reporting nothing proves less.
+
+  is "an item nobody took is taken" "$(code_of floor "$tmp/clm" claim 71)" "0"
+
+  # A claim is not authority. It says a host started, never that it may.
+  is "and holding it grants nothing" "$(floor "$tmp/clm" policy)" "$allowed"
+
+  is  "the next host is refused" "$(code_of floor "$tmp/clm" claim 71)" "30"
+  has "and told who holds it"    "$(floor_says "$tmp/clm" claim 71)" "already held"
+  has "and keeps what it saw"    "$(floor "$tmp/clm" observe)" "claim.refused	item=71"
+
+  is "the holder may let go"     "$(code_of floor "$tmp/clm" release 71)" "0"
+  is "and nobody holds it after" "$(code_of floor "$tmp/clm" release 71)" "30"
+}
+exactly_one_host_takes_an_item
+
+#
 # What produced this row. A run graded under one implementation
 # and completed under another was judged twice, and the two
 # holes closed this week are why that is worth knowing.
