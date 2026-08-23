@@ -1228,6 +1228,11 @@ wreck_runner "a merge that lands a moved head is caught" \
 wreck_runner "a gate killed by a signal recorded as failed is caught" \
   killedgate 's#^was_killed() .*#was_killed() { false; }#'
 
+# A bare word recorded as an observation could only be read by its position, and every event would
+# then owe the same positions.
+wreck_runner "an observation field with no name is caught" \
+  unnamedfield 's#^        case $pair in .*#        continue#'
+
 # A run rewrote a file its gate runs and no command names. Nothing covered it.
 wreck_runner "a gate reaching a second file is caught" \
   reaches 's#^        \[ "$grown".*#        break#'

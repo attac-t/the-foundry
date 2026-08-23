@@ -86,6 +86,7 @@ main() {
         complete)  complete "$@" ;;
         deliver)   deliver "$@" ;;
         aside)     aside "$@" ;;
+        observe)   observe "$@" ;;
         merge)     merge_delivery "$@" ;;
         reconcile) reconcile "$@" ;;
         authorise) authorise ;;
@@ -128,6 +129,7 @@ floor — where work happens.
   run.sh complete                 may this run deliver? exit 15 names what is missing
   run.sh deliver <title>          push the work and tell the source where it is
   run.sh aside [text]             record what this run cannot act on, or print what it has
+  run.sh observe [event] [k=v...] record that something happened, or print what did
   run.sh merge                    land what was graded, or say why it may not be
   run.sh reconcile                whether every other open delivery can join this one
   run.sh authorise                refuse a run that describes no work, or whose selection moved
@@ -1921,6 +1923,87 @@ forget_tree() {
     git -C "$1" worktree remove --force "$2" >/dev/null 2>&1
     rm -rf "$2"
 }
+
+#
+# Something happened, recorded where it happened. Inside the run, because a run has already been
+# carried between machines and its own history went with it, and a run
+# somebody deletes took its own history too.
+#
+# An observation is not evidence. It says a thing occurred, and satisfying
+# a clause needs a trusted producer, a ref and a clause to bind
+# to — which is why completion never reads this file.
+#
+# A field nobody set is absent rather than empty. Composition follows
+# the identities a record genuinely knows, so a missing one
+# narrows what can be asked and breaks nothing.
+#
+observe() {
+    dir=$(active_run) || exit 1
+    refuse_unreadable_run "$dir"
+
+    event=${1:-}
+    [ -n "$event" ] || { list_observations "$dir"; return 0; }
+    shift
+
+    is_one_line "$event" || { note "an event name is one line: [$event]"; exit 2; }
+    refuse_an_unnamed_field "$@"
+
+    record_observation "$dir" "$event" "$@"
+}
+
+# Named pairs, so a reader knows what a value is without counting columns. A bare word could only be
+# read by position, and every event would then owe the same positions.
+refuse_an_unnamed_field() {
+    for pair in "$@"; do
+        case $pair in *=*) continue ;; esac
+
+        note "an observation's fields are key=value, and [$pair] is not one"
+        exit 2
+    done
+}
+
+#
+# The recording host names itself, because two machines do not
+# agree on the time. Order inside one file is the order
+# it was written, and across two there is none.
+#
+record_observation() {
+    dir=$1; event=$2
+    shift 2
+
+    line=$(printf '%s\t%s\t%s\t%s' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+        "$(one_line "$(recording_host)")" "$(one_line "$event")" "$(one_line "$*")")
+
+    refuse_a_torn_row "$line"
+
+    printf '%s\n' "$line" >> "$(observations_file "$dir")" 2>/dev/null \
+        || die_unwritable "$(observations_file "$dir")"
+}
+
+# `uname -n`, because `hostname` is not POSIX and a machine that answers neither is still a machine
+# whose clock this row belongs to. Unknown is a name; empty is a column nobody can read.
+recording_host() { uname -n 2>/dev/null || printf 'unknown'; }
+
+#
+# **One line, one write.** POSIX makes an append atomic only under `PIPE_BUF`, which is 4096 at
+# worst, so a row that fits lands whole and two writers cannot tear each other's.
+#
+# That property picked this shape. Not a format because it is common, and not one because another
+# file here already uses it.
+#
+# Characters, not bytes — a shell counts what it has. The margin is what covers the difference, and
+# a row this long is a paragraph somebody put in the wrong file.
+#
+refuse_a_torn_row() {
+    [ "${#1}" -lt 4000 ] && return 0
+
+    note "an observation must fit one atomic write, and that one is ${#1} long"
+    exit 2
+}
+
+observations_file() { printf '%s/observations' "$1"; }
+
+list_observations() { cat "$(observations_file "$1")" 2>/dev/null; }
 
 #
 # Something this run learned that its own bar does not cover. Recorded so it survives the
