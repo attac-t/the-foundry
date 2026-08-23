@@ -33,6 +33,11 @@ BEGIN {
   #
   # Four, and only on block. A warn costs nothing, so it keeps firing on the share alone.
   if (long_min    == "") long_min    = 4
+
+  # Questions in the prose, counted. More than one and a person has
+  # more than one thing to answer, which is the only half
+  # of the conclusion standard a machine can see.
+  if (asks_warn   == "") asks_warn   = 1
   fence = 0
 
   # A block edge. END turns each one into a full stop, so no sentence runs across one.
@@ -68,6 +73,17 @@ fence               { fbuf = fbuf EDGE $0; next }
                                    sub(/^\[[ x]\][ \t]*/, "", line)
                                    pbuf = pbuf EDGE line; next }
                                  { pbuf = pbuf " " line }
+
+#
+# A question mark inside a fence never reaches here, and
+# one inside a link still does. Both are wrong in the
+# safe direction, and a warn costs a reply nothing.
+#
+# Merging three asks into one sentence beats this count and
+# loses to the sentence length. Splitting them across
+# replies beats both, and nothing here sees it.
+#
+function questions(s,   t) { t = s; return gsub(/\?/, "", t) }
 
 # Determine if a token holds a readable word.
 function is_word(t) { return t != "" && t ~ /[a-z]/ }
@@ -143,6 +159,7 @@ END {
   if (fence) pbuf = pbuf EDGE fbuf
 
   gsub(/\001/, ".", pbuf)
+  asks = questions(pbuf)
   n = split(pbuf, sent, /[.!?]+[ \t]/)
   for (i = 1; i <= n; i++) {
     c = tally(sent[i])
@@ -164,6 +181,7 @@ END {
   if (long_pct > long_warn)  { verdict = "warn"; reason = reason sep() sprintf("%.0f%% long words, aim for %d%%", long_pct, long_warn) }
   if (longest  > sent_warn)      { verdict = "warn"; reason = reason sep() sprintf("longest sentence %d words, aim for %d", longest, sent_warn) }
   if (prose_words > words_warn)  { verdict = "warn"; reason = reason sep() sprintf("%d words, aim for %d", prose_words, words_warn) }
+  if (asks > asks_warn)          { verdict = "warn"; reason = reason sep() sprintf("%d questions, ask one", asks) }
 
   if (long_pct > long_block && hard_words >= long_min) verdict = "block"
   if (longest  > sent_block)     verdict = "block"
@@ -182,12 +200,14 @@ END {
   printf "sent_warn=%d\n",  sent_warn
   printf "long_warn=%d\n",  long_warn
   printf "long_min=%d\n", long_min
+  printf "asks_warn=%d\n", asks_warn
 
   printf "words=%d\n",      prose_words
   printf "measured=%d\n",   measured_words
   printf "sentences=%d\n",  sentences
   printf "longest=%d\n",    longest
   printf "long_pct=%.1f\n", long_pct
+  printf "asks=%d\n",       asks
   printf "grade=%.1f\n",    grade
   printf "verdict=%s\n",    verdict
   printf "reason=%s\n",     reason

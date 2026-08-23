@@ -32,6 +32,7 @@ without() {
     long)  printf '%s' "$2" | awk -f "$scorer" -v long_warn=100  -v long_block=100  >/dev/null 2>&1 ;;
     sent)  printf '%s' "$2" | awk -f "$scorer" -v sent_warn=999  -v sent_block=999  >/dev/null 2>&1 ;;
     words) printf '%s' "$2" | awk -f "$scorer" -v words_warn=1e9 -v words_block=1e9 >/dev/null 2>&1 ;;
+    asks)  printf '%s' "$2" | awk -f "$scorer" -v asks_warn=999 >/dev/null 2>&1 ;;
   esac
   echo $?
 }
@@ -57,6 +58,30 @@ budget=$(repeat 110 'The cat sat on a mat.')
 
 is "long words block"           "$(verdict "$longwords")"     2
 is "and nothing else fired"     "$(without long "$longwords")" 0
+
+# --- one thing to answer ---
+#
+# A person answers one question. Two is two things, and the count is the
+# only half of the conclusion standard a machine
+# can see without guessing.
+#
+asked_one='Done. Shall I merge it?'
+asked_three='Should we merge? Or wait? Or drop it?'
+
+is "one question passes"        "$(verdict "$asked_one")"     0
+is "and it is counted"          "$(field "$asked_one" asks)"  1
+is "more than one warns"        "$(verdict "$asked_three")"   1
+is "and nothing else fired"     "$(without asks "$asked_three")" 0
+has "the reason names the count" "$(field "$asked_three" reason)" "3 questions"
+
+# A fence holds an example, not an ask. Counting one would punish a reply for showing the shape.
+fenced='Done.
+
+```
+Reply: yes / no?
+```
+'
+is "a question inside a fence is not an ask" "$(field "$fenced" asks)" "0"
 is "a long sentence blocks"     "$(verdict "$sentence")"      2
 is "and nothing else fired"     "$(without sent "$sentence")"  0
 is "the word count blocks"      "$(verdict "$budget")"        2
@@ -207,8 +232,11 @@ not "and still say why"          "$(printf '%s\n' "$report" | awk -F= '$1 == "re
 # --- the plugin holds itself to this ---
 # Capture the code before anything else runs, or a command substitution in the label overwrites it.
 
-for doc in "$root/README.md" "$root/skills/plain-english/SKILL.md"; do
-  awk -f "$scorer" -v words_warn=99999 -v words_block=99999 < "$doc" >/dev/null 2>&1
+# A document is not a reply. Both counts measure what a
+# person answers in one turn, and a page
+# explaining them holds many of each.
+for doc in "$root/README.md" "$root/skills/plain-english/SKILL.md" "$root/skills/conclusion/SKILL.md"; do
+  awk -f "$scorer" -v words_warn=99999 -v words_block=99999 -v asks_warn=99999 < "$doc" >/dev/null 2>&1
   rc=$?
   is "$(basename "$doc") clears its own gate" "$rc" 0
 done
