@@ -113,6 +113,8 @@ sh bin/run.sh evidence
 sh bin/run.sh evidence record tests ./check
 sh bin/run.sh gates
 sh bin/run.sh source read 7
+sh bin/run.sh claim 7
+sh bin/run.sh release 7
 sh bin/run.sh source publish work/gift-cards "Gift card flow"
 sh bin/run.sh source ask authorisation tests "May this clause exist? …"
 sh bin/run.sh source receive authorisation tests
@@ -817,8 +819,8 @@ back; nothing in this stage looks.
 
 Where a work item comes from, where a delivery is reported, and where a human is asked.
 
-Four verbs, and **transport is all they are**. What an item means is planning's. What an answer means
-belongs to the stage that asked — this carries the words and reads none of them.
+Five verbs, and **transport is nearly all they are**. What an item means is planning's. What an
+answer means belongs to the stage that asked — this carries the words and reads none of them.
 
 | Verb | Carries | Refuses |
 |---|---|---|
@@ -826,6 +828,7 @@ belongs to the stage that asked — this carries the words and reads none of the
 | `publish` | this run's delivery, answering with its identity | a second, different branch |
 | `ask` | a question about one clause | the same question in other words |
 | `receive` | the answer, or nothing | an answer handed to it |
+| `claim` | that one host started | a second host |
 
 
 ### An absence is observed, never assumed
@@ -894,6 +897,29 @@ The adapter is what knows. `source-github.sh` answers `where` with the repositor
 directory has none, so a run on that source is not refused here at all. **What nothing can name,
 nothing can refuse.**
 
+### A claim says a host started, never that it may
+
+Two machines reading the same issue list both see item 7, and both are right. Nothing above the
+source can settle which one runs it, because nothing above the source is shared.
+
+So the claim lives where the item does. `claim` takes it for this host or exits **30** and names
+who holds it; `release` gives it back, and only to the host that took it.
+
+| Adapter | Compare-and-swap |
+|---|---|
+| a directory | `mkdir` — it makes the directory or it fails |
+| GitHub | creating a ref, which the server refuses if it exists |
+
+Both are one step at the far end. Neither reads-then-writes, which is the shape that loses a race.
+
+**A claim grants nothing.** It does not widen the allowlist, select a target or satisfy a clause —
+`policy` is still empty after one. It answers *who started*, and every question about *who may* is
+still answered where it was before.
+
+**Not proved by a race here.** The property is `mkdir` being one step, which POSIX gives. Two process
+races in one suite starve this machine, so the suite drives the sequence — take, refuse, release,
+refuse — and says this rather than reporting a race that never ran.
+
 ### Two adapters, because one proves nothing
 
 | Adapter | Needs | Holds |
@@ -943,8 +969,11 @@ otherwise          → none, and `path` exits 1
 The pointer lives in the git directory, so it is never committed and needs no gitignore entry. A
 git worktree gets its own git directory, so it gets its own pointer.
 
-**That is the whole answer to two runs at once.** Parallel runs are parallel worktrees. No lock
-file, no scheduler.
+**That is the whole answer to two runs on one machine.** Parallel runs are parallel worktrees. No
+lock file, no scheduler.
+
+Two machines share no git directory, so they share nothing here. What they do share is the work
+source, which is where the claim lives.
 
 ---
 
