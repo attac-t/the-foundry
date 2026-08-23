@@ -4099,6 +4099,31 @@ And only what was graded.
   : > "$store/reads-fail"
   is "a lookup that failed never reads as safe to merge" "$(code_of mg merge)" "25"
   rm -f "$store/reads-fail"
+
+  # A second run, its own delivery, and the first one may not land it. The adapter finds
+  # a delivery by the run written into its body, so one run reaching
+  # another's is a shape the key does not have.
+  #
+  # Held by construction and never tested, which is the same as untested.
+  printf 'Land it\n\nAnd only what was graded.\n' > "$store/item"
+  other=$( cd "$tmp/mg" && PATH="$tmp/mgbin:$PATH" GH_STORE="$store" FOUNDRY_HOME="$home" \
+           FOUNDRY_RUN="" FOUNDRY_WHO=a@b sh "$runner" new "Another" 2>/dev/null )
+  theirs() { ( cd "$tmp/mg" && PATH="$tmp/mgbin:$PATH" GH_STORE="$store" FOUNDRY_HOME="$home" \
+               FOUNDRY_RUN="$other" FOUNDRY_WHO=a@b sh "$runner" "$@" 2>/dev/null ); }
+
+  theirs source read 12 >/dev/null 2>&1
+  theirs charter derive >/dev/null 2>&1
+  theirs policy authorize  'https://github.com/acme/mg.git' >/dev/null 2>&1
+  theirs policy deliver-to 'https://github.com/acme/mg.git' >/dev/null 2>&1
+  theirs policy merge-to   'https://github.com/acme/mg.git' >/dev/null 2>&1
+  theirs targets add       'https://github.com/acme/mg.git' main >/dev/null 2>&1
+  theirs open  >/dev/null 2>&1
+  theirs gates >/dev/null 2>&1
+
+  is "a run that delivered nothing may not land what another did" \
+     "$(code_of theirs merge)" "24"
+  is "and the source was still asked once" \
+     "$(grep -c . "$store/merged" 2>/dev/null)" "1"
 }
 a_merge_lands_only_what_was_graded
 
