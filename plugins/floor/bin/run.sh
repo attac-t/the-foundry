@@ -2255,7 +2255,7 @@ send_delivery() {
     branch=$(delivery_branch "$1")
 
     push_workspace "$1" "$2" "$branch"
-    publish_delivery "$1" "$branch" "$3"
+    publish_delivery "$1" "$branch" "$3" "$(unit_head "$1" "$2")"
 }
 
 push_workspace() {
@@ -2265,6 +2265,11 @@ push_workspace() {
     note "could not deliver [$3] to [$2]: $why"
     exit 19
 }
+
+# Read after the push and never before. `push_workspace` sends
+# `HEAD`, so asking first names a commit the push might
+# not have carried, and a wrong sha reads right.
+unit_head() { git -C "$(unit_work_tree "$1" "$2")" rev-parse HEAD 2>/dev/null; }
 
 # Derived, never chosen. A branch a worker names is a branch a retry can rename, and then the source
 # holds two deliveries for one run.
@@ -3460,14 +3465,14 @@ refuse_unaddressed() {
 publish_delivery() {
     dir=$1; branch=${2:-}; title=${3:-}
 
-    [ "$#" -le 3 ] || { usage; exit 2; }
+    [ "$#" -le 4 ] || { usage; exit 2; }
     [ -n "$branch" ] && [ -n "$title" ] || { note "publish needs a branch and a title"; exit 2; }
     refuse_unaddressed "$dir"
     refuse_a_second_branch "$dir" "$branch"
 
     delivered_already "$dir" && return
 
-    send_and_record "$dir" "$branch" "$title"
+    send_and_record "$dir" "$branch" "$title" "${4:-}"
 }
 
 # `<branch> <url>`, and a branch holds no space — the adapter's shape, so one reader fits both.
@@ -3479,7 +3484,7 @@ refuse_a_second_branch() {
     had=$(recorded_delivery "$1")
 
     [ -n "$had" ] || return 0
-    [ "${had% *}" = "$2" ] && return 0
+    [ "${had%% *}" = "$2" ] && return 0
 
     refuse_unless_answered 4 delivery 19
 }
@@ -3507,10 +3512,30 @@ send_and_record() {
     said=$(source_says publish "$(item_id "$1")" "$(basename "$1")" "$2" "$3" "$(closure_word "$1")")
     refuse_unless_answered "$?" delivery 19
 
-    printf '%s %s\n' "$2" "$said" > "$(delivery_file "$1")" \
-        || note "delivered [$said], but this run could not record it — a resume will ask the source"
-
+    record_delivery "$1" "$2" "${4:-}" "$said"
     printf '%s\n' "$said"
+}
+
+# `<branch> <commit> <url>`, and two fields when nothing was pushed — `source publish`
+# tells the source where the work is and pushes
+# nothing, so it cannot say what landed.
+record_delivery() {
+    line=$2
+    [ -n "$3" ] && line="$line $3"
+
+    printf '%s %s\n' "$line" "$4" > "$(delivery_file "$1")" \
+        || note "delivered [$4], but this run could not record it — a resume will ask the source"
+}
+
+# The commit this run pushed. A record written before floor kept
+# one has two fields, and the middle field is
+# what tells them apart.
+delivered_head() {
+    had=$(recorded_delivery "$1")
+    rest=${had#* }
+
+    [ "$rest" = "${rest#* }" ] && return 1
+    printf '%s\n' "${rest%% *}"
 }
 
 #

@@ -144,7 +144,7 @@ ${FOUNDRY_HOME:-$HOME/.foundry}/runs/<date>-<slug>-<short id>/
 ├── authority          who selected this work item, and when
 ├── evidence           one line per gate that ran, tab-separated
 ├── charter            the bar — one clause, one pin and one command per line
-├── delivery           the branch this run pushed, and where the source put it
+├── delivery           the branch this run pushed, the commit it pushed, and where it landed
 ├── observations       what happened, one line each, and nothing granted by any of it
 ├── id                 this run's name, so a copied directory still knows it
 ├── memory/            working.md, blueprint.md, spec.md, adr/
@@ -185,8 +185,8 @@ write to a target, and nothing enforces that yet because nothing here reads one.
 
 ### What the record answers without floor
 
-Measured on one completed run, read with `cat` and `ls` and nothing else. **Four of six facts come
-back. Two do not, and they fail differently.**
+Measured on one completed run, read with `cat` and `ls` and nothing else. **Five of six facts come
+back. The sixth is recoverable, and the run names where to look.**
 
 | Fact | Answered | |
 |---|---|---|
@@ -195,20 +195,24 @@ back. Two do not, and they fail differently.**
 | whether each clause was met | yes | `evidence` |
 | which commit was graded | yes | `evidence`, field six |
 | who said this run may deliver | no | it is in the target's `.foundry/practice` |
-| whether what shipped is what was graded | **no** | nothing writes it down |
+| whether what shipped is what was graded | yes | `delivery`, field two |
 
 **No derived id is load-bearing.** `evidence` names a clause by its label, never by the number the
 charter computes. A reader matches `gates` to `gates`, so nothing has to be recomputed to be read.
 
-**The first gap is recoverable.** A standing grant lives in the target repository, and `bootstrap`
+**The one gap is recoverable.** A standing grant lives in the target repository, and `bootstrap`
 names the exact commit to read it at. That needs git, which is a different question — RFC-001 owns
 it.
 
-**The second is not.** `delivery` holds a branch name and a URL. `merge` refuses a head that moved
-after grading, so floor enforces the rule live — and then keeps no answer. **The record cannot say
-whether the strongest guarantee held.** A commit in `delivery` would close it.
+**The sixth used to fail.** `delivery` held a branch and a URL, so a reader could not tell whether
+what shipped was what was graded — the exact rule `merge` refuses on. It holds the pushed commit now,
+and `evidence` holds the graded one. Comparing them needs no floor and no network.
 
-So the record is readable without floor. It is not self-contained, and it is honest to say which.
+So the record is readable without floor, and self-contained but for one fact it points at.
+
+**A record written before this holds two fields**, and says so by having nothing in the middle. It is
+read, never refused — a run that delivered under the old shape still answers, and answers *unknown*
+rather than guessing.
 
 ---
 

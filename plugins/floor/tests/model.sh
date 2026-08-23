@@ -4463,6 +4463,24 @@ a_delivery_that_succeeds() {
         "foundry/$(basename "$dvrun")"
   is    "and delivering again answers the same way" \
         "$(code_of floor "$tmp/dv" deliver 'A change worth reading')" "0"
+
+  #
+  # What `merge` refuses on, written down. The head is read after the push, so the record names what
+  # landed rather than what the workspace held.
+  #
+  landed=$(cut -d' ' -f2 "$dvrun/delivery")
+
+  is "the record names the commit it pushed" \
+     "$landed" "$(git -C "$co" rev-parse HEAD)"
+  is "and it is the commit the gate graded" \
+     "$landed" "$(awk -F'\t' 'NR == 1 { print $6 }' "$dvrun/evidence")"
+
+  # A run that delivered before floor kept a commit. Two fields, and it still answers.
+  printf 'foundry/%s https://example.invalid/9\n' "$(basename "$dvrun")" > "$dvrun/delivery"
+
+  is "an older record still answers with its delivery" \
+     "$(floor "$tmp/dv" source publish "foundry/$(basename "$dvrun")" 'A change')" \
+     "https://example.invalid/9"
 }
 a_delivery_that_succeeds
 
