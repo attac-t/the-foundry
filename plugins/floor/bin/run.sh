@@ -39,7 +39,8 @@
 #      nothing
 #  20  the work source could not be asked — a tool that is not there, a credential it refused, a
 #      network. Not 1: that is the source answering, and answering that nothing is there
-#  21  a gate's command is not on this host, so nothing was graded and nothing is recorded. Not 14:
+#  21  a gate never answered — its command is not on this host, or a signal killed it before it
+#      could. Nothing was graded and nothing is recorded. Not 14:
 #      that is a gate answering, and its answer stands at that ref for good
 #  23  nobody said this run may merge into that repository. `policy deliver-to` grants proposing,
 #      and landing work in the trunk is a third act a human takes
@@ -1245,6 +1246,21 @@ enter_work_tree() {
 never_ran() { [ "$1" -eq 126 ] || [ "$1" -eq 127 ]; }
 
 #
+# A signal is 128 plus its number, so a killed gate arrives as 130, 137 or 143. None of those is a
+# gate answering badly, and every one of them poisoned the ref
+# until it was read here.
+#
+# Hit for real. A run stalled inside a copy, was killed, and stamped 143.
+# The next run passed all eight gates at the same commit and completion
+# still refused, because a failure at a ref can never be taken back.
+#
+# A gate wanting to fail has 1. Nothing here kills itself to say so,
+# and a gate that did would be choosing a code this
+# reads as never having answered.
+#
+was_killed() { [ "$1" -gt 128 ] && [ "$1" -lt 160 ]; }
+
+#
 # Run it, and stamp what happened. The only path to a `machine` record, and it takes the ref rather
 # than reading one — `gates` grades every gate against the tree it asked about, not against whatever
 # an earlier gate left behind.
@@ -1259,7 +1275,8 @@ stamp_command() {
     # recorded command that reads the caller's terminal is evidence of something nobody can repeat.
     why=$("$@" </dev/null 2>&1); result=$?
 
-    never_ran "$result" && { note "[$name] could not run on this host: $why"; exit 21; }
+    never_ran "$result"  && { note "[$name] could not run on this host: $why"; exit 21; }
+    was_killed "$result" && { note "[$name] was killed by signal $((result - 128)), so nothing was graded"; exit 21; }
 
     stamp "$dir" machine "$name" "$result" "$ref" "$why"
     return "$result"
