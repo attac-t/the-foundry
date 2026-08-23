@@ -3193,6 +3193,50 @@ a_row_names_the_runtime_that_wrote_it() {
 a_row_names_the_runtime_that_wrote_it
 
 #
+# Whether this host can be replaced. A run holding a workspace has a
+# checkout somebody may be writing to, and swapping the
+# host under it loses work nobody recorded.
+#
+# Its own home, because every other fixture here leaves runs behind and a
+# host is only settled when nothing at all is in flight.
+#
+a_host_is_settled_when_no_run_holds_a_workspace() {
+  make_repo "$tmp/stl" main && set_origin "$tmp/stl" 'https://github.com/acme/stl.git' \
+    && mkdir -p "$tmp/stl/.foundry" \
+    && commit_file "$tmp/stl" .foundry/gates 'tests  true
+' || { skip "settled — git could not make a repo here"; return; }
+
+  quiet="$tmp/quiethome"
+  mkdir -p "$quiet"
+  q() { floor_as "$tmp/stl" "$quiet" "$strun" "$@"; }
+
+  is "a home holding no run is settled" \
+     "$( cd "$tmp/stl" && FOUNDRY_HOME="$quiet" FOUNDRY_RUN="" FOUNDRY_WHO="" \
+         sh "$runner" settled >/dev/null 2>&1; echo $? )" "0"
+
+  strun=$( cd "$tmp/stl" && FOUNDRY_HOME="$quiet" FOUNDRY_RUN="" FOUNDRY_WHO="" \
+           FOUNDRY_SOURCE="$dir_source" sh "$runner" new "Settled" 2>/dev/null )
+  q charter derive >/dev/null 2>&1
+
+  # A run that only charted holds nothing a worker writes to.
+  is "a run with no workspace leaves it settled" "$(code_of q settled)" "0"
+
+  q policy authorize 'https://github.com/acme/stl.git' >/dev/null 2>&1
+  q targets add 'https://github.com/acme/stl.git' main >/dev/null 2>&1
+  q open >/dev/null 2>&1
+
+  is "a run holding one does not"  "$(code_of q settled)" "29"
+  # `floor_as` drops stderr, so a refusal read through it is a refusal nobody heard.
+  said=$( cd "$tmp/stl" && FOUNDRY_HOME="$quiet" FOUNDRY_RUN="$strun" FOUNDRY_WHO="" \
+          sh "$runner" settled 2>&1 )
+  has "and it is named"            "$said" "$(basename "$strun")"
+  # Grading changes nothing. The workspace is still there and still being read.
+  q gates >/dev/null 2>&1
+  is "and grading it does not settle the host" "$(code_of q settled)" "29"
+}
+a_host_is_settled_when_no_run_holds_a_workspace
+
+#
 # One kind, two adapters that spell it differently. A directory carries `kind: defect` in
 # frontmatter; GitHub carries a label called `foundry:defect`. Core is told `defect` by both and
 # knows neither spelling.

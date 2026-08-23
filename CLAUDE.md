@@ -13,6 +13,7 @@ in your context, read it.
 
 | Rule | Owns |
 |---|---|
+| [closing](.claude/rules/closing.md) | when a GitHub issue may be closed — every box, or say why not |
 | [economy](.claude/rules/economy.md) | saying and doing more with less, decided before writing |
 | [guidance](.claude/rules/guidance.md) | which file a new instruction belongs in — a rule, a skill or a README |
 | [identity](.claude/rules/identity.md) | who the record says did the work — git, and which `gh` writes |

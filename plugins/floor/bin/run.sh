@@ -54,6 +54,8 @@
 #      source that could not be reached, and this is one that was
 #  28  the item advised the repository it was filed in. A source is not a target, and advice is
 #      the one path no human typed
+#  29  a run here holds a workspace, so this host is not settled. An answer about the host, and
+#      never a fault in any run
 #  22  the repository declares a bar in a file that is there and cannot be read. Not 8: that is a
 #      charter holding no clause, and this is one nobody could derive. The remedy is the file
 #
@@ -76,6 +78,7 @@ main() {
         path)      print_active_run ;;
         home)      print_home ;;
         runs)      list_runs "$@" ;;
+        settled)   settled "$@" ;;
         bootstrap) print_bootstrap ;;
         targets)   targets "$@" ;;
         policy)    policy "$@" ;;
@@ -109,6 +112,7 @@ floor — where work happens.
   run.sh path                     print the active run's directory, or exit 1
   run.sh home                     print the Foundry home
   run.sh runs                     every run this home holds, and how far each one got
+  run.sh settled                  whether this host holds work, and what it is waiting for
   run.sh bootstrap                print the run's bootstrap target, or exit 1
   run.sh targets                  list unit 01's targets
   run.sh targets add <repo> <ref> add one
@@ -186,6 +190,35 @@ list_runs() {
         [ -d "$dir" ] || continue
         printf '%s\t%s\n' "$(how_far "${dir%/}")" "$(basename "$dir")"
     done
+}
+
+#
+# Whether this host can be replaced. A run holding a workspace has a
+# checkout somebody may be writing to, and swapping the
+# host under it loses work nobody recorded.
+#
+# Three of the four conditions a safe boundary wants fall out of that one test. An attached
+# session and a gate mid-run both hold a workspace, and the fourth
+# is a transition floor has no word for.
+#
+settled() {
+    [ "$#" -eq 0 ] || { usage; exit 2; }
+
+    inflight=$(runs_in_flight)
+    [ -n "$inflight" ] || { note "nothing is in flight"; return 0; }
+
+    note "these runs hold a workspace, so this host is not settled:"
+    printf '%s
+' "$inflight" | while read -r underway; do note "  $underway"; done
+
+    return 29
+}
+
+# A workspace is the part a worker writes to. A run that only charted holds none,
+# so nothing is lost by replacing the host under it, and
+# a delivered one has finished.
+runs_in_flight() {
+    list_runs | awk '$1 == "open" || $1 == "graded" { print $2 }'
 }
 
 # The furthest thing a run's own files say about it, read downward so the first

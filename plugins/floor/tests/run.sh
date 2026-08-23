@@ -1233,6 +1233,10 @@ wreck_runner "a gate killed by a signal recorded as failed is caught" \
 wreck_runner "an observation field with no name is caught" \
   unnamedfield 's#^        case $pair in .*#        continue#'
 
+# A host replaced while a run held a workspace lost work nobody recorded.
+wreck_runner "a host called settled while a run holds a workspace is caught" \
+  notsettled 's#\$1 == "open" || \$1 == "graded"#0#'
+
 # A run rewrote a file its gate runs and no command names. Nothing covered it.
 wreck_runner "a gate reaching a second file is caught" \
   reaches 's#^        \[ "$grown".*#        break#'
