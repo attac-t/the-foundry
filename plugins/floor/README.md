@@ -139,12 +139,17 @@ ${FOUNDRY_HOME:-$HOME/.foundry}/runs/<date>-<slug>-<short id>/
 ├── bootstrap          the repo Foundry was invoked from — 0 or 1
 ├── authority          who selected this work item, and when
 ├── evidence           one line per gate that ran, tab-separated
+├── charter            the bar — one clause, one pin and one command per line
+├── delivery           the branch this run pushed, and where the source put it
+├── observations       what happened, one line each, and nothing granted by any of it
+├── id                 this run's name, so a copied directory still knows it
 ├── memory/            working.md, blueprint.md, spec.md, adr/
 ├── planning/          scratch space for planning
 └── units/
     └── 01/
         ├── memory/
         ├── targets    authoritative
+        ├── authorised-targets  the selection, frozen
         └── workspace/ one isolated checkout per selected target
 ```
 
@@ -171,6 +176,35 @@ move every path in every adapter.
 RFC-001 with no written contract, this directory holds no checkout, and naming a thing after a
 contract that does not exist is the mistake the word `seam` was added to stop. Planning must never
 write to a target, and nothing enforces that yet because nothing here reads one.
+
+---
+
+### What the record answers without floor
+
+Measured on one completed run, read with `cat` and `ls` and nothing else. **Four of six facts come
+back. Two do not, and they fail differently.**
+
+| Fact | Answered | |
+|---|---|---|
+| which item, and its words | yes | `source`, `item.md` |
+| what the bar was | yes | `charter` |
+| whether each clause was met | yes | `evidence` |
+| which commit was graded | yes | `evidence`, field six |
+| who said this run may deliver | no | it is in the target's `.foundry/practice` |
+| whether what shipped is what was graded | **no** | nothing writes it down |
+
+**No derived id is load-bearing.** `evidence` names a clause by its label, never by the number the
+charter computes. A reader matches `gates` to `gates`, so nothing has to be recomputed to be read.
+
+**The first gap is recoverable.** A standing grant lives in the target repository, and `bootstrap`
+names the exact commit to read it at. That needs git, which is a different question — RFC-001 owns
+it.
+
+**The second is not.** `delivery` holds a branch name and a URL. `merge` refuses a head that moved
+after grading, so floor enforces the rule live — and then keeps no answer. **The record cannot say
+whether the strongest guarantee held.** A commit in `delivery` would close it.
+
+So the record is readable without floor. It is not self-contained, and it is honest to say which.
 
 ---
 
