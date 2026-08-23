@@ -71,6 +71,26 @@ marked against.
 
 ---
 
+### A third concern, and one line of it is counted
+
+`plain-english` asks *can I understand this?* `economy` asks *did you say only what matters?*
+`conclusion` asks **can I tell what is true, and what I need to do?**
+
+A reply leads with its state. A question leads with a recommendation, asks one thing, and names the
+reply that settles it. `signal:conclusion` carries the standard, and the brief carries one line of
+it before a reply exists.
+
+**Only the question count is scored.** Two questions are two things for a person to answer, so more
+than one warns.
+
+Everything else is read by a person. Is the state buried? Were two decisions bundled? Did a bounded
+answer flatten an uncertain claim? Each is a judgement, and a check that guessed would be wrong more
+often than it helped.
+
+The count is gameable in one direction and not the other. Merge three asks into one sentence and the
+sentence-length check fires instead. Split them across replies and nothing here sees it — `Stop`
+scores one message.
+
 ## Install
 
 Needs: Claude Code CLI, `sh`, `awk`. No Python, Node or `jq`.

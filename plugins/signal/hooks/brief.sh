@@ -52,6 +52,8 @@ printf 'signal: hold your reply to %s words, no sentence over %s, and long words
   "$(field words_warn)" "$(field sent_warn)" "$(field long_warn)"
 printf 'Code, paths and tables do not count. The bar is a ten-year-old reading it once — see signal:plain-english.\n'
 printf 'Say the answer once, in your last message. Anything you write before a tool call is already read, so keep it to progress.\n'
+printf 'Lead with what is true. If you need the human, ask one bounded thing and name the reply that settles it — see signal:conclusion.
+'
 
 [ -n "$last" ] && printf 'Your last reply came in at %s. Cut harder this time.\n' "$last"
 

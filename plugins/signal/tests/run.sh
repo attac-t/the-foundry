@@ -152,6 +152,7 @@ audit "a dead word-budget check is caught"       's/^  if (prose_words > words_b
 audit "a dead long-word warn band is caught"     's/^  if (long_pct > long_warn).*/  dead = 0/'        longwarn
 audit "a dead sentence warn band is caught"      's/^  if (longest  > sent_warn).*/  dead = 0/'        sentwarn
 audit "a dead word-budget warn band is caught"   's/^  if (prose_words > words_warn).*/  dead = 0/'    wordwarn
+audit "a dead question count is caught"           's/^  if (asks > asks_warn).*/  dead = 0/'        noasks
 audit "a table left out of long words is caught" 's/^  tally(tbuf)/  dead = 0/'                        table
 audit "the sh-sound exception is tested"         's@ && t !~ /\[tcsx\](ia|io)\[nl\]/@@'                shsound
 audit "the -tio ending carve-out is tested"      's@(ia|io)\[nl\]@(ia|io)@'                            tioend
