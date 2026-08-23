@@ -66,6 +66,7 @@ sh bin/run.sh reconcile
 sh bin/run.sh charter derive                         # the bar, pinned at the base commit
 sh bin/run.sh policy authorize https://github.com/acme/api.git
 sh bin/run.sh policy merge-to https://github.com/acme/api.git
+sh bin/run.sh policy closes                          # a person read the item's list, and it is met
 sh bin/run.sh targets add https://github.com/acme/api.git main
 sh bin/run.sh authorise                              # refuses, or says who must answer what
 sh bin/run.sh open                                   # prints the workspace — the work happens there
@@ -75,6 +76,7 @@ sh bin/run.sh open                                   # prints the workspace — 
 sh bin/run.sh gates                                  # every gate the charter pins, each recorded
 sh bin/run.sh complete                               # may this run deliver? 15 names what is missing
 sh bin/run.sh policy deliver-to https://github.com/acme/api.git
+sh bin/run.sh policy closes
 sh bin/run.sh deliver "Gift card flow"               # push, then tell the source where it is
 ```
 
@@ -113,6 +115,8 @@ sh bin/run.sh evidence
 sh bin/run.sh evidence record tests ./check
 sh bin/run.sh gates
 sh bin/run.sh source read 7
+sh bin/run.sh claim 7
+sh bin/run.sh release 7
 sh bin/run.sh source publish work/gift-cards "Gift card flow"
 sh bin/run.sh source ask authorisation tests "May this clause exist? …"
 sh bin/run.sh source receive authorisation tests
@@ -428,6 +432,30 @@ line — a run proposing its own authority is not a grant.
 
 ---
 
+### A delivery names its item, and does not close it
+
+`Closes #7` is GitHub's keyword. On merge it shuts the issue, whatever its `## Done when` list says.
+Floor writes `Refs #7` instead, so a delivery says which item it answers and stops there.
+
+**It shipped closing every time.** Three issues were closed by merges over nineteen unticked boxes,
+one of them the issue about closure integrity. Nothing was wrong with the merges — the tool asserted
+something no run can know.
+
+`policy closes` is what changes the word. It is the one grant that names no repository, because a run
+reads one item and there is nothing to point at.
+
+| | |
+|---|---|
+| nothing granted | `Refs #7` — the item is named, and stays open |
+| `policy closes` | `Closes #7` — GitHub shuts it on merge |
+
+The grant is keyed by the item, so it cannot outlive the item it was given for.
+
+**Floor still reads no part of the item.** It never sees the list, never counts a box, and cannot
+tell a met one from an unmet one. A person reads it and types one line — the same shape as
+`targets add`, and for the same reason.
+
+---
 ### A kind is the source's word, not Foundry's
 
 `source read` also asks the source what the work **is**. A directory carries `kind: defect` in
@@ -851,15 +879,16 @@ back; nothing in this stage looks.
 
 Where a work item comes from, where a delivery is reported, and where a human is asked.
 
-Four verbs, and **transport is all they are**. What an item means is planning's. What an answer means
-belongs to the stage that asked — this carries the words and reads none of them.
+Five verbs, and **transport is nearly all they are**. What an item means is planning's. What an
+answer means belongs to the stage that asked — this carries the words and reads none of them.
 
 | Verb | Carries | Refuses |
 |---|---|---|
 | `read` | the item's words, into the run | a second, different item |
-| `publish` | this run's delivery, answering with its identity | a second, different branch |
+| `publish` | this run's delivery, and the word it answers the item with | a second, different branch |
 | `ask` | a question about one clause | the same question in other words |
 | `receive` | the answer, or nothing | an answer handed to it |
+| `claim` | that one host started | a second host |
 
 
 ### An absence is observed, never assumed
@@ -928,6 +957,29 @@ The adapter is what knows. `source-github.sh` answers `where` with the repositor
 directory has none, so a run on that source is not refused here at all. **What nothing can name,
 nothing can refuse.**
 
+### A claim says a host started, never that it may
+
+Two machines reading the same issue list both see item 7, and both are right. Nothing above the
+source can settle which one runs it, because nothing above the source is shared.
+
+So the claim lives where the item does. `claim` takes it for this host or exits **30** and names
+who holds it; `release` gives it back, and only to the host that took it.
+
+| Adapter | Compare-and-swap |
+|---|---|
+| a directory | `mkdir` — it makes the directory or it fails |
+| GitHub | creating a ref, which the server refuses if it exists |
+
+Both are one step at the far end. Neither reads-then-writes, which is the shape that loses a race.
+
+**A claim grants nothing.** It does not widen the allowlist, select a target or satisfy a clause —
+`policy` is still empty after one. It answers *who started*, and every question about *who may* is
+still answered where it was before.
+
+**Not proved by a race here.** The property is `mkdir` being one step, which POSIX gives. Two process
+races in one suite starve this machine, so the suite drives the sequence — take, refuse, release,
+refuse — and says this rather than reporting a race that never ran.
+
 ### Two adapters, because one proves nothing
 
 | Adapter | Needs | Holds |
@@ -977,8 +1029,11 @@ otherwise          → none, and `path` exits 1
 The pointer lives in the git directory, so it is never committed and needs no gitignore entry. A
 git worktree gets its own git directory, so it gets its own pointer.
 
-**That is the whole answer to two runs at once.** Parallel runs are parallel worktrees. No lock
-file, no scheduler.
+**That is the whole answer to two runs on one machine.** Parallel runs are parallel worktrees. No
+lock file, no scheduler.
+
+Two machines share no git directory, so they share nothing here. What they do share is the work
+source, which is where the claim lives.
 
 ---
 

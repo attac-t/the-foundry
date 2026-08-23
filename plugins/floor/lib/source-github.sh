@@ -18,7 +18,7 @@
 # type is a command language, and the first person who met one answered and went unheard.
 #
 # Usage: sh source-github.sh read    <issue>
-#        sh source-github.sh publish <issue> <run> <branch> <title>
+#        sh source-github.sh publish <issue> <run> <branch> <title> [word]
 #        sh source-github.sh ask     <issue> <question> <text>
 #        sh source-github.sh receive <issue> <question>
 #
@@ -60,7 +60,7 @@ repository_answers() { gh repo view --json name >/dev/null 2>&1; }
 publish_delivery() {
     had=$(delivery_of "$2") || return 3
 
-    [ -z "$had" ] && { open_delivery "$1" "$2" "$3" "$4"; return $?; }
+    [ -z "$had" ] && { open_delivery "$1" "$2" "$3" "$4" "$5"; return $?; }
 
     # `<branch> <url>`, and a branch holds no space.
     [ "${had% *}" = "$3" ] || return 4
@@ -86,9 +86,11 @@ delivery_of() {
     printf '%s\n' "$found" | head -1
 }
 
-# `Closes #<issue>` makes the delivery answer the item. `floor-run` is what makes it this run's.
+# The caller says which word. `Refs` names the item and closes
+# nothing. `Closes` is what GitHub acts on, and floor
+# writes it only where a person granted it.
 open_delivery() {
-    gh pr create --head "$3" --title "$4" --body "Closes #$1
+    gh pr create --head "$3" --title "$4" --body "${5:-Refs} #$1
 
 floor-run: $2" || return 3
 }
@@ -277,16 +279,63 @@ where_from() {
 ' "$said"
 }
 
+
+#
+# A ref that did not exist, created. GitHub refuses a second create of the same name, so two hosts
+# pushing at once leave one winner and one refusal — the same
+# compare-and-swap `mkdir` gives a directory.
+#
+# The branch holds nothing. Its name is the claim and its message says who took it, which is why
+# nothing ever merges it.
+#
+take_claim() {
+    git ls-remote --exit-code origin "refs/heads/$(claim_ref "$1")" >/dev/null 2>&1 && return 4
+
+    tree=$(git hash-object -t tree /dev/null) || return 3
+    made=$(printf 'claimed by %s\n' "$2" | git commit-tree "$tree" 2>/dev/null) || return 3
+
+    why=$(git push origin "$made:refs/heads/$(claim_ref "$1")" 2>&1) && return 0
+
+    printf 'source-github: the claim was refused: %s\n' "$why" >&2
+    return 4
+}
+
+# Who holds it, and since when. The commit's own date and message, because a branch nobody merges
+# has nowhere else to put them.
+read_claim() {
+    listed=$(git ls-remote origin "refs/heads/$(claim_ref "$1")" 2>/dev/null) || return 3
+    ref=${listed%%	*}
+    [ -n "$ref" ] || return 1
+
+    git fetch origin "refs/heads/$(claim_ref "$1")" >/dev/null 2>&1 || return 3
+
+    said=$(git show -s --format='%cI	%s' "$ref" 2>/dev/null) || return 3
+    printf '%s	%s
+' "${said%%	*}" "${said##*claimed by }"
+}
+
+# Deleting the ref. Only the holder should, and GitHub cannot tell — the check is the caller's, and
+# this repository is not a security boundary either.
+drop_claim() {
+    git push origin --delete "refs/heads/$(claim_ref "$1")" >/dev/null 2>&1 || return 4
+}
+
+# One name, derived. A host choosing it could claim an item nobody filed.
+claim_ref() { printf 'foundry/claim/%s' "$1"; }
+
 case "${1:-}" in
     read)    shift; read_item        "${1:-}" ;;
     kind)    shift; kind_of_item     "${1:-}" ;;
     where)   shift; where_from ;;
     open)    shift; open_deliveries  "${1:-}" ;;
-    publish) shift; publish_delivery "${1:-}" "${2:-}" "${3:-}" "${4:-}" ;;
+    claim)   shift; take_claim       "${1:-}" "${2:-}" ;;
+    held)    shift; read_claim       "${1:-}" ;;
+    release) shift; drop_claim       "${1:-}" "${2:-}" ;;
+    publish) shift; publish_delivery "${1:-}" "${2:-}" "${3:-}" "${4:-}" "${5:-}" ;;
     ask)     shift; put_question     "${1:-}" "${2:-}" "${3:-}" ;;
     receive) shift; read_answer      "${1:-}" "${2:-}" ;;
     state)   shift; delivery_state   "${1:-}" ;;
     land)    shift; land_delivery    "${1:-}" ;;
-    *)       echo "source-github: read <issue> | kind <issue> | publish <issue> <run> <branch> <title> | ask <issue> <question> <text> | receive <issue> <question> | state <run> | land <run>" >&2
+    *)       echo "source-github: read <issue> | kind <issue> | claim <issue> <host> | held <issue> | release <issue> <host> | publish <issue> <run> <branch> <title> [word] | ask <issue> <question> <text> | receive <issue> <question> | state <run> | land <run>" >&2
              exit 2 ;;
 esac

@@ -10,6 +10,7 @@
 # writing one. That is the whole of the ask channel: no terminal, no daemon, no inbox.
 #
 #     items/<item>                   what someone wants
+#     claims/<item>/held             which host took it, and when
 #     deliveries/<run>               what one run published
 #     questions/<item>/<question>    what a run asked
 #     answers/<item>/<question>      what a human answered
@@ -125,13 +126,53 @@ open_deliveries() {
     done
 }
 
+
+#
+# Exactly one host may take an item. Two seeing the same one
+# and both starting is the failure, and almost never
+# is not a claim — it is money spent twice.
+#
+# `mkdir` either makes the directory or it does not, and the loser is told which.
+# A file written after a test is two steps, and two hosts can
+# both pass the test before either writes.
+#
+# Held by a host that died, and nobody clears it. The claim
+# carries when it was taken, so a later host can see
+# it is stale without anyone deciding it is.
+#
+take_claim() {
+    mkdir -p "$root/claims" 2>/dev/null || return 3
+    mkdir "$root/claims/$1" 2>/dev/null || return 4
+
+    printf '%s\t%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$2" > "$root/claims/$1/held" || return 3
+}
+
+# Who holds it, and since when. Nothing when nobody does.
+read_claim() {
+    [ -f "$root/claims/$1/held" ] || return 1
+
+    cat "$root/claims/$1/held"
+}
+
+# Only the holder may let go. A host dropping another's claim is the race this exists to stop,
+# arriving one step later.
+drop_claim() {
+    held=$(read_claim "$1") || return 1
+    [ "${held#*	}" = "$2" ] || return 4
+
+    rm -rf "$root/claims/$1"
+}
+
 case "${1:-}" in
     read)    shift; read_item        "${1:-}" ;;
     kind)    shift; kind_of_item     "${1:-}" ;;
     open)    shift; open_deliveries  "${1:-}" ;;
-    publish) shift; publish_delivery "${1:-}" "${2:-}" "${3:-}" "${4:-}" ;;
+    claim)   shift; take_claim       "${1:-}" "${2:-}" ;;
+    held)    shift; read_claim       "${1:-}" ;;
+    release) shift; drop_claim       "${1:-}" "${2:-}" ;;
+    publish) shift; publish_delivery "${1:-}" "${2:-}" "${3:-}" "${4:-}" "${5:-}" ;;
     ask)     shift; put_question     "${1:-}" "${2:-}" "${3:-}" ;;
     receive) shift; read_answer      "${1:-}" "${2:-}" ;;
-    *)       echo "source-dir: read <item> | publish <item> <run> <branch> <title> | ask <item> <question> <text> | receive <item> <question>" >&2
+    *)       echo "source-dir: read <item> | claim <item> <host> | held <item> | release <item> <host> | publish <item> <run> <branch> <title> [word] | ask <item> <question> <text> | receive <item> <question>" >&2
              exit 2 ;;
 esac

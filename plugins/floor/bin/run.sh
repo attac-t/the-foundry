@@ -56,6 +56,8 @@
 #      the one path no human typed
 #  29  a run here holds a workspace, so this host is not settled. An answer about the host, and
 #      never a fault in any run
+#  30  another host holds that item, or this one does not. A claim is not authority, so this is
+#      never a refusal about what a run may touch
 #  22  the repository declares a bar in a file that is there and cannot be read. Not 8: that is a
 #      charter holding no clause, and this is one nobody could derive. The remedy is the file
 #
@@ -89,6 +91,8 @@ main() {
         complete)  complete "$@" ;;
         deliver)   deliver "$@" ;;
         aside)     aside "$@" ;;
+        claim)     claim "$@" ;;
+        release)   release "$@" ;;
         observe)   observe "$@" ;;
         observed)  observed "$@" ;;
         merge)     merge_delivery "$@" ;;
@@ -120,6 +124,7 @@ floor — where work happens.
   run.sh policy authorize <repo>  let this run change one more
   run.sh policy deliver-to <repo> let this run write to one — a second act, and grading is not it
   run.sh policy merge-to <repo>   let this run land what it delivered — a third act, absent by default
+  run.sh policy closes            say a person read the item's list and it is met
   run.sh charter                  print what must be true for this run to be good
   run.sh charter derive           derive clauses from this repository, pinned at its base
   run.sh charter check            report clauses that drifted from their pins, or went missing
@@ -134,6 +139,8 @@ floor — where work happens.
   run.sh complete                 may this run deliver? exit 15 names what is missing
   run.sh deliver <title>          push the work and tell the source where it is
   run.sh aside [text]             record what this run cannot act on, or print what it has
+  run.sh claim <item>             take it for this host, or say who has it
+  run.sh release <item>           let it go, if this host took it
   run.sh observe [event] [k=v...] record that something happened, or print what did
   run.sh observed [event]         every run's observations, with the run named
   run.sh merge                    land what was graded, or say why it may not be
@@ -888,6 +895,7 @@ policy() {
         authorize)  shift; authorize  "$dir" "${1:-}" ;;
         deliver-to) shift; deliver_to "$dir" "${1:-}" ;;
         merge-to)   shift; merge_to   "$dir" "${1:-}" ;;
+        closes)     shift; closes     "$dir" ;;
         *)          usage; exit 2 ;;
     esac
 }
@@ -988,6 +996,7 @@ list_policy() {
 
     list_grants "$(grants_file "$1")"     granted
     list_grants "$(deliveries_file "$1")" deliver
+    list_grants "$(closes_file "$1")"     closes
 }
 
 list_grants() {
@@ -1039,6 +1048,27 @@ record_grant() {
 authorize()  { grant "$1" "$(grants_file "$1")"     is_authorised  "${2:-}"; }
 deliver_to() { grant "$1" "$(deliveries_file "$1")" may_deliver_to "${2:-}"; }
 merge_to()   { grant "$1" "$(merges_file "$1")"     may_merge_to   "${2:-}"; }
+
+# The one grant that names no repository. A run reads one item, so
+# there is nothing to point at. What this records is that
+# a person read the item's list and found it met.
+closes() {
+    item=$(item_id "$1")
+    [ -n "$item" ] || { note "this run reads no item, so there is nothing to close"; exit 2; }
+
+    may_close_item "$1" && return 0
+    record_grant "$(closes_file "$1")" "$item"
+}
+
+closes_file() { printf '%s/%s/closes' "$GRANTS" "$(basename "$1")"; }
+
+# Keyed by the item, so a grant cannot outlive the item it was given for.
+may_close_item() {
+    file=$(closes_file "$1")
+    [ -f "$file" ] || return 1
+
+    grep -Fxq -- "$(item_id "$1")" "$file"
+}
 
 list_targets() {
     [ -f "$1" ] || return 0
@@ -1959,6 +1989,57 @@ reconcile_tree() { printf '%s/reconcile-tree' "$1"; }
 forget_tree() {
     git -C "$1" worktree remove --force "$2" >/dev/null 2>&1
     rm -rf "$2"
+}
+
+#
+# Exactly one host may take an item. Two seeing the same one
+# and both starting is the failure, and almost never
+# is not a claim — it is money spent twice.
+#
+# A claim is not authority. It says a host started, never that it may — `policy` still decides what
+# a run may touch, and this widens nothing.
+#
+claim() {
+    [ "$#" -le 1 ] || { usage; exit 2; }
+    refuse_missing_source
+
+    item=${1:-}
+    [ -n "$item" ] || { note "claim names an item"; exit 2; }
+
+    source_says claim "$item" "$(recording_host)" && { note "claimed [$item]"; return 0; }
+
+    say_who_holds "$item"
+    record_the_refusal "$item"
+    exit 30
+}
+
+# What the loser keeps. A host claims before it opens a run
+# as often as after, so there is not always a row to
+# write. Inventing one to hold a line is worse.
+record_the_refusal() {
+    dir=$(active_run 2>/dev/null) || return 0
+    record_observation "$dir" claim.refused "item=$1" || return 0
+}
+
+# Only the holder may let go. A host dropping another's claim is the race this exists to stop,
+# arriving one step later.
+release() {
+    [ "$#" -le 1 ] || { usage; exit 2; }
+    refuse_missing_source
+
+    item=${1:-}
+    [ -n "$item" ] || { note "release names an item"; exit 2; }
+
+    source_says release "$item" "$(recording_host)" && { note "released [$item]"; return 0; }
+
+    note "[$item] is not this host's to release"
+    exit 30
+}
+
+say_who_holds() {
+    held=$(source_says held "$1") || { note "[$1] is held, and the source could not say by whom"; return 0; }
+
+    note "[$1] is already held: $held"
 }
 
 #
@@ -3413,8 +3494,17 @@ delivered_already() {
 # Written after the send, so it can only ever describe a delivery that happened. One that cannot be
 # written is said out loud and not fatal — asking the source is the fallback, and it is what every run
 # had before this.
+# `Closes` is GitHub's keyword and it shuts the issue on merge.
+# A run may not say its own item is finished, so the word
+# is `Refs` until `policy closes` says otherwise.
+closure_word() {
+    may_close_item "$1" && { printf 'Closes'; return 0; }
+
+    printf 'Refs'
+}
+
 send_and_record() {
-    said=$(source_says publish "$(item_id "$1")" "$(basename "$1")" "$2" "$3")
+    said=$(source_says publish "$(item_id "$1")" "$(basename "$1")" "$2" "$3" "$(closure_word "$1")")
     refuse_unless_answered "$?" delivery 19
 
     printf '%s %s\n' "$2" "$said" > "$(delivery_file "$1")" \
