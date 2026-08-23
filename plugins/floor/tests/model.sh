@@ -3435,6 +3435,11 @@ case "$*" in
   "issue view"*)            [ -f "$store/reads-fail" ] && { echo "HTTP 401: Bad credentials" >&2; exit 1; }
                             cat "$store/item" 2>/dev/null ;;
   # The probe. A repository cannot be absent, so failing here is the host and never the item.
+  # The stub answers a repository view with a url only when asked for
+  # one. Real gh applies the jq itself, so a fixture printing the
+  # same field regardless would be agreeing with the adapter.
+  "repo view"*"--json url"*)  [ -f "$store/reads-fail" ] && { echo "HTTP 401: Bad credentials" >&2; exit 1; }
+                            sed -e 's/\.git$//' "$store/repo" 2>/dev/null ;;
   "repo view"*)             [ -f "$store/reads-fail" ] && { echo "HTTP 401: Bad credentials" >&2; exit 1; }
                             printf '{"name":"gh"}\n' ;;
   # One comment, one body, in order. GitHub keeps a list and the adapter asks for the field, so the
@@ -3650,6 +3655,46 @@ the_other_adapter() {
   unset GH_STORE
 }
 the_other_adapter
+
+#
+# An item filed in a repository, advising that same repository. The bootstrap
+# authorises it because the run stands there, so nothing else
+# would stop advice alone from selecting it.
+#
+# A human naming it still can. The refusal is about the path nobody
+# typed, not about the repository, and self-hosting is
+# exactly this shape done deliberately.
+#
+advice_may_not_make_the_source_a_target() {
+  make_repo "$tmp/sn" main && set_origin "$tmp/sn" 'https://github.com/acme/sn.git' \
+    && commit_file "$tmp/sn" Makefile 'test:
+	echo ok
+' || { skip "source as a target — git could not make a repo here"; return; }
+
+  fake_gh "$tmp/snbin" || { skip "source as a target — could not put a gh on the path"; return; }
+  store="$tmp/snstore"
+  mkdir -p "$store"
+  printf 'Mend it\n\ntargets: https://github.com/acme/sn.git\n' > "$store/item"
+  printf 'https://github.com/acme/sn.git\n'                     > "$store/repo"
+
+  sn() { ( cd "$tmp/sn" && PATH="$tmp/snbin:$PATH" GH_STORE="$store" FOUNDRY_HOME="$home" \
+           FOUNDRY_RUN="$snrun" FOUNDRY_WHO=a@b sh "$runner" "$@" 2>/dev/null ); }
+  sn_says() { ( cd "$tmp/sn" && PATH="$tmp/snbin:$PATH" GH_STORE="$store" FOUNDRY_HOME="$home" \
+                FOUNDRY_RUN="$snrun" FOUNDRY_WHO=a@b sh "$runner" "$@" 2>&1 ); }
+  snrun=$( cd "$tmp/sn" && PATH="$tmp/snbin:$PATH" GH_STORE="$store" FOUNDRY_HOME="$home" \
+           FOUNDRY_RUN="" FOUNDRY_WHO=a@b sh "$runner" new "Source" 2>/dev/null )
+
+  sn source read 12 >/dev/null 2>&1
+  sn policy authorize 'https://github.com/acme/sn.git' >/dev/null 2>&1
+
+  is  "advice naming the item's own repository is refused" "$(code_of sn targets add)" "28"
+  has "and says which path may still name it" "$(sn_says targets add)" "targets add"
+  is  "so nothing is selected"                "$(sn targets)" ""
+
+  is "a human naming it is not advice, and holds" \
+     "$(code_of sn targets add 'https://github.com/acme/sn.git' main)" "0"
+}
+advice_may_not_make_the_source_a_target
 
 #
 # A source that answers `read` and nothing else. §2.1 proposes four

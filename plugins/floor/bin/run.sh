@@ -51,6 +51,8 @@
 #      two deliveries, and a fault in neither
 #  27  the work source has no way to do that at all — it can only be read. Not 20: that is a
 #      source that could not be reached, and this is one that was
+#  28  the item advised the repository it was filed in. A source is not a target, and advice is
+#      the one path no human typed
 #  22  the repository declares a bar in a file that is there and cannot be read. Not 8: that is a
 #      charter holding no clause, and this is one nobody could derive. The remedy is the file
 #
@@ -1039,8 +1041,27 @@ add_advised() {
     [ -n "$advised" ] || { note "the item advises no target, so name one"; exit 2; }
 
     for repo in $advised; do
+        refuse_the_source_as_advice "$1" "$repo"
         add_target "$1" "$2" "$repo" "$(bootstrap_ref "$1")"
     done
+}
+
+#
+# Advice may not make the source a target. An item filed in a repository
+# can name that repository, and the bootstrap already authorises
+# it wherever you stand, so advice alone would select it.
+#
+# A source that cannot say leaves this open. Nothing here can
+# refuse what nothing can name, and a directory
+# source has no repository to be.
+#
+refuse_the_source_as_advice() {
+    from=$(source_says where "$(item_id "$1")" 2>/dev/null) || return 0
+    [ "$from" = "$2" ] || return 0
+
+    note "[$2] is where this item was filed, so advice may not select it"
+    note "a human naming it with \`targets add\` still can"
+    exit 28
 }
 
 # The `targets:` lines in the item's own words. Floor reads a repository and nothing else — what the
