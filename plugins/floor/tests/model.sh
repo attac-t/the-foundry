@@ -862,10 +862,24 @@ a_charter_derives_from_the_repository_it_is_run_in() {
   # selected at that moment — which is what lets a line *removed* afterwards be seen at all. The
   # selection file cannot show an absence; a second record can.
   #
-  frozen=$chrun/units/01/authorised-targets
+  frozen=$chrun/units/01/selection
   exists "authorising writes the selected set down" "$frozen"
   is "and it holds the lines, not a digest of them" \
      "$(cat "$frozen")" "https://github.com/acme/ch.git develop"
+
+  # A run authorised before the rename. It holds the old name and nothing re-freezes it, so reading
+  # the new one would lose the record that makes a *removed* line visible — and exit 10 with it.
+  mv "$frozen" "$chrun/units/01/authorised-targets"
+
+  is "a run frozen under the old name still authorises" \
+     "$(code_of floor "$tmp/ch" authorise)" "0"
+
+  printf 'https://github.com/acme/ch.git main\n' >> "$chrun/units/01/targets"
+  is "and a selection that moves under it still refuses" \
+     "$(code_of floor "$tmp/ch" authorise)" "10"
+
+  mv "$chrun/units/01/authorised-targets" "$frozen"
+  printf 'https://github.com/acme/ch.git develop\n' > "$chrun/units/01/targets"
 
   is "authorising again over the same selection is not a change" \
      "$(code_of floor "$tmp/ch" authorise)" "0"

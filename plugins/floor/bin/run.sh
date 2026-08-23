@@ -2495,7 +2495,22 @@ authorise() {
     freeze_selection "$run_dir" "$selection_path"
 }
 
-frozen_selection_file() { printf '%s/units/01/authorised-targets' "$1"; }
+# A run authorised before the rename holds `authorised-targets`, and it is
+# read rather than refused. That name said who allowed the
+# selection, which `policy` already answers.
+#
+# Silently, and on purpose. This is asked three times a
+# command, and a note that fires that often
+# is one people learn to skip.
+frozen_selection_file() {
+    named="$1/units/01/selection"
+    [ -f "$named" ] && { printf '%s' "$named"; return 0; }
+
+    before="$1/units/01/authorised-targets"
+    [ -f "$before" ] && { printf '%s' "$before"; return 0; }
+
+    printf '%s' "$named"
+}
 
 selection_is_frozen() { [ -f "$(frozen_selection_file "$1")" ]; }
 

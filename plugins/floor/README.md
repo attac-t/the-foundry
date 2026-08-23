@@ -153,7 +153,7 @@ ${FOUNDRY_HOME:-$HOME/.foundry}/runs/<date>-<slug>-<short id>/
     └── 01/
         ├── memory/
         ├── targets    authoritative
-        ├── authorised-targets  the selection, frozen
+        ├── selection  what was selected, frozen at authorisation
         └── workspace/ one isolated checkout per selected target
 ```
 
@@ -873,7 +873,7 @@ checkout.
 ### The selection freezes here
 
 ```
-<run>/units/01/authorised-targets
+<run>/units/01/selection
 ```
 
 Authorising writes the selected set down. **That record is what makes a line *removed* from
@@ -888,6 +888,11 @@ ignore refusals.
 Authorising again over an unchanged selection is not a change and does not refuse. Authorising over a
 moved one exits 10 and does **not** re-freeze: quietly recording the new set would let the selection
 be edited after the moment it was fixed, which is the entire thing the freeze exists to stop.
+
+**It was called `authorised-targets` until now.** That name said who allowed the selection, which
+`policy` already answers, and it read as a third kind of grant. A run authorised under the old name
+is read rather than refused — silently, because this file is asked for three times a command and a
+note that fires that often is one people learn to skip.
 
 **Who is authoritative moves here.** Before authorisation the selection file is the answer to *what
 does this run touch*. After it, the frozen record is, and the live file's authority ends.
