@@ -95,6 +95,11 @@ main() {
 }
 
 usage() {
+    usage_run
+    usage_source
+}
+
+usage_run() {
     cat <<'EOF'
 floor — where work happens.
 
@@ -127,6 +132,13 @@ floor — where work happens.
   run.sh reconcile                whether every other open delivery can join this one
   run.sh authorise                refuse a run that describes no work, or whose selection moved
                                   — exit 1, 5, 8, 9, 10, 11 or 12
+EOF
+}
+
+# Its own list, because `usage` was one line over the cap the shell gate holds. Split by what a verb
+# reaches rather than by length, or the next verb moves the seam again.
+usage_source() {
+    cat <<'EOF'
   run.sh source read <item>       pull the item's words into this run
   run.sh source kind              what the source says this work is, or exit 1
   run.sh source publish <branch> <title>
