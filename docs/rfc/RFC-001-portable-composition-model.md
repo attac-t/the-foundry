@@ -1428,6 +1428,31 @@ can edit the charter, the practice and the grants, and nothing here stops it. Th
 and the ordinary shape of a worker taking the easy path — not an adversary.
 
 
+### Revision 18 — the order reached its end, and grew three stages
+
+§9 listed eleven stages and no way to say which were built. A reader had to go and look, and two of
+the eleven had been finished for days.
+
+| Was | Is | What falsified it |
+|---|---|---|
+| eleven stages, no state | each stage says built or not, and what is missing | reading the verb table against the list |
+| the order ends at `explain` | three stages came after it that nothing predicted | `merge`, `reconcile`, and a work kind |
+| *workspace seam* reads as done | one adapter, so §8's two-adapter rule is unmet there | a clone is the only way a workspace is ever made |
+
+**The order itself held.** Every stage was built in the sequence written, and neither structural claim
+was contradicted. That is worth recording plainly, because a build order that survives eleven stages
+is the part of this document with the least evidence behind it when written.
+
+**What it did not predict is what came after.** Delivery without merge stops at a green pull request.
+Two deliveries with no coordinator need a way to ask whether they join. Each new stage answers a
+question an earlier stage created, which is the shape a good order produces rather than a failure of
+one.
+
+**Two issues are open for work that ships.** #93 and #97 both carry unchecked boxes against verbs
+that exist. This revision does not close them — an issue is closed by checking its own list, not by a
+document saying the stage is done.
+
+
 ## 7. Unresolved questions
 
 **Closed since revision 2:** `policy` stays; the target allowlist is its first instance and is
@@ -1589,6 +1614,41 @@ unordered           the learning-loop skill, and contracts-first planning
                     kernel: narrow the evaluate.sh skill list before the model sees it
                     run Panel's kill criterion; publish the count
 ```
+
+### Revision 18 — what the order reached
+
+Stages, in the order above, against what floor ships on 2026-08-23. Read from the verb table in
+`bin/run.sh` and the two adapters, not from this document's own history.
+
+| Stage | Built | What is not |
+|---|---|---|
+| run | yes | — |
+| targets | yes | — |
+| policy | yes | — |
+| charter | yes | the semantic path. No judge exists, so condition 2 cannot fire |
+| authorisation | yes | — |
+| evidence | yes | — |
+| gates | yes | *per target* means the one target the caller stands in |
+| work source | yes | — two adapters, four verbs each, and a fifth this section never named |
+| durable grants | yes | `.foundry/practice`, read at the base commit |
+| workspace seam | one adapter | a clone. The container interface is unwritten, so the seam is unproven |
+| delivery seam | yes | — |
+| explain | no | nothing prints a default and its reason |
+
+**Three stages this section never had.** `merge` lands what was graded and refuses anything else.
+`reconcile` says whether two open deliveries can be brought together. A work source also carries what
+the work *is*, in core's own word.
+
+None of the three was foreseen, and each answers a question the order below it created. Delivery
+without merge stops at a green pull request. Two deliveries with no coordinator need a way to ask.
+Work arriving with no kind cannot be sorted by anything that does not read the words.
+
+**The order held.** Every stage was built in the sequence written, and the two structural claims below
+were never contradicted. What the order did not predict is what came after it.
+
+**One stage is a seam in name only.** A workspace has one adapter, so §8's two-adapter rule is unmet
+there and the interface a container would need is still a guess. The work source has two and is the
+only seam that meets it.
 
 **Two structural claims, kept.** `policy` precedes multi-repo targets, because §2.3 makes the
 allowlist a prerequisite rather than an open question. And the charter splits in two: the shape ships
