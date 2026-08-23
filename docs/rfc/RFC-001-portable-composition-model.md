@@ -881,6 +881,32 @@ Foundry **orchestrates** a provider; it does not wrap it. Credentials, model sel
 provider-specific features stay with the provider. Neutrality is bought by keeping contracts as
 shapes and exit codes — not by writing interface types with one implementation.
 
+### What kind of thinking the work needs
+
+A worker is replaceable. **What the work needs is not**, and until now the model had no word for it.
+
+| Capability | The work needs |
+|---|---|
+| `build` | a bounded change made against a stated bar |
+| `challenge` | a premise attacked, and what is false found |
+| `judge` | a verdict from something that did not produce the thing |
+| `read` | a cold reading, reporting confusion rather than resolving it |
+
+Four, because removing any one reproduces a failure this repository has had. Without `build` nothing
+changes. Without `challenge` a false premise survives — #150 exists because one did. Without `judge`
+the `judged` trust level has no producer, which is exactly why it does not ship. Without `read` a
+README that took eight minutes to understand passes every gate.
+
+**The falsifier is collapse.** If two of these always reach the same worker across ten work items,
+they were one capability and this table is one row too long.
+
+**A capability is core language. A worker is not.** `build` is what the work needs; whichever product
+does it is the adapter's business, the same rule that keeps `foundry:defect` out of core.
+
+**The strongest available worker takes it, and cost is not in that sentence.** Cost is a fact worth
+recording and never a reason to lower a bar. A rule holding a cost term is a rule that sometimes
+prefers a weaker answer.
+
 ### The two-adapter rule
 
 **A contract is unproven until two adapters satisfy it.** In v1 only the work-source contract meets
@@ -1451,6 +1477,33 @@ one.
 **Two issues are open for work that ships.** #93 and #97 both carry unchecked boxes against verbs
 that exist. This revision does not close them — an issue is closed by checking its own list, not by a
 document saying the stage is done.
+
+
+### Revision 19 — the model had no word for what the work needs
+
+Every noun here describes what is done, who may do it and what proves it was done well. **None
+described what kind of thinking the work wanted**, so *route this to the right worker* could not be
+said without naming a product.
+
+| Was | Is | What forced it |
+|---|---|---|
+| a worker is replaceable, and nothing says replaceable *at what* | four capabilities, in §3 | #297 asked for the vocabulary before the router |
+| telemetry's limits stated for evidence only | stated for routing too | an observation may narrow a choice and may never make one |
+
+**Two lists, and they do not overlap.** Telemetry may narrow: which workers have done a capability
+before and what happened, how often a kind of work needed a second attempt, how long one took. It may
+never decide: whether a clause is satisfied, what the bar is, whether a worker may act at all, or
+that a weaker answer is acceptable today.
+
+**A routing decision is an observation, not authority.** `work.routed capability=... worker=...` is
+readable after the fact, sits beside the gate rows from the same run, and is never deleted when it
+turns out to have been wrong. That is how a bad choice is shown to have been one.
+
+**Nothing is built.** No router, no registry, no scheduler. This is the vocabulary a router would
+need, written first so that building one cannot invent it quietly.
+
+**Unproven.** One harness has ever run this, so *the same work reaches the same capability elsewhere*
+is a claim with no second implementation behind it.
 
 
 ## 7. Unresolved questions
