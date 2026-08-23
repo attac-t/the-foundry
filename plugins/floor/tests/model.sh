@@ -3295,6 +3295,19 @@ a_work_kind_survives_the_adapter() {
 
   # `kind:` in the body is the item's prose. Reading it would make a sentence a classification.
   is "a kind below the frontmatter is prose" "$(code_of floor "$tmp/kdp" source kind)" "1"
+
+  # Two labels answer as two lines. Both used to be kept, so `source kind` printed a pair and the
+  # reader chose in silence — which is the choice the short inventory exists to avoid.
+  printf -- '---\nkind: defect chore\n---\n\nTwo at once\n' > "$src/items/34"
+
+  make_repo "$tmp/kd2" main && set_origin "$tmp/kd2" 'https://gitlab.com/acme/kd2.git' \
+    && floor "$tmp/kd2" new "Two kinds" >/dev/null || { skip "two kinds — no repo"; return; }
+
+  is "an item the source calls two things is refused" \
+     "$(code_of floor "$tmp/kd2" source read 34)" "31"
+  has "and the refusal names both" \
+      "$(floor_says "$tmp/kd2" source read 34)" "more than one kind"
+  is "and the run keeps no kind at all" "$(code_of floor "$tmp/kd2" source kind)" "1"
 }
 a_work_kind_survives_the_adapter
 

@@ -58,6 +58,8 @@
 #      never a fault in any run
 #  30  another host holds that item, or this one does not. A claim is not authority, so this is
 #      never a refusal about what a run may touch
+#  31  the source says one item is more than one kind. The inventory is short so a reader never
+#      has to choose, and two answers is that choice arriving anyway
 #  22  the repository declares a bar in a file that is there and cannot be read. Not 8: that is a
 #      charter holding no clause, and this is one nobody could derive. The remedy is the file
 #
@@ -3399,7 +3401,20 @@ record_kind() {
     kind_said=$(source_says kind "$2") || return 0
     [ -n "$kind_said" ] || return 0
 
+    refuse_two_kinds "$2" "$kind_said"
     printf '%s\n' "$kind_said" > "$(kind_file "$1")" 2>/dev/null || die_unwritable "$(kind_file "$1")"
+}
+
+# An item is one kind. Two labels answered as two lines and
+# both were kept, so `source kind` printed a pair
+# and every reader of it chose in silence.
+refuse_two_kinds() {
+    [ "$(printf '%s\n' "$2" | grep -c .)" -le 1 ] && return 0
+
+    note "the source says item [$1] is more than one kind:"
+    printf '%s\n' "$2" | sed 's/^/floor:   /' >&2
+    note "an item is one kind — the inventory is short on purpose"
+    exit 31
 }
 
 # Beside `source`, which records which item this run reads. This records what that item is.

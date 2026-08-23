@@ -477,6 +477,49 @@ A prefix anywhere else is portability already leaked.
 **A kind is not authority and not a bar.** Nothing reads it yet. It widens no allowlist, moves no
 clause and selects no target, so a run without one is ordinary rather than blocked.
 
+**An item is one kind.** Two answers is a choice between two things a human wrote, and floor refuses
+at **31** rather than making it. A source with nothing to say is fine; a source with two is not.
+
+#### The inventory
+
+| Kind | The work is |
+|---|---|
+| `defect` | something that is wrong, and the item says what right looks like |
+
+**One, because nothing reads a kind yet.** A taxonomy invented ahead of its reader is a vocabulary
+nobody obeys, and the refusal above only holds while the list is short enough to be obvious.
+
+**Adding one is a decision, not a convenience.** Every kind is a word a stranger's repository must
+learn, and a second one is the moment `source kind` starts meaning something.
+
+Six were proposed and none survived, each for its own reason:
+
+| Proposed | Why not |
+|---|---|
+| `goal`, `maintenance`, `experiment` | no reader. Three words for a distinction nothing acts on |
+| `proposal` | a pull request already is one, and GitHub says so without a label |
+| `human` | `source ask` posts the question. A label repeats what the comment already says |
+| `go` | **authority is a stamped record**, and a label carries no actor, no time and no revision |
+
+`go` is the one worth stating plainly. A label that means *approved* is authority wearing a signal,
+and whoever clicks it is whoever has write access. `authority` names the person, the moment and the
+run, and nothing in a label can.
+
+#### Foundry does not write labels
+
+A person does, in one line per kind, and the description is what makes it removable:
+
+```bash
+gh label create foundry:defect \
+  --description "Foundry reads this as the kind of work. Delete it if you do not use Foundry."
+```
+
+The source contract carries words and writes none of its own — a verb that created labels would be
+floor deciding a repository's vocabulary for it.
+
+**That description is the whole of the removal story.** Someone who has never heard of Foundry finds
+the label, reads what it is for, and deletes it. Nothing else has to know it existed.
+
 ---
 
 ## The charter
