@@ -1380,6 +1380,62 @@ an_aside_is_kept_and_blocks_nothing() {
      "$(floor "$tmp/as" aside | grep -c .)" "2"
 }
 an_aside_is_kept_and_blocks_nothing
+
+#
+# Something happened, recorded. Not evidence, not a grant, and not a clause —
+# the ledger beside it answers whether a bar was met,
+# and this answers only that a thing occurred.
+#
+an_observation_is_not_evidence() {
+  make_repo "$tmp/ob" main && set_origin "$tmp/ob" 'https://github.com/acme/ob.git' \
+    && mkdir -p "$tmp/ob/.foundry" \
+    && commit_file "$tmp/ob" .foundry/gates 'tests  true
+' || { skip "an observation — git could not make a repo here"; return; }
+
+  floor "$tmp/ob" new "Observed" >/dev/null
+  floor "$tmp/ob" charter derive >/dev/null 2>&1
+  floor "$tmp/ob" policy authorize 'https://github.com/acme/ob.git' >/dev/null 2>&1
+  floor "$tmp/ob" targets add 'https://github.com/acme/ob.git' main >/dev/null 2>&1
+  floor "$tmp/ob" open >/dev/null 2>&1
+
+  is "a run that observed nothing says nothing" "$(floor "$tmp/ob" observe)" ""
+
+  floor "$tmp/ob" observe gate.finished result=pass unit=01 >/dev/null 2>&1
+  matches "a record says when, where and what" "$(floor "$tmp/ob" observe)" \
+          "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:]+Z	[^	]+	gate.finished	"
+  has "and carries the fields it was given" "$(floor "$tmp/ob" observe)" "result=pass unit=01"
+
+  # Recording that a gate finished says a gate finished. Completion still refuses,
+  # because satisfying a clause wants a trusted producer, a ref and a
+  # clause — and an observation carries none of the three.
+  is "and satisfies nothing"  "$(code_of floor "$tmp/ob" complete)" "15"
+  is "and grades nothing"     "$(floor "$tmp/ob" evidence)" ""
+
+  # An event nobody gave a session, a worker or a target is still an event.
+  floor "$tmp/ob" observe session.attached >/dev/null 2>&1
+  has "a record naming nothing else is still one" "$(floor "$tmp/ob" observe)" "session.attached"
+
+  is "a field that is not key=value refuses" \
+     "$(code_of floor "$tmp/ob" observe bad.field notakeyvalue)" "2"
+  is "an event holding a newline refuses" \
+     "$(code_of floor "$tmp/ob" observe "$(printf 'two\nlines')")" "2"
+  is "a row too long to land whole refuses" \
+     "$(code_of floor "$tmp/ob" observe long.row "note=$(head -c 4100 /dev/zero | tr '\0' 'x')")" "2"
+
+  # Twenty writers at once, and twenty whole rows. The property is the atomic append
+  # rather than this count, and the count is what would notice
+  # if the rows grew past it.
+  before=$(floor "$tmp/ob" observe | grep -c .)
+  i=0
+  while [ "$i" -lt 20 ]; do floor "$tmp/ob" observe "race.$i" n="$i" >/dev/null 2>&1 & i=$((i + 1)); done
+  wait
+
+  is "twenty writers leave twenty whole rows" \
+     "$(floor "$tmp/ob" observe | grep -c .)" "$((before + 20))"
+  is "and none of them tore" \
+     "$(floor "$tmp/ob" observe | awk -F'\t' 'NF != 4' | grep -c .)" "0"
+}
+an_observation_is_not_evidence
   make_repo "$tmp/ev4" main && set_origin "$tmp/ev4" 'https://github.com/acme/ev4.git' \
     && mkdir -p "$tmp/ev4/.foundry" \
     && commit_file "$tmp/ev4" .foundry/gates 'tests  true

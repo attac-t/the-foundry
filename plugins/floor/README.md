@@ -59,6 +59,7 @@ Eleven verbs, in this order, and a standing practice answers for two of them.
 sh bin/run.sh new "Ship the gift card flow"          # a run, and this checkout points at it
 sh bin/run.sh source read 7                          # the item's own words, if a source can answer
 sh bin/run.sh source kind
+sh bin/run.sh observe gate.finished result=pass unit=01
 sh bin/run.sh aside "a worktree is not a safe place to grade"
 sh bin/run.sh reconcile
 sh bin/run.sh charter derive                         # the bar, pinned at the base commit
@@ -292,6 +293,31 @@ this is a correctness mechanism, not a containment one.
 
 Policy state holds portable identities and nothing else — no local path, no credential. It outlives
 the run that wrote it and it gets read by eye.
+
+### An observation says a thing happened, and nothing more
+
+`observe` records one. Four columns — when, the host that wrote it, the event, and named fields —
+and a field nobody set is absent rather than empty.
+
+**It is not evidence.** Completion never reads this file. Recording `gate.finished result=pass` says
+a gate finished; satisfying a clause wants a trusted producer, a ref and a clause to bind to, and an
+observation carries none of the three.
+
+Three choices, and here is why each went the way it did.
+
+| Question | Answer | Because |
+|---|---|---|
+| where they live | inside the run | a run has been carried between machines and its history went with it. A run somebody deletes took its history too, and that is honest |
+| whose clock | the recording host's, and it names itself | two machines do not agree. Order inside one file is the order it was written; across two there is none |
+| what a worker may write | anything, about itself | nothing above reads it as authority, which is the boundary floor already holds |
+
+**The format was picked by one property.** POSIX makes an append atomic only under `PIPE_BUF`, so a
+row that fits lands whole and two writers cannot tear each other's. A row that would not fit is
+refused rather than written. Twenty writers at once leave twenty whole rows, and the suite counts
+them.
+
+Nothing composes them yet. `observe` with no event prints what a run holds, and questions across
+runs are the next stage.
 
 ### An aside is kept, and blocks nothing
 
