@@ -18,7 +18,7 @@
 # type is a command language, and the first person who met one answered and went unheard.
 #
 # Usage: sh source-github.sh read    <issue>
-#        sh source-github.sh publish <issue> <run> <branch> <title>
+#        sh source-github.sh publish <issue> <run> <branch> <title> [word]
 #        sh source-github.sh ask     <issue> <question> <text>
 #        sh source-github.sh receive <issue> <question>
 #
@@ -60,7 +60,7 @@ repository_answers() { gh repo view --json name >/dev/null 2>&1; }
 publish_delivery() {
     had=$(delivery_of "$2") || return 3
 
-    [ -z "$had" ] && { open_delivery "$1" "$2" "$3" "$4"; return $?; }
+    [ -z "$had" ] && { open_delivery "$1" "$2" "$3" "$4" "$5"; return $?; }
 
     # `<branch> <url>`, and a branch holds no space.
     [ "${had% *}" = "$3" ] || return 4
@@ -86,9 +86,11 @@ delivery_of() {
     printf '%s\n' "$found" | head -1
 }
 
-# `Closes #<issue>` makes the delivery answer the item. `floor-run` is what makes it this run's.
+# The caller says which word. `Refs` names the item and closes
+# nothing. `Closes` is what GitHub acts on, and floor
+# writes it only where a person granted it.
 open_delivery() {
-    gh pr create --head "$3" --title "$4" --body "Closes #$1
+    gh pr create --head "$3" --title "$4" --body "${5:-Refs} #$1
 
 floor-run: $2" || return 3
 }
@@ -329,11 +331,11 @@ case "${1:-}" in
     claim)   shift; take_claim       "${1:-}" "${2:-}" ;;
     held)    shift; read_claim       "${1:-}" ;;
     release) shift; drop_claim       "${1:-}" "${2:-}" ;;
-    publish) shift; publish_delivery "${1:-}" "${2:-}" "${3:-}" "${4:-}" ;;
+    publish) shift; publish_delivery "${1:-}" "${2:-}" "${3:-}" "${4:-}" "${5:-}" ;;
     ask)     shift; put_question     "${1:-}" "${2:-}" "${3:-}" ;;
     receive) shift; read_answer      "${1:-}" "${2:-}" ;;
     state)   shift; delivery_state   "${1:-}" ;;
     land)    shift; land_delivery    "${1:-}" ;;
-    *)       echo "source-github: read <issue> | kind <issue> | publish <issue> <run> <branch> <title> | ask <issue> <question> <text> | receive <issue> <question> | state <run> | land <run>" >&2
+    *)       echo "source-github: read <issue> | kind <issue> | claim <issue> <host> | held <issue> | release <issue> <host> | publish <issue> <run> <branch> <title> [word] | ask <issue> <question> <text> | receive <issue> <question> | state <run> | land <run>" >&2
              exit 2 ;;
 esac

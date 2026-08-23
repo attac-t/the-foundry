@@ -170,9 +170,9 @@ case "${1:-}" in
     claim)   shift; take_claim       "${1:-}" "${2:-}" ;;
     held)    shift; read_claim       "${1:-}" ;;
     release) shift; drop_claim       "${1:-}" "${2:-}" ;;
-    publish) shift; publish_delivery "${1:-}" "${2:-}" "${3:-}" "${4:-}" ;;
+    publish) shift; publish_delivery "${1:-}" "${2:-}" "${3:-}" "${4:-}" "${5:-}" ;;
     ask)     shift; put_question     "${1:-}" "${2:-}" "${3:-}" ;;
     receive) shift; read_answer      "${1:-}" "${2:-}" ;;
-    *)       echo "source-dir: read <item> | publish <item> <run> <branch> <title> | ask <item> <question> <text> | receive <item> <question>" >&2
+    *)       echo "source-dir: read <item> | claim <item> <host> | held <item> | release <item> <host> | publish <item> <run> <branch> <title> [word] | ask <item> <question> <text> | receive <item> <question>" >&2
              exit 2 ;;
 esac
