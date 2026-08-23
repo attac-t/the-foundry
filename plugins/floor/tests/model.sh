@@ -1312,6 +1312,37 @@ a_pinned_name_is_not_recordable() {
      "$(code_of floor "$tmp/ev7" evidence record "a check no gate expresses" true)" "0"
 }
 a_pinned_name_is_not_recordable
+
+#
+# A gate a signal killed is not a gate that failed. The ledger is append-only,
+# so a row saying it failed spends that commit for good and the
+# work has to move to a new one to be gradeable at all.
+#
+a_killed_gate_is_not_a_failed_one() {
+  make_repo "$tmp/kg" main && set_origin "$tmp/kg" 'https://github.com/acme/kg.git' \
+    && mkdir -p "$tmp/kg/.foundry" \
+    && commit_file "$tmp/kg" .foundry/gates 'tests  true
+' || { skip "a killed gate — git could not make a repo here"; return; }
+
+  floor "$tmp/kg" new "Killed" >/dev/null
+  floor "$tmp/kg" charter derive >/dev/null 2>&1
+  floor "$tmp/kg" policy authorize 'https://github.com/acme/kg.git' >/dev/null 2>&1
+  floor "$tmp/kg" targets add 'https://github.com/acme/kg.git' main >/dev/null 2>&1
+  floor "$tmp/kg" open >/dev/null 2>&1
+
+  is "a gate a signal killed answers 21, not a result" \
+     "$(code_of floor "$tmp/kg" evidence record "a check no gate expresses" sh -c 'kill -TERM $$')" "21"
+  has "and names the signal"  \
+      "$(floor_says "$tmp/kg" evidence record "a check no gate expresses" sh -c 'kill -TERM $$')" "signal 15"
+  is "and records nothing"    "$(floor "$tmp/kg" evidence)" ""
+
+  # A gate that fails must still spend the ref. That is the completion invariant, and widening the
+  # guard past a signal would take it away.
+  is "a gate that answers badly is still recorded" \
+     "$(code_of floor "$tmp/kg" evidence record "a check no gate expresses" false)" "1"
+  matches "with the result it gave" "$(floor "$tmp/kg" evidence)" "	1	"
+}
+a_killed_gate_is_not_a_failed_one
   make_repo "$tmp/ev4" main && set_origin "$tmp/ev4" 'https://github.com/acme/ev4.git' \
     && mkdir -p "$tmp/ev4/.foundry" \
     && commit_file "$tmp/ev4" .foundry/gates 'tests  true
