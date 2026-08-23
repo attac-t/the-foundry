@@ -127,24 +127,27 @@ open_deliveries() {
 }
 
 
-#
-# Exactly one host may take an item. Two seeing the same one
-# and both starting is the failure, and almost never
-# is not a claim — it is money spent twice.
-#
-# `mkdir` either makes the directory or it does not, and the loser is told which.
-# A file written after a test is two steps, and two hosts can
-# both pass the test before either writes.
-#
-# Held by a host that died, and nobody clears it. The claim
-# carries when it was taken, so a later host can see
-# it is stale without anyone deciding it is.
-#
+# `mkdir` is the compare-and-swap, and it fails when the claim
+# is there. The holder rewriting its own stamp is the
+# renewal, so nothing can slip between the two.
 take_claim() {
     mkdir -p "$root/claims" 2>/dev/null || return 3
-    mkdir "$root/claims/$1" 2>/dev/null || return 4
+    mkdir "$root/claims/$1" 2>/dev/null || held_by "$1" "$2" || return 4
 
-    printf '%s\t%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$2" > "$root/claims/$1/held" || return 3
+    stamp_claim "$root/claims/$1/held" "$2"
+}
+
+# The epoch is what makes an age arithmetic. The stamp beside it is for whoever reads the file, and
+# the two are written together so they cannot disagree.
+stamp_claim() {
+    printf '%s\t%s\t%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$2" "$(date -u +%s)" > "$1" || return 3
+}
+
+held_by() {
+    held=$(read_claim "$1") || return 1
+
+    rest=${held#*	}
+    [ "${rest%%	*}" = "$2" ]
 }
 
 # Who holds it, and since when. Nothing when nobody does.
@@ -157,8 +160,7 @@ read_claim() {
 # Only the holder may let go. A host dropping another's claim is the race this exists to stop,
 # arriving one step later.
 drop_claim() {
-    held=$(read_claim "$1") || return 1
-    [ "${held#*	}" = "$2" ] || return 4
+    held_by "$1" "$2" || return 4
 
     rm -rf "$root/claims/$1"
 }
