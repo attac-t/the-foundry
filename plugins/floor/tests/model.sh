@@ -3193,15 +3193,42 @@ exactly_one_host_takes_an_item() {
   # A claim is not authority. It says a host started, never that it may.
   is "and holding it grants nothing" "$(floor "$tmp/clm" policy)" "$allowed"
 
-  is  "the next host is refused" "$(code_of floor "$tmp/clm" claim 71)" "30"
-  has "and told who holds it"    "$(floor_says "$tmp/clm" claim 71)" "already held"
-  has "and keeps what it saw"    "$(floor "$tmp/clm" observe)" "claim.refused	item=71"
+  # The holder claiming again is the renewal. Without it a claim needs a heartbeat, and a heartbeat
+  # is the daemon this refuses to be. `recording_host` is this machine, so a second host is written
+  # by hand below — nothing in the environment can pretend to be one.
+  printf '2026-01-01T00:00:00Z\t%s\t1767225600\n' "$(uname -n)" > "$src/claims/71/held"
+  is "the holder claiming again renews it" "$(code_of floor "$tmp/clm" claim 71)" "0"
+  lacks "and the stamp moved" "$(cat "$src/claims/71/held")" "1767225600"
+
+  printf '2026-01-01T00:00:00Z\tOtherHost\t%s\n' "$(date -u +%s)" > "$src/claims/71/held"
+
+  is  "another host's claim is refused" "$(code_of floor "$tmp/clm" claim 71)" "30"
+  has "and told who holds it"           "$(floor_says "$tmp/clm" claim 71)" "held by OtherHost"
+  has "and keeps what it saw"           "$(floor "$tmp/clm" observe)" "claim.refused	item=71"
+
+  # A host that stopped. Aged out rather than cleared by a person, which is the whole point —
+  # nobody is watching to notice it died.
+  printf '2026-01-01T00:00:00Z\tOtherHost\t1767225600\n' > "$src/claims/71/held"
+
+  has "a claim past the window says what it broke" \
+      "$(floor_says "$tmp/clm" claim 71)" "without a word from OtherHost"
+  has "and this host holds it after" "$(cat "$src/claims/71/held")" "$(uname -n)"
+
+  # An age nobody can compute is not an age past the window. Unknown is not stale.
+  printf '2026-01-01T00:00:00Z\tOtherHost\n' > "$src/claims/71/held"
+  is "a claim with no stamp is never broken" "$(code_of floor "$tmp/clm" claim 71)" "30"
+
+  # An hour is a guess about how often a host wakes, so the caller may say otherwise.
+  printf '2026-01-01T00:00:00Z\tOtherHost\t1767225600\n' > "$src/claims/71/held"
+  is "a window the caller widens holds the claim" \
+     "$(FOUNDRY_CLAIM_TTL=99999999999 code_of floor "$tmp/clm" claim 71)" "30"
+  is "and one it narrows to nothing takes it" \
+     "$(FOUNDRY_CLAIM_TTL=0 code_of floor "$tmp/clm" claim 71)" "0"
 
   is "the holder may let go"     "$(code_of floor "$tmp/clm" release 71)" "0"
   is "and nobody holds it after" "$(code_of floor "$tmp/clm" release 71)" "30"
 }
 exactly_one_host_takes_an_item
-
 #
 # What produced this row. A run graded under one implementation
 # and completed under another was judged twice, and the two

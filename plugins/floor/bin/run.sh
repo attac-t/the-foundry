@@ -2009,11 +2009,44 @@ claim() {
     [ -n "$item" ] || { note "claim names an item"; exit 2; }
 
     source_says claim "$item" "$(recording_host)" && { note "claimed [$item]"; return 0; }
+    break_a_dead_claim "$item" && return 0
 
     say_who_holds "$item"
     record_the_refusal "$item"
     exit 30
 }
+
+# An hour with no word. A wake is ten minutes, so a live host
+# renews six times inside it, and a window this wide
+# costs a slow host nothing at all.
+CLAIM_TTL=${FOUNDRY_CLAIM_TTL:-3600}
+
+# A host that died holding one would block that item for good,
+# and nothing here may need a person to clear it. Age
+# is the only signal a second machine has.
+break_a_dead_claim() {
+    held=$(source_says held "$1") || return 1
+    age=$(claim_age "$held")      || return 1
+
+    [ "$age" -gt "$CLAIM_TTL" ] || return 1
+
+    source_says release "$1" "$(claim_holder "$held")" || return 1
+    note "[$1] went $age seconds without a word from $(claim_holder "$held") — taking it"
+
+    source_says claim "$1" "$(recording_host)"
+}
+
+# Seconds since the claim was stamped. A record written before
+# floor kept an epoch cannot be aged at all, so it
+# is never broken. Unknown is not stale.
+claim_age() {
+    stamped=$(printf '%s\n' "$1" | awk -F'\t' 'NF == 3 && $3 ~ /^[0-9]+$/ { print $3 }')
+    [ -n "$stamped" ] || return 1
+
+    printf '%s' "$(( $(date -u +%s) - stamped ))"
+}
+
+claim_holder() { printf '%s\n' "$1" | awk -F'\t' '{ print $2 }'; }
 
 # What the loser keeps. A host claims before it opens a run
 # as often as after, so there is not always a row to
@@ -2041,8 +2074,10 @@ release() {
 say_who_holds() {
     held=$(source_says held "$1") || { note "[$1] is held, and the source could not say by whom"; return 0; }
 
-    note "[$1] is already held: $held"
+    note "[$1] is held by $(claim_holder "$held"), since $(claim_when "$held")"
 }
+
+claim_when() { printf '%s\n' "$1" | awk -F'\t' '{ print $1 }'; }
 
 #
 # Something happened, recorded where it happened. Inside the run, because a run has already been

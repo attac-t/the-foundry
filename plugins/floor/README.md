@@ -1032,6 +1032,23 @@ still answered where it was before.
 races in one suite starve this machine, so the suite drives the sequence — take, refuse, release,
 refuse — and says this rather than reporting a race that never ran.
 
+**A dead host loses its claim without anyone acting.** A claim carries the moment it was stamped, and
+one older than `FOUNDRY_CLAIM_TTL` — an hour by default — is taken by the next host, which says whose
+it was and how long it went quiet.
+
+**The holder claiming again is the renewal.** No heartbeat, and so no daemon: a run that keeps working
+keeps its claim, and every verb is a natural place to say so. Each adapter renews through its own
+compare-and-swap — `mkdir` fails and the owner rewrites in place, and a ref moves only by a
+fast-forward the server refuses if the tip moved.
+
+**Two clocks, and nothing reconciles them.** The stamp is the holder's; the age is the reader's
+arithmetic. Hosts far out of step will disagree about what is dead, and floor neither detects that
+nor claims to.
+
+**A claim floor cannot age is never broken.** A record from before the stamp existed holds two fields,
+and unknown is not stale — so it blocks until a person clears it. That is the one case the expiry
+does not cover, and it is the safe half.
+
 ### Two adapters, because one proves nothing
 
 | Adapter | Needs | Holds |
