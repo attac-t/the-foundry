@@ -836,6 +836,15 @@ under the two-adapter rule.
 The workspace sketch comes from the independently written synthesis §5 compares this RFC against. A
 sketch, not a ratified contract, and kept because it beats nothing.
 
+**The workspace seam costs more than the others.** §2.2 and §2.5 admit the same hole — authority,
+evidence and policy are files a worker running as the same user can write by hand. A workspace
+boundary is what closes it, so three separations in this document are partly standing in for a
+runtime that is not here.
+
+A commercial one now exists, open source, with credentials unreachable from agent-written code. That
+makes it a candidate second adapter and nothing more — **adopting a runtime is a workspace adapter,
+and building one is a different product**.
+
 ---
 
 ## 3. Conventions and escape hatches
@@ -915,6 +924,43 @@ that bar, and it must — a single GitHub adapter is a GitHub model wearing a co
 
 Falsifiable form: **a directory of markdown files must work as a work source in under twenty lines**
 for `read`, and must be able to `ask` by writing a file and `receive` by reading one.
+
+---
+
+### What is fixed
+
+The two-adapter rule says which contracts are unproven. §2.6 lists the seams. **Neither says which
+mechanisms are not going to be replaced at all**, and that list has never existed — so it was being
+written by accident, one commit at a time.
+
+The test, and it is the same question every new capability must answer:
+
+> **If the owner rejects this mechanism, what must change?**
+
+Run against v1, counting call sites rather than intentions:
+
+| Mechanism | What must change | |
+|---|---|---|
+| GitHub | one adapter file. Core names it four times, all in comments, none in code | replaceable, **proven** — a directory answers |
+| a CI service | nothing. Gates run wherever `sh` runs | replaceable, **proven** — this repository's have run nowhere else for weeks |
+| a container runtime | nothing. No shipped file holds one | replaceable, unproven |
+| the harness | `join.sh` only — it reads a rules directory and a settings file that belong to one product | **fixed**, and narrowly |
+| the plugin format | every manifest, the marketplace, and the version floor reads about itself | **fixed** |
+| **git** | **`target`, `evidence`, `delivery`, and 59 call sites in core** | **fixed** |
+
+**git earned it.** A `target` is a repository and a ref. Evidence binds a commit. A delivery is a
+branch. Remove GitHub and a directory answers; remove git and nothing does.
+
+**Fixed is a decision, not a discovery.** Naming git a seam would promise a second implementation, and
+by the two-adapter rule a promise with one implementation is a guess. Saying *fixed* costs a port
+nobody was making and buys a reader who is not misled.
+
+**The harness row is the surprising one.** `run.sh` names no agent product anywhere. `join.sh` does,
+because joining a host means putting plugins where one product looks for them. That is the whole of
+the coupling, and it is worth keeping in one file rather than pretending it is absent.
+
+**What would overturn a row.** A second implementation that works. Nothing else — not an intention,
+not an abstraction layer written for one caller.
 
 ---
 
@@ -1534,6 +1580,39 @@ one that goes stale is the copy nobody edits.
 **Unproven.** The harness version and the host's tools are not recorded, only floor's. A run that
 moved between two Claude Code versions still cannot say so.
 
+### Revision 21 — the seams were listed and the welds were not
+
+§2.6 says which contracts are deferred. The two-adapter rule says which are unproven. **Nothing said
+which mechanisms are never going to be replaced**, so that list was being written by accident.
+
+#312 ran the question against v1 and found one answer nobody had written down.
+
+| Was | Is | What forced it |
+|---|---|---|
+| provider neutrality stated as a rule, with no list of exceptions | §3 names what is fixed, with the call sites that earned each row | #312 measured it: 59 `git` calls in core, four `github` mentions and all of them comments |
+
+**git is fixed, and that is a decision.** Calling it a seam would promise a second implementation, and
+a promise with one implementation is a guess by this document's own rule. A human may overturn the
+row; only a working second implementation should.
+
+**The harness row was not expected.** `run.sh` names no agent product. `join.sh` does — it reads one
+product's rules directory and settings file, because joining a host means putting plugins where that
+product looks. Narrow, real, and better in one file than denied.
+
+**§2.6's workspace row costs more than it did.** Cloudflare OS shipped an isolate-per-agent runtime
+with credentials unreachable from agent-written code, Apache-2.0, in August 2026. So the seam now has
+a commercial existence proof and a candidate second adapter.
+
+That matters beyond adapter arithmetic. §2.2 and §2.5 both admit the same hole — authority, evidence
+and policy are files a worker running as the same user can write by hand. **A workspace boundary is
+what closes it.** Three of this document's separations are partly standing in for a runtime that does
+not exist here, and the row should say so rather than reading as a convenience deferred.
+
+**Nothing in §2.6 is promoted by this.** A cost is not a contract, and adopting a runtime would be a
+workspace adapter. Building one would be a different product.
+
+**Unproven.** The container and harness rows rest on reading the tree, never on a port. The first
+person to attempt one finds what the grep missed.
 
 ## 7. Unresolved questions
 
