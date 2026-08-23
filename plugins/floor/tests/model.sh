@@ -3652,6 +3652,53 @@ the_other_adapter() {
 the_other_adapter
 
 #
+# A source that answers `read` and nothing else. §2.1 proposes four
+# operations and this has one, which the goal calls valid, so the
+# contract admits a source that is less than four verbs.
+#
+# The run reads its item and then cannot ask. Both facts matter:
+# a source this small still carries work, and every
+# verb it lacks says which one and why.
+#
+a_source_that_can_only_be_read() {
+  make_repo "$tmp/ro" main && set_origin "$tmp/ro" 'https://gitlab.com/acme/ro.git' \
+    && commit_file "$tmp/ro" Makefile 'test:
+	echo ok
+' || { skip "a read-only source — git could not make a repo here"; return; }
+
+  mkdir -p "$src/items"
+  printf 'Mend it\n\nAnd say nothing back.\n' > "$src/items/51"
+
+  only_read="$(dirname "$runner")/../lib/source-read-only.sh"
+  ro() { ( cd "$tmp/ro" && FOUNDRY_HOME="$home" FOUNDRY_RUN="$rorun" FOUNDRY_WHO="" \
+           FOUNDRY_SOURCE="$only_read" sh "$runner" "$@" 2>/dev/null ); }
+  ro_says() { ( cd "$tmp/ro" && FOUNDRY_HOME="$home" FOUNDRY_RUN="$rorun" FOUNDRY_WHO="" \
+                FOUNDRY_SOURCE="$only_read" sh "$runner" "$@" 2>&1 ); }
+
+  rorun=$( cd "$tmp/ro" && FOUNDRY_HOME="$home" FOUNDRY_RUN="" FOUNDRY_WHO="" \
+           FOUNDRY_SOURCE="$only_read" sh "$runner" new "Read only" 2>/dev/null )
+
+  has "a source with one verb still carries the work" "$(ro source read 51)" "say nothing back"
+
+  ro charter derive >/dev/null 2>&1
+  ro charter introduce Decided 'pricing copy signed off' >/dev/null 2>&1
+
+  is  "and asking it refuses"       "$(code_of ro source ask authorisation 'pricing copy signed off' 'May it?')" "27"
+  has "naming the source's shape"       "$(ro_says source ask authorisation 'pricing copy signed off' 'May it?')" "can only be read"
+
+  # The same rule where a delivery is reported. A source that cannot be written to cannot be told.
+  is "and telling it about a delivery refuses too" \
+     "$(code_of ro source publish work/ro 'The work')" "27"
+
+  # Authorisation is where a person notices. It blocks on an introduced clause, and the
+  # reason it gives has to be the shape of the source rather
+  # than a fault it should retry.
+  has "an introduced clause blocks, and says the source cannot ask" \
+      "$(ro_says authorise)" "can only be read"
+}
+a_source_that_can_only_be_read
+
+#
 # **The thing merged must be the thing graded.** Every other refusal here is worth less than that
 # one: a head that moved after grading is a tree nothing answered for, and landing it puts work in
 # the trunk no gate ever saw.

@@ -49,6 +49,8 @@
 #      source answering, and this is nobody answering
 #  26  an open delivery elsewhere cannot be brought together with this one. An answer about
 #      two deliveries, and a fault in neither
+#  27  the work source has no way to do that at all — it can only be read. Not 20: that is a
+#      source that could not be reached, and this is one that was
 #  22  the repository declares a bar in a file that is there and cannot be read. Not 8: that is a
 #      charter holding no clause, and this is one nobody could derive. The remedy is the file
 #
@@ -2660,8 +2662,18 @@ CLAUSES
 # a blocked run that authorises again does not pile them up.
 ask_to_authorise() {
     said=$(source_says ask "$(item_id "$1")" "$(question_id "$1" authorisation "$2")" \
-        "May this clause exist? Nothing derives it: $2. Answer with $(clause_id "$2") to authorise it." 2>&1) \
-        && return 0
+        "May this clause exist? Nothing derives it: $2. Answer with $(clause_id "$2") to authorise it." 2>&1)
+    asked=$?
+
+    [ "$asked" -eq 0 ] && return 0
+
+    # This one blocks rather than exits, because authorisation
+    # names every introduced clause before it stops
+    # and a reader needs all of them.
+    [ "$asked" -eq 2 ] && {
+        note "this work source can only be read, so nothing can carry that question"
+        return 1
+    }
 
     note "the work source could not carry that question: $said"
     return 1
@@ -2978,6 +2990,14 @@ refuse_unasked() {
 # door marked nothing to answer with. 4 stays floor's own.
 refuse_unless_answered() {
     [ "$1" -eq 0 ] && return 0
+
+    # A source with no way to carry this is not a source that failed
+    # today. One is a shape a caller picks and the other is a fault
+    # it should retry, and a single message made them look alike.
+    [ "$1" -eq 2 ] && {
+        note "this work source can only be read, so nothing here can carry a $2"
+        exit 27
+    }
 
     [ "$1" -eq 4 ] && {
         note "this run already sent the work source another $2"

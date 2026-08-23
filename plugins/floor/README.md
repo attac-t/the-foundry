@@ -823,6 +823,7 @@ authorised by a human or not at all.
 |---|---|---|
 | `lib/source-dir.sh` | `sh` | files a person opens in an editor |
 | `lib/source-github.sh` | `gh` | issues, and comments under them |
+| `lib/source-read-only.sh` | `sh` | the same files, and no way to write to them |
 
 `lib/source.sh` chooses between them, and those three files are the only ones in floor that may know
 where a work item lives. Nothing above them learns which answered: the run records the item's id and
@@ -830,6 +831,17 @@ the item's own words, so a run carried to a machine with neither installed still
 
 `FOUNDRY_SOURCE` names another adapter. `FOUNDRY_SOURCE_DIR` moves the directory one, which otherwise
 sits in the Foundry home.
+
+**A source may be less than four verbs.** `source-read-only.sh` answers `read` and refuses everything
+else at exit 2, which floor reports as **27** — *this source can only be read*. That is a different
+fact from 20, which is a source nobody could reach.
+
+It exists because the shape is real: an issue tracker nobody may post to, an export, a file someone
+handed you. A run reads its item and works; it blocks the moment it needs to ask, and the refusal
+names the source rather than a fault to retry.
+
+`source.sh` never chooses it. A repository opts in by naming it in `FOUNDRY_SOURCE`, because a source
+that cannot be asked is a decision rather than a fallback.
 
 **What this does not prove.** The second adapter has been driven only by a stand-in on the path,
 never by the service — so its own conventions run for real and the service's do not. And an answer
