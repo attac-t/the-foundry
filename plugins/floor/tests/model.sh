@@ -1343,6 +1343,43 @@ a_killed_gate_is_not_a_failed_one() {
   matches "with the result it gave" "$(floor "$tmp/kg" evidence)" "	1	"
 }
 a_killed_gate_is_not_a_failed_one
+
+#
+# An idea outside this run's bar is recorded, never a blocker. A run that
+# widened itself to act on one would be doing work nobody
+# selected, and one that dropped it loses what it learned.
+#
+an_aside_is_kept_and_blocks_nothing() {
+  make_repo "$tmp/as" main && set_origin "$tmp/as" 'https://github.com/acme/as.git' \
+    && mkdir -p "$tmp/as/.foundry" \
+    && commit_file "$tmp/as" .foundry/gates 'tests  true
+' || { skip "an aside — git could not make a repo here"; return; }
+
+  floor "$tmp/as" new "Aside" >/dev/null
+  floor "$tmp/as" charter derive >/dev/null 2>&1
+  floor "$tmp/as" policy authorize 'https://github.com/acme/as.git' >/dev/null 2>&1
+  floor "$tmp/as" targets add 'https://github.com/acme/as.git' main >/dev/null 2>&1
+  floor "$tmp/as" open >/dev/null 2>&1
+
+  is "a run with nothing set aside says nothing" "$(floor "$tmp/as" aside)" ""
+
+  floor "$tmp/as" aside 'the identity rule admits no offline address' >/dev/null 2>&1
+  has "and one it kept comes back" "$(floor "$tmp/as" aside)" "no offline address"
+  matches "with when it was set aside" "$(floor "$tmp/as" aside)" "^[0-9]{4}-[0-9]{2}-[0-9]{2}T"
+
+  # The whole point. An aside is not a clause, not evidence and not a grant.
+  is "it satisfies nothing"  "$(code_of floor "$tmp/as" complete)" "15"
+  is "and grades nothing"    "$(floor "$tmp/as" evidence)" ""
+
+  floor "$tmp/as" gates >/dev/null 2>&1
+  is "and a run holding one still completes" "$(code_of floor "$tmp/as" complete)" "0"
+
+  # A second is a second line, because two things learned are two things.
+  floor "$tmp/as" aside 'a worktree is not a safe place to grade' >/dev/null 2>&1
+  is "two set aside are two lines" \
+     "$(floor "$tmp/as" aside | grep -c .)" "2"
+}
+an_aside_is_kept_and_blocks_nothing
   make_repo "$tmp/ev4" main && set_origin "$tmp/ev4" 'https://github.com/acme/ev4.git' \
     && mkdir -p "$tmp/ev4/.foundry" \
     && commit_file "$tmp/ev4" .foundry/gates 'tests  true
