@@ -32,6 +32,14 @@ State the decision. Then the one case that would prove it wrong. Stop.
 Use the shape the content already has — columns want a table, a layout or a flow wants a fenced
 block. A shape drawn beats the paragraph describing it.
 
+**A table cell is a few words.** Half of them here are seventeen characters and nine in ten are under
+fifty; the longest is four hundred and ninety-five. That one is a paragraph in a grid, and no amount
+of spacing makes it readable unrendered.
+
+Padding the columns is not the fix and cannot be. `length` counts bytes in one locale and characters
+in another, so a table aligned by one `awk` is ragged to the next — measured, and it is why no gate
+holds this.
+
 Never a heading to decorate a paragraph. Never a section restating the one above it.
 
 **Do not enumerate.** State the rule once and let it apply. A rule rewritten per case is the same
