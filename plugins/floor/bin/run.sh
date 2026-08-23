@@ -217,7 +217,7 @@ make_run() {
     stamp_selection "$dir" "$(selector)" "$id"
     say_if_nobody_selected
     point_this_checkout_at "$id"
-    emit "$dir" run.began
+    emit "$dir" run.began runtime="$(runtime)"
 
     printf '%s\n' "$dir"
 }
@@ -1635,7 +1635,7 @@ gate_held() {
     [ -n "$command" ] || { note "the charter pins no command for [$name]"; exit 7; }
 
     stamp_command "$dir" "$ref" "$name" sh -c "$command"
-    answered=$?; emit "$dir" gate.finished name="$name" result="$answered"; return "$answered"
+    answered=$?; emit "$dir" gate.finished name="$name" result="$answered" runtime="$(runtime)"; return "$answered"
 }
 
 #
@@ -2026,6 +2026,28 @@ observed() {
 say_the_rows() {
     awk -F'\t' -v run="$1" -v want="$3" \
         'want == "" || $3 == want { print run "\t" $0 }' "$2" 2>/dev/null
+}
+
+#
+# What produced this row. A run graded under one implementation
+# and completed under another was judged twice, and the two
+# holes closed this week are why that is worth knowing.
+#
+# Read from the manifest beside this script, because a version compiled
+# in is a second copy of the same fact and the
+# one that goes stale.
+#
+# Recorded and not yet refused. Nothing here compares
+# two runtimes, and the decision to refuse wants
+# rows to argue from rather than a guess.
+#
+runtime() {
+    stated=$(awk -F'"' '/"version"/ { print $4; exit }' \
+        "$(dirname "$0")/../.claude-plugin/plugin.json" 2>/dev/null)
+
+    [ -n "$stated" ] || stated=unknown
+
+    printf 'floor/%s' "$stated"
 }
 
 #

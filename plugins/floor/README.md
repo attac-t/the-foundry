@@ -326,6 +326,13 @@ work item compose there without either having heard of the other, and neither ho
 
 Nothing is summed. The rows go out as they were written and the question is asked with `awk`.
 
+**A row names the runtime that wrote it.** `run.began` and `gate.finished` carry `runtime=floor/x.y.z`,
+read from the manifest beside the script rather than compiled in.
+
+A run's bar is pinned at a base commit and cannot move. The implementation applying it can, and until
+now no row said which one did. Nothing compares them yet — RFC-001 revision 20 says what would decide
+whether anything should.
+
 **A moment floor records cannot refuse.** An observation is not evidence, so a home that will not take
 one must not stop the work somebody asked for. `observe` still refuses when a person asked for it.
 

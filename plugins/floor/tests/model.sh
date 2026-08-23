@@ -3157,6 +3157,42 @@ two_runs_over_one_item_compose() {
 two_runs_over_one_item_compose
 
 #
+# What produced this row. A run graded under one implementation
+# and completed under another was judged twice, and the two
+# holes closed this week are why that is worth knowing.
+#
+# Recorded and not yet refused. Nothing compares two runtimes,
+# and choosing whether to refuse wants rows to argue
+# from rather than a guess.
+#
+a_row_names_the_runtime_that_wrote_it() {
+  make_repo "$tmp/rt" main && set_origin "$tmp/rt" 'https://github.com/acme/rt.git' \
+    && mkdir -p "$tmp/rt/.foundry" \
+    && commit_file "$tmp/rt" .foundry/gates 'tests  true
+' || { skip "the runtime — git could not make a repo here"; return; }
+
+  rtrun=$(floor "$tmp/rt" new "Runtime")
+  floor "$tmp/rt" charter derive >/dev/null 2>&1
+  floor "$tmp/rt" policy authorize 'https://github.com/acme/rt.git' >/dev/null 2>&1
+  floor "$tmp/rt" targets add 'https://github.com/acme/rt.git' main >/dev/null 2>&1
+  floor "$tmp/rt" open >/dev/null 2>&1
+  floor "$tmp/rt" gates >/dev/null 2>&1
+
+  matches "a run says which runtime began it" \
+          "$(floor "$tmp/rt" observe | awk -F'\t' '$3 == "run.began"')" "runtime=floor/[0-9]+\.[0-9]+\.[0-9]+"
+  matches "and which one graded each gate" \
+          "$(floor "$tmp/rt" observe | awk -F'\t' '$3 == "gate.finished"')" "runtime=floor/[0-9]+\.[0-9]+\.[0-9]+"
+
+  # Both rows come from one run, so they agree. Two that disagree are what a later rule would read.
+  is "and one run's rows agree on it" \
+     "$(floor "$tmp/rt" observe | grep -o 'runtime=[^ ]*' | sort -u | grep -c .)" "1"
+
+  # Nothing refuses on it yet. A run whose runtime moved still completes, and the rows say it moved.
+  is "a runtime nobody compares blocks nothing" "$(code_of floor "$tmp/rt" complete)" "0"
+}
+a_row_names_the_runtime_that_wrote_it
+
+#
 # One kind, two adapters that spell it differently. A directory carries `kind: defect` in
 # frontmatter; GitHub carries a label called `foundry:defect`. Core is told `defect` by both and
 # knows neither spelling.
