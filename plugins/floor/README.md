@@ -66,6 +66,7 @@ sh bin/run.sh reconcile
 sh bin/run.sh charter derive                         # the bar, pinned at the base commit
 sh bin/run.sh policy authorize https://github.com/acme/api.git
 sh bin/run.sh policy merge-to https://github.com/acme/api.git
+sh bin/run.sh policy closes                          # a person read the item's list, and it is met
 sh bin/run.sh targets add https://github.com/acme/api.git main
 sh bin/run.sh authorise                              # refuses, or says who must answer what
 sh bin/run.sh open                                   # prints the workspace — the work happens there
@@ -75,6 +76,7 @@ sh bin/run.sh open                                   # prints the workspace — 
 sh bin/run.sh gates                                  # every gate the charter pins, each recorded
 sh bin/run.sh complete                               # may this run deliver? 15 names what is missing
 sh bin/run.sh policy deliver-to https://github.com/acme/api.git
+sh bin/run.sh policy closes
 sh bin/run.sh deliver "Gift card flow"               # push, then tell the source where it is
 ```
 
@@ -394,6 +396,30 @@ line — a run proposing its own authority is not a grant.
 
 ---
 
+### A delivery names its item, and does not close it
+
+`Closes #7` is GitHub's keyword. On merge it shuts the issue, whatever its `## Done when` list says.
+Floor writes `Refs #7` instead, so a delivery says which item it answers and stops there.
+
+**It shipped closing every time.** Three issues were closed by merges over nineteen unticked boxes,
+one of them the issue about closure integrity. Nothing was wrong with the merges — the tool asserted
+something no run can know.
+
+`policy closes` is what changes the word. It is the one grant that names no repository, because a run
+reads one item and there is nothing to point at.
+
+| | |
+|---|---|
+| nothing granted | `Refs #7` — the item is named, and stays open |
+| `policy closes` | `Closes #7` — GitHub shuts it on merge |
+
+The grant is keyed by the item, so it cannot outlive the item it was given for.
+
+**Floor still reads no part of the item.** It never sees the list, never counts a box, and cannot
+tell a met one from an unmet one. A person reads it and types one line — the same shape as
+`targets add`, and for the same reason.
+
+---
 ### A kind is the source's word, not Foundry's
 
 `source read` also asks the source what the work **is**. A directory carries `kind: defect` in
@@ -823,7 +849,7 @@ belongs to the stage that asked — this carries the words and reads none of the
 | Verb | Carries | Refuses |
 |---|---|---|
 | `read` | the item's words, into the run | a second, different item |
-| `publish` | this run's delivery, answering with its identity | a second, different branch |
+| `publish` | this run's delivery, and the word it answers the item with | a second, different branch |
 | `ask` | a question about one clause | the same question in other words |
 | `receive` | the answer, or nothing | an answer handed to it |
 
