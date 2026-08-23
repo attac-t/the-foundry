@@ -15,12 +15,83 @@ trap 'rm -rf "$tmp"' EXIT
 failed=0
 bad() { failed=1; printf '  FAIL  %s\n' "$1"; }
 
+#
+# A mutant that never answers is not a mutant the suite caught. Copied from floor's audit rather
+# than shared, because a plugin ships alone and a suite needing a
+# sibling breaks the thing it tests.
+#
+# Timeout exits 124 when it kills one. Inverting that gives zero,
+# which is this file's word for the suite noticing, so
+# a mutant that hung would be filed as caught.
+#
+moot() { [ "$failed" -eq 0 ] && failed=3; printf '  MOOT  %s\n' "$1"; }
+
+# Eight times the slowest mutant measured here, which
+# was about fifteen seconds. A deadline reached
+# too early is a verdict nobody earned.
+deadline=${FOUNDRY_AUDIT_DEADLINE:-120}
+
+bounded() {
+  local seconds="$1"
+  shift
+
+  command -v timeout >/dev/null 2>&1 && { timed "$seconds" "$@"; return; }
+
+  polled "$seconds" "$@"
+}
+
+# A real 2 from the command reads as a deadline. These suites answer 0 or 1, so the collision is a
+# shape they do not have.
+timed() {
+  local seconds="$1" said
+  shift
+
+  timeout "$seconds" "$@" >/dev/null 2>&1
+  said=$?
+
+  [ "$said" -eq 124 ] && return 2
+  return "$said"
+}
+
+# macOS ships no timeout unless someone installed the GNU tools, so without
+# this there is no bound at all there. Wait with a deadline is bash
+# 4.3 and macOS ships 3.2, which is the same platform twice.
+polled() {
+  local seconds="$1" job waited=0
+  shift
+
+  "$@" >/dev/null 2>&1 &
+  job=$!
+
+  while kill -0 "$job" 2>/dev/null; do
+    [ "$waited" -ge "$seconds" ] && { kill -9 "$job" 2>/dev/null; wait "$job" 2>/dev/null; return 2; }
+    sleep 1
+    waited=$((waited + 1))
+  done
+
+  wait "$job"
+}
+
+# One shape for every noticer here. The suite must go red against the mutant, and 2 says it never
+# answered at all — which is not the suite answering badly.
+red_against() {
+  local suite="$1" said
+  shift
+
+  bounded "$deadline" env "$@" bash "$root/tests/$suite"
+  said=$?
+
+  [ "$said" -eq 2 ] && return 2
+  [ "$said" -eq 0 ] && return 1
+  return 0
+}
+
 bash "$root/tests/chain.sh" || failed=1
 echo
 
 echo "audit — break the chain, the suite must notice"
 
-caught() { ! RUNNER="$tmp/$1/bin/verdicts.sh" bash "$root/tests/chain.sh" >/dev/null 2>&1; }
+caught() { red_against chain.sh RUNNER="$tmp/$1/bin/verdicts.sh"; }
 
 #
 # Break one rule and require the suite to notice.
@@ -37,7 +108,11 @@ wreck() {
   [ -s "$tmp/$tag/bin/verdicts.sh" ] || { bad "$name — the mutant is empty"; return; }
   cmp -s "$tmp/$tag/bin/verdicts.sh" "$root/bin/verdicts.sh" \
     && { bad "$name — the break did not apply, so this proves nothing"; return; }
-  caught "$tag" || { bad "$name — the suite passed against a broken chain"; return; }
+  caught "$tag"
+  case $? in
+    1) bad  "$name — the suite passed against a broken chain"; return ;;
+    2) moot "$name — the mutant never answered, so this proves nothing"; return ;;
+  esac
 
   printf '  ok    %s\n' "$name"
 }
@@ -86,5 +161,22 @@ wreck "a recorder that always writes round 1 is caught" \
   && bad "a suite that ran nothing passed" \
   || printf '  ok    a suite that ran nothing does not pass\n'
 echo
-[ "$failed" -eq 0 ] && echo "ALL GREEN" || echo "FAILURES ABOVE"
+# End to end, and not just the bound. A runner that never returns
+# must reach the verdict rather than the answer
+# the suite would have given without it.
+mkdir -p "$tmp/hang/bin" && printf '#!/bin/sh\nsleep 30\n' > "$tmp/hang/bin/verdicts.sh"
+( deadline=1; caught hang )
+[ "$?" -eq 2 ] && printf '  ok    a hanging mutant reaches the verdict, not a pass\n' \
+               || bad "a hanging mutant did not reach the verdict"
+
+# The bound itself, because no mutant has ever hung
+# and an unused guard is the one
+# that rots.
+( deadline=1; bounded "$deadline" sleep 5 )
+[ "$?" -eq 2 ] && printf '  ok    a mutant that never answers is bounded\n' \
+               || bad "a mutant that never answers was not bounded"
+
+[ "$failed" -eq 0 ] && echo "ALL GREEN"
+[ "$failed" -eq 1 ] && echo "FAILURES ABOVE"
+[ "$failed" -eq 3 ] && echo "PROVED NOTHING — the experiments above never ran"
 exit $failed

@@ -27,12 +27,84 @@ main() {
   audit_the_install
   audit_the_cleanup "$strays_before"
   audit_the_tally
+  audit_the_bound
 
   report
 }
 
 # Record a failing audit.
 bad() { failed=1; printf '  FAIL  %s\n' "$1"; }
+
+#
+# A mutant that never answers is not a mutant the suite caught. Copied from floor's audit rather
+# than shared, because a plugin ships alone and a suite needing a
+# sibling breaks the thing it tests.
+#
+# Timeout exits 124 when it kills one. Inverting that gives zero,
+# which is this file's word for the suite noticing, so
+# a mutant that hung would be filed as caught.
+#
+moot() { [ "$failed" -eq 0 ] && failed=3; printf '  MOOT  %s\n' "$1"; }
+
+# Eight times the slowest mutant measured here, which
+# was about fifteen seconds. A deadline reached
+# too early is a verdict nobody earned.
+deadline=${FOUNDRY_AUDIT_DEADLINE:-120}
+
+bounded() {
+  local seconds="$1"
+  shift
+
+  command -v timeout >/dev/null 2>&1 && { timed "$seconds" "$@"; return; }
+
+  polled "$seconds" "$@"
+}
+
+# A real 2 from the command reads as a deadline. These suites answer 0 or 1, so the collision is a
+# shape they do not have.
+timed() {
+  local seconds="$1" said
+  shift
+
+  timeout "$seconds" "$@" >/dev/null 2>&1
+  said=$?
+
+  [ "$said" -eq 124 ] && return 2
+  return "$said"
+}
+
+# macOS ships no timeout unless someone installed the GNU tools, so without
+# this there is no bound at all there. Wait with a deadline is bash
+# 4.3 and macOS ships 3.2, which is the same platform twice.
+polled() {
+  local seconds="$1" job waited=0
+  shift
+
+  "$@" >/dev/null 2>&1 &
+  job=$!
+
+  while kill -0 "$job" 2>/dev/null; do
+    [ "$waited" -ge "$seconds" ] && { kill -9 "$job" 2>/dev/null; wait "$job" 2>/dev/null; return 2; }
+    sleep 1
+    waited=$((waited + 1))
+  done
+
+  wait "$job"
+}
+
+# One shape for every noticer here. The suite must go red against the mutant, and 2 says it never
+# answered at all — which is not the suite answering badly.
+red_against() {
+  local suite="$1" said
+  shift
+
+  bounded "$deadline" env "$@" bash "$root/tests/$suite"
+  said=$?
+
+  [ "$said" -eq 2 ] && return 2
+  [ "$said" -eq 0 ] && return 1
+  return 0
+}
 
 #
 # Determine if this system's `sh` is really bash.
@@ -168,13 +240,17 @@ wreck_lib() {
   rm -rf "$tmp/$tag" && cp -R "$root/hooks/lib" "$tmp/$tag" || { bad "$name — could not copy lib"; return; }
   sed "$expr" "$root/hooks/lib/$file" > "$tmp/$tag/$file" || { bad "$name — sed failed"; return; }
   cmp -s "$tmp/$tag/$file" "$root/hooks/lib/$file" && { bad "$name — the break did not apply"; return; }
-  lib_caught "$tag" || { bad "$name — the suite passed against a broken lib"; return; }
+  lib_caught "$tag"
+  case $? in
+    1) bad  "$name — the suite passed against a broken lib"; return ;;
+    2) moot "$name — the mutant never answered, so this proves nothing"; return ;;
+  esac
 
   printf '  ok    %s\n' "$name"
 }
 
 # Determine if the memory suite fails against a broken lib.
-lib_caught() { ! LIB="$tmp/$1" bash "$root/tests/memory.sh" >/dev/null 2>&1; }
+lib_caught() { red_against memory.sh LIB="$tmp/$1"; }
 
 #
 # The same rules one layer out, against a throwaway copy of the plugin.
@@ -218,7 +294,11 @@ wreck() {
 
   copy "$tag"             || { bad "$name — could not copy the plugin, so this proves nothing"; return; }
   "$break_it" "$tmp/$tag" || { bad "$name — the break did not apply, so this proves nothing"; return; }
-  caught "$tag"           || { bad "$name — the suite passed against a broken install"; return; }
+  caught "$tag"          
+  case $? in
+    1) bad  "$name — the suite passed against a broken install"; return ;;
+    2) moot "$name — the mutant never answered, so this proves nothing"; return ;;
+  esac
 
   printf '  ok    %s\n' "$name"
 }
@@ -227,7 +307,7 @@ wreck() {
 copy() { rm -rf "$tmp/$1" && cp -R "$root" "$tmp/$1"; }
 
 # Determine if the install suite fails against the broken copy.
-caught() { ! PLUGIN_ROOT="$tmp/$1" bash "$root/tests/install.sh" >/dev/null 2>&1; }
+caught() { red_against install.sh PLUGIN_ROOT="$tmp/$1"; }
 
 # Rewrite a file in place.
 rewrite() { cat > "$1.new" && mv "$1.new" "$1"; }
@@ -291,10 +371,22 @@ audit_the_tally() {
     || printf '  ok    a suite that ran nothing does not pass\n'
 }
 
+# The bound itself, because no mutant has ever hung
+# and an unused guard is the one
+# that rots.
+audit_the_bound() {
+  ( deadline=1; bounded "$deadline" sleep 5 )
+
+  [ "$?" -eq 2 ] && { printf '  ok    a mutant that never answers is bounded\n'; return; }
+  bad "a mutant that never answers was not bounded"
+}
+
 # Say how it went, and leave with the verdict.
 report() {
   echo
-  [ "$failed" -eq 0 ] && echo "ALL GREEN" || echo "FAILURES ABOVE"
+  [ "$failed" -eq 0 ] && echo "ALL GREEN"
+  [ "$failed" -eq 1 ] && echo "FAILURES ABOVE"
+  [ "$failed" -eq 3 ] && echo "PROVED NOTHING — the experiments above never ran"
   exit "$failed"
 }
 
