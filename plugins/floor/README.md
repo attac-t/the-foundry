@@ -59,6 +59,7 @@ Eleven verbs, in this order, and a standing practice answers for two of them.
 sh bin/run.sh new "Ship the gift card flow"          # a run, and this checkout points at it
 sh bin/run.sh source read 7                          # the item's own words, if a source can answer
 sh bin/run.sh source kind
+sh bin/run.sh observed gate.finished
 sh bin/run.sh observe gate.finished result=pass unit=01
 sh bin/run.sh aside "a worktree is not a safe place to grade"
 sh bin/run.sh reconcile
@@ -316,8 +317,17 @@ row that fits lands whole and two writers cannot tear each other's. A row that w
 refused rather than written. Twenty writers at once leave twenty whole rows, and the suite counts
 them.
 
-Nothing composes them yet. `observe` with no event prints what a run holds, and questions across
-runs are the next stage.
+**Floor records the moments it already knows** — a run began, an item was read, a gate finished, a
+delivery went out. Nothing is kept as a total, so how many gates failed before one passed is counted
+from the rows.
+
+`observed` reads every run this home holds, one row each, with the run named first. Two runs over one
+work item compose there without either having heard of the other, and neither holds the other's row.
+
+Nothing is summed. The rows go out as they were written and the question is asked with `awk`.
+
+**A moment floor records cannot refuse.** An observation is not evidence, so a home that will not take
+one must not stop the work somebody asked for. `observe` still refuses when a person asked for it.
 
 ### An aside is kept, and blocks nothing
 

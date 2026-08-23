@@ -87,6 +87,7 @@ main() {
         deliver)   deliver "$@" ;;
         aside)     aside "$@" ;;
         observe)   observe "$@" ;;
+        observed)  observed "$@" ;;
         merge)     merge_delivery "$@" ;;
         reconcile) reconcile "$@" ;;
         authorise) authorise ;;
@@ -130,6 +131,7 @@ floor — where work happens.
   run.sh deliver <title>          push the work and tell the source where it is
   run.sh aside [text]             record what this run cannot act on, or print what it has
   run.sh observe [event] [k=v...] record that something happened, or print what did
+  run.sh observed [event]         every run's observations, with the run named
   run.sh merge                    land what was graded, or say why it may not be
   run.sh reconcile                whether every other open delivery can join this one
   run.sh authorise                refuse a run that describes no work, or whose selection moved
@@ -215,6 +217,7 @@ make_run() {
     stamp_selection "$dir" "$(selector)" "$id"
     say_if_nobody_selected
     point_this_checkout_at "$id"
+    emit "$dir" run.began
 
     printf '%s\n' "$dir"
 }
@@ -1632,6 +1635,7 @@ gate_held() {
     [ -n "$command" ] || { note "the charter pins no command for [$name]"; exit 7; }
 
     stamp_command "$dir" "$ref" "$name" sh -c "$command"
+    answered=$?; emit "$dir" gate.finished name="$name" result="$answered"; return "$answered"
 }
 
 #
@@ -1948,7 +1952,7 @@ observe() {
     is_one_line "$event" || { note "an event name is one line: [$event]"; exit 2; }
     refuse_an_unnamed_field "$@"
 
-    record_observation "$dir" "$event" "$@"
+    record_observation "$dir" "$event" "$@" || die_unwritable "$(observations_file "$dir")"
 }
 
 # Named pairs, so a reader knows what a value is without counting columns. A bare word could only be
@@ -1976,8 +1980,8 @@ record_observation() {
 
     refuse_a_torn_row "$line"
 
-    printf '%s\n' "$line" >> "$(observations_file "$dir")" 2>/dev/null \
-        || die_unwritable "$(observations_file "$dir")"
+    printf '%s
+' "$line" >> "$(observations_file "$dir")" 2>/dev/null
 }
 
 # `uname -n`, because `hostname` is not POSIX and a machine that answers neither is still a machine
@@ -2000,6 +2004,39 @@ refuse_a_torn_row() {
     note "an observation must fit one atomic write, and that one is ${#1} long"
     exit 2
 }
+
+#
+# Every run this home holds, one row each, with the run named first. Two
+# runs over one work item compose here without either
+# ever having heard of the other.
+#
+# A run holding none contributes none. Nothing is counted here and nothing is summed — the rows go
+# out as they were written, and the question is asked with `awk`.
+#
+observed() {
+    [ "$#" -le 1 ] || { usage; exit 2; }
+
+    want=${1:-}
+    for held in "$RUNS"/*/; do
+        [ -f "${held}observations" ] || continue
+        say_the_rows "$(basename "${held%/}")" "${held}observations" "$want"
+    done
+}
+
+say_the_rows() {
+    awk -F'\t' -v run="$1" -v want="$3" \
+        'want == "" || $3 == want { print run "\t" $0 }' "$2" 2>/dev/null
+}
+
+#
+# Floor's own moments. An observation is not evidence, so a home that
+# cannot take one must not stop the work somebody
+# actually asked for.
+#
+# Silent when it fails, on purpose. A run whose home went read-only has a louder problem, and every
+# verb that needs to write already says so.
+#
+emit() { record_observation "$@" || return 0; }
 
 observations_file() { printf '%s/observations' "$1"; }
 
@@ -2058,6 +2095,7 @@ deliver() {
 
     send_delivery "$dir" "$here" "$title"
     say_the_asides "$dir"
+    emit "$dir" run.delivered
 }
 
 refuse_ungranted_delivery() {
@@ -3205,6 +3243,7 @@ read_work_item() {
     printf '%s\n' "$said" > "$dir/item.md" 2>/dev/null || die_unwritable "$dir/item.md"
     printf '%s\n' "$item" > "$(source_file "$dir")" 2>/dev/null || die_unwritable "$(source_file "$dir")"
     record_kind "$dir" "$item"
+    emit "$dir" item.read item="$item"
     printf '%s\n' "$said"
 }
 

@@ -1398,7 +1398,7 @@ an_observation_is_not_evidence() {
   floor "$tmp/ob" targets add 'https://github.com/acme/ob.git' main >/dev/null 2>&1
   floor "$tmp/ob" open >/dev/null 2>&1
 
-  is "a run that observed nothing says nothing" "$(floor "$tmp/ob" observe)" ""
+  has "a fresh run has already recorded that it began" "$(floor "$tmp/ob" observe)" "run.began"
 
   floor "$tmp/ob" observe gate.finished result=pass unit=01 >/dev/null 2>&1
   matches "a record says when, where and what" "$(floor "$tmp/ob" observe)" \
@@ -3080,6 +3080,81 @@ the_work_source() {
   ws charter derive >/dev/null 2>&1
 }
 the_work_source
+
+#
+# Floor records the moments it already knows. Nothing is kept as a total, so
+# how many gates failed before one passed is counted from the rows
+# rather than read from a number somebody incremented.
+#
+a_run_answers_from_its_own_rows() {
+  make_repo "$tmp/ans" main && set_origin "$tmp/ans" 'https://github.com/acme/ans.git' \
+    && mkdir -p "$tmp/ans/.foundry" \
+    && commit_file "$tmp/ans" .foundry/gates 'tests  false
+' || { skip "answering from rows — git could not make a repo here"; return; }
+
+  mkdir -p "$src/items"
+  printf 'Count it\n' > "$src/items/61"
+
+  ansrun=$(floor "$tmp/ans" new "Answered")
+  floor "$tmp/ans" source read 61 >/dev/null 2>&1
+  floor "$tmp/ans" charter derive >/dev/null 2>&1
+  floor "$tmp/ans" policy authorize 'https://github.com/acme/ans.git' >/dev/null 2>&1
+  floor "$tmp/ans" targets add 'https://github.com/acme/ans.git' main >/dev/null 2>&1
+  work=$(only_slot "$(floor "$tmp/ans" open)")
+
+  floor "$tmp/ans" gates >/dev/null 2>&1
+  floor "$tmp/ans" gates >/dev/null 2>&1
+
+  mine() { floor "$tmp/ans" observed "$1" | awk -F'\t' -v r="$(basename "$ansrun")" '$1 == r'; }
+
+  has "a run records that it began"  "$(mine run.began)"  "run.began"
+  has "and which item it read"       "$(mine item.read)"  "item=61"
+
+  # Counted from the rows. Nothing stores how many failed, so nothing can disagree with them.
+  is "two failed gates are two rows" \
+     "$(mine gate.finished | grep -c 'result=1')" "2"
+  is "and none passed"  "$(mine gate.finished | grep -c 'result=0')" "0"
+
+  printf 'true\n' > "$tmp/ans/.foundry/gates.new"
+  printf 'tests  true\n' > "$work/.foundry/gates"
+  git -C "$work" -c user.email=a@b.c -c user.name=a commit -aqm "a gate that passes"
+  floor "$tmp/ans" gates >/dev/null 2>&1
+
+  is "and the pass after them is one more row" \
+     "$(mine gate.finished | grep -c .)" "3"
+}
+a_run_answers_from_its_own_rows
+
+#
+# Every run this home holds, one row each, with the run named first. Two
+# runs over one work item compose here without either
+# ever having heard of the other.
+#
+two_runs_over_one_item_compose() {
+  make_repo "$tmp/cmp" main && set_origin "$tmp/cmp" 'https://github.com/acme/cmp.git' \
+    || { skip "composing — git could not make a repo here"; return; }
+
+  mkdir -p "$src/items"
+  printf 'Twice\n' > "$src/items/62"
+
+  first=$(floor "$tmp/cmp" new "First")
+  floor "$tmp/cmp" source read 62 >/dev/null 2>&1
+
+  second=$( cd "$tmp/cmp" && FOUNDRY_HOME="$home" FOUNDRY_RUN="" FOUNDRY_WHO="" \
+            FOUNDRY_SOURCE="$dir_source" sh "$runner" new "Second" 2>/dev/null )
+  ( cd "$tmp/cmp" && FOUNDRY_HOME="$home" FOUNDRY_RUN="$second" FOUNDRY_WHO="" \
+    FOUNDRY_SOURCE="$dir_source" sh "$runner" source read 62 >/dev/null 2>&1 )
+
+  is "two runs read one item, and both rows are there" \
+     "$(floor "$tmp/cmp" observed item.read | grep -c 'item=62')" "2"
+  is "and each row names its own run" \
+     "$(floor "$tmp/cmp" observed item.read | awk -F'\t' '/item=62/ { print $1 }' | sort -u | grep -c .)" "2"
+
+  # Neither run ever heard of the other. The home is what holds them, and nothing was coordinated.
+  is "and neither run holds the other's row" \
+     "$(floor "$tmp/cmp" observe | grep -c 'item=62')" "1"
+}
+two_runs_over_one_item_compose
 
 #
 # One kind, two adapters that spell it differently. A directory carries `kind: defect` in
