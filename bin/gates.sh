@@ -86,6 +86,8 @@ gate versions    bash bin/versions.sh
 
 gate repeats     bash bin/repeats.sh
 
+gate tables      bash bin/tables.sh
+
 gate shell       bash bin/shell.sh
 
 for plugin in kernel signal floor panel; do

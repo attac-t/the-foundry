@@ -255,7 +255,7 @@ await_a_free_worker() {
 }
 
 # Report every break, in the order they were declared rather than the order they finished. The same
-# eight gates have to read the same way twice.
+# nine gates have to read the same way twice.
 report_breaks() {
   wait
 

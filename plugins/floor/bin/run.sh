@@ -1335,7 +1335,7 @@ never_ran() { [ "$1" -eq 126 ] || [ "$1" -eq 127 ]; }
 # until it was read here.
 #
 # Hit for real. A run stalled inside a copy, was killed, and stamped 143.
-# The next run passed all eight gates at the same commit and completion
+# The next run passed every gate at the same commit and completion
 # still refused, because a failure at a ref can never be taken back.
 #
 # A gate wanting to fail has 1. Nothing here kills itself to say so,

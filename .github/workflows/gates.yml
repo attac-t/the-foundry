@@ -39,6 +39,12 @@ jobs:
       - name: No sentence appears twice
         run: bash bin/repeats.sh $(git ls-files 'plugins/panel/*.md' 'plugins/pest/*.md' 'plugins/signal/*.md')
 
+      # Alignment was the first answer and cannot be given: `length` counts bytes in one locale
+      # and characters in another, so a table padded by one awk is ragged to the next. What is
+      # actually unreadable is a cell holding a paragraph, and that is a number.
+      - name: No table cell is a paragraph
+        run: bash bin/tables.sh
+
       # Two craft-sh rules that only human attention held. Both were caught by hand three times in
       # one day, which is the moment a judgement becomes an exit code.
       #

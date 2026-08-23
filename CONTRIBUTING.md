@@ -1,6 +1,6 @@
 # Contributing
 
-Eight gates. Run them before you open a pull request:
+Nine gates. Run them before you open a pull request:
 
 ```bash
 sh bin/gates.sh                 # all eight, here
@@ -22,6 +22,7 @@ eight and is not one of them. `panel` was advertised here and absent from CI for
 | `frontmatter` | a skill, agent or command is missing the frontmatter that registers it |
 | `versions` | a plugin the manifest lists cannot say what version it is |
 | `repeats` | a sentence appears verbatim in two files — scoped to `panel`, `pest` and `signal` |
+| `tables` | a table cell is a paragraph — over 200 bytes, and no spacing rescues it |
 | `shell` | shipped shell takes an `else`, or a function body passes 40 lines |
 | `kernel` | the plugin does not run — checked on Linux, macOS and Windows |
 | `signal` | the plugin does not run — checked on Linux, macOS and Windows |
@@ -44,7 +45,7 @@ no such bit.
 
 **What they do not check:** that `laravel-ddd`, `laravel-playbook` or `pest` still load, or
 that their skills say anything true. Those three ship no code, so there is nothing to run — but
-nothing here reads them either. Green means eight gates passed. For those three plugins it does not
+nothing here reads them either. Green means nine gates passed. For those three plugins it does not
 mean the change works.
 
 Bump the version in **both** `plugin.json` and `.claude-plugin/marketplace.json` — the manifest is

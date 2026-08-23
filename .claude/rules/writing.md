@@ -33,8 +33,12 @@ Use the shape the content already has — columns want a table, a layout or a fl
 block. A shape drawn beats the paragraph describing it.
 
 **A table cell is a few words.** Half of them here are seventeen characters and nine in ten are under
-fifty; the longest is four hundred and ninety-five. That one is a paragraph in a grid, and no amount
-of spacing makes it readable unrendered.
+fifty. `bin/tables.sh` fails one over two hundred bytes, because that is a paragraph in a grid and no
+spacing makes it readable unrendered.
+
+**Columns are never padded.** `length` counts bytes in one locale and characters in another, so a
+table aligned by one `awk` is ragged to the next — measured, and it is why the gate caps a cell
+rather than lining one up.
 
 Padding the columns is not the fix and cannot be. `length` counts bytes in one locale and characters
 in another, so a table aligned by one `awk` is ragged to the next — measured, and it is why no gate
@@ -64,7 +68,18 @@ The bar above covers the rest.
 
 | | |
 |---|---|
-| pull request | read `.github/PULL_REQUEST_TEMPLATE.md` first — `gh pr create --body` bypasses it. Answer one question: why does this change exist? The reader already sees the diff. Close with `Closes #N` for the issue this finishes and `Refs #N` for the rest — never `@see`, github.com/see is a real person GitHub notifies |
-| issue | goal, contract, what is deliberately not built, and a `## Done when` list of checks that can each fail before the code exists. **Written `- [ ]`, never `- `** — a bullet nobody can tick records nothing at close, and 47 of the first 83 lists were that shape. Name open decisions rather than guessing them |
 | commit | [Commitizen](https://commitizen-tools.github.io/commitizen/) `type(scope): description`. The subject says what changed; the body says why it was wrong before |
 | comment | carries a discovery, never narration. `# the fatal goes to stderr, the argument to stdout` earns its line. `# loop over the files` does not |
+
+**A pull request answers one question: why does this change exist?** The reader already sees the diff.
+
+Read `.github/PULL_REQUEST_TEMPLATE.md` first — `gh pr create --body` bypasses it. Close with
+`Closes #N` for the issue this finishes and `Refs #N` for the rest. Never `@see`: github.com/see is a
+real person, and GitHub notifies them.
+
+**An issue holds a goal, a contract, what is deliberately not built, and a `## Done when` list.** Each
+check can fail before the code exists. Name open decisions rather than guessing them.
+
+Its list is written `- [ ]`, never `- `. A bullet nobody can tick records nothing at close, and 47 of
+the first 83 lists were that shape.
+
