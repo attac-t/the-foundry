@@ -104,6 +104,21 @@ else
   has "and names what would change that"             "$remote" "gh"
 fi
 
+# The sentence above comes from the resolver, never from `join.sh`. A copy of
+# `remote_is_github` lived here once, which put a provider's name in core.
+#
+# Comments stripped first. A comment naming an adapter explains a case; a code path
+# matching a hostname decides one, and only the second is core knowing a provider.
+code=$(grep -v '^[[:space:]]*#' "$here/bin/join.sh" | tr 'A-Z' 'a-z')
+lacks "core holds no provider name" "$code" "github"
+lacks "nor any other"               "$code" "gitlab"
+
+# A resolver `FOUNDRY_SOURCE` names is asked the same question. Whatever it prints is
+# the answer, so a source that never heard of GitHub still reports itself.
+printf '#!/bin/sh\n[ "${1:-}" = serves ] && { echo "a filing cabinet"; exit 0; }\nexit 1\n' > "$tmp/cabinet.sh"
+theirs=$(joined "$tmp/one" FOUNDRY_WHO=a@b FOUNDRY_SOURCE="$tmp/cabinet.sh")
+has "and another resolver answers for itself" "$theirs" "source  a filing cabinet"
+
 
 # --- the skills the rules name ---
 
