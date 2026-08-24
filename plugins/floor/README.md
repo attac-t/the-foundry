@@ -610,6 +610,16 @@ falls between the gate harness and the suites it invokes by expansion. A plugin'
 often a run's work as it is its bar, so following it would make adding a test impossible. That is
 luck rather than design, and it is the residual.
 
+**A change to the bar itself cannot be graded by a run, and floor now says so.** Adding or removing a
+gate rewrites the file `agree` reads to know the set — so `agree` compares one tree's list against
+another's and fails, while passing by hand at the delivered tree.
+
+That is this rule working. Every path out of it is closed by the bar's own guards: dropping the clause
+is a removal monotonicity refuses, and editing the declaration moves a pin.
+
+**So landing a bar change is a human act, like merging.** When a gate fails, floor names every file it
+took from the base, because that is the likeliest cause and it used to be invisible.
+
 ### Monotonicity
 
 The set of requirements may grow. It may never shrink.

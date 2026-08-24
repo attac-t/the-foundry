@@ -1639,7 +1639,8 @@ the_substituted_tree_still_holds_the_work() {
   is "the base's gate wants what the base does not hold" "$(code_of floor "$tmp/sub2" gates)" "14"
 
   printf 'ok\n' > "$work/added"
-  printf 'exit 1\n' > "$work/check.sh"
+  printf 'exit 1
+' > "$work/check.sh"
   git -C "$work" add added
   git -C "$work" -c user.email=a@b.c -c user.name=a commit -aqm "the work, and a gate that refuses it"
 
@@ -1687,6 +1688,28 @@ a_gate_grades_from_the_base_however_deep_it_reaches() {
   git -C "$work" -c user.email=a@b.c -c user.name=a commit -aqm "the work the gate reads"
 
   is "while a file it only reads is still the run's own work" "$(code_of floor "$tmp/cl" gates)" "0"
+
+  # A gate that fails while the run changed a file it runs. The two facts were reported apart, so a
+  # gate passing by hand and failing here read as a mystery.
+  #
+  # The gate has to fail for its own reason: rewriting the file it runs cannot do it, because that
+  # file is the one restored.
+  printf 'exit 1\n' > "$work/deepest.sh"
+  printf 'original\n'  > "$work/notes.md"
+  git -C "$work" -c user.email=a@b.c -c user.name=a commit -aqm "a file the gate runs, and one it reads"
+
+  said=$(floor_says "$tmp/cl" gates)
+  has "a failed gate names what came from the base" "$said" "changed a file its own gates run"
+  has "and which file it was"                       "$said" "deepest.sh"
+  has "and that a bar change is a person's"         "$said" "landed by a person"
+
+  # The quiet half. Nearly every run that substitutes something passes anyway, and a note on each of
+  # those is a note people learn to skip.
+  printf 'changed\n' > "$work/notes.md"
+  printf 'exit 0\n' > "$work/deepest.sh"
+  git -C "$work" -c user.email=a@b.c -c user.name=a commit -aqm "and it passes again"
+
+  lacks "a gate that passed says none of it" "$(floor_says "$tmp/cl" gates)" "landed by a person"
 }
 a_gate_grades_from_the_base_however_deep_it_reaches
 
