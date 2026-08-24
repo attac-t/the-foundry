@@ -49,7 +49,7 @@ main() {
     report 'an else is a function nobody named' "$(branches)"
     report "a body past $MAX lines"             "$(overlong)"
     report 'a pipe that hides a failure'        "$(piped)"
-    report 'a taper that does not narrow evenly' "$(tapers)"
+    report 'a taper that does not step down by three' "$(tapers)"
 
     verdict
 }
