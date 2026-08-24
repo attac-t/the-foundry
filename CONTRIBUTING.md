@@ -11,6 +11,13 @@ sh bin/gates.sh linux           # the same eight where `sh` is dash
 CI runs the first two. Leave `agree` out of your run and a PR can still go red on a check this file
 never mentioned — the drift this file exists to prevent, one level up.
 
+**A green gate is not a working gate.** `bash bin/breaks.sh` drives each one against a tree that
+breaks it and prints what was caught. It is not in `gates.sh` and never will be: it makes the tree red
+on purpose, and a gate grading the gates is a loop nothing outside it can check.
+
+Run it when you change what a gate grades. Two checks here were vacuous for weeks, and a bad break
+looks exactly like a blind gate — #351 holds why.
+
 The second is not a convenience. On macOS and under Git Bash `sh` **is** bash and accepts `&>` and
 `[[ =~ ]]` without complaint, so neither can fail a bashism — and every runner here opens `#!/bin/sh`.
 
