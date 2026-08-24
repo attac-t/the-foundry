@@ -1724,6 +1724,28 @@ separates them, and floor proves the first two.
 to cross this line. The rule is written before the thing it constrains, for the reason revision 22
 was: a system built first names its own words, and then the words are the design.
 
+### Revision 24 — the experiment table answered as of revision 17
+
+§8's fourth column said *At revision 17*. The document is at 24, and the column had not been read
+since — so it recorded a shipped defect that closed six revisions ago.
+
+| Was | Is | What forced it |
+|---|---|---|
+| 12: *the nouns hold, the verb does not* | **passes** | re-run from a workspace: `path` answers the run, `evidence` prints its ledger |
+| 15: *never run* | **cannot be run as written** | `.gitignore` holds `.claude/panel/`, so nothing can count ten runs |
+| the column header | the revision that last read it | a date-stamped column nobody re-reads is a claim that ages into a lie |
+
+**Row 12 mattered most.** It said `active_run` never looks where it is standing, which was true when
+#115 was open and false the day it closed. A reader planning session work would have built around a
+defect that was gone.
+
+**Only what was measured moved.** The other rows were not re-run, and the header now says which
+revision read them — so the next reader knows exactly how old each answer is.
+
+**Unproven, and it is the shape of the problem.** A column stamped with a revision still ages. What
+would end this is an experiment that runs, not a note about when someone last looked, and #351 holds
+the nearest thing: six gates driven by one command.
+
 ## 7. Unresolved questions
 
 **Closed since revision 2:** `policy` stays; the target allowlist is its first instance and is
@@ -1799,7 +1821,7 @@ required by §2.3, not speculative.
 
 ## 8. Falsifiable experiments
 
-| # | Experiment | Falsifies | At revision 17 |
+| # | Experiment | Falsifies | At revision 24 |
 |---|---|---|---|
 | 1 | Rewrite a gate script to `exit 0`; confirm the run is still graded by the bar it agreed to | the pinning invariant | **falsified 2026-08-22, closed 2026-08-23.** It fell for the reason §2.2 records: the pin is on the declaration, so `charter check` answered 0 and `complete` went 15 → 0. `gates` now takes every file a pinned command reaches from the base first. Re-run with `bin/gates.sh` rewritten to `exit 0`: the base's copy ran and the suite went red |
 | 1b | Ten ordinary runs — a dependency bump, a new test, a refactor; count how many downgrade | that downgrade is rare enough to mean something | moot — there is nothing to count |
@@ -1826,11 +1848,11 @@ required by §2.3, not speculative.
 | 10 | Deliver after gates pass, then land a commit; confirm completion refuses | the completion invariant | **passes.** `satisfied` matches evidence on the ref it named, so a commit after grading unbinds it. Hit for real on 2026-08-21 |
 | 10b | A run whose charter derives no clause, and one whose units select no target; confirm both refuse to deliver | the two non-empty conjuncts | **passes.** `unmet_for_delivery` runs `empty_bar` and `empty_selection` |
 | 11 | Detection across ten unfamiliar repos — right, wrong, and *says it cannot tell* | Level 1 convention | untested |
-| 12 | Open a shell in a workspace and take over mid-run | the session decomposition | **run 2026-08-22 — the nouns hold, the verb does not.** A person can read the run: the workspace sits inside it, four levels down, and the ledger is right there. Floor cannot. `active_run` reads `FOUNDRY_RUN` or the invoking checkout's pointer and never where it is standing, so from the workspace `path` answers nothing and `gates` exits 1. The workspace records `foundry.ref` and no run. Joining needs no new noun — it needs `active_run` to look down at its own feet. #115 |
+| 12 | Open a shell in a workspace and take over mid-run | the session decomposition | **passes.** It did not at revision 17, and that entry stood six revisions after #115 closed. Re-run 2026-08-25 from a delivered run's workspace with `FOUNDRY_RUN` unset: `path` answers the run's directory and `evidence` prints its ledger. `active_run` looks down at its own feet now |
 | 13 | Two units in one run, in parallel, no interference | the unit/workspace split | not built |
 | 13b | Two deliveries against one target; confirm each is told whether it can join the other | that separation needs no coordinator | **passes.** `reconcile` asks the source what else is open and tries the merge beside the run. No scheduler, no lock, and no run reads another's workspace. Proved on this repository's own queue: three of five clashed |
 | 14 | Skill narrowing vs. kernel's claimed 84% activation | the discovery convention | unmeasured |
-| 15 | Panel's own kill criterion — ten runs | whether Panel earns its cost | never run |
+| 15 | Panel's own kill criterion — ten runs | whether Panel earns its cost | **cannot be run as written.** `.gitignore` holds `.claude/panel/`, so a verdict dies with its branch — thirty-seven written here and one tracked by accident. Nothing can count ten runs. #332 owns producing a verdict floor can read |
 
 Experiments 1, 5, 6 and 9 test the properties this RFC claims most loudly. **Experiment 1 falsified
 the headline and no longer does** — see row 1 and §2.2. It cost two shipped mechanisms and left one
