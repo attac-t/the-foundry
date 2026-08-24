@@ -1,5 +1,7 @@
 # Shell
 
+Reading `craft-sh` before a shipped script is edited.
+
 Shipped shell is `plugins/*/bin`, `lib` and `hooks`. Not `tests/` — those are bash on purpose and
 hold no such rule.
 

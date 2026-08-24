@@ -23,7 +23,7 @@ jobs:
 
       # A meta-check, not one of the seven. It grades them, so counting it among them would make the
       # set it checks disagree with itself. `panel` was advertised and unrun for days.
-      - name: The README, this workflow and bin/gates.sh name the same gates
+      - name: The documents, the workflow and every harness file agree
         run: sh bin/agree.sh
 
       - name: And that check can fail

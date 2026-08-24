@@ -1,5 +1,7 @@
 # Plugins
 
+What a plugin owes when it changes.
+
 ## Bump the version — every time
 
 After modifying **any** file inside a plugin, bump it via `craft-plugin-update`.
