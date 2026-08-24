@@ -2,8 +2,8 @@
 #
 # Drives every gate against a tree that breaks it, and reports what was caught.
 #
-# Nothing else does. The mutation suite is `MOOT` on a machine this size — every wreck reports the
-# mutant never answered — so eight gates have been green for weeks with none of them shown to fail.
+# Nothing else does for these six. The four plugin gates drive their own breaks and always did —
+# kernel, signal, panel and floor answer 1351 assertions with no mutant unanswered between them.
 #
 # **Not a gate.** It makes the tree red on purpose, and a gate grading the gates is a loop nothing
 # outside it can check. Run by hand, read the count.

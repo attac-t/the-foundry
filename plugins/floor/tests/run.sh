@@ -6,6 +6,25 @@
 # go red, so we break the plugin one rule at a time and each break must take a suite down with it.
 #
 
+# The pool waits with `jobs -pr`, which is bash's. Under dash it answers zero without complaining, so
+# nothing waits, every mutant starts at once, and all of them report MOOT — a machine too small is
+# what that reads like, not a caller in the wrong shell.
+#
+# Measured: 144 MOOT under dash and 0 under bash, with the suite saying `PROVED NOTHING` both times
+# and never naming the shell. `bin/gates.sh` always invokes it correctly. A person at a prompt does
+# not, and it cost several days of believing this machine could not run them.
+# Asked, not assumed. `BASH_VERSION` is an environment variable and a parent can leave one behind,
+# so the pool's own question is the one worth putting: start a job, and see whether it is counted.
+sleep 1 &
+counted=$(jobs -pr 2>/dev/null | wc -l)
+wait
+
+[ "${counted:-0}" -ge 1 ] 2>/dev/null || {
+  printf 'this suite is bash — its mutant pool waits with `jobs -pr`, and this shell counts none\n' >&2
+  printf '  bash %s\n' "$0" >&2
+  exit 2
+}
+
 set -u
 root="$(cd "$(dirname "$0")/.." && pwd)"
 tmp="${TMPDIR:-/tmp}/floor-audit-$$"
@@ -113,6 +132,7 @@ worker_count() {
 workers=${FOUNDRY_AUDIT_WORKERS:-$(worker_count)}
 queued=0
 reported=0
+
 #
 # Run a command with a deadline, and answer **2 when the deadline passed** — never the command's own
 # status, because a command that never answered did not answer badly.
