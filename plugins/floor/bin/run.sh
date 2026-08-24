@@ -2236,9 +2236,17 @@ say_the_rows() {
 # two runtimes, and the decision to refuse wants
 # rows to argue from rather than a guess.
 #
+# Resolved once, before anything moves. `gates` enters the workspace, and a
+# path relative to `$0` stops resolving from there — so
+# every gate row said `floor/unknown`.
+#
+# `run.began` was right and the gate rows were wrong, which is the worst
+# shape: the rows worth arguing from are the ones the
+# version had already fallen out of.
+MANIFEST=$(cd "$(dirname "$0")/../.claude-plugin" 2>/dev/null && pwd)/plugin.json
+
 runtime() {
-    stated=$(awk -F'"' '/"version"/ { print $4; exit }' \
-        "$(dirname "$0")/../.claude-plugin/plugin.json" 2>/dev/null)
+    stated=$(awk -F'"' '/"version"/ { print $4; exit }' "$MANIFEST" 2>/dev/null)
 
     [ -n "$stated" ] || stated=unknown
 
