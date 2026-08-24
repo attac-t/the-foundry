@@ -797,7 +797,7 @@ wreck_runner "evidence that no longer applies to the delivered ref is caught" \
 
 # `satisfying` evidence is a record whose answer is yes. A record that a gate failed is a record.
 wreck_runner "a failing gate counted as satisfying its clause is caught" \
-  anyresult 's#        $5 != "0" { no  = 1 }#        $5 != "0" { yes = 1 }#'
+  anyresult 's#        $5 != "0"                             { no = 1; next }#        $5 != "0" { yes = 1 }#'
 
 # Quantified over clauses and over targets, so each empty set satisfies it for free. These two are
 # the fail-opens, and neither is an edge case: every fresh run has an empty selection.
@@ -1199,7 +1199,7 @@ wreck_runner "a derive that says nothing is caught" \
 # One yes outranking a no. While every record was an exit code this was invisible: one tree gives one
 # answer. A human answering makes a second, contradicting record possible.
 wreck_runner "a yes that outranks a no is caught" \
-  onlyyes 's#        $5 != "0" { no  = 1 }#        $5 != "0" { }#'
+  onlyyes 's#END { exit !(yes && !no) }#END { exit !yes }#'
 
 # A shell standing in a run that cannot name it. Joining needed no new noun, only this lookup, and
 # without it a workspace handed to a second person answers nothing.

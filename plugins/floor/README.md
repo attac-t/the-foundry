@@ -113,6 +113,7 @@ sh bin/run.sh charter derive
 sh bin/run.sh charter check
 sh bin/run.sh evidence
 sh bin/run.sh evidence record tests ./check
+sh bin/run.sh evidence verdict "the interface is understandable" "A Reviewer" "read in two minutes"
 sh bin/run.sh gates
 sh bin/run.sh source read 7
 sh bin/run.sh claim 7
@@ -648,6 +649,35 @@ is a removal monotonicity refuses, and editing the declaration moves a pin.
 **So landing a bar change is a human act, like merging.** When a gate fails, floor names every file it
 took from the base, because that is the likeliest cause and it used to be invisible.
 
+### A kind decides what may answer it
+
+`Gate`, `Judged` and `Decided` say how a clause's truth is established. Until now the trust level was
+**recorded and never read** — so a gate exiting 0 satisfied a `Judged:` clause, whose whole point is
+that no command can answer it.
+
+| Kind | Answered by | Written by |
+|---|---|---|
+| `Gate` | `machine` | `gates`, and `evidence record` for a name no pin holds |
+| `Judged` | `judged` | `evidence verdict` |
+| `Decided` | `human` | an answer where the item is |
+
+**A verdict comes from something that did not produce the work.** That is the whole of what `judged`
+means, so floor refuses one naming the run's own worker.
+
+**It cannot prove who typed it.** The file is writable by the same user, and §2.5 says so. Refusing
+the one name floor already knows is what an honest record can do — no more.
+
+**No second producer, so the contract is unproven.** One judge is a judge-shaped costume, by the same
+rule that keeps every seam in §2.6 marked.
+
+**And a verdict cannot satisfy anything yet.** A `Judged:` clause rests on no pin, because nothing
+derives one — the detector reads `.foundry/gates` and yields `Gate` clauses only. So invariant 1
+reports it *introduced*, and no ref makes it true.
+
+The verdict is recorded and the kind rule is written. **What is missing is a declaration a Judged
+clause can be derived from**, and until one exists the rule above is correct and unexercised.
+
+---
 ### Monotonicity
 
 The set of requirements may grow. It may never shrink.
