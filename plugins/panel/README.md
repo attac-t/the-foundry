@@ -24,7 +24,7 @@ approving what it judges.
 2. Mechanical claims reduce to a command. Judgments carry severity.
 3. Only failing commands and Criticals block.
 4. A judge never writes what it judges.
-5. Verdicts are committed artifacts in the branch under review.
+5. Verdicts are written to `.claude/panel/verdicts/`, which this repository ignores.
 6. Nothing starts until the charter is approved.
 7. Verdicts may only narrow. The loop ends in silence.
 8. A judgment that recurs becomes an oracle.
@@ -167,9 +167,17 @@ Its ceiling is the quality of its gates.
 This plugin's premise is unproven: nobody has shown an adversarial panel beats disciplined
 self-review per token on a solo developer's workload.
 
-Verdicts are committed data. Instrument them — iterations to approval, oracle-caught versus
-judge-caught, promotions per run. **If ten runs show no catches that self-review would have missed,
-delete the plugin and keep `craft-oracle`.** That part has unconditional value.
+Instrument the verdicts — iterations to approval, oracle-caught versus judge-caught, promotions per
+run. **If ten runs show no catches that self-review would have missed, delete the plugin and keep
+`craft-oracle`.** That part has unconditional value.
+
+**Nothing can be instrumented yet, and this said the opposite.** It claimed verdicts were committed
+data. `.gitignore` holds `.claude/panel/` — thirty-seven verdicts have been written here and one is
+tracked, by accident. So a verdict dies with the branch, no run can count them, and nothing outside
+the session that produced one can read it.
+
+**That is why a `Judged:` clause has never been satisfied.** #332 owns producing a verdict floor can
+read, and four closed issues — #67, #70, #75 and #77 — each carry a `Judged:` box waiting on it.
 
 ---
 
