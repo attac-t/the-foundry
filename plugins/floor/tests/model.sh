@@ -1375,11 +1375,12 @@ an_aside_is_kept_and_blocks_nothing() {
   floor "$tmp/as" targets add 'https://github.com/acme/as.git' main >/dev/null 2>&1
   floor "$tmp/as" open >/dev/null 2>&1
 
-  is "a run with nothing set aside says nothing" "$(floor "$tmp/as" aside)" ""
+  asrun=$(basename "$(floor "$tmp/as" path)")
+  lacks "a run with nothing set aside contributes nothing" "$(floor "$tmp/as" aside)" "$asrun"
 
   floor "$tmp/as" aside 'the identity rule admits no offline address' >/dev/null 2>&1
   has "and one it kept comes back" "$(floor "$tmp/as" aside)" "no offline address"
-  matches "with when it was set aside" "$(floor "$tmp/as" aside)" "^[0-9]{4}-[0-9]{2}-[0-9]{2}T"
+  matches "with the run, then when it was set aside" "$(floor "$tmp/as" aside)" "^[^	]+	[0-9]{4}-[0-9]{2}-[0-9]{2}T"
 
   # The whole point. An aside is not a clause, not evidence and not a grant.
   is "it satisfies nothing"  "$(code_of floor "$tmp/as" complete)" "15"
@@ -1391,9 +1392,40 @@ an_aside_is_kept_and_blocks_nothing() {
   # A second is a second line, because two things learned are two things.
   floor "$tmp/as" aside 'a worktree is not a safe place to grade' >/dev/null 2>&1
   is "two set aside are two lines" \
-     "$(floor "$tmp/as" aside | grep -c .)" "2"
+     "$(floor "$tmp/as" aside | grep -c "^$asrun	")" "2"
 }
 an_aside_is_kept_and_blocks_nothing
+
+#
+# An aside is written for whoever comes next, so a reader who can see one run's has been shown the
+# least useful half. Measured before this existed: one aside across every run ever made here, and
+# nobody had read it.
+#
+an_aside_outlives_the_run_that_wrote_it() {
+  make_repo "$tmp/as1" main && set_origin "$tmp/as1" 'https://gitlab.com/acme/as1.git' \
+    && make_repo "$tmp/as2" main && set_origin "$tmp/as2" 'https://gitlab.com/acme/as2.git' \
+    || { skip "asides — git could not make a repo here"; return; }
+
+  first=$(floor "$tmp/as1" new "First")
+  floor "$tmp/as1" aside "a worktree is not a safe place to grade" >/dev/null 2>&1
+
+  second=$(floor "$tmp/as2" new "Second")
+  floor "$tmp/as2" aside "the second run learned something else" >/dev/null 2>&1
+
+  said=$(floor "$tmp/as2" aside)
+  has "a later run reads what an earlier one set aside" "$said" "not a safe place to grade"
+  has "and its own"                                     "$said" "learned something else"
+  has "and each row names the run it came from"         "$said" "$(basename "$first")"
+
+  # An aside is not a clause, not evidence and not a grant. Reading every run's changes none of that.
+  is "reading them all grants nothing"  "$(floor "$tmp/as2" policy)" "$(floor "$tmp/as2" policy)"
+  is "and satisfies nothing"            "$(floor "$tmp/as2" evidence)" ""
+
+  # A run that set none still reads the others. The verb answers about the tree, never about one run.
+  third=$(floor "$tmp/as1" new "Third")
+  has "a run that set none still reads the rest" "$(floor "$tmp/as1" aside)" "$(basename "$second")"
+}
+an_aside_outlives_the_run_that_wrote_it
 
 #
 # Something happened, recorded. Not evidence, not a grant, and not a clause —
@@ -3512,8 +3544,8 @@ a_human_answer_can_satisfy_a_clause() {
   q=$(ls "$src/questions/11" 2>/dev/null | head -1)
   id=$(printf '%s' "pricing copy signed off" | cksum | awk '{ print $1 }')
 
-  printf 'no, hold it back\n' > "$src/answers/11/$q" 2>/dev/null \
-    || { mkdir -p "$src/answers/11" && printf 'no, hold it back\n' > "$src/answers/11/$q"; }
+  mkdir -p "$src/answers/11"
+  printf 'no, hold it back\n' > "$src/answers/11/$q"
   floor "$tmp/hv" source receive completion "pricing copy signed off" >/dev/null 2>&1
 
   is "an answer that does not name the clause satisfies nothing" \

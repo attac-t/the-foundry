@@ -2267,14 +2267,29 @@ list_observations() { cat "$(observations_file "$1")" 2>/dev/null; }
 aside() {
     [ "$#" -le 1 ] || { usage; exit 2; }
 
+    text=${1:-}
+    [ -n "$text" ] || { every_aside; return 0; }
+
     dir=$(active_run) || exit 1
     refuse_unreadable_run "$dir"
 
-    text=${1:-}
-    [ -n "$text" ] || { list_asides "$dir"; return 0; }
-
     printf '%s\t%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$(one_line "$text")" \
         >> "$(asides_file "$dir")" 2>/dev/null || die_unwritable "$(asides_file "$dir")"
+}
+
+# Every run's, and never only this one's. An aside is written for whoever
+# comes next, so a reader who can see one run's has
+# been shown the least useful half.
+#
+# Measured before this existed: one aside, across every run ever made
+# here. A verb that records where nobody reads is a
+# verb nobody reaches for.
+every_aside() {
+    for held in "$RUNS"/*/; do
+        [ -f "${held}asides" ] || continue
+
+        awk -F'\t' -v run="$(basename "${held%/}")" '{ print run "\t" $0 }' "${held}asides" 2>/dev/null
+    done
 }
 
 asides_file() { printf '%s/asides' "$1"; }
