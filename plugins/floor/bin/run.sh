@@ -1646,11 +1646,13 @@ enter_base_gates() {
     }
 
     note "grading with the base's own gates: $(printf '%s\n' "$moved" | cut -f2 | tr '\n' ' ')"
+    substituted=$moved
     cd "$tree" || { note "cannot enter [$tree]"; exit 16; }
 }
 
 run_pinned_gates() {
     dir=$1
+    substituted=
     failed=0
 
     pins=$(pinned_gates "$dir")
@@ -1677,7 +1679,24 @@ EOF
 
     [ "$failed" -eq 0 ] && return 0
     note "gates that did not pass: $failed"
+    say_the_substitution "$substituted"
     return 14
+}
+
+# Why a gate failed here and passes by hand. The run changed a
+# file the gate runs, so it was graded against a tree
+# that is neither the base nor what ships.
+#
+# Said only when a gate actually failed. Nearly every run that
+# substitutes something passes anyway, and a note on
+# every one of those is a note people skip.
+say_the_substitution() {
+    [ -n "$1" ] || return 0
+
+    note "this run changed a file its own gates run:"
+    printf '%s\n' "$1" | cut -f2 | sed 's/^/floor:   /' >&2
+    note "each was graded as the base wrote it, so a gate reading one saw neither tree whole"
+    note "a change to the bar itself is landed by a person — no run can prove it"
 }
 
 #
