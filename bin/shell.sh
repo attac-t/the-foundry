@@ -143,7 +143,6 @@ overlong() {
         }
     ' "$owed" "$measured"
 }
-
 # --- the taper ---
 
 # Three comment lines above a body, narrowing evenly. `craft-comment` states
@@ -153,41 +152,17 @@ overlong() {
 # Bytes under `LC_ALL=C`. `length` counts characters in one locale and bytes
 # in another, and an em-dash makes a line three bytes
 # longer than it looks. One block drifted that way.
-#
-# Only where the first line is under WIDE. Prose wrapped at the margin lands
-# near a hundred and is not a taper — nobody
-# hand-shapes a line to that width.
 tapers() {
     while read -r file; do
         [ -f "$file" ] && taper_in "$file"
     done < "$files"
 }
 
-# One file at a time. `END` runs once for the whole stream, so a single awk over
-# every file would read the last one and call the
-# rest clean — which it did, until a break said so.
+# One file at a time. `END` runs once for the whole stream, so a single awk
+# over every file would read the last and call the
+# rest clean. It did, until a break said so.
 taper_in() {
-    LC_ALL=C awk -v wide="$WIDE" '
-        { line[FNR] = $0 }
-
-        END { for (i = 1; i <= FNR; i++) check(i) }
-
-        function check(i,   n, a, b, c) {
-            if (line[i] !~ /^#/ || line[i] ~ /^#[[:space:]]*$/ || line[i] ~ /^#!/) return
-            if (i > 1 && line[i-1] ~ /^#/) return
-
-            n = 0
-            while (line[i+n] ~ /^#/ && line[i+n] !~ /^#[[:space:]]*$/) n++
-            if (n != 3 || line[i+3] ~ /^[[:space:]]*$/) return
-
-            a = length(line[i]); b = length(line[i+1]); c = length(line[i+2])
-            if (a >= wide || (a > b && b > c && even(a - b, b - c))) return
-
-            printf "    %s:%d  %d %d %d\n", FILENAME, i, a, b, c
-        }
-
-        function even(one, two) { return one - two <= 3 && two - one <= 3 }
-    ' "$1"
+    LC_ALL=C awk -v wide="$WIDE" -f "$(dirname "$0")/taper.awk" "$1"
 }
 
 # --- the verdict ---

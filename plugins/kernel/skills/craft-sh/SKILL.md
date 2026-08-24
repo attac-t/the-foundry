@@ -36,6 +36,10 @@ Seven lines, the whole story. The test: **can a stranger describe the script aft
    moment another function is merited, not once it is unreadable. The test is the call site:
    `fetch_objects; check_out_ref; point_at_origin` reads as English. A body you have to assemble does
    not.
+   **An embedded program is code.** An `awk` or `sed` inside a single-quoted string obeys every rule
+   here — one job, named steps, early return. A string is not a reason to stop. Once it has more than
+   one job, give it `-f` and a file of its own.
+
 2. **Early return. Never `else`.** Guard, return, carry on. Zero `else` reads downward, not sideways.
    **An `else` is a function you have not named yet** — it holds a second job, which is why it needed
    a second branch. Extract it and the `else` disappears on its own. Same for `elif`, once per arm.
