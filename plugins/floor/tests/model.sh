@@ -3419,6 +3419,19 @@ a_judged_clause_wants_a_verdict() {
      "$(code_of floor "$tmp/jd" evidence verdict 'the interface is understandable' 'A Reviewer' 'a stranger read it in two minutes')" "0"
   has "as judged, never machine" "$(floor "$tmp/jd" evidence)" "	judged	"
   has "carrying who said it"     "$(floor "$tmp/jd" evidence)" "A Reviewer: a stranger read it"
+
+  # The mirror of the first refusal. An answer here is stamped `human` and satisfaction wants
+  # `judged`, so without this the record says a person answered while completion still calls it unmet.
+  is "a person may not answer a Judged clause at completion" \
+     "$(code_of floor "$tmp/jd" source ask completion 'the interface is understandable' 'Is it?')" "2"
+  has "and is told what does answer it" \
+      "$(floor_says "$tmp/jd" source ask completion 'the interface is understandable' 'Is it?')" \
+      "record a verdict instead"
+
+  # Whether a clause may exist is nobody else's call, whatever kind it is.
+  lacks "while authorisation is still every kind's" \
+        "$(floor_says "$tmp/jd" source ask authorisation 'the interface is understandable' 'May it?')" \
+        "record a verdict instead"
 }
 a_judged_clause_wants_a_verdict
 
