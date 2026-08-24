@@ -259,7 +259,7 @@ make_run() {
     stamp_selection "$dir" "$(selector)" "$id"
     say_if_nobody_selected
     point_this_checkout_at "$id"
-    emit "$dir" run.began runtime="$(runtime)"
+    emit "$dir" run.began "$(began_with)"
 
     printf '%s\n' "$dir"
 }
@@ -2218,6 +2218,27 @@ runtime() {
     [ -n "$stated" ] || stated=unknown
 
     printf 'floor/%s' "$stated"
+}
+
+# Which agent produced the work, in whatever word its harness uses. Core
+# names the field and never the value — the same rule
+# that keeps a label's prefix out of core.
+#
+# No fallback. `selector` falls back to a git address because a run with no
+# human may not deliver; a run with no named worker is
+# ordinary, and a guessed name is worse than none.
+worker() { printf '%s' "${FOUNDRY_WORKER:-}"; }
+
+# Three facts, and collapsing any two of them is what #156 is about.
+#
+# The host is where it ran. The selector is who permitted it. The worker
+# is what produced it. A record naming one of the
+# three has answered a different question.
+began_with() {
+    said=$(worker)
+    [ -n "$said" ] && { printf 'runtime=%s worker=%s' "$(runtime)" "$(one_line "$said")"; return 0; }
+
+    printf 'runtime=%s' "$(runtime)"
 }
 
 #

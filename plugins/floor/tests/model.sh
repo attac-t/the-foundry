@@ -3289,6 +3289,36 @@ a_row_names_the_runtime_that_wrote_it() {
 a_row_names_the_runtime_that_wrote_it
 
 #
+# Three facts, and #156 exists because they collapsed into one. The host is where it ran, the
+# selector is who permitted it, the worker is what produced it — and a record naming one of the three
+# has answered a different question.
+#
+a_row_names_the_worker_apart_from_the_host() {
+  make_repo "$tmp/wk" main && set_origin "$tmp/wk" 'https://gitlab.com/acme/wk.git' \
+    || { skip "the worker — git could not make a repo here"; return; }
+
+  ( cd "$tmp/wk" && FOUNDRY_HOME="$home" FOUNDRY_RUN="" FOUNDRY_WHO="ada@example.com" \
+      FOUNDRY_WORKER="Some Model 9" sh "$runner" new "Named" >/dev/null 2>&1 )
+
+  allowed=$(floor "$tmp/wk" policy)
+  said=$(floor "$tmp/wk" observe)
+  has "a run names the worker that produced it" "$said" "worker=Some Model 9"
+  has "and the host it ran on, which is not that" "$said" "$(uname -n)"
+  has "while the selector is recorded apart"      "$(cat "$(floor "$tmp/wk" path)/authority")" "ada@example.com"
+
+  # A guessed worker is worse than none. `selector` falls back to a git address because a run with no
+  # human may not deliver; a run with no named worker is ordinary.
+  ( cd "$tmp/wk" && FOUNDRY_HOME="$home" FOUNDRY_RUN="" FOUNDRY_WHO="ada@example.com" \
+      sh "$runner" new "Unnamed" >/dev/null 2>&1 )
+
+  lacks "an unnamed worker is left out, never guessed" "$(floor "$tmp/wk" observe)" "worker="
+
+  # Naming a worker is not being permitted to do anything, which is the whole of #156's separation.
+  is "and naming one grants nothing" "$(floor "$tmp/wk" policy)" "$allowed"
+}
+a_row_names_the_worker_apart_from_the_host
+
+#
 # Whether this host can be replaced. A run holding a workspace has a
 # checkout somebody may be writing to, and swapping the
 # host under it loses work nobody recorded.
