@@ -2226,16 +2226,16 @@ runtime() {
 # field and never the value, the same rule that keeps a
 # label's prefix out of core.
 #
-# No fallback. `selector` falls back to a git address because a run with no
-# human may not deliver; a run with no named worker is
-# ordinary, and a guessed name is worse than none.
+# No fallback. `selector` falls back to a git address because a run
+# with no human may not deliver. A run with no named worker
+# is ordinary, and a guessed name is worse than none.
 worker() { printf '%s' "${FOUNDRY_WORKER:-}"; }
 
 # Three facts, and collapsing any two of them is what #156 is about.
 #
 # The host is where it ran. The selector is who permitted it. The worker
-# is what produced it. A record naming one of the
-# three has answered a different question.
+# is what produced it. A record naming one of the three
+# has answered a different question.
 began_with() {
     said=$(worker)
     [ -n "$said" ] && { printf 'runtime=%s worker=%s' "$(runtime)" "$(one_line "$said")"; return 0; }
@@ -2284,8 +2284,8 @@ aside() {
 # run's has been shown the least useful half.
 #
 # Measured before this existed: one aside, across every run ever made
-# here. A verb that records where nobody reads is a
-# verb nobody reaches for.
+# here. A verb that records where nobody reads is
+# a verb nobody reaches for.
 every_aside() {
     for held in "$RUNS"/*/; do
         [ -f "${held}asides" ] || continue
@@ -2462,9 +2462,9 @@ unmet_clauses() {
 # recorded and never read, so a gate could satisfy a
 # clause whose whole point is that no command can.
 #
-# One row per kind, and no order over them. RFC-001 says the kinds are not a
-# scale: a judgement raised to a gate asks for a command
-# that cannot exist.
+# One row per kind, and no order over them. RFC-001 says
+# the kinds are not a scale: a judgement raised to
+# a gate asks for a command that cannot exist.
 answers_for() {
     case "$1" in
         Gate)    printf 'machine' ;;
