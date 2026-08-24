@@ -215,6 +215,28 @@ So the record is readable without floor, and self-contained but for one fact it 
 read, never refused — a run that delivered under the old shape still answers, and answers *unknown*
 rather than guessing.
 
+### What a forged record survives
+
+Reading it is one question. **Believing it is another**, and the record is plain files held by whoever
+made them. Measured the same way — `git` and `cat`, no floor.
+
+| A forger writes | Caught | By what |
+|---|---|---|
+| a laxer bar | yes | `charter` pins a blob, and `git rev-parse <commit>:<path>` disagrees |
+| a clause the bar never held | yes | a label in `evidence` with no `clause` line in `charter` |
+| a commit that does not exist | yes | `git cat-file -e` — not a commit in this repository |
+| a passing exit code on a failing gate | **no** | nothing binds an exit code to an execution |
+| who said this run may deliver | **no** | `authority` is a line the run wrote about itself |
+
+**Three of five, and the two survivors are one defect**: a fact the run wrote about itself, with no
+counterpart outside the run directory. Every catch works for the opposite reason — the record names a
+commit, a blob or a label the forger does not hold alone.
+
+**Re-running is not reading.** A `Gate` clause can be re-derived at the delivered ref by anyone with a
+shell. A `Judged` or `Decided` clause cannot, because a person's yes has no second run.
+
+This is a boundary, not a plan. #337 owns it.
+
 ---
 
 ## Targets
