@@ -916,6 +916,69 @@ does it is the adapter's business, the same rule that keeps `foundry:defect` out
 recording and never a reason to lower a bar. A rule holding a cost term is a rule that sometimes
 prefers a weaker answer.
 
+#### The fifth is a human's, and so it is not a capability
+
+*Deciding* is missing from the four, and it stays missing. A choice between two defensible options is
+authority, not thinking — `Decided:` is a charter kind for exactly that reason, and no worker may hold
+it however well it reasons.
+
+So the table is short because one row was moved, never because nobody thought of it.
+
+**Anything else unnamed is unnamed.** Nothing here claims four is the complete set of ways work can
+need thinking. It is the set whose absence has cost this repository something, and a fifth arrives by
+costing something too.
+
+#### What a record may narrow, and what it may never decide
+
+Two lists, and the line between them is #218's: an observation says a thing happened.
+
+| May narrow | May never decide |
+|---|---|
+| which worker is offered the work first | whether a clause was met |
+| how much effort is asked for | what the bar is |
+| whether to ask a person before starting | whether a run may deliver |
+| — | who authorised anything |
+
+**Narrowing is a preference between things already allowed.** Deciding is what makes one of them
+allowed, and no count of past runs does that.
+
+The rule that keeps them apart: **a record may reorder a set it did not create.** If routing had to
+add a worker to be useful, it would be granting.
+
+#### The choice is a row, not a number inside something
+
+A routing decision is written where every other fact about a run is written:
+
+```
+<when>	<host>	work.routed	capability=build effort=high because=<what narrowed it>
+```
+
+Readable with `cat`, appended once, and granting nothing — the same shape and the same weight as
+`gate.finished`.
+
+**A number inside a chooser is not a decision anyone can disagree with.** A row is, and disagreeing
+with it later is what makes the choice improvable.
+
+**A wrong choice survives being wrong.** Observations are append-only, so the row that routed badly
+stays exactly as it was, and the row that says what happened next sits beside it. Nothing edits the
+first, which is the whole reason a later reader can tell the two apart.
+
+#### What none of this proves
+
+**No router exists.** The vocabulary, the lists and the row shape are written before the thing that
+would use them, deliberately — a router built first would have invented them quietly.
+
+**The collapse falsifier has never run.** It needs ten work items routed across the four capabilities,
+and nothing routes.
+
+**A second harness has never been asked.** The claim that the same work reaches the same capability
+under a different harness rests on the word *capability* being provider-neutral, which is a property
+of this table and not a measurement.
+
+**Nothing fails when a provider name appears in core.** §3's fixed list records that `run.sh` names
+none and `join.sh` names one. A check would need a list of today's vendors and a carve-out for the
+plugin format, which dates faster than the sentence it replaces.
+
 ### The two-adapter rule
 
 **A contract is unproven until two adapters satisfy it.** In v1 only the work-source contract meets
@@ -1613,6 +1676,29 @@ workspace adapter. Building one would be a different product.
 
 **Unproven.** The container and harness rows rest on reading the tree, never on a port. The first
 person to attempt one finds what the grep missed.
+
+### Revision 22 — the capability had a vocabulary and no rules around it
+
+Revision 19 named four capabilities. It said what each was for and said a worker is the adapter's
+business. It did not say what a record of past work may do with them, and that is where a routing
+model turns into a scheduler without anyone deciding to build one.
+
+| Was | Is | What forced it |
+|---|---|---|
+| four capabilities, and nothing about how one is chosen | two lists: what a record may narrow, what it may never decide | #297 asked, and the answer had to exist before a router did |
+| a routing choice with no shape | a `work.routed` row, appended like every other fact | a number inside a chooser is not a decision anyone can disagree with |
+| four, with no word on what is missing | *deciding* is a human's, so it is authority and not a capability | the table looked arbitrary until the moved row was named |
+
+**The line is #218's, restated where routing will meet it.** A record may reorder a set it did not
+create. If routing had to add a worker to be useful, it would be granting rather than informing.
+
+**Written before the router, deliberately.** A router built first invents its own vocabulary quietly,
+and #297 exists because that had already happened once with telemetry.
+
+**Unproven, and there is a lot of it.** No router. The collapse falsifier has never run, because
+nothing routes. No second harness has been asked whether the same work reaches the same capability.
+And nothing fails when a provider name appears in core — a check would need today's vendor names and
+a carve-out for the plugin format, which dates faster than §3's sentence.
 
 ## 7. Unresolved questions
 
