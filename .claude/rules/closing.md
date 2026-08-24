@@ -26,6 +26,18 @@ Say so on the issue, and say which of two things it is:
 
 Neither is a tick. A box removed silently and a box ticked wrongly read the same six months later.
 
+## A list that was never a list
+
+**Ninety issues are closed here. Two hundred and nineteen of their claims are plain bullets**, spread
+across forty-seven of them — written before `- [ ]` was required, so nothing could be ticked and
+closure recorded nothing about any of them.
+
+They are not silently unmet. **They are unrecordable**, which is a worse thing to find and a cheaper
+thing to answer: an unrecordable claim is unverified, and it becomes work the day something
+contradicts it. Reopening forty-seven issues to tick boxes nobody can check is a different waste.
+
+Converting a closed issue's list is worth it only when someone is about to rely on it.
+
 ## Nothing checks this
 
 The gates are offline and an issue lives on a service. **This is a rule because no exit code can

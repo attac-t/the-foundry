@@ -7,8 +7,14 @@ Who the record says did the work.
 ## Never override git
 
 **Do not pass `-c user.name` or `-c user.email`.** The checkout carries the identity, and a workspace
-clone inherits it. Overriding it wrote an address the account does not own on every commit an agent
-made here — GitHub linked those to nobody, and the history says a person committed when a run did.
+clone inherits it.
+
+Overriding it wrote an address the account does not own on every commit an agent made here — GitHub
+linked those to nobody, and the history says a person committed when a run did.
+
+**A fixture repository is the exception, and the only one.** A repo a suite makes and deletes has no
+checkout behind it and no account in front of it, so it must be told who commits or `git` refuses.
+Floor's suite does this fifteen times. Nothing outside `tests/` may.
 
 A checkout with no identity is caught earlier: `floor`'s `join.sh` refuses and says what to run. It
 is not commit time's job.
