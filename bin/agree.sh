@@ -18,6 +18,8 @@ main() {
     disagree CONTRIBUTING "$(named_in_contributing)"
     disagree workflow "$(named_in_workflow)"
 
+    projections_agree
+
     verdict
 }
 
@@ -80,6 +82,20 @@ disagree() {
     disagreed=$((disagreed + 1))
 }
 
+# The same question one layer out. `CONTRIBUTING` and the workflow name the gates; a harness file
+# names the rules, and every harness has its own
+# name for that file.
+#
+# One source, so no harness owns the table and none of them can drift alone.
+projections_agree() {
+    bash bin/project.sh check >/dev/null 2>&1 && { printf '  PASS  %s
+' "harness files"; return; }
+
+    printf '  FAIL  a harness file drifted from .claude/rules — run bin/project.sh
+'
+    disagreed=$((disagreed + 1))
+}
+
 verdict() {
     [ "$disagreed" -eq 0 ] || exit 1
     printf 'AGREED — %s gates\n' "$(wc -l < "$listed" | tr -d ' ')"
@@ -105,6 +121,10 @@ audit() {
     # rule broken either. The two exits are different remedies: one edits a document, the other
     # says the list itself did not come.
     caught "a gate list that could not be produced" 3 gates '1a exit 9'
+
+    # The projection half. A row edited by hand in one harness file and nowhere else is the drift
+    # this exists to catch.
+    caught "a harness file edited by hand"        1 agents 's/Anything written down/something else/'
 
     [ "$disagreed" -eq 0 ] || return 1
     printf 'THE CHECK CAN FAIL\n'
@@ -140,6 +160,7 @@ broken_file() {
     case "$1" in
         workflow) printf '%s' "$lab/.github/workflows/gates.yml" ;;
         gates)    printf '%s' "$lab/bin/gates.sh" ;;
+        agents)   printf '%s' "$lab/AGENTS.md" ;;
         *)        printf '%s' "$lab/CONTRIBUTING.md" ;;
     esac
 }

@@ -1,6 +1,6 @@
 # Guidance
 
-Anything you want Claude to know, before you decide where to put it.
+Anything an agent should know, before you decide where to put it.
 
 Nothing said which file, so it landed in `CLAUDE.md` — the one file that owns nothing.
 
