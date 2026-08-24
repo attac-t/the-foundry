@@ -339,6 +339,27 @@ the run that wrote it and it gets read by eye.
 
 ### An observation says a thing happened, and nothing more
 
+**Three facts, and a row that names one has answered a different question.**
+
+| | |
+|---|---|
+| host | where it ran — `uname -n`, on every row |
+| selector | who permitted it — `authority`, and a run without one may not deliver |
+| worker | what produced it — `FOUNDRY_WORKER`, and left out when nothing says |
+
+Core names the field and never the value, the same rule that keeps `foundry:defect` out of core.
+
+**No fallback for the worker.** The selector falls back to a git address because a run with nobody
+recorded may not deliver. A run with no named worker is ordinary, and a guessed name is worse than
+none.
+
+**Naming a worker permits nothing.** It widens no allowlist and satisfies no clause — the same weight
+as every other observation.
+
+**What is still one thing.** The outward actor. A push and a pull request go out on whatever
+credentials are ambient, so an autonomous act still appears as the person who installed Foundry.
+#156 owns that, and it needs an identity a person creates.
+
 `observe` records one. Four columns — when, the host that wrote it, the event, and named fields —
 and a field nobody set is absent rather than empty.
 
