@@ -25,6 +25,10 @@ set -u
 # done, and below both the ones a reviewer has stopped on.
 readonly MAX=40
 
+# Prose wrapped at the margin lands near a hundred; a taper is hand-shaped and does not. Blocks at
+# or past this are read as paragraphs and left alone.
+readonly WIDE=90
+
 # The two already past MAX — `authorise` at 105 lines, `derive_charter` at 46. Named, not waived by
 # lifting MAX above them, which would gate nothing at all.
 #
@@ -44,6 +48,7 @@ main() {
     report 'an else is a function nobody named' "$(branches)"
     report "a body past $MAX lines"             "$(overlong)"
     report 'a pipe that hides a failure'        "$(piped)"
+    report 'a taper that does not narrow evenly' "$(tapers)"
 
     verdict
 }
@@ -137,6 +142,52 @@ overlong() {
             }
         }
     ' "$owed" "$measured"
+}
+
+# --- the taper ---
+
+# Three comment lines above a body, narrowing evenly. `craft-comment` states
+# it, nothing enforced it, and more than half the
+# blocks in this tree had drifted.
+#
+# Bytes under `LC_ALL=C`. `length` counts characters in one locale and bytes
+# in another, and an em-dash makes a line three bytes
+# longer than it looks. One block drifted that way.
+#
+# Only where the first line is under WIDE. Prose wrapped at the margin lands
+# near a hundred and is not a taper — nobody
+# hand-shapes a line to that width.
+tapers() {
+    while read -r file; do
+        [ -f "$file" ] && taper_in "$file"
+    done < "$files"
+}
+
+# One file at a time. `END` runs once for the whole stream, so a single awk over
+# every file would read the last one and call the
+# rest clean — which it did, until a break said so.
+taper_in() {
+    LC_ALL=C awk -v wide="$WIDE" '
+        { line[FNR] = $0 }
+
+        END { for (i = 1; i <= FNR; i++) check(i) }
+
+        function check(i,   n, a, b, c) {
+            if (line[i] !~ /^#/ || line[i] ~ /^#[[:space:]]*$/ || line[i] ~ /^#!/) return
+            if (i > 1 && line[i-1] ~ /^#/) return
+
+            n = 0
+            while (line[i+n] ~ /^#/ && line[i+n] !~ /^#[[:space:]]*$/) n++
+            if (n != 3 || line[i+3] ~ /^[[:space:]]*$/) return
+
+            a = length(line[i]); b = length(line[i+1]); c = length(line[i+2])
+            if (a >= wide || (a > b && b > c && even(a - b, b - c))) return
+
+            printf "    %s:%d  %d %d %d\n", FILENAME, i, a, b, c
+        }
+
+        function even(one, two) { return one - two <= 3 && two - one <= 3 }
+    ' "$1"
 }
 
 # --- the verdict ---

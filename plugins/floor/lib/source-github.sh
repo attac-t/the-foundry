@@ -293,8 +293,8 @@ take_claim() {
 }
 
 # A commit on top of the one there, so the push is a fast-forward
-# and the server refuses it if the tip moved. Creating
-# the ref and renewing it are one step.
+# the server refuses if the tip moved. Creating the
+# ref and renewing it are one step.
 claim_commit() {
     tree=$(git hash-object -t tree /dev/null) || return 3
 

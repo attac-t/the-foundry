@@ -189,9 +189,9 @@ foundry_home() {
 
 print_home() { printf '%s\n' "$HOME_DIR"; }
 
-# Every run this home holds, and how far each one got. The only verb not
-# scoped to the active run — selection lived in whoever was
-# driving because nothing could answer what work exists.
+# Every run this home holds, and how far each one got. The only verb not scoped to
+# the active run, because selection lived in whoever was driving
+# and nothing could answer what work exists.
 list_runs() {
     [ "$#" -eq 0 ] || { usage; exit 2; }
     [ -d "$RUNS" ] || return 0
@@ -231,9 +231,9 @@ runs_in_flight() {
     list_runs | awk '$1 == "open" || $1 == "graded" { print $2 }'
 }
 
-# The furthest thing a run's own files say about it, read downward so the first
-# that holds wins. A position and never a verdict: waiting needs the
-# work source, and a reader that reaches the network is not one.
+# The furthest thing a run's own files say about it, read downward
+# so the first that holds wins. A position and never a
+# verdict: waiting needs the work source.
 how_far() {
     [ -s "$(delivery_file "$1")" ] && { printf 'delivered'; return; }
     [ -s "$(evidence_file "$1")" ] && { printf 'graded';    return; }
@@ -2037,9 +2037,9 @@ claim() {
     exit 30
 }
 
-# An hour with no word. A wake is ten minutes, so a live host
-# renews six times inside it, and a window this wide
-# costs a slow host nothing at all.
+# An hour with no word. A wake is ten minutes, so a live
+# host renews six times inside it, and a window
+# this wide costs a slow host nothing.
 CLAIM_TTL=${FOUNDRY_CLAIM_TTL:-3600}
 
 # A host that died holding one would block that item for good,
@@ -2222,9 +2222,9 @@ runtime() {
     printf 'floor/%s' "$stated"
 }
 
-# Which agent produced the work, in whatever word its harness uses. Core
-# names the field and never the value — the same rule
-# that keeps a label's prefix out of core.
+# Which agent produced the work, in whatever word its harness uses. Core names the
+# field and never the value, the same rule that keeps a
+# label's prefix out of core.
 #
 # No fallback. `selector` falls back to a git address because a run with no
 # human may not deliver; a run with no named worker is
@@ -2279,9 +2279,9 @@ aside() {
         >> "$(asides_file "$dir")" 2>/dev/null || die_unwritable "$(asides_file "$dir")"
 }
 
-# Every run's, and never only this one's. An aside is written for whoever
-# comes next, so a reader who can see one run's has
-# been shown the least useful half.
+# Every run's, and never only this one's. An aside is written
+# for whoever comes next, so a reader who can see one
+# run's has been shown the least useful half.
 #
 # Measured before this existed: one aside, across every run ever made
 # here. A verb that records where nobody reads is a
@@ -2477,9 +2477,9 @@ clause_kind() {
     awk -v id="$2" '$1 == "clause" && $2 == id { print $3; exit }' "$1" 2>/dev/null
 }
 
-# A pass must come from the kind of authority the clause names. A failure
-# is a failure whoever saw it — a human's no at the same
-# ref still stops a gate that said yes.
+# A pass must come from the kind of authority the clause names. A
+# failure is a failure whoever saw it, so a human's
+# no still stops a gate that said yes.
 satisfied() {
     awk -F'\t' -v name="$2" -v ref="$3" -v trust="$4" '
         $4 "" != name "" || $6 "" != ref "" { next }
@@ -2488,9 +2488,9 @@ satisfied() {
         END { exit !(yes && !no) }' "$(evidence_file "$1")" 2>/dev/null
 }
 
-# A verdict from something that did not produce the work. That is the whole
-# of what `judged` means, and a worker writing one
-# about itself has answered nothing.
+# A verdict from something that did not produce the work. That is the whole of
+# what `judged` means, and a worker writing one about
+# itself has answered nothing.
 #
 # Floor cannot prove who typed it — the file is writable by the same user,
 # and §2.5 says so. Refusing the name it already knows
@@ -3699,9 +3699,9 @@ send_and_record() {
     printf '%s\n' "$said"
 }
 
-# `<branch> <commit> <url>`, and two fields when nothing was pushed — `source publish`
-# tells the source where the work is and pushes
-# nothing, so it cannot say what landed.
+# `<branch> <commit> <url>`, and two fields when nothing was pushed.
+# `source publish` tells the source where the work is and
+# pushes nothing, so it cannot say what landed.
 record_delivery() {
     line=$2
     [ -n "$3" ] && line="$line $3"
