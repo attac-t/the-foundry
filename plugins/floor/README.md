@@ -411,6 +411,13 @@ one must not stop the work somebody asked for. `observe` still refuses when a pe
 
 ### An aside is kept, and blocks nothing
 
+**And every run's is read, never only this one's.** An aside is written for whoever comes next, so a
+reader shown one run's has been shown the least useful half. Each row names the run it came from.
+
+**Measured before that changed: one aside, across every run ever made here.** A verb that records
+where nobody reads is a verb nobody reaches for — and the one that existed named a real defect in the
+suite that nobody had acted on.
+
 A run learns things its own bar does not cover. `aside` records one, and `deliver` prints them after
 it says where the work went.
 
