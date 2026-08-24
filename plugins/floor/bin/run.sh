@@ -1640,6 +1640,7 @@ forget_base_gates() {
 #
 enter_base_gates() {
     moved=$(moved_gate_scripts "$1" "$2")
+    record_the_substitution "$1" "$moved"
     [ -n "$moved" ] || return 0
 
     tree=$(tree_with_base_gates "$1" "$moved") || {
@@ -1650,6 +1651,24 @@ enter_base_gates() {
     note "grading with the base's own gates: $(printf '%s\n' "$moved" | cut -f2 | tr '\n' ' ')"
     substituted=$moved
     cd "$tree" || { note "cannot enter [$tree]"; exit 16; }
+}
+
+# Said once on stderr, it died with the run. A reader re-running a gate at the delivered ref then ran
+# a file this run rewrote, got another exit code, and read an
+# honest record as a forged one.
+#
+# The claim is checkable, which is why writing it is safe: `git diff <base> <ref> -- <path>` is empty
+# for a path that never moved, so a substitution invented to
+# explain a mismatch does not survive a reading.
+#
+# Written on every grading, because a run that puts a gate back would otherwise leave the last
+# grading's file standing — and a record that lies about what
+# it substituted is worse than one that says nothing.
+record_the_substitution() {
+    [ -n "$2" ] || { rm -f "$(substitutions_file "$1")"; return 0; }
+
+    printf '%s\n' "$2" > "$(substitutions_file "$1")" 2>/dev/null ||
+        die_unwritable "$(substitutions_file "$1")"
 }
 
 run_pinned_gates() {
@@ -3602,6 +3621,7 @@ work_kind() {
 #
 source_file() { printf '%s/source' "$1"; }
 delivery_file() { printf '%s/delivery' "$1"; }
+substitutions_file() { printf '%s/substitutions' "$1"; }
 
 item_id() { [ -f "$(source_file "$1")" ] && read -r held < "$(source_file "$1")" && printf '%s' "$held"; }
 

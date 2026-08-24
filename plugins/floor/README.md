@@ -146,6 +146,7 @@ ${FOUNDRY_HOME:-$HOME/.foundry}/runs/<date>-<slug>-<short id>/
 ├── evidence           one line per gate that ran, tab-separated
 ├── charter            the bar — one clause, one pin and one command per line
 ├── delivery           the branch this run pushed, the commit it pushed, and where it landed
+├── substitutions      files graded as the base wrote them — absent when the run changed no gate
 ├── observations       what happened, one line each, and nothing granted by any of it
 ├── id                 this run's name, so a copied directory still knows it
 ├── memory/            working.md, blueprint.md, spec.md, adr/
@@ -268,7 +269,18 @@ git cat-file -e <graded>               # and it is a commit in this repository
 ```
 
 **4. Re-run what can be re-run.** `charter`'s `gate` line holds the command. Check out the graded
-commit, run it, and compare its exit code to field five of `evidence`.
+commit, run it **from the repository root**, and compare its exit code to field five of `evidence`.
+
+**Read `substitutions` before you believe a mismatch.** A run that changed a file its own gates run
+is graded with the base's copy of that file, so re-running at the graded ref runs something else.
+Each line names the base commit and the path. **Every line is checkable:**
+
+```sh
+git diff <base> <graded> -- <path>          # empty means the substitution was invented
+```
+
+An absent file claims nothing was substituted, and a forger gains nothing by deleting it — check 4
+still contradicts them.
 
 **What none of it proves.** Check 4 is the only one that reaches an exit code, and it reaches one
 only for a `machine` clause. A `judged` or `human` clause has no second run, because a person's yes

@@ -660,6 +660,12 @@ wreck_runner "a gate name that can hold a newline is caught" \
 wreck_runner "a ref read after the command ran is caught" \
   lateref 's#stamp "$dir" machine "$name" "$result" "$ref" "$why"#stamp "$dir" machine "$name" "$result" "$(delivered_ref)" "$why"#'
 
+# Said on stderr and nowhere else, it dies with the run. A reader re-running the gate at the
+# delivered ref then runs a file the run rewrote, gets another exit code, and reads an honest record
+# as a forged one.
+wreck_runner "a substitution the record never keeps is caught" \
+  quietsub 's#    record_the_substitution "$1" "$moved"##'
+
 # `unbornref` stood here: without a guard, a repository with no commit recorded a gate against an
 # empty ref. The guard is gone and so is the break, because the case moved rather than closed — a
 # repository with no commit can hold no workspace, and `attached` proves a HEAD before any tree is
