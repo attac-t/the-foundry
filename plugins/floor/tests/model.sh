@@ -1755,6 +1755,24 @@ a_gate_grades_from_the_base_however_deep_it_reaches() {
         "$(grep -v '^[[:space:]]*#' "$here/bin/run.sh")" "mktemp"
   is "and the index it used is not left behind" \
      "$(ls "$run" | grep -c '^gates-index$')" "0"
+
+  # #313 says a cold reader answers with `ls` and `cat`, so a file the layout never names is one
+  # they find and cannot read. Four sat there unnamed: `kind`, `gates-tree`, `asides` and
+  # `reconcile-tree`.
+  #
+  # Read from the code, not from a fixture. Listing a run only tests the names that run happens to
+  # hold, and the first version of this check passed with `kind` deleted from the README for exactly
+  # that reason.
+  #
+  # `foundry-run` lives in the checkout's `.git`, and `gates-index` is removed after use. Neither is
+  # a run's file, and both are named here so a reader knows they were considered.
+  layout=$(sed -n '/^\${FOUNDRY_HOME/,/^```$/p' "$here/README.md")
+  unnamed=''
+  for held in $(grep -oE "printf '%s/[a-z-]+'" "$here/bin/run.sh" | sed "s|printf '%s/||;s|'||" | sort -u); do
+      case "$held" in foundry-run|gates-index) continue ;; esac
+      case "$layout" in *"$held"*) ;; *) unnamed="$unnamed $held" ;; esac
+  done
+  is "every file floor can write is named in the README" "$unnamed" ""
   is  "and names a base the reader can diff against" \
       "$(git -C "$tmp/cl" cat-file -t "$(cut -f1 "$run/substitutions" 2>/dev/null)" 2>/dev/null)" "commit"
 

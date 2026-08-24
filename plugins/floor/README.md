@@ -141,6 +141,7 @@ sh bin/run.sh deliver "Gift card flow"
 ${FOUNDRY_HOME:-$HOME/.foundry}/runs/<date>-<slug>-<short id>/
 ├── item.md            what someone wants, and advisory targets
 ├── source             which item this run reads — one line, and never a provider
+├── kind               what the source says this work is — absent when it said nothing
 ├── bootstrap          the repo Foundry was invoked from — 0 or 1
 ├── authority          who selected this work item, and when
 ├── evidence           one line per gate that ran, tab-separated
@@ -148,7 +149,10 @@ ${FOUNDRY_HOME:-$HOME/.foundry}/runs/<date>-<slug>-<short id>/
 ├── delivery           the branch this run pushed, the commit it pushed, and where it landed
 ├── substitutions      files graded as the base wrote them — absent when the run changed no gate
 ├── observations       what happened, one line each, and nothing granted by any of it
+├── asides             what this run could not act on — written by `aside`, read by nothing
 ├── id                 this run's name, so a copied directory still knows it
+├── gates-tree/        the tree a substituted gate was graded in — absent unless one was
+├── reconcile-tree/    where `reconcile` reads another delivery — absent unless it ran
 ├── memory/            working.md, blueprint.md, spec.md, adr/
 ├── planning/          scratch space for planning
 └── units/
