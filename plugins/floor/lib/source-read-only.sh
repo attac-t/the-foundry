@@ -33,9 +33,8 @@ read_item() {
     cat "$root/items/$1"
 }
 
-# Named rather than inlined, because
-# the exit code is the contract
-# and one place decides it.
+# Named rather than inlined, because the exit code is the contract and one
+# place decides it, never two.
 cannot() {
     echo "source-read-only: this source can only be read" >&2
     exit 2

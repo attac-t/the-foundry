@@ -28,6 +28,7 @@ readonly MAX=40
 # Prose wrapped at the margin lands near a hundred; a taper is hand-shaped and does not. Blocks at
 # or past this are read as paragraphs and left alone.
 readonly WIDE=90
+readonly STEP=3
 
 # The two already past MAX — `authorise` at 105 lines, `derive_charter` at 46. Named, not waived by
 # lifting MAX above them, which would gate nothing at all.
@@ -150,19 +151,17 @@ overlong() {
 # blocks in this tree had drifted.
 #
 # Bytes under `LC_ALL=C`. `length` counts characters in one locale and bytes
-# in another, and an em-dash makes a line three bytes
-# longer than it looks. One block drifted that way.
+# in another, so an em-dash costs three bytes that it never shows.
 tapers() {
     while read -r file; do
         [ -f "$file" ] && taper_in "$file"
     done < "$files"
 }
 
-# One file at a time. `END` runs once for the whole stream, so a single awk
-# over every file would read the last and call the
-# rest clean. It did, until a break said so.
+# One file at a time. `END` runs once for a whole stream, so one awk over
+# every file would read the last and call the rest clean. A break said so.
 taper_in() {
-    LC_ALL=C awk -v wide="$WIDE" -f "$(dirname "$0")/taper.awk" "$1"
+    LC_ALL=C awk -v wide="$WIDE" -v step="$STEP" -f "$(dirname "$0")/taper.awk" "$1"
 }
 
 # --- the verdict ---

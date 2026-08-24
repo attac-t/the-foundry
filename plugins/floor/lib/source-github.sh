@@ -86,9 +86,8 @@ delivery_of() {
     printf '%s\n' "$found" | head -1
 }
 
-# The caller says which word. `Refs` names the item and closes
-# nothing. `Closes` is what GitHub acts on, and floor
-# writes it only where a person granted it.
+# The caller says which word. `Refs` names the item and closes nothing.
+# `Closes` is what GitHub acts on, and only a person grants that.
 open_delivery() {
     gh pr create --head "$3" --title "$4" --body "${5:-Refs} #$1
 
@@ -248,9 +247,8 @@ kind_of_item() {
 
 
 #
-# Every delivery open against this source but this run's. A
-# run never reads another run's workspace. The source is
-# what knows, and a branch name is all that crosses.
+# Every delivery open against this source but this run's. A run never reads
+# another run's workspace. The source knows, and a branch name is all that crosses.
 open_deliveries() {
     # Named, because a `gh` line holding a pipe reads as one to the gate that grades this file.
     shape='.[] | .headRefName + "	" + .url'
@@ -292,9 +290,8 @@ take_claim() {
     return 4
 }
 
-# A commit on top of the one there, so the push is a fast-forward
-# the server refuses if the tip moved. Creating the
-# ref and renewing it are one step.
+# A commit on top of the one there, so the push is a fast-forward the server
+# refuses if the tip moved. Creating the ref and renewing it are one step.
 claim_commit() {
     tree=$(git hash-object -t tree /dev/null) || return 3
 
@@ -315,9 +312,8 @@ holder_at() {
     [ "${said##*claimed by }" = "$2" ]
 }
 
-# `%ct` is the commit's own time, so the age travels with
-# the claim and no clock but the holder's wrote it.
-# A reader elsewhere still compares to its own.
+# `%ct` is the commit's own time, so the age travels with the claim and no
+# clock but the holder's wrote it. A reader elsewhere compares to its own.
 read_claim() {
     at=$(claim_tip "$1")
     [ -n "$at" ] || return 1
