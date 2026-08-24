@@ -1748,6 +1748,13 @@ a_gate_grades_from_the_base_however_deep_it_reaches() {
   # read an honest record as a forged one.
   run=$(floor "$tmp/cl" path)
   has "the record keeps it too" "$(cat "$run/substitutions" 2>/dev/null)" "deepest.sh"
+
+  # `mktemp` built the index here and is not POSIX, while floor declares `sh`, `awk` and `git`. It
+  # also made a file only to delete it and keep the name, which is the race refused everywhere else.
+  lacks "core reaches for no mktemp" \
+        "$(grep -v '^[[:space:]]*#' "$here/bin/run.sh")" "mktemp"
+  is "and the index it used is not left behind" \
+     "$(ls "$run" | grep -c '^gates-index$')" "0"
   is  "and names a base the reader can diff against" \
       "$(git -C "$tmp/cl" cat-file -t "$(cut -f1 "$run/substitutions" 2>/dev/null)" 2>/dev/null)" "commit"
 

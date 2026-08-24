@@ -1594,7 +1594,8 @@ tree_with_base_gates() {
     where=$(base_gates_tree "$1")
     forget_base_gates "$where"
 
-    index=$(mktemp) && rm -f "$index" || return 1
+    index=$(base_gates_index "$1")
+    rm -f "$index"
     export GIT_INDEX_FILE="$index"
     git read-tree HEAD >/dev/null 2>&1 || return 1
 
@@ -1603,6 +1604,7 @@ tree_with_base_gates() {
     tree=$(git write-tree) || return 1
     commit=$(printf 'the gates as the base wrote them\n' | git commit-tree "$tree" -p HEAD) || return 1
     unset GIT_INDEX_FILE
+    rm -f "$index"
 
     git worktree add --detach "$where" "$commit" >/dev/null 2>&1 || return 1
     printf '%s' "$where"
@@ -1622,6 +1624,10 @@ plant_base_blobs() {
 # Beside the charter, not in a temp directory. A substitution that graded wrong is worth reading, and
 # a fixed path is one a person can be told to open.
 base_gates_tree() { printf '%s/gates-tree' "$1"; }
+
+# `mktemp` stood here and is not POSIX, while floor declares `sh`, `awk` and `git`. It also made a
+# file only to delete it and keep the name, which is a race this repository refuses everywhere else.
+base_gates_index() { printf '%s/gates-index' "$1"; }
 
 # git's worktree, so git forgets it. Left registered, the next `add` refuses a path that is gone.
 forget_base_gates() {
