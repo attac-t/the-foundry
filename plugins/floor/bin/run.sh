@@ -1490,8 +1490,12 @@ pinned_base() {
 # ever pass.
 #
 # Only a literal path. A path built from a variable is not followed, and that boundary is where this
-# stops — stated in the README, because here it happens to fall between the gate harness and the
-# suites the harness invokes, which are as often a run's work as they are its bar.
+# stops — so a run can weaken its own plugin's suite and be
+# graded by the weakened copy.
+#
+# The README carries the cost of closing it: thirty-three of sixty commits touch a plugin suite, and
+# twenty-eight change the code that suite grades. #341 holds
+# the trade, and either side of it is a person's act.
 #
 closure_of() {
     base=$1

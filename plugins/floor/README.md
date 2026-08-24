@@ -710,9 +710,17 @@ the run's own work graded as the base wrote it, which is the opposite failure �
 ever pass.
 
 **A path built from a variable is not followed, and that is where this stops.** Here the boundary
-falls between the gate harness and the suites it invokes by expansion. A plugin's own suite is as
-often a run's work as it is its bar, so following it would make adding a test impossible. That is
-luck rather than design, and it is the residual.
+falls between the gate harness and the suites it invokes by expansion — so **a run can weaken its own
+plugin's tests and be graded by the weakened copy.** That is real, and it is not hypothetical: the run
+that added `substitutions` rewrote two of floor's test files and was graded by its own.
+
+**Measured on sixty commits. Thirty-three touch a plugin suite, and twenty-eight of those change the
+code that suite grades.** Following the closure through the variable would put more than half of all
+work behind a second, human-landed step — the rule a gate-set change already obeys, applied to every
+run that writes a test.
+
+So it is a trade with a cost on both sides, not an oversight. #341 holds it, and landing either side
+is a person's act.
 
 **A change to the bar itself cannot be graded by a run, and floor now says so.** Adding or removing a
 gate rewrites the file `agree` reads to know the set — so `agree` compares one tree's list against
