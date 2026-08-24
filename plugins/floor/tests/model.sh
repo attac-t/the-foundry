@@ -62,6 +62,14 @@ floor_new_as() {
     FOUNDRY_HOME="$home" FOUNDRY_RUN="" FOUNDRY_WHO="$who" sh "$runner" new "$@" 2>/dev/null )
 }
 
+# Named, because `worker` reads the environment and nothing else can say who produced the work.
+floor_worked() {
+  dir=$1; said=$2; shift 2
+  ( cd "$dir" 2>/dev/null || exit 9
+    FOUNDRY_HOME="$home" FOUNDRY_RUN="" FOUNDRY_WHO="" FOUNDRY_WORKER="$said" \
+      sh "$runner" "$@" 2>/dev/null )
+}
+
 # Everything a gate needs before it can run: a charter, a selection, and a workspace to grade. Four
 # calls in every test that reaches the gate stage, and the gate stage is most of them.
 ready_run() {
@@ -3349,6 +3357,49 @@ a_row_names_the_worker_apart_from_the_host() {
   is "and naming one grants nothing" "$(floor "$tmp/wk" policy)" "$allowed"
 }
 a_row_names_the_worker_apart_from_the_host
+
+#
+# The middle trust level had no producer, so `judged` was a word in the RFC and nothing wrote it.
+# Worse: `satisfied` read the level and never used it, so a gate could answer a clause whose whole
+# point is that no command can.
+#
+a_judged_clause_wants_a_verdict() {
+  make_repo "$tmp/jd" main && set_origin "$tmp/jd" 'https://gitlab.com/acme/jd.git' \
+    && mkdir -p "$tmp/jd/.foundry" \
+    && commit_file "$tmp/jd" .foundry/gates 'tests  true
+' || { skip "a verdict — git could not make a repo here"; return; }
+
+  jdrun=$(floor "$tmp/jd" new "Judged")
+  floor "$tmp/jd" charter derive >/dev/null 2>&1
+  floor "$tmp/jd" policy authorize 'https://gitlab.com/acme/jd.git' >/dev/null 2>&1
+  floor "$tmp/jd" targets add 'https://gitlab.com/acme/jd.git' main >/dev/null 2>&1
+  floor "$tmp/jd" open >/dev/null 2>&1
+
+  # After the workspace. An introduced clause exits `authorise` at 11, and `open` runs `authorise`.
+  floor "$tmp/jd" charter introduce Judged 'the interface is understandable' >/dev/null 2>&1
+
+  is "a verdict on a Gate clause answers nothing" \
+     "$(code_of floor "$tmp/jd" evidence verdict 'tests' 'A Reviewer' 'looks right')" "2"
+  has "and says which verb does answer it" \
+      "$(floor_says "$tmp/jd" evidence verdict 'tests' 'A Reviewer' 'looks right')" "answered by \`gates\`"
+
+  # The whole of what `judged` means. Floor cannot prove who typed it — §2.5 says the file is
+  # writable by the same user — so refusing the one name it already knows is what it can do.
+  is "a worker may not judge its own work" \
+     "$(code_of floor_worked "$tmp/jd" 'Some Model 9' evidence verdict 'the interface is understandable' 'Some Model 9' 'reads fine')" "2"
+
+  # A `Judged:` clause rests on no pin, so invariant 1 reports it `introduced` and nothing reaches
+  # satisfaction. A verdict is recorded and cannot yet satisfy — the derivation is what is missing,
+  # not the verdict.
+  has "a Judged clause rests on no pin, so it is introduced" \
+      "$(floor "$tmp/jd" complete 2>&1)" "introduced: [the interface is understandable]"
+
+  is "a verdict from something else is recorded" \
+     "$(code_of floor "$tmp/jd" evidence verdict 'the interface is understandable' 'A Reviewer' 'a stranger read it in two minutes')" "0"
+  has "as judged, never machine" "$(floor "$tmp/jd" evidence)" "	judged	"
+  has "carrying who said it"     "$(floor "$tmp/jd" evidence)" "A Reviewer: a stranger read it"
+}
+a_judged_clause_wants_a_verdict
 
 #
 # Whether this host can be replaced. A run holding a workspace has a

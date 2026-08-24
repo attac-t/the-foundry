@@ -134,6 +134,7 @@ floor — where work happens.
                                   add a clause nothing derived — it stays introduced
   run.sh evidence                 print what this run has proved
   run.sh evidence record <name> <command...>
+  run.sh evidence verdict <clause> <judge> <what they said>
                                   run it, and stamp what happened
   run.sh gates                    run every gate the charter pins, and record each — exit 14 if any
                                   did not pass
@@ -1252,6 +1253,7 @@ evidence() {
     case "${1:-}" in
         '')     cat "$(evidence_file "$dir")" 2>/dev/null; return 0 ;;
         record) shift; refuse_wrong_repository "$dir"; record_gate "$dir" "$@" ;;
+        verdict) shift; refuse_wrong_repository "$dir"; verdict "$dir" "$@" ;;
         *)      usage; exit 2 ;;
     esac
 }
@@ -2437,7 +2439,7 @@ unmet_clauses() {
         has_local_pin "$file" "$id" "$here" \
             || { printf 'unverifiable: [%s] is pinned to a repository this checkout is not\n' "$text"; continue; }
 
-        satisfied "$1" "$text" "$ref" && continue
+        satisfied "$1" "$text" "$ref" "$(answers_for "$(clause_kind "$file" "$id")")" && continue
         printf 'unmet: [%s] at %s@%s\n' "$text" "$here" "$ref"
     done
 }
@@ -2456,12 +2458,73 @@ unmet_clauses() {
 # `""` on both sides of each comparison. An `-v` assignment is a numeric string, so a clause named
 # `123` would match a record named `0123` — the identity defect §2.2 already paid for once.
 #
+# What may answer a clause, decided by the kind a human wrote. Trust was
+# recorded and never read, so a gate could satisfy a
+# clause whose whole point is that no command can.
+#
+# One row per kind, and no order over them. RFC-001 says the kinds are not a
+# scale: a judgement raised to a gate asks for a command
+# that cannot exist.
+answers_for() {
+    case "$1" in
+        Gate)    printf 'machine' ;;
+        Judged)  printf 'judged'  ;;
+        Decided) printf 'human'   ;;
+    esac
+}
+
+clause_kind() {
+    awk -v id="$2" '$1 == "clause" && $2 == id { print $3; exit }' "$1" 2>/dev/null
+}
+
+# A pass must come from the kind of authority the clause names. A failure
+# is a failure whoever saw it — a human's no at the same
+# ref still stops a gate that said yes.
 satisfied() {
-    awk -F'\t' -v name="$2" -v ref="$3" '
+    awk -F'\t' -v name="$2" -v ref="$3" -v trust="$4" '
         $4 "" != name "" || $6 "" != ref "" { next }
-        $5 == "0" { yes = 1 }
-        $5 != "0" { no  = 1 }
+        $5 != "0"                             { no = 1; next }
+        trust == "" || $2 "" == trust ""      { yes = 1 }
         END { exit !(yes && !no) }' "$(evidence_file "$1")" 2>/dev/null
+}
+
+# A verdict from something that did not produce the work. That is the whole
+# of what `judged` means, and a worker writing one
+# about itself has answered nothing.
+#
+# Floor cannot prove who typed it — the file is writable by the same user,
+# and §2.5 says so. Refusing the name it already knows
+# is what an honest record can do.
+verdict() {
+    dir=$1; text=${2:-}; judge=${3:-}; said=${4:-}
+
+    [ -n "$text" ] && [ -n "$judge" ] && [ -n "$said" ] \
+        || { note "a verdict names the clause, who judged it, and what they said"; exit 2; }
+
+    refuse_a_kind_that_is_not_judged "$dir" "$text"
+    refuse_a_judge_that_is_the_worker "$judge"
+
+    enter_work_tree "$dir"
+    stamp "$dir" judged "$text" 0 "$(delivered_ref)" "$judge: $said"
+}
+
+refuse_a_kind_that_is_not_judged() {
+    file=$(charter_file "$1")
+    id=$(clause_id "$2")
+
+    [ "$(clause_kind "$file" "$id")" = Judged ] && return 0
+
+    note "[$2] is not a Judged clause, so a verdict answers nothing about it"
+    note "a Gate clause is answered by \`gates\`, and a Decided one by a human where the item is"
+    exit 2
+}
+
+refuse_a_judge_that_is_the_worker() {
+    [ "$1" != "$(worker)" ] && return 0
+
+    note "[$1] produced the work, so its verdict on that work says nothing"
+    note "a verdict comes from something that did not write what it grades"
+    exit 2
 }
 
 #
