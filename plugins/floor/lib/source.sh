@@ -28,6 +28,22 @@ remote_is_github() {
 
 github_serves() { command -v gh >/dev/null 2>&1 && remote_is_github; }
 
+# Answered here, never passed on. `join.sh` kept its own copy of this test, which
+# put a provider's name in core and made the line above false the day it was written.
+say_what_answers() {
+    remote_is_github || { printf 'a directory — this remote is not GitHub\n'; return; }
+
+    command -v gh >/dev/null 2>&1 ||
+        { printf 'a directory, and the remote is GitHub. Install gh, or Issues stay unreachable.\n'; return; }
+
+    gh auth status >/dev/null 2>&1 ||
+        { printf 'GitHub, but gh is not signed in. Run: gh auth login && gh auth setup-git\n'; return; }
+
+    printf 'GitHub\n'
+}
+
+[ "${1:-}" = serves ] && { say_what_answers; exit 0; }
+
 github_serves && exec sh "$here/source-github.sh" "$@"
 
 # A GitHub remote whose `gh` is missing is half of level 1. The directory answers, correctly,

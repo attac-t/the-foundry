@@ -105,34 +105,18 @@ report_home() {
 }
 
 #
-# Which adapter answers, said out loud. This is the silent one: a GitHub remote with no `gh` still
-# has a work source, and the directory that answers has never heard of Issues — so its
+# Which adapter answers, said out loud. This is the silent one: an adapter can change under a host
+# without a word, and the one that answers may never have heard of Issues — so its
 # nothing-there and an item nobody can reach read exactly alike.
 #
 report_work_source() {
     say "who     $FOUNDRY_WHO"
-
-    remote_is_github || { say "source  a directory — this remote is not GitHub"; return; }
-    command -v gh >/dev/null 2>&1 || {
-        say "source  a directory, and the remote is GitHub. Install gh, or Issues stay unreachable."
-        return
-    }
-
-    gh auth status >/dev/null 2>&1 || {
-        say "source  GitHub, but gh is not signed in. Run: gh auth login && gh auth setup-git"
-        return
-    }
-
-    say "source  GitHub"
+    say "source  $(sh "$(source_resolver)" serves 2>/dev/null)"
 }
 
-remote_is_github() {
-    case "$(git remote get-url origin 2>/dev/null)" in
-        *github.com*) return 0 ;;
-    esac
-
-    return 1
-}
+# The same file `run.sh` asks, and the same override. Core names no provider, so it
+# asks whatever resolver is installed and prints the sentence back.
+source_resolver() { printf '%s' "${FOUNDRY_SOURCE:-$(dirname "$0")/../lib/source.sh}"; }
 
 #
 # The repository's half, printed beside the host's. What may be graded and delivered is
