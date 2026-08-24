@@ -237,6 +237,47 @@ shell. A `Judged` or `Decided` clause cannot, because a person's yes has no seco
 
 This is a boundary, not a plan. #337 owns it.
 
+### Checking a record you did not make
+
+You need the record, `git`, and a clone of the repository `bootstrap` names. No floor.
+
+**1. The bar is the one that was pinned.** Every `pin` line in `charter` names a repository, a
+commit, a path and a blob.
+
+```sh
+git rev-parse <commit>:<path>          # must equal the blob on the pin line
+```
+
+A mismatch means the bar was swapped after the run read it.
+
+**2. The bar and the evidence name the same clauses.**
+
+```sh
+awk '$1=="clause"{print $4}' charter | sort -u
+cut -f4 evidence | sort -u
+```
+
+A label in `evidence` alone was invented. A label in `charter` alone was never answered.
+
+**3. The graded commit is real, and it is the one that shipped.**
+
+```sh
+cut -f6 evidence                       # graded
+cut -d' ' -f2 delivery                 # shipped
+git cat-file -e <graded>               # and it is a commit in this repository
+```
+
+**4. Re-run what can be re-run.** `charter`'s `gate` line holds the command. Check out the graded
+commit, run it, and compare its exit code to field five of `evidence`.
+
+**What none of it proves.** Check 4 is the only one that reaches an exit code, and it reaches one
+only for a `machine` clause. A `judged` or `human` clause has no second run, because a person's yes
+cannot be re-derived. Read those as unanchored — and read `authority` the same way, since it is a
+line the run wrote about itself.
+
+**Measured, not asserted.** An honest record passes all four. A record with a swapped pin and an
+invented clause fails checks 1 and 2, before check 4 is even reached.
+
 ---
 
 ## Targets
