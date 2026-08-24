@@ -982,6 +982,22 @@ that does — the workspace seam is what turns it into an answer.
 holds the selection, the ledger holds what ran. A second copy of any of them is a second thing to
 drift.
 
+### It never answers whether the work mattered
+
+**`complete` asks whether this run may deliver. It does not ask whether anything came of it**, and
+nothing floor records ever will — not the ledger, not `delivery`, not `merge`.
+
+Seven states collapse into one whenever nobody separates them:
+
+> `implemented` · `delivered` · `released` · `exposed` · `reachable` · `used` · `valuable`
+
+**Floor proves the first two and is silent on the rest.** Exit 0 and a merged pull request are not
+success; they are a change that met a bar and reached a branch.
+
+The other half of the rule — that what happened afterwards may never set completion — belongs to
+#157, and nothing here can enforce it while nothing produces an outcome. RFC-001 revision 23 names
+both halves and builds neither.
+
 ---
 
 ## Authorisation

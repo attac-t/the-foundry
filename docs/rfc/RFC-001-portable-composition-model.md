@@ -828,7 +828,7 @@ under the two-adapter rule.
 | Seam | What plugs in | Starting sketch |
 |---|---|---|
 | `workspace` | worktree, container, VM, cloud sandbox | create · run commands · expose a service · keep or publish a branch · destroy |
-| `delivery` | branch and PR, patch, direct push | publish an outcome, stamp evidence |
+| `delivery` | branch and PR, patch, direct push | publish a result, stamp evidence |
 | `browser` | Playwright, and its peers | named in issue #66; no sketch yet |
 | `session` | provider-specific attach | no sketch; see §4 |
 | `agent` | Claude Code, and its peers | orchestrated, never wrapped — §3 |
@@ -1699,6 +1699,30 @@ and #297 exists because that had already happened once with telemetry.
 nothing routes. No second harness has been asked whether the same work reaches the same capability.
 And nothing fails when a provider name appears in core — a check would need today's vendor names and
 a carve-out for the plugin format, which dates faster than §3's sentence.
+
+### Revision 23 — one word held completion and what came after it
+
+§2.6's `delivery` row said the seam publishes *an outcome*, meaning the branch and the pull request.
+#157 needs *outcome* for what happened once the change reached people. **One word, two meanings, in a
+document whose contracts bind.**
+
+The second meaning is the one worth keeping. What a delivery publishes is a **result**, and that is
+the word here doing no other work.
+
+| Was | Is | What forced it |
+|---|---|---|
+| `delivery` publishes *an outcome* | it publishes a **result** | one word cannot hold the artifact and what the artifact caused |
+| nothing said where completion stops | completion answers *may this run deliver*, never *did it work* | exit 0 and a merge read as success, and neither is |
+| the other half unwritten | an outcome may never set completion — **named, not built** | Product does not exist, and writing its half here would invent it |
+
+**Floor's half is the half that can be written now.** Nothing floor records says whether anyone was
+reached: not the ledger, not `delivery`, not `merge`. The seven states #157 names — *implemented ·
+delivered · released · exposed · reachable · used · valuable* — collapse into one every time nobody
+separates them, and floor proves the first two.
+
+**Unproven, and it cannot yet be otherwise.** Nothing produces an outcome, so no code has ever tried
+to cross this line. The rule is written before the thing it constrains, for the reason revision 22
+was: a system built first names its own words, and then the words are the design.
 
 ## 7. Unresolved questions
 
