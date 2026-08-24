@@ -33,9 +33,8 @@ ours() { [ "$(cat "$(markfile)" 2>/dev/null)" = "$prompt" ]; }
 # Determine if the temp directory can hold a marker.
 keepable() { [ -w "$temp" ]; }
 
-# Record that we blocked this prompt, and answer whether it
-# stuck. A block we cannot remember is one we take
-# again next turn, and every turn after it.
+# Record that we blocked this prompt, and answer whether it stuck. A block we
+# cannot remember is one we take again next turn, and every turn after it.
 remember() { printf '%s' "$prompt" > "$(markfile)" 2>/dev/null; }
 
 # Get the path to this session's note.

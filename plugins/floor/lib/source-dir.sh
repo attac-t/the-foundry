@@ -109,9 +109,8 @@ kind_of_item() {
 
 
 #
-# Every delivery this directory holds but this run's. It holds no
-# notion of open, because nothing here merges anything,
-# so every delivery it recorded is reported.
+# Every delivery this directory holds but this run's. Nothing here merges, so
+# it holds no notion of open and reports every delivery it recorded.
 open_deliveries() {
     [ -d "$root/deliveries" ] || return 0
 
@@ -127,9 +126,8 @@ open_deliveries() {
 }
 
 
-# `mkdir` is the compare-and-swap, and it fails when the claim
-# is there. The holder rewriting its own stamp is the
-# renewal, so nothing can slip between the two.
+# `mkdir` is the compare-and-swap, and it fails when the claim is there. The
+# holder rewriting its own stamp is the renewal, so nothing slips between.
 take_claim() {
     mkdir -p "$root/claims" 2>/dev/null || return 3
     mkdir "$root/claims/$1" 2>/dev/null || held_by "$1" "$2" || return 4

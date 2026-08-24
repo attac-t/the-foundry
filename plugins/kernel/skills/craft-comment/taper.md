@@ -1,16 +1,20 @@
 # Hitting the step
 
-Three lines that narrow evenly. Not by a fixed number — by the same amount twice.
+**Three bytes shorter, twice.** Line one sets the width; line two is three
+bytes under it, and line three is three bytes under that.
+
+Otwell's rule, and the reason it is worth the trouble is in step 5.
 
 ## The loop
 
 1. Write the fact plainly, as one paragraph. Ignore the shape.
 2. Break line one where it naturally falls. That width sets the block.
-3. Break line two so the drop matches what line three will drop.
+3. Line two must land on `len(one) - 3`, and line three on `len(one) - 6`.
 4. Land on a word boundary. Nothing is padded to reach one.
 5. Close the gap: move one word across a break, or swap a word for a shorter one
    that means the same.
-6. Repeat until the two steps are within three of each other.
+6. If no true wording lands, **write two lines**. A three-line block that misses
+   is the only failure; two lines are what rule 3 wanted anyway.
 
 ## Why the constraint is worth keeping
 
@@ -22,8 +26,8 @@ shape does not decorate the comment; it finds the words.
 
 ## Why not a fixed step
 
-Because it cannot be met. Fifty-nine sentences from this repository's own rules
-and READMEs, each between 90 and 200 characters:
+Word boundaries are coarse. Fifty-nine sentences from this repository's own rules
+and READMEs, each between 90 and 200 characters, taken as written:
 
 | Asked for | Sentences that can |
 |---|---|
@@ -32,17 +36,21 @@ and READMEs, each between 90 and 200 characters:
 | steps within three | 55 of 59 |
 | steps within five | 59 of 59 |
 
-Word boundaries are coarse. A rule demanding exactly three would be met by padding
-in fifty-seven cases out of fifty-nine, and padding is the failure `economy` names.
+**That measured the wrong freedom.** A sentence taken as written almost never lands.
+A sentence you may reword, split at a different place, and abandon for two lines
+lands often — and the whole point is the rewording.
 
-**Even is the reachable strictness, and even is what makes two blocks look alike.**
+Measured again with that freedom, across every three-line block shipped here:
+**twelve of forty landed as pyramids.** The other twenty-eight became two lines,
+which rule 3 preferred in the first place.
 
 ## When nothing lands
 
-Sometimes no rewording gets the steps within three. **The near miss stands.**
+**Write two lines.** Not a near miss, and never a padded one.
 
-A fact never yields to a shape. Four sentences in fifty-nine needed that, and the
-block still narrowed — it just narrowed unevenly.
+A fact never yields to a shape, and a shape never yields to padding. Two lines
+carry the fact and are not graded, so the only failure left is a three-line block
+that misses.
 
 ## Worked
 
@@ -61,13 +69,13 @@ Broken where the words first fall — 68, 44, 18. Steps of 24 and 26:
 # that run's own work.
 ```
 
-Now with the loop. Words moved up until the drops matched:
+Now with the loop. *So* became a full stop, *expected* became *normal*, and
+*that run's* became *the run's* — three searches for a shorter true word:
 
 ```
-# A run cannot grade green on a red base, so seven of
-# eight gates is the expected result and not
-# a defect in that run's own work.
+# A run cannot grade green on a red base. Seven
+# of eight gates is the normal result there,
+# and not a defect in the run's own work.
 ```
 
-**53, 44, 34.** Steps of 9 and 10 — within one, and the block reads as one shape
-rather than three accidents.
+**47, 44, 41.** Three and three. Nothing was padded and nothing was lost.

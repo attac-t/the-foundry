@@ -24,9 +24,9 @@ readonly SKIP='^\.claude/|PULL_REQUEST_TEMPLATE'
 # arguments, because that is what let a bare run and CI
 # disagree by 22 repeats nobody could act on.
 #
-# An exclusion, never an inclusion. A plugin added tomorrow is
-# graded without anyone editing this line, where an
-# inclusion list would have skipped it.
+# An exclusion, never an inclusion. A plugin added
+# tomorrow is graded without anyone editing the
+# line, where any inclusion list would skip.
 readonly DEBT='^docs/|^plugins/floor/|^plugins/kernel/|^plugins/laravel-ddd/|^plugins/laravel-playbook/'
 
 files=("$@")

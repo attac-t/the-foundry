@@ -33,9 +33,9 @@ each_rule() {
     done
 }
 
-# Each harness gets the shape its own file wants. One table
-# copied into two files is prose repeated, which
-# `repeats` refuses and is right to.
+# Each harness gets the shape its own file wants. A
+# table copied into two files is prose repeated,
+# and `repeats` is right to refuse that here.
 block() {
     printf '%s\n' "$OPEN"
 

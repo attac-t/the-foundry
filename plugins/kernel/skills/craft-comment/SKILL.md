@@ -16,11 +16,12 @@ description: What a comment is for, what shape it takes, and the space around co
    preamble longer than what it introduces is the clearest form of the tell.
 3. **One sentence, when one sentence does it.** No fence and no bold — the blank line already
    separated it, and the sentence that matters goes first.
-4. **Three lines, narrowing evenly,** once there is more than one sentence to say. The two steps
-   stay within three of each other, so the block reads as one shape rather than three accidents.
-   `taper.md` carries the loop, and the measurement behind the number.
-   **Three lines is a shape, never a target.** Padding one sentence into three to make it narrow is
-   the waste `economy` names, wearing craft.
+4. **Three lines, each exactly three bytes shorter than the one above it.** Not *about* three, and
+   not an even step of any size — three, twice. A block that steps by eighteen is a triangle, and a
+   triangle is what this refuses. `taper.md` carries the loop.
+   **Two lines when three will not land honestly.** Padding a sentence to reach the number is the
+   waste `economy` names, wearing craft — and a two-line comment is not graded, because rule 3
+   already prefers it. What is never allowed is a three-line block that misses.
 5. **Let it breathe.** Blank lines inside a body group steps into thoughts, so it reads as three
    moves rather than eleven lines. A body with no blank line is held breath.
    **Breathing is space, not words** — the opposite mistake is filling the space that was doing the

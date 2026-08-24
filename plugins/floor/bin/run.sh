@@ -189,9 +189,8 @@ foundry_home() {
 
 print_home() { printf '%s\n' "$HOME_DIR"; }
 
-# Every run this home holds, and how far each one got. The only verb not scoped to
-# the active run, because selection lived in whoever was driving
-# and nothing could answer what work exists.
+# Every run this home holds, and how far each got. The only verb not scoped
+# to the active run, because selection lived in whoever was driving it.
 list_runs() {
     [ "$#" -eq 0 ] || { usage; exit 2; }
     [ -d "$RUNS" ] || return 0
@@ -224,16 +223,14 @@ settled() {
     return 29
 }
 
-# A workspace is the part a worker writes to. A run that only charted holds none,
-# so nothing is lost by replacing the host under it, and
-# a delivered one has finished.
+# A workspace is the part a worker writes to. A run that only charted holds
+# none, so replacing the host under it loses nothing, and a delivered run is done.
 runs_in_flight() {
     list_runs | awk '$1 == "open" || $1 == "graded" { print $2 }'
 }
 
-# The furthest thing a run's own files say about it, read downward
-# so the first that holds wins. A position and never a
-# verdict: waiting needs the work source.
+# The furthest thing a run's own files say about it, read downward so the
+# first that holds wins. A position, never a verdict: waiting needs the source.
 how_far() {
     [ -s "$(delivery_file "$1")" ] && { printf 'delivered'; return; }
     [ -s "$(evidence_file "$1")" ] && { printf 'graded';    return; }
@@ -1052,9 +1049,8 @@ authorize()  { grant "$1" "$(grants_file "$1")"     is_authorised  "${2:-}"; }
 deliver_to() { grant "$1" "$(deliveries_file "$1")" may_deliver_to "${2:-}"; }
 merge_to()   { grant "$1" "$(merges_file "$1")"     may_merge_to   "${2:-}"; }
 
-# The one grant that names no repository. A run reads one item, so
-# there is nothing to point at. What this records is that
-# a person read the item's list and found it met.
+# The one grant that names no repository. A run reads one item, so there is
+# nothing to point at. It records that a person read the list and found it met.
 closes() {
     item=$(item_id "$1")
     [ -n "$item" ] || { note "this run reads no item, so there is nothing to close"; exit 2; }
@@ -1712,9 +1708,8 @@ EOF
 # file the gate runs, so it was graded against a tree
 # that is neither the base nor what ships.
 #
-# Said only when a gate actually failed. Nearly every run that
-# substitutes something passes anyway, and a note on
-# every one of those is a note people skip.
+# Said only when a gate actually failed. Nearly every run that substitutes
+# something passes anyway, and a note on all of those is a note people skip.
 say_the_substitution() {
     [ -n "$1" ] || return 0
 
@@ -1987,9 +1982,8 @@ name_the_clash() {
     return 1
 }
 
-# Fetched when the source answers, and the copy already here
-# when it does not. A host that is down is no reason
-# to stop, and a clone left the tracking ref.
+# Fetched when the source answers, and the copy already here when it does not.
+# A host that is down is no reason to stop, and a clone left the tracking ref.
 their_head() {
     git -C "$1" fetch origin "$2" >/dev/null 2>&1
     fetched=$(git -C "$1" rev-parse --verify --quiet FETCH_HEAD 2>/dev/null)
@@ -2026,9 +2020,8 @@ clashing_files() {
     printf '%s' "$named"
 }
 
-# Beside the charter, like the gates tree. A merge
-# that went wrong is worth reading, and a fixed
-# path is one a person can be told to open.
+# Beside the charter, like the gates tree. A merge that went wrong is worth
+# reading, and a fixed path is one a person can be told to open.
 reconcile_tree() { printf '%s/reconcile-tree' "$1"; }
 
 # git's worktree, so git forgets it. Left registered, the next `add` refuses a path that is gone.
@@ -2060,14 +2053,12 @@ claim() {
     exit 30
 }
 
-# An hour with no word. A wake is ten minutes, so a live
-# host renews six times inside it, and a window
-# this wide costs a slow host nothing.
+# An hour with no word. A wake is ten minutes, so a live host renews six
+# times inside it, and a window this wide costs a slow host nothing.
 CLAIM_TTL=${FOUNDRY_CLAIM_TTL:-3600}
 
-# A host that died holding one would block that item for good,
-# and nothing here may need a person to clear it. Age
-# is the only signal a second machine has.
+# A host that died holding one would block that item for good, and nothing
+# here may need a person to clear it. Age is the only signal a second machine has.
 break_a_dead_claim() {
     held=$(source_says held "$1") || return 1
     age=$(claim_age "$held")      || return 1
@@ -2080,9 +2071,8 @@ break_a_dead_claim() {
     source_says claim "$1" "$(recording_host)"
 }
 
-# Seconds since the claim was stamped. A record written before
-# floor kept an epoch cannot be aged at all, so it
-# is never broken. Unknown is not stale.
+# Seconds since the claim was stamped. A record written before floor kept an
+# epoch cannot be aged at all, so it is never broken. Unknown is not stale.
 claim_age() {
     stamped=$(printf '%s\n' "$1" | awk -F'\t' 'NF == 3 && $3 ~ /^[0-9]+$/ { print $3 }')
     [ -n "$stamped" ] || return 1
@@ -2092,9 +2082,8 @@ claim_age() {
 
 claim_holder() { printf '%s\n' "$1" | awk -F'\t' '{ print $2 }'; }
 
-# What the loser keeps. A host claims before it opens a run
-# as often as after, so there is not always a row to
-# write. Inventing one to hold a line is worse.
+# What the loser keeps. A host claims before it opens a run as often as after,
+# so there is not always a row to write. Inventing one to hold a line is worse.
 record_the_refusal() {
     dir=$(active_run 2>/dev/null) || return 0
     record_observation "$dir" claim.refused "item=$1" || return 0
@@ -2236,9 +2225,17 @@ say_the_rows() {
 # two runtimes, and the decision to refuse wants
 # rows to argue from rather than a guess.
 #
+# Resolved once, before anything moves. `gates` enters the workspace, and a
+# path relative to `$0` stops resolving from there — so
+# every gate row said `floor/unknown`.
+#
+# `run.began` was right and the gate rows were wrong,
+# which is the worst shape: the rows worth arguing
+# from are those the version had fallen out of.
+MANIFEST=$(cd "$(dirname "$0")/../.claude-plugin" 2>/dev/null && pwd)/plugin.json
+
 runtime() {
-    stated=$(awk -F'"' '/"version"/ { print $4; exit }' \
-        "$(dirname "$0")/../.claude-plugin/plugin.json" 2>/dev/null)
+    stated=$(awk -F'"' '/"version"/ { print $4; exit }' "$MANIFEST" 2>/dev/null)
 
     [ -n "$stated" ] || stated=unknown
 
@@ -2249,16 +2246,14 @@ runtime() {
 # field and never the value, the same rule that keeps a
 # label's prefix out of core.
 #
-# No fallback. `selector` falls back to a git address because a run
-# with no human may not deliver. A run with no named worker
-# is ordinary, and a guessed name is worse than none.
+# No fallback. `selector` falls back to a git address because a run with no
+# human may not deliver. A run with no named worker is ordinary.
 worker() { printf '%s' "${FOUNDRY_WORKER:-}"; }
 
 # Three facts, and collapsing any two of them is what #156 is about.
 #
-# The host is where it ran. The selector is who permitted it. The worker
-# is what produced it. A record naming one of the three
-# has answered a different question.
+# The host is where it ran. The selector permitted it. The worker produced it.
+# A record naming one of the three has answered a different question.
 began_with() {
     said=$(worker)
     [ -n "$said" ] && { printf 'runtime=%s worker=%s' "$(runtime)" "$(one_line "$said")"; return 0; }
@@ -2306,9 +2301,9 @@ aside() {
 # for whoever comes next, so a reader who can see one
 # run's has been shown the least useful half.
 #
-# Measured before this existed: one aside, across every run ever made
-# here. A verb that records where nobody reads is
-# a verb nobody reaches for.
+# Measured before this existed: one aside, across
+# each run ever made here. A verb that records
+# where nobody reads is a verb nobody uses.
 every_aside() {
     for held in "$RUNS"/*/; do
         [ -f "${held}asides" ] || continue
@@ -2383,9 +2378,8 @@ push_workspace() {
     exit 19
 }
 
-# Read after the push and never before. `push_workspace` sends
-# `HEAD`, so asking first names a commit the push might
-# not have carried, and a wrong sha reads right.
+# Read after the push and never before. `push_workspace` sends `HEAD`, so
+# asking first names a commit the push might not have carried.
 unit_head() { git -C "$(unit_work_tree "$1" "$2")" rev-parse HEAD 2>/dev/null; }
 
 # Derived, never chosen. A branch a worker names is a branch a retry can rename, and then the source
@@ -2485,9 +2479,8 @@ unmet_clauses() {
 # recorded and never read, so a gate could satisfy a
 # clause whose whole point is that no command can.
 #
-# One row per kind, and no order over them. RFC-001 says
-# the kinds are not a scale: a judgement raised to
-# a gate asks for a command that cannot exist.
+# One row per kind, and no order over them. RFC-001 says the kinds are not a
+# scale: a judgement raised to a gate wants a command that cannot exist.
 answers_for() {
     case "$1" in
         Gate)    printf 'machine' ;;
@@ -2496,9 +2489,9 @@ answers_for() {
     esac
 }
 
-# A pass must come from the kind of authority the clause names. A
-# failure is a failure whoever saw it, so a human's
-# no still stops a gate that said yes.
+# A pass must come from the kind of authority the clause
+# names. Any failure is a failure whoever read it, so
+# a human's no still stops the gate that said yes.
 satisfied() {
     awk -F'\t' -v name="$2" -v ref="$3" -v trust="$4" '
         $4 "" != name "" || $6 "" != ref "" { next }
@@ -2511,9 +2504,8 @@ satisfied() {
 # what `judged` means, and a worker writing one about
 # itself has answered nothing.
 #
-# Floor cannot prove who typed it — the file is writable by the same user,
-# and §2.5 says so. Refusing the name it already knows
-# is what an honest record can do.
+# Floor cannot prove who typed it, because the file is writable by the same
+# user. Refusing the name it already knows is what an honest record can do.
 verdict() {
     dir=$1; text=${2:-}; judge=${3:-}; said=${4:-}
 
@@ -2671,9 +2663,9 @@ authorise() {
 # read rather than refused. That name said who allowed the
 # selection, which `policy` already answers.
 #
-# Silently, and on purpose. This is asked three times a
-# command, and a note that fires that often
-# is one people learn to skip.
+# Silently, and on purpose. This is asked three
+# times per command, and any note that fires
+# that often is one people learn to skip.
 frozen_selection_file() {
     named="$1/units/01/selection"
     [ -f "$named" ] && { printf '%s' "$named"; return 0; }
@@ -3592,9 +3584,8 @@ record_kind() {
     printf '%s\n' "$kind_said" > "$(kind_file "$1")" 2>/dev/null || die_unwritable "$(kind_file "$1")"
 }
 
-# An item is one kind. Two labels answered as two lines and
-# both were kept, so `source kind` printed a pair
-# and every reader of it chose in silence.
+# An item is one kind. Two labels answered as two lines and both were kept,
+# so `source kind` printed a pair and every reader of it chose in silence.
 refuse_two_kinds() {
     [ "$(printf '%s\n' "$2" | grep -c .)" -le 1 ] && return 0
 
@@ -3719,9 +3710,8 @@ send_and_record() {
     printf '%s\n' "$said"
 }
 
-# `<branch> <commit> <url>`, and two fields when nothing was pushed.
-# `source publish` tells the source where the work is and
-# pushes nothing, so it cannot say what landed.
+# `<branch> <commit> <url>`, and two fields when nothing was pushed. `source
+# publish` tells the source where the work is, so it cannot say what landed.
 record_delivery() {
     line=$2
     [ -n "$3" ] && line="$line $3"
@@ -3730,9 +3720,9 @@ record_delivery() {
         || note "delivered [$4], but this run could not record it — a resume will ask the source"
 }
 
-# The commit this run pushed. A record written before floor kept
-# one has two fields, and the middle field is
-# what tells them apart.
+# The commit this run pushed. A record written
+# before floor kept one has two fields, and
+# the middle one is what separates them.
 delivered_head() {
     had=$(recorded_delivery "$1")
     rest=${had#* }

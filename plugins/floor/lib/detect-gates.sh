@@ -54,9 +54,8 @@ detected() {
     return 1
 }
 
-# A declaration that is there and cannot be read is neither a declaration nor an absence.
-# Falling to `detected` derives a bar the repository never asked for and pins the file
-# it guessed from, so the declaration goes invisible and every later check agrees.
+# A declaration that is there and cannot be read is neither a declaration nor
+# an absence. Falling to `detected` derives a bar the repository never asked for.
 refuse_unreadable() {
     printf 'detect-gates: [%s] is there and cannot be read\n' "$dir/.foundry/gates" >&2
     exit 22
