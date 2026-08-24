@@ -1743,6 +1743,14 @@ a_gate_grades_from_the_base_however_deep_it_reaches() {
   has "and which file it was"                       "$said" "deepest.sh"
   has "and that a bar change is a person's"         "$said" "landed by a person"
 
+  # Said on stderr it died with the run, and a reader re-running the gate at the delivered ref ran a
+  # file this run rewrote. They got another exit code and
+  # read an honest record as a forged one.
+  run=$(floor "$tmp/cl" path)
+  has "the record keeps it too" "$(cat "$run/substitutions" 2>/dev/null)" "deepest.sh"
+  is  "and names a base the reader can diff against" \
+      "$(git -C "$tmp/cl" cat-file -t "$(cut -f1 "$run/substitutions" 2>/dev/null)" 2>/dev/null)" "commit"
+
   # The quiet half. Nearly every run that substitutes something passes anyway, and a note on each of
   # those is a note people learn to skip.
   printf 'changed\n' > "$work/notes.md"
@@ -1750,6 +1758,14 @@ a_gate_grades_from_the_base_however_deep_it_reaches() {
   git -C "$work" -c user.email=a@b.c -c user.name=a commit -aqm "and it passes again"
 
   lacks "a gate that passed says none of it" "$(floor_says "$tmp/cl" gates)" "landed by a person"
+
+  # A run that puts a gate back substituted nothing, and the last grading's file would say otherwise.
+  printf 'grep -q changed notes.md\n' > "$work/deepest.sh"
+  git -C "$work" -c user.email=a@b.c -c user.name=a commit -aqm "the gate, as the base wrote it"
+  floor "$tmp/cl" gates >/dev/null 2>&1
+
+  is "putting a gate back clears the record of it" \
+     "$(ls "$(floor "$tmp/cl" path)" | grep -c '^substitutions$')" "0"
 }
 a_gate_grades_from_the_base_however_deep_it_reaches
 
@@ -1778,6 +1794,11 @@ second  true
   is  "and named one ref between them" \
       "$(printf '%s\n' "$held" | awk -F'\t' 'NF == 7 { print $6 }' | sort -u | grep -c .)" "1"
   has "which is the tree they were asked about" "$held" "$was"
+
+  # An absent file is the claim that nothing was substituted, and it is the ordinary case. Writing
+  # one every time would teach a reader to skip it.
+  is "a run that changed no gate leaves no substitutions" \
+     "$(ls "$(floor "$tmp/g3" path)" | grep -c '^substitutions$')" "0"
 }
 every_gate_is_recorded_against_one_ref
 
