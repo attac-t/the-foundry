@@ -2496,10 +2496,6 @@ answers_for() {
     esac
 }
 
-clause_kind() {
-    awk -v id="$2" '$1 == "clause" && $2 == id { print $3; exit }' "$1" 2>/dev/null
-}
-
 # A pass must come from the kind of authority the clause names. A
 # failure is a failure whoever saw it, so a human's
 # no still stops a gate that said yes.
@@ -3840,7 +3836,28 @@ refuse_impossible_question() {
     is_stage "$2" || { note "a question is asked at authorisation or at completion, not at [$2]"; exit 2; }
 
     refuse_unheld_clause "$1" "$3"
+    refuse_a_kind_a_person_cannot_answer "$1" "$2" "$3"
     refuse_unaddressed "$1"
+}
+
+# `verdict` refuses a clause that is not Judged and names what does answer it. Nothing refused the
+# other way, so a person could answer a Judged clause at
+# completion and satisfy nothing by it.
+#
+# Silent is what made it worth a guard. The answer arrives, `accept_answer` stamps it `human`, and
+# satisfaction wants `judged` — so the record says a person
+# answered while completion still calls it unmet.
+#
+# Authorisation is every kind's, because whether a clause may exist at all is nobody else's call.
+# Only completion asks what met it, and only there does the
+# kind decide who may answer.
+refuse_a_kind_a_person_cannot_answer() {
+    [ "$2" = completion ] || return 0
+    [ "$(clause_kind "$(charter_file "$1")" "$(clause_id "$3")")" = Judged ] || return 0
+
+    note "[$3] is a Judged clause, so a person's answer would satisfy nothing about it"
+    note "record a verdict instead — \`evidence verdict\` names who judged it and what they said"
+    exit 2
 }
 
 #

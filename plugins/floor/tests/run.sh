@@ -666,6 +666,11 @@ wreck_runner "a ref read after the command ran is caught" \
 wreck_runner "a substitution the record never keeps is caught" \
   quietsub 's#    record_the_substitution "$1" "$moved"##'
 
+# An answer stamped `human` against a clause satisfaction wants `judged` for. The record says a
+# person answered and completion still calls it unmet, with nothing joining the two.
+wreck_runner "a person allowed to answer a Judged clause is caught" \
+  personjudge 's#    refuse_a_kind_a_person_cannot_answer "$1" "$2" "$3"##'
+
 # `unbornref` stood here: without a guard, a repository with no commit recorded a gate against an
 # empty ref. The guard is gone and so is the break, because the case moved rather than closed — a
 # repository with no commit can hold no workspace, and `attached` proves a HEAD before any tree is
