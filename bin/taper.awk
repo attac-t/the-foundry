@@ -6,6 +6,13 @@
 #
 # Usage: awk -v wide=90 -v step=3 -f taper.awk file.sh
 
+# Defaulted here, not left to the caller. `shell.sh` names this file through a
+# variable, so a restore takes one and not the other. #341 owns that gap.
+BEGIN {
+    if (step == "") step = 3
+    if (wide == "") wide = 90
+}
+
 { line[FNR] = $0 }
 
 END { for (i = 1; i <= FNR; i++) if (block_at(i)) grade(i) }
