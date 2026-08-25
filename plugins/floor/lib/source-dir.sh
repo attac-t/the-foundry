@@ -16,7 +16,7 @@
 #     answers/<item>/<question>      what a human answered
 #
 # Usage: sh source-dir.sh read    <item>
-#        sh source-dir.sh publish <item> <run> <branch> <title>
+#        sh source-dir.sh publish <item> <run> <branch> <title> [word] [brief]
 #        sh source-dir.sh ask     <item> <question> <text>
 #        sh source-dir.sh receive <item> <question>
 #
@@ -51,7 +51,24 @@ publish_delivery() {
     [ -r "$file" ] || return 3
     delivered "$file" "$3" || return 4
 
+    keep_the_brief "$2" "${6:-}"
     printf '%s\n' "$file"
+}
+
+# Beside the record, never inside it. The first line of a delivery is three
+# fields a machine splits on tabs, and a body is many lines with tabs
+# of its own — one file holding both is a parser nobody wrote.
+#
+# A second run over the same delivery leaves the first brief alone. The
+# record already refuses any changed branch, and a body that is then
+# rewritten under a reader is the very same drift all over again.
+keep_the_brief() {
+    [ -n "$2" ] && [ -r "$2" ] || return 0
+
+    said="$root/deliveries/$1.brief"
+    [ -f "$said" ] && return 0
+
+    cat "$2" > "$said" || return 3
 }
 
 record_delivery() {
@@ -170,9 +187,9 @@ case "${1:-}" in
     claim)   shift; take_claim       "${1:-}" "${2:-}" ;;
     held)    shift; read_claim       "${1:-}" ;;
     release) shift; drop_claim       "${1:-}" "${2:-}" ;;
-    publish) shift; publish_delivery "${1:-}" "${2:-}" "${3:-}" "${4:-}" "${5:-}" ;;
+    publish) shift; publish_delivery "${1:-}" "${2:-}" "${3:-}" "${4:-}" "${5:-}" "${6:-}" ;;
     ask)     shift; put_question     "${1:-}" "${2:-}" "${3:-}" ;;
     receive) shift; read_answer      "${1:-}" "${2:-}" ;;
-    *)       echo "source-dir: read <item> | claim <item> <host> | held <item> | release <item> <host> | publish <item> <run> <branch> <title> [word] | ask <item> <question> <text> | receive <item> <question>" >&2
+    *)       echo "source-dir: read <item> | claim <item> <host> | held <item> | release <item> <host> | publish <item> <run> <branch> <title> [word] [brief] | ask <item> <question> <text> | receive <item> <question>" >&2
              exit 2 ;;
 esac

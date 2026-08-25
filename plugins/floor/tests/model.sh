@@ -2148,6 +2148,38 @@ a_run_nobody_selected_may_not_deliver() {
 a_run_nobody_selected_may_not_deliver
 
 #
+# The publish seam carried a title, so every body was written by hand afterwards. A delivery that has
+# to be edited into shape is one the seam did not carry, and the human surface then
+# belongs to whoever remembered to run the second command.
+#
+a_delivery_carries_its_brief() {
+  make_repo "$tmp/br" main && set_origin "$tmp/br" 'https://github.com/acme/br.git'     && mkdir -p "$tmp/br/.foundry"     && commit_file "$tmp/br" .foundry/gates 'tests  true
+' || { skip "brief — git could not make a repo here"; return; }
+
+  d=$(floor_new_as "$tmp/br" ada@example.com "Brief")
+  floor "$tmp/br" charter derive >/dev/null 2>&1
+  floor "$tmp/br" policy authorize 'https://github.com/acme/br.git' >/dev/null 2>&1
+  floor "$tmp/br" policy deliver-to 'https://github.com/acme/br.git' >/dev/null 2>&1
+  floor "$tmp/br" targets add 'https://github.com/acme/br.git' main >/dev/null 2>&1
+  floor "$tmp/br" open >/dev/null 2>&1
+  floor "$tmp/br" gates >/dev/null 2>&1
+
+  # A path that is not there is a lie, not an absent brief. One is a mistake and the other is a
+  # legal choice, and a source told the first would write a body from nothing.
+  is "a brief that is not there is refused"      "$(code_of floor "$tmp/br" deliver 'a change' "$tmp/br/nowhere")" "2"
+  has "and it names the path it could not read"       "$(floor_says "$tmp/br" deliver 'a change' "$tmp/br/nowhere")" "no brief to read"
+
+  printf 'Outcome
+
+A reader knows what changed.
+' > "$tmp/br-brief.md"
+  floor "$tmp/br" deliver 'a change' "$tmp/br-brief.md" >/dev/null 2>&1
+
+  has "the run keeps the brief it was handed" "$(cat "$d/brief" 2>/dev/null)" "A reader knows what changed"
+}
+a_delivery_carries_its_brief
+
+#
 # Two conjuncts that close fail-opens rather than edge cases. Quantified over clauses and over
 # targets, the invariant is satisfied by an empty charter and by an empty selection — vacuously, and
 # every fresh run has the second.
