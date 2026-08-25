@@ -2,14 +2,13 @@
 #
 # SessionStart: prove kernel's hooks can still run, and say so when they cannot.
 #
-# Every way kernel fails is quiet. Not one of kernel's hooks has anything to report when it works —
-# the memory hook prints nothing when there is no memory, the ADR hook prints nothing when the file
-# is a document, and the delegation hook prints nothing when there is no blueprint. Silence is the
-# healthy reading. So a hook that cannot start, a lib that did not ship, a clone that rewrote the
-# line endings, and a shell that cannot parse the script all look exactly like a quiet afternoon.
+# Every way kernel fails is quiet. Not one of its hooks reports
+# anything while it works, so a hook that cannot start looks
+# exactly like a healthy hook with nothing at all to say.
 #
-# So we run the shipped code against known input and check the answer, once, at the top of the
-# session. Silent when it works. One line when it does not.
+# So we run the shipped code against known input and check the
+# answer once at the top of a session. Quiet when it works,
+# and one line when it does not. That is the whole hook.
 #
 
 root="$(cd "$(dirname "$0")" && pwd)"
@@ -28,12 +27,11 @@ reader_finds_a_nested_value() {
 }
 
 #
-# One line, and it starts where we told it to. Both halves earn their keep: resolve-memory.sh's
-# header names a bashism that answers with two lines and git's own output on top, and every hook
-# that resolves memory then writes to a directory named after whatever came back.
+# One line, and it starts where we told it to. Both halves earn it:
+# a bashism here answers with two lines and git's output on top,
+# so each hook resolving memory writes to whatever came back.
 #
-# `FOUNDRY_RUN=`, or a developer with one exported sees this probe call kernel broken for doing its
-# job.
+# An exported `FOUNDRY_RUN` makes this probe call kernel broken for doing its job.
 #
 resolver_gives_one_path() {
   resolved=$(FOUNDRY_RUN= CLAUDE_MEMORY_DIR=__kernel_probe__ sh "$root/lib/resolve-memory.sh" 2>/dev/null)
@@ -45,9 +43,9 @@ resolver_gives_one_path() {
 }
 
 #
-# Needs a file, so it needs somewhere to put one. Where it cannot write, it declines to judge: a
-# read-only temp directory is not kernel being broken, and a check that goes red for something the
-# plugin did not do is a check people learn to scroll past.
+# Needs a file, so it needs somewhere to put it. Where it cannot
+# write, it declines to judge. And a check going red for what
+# it never did is one that people learn to scroll on past.
 #
 parser_reads_an_objective() {
   probe="${TMPDIR:-/tmp}/kernel-preflight-$$.md"

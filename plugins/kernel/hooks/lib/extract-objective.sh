@@ -11,8 +11,9 @@ WORKING_MD="$1"
 
 goal=$(grep '^\*\*Objective\*\*:' "$WORKING_MD" | sed 's/\*\*Objective\*\*:[[:space:]]*//' | head -1)
 
-# Skip placeholders like [TBD]. `case` rather than `[[ =~ ]]`, which dash does not parse at all —
-# it fails on the bracket before it ever reaches the pattern.
+# Skip placeholders like [TBD]. `case`, never `[[ =~ ]]` — dash
+# does not parse that one at all. It fails on the bracket long
+# before it ever gets as far as reading the pattern at all.
 case "$goal" in
   "["*"]") exit 0 ;;
 esac

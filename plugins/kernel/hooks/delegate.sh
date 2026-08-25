@@ -3,8 +3,9 @@
 #
 # Thin hook → points to ground-delegation skill
 #
-# `$0`, not `${BASH_SOURCE[0]}`. The array subscript is a bash extension, and every other shell
-# stops at "Bad substitution" before the hook reads a thing.
+# `$0`, not `${BASH_SOURCE[0]}`. The array subscript is bash's
+# own, and every other shell stops dead at Bad substitution
+# before this hook has read so much as one single thing.
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 MEMORY_DIR=$(sh "$SCRIPT_DIR/lib/resolve-memory.sh")
