@@ -28,6 +28,7 @@ main() {
     report_work_source
     report_what_the_repository_carries
     report_skills_the_rules_name
+    report_plugins_this_host_loaded
     say "joined."
 }
 
@@ -192,6 +193,62 @@ reachable() {
     grep -q "\"$1@" "$settings" && return
 
     printf '  — NOT enabled on this host'
+}
+
+# What this host actually loaded, against what this tree ships. A skill is
+# read from a cache keyed by its version, so a rule can be landed
+# on main and still change nothing in the session that wrote it.
+#
+# Silent when they agree. A line for every plugin would bury the one that
+# drifted, and drift is the only thing here that a person acts on. The
+# count is there so that any reader knows the check has run at all.
+report_plugins_this_host_loaded() {
+    root=$(git rev-parse --show-toplevel)
+    seen=0
+
+    for manifest in "$root"/plugins/*/.claude-plugin/plugin.json; do
+        [ -f "$manifest" ] || continue
+
+        seen=$((seen + 1))
+        say_a_plugin_that_drifted "$manifest"
+    done
+
+    say "plugin  $seen shipped here, checked against what this host loaded"
+}
+
+# Absent and behind are different remedies. One is an install, the
+# the other one is an update, and a host that is told only that
+# something is wrong goes off looking for the wrong command.
+say_a_plugin_that_drifted() {
+    named=$(basename "$(dirname "$(dirname "$1")")")
+    ships=$(version_in "$1")
+    loaded=$(version_this_host_loaded "$named")
+
+    [ "$loaded" = "$ships" ] && return
+    [ -n "$loaded" ] || { say "        $named $ships is NOT installed here"; return; }
+
+    say "        $named ships $ships, and this host loaded $loaded"
+}
+
+# The value after the key, never the fourth field. A manifest with two
+# keys on one line is legal, and counting the fields reads back the
+# very first value it meets, and that was the plugin's own name.
+version_in() {
+    awk -F'"' '{ for (i = 1; i < NF; i++) if ($i == "version") { print $(i + 2); exit } }' "$1"
+}
+
+# The record a harness keeps of what it installed. Read by name and never
+# by path: a cache directory name is one harness's own layout, and the
+# next one will be keeping that very same fact somewhere else, too.
+version_this_host_loaded() {
+    record="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plugins/installed_plugins.json"
+
+    [ -r "$record" ] || return 0
+
+    awk -F'"' -v want="$1" '
+        index($0, "\"" want "@") { hit = 1; next }
+        hit && /"version"/         { print $4; exit }
+    ' "$record"
 }
 
 say() { printf '%s\n' "$1"; }
