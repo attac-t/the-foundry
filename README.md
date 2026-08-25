@@ -53,6 +53,12 @@ Give work a home outside the repo it changes:
 /plugin install floor@the-foundry
 ```
 
+Have work judged by something that did not write it:
+
+```
+/plugin install panel@the-foundry
+```
+
 Enable the opinionated voice:
 
 ```
