@@ -90,7 +90,11 @@ is "the home it reports is the home a run would use" "$theirs" "$mine"
 
 # No home to derive from is not a home called nothing. It used to print `/.foundry-runs`, which is a
 # path, and a path reads as somewhere a run went.
-homeless=$( cd "$tmp/one" && env -u HOME FOUNDRY_WHO=a@b sh "$join" 2>&1 )
+#
+# Both variables go. Unsetting `HOME` alone leaves whatever the shell running this
+# suite happened to export, so the check passed here and failed under a
+# grade — which is the ambient environment grading itself.
+homeless=$( cd "$tmp/one" && env -u HOME -u FOUNDRY_HOME FOUNDRY_WHO=a@b sh "$join" 2>&1 )
 has "with no HOME it says there is nowhere"  "$homeless" "home    nowhere"
 lacks "and names no path at all"             "$homeless" ".foundry-runs"
 
