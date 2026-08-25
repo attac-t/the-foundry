@@ -2,10 +2,9 @@
 #
 # Join this host to a repository that already carries Foundry.
 #
-# Seven things stand between a clean machine and a working system, and four of them are silent when
-# wrong: no `gh` picks a different work source, no git identity fails later at commit, no
-# `FOUNDRY_WHO` records an authority nobody granted, and a rule naming an unreachable skill does
-# nothing at all. This names what is missing and changes nothing.
+# Seven things stand between a clean machine and a working system, and four are silent
+# when wrong: no `gh` picks a different source, no git identity fails at commit, no
+# `FOUNDRY_WHO` names the authority, and a rule can name a skill nobody reaches.
 #
 # It reports and exits. Nothing here is a daemon, nothing is installed, and nothing is written to the
 # repository — the repository already says what may be graded, delivered and required.
@@ -41,9 +40,9 @@ usage() {
 # --- what the host must supply ---
 
 #
-# `sh`, `git` and `awk`. Floor's dependency contract names these three and nothing else, so a host
-# missing one is a host floor cannot run on — said by name, because "it did not work"
-# sends the reader to look at the repository instead of at their machine.
+# `sh`, `git` and `awk`. Floor's contract names these three and nothing else, so a
+# host that is missing any one of them can not run floor. Said by name, because
+# *it did not work* sends a reader to the repository and not their machines.
 #
 refuse_without_dependencies() {
     missing=''
@@ -81,9 +80,9 @@ refuse_without_an_author() {
 }
 
 #
-# `FOUNDRY_WHO` is the run's authority — invariant 4 makes selecting the work the human act, and this
-# is the only place that name comes from. Unset, a run records nobody and completion
-# refuses it much later, which reads as a bug in the work.
+# `FOUNDRY_WHO` is the run's authority, and invariant 4 makes selecting the work
+# a human act. Unset, a run records nobody at all, and completion will refuse
+# it much later on, where it then reads as one bug in the work itself now.
 #
 refuse_without_an_authority() {
     [ -n "${FOUNDRY_WHO:-}" ] && return 0
@@ -106,9 +105,9 @@ report_home() {
 }
 
 #
-# Which adapter answers, said out loud. This is the silent one: an adapter can change under a host
-# without a word, and the one that answers may never have heard of Issues — so its
-# nothing-there and an item nobody can reach read exactly alike.
+# Which adapter answers, said out loud. This is the silent one:
+# an adapter can change under a host without a word, and the
+# one that answers may never have heard of Issues at all.
 #
 report_work_source() {
     say "who     $FOUNDRY_WHO"
@@ -120,9 +119,9 @@ report_work_source() {
 source_resolver() { printf '%s' "${FOUNDRY_SOURCE:-$(dirname "$0")/../lib/source.sh}"; }
 
 #
-# The repository's half, printed beside the host's. What may be graded and delivered is
-# `.foundry/practice`; what the bar is, `.foundry/gates`. Neither is this command's to write, and a
-# repository carrying neither is joinable and can do nothing yet.
+# The repository's half, printed beside the host's own. `.foundry/practice` states
+# what may be graded now and what may be delivered; and `.foundry/gates` states
+# what the bar is. Neither of these two is this one command's to write here.
 #
 report_what_the_repository_carries() {
     root=$(git rev-parse --show-toplevel)
@@ -142,9 +141,9 @@ count_lines() {
 #
 # The skills this repository's rules name, and whether this host can reach them.
 #
-# A rule saying "invoke `kernel:craft-sh` before the first character" does nothing on a host where
-# kernel is not enabled, and nothing said so. The session read the rule, could not
-# reach the skill, and carried on — the silent failure this command exists for.
+# A rule that says to invoke `kernel:craft-sh` does nothing at all on a host
+# where kernel is switched off, and nothing here said so. A session reads
+# the rule, cannot reach the skill named, and then carries on past it.
 #
 # The repository states the need by naming skills in its rules. The host states what it has. Neither
 # is written into the other, and nothing here installs anything.
@@ -160,9 +159,9 @@ report_skills_the_rules_name() {
     done
 }
 
-# `/output-style kernel:craftsman` is not a skill, and a host told it is one goes looking for a skill
-# that is not there. The reachability question is the same either way — the plugin is on, or nothing
-# a rule names can be reached.
+# `/output-style kernel:craftsman` is not a skill at all, and a host that
+# is told it is one goes looking for a skill that is not there at all.
+# The plugin is on, or a rule reaches nothing at all that it names.
 noun_for() {
     grep -rqE "/output-style +$2" "$1/.claude/rules" 2>/dev/null && { printf 'style'; return; }
 
