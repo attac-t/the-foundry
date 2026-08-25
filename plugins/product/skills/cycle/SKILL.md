@@ -20,6 +20,9 @@ Read, in this order, at the commit you were given:
 **If direction is missing, do not invent it.** Say it is missing. That is the finding, and the pass
 ends there.
 
+**A goals file holding nothing accepted is the same answer.** A draft is not direction, and a pass
+that reads its own proposal as a goal has appointed itself.
+
 ## Resume before you start
 
 A waiting answer, a running experiment, or a result now due — each beats anything new. Deal with one
