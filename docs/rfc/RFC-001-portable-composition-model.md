@@ -1746,6 +1746,31 @@ revision read them — so the next reader knows exactly how old each answer is.
 would end this is an experiment that runs, not a note about when someone last looked, and #351 holds
 the nearest thing: six gates driven by one command.
 
+### Revision 25 — experiment 6 had been passing, unrun
+
+Revision 24 dated the column and moved only what it measured. Row 6 said *not built*: a run that
+introduces one clause with no provenance, confirming exactly one question is asked.
+
+**It was built. Nobody had run it.**
+
+| Was | Is | What forced it |
+|---|---|---|
+| 6: *not built* | **passes** | one `introduce`, then `authorise` exits 11, names that clause alone, and posts one question |
+| a question needed `source ask` | `authorise` asks | reading the code said otherwise; running it settled it |
+
+**`authorise` posts the question itself.** The refusal at 11 and the comment on the item are one act,
+so the ordinary case never calls `ask`. That verb is for a second question, and it refuses at 17 when
+this run already sent one.
+
+**Two clauses make two questions, one each** — which is the invariant, stated per clause rather than
+per run.
+
+**The cost of finding out was two comments on a live issue.** They were deleted, and a probe against a
+real work source should be read as leaving marks until it does not.
+
+**Unproven, and named.** Nothing here answered the question. Rows 6b to 6i still wait on a judge, and
+#332 owns producing one.
+
 ## 7. Unresolved questions
 
 **Closed since revision 2:** `policy` stays; the target allowlist is its first instance and is
@@ -1821,7 +1846,7 @@ required by §2.3, not speculative.
 
 ## 8. Falsifiable experiments
 
-| # | Experiment | Falsifies | At revision 24 |
+| # | Experiment | Falsifies | At revision 25 |
 |---|---|---|---|
 | 1 | Rewrite a gate script to `exit 0`; confirm the run is still graded by the bar it agreed to | the pinning invariant | **falsified 2026-08-22, closed 2026-08-23.** It fell for the reason §2.2 records: the pin is on the declaration, so `charter check` answered 0 and `complete` went 15 → 0. `gates` now takes every file a pinned command reaches from the base first. Re-run with `bin/gates.sh` rewritten to `exit 0`: the base's copy ran and the suite went red |
 | 1b | Ten ordinary runs — a dependency bump, a new test, a refactor; count how many downgrade | that downgrade is rare enough to mean something | moot — there is nothing to count |
@@ -1832,7 +1857,7 @@ required by §2.3, not speculative.
 | 3 | Two runs, same branch name, same machine | workspace isolation | **passes.** Two concurrent `open` calls: one built, one refused at 16, one whole checkout, no leftover. `mkdir` serialises the claim |
 | 4 | A directory of markdown files as a source — `read` under twenty lines, plus `ask` and `receive` | the work-source contract | **passes.** `lib/source-dir.sh` ships all four verbs, and the two-adapter rule is met for this contract alone |
 | 5 | A run where all clauses derive; confirm no human is asked | the authorisation gate is not ceremony | **passes**, on every self-hosted run to date |
-| 6 | A run that introduces one clause with no provenance; confirm exactly one question is asked | invariant 1 | not built |
+| 6 | A run that introduces one clause with no provenance; confirm exactly one question is asked | invariant 1 | **passes.** Run 2026-08-25 against this repository: one `charter introduce`, then `authorise` exits 11 naming that clause and no other, and posts exactly one `floor-question:` comment carrying the run's own id. A second clause makes a second question, one each. `authorise` asks — nothing has to call `source ask` for the ordinary case |
 | 6b | The worker asserts its own provenance for an invented clause; confirm it is treated as introduced | the independence constraint | not built |
 | 6c | A clause entailed only by `CLAUDE.md` prose; confirm the judge establishes it and no human is asked | the semantic path earns its place | not built |
 | 6d | A clause that *weakens* a prior one, with a judge willing to bless it; confirm the run refuses | the asymmetry — a judge may never permit a weakening | not built |
