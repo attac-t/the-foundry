@@ -1,0 +1,17 @@
+{
+  "name": "product",
+  "version": "0.1.0",
+  "description": "Keeps a repository's beliefs, risks and outcomes in contact with reality. Challenges and proposes; never decides meaning.",
+  "author": {
+    "name": "Christian Attard",
+    "url": "https://github.com/attac-t"
+  },
+  "keywords": [
+    "product-discovery",
+    "claim-challenge",
+    "evidence",
+    "risk",
+    "outcomes"
+  ],
+  "skills": "./skills/"
+}
