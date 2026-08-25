@@ -1088,7 +1088,12 @@ wreck_runner "a work source that cannot be named is caught" \
 # The question names the clause it asks about, so a reader that starts at the marker hands the question
 # back as its answer — and a human who has not replied yet reads as having agreed.
 wreck_runner "a question answering itself is caught" \
-  ghself 's#mine = index($0, mark) > 0; want = 0#mine = index($0, mark) > 0; want = 1#' lib/source-github.sh
+  ghself 's#open = 0; want = 0#open = 1; want = 1#' lib/source-github.sh
+# The author is the only thing telling the run's own words from a person's. A reader that ignores it
+# hands back a note the run wrote — which is exactly what #373 was, and it stamped a
+# human answer nobody gave.
+wreck_runner "a run answering its own question is caught" \
+  ghauthor 's#want = open \&\& substr($0, 16) != self#want = open#' lib/source-github.sh
 
 # A lookup that could not answer, read as a delivery that is not there — whose remedy is to open one.
 # The run lives in the body so that one run cannot open a second delivery, and this is the check that
