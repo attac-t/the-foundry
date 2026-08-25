@@ -139,6 +139,14 @@ lacks "and an enabled one says nothing more" "$rules" "kernel:craft-sh  —"
 # A URL holds a colon and is not a skill. Counting one would report a need no rule has.
 lacks "a link is not a skill"             "$rules" "https:"
 
+# `/output-style kernel:craftsman` is not a skill either, and a host told it is one goes looking for
+# a skill that is not there. Same reachability question, different noun.
+printf 'Voice: craftsman, always — `/output-style kernel:craftsman`.
+' >> "$tmp/one/.claude/rules/shell.md"
+styled=$(joined "$tmp/one" CLAUDE_CONFIG_DIR="$tmp/conf" FOUNDRY_WHO=a@b)
+has   "an output style is named as one"   "$styled" "style   kernel:craftsman"
+lacks "and never as a skill"              "$styled" "skill   kernel:craftsman"
+
 # Enabled, not installed. A plugin switched off is a skill nobody can invoke, and the settings file
 # is the only place that distinction lives.
 printf '{ "enabledPlugins": { } }\n' > "$tmp/conf/settings.json"

@@ -38,6 +38,7 @@ source  a directory, and the remote is GitHub. Install gh, or Issues stay unreac
 grants  2 in .foundry/practice
 gates   1 in .foundry/gates
 skill   kernel:craft-sh
+style   kernel:craftsman
 skill   signal:economy  — NOT enabled on this host
 joined.
 ```
