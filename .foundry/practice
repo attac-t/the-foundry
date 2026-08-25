@@ -7,8 +7,15 @@
 # grants nothing until a human commits it and a later run reads it.
 #
 # **Merging is not a grant floor can withhold.** Anything that can run `gh` can merge, whatever this
-# file says — floor is not a security boundary and says so. Foundry runs under an identity without
-# that permission, and the provider is what refuses.
+# file says — floor is not a security boundary and says so.
+#
+# **Nothing else withholds it here either.** This used to claim Foundry runs under an identity
+# lacking that permission, and that the provider refuses. Measured 2026-08-25: the identity `gh`
+# holds on this machine has `admin` on this repository, and over a hundred pull requests have been
+# merged under it. The provider refuses nothing and never has here.
+#
+# What holds is the operator's word and this file — both records, neither a control. #156 owns the
+# identity that could make a refusal real.
 #
 # Accepted 2026-08-19 by chriss.attard@gmail.com:
 #
