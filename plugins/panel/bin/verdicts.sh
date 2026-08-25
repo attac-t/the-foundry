@@ -2,10 +2,9 @@
 #
 # The review chain, made mechanical. See README.md.
 #
-# Panel already promised this: the adversary produces a verdict and structurally cannot write it,
-# `/verdict` records it, and `craft-verdict` says prior verdicts are input rather than archive. All
-# true, and none of it enforced — invoking the judge directly produced a verdict that went nowhere,
-# and the next round read the coordinator's retelling instead.
+# Panel already promised this: the adversary produces a verdict and
+# structurally cannot write it, and yet `/verdict` records that.
+# None of it is enforced, so an invoked verdict went nowhere.
 #
 # This does not change what Panel is. It refuses the one shortcut that made the promise advisory.
 #
@@ -45,9 +44,9 @@ note() { printf 'panel: %s\n' "$1" >&2; }
 # Verdict files are `NNN-<role>-verdict.md`. The number is the round.
 rounds() { ls "$1" 2>/dev/null | sed -n 's/^\([0-9][0-9]*\)-.*-verdict\.md$/\1/p'; }
 
-# The round after the last one recorded. It says which and still answers: a coordinator asks this
-# before the directory exists, so nothing there is what a new review looks like. A
-# mistyped path looks the same, and `001` is the round `prior_round` exempts.
+# The round after the last one recorded. It says which, and still
+# answers: a coordinator asks it before that directory exists.
+# One mistyped path looks exactly the same as an empty one.
 next_round() {
     [ -n "$1" ] || { note "next needs a verdicts directory"; exit 2; }
 
@@ -60,10 +59,9 @@ next_round() {
 # The highest round recorded, or nothing. Nothing is what a chain with no rounds looks like.
 last_round() { rounds "$1" | sort -n | tail -1 | sed 's/^0*//'; }
 
-# A round is a positive whole number. Anything else reached round one's exemption, the one round
-# that needs no prior, so a malformed round skipped the check by being malformed. `000` and
-# `-1` computed a want below 1; a word made `set -u` refuse with a shell error at
-# exit 1, which this file's header reserves for a prior nothing records.
+# A round is a positive whole number. Anything else reached round
+# one's exemption, so a malformed round skipped by malforming.
+# One word made `set -u` exit 1, a code already spoken for.
 refuse_unless_a_round() {
     case "$1" in ''|*[!0-9]*) not_a_round "$1" ;; esac
 
@@ -78,9 +76,9 @@ not_a_round() {
 #
 # The verdict round N must have read, or a refusal.
 #
-# Round 1 has no prior, so it answers nothing and exits 0. Every later round must find a record that
-# names the same review — otherwise the chain is being started fresh while claiming to continue one,
-# which is exactly the shape that let three rounds judge a summary.
+# Round 1 has no prior and exits 0. Later rounds must find a record
+# naming that review. Without one the chain restarts in silence,
+# the shape which let three rounds judge a retelling instead.
 #
 prior_round() {
     dir=$1; round=$2; review=$3
@@ -112,13 +110,11 @@ prior_round() {
 #
 # Write what a judge returned, at the next round, stamped with the review it judged.
 #
-# The number, the name and the stamp are decided here rather than by whoever is holding the verdict.
-# `prior` refuses a record that does not name its review — which is only worth anything if something
-# guarantees a recorded verdict carries one. A model asked to write the file might not, and the
-# refusal would then fire on an honest round.
+# The number, name and stamp are decided here, not by whoever holds
+# the verdict. `prior` refuses any record that does not name its
+# review, and a model asked to write one might simply forget.
 #
-# The body arrives on stdin and is never interpreted. A recorder that edits a verdict is a second
-# author.
+# The body is never interpreted. A recorder that edits a verdict is a second author.
 #
 record_verdict() {
     dir=$1; role=$2; review=$3
