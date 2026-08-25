@@ -2,8 +2,8 @@
 #
 # Drives every gate against a tree that breaks it, and reports what was caught.
 #
-# Nothing else does for these six. The four plugin gates drive their own breaks and always did —
-# kernel, signal, panel and floor answer 1351 assertions with no mutant unanswered between them.
+# Only these five need it. `agree` drives its own six with `agree.sh audit`, and the four plugin
+# suites drive theirs — 1351 assertions between them, no mutant unanswered.
 #
 # **Not a gate.** It makes the tree red on purpose, and a gate grading the gates is a loop nothing
 # outside it can check. Run by hand, read the count.
@@ -32,6 +32,10 @@ main() {
 
     say ""
     say "$caught caught, $missed missed"
+
+    say ""
+    say "these drive themselves, and are not run here"
+    say_what_drives_itself
 }
 
 # A gate already red grades nothing below it, and a break against a red tree reports the old fault.
@@ -41,6 +45,12 @@ every_gate_is_green() {
     done
 
     runs 'bash bin/project.sh check' && note green project || note RED project
+}
+
+# Named, never run here. Each is minutes, and a tool people skip because it is slow proves nothing.
+say_what_drives_itself() {
+    say "  self     agree      bash bin/agree.sh audit"
+    say "  self     kernel signal panel floor   bash plugins/<name>/tests/run.sh"
 }
 
 every_break() {

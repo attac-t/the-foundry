@@ -29,15 +29,18 @@ jobs:
       - name: And that check can fail
         run: sh bin/agree.sh audit
 
-      # Enforced on the three plugins that are clean. kernel, laravel-ddd and laravel-playbook
-      # carry 16 repeats between them; widening this gate means fixing those first. A gate
-      # that declares its scope is honest — a gate quietly narrowed to stay green is not.
+      # No arguments. The scope is `repeats.sh`'s own DEBT list and nothing else, because a file
+      # list here was a second declaration of the same thing — and the two had drifted.
+      #
+      # Measured 2026-08-25: a sentence copied from README into CONTRIBUTING turned a bare run red
+      # and this step green. Neither file was in the list. `agree` cannot see it: it holds the two
+      # to the same *gates*, never to the same arguments.
       #
       # This blocks verbatim duplication, which is the *precondition* of drift, not drift
       # itself. Once two statements of a rule differ by one word, separating intentional
       # variation from drift needs semantics, and no exit code can do it.
       - name: No sentence appears twice
-        run: bash bin/repeats.sh $(git ls-files 'plugins/panel/*.md' 'plugins/pest/*.md' 'plugins/signal/*.md')
+        run: bash bin/repeats.sh
 
       # Two craft-sh rules that only human attention held. Both were caught by hand three times in
       # one day, which is the moment a judgement becomes an exit code.
