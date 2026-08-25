@@ -41,6 +41,10 @@ answer that costs you anything. At 250 words it fired on 78 of every 100 real re
 handed you the long answer, then the short one. It now sits where the longest 5% of real replies
 sit, and 13 in 100 reach it.
 
+**That 78% cannot be credited to the threshold alone.** One commit, `e3cb32a` on 2026-08-12, moved
+the block from 250 to 600 *and* added the pre-reply brief. The rate fell after it. Nothing here can
+say which of the two did it.
+
 One block per turn. If the rewrite is still over, it ships and you get a note.
 
 **Beats** are syllables, counted by vowel groups. `use` is one, `utilise` three. **Long words** means
