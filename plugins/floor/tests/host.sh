@@ -98,6 +98,49 @@ homeless=$( cd "$tmp/one" && env -u HOME -u FOUNDRY_HOME FOUNDRY_WHO=a@b sh "$jo
 has "with no HOME it says there is nowhere"  "$homeless" "home    nowhere"
 lacks "and names no path at all"             "$homeless" ".foundry-runs"
 
+# --- what this host loaded ---
+
+# The shape a harness writes: one key per line. A record on a single line is a rendering nobody
+# serves, and a fixture that used one graded the reader against a file it will never meet.
+installed() {
+  mkdir -p "$home/plugins"
+  record=$home/plugins/installed_plugins.json
+
+  [ "$1" = none ] && { printf '%s\n' '{' '  "plugins": {}' '}' > "$record"; return; }
+
+  printf '%s\n' '{' '  "plugins": {' '    "floor@x": [' '      {' \
+    "        \"version\": \"$1\"" '      }' '    ]' '  }' '}' > "$record"
+}
+
+# A cache keyed by version is how a skill reaches a session, so a rule can land on `main` and change
+# nothing in the session that wrote it. This went unsaid until a person asked, and
+# `signal` was two versions behind the tree that had just committed it.
+# The repository ships the plugin, so the repository is what says which version. A target that
+# vendors none has none to check, and the count says zero rather than nothing at all.
+ships=9.9.9
+mkdir -p "$tmp/one/plugins/floor/.claude-plugin"
+printf '{ "name": "floor", "version": "%s" }\n' "$ships" \
+  > "$tmp/one/plugins/floor/.claude-plugin/plugin.json"
+
+home=$tmp/cfg
+installed 0.0.1
+
+behind=$( cd "$tmp/one" && CLAUDE_CONFIG_DIR="$home" FOUNDRY_WHO=a@b sh "$join" 2>&1 )
+has "a plugin behind the tree is named"  "$behind" "floor ships $ships"
+has "and it says what this host loaded"  "$behind" "and this host loaded 0.0.1"
+
+# Absent and behind are different remedies. One is an install and the other an update.
+installed none
+gone=$( cd "$tmp/one" && CLAUDE_CONFIG_DIR="$home" FOUNDRY_WHO=a@b sh "$join" 2>&1 )
+has "a plugin nobody installed says so" "$gone" "floor $ships is NOT installed here"
+lacks "and never calls that behind"      "$gone" "and this host loaded"
+
+# Silence is the healthy reading, and the count is how a reader knows it looked.
+installed "$ships"
+current=$( cd "$tmp/one" && CLAUDE_CONFIG_DIR="$home" FOUNDRY_WHO=a@b sh "$join" 2>&1 )
+lacks "a plugin that matches says nothing" "$current" "floor ships"
+has "and the count says it was checked"    "$current" "shipped here, checked against"
+
 # --- the repository's half ---
 
 is "a repository carrying neither file joins anyway" "$(code_of "$tmp/one" FOUNDRY_WHO=a@b)" "0"
