@@ -2,9 +2,10 @@
 #
 # Join this host to a repository that already carries Foundry.
 #
-# Six things stood between a clean machine and a working system, and three of them were silent when
-# wrong: no `gh` picks a different work source, no git identity fails later at commit, and no
-# `FOUNDRY_WHO` records an authority nobody granted. This names what is missing and changes nothing.
+# Seven things stand between a clean machine and a working system, and four of them are silent when
+# wrong: no `gh` picks a different work source, no git identity fails later at commit, no
+# `FOUNDRY_WHO` records an authority nobody granted, and a rule naming an unreachable skill does
+# nothing at all. This names what is missing and changes nothing.
 #
 # It reports and exits. Nothing here is a daemon, nothing is installed, and nothing is written to the
 # repository — the repository already says what may be graded, delivered and required.
@@ -154,9 +155,18 @@ report_skills_the_rules_name() {
 
     [ -n "$named" ] || { say "skills  none named in .claude/rules"; return; }
 
-    for skill in $named; do
-        say "skill   $skill$(reachable "${skill%%:*}")"
+    for one in $named; do
+        say "$(noun_for "$root" "$one")   $one$(reachable "${one%%:*}")"
     done
+}
+
+# `/output-style kernel:craftsman` is not a skill, and a host told it is one goes looking for a skill
+# that is not there. The reachability question is the same either way — the plugin is on, or nothing
+# a rule names can be reached.
+noun_for() {
+    grep -rqE "/output-style +$2" "$1/.claude/rules" 2>/dev/null && { printf 'style'; return; }
+
+    printf 'skill'
 }
 
 # `plugin:skill`, wherever a rule writes one. A rule is prose, so the mention is the declaration —
