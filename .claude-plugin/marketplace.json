@@ -43,6 +43,11 @@
       "name": "floor",
       "source": "./plugins/floor",
       "description": "Where work happens. A run is one attempt at one work item, held outside every repository it changes."
+    },
+    {
+      "name": "product",
+      "source": "./plugins/product",
+      "description": "Keeps a repository's beliefs, risks and outcomes in contact with reality. Challenges and proposes; never decides meaning."
     }
   ]
 }

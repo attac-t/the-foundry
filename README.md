@@ -10,6 +10,7 @@ A curated collection of Claude Code plugins.
 |--------|---------|
 | [kernel](plugins/kernel/README.md) | Cognitive OS. How to think. |
 | [panel](plugins/panel/README.md) | Adversarial agent teams. How to verify. |
+| [product](plugins/product/README.md) | Beliefs against reality. What to question. |
 | [signal](plugins/signal/README.md) | Plain English harness. How to speak. |
 | [floor](plugins/floor/README.md) | Runs and workspaces. Where work happens. |
 | [laravel-ddd](plugins/laravel-ddd/README.md) | Laravel DDD patterns. What to build. |
