@@ -21,7 +21,8 @@ Voice: craftsman, always — `/output-style kernel:craftsman`. Direct, opinionat
 
 ## The bar
 
-Short sentences. Plain English. **What can be said in one word must not be said in two.**
+Short sentences. Plain English. **One word, never two** — `signal:economy` owns that rule, and the
+order it obeys. Meaning and grammar come first, and the count comes last.
 
 Write it, then cut. **Delete any sentence that would not change what the reader does.**
 

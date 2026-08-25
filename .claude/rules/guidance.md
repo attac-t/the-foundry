@@ -15,6 +15,12 @@ Nothing said which file, so it landed in `CLAUDE.md` — the one file that owns 
 | a README | what a thing is and how to work on it | when someone reads the thing it describes |
 | `CLAUDE.md` | nothing. It routes to the rest | every session |
 
+**A note on the machine is not a home.** A harness keeps its own memory, and that memory dies with
+the harness, the account or the laptop. Nobody else ever reads it.
+
+So a learning lands in the tree. Worth remembering is worth a commit. Not worth a commit was never
+a learning.
+
 ---
 
 ## The test
