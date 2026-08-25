@@ -3,7 +3,11 @@
 # UserPromptSubmit: tell the agent the budget before it writes, not after.
 #
 # The half signal was missing. `Stop` arrives too late to keep a long reply off the screen, so every
-# first draft was written blind and 78% of them blocked. This is the only moment that can help.
+# first draft was written blind and the block was the path rather than the exception. This is the
+# only moment that can help.
+#
+# It used to claim 78% here. That commit also tripled the block threshold, so the number measures the
+# pair and not this hook — signal's README says so where the arithmetic lives.
 #
 # Then where the answer goes. `Stop` is handed one message, so a turn that answered twice scores as
 # one reply and passes. Nothing can mark the shape, so this is the only place it can be asked for.
