@@ -32,9 +32,20 @@ The old sentence dismissed a true report as hypothetical.
 Whether the provider *should* refuse is about how this repository is configured,
 and it is open as [#156](https://github.com/attac-t/the-foundry/issues/156).
 
-Nor is a gate you can make pass by editing the gate. A run that rewrites its own
-evaluator and reaches `complete` is [#66](https://github.com/attac-t/the-foundry/issues/66),
-recorded and open.
+**A gate you can make pass by editing the gate used to be here too, pointing at
+[#66](https://github.com/attac-t/the-foundry/issues/66) as recorded and open.
+#66 closed on 2026-08-23, and so did the hole.** A run that changes a file its own
+gates run is graded with the base's copy of that file, and the run records which
+ones in `substitutions`.
+
+**One form of it is still open, and it is narrower.** The restore follows a gate
+command's file closure by literal path. A gate that reaches a file through a
+variable — as `bin/gates.sh` reaches each plugin's suite — is not followed, so a
+run can rewrite that file and be graded by its own copy.
+
+That is [#341](https://github.com/attac-t/the-foundry/issues/341), open, with the
+cost of closing it measured on the issue. A report of the direct form is already
+caught; a report of this one is worth sending.
 
 ## Versions
 
