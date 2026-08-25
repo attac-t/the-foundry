@@ -1120,7 +1120,7 @@ wreck_runner "a question lookup that failed asking again is caught" \
 # stopped serving to an older client at all.
 #
 wreck_runner "a comment boundary read out of a rendering is caught" \
-  noboundary 's#"floor-comment:", .body#.body#' lib/source-github.sh
+  noboundary 's#"floor-comment: " + .author.login, .body#.body#' lib/source-github.sh
 #
 # A question a human can act on, and one only its own run can read.
 #

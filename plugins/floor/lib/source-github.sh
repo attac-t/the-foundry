@@ -138,7 +138,7 @@ read_answer() {
 comments_of() {
     # The `|` here is jq's, not the shell's — named so the line that runs `gh` holds no pipe at all,
     # which is the only thing `bin/shell.sh` can tell apart without a parser.
-    shape='.comments[] | "floor-comment:", .body'
+    shape='.comments[] | "floor-comment: " + .author.login, .body'
 
     seen=$(gh issue view "$1" --json comments --jq "$shape" 2>&1) || {
         printf 'source-github: could not read the comments: %s\n' "$seen" >&2
@@ -174,12 +174,33 @@ after_marker() {
 #
 said_after() {
     seen=$(comments_of "$1") || return 3
+    self=$(posting_as) || return 3
 
     printf '%s\n' "$seen" \
-        | awk -v mark="$2" '
-            $0 == "floor-comment:" { want = want || mine; mine = 0; next }
-            /^floor-question: /    { mine = index($0, mark) > 0; want = 0; next }
-            want && NF             { print }'
+        | awk -v mark="$2" -v self="$self" '
+            /^floor-comment: /  { open = open || mine; mine = 0
+                                  want = open && substr($0, 16) != self; next }
+            /^floor-question: / { mine = index($0, mark) > 0; open = 0; want = 0; next }
+            want && NF          { print }'
+}
+
+#
+# The account this run comments as. #373 is what a missing one costs: a
+# note the run wrote, holding a clause number so that a person could
+# copy it, was read back as the person saying yes to all of this.
+#
+# It fails closed. Not knowing who we are means not knowing whose these
+# words are, and a source that cannot tell these apart really has to
+# refuse rather than guessing in a way that suits its own favour.
+#
+posting_as() {
+    said=$(gh api user --jq '.login' 2>&1) || {
+        printf 'source-github: could not read who this run comments as: %s\n' "$said" >&2
+        return 3
+    }
+
+    [ -n "$said" ] || { printf 'source-github: gh names nobody as this run\n' >&2; return 3; }
+    printf '%s' "$said"
 }
 
 # 32 bits, so two texts can share one. A collision lets a rewritten question pass for the one already
