@@ -3987,7 +3987,9 @@ case "$*" in
                             case "$*" in *floor-comment*) mark='floor-comment:' ;; *) mark='' ;; esac
                             for body in "$store/comments"/*; do
                                 [ -f "$body" ] || continue
-                                [ -n "$mark" ] && printf '%s\n' "$mark"
+                                slot=${body##*/}
+                                who=$(cat "$store/authors/$slot" 2>/dev/null || printf 'foundry-run')
+                                [ -n "$mark" ] && printf '%s %s\n' "$mark" "$who"
                                 cat "$body"
                             done ;;
   # An item nobody filed and a source nobody could ask both fail here, and only the probe below tells
@@ -4004,9 +4006,20 @@ case "$*" in
                             printf '{"name":"gh"}\n' ;;
   # One comment, one body, in order. GitHub keeps a list and the adapter asks for the field, so the
   # fixture keeps a list too — a single file with separators in it would be a rendering nobody serves.
-  "issue comment"*)         mkdir -p "$store/comments"
-                            printf '%s\n' "$5" > "$store/comments/$(printf '%03d' \
-                                "$(find "$store/comments" -type f | grep -c .)")" ;;
+  #
+  # A body written here belongs to whoever `api user` names, because that is who is
+  # running. A test drops another person's words by writing both files
+  # itself, which is the only way two authors exist offline.
+  "issue comment"*)         mkdir -p "$store/comments" "$store/authors"
+                            slot=$(printf '%03d' "$(find "$store/comments" -type f | grep -c .)")
+                            printf '%s\n' "$5" > "$store/comments/$slot"
+                            cat "$store/me" 2>/dev/null > "$store/authors/$slot" \
+                                || printf 'foundry-run\n' > "$store/authors/$slot" ;;
+  # Who this run comments as. `posting_as` fails closed on an empty answer, so a
+  # store with no `me` still names somebody — the absent case is its
+  # own fixture, set by emptying the file rather than deleting it.
+  "api user"*)              [ -f "$store/reads-fail" ] && { echo "HTTP 401: Bad credentials" >&2; exit 1; }
+                            cat "$store/me" 2>/dev/null || printf 'foundry-run\n' ;;
   # A read that cannot answer. GitHub fails this way for a network, a token or a rate limit, and none
   # of them mean "nothing is there yet" — which is what both readers below used to conclude.
   # `gh` matches words in a body, so a run made the same day as another comes back on shared tokens.
@@ -4040,10 +4053,22 @@ STUB
 
 # A person comments, and order is what makes an answer come *after* a question. Numbered the way the
 # stub numbers them, because a name that sorts differently is a transcript nobody wrote.
-gh_says() {
-  mkdir -p "$GH_STORE/comments"
-  printf '%s\n' "$1" \
-    > "$GH_STORE/comments/$(printf '%03d' "$(find "$GH_STORE/comments" -type f | grep -c .)")"
+#
+# The author is a person, never the run. #373 is what the two being one costs: the run's own
+# note, holding a clause number so a person could copy it, was read back as
+# that person saying yes. A second author is what tells them apart.
+gh_says() { said_by a-person "$1"; }
+
+# The run's own words, in the same place a person's would land. Only a test that means to
+# check the refusal calls this — every other comment in this suite is a
+# person's, and reads that way.
+run_says() { said_by foundry-run "$1"; }
+
+said_by() {
+  mkdir -p "$GH_STORE/comments" "$GH_STORE/authors"
+  slot=$(printf '%03d' "$(find "$GH_STORE/comments" -type f | grep -c .)")
+  printf '%s\n' "$2" > "$GH_STORE/comments/$slot"
+  printf '%s\n' "$1" > "$GH_STORE/authors/$slot"
 }
 
 the_other_adapter() {
@@ -4110,6 +4135,21 @@ the_other_adapter() {
   has "and the first is still there"  \
       "$(gh_floor source receive authorisation tests)" "yes, go ahead"
 
+  # #373. The run posted a note explaining its own question, and the note held the clause number so a
+  # person could copy it. That note was read back as the person's yes, and floor stamped
+  # a human answer nobody had given. The author was in the data the whole time.
+  run_says 'To answer, post the clause number. It is 1234567890.'
+  lacks "the run's own comment is not an answer" \
+        "$(gh_floor source receive authorisation tests)" "1234567890"
+  has "and a person's answer still comes back" \
+      "$(gh_floor source receive authorisation tests)" "yes, go ahead"
+
+  # Fails closed, and this is why. An adapter that cannot name itself cannot tell its own words from
+  # a person's, so it must refuse. Guessing here means guessing in its own favour.
+  : > "$GH_STORE/me"
+  is "an adapter that cannot name itself refuses to read an answer" \
+     "$(code_of gh_floor source receive authorisation tests)" "20"
+  printf 'foundry-run\n' > "$GH_STORE/me"
 
   # The same rule where an answer is read. This one is fail-safe — the run waits rather than proceeds
   # — and it still reported a human who had not answered when nobody could be asked.
