@@ -2,17 +2,17 @@
 # Resolves the branch-aware memory directory path.
 # Outputs: .claude/memory/<branch> or .claude/memory (fallback)
 #
-# The redirects here read `>/dev/null 2>&1`, never `&>/dev/null`. `&>` is bash's, and dash reads it
-# as "run in the background, then redirect": the guard always succeeds, and git's own output lands
-# on stdout, where the caller reads it as the memory path.
+# Redirects here read `>/dev/null 2>&1`, never `&>/dev/null`. To
+# dash that second form means background, then redirect: this
+# guard always passes, and git's output becomes that path.
 
 MEMORY_BASE="${CLAUDE_MEMORY_DIR:-.claude/memory}"
 
 # An active run outranks the branch, and outranks the base above.
 #
-# One variable is the whole handshake with floor — no shared file, no call — so each plugin still
-# works with the other uninstalled. The price is that a hook cannot export into the session that
-# started it, so a run floor found through its own pointer is one this script cannot see.
+# One variable is the whole handshake with floor. No shared file,
+# no call, so each plugin works when the other is missing. But
+# a hook cannot export, so floor's own pointer goes unseen.
 if [ -n "${FOUNDRY_RUN:-}" ] && [ -d "$FOUNDRY_RUN" ]; then
     echo "$FOUNDRY_RUN/memory"
     exit 0

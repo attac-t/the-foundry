@@ -1,13 +1,13 @@
 #!/bin/sh
 # Stop: hand the turn back when the blueprint still shows work in flight. Once per turn.
 #
-# A block costs the reader a second reply. One is worth it, because the reason names work the agent
-# can do — close the task, defer it, or write the handoff. Eight are not, and eight is what this did
-# without the guard, until Claude Code overrode it at the cap.
+# A block costs the reader a second reply. One is worth it: the
+# reason names work that agent can do: close, defer, or hand
+# off. Eight are not, and eight is what it did unguarded.
 #
-# `stop_hook_active` is set by any plugin's stop hook, not only ours, so reading it as "stand down"
-# gives up our block to someone else's now and then. A nag one turn late costs nothing. A nag that
-# cannot be turned off costs every turn.
+# `stop_hook_active` is set by any plugin's stop hook, not just
+# ours, so reading it as a stand down gives up our block now
+# and then. A late nag is free. A stuck one costs it all.
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 MEMORY_DIR=$(sh "$SCRIPT_DIR/lib/resolve-memory.sh")

@@ -9,29 +9,27 @@ PAYLOAD=$(cat)
 #
 # Read a value out of the payload.
 #
-# This used to call `jq`, which ships with neither macOS nor Git Bash. Missing, it did not silence
-# the hook — it emptied the path, and an empty path matches no skip rule, so the ADR prompt fired on
-# every write the hook exists to ignore. A dependency that fails loud is a bug; one that inverts the
-# behaviour is a trap.
+# This called `jq`, which ships with neither macOS nor Git Bash.
+# Missing, it emptied that path, so the prompt fired on every
+# write this hook exists to skip. Inverted, and quiet too.
 #
 field() { printf '%s' "$PAYLOAD" | awk -f "$SCRIPT_DIR/lib/unjson.awk" -v path="$1" 2>/dev/null; }
 
 FILE=$(field tool_input.file_path)
 [ -n "$FILE" ] || FILE=$(field tool_input.pathInProject)
 
-# No path means the reader is broken, not that the file is interesting. Stay quiet and let the
-# preflight be the one to say so.
+# No path means the reader is broken, not the file interesting. The preflight says so.
 [ -n "$FILE" ] || exit 0
 
-# One separator to match against. Windows hands us `src\tests\Foo.php`, and a rule written in
-# forward slashes silently declines to fire on half the installs.
+# One separator to match against. Windows hands `src\tests\Foo.php`,
+# and a rule written in forward slashes silently declines to fire
+# on half the installs it runs on. Nothing says it went wrong.
 FILE=$(printf '%s' "$FILE" | tr '\\' '/')
 
 # Skip non-code files (tests, docs, config)
 printf '%s' "$FILE" | grep -qE '(^|/)tests?/|\.test\.|\.spec\.|\.md$|\.json$|\.ya?ml$|\.env' && exit 0
 
-# Which standard governs what was edited. Naming it is the whole job — what it asks for is its own,
-# and a copy here would be a second one to keep true.
+# Which standard governs the edit. A copy here would be a second one to keep true.
 standard_for() {
     case "$1" in
         plugins/*/bin/*.sh|plugins/*/lib/*.sh|plugins/*/hooks/*.sh) printf 'craft-sh'  ;;
