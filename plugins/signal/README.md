@@ -31,6 +31,11 @@ would tell you never reaches the agent. The numbers go to the one who can act on
 | Longest sentence | up to 20 words | 21 to 45 | over 45 |
 | Words in all | up to 120 | 121 to 600 | over 600 |
 
+**The long-word block needs four of them, and the table cannot show that.** Three long words in a
+five-word sentence is 60% and only warns; five in nine is 78% and blocks. A share computed from
+almost nothing is not a measurement, and a short reply should not be blocked by one. The warn line
+has no such floor — it fires on the share alone.
+
 Warn is where good writing sits. Block is the tail, and it sits far out because it is the only
 answer that costs you anything. At 250 words it fired on 78 of every 100 real replies. Each one
 handed you the long answer, then the short one. It now sits where the longest 5% of real replies
