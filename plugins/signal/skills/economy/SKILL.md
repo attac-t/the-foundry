@@ -15,6 +15,36 @@ So ask first.
 
 ---
 
+## The rule
+
+> **What can be said in one word must not be said in two.**
+
+## Where it sits
+
+It is the fifth thing you do, never the first.
+
+```
+clear meaning → natural grammar → precise claim → useful structure → economy → the count
+```
+
+**Never reverse that.** A shorter sentence that a fluent speaker would not say is not shorter. It is
+broken, and the count still passes.
+
+## Cut the word, then read the sentence again
+
+Swapping a word changes the grammar around it. Read the whole sentence out loud after every cut.
+
+| Was | Cut to | What broke |
+|---|---|---|
+| *a bar its owner signed off on* | *a bar its owner signed off* | the preposition the verb needs |
+| *the run it was graded against* | *the run it was graded* | same, and now it says nothing |
+
+Both are shorter. Neither is English. This shipped in a doctrine and a reader stopped at it.
+
+**If nobody would say it aloud, put the word back.**
+
+---
+
 ## Before you write
 
 | About to | Ask |
