@@ -4,6 +4,16 @@
 
 ---
 
+## Doctrine
+
+**Read [`.foundry/doctrine.md`](.foundry/doctrine.md) before you decide anything.** It says why
+Foundry exists, who may say what good means here, and what is not true yet.
+
+A rule below says how the work is done. The doctrine says what the work answers to. Where they
+disagree, the doctrine wins and the rule is wrong.
+
+---
+
 ## Rules
 
 This file routes. It holds no rules of its own.
