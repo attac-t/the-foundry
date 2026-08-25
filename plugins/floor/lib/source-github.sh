@@ -18,7 +18,7 @@
 # type is a command language, and the first person who met one answered and went unheard.
 #
 # Usage: sh source-github.sh read    <issue>
-#        sh source-github.sh publish <issue> <run> <branch> <title> [word]
+#        sh source-github.sh publish <issue> <run> <branch> <title> [word] [brief]
 #        sh source-github.sh ask     <issue> <question> <text>
 #        sh source-github.sh receive <issue> <question>
 #
@@ -60,7 +60,7 @@ repository_answers() { gh repo view --json name >/dev/null 2>&1; }
 publish_delivery() {
     had=$(delivery_of "$2") || return 3
 
-    [ -z "$had" ] && { open_delivery "$1" "$2" "$3" "$4" "$5"; return $?; }
+    [ -z "$had" ] && { open_delivery "$1" "$2" "$3" "$4" "$5" "${6:-}"; return $?; }
 
     # `<branch> <url>`, and a branch holds no space.
     [ "${had% *}" = "$3" ] || return 4
@@ -89,9 +89,21 @@ delivery_of() {
 # The caller says which word. `Refs` names the item and closes nothing.
 # `Closes` is what GitHub acts on, and only a person grants that.
 open_delivery() {
-    gh pr create --head "$3" --title "$4" --body "${5:-Refs} #$1
+    gh pr create --head "$3" --title "$4" --body "$(body_for "$1" "$2" "${5:-Refs}" "${6:-}")" \
+        || return 3
+}
 
-floor-run: $2" || return 3
+# The brief first, then the two lines only a machine reads. A reader opens this
+# to decide something, and a run marker above the reason is a transcript
+# wearing a decision's clothes. The order is the whole point here.
+#
+# Nothing to say is legal, and says only which item this answers. Thin,
+# and thin is honest: a body written to fill the space is worse than
+# a shorter one, because a reader reads to the end to learn that.
+body_for() {
+    [ -n "$4" ] && [ -r "$4" ] && printf '%s\n\n' "$(cat "$4")"
+
+    printf '%s #%s\n\nfloor-run: %s\n' "$3" "$1" "$2"
 }
 
 put_question() {
@@ -360,11 +372,11 @@ case "${1:-}" in
     claim)   shift; take_claim       "${1:-}" "${2:-}" ;;
     held)    shift; read_claim       "${1:-}" ;;
     release) shift; drop_claim       "${1:-}" "${2:-}" ;;
-    publish) shift; publish_delivery "${1:-}" "${2:-}" "${3:-}" "${4:-}" "${5:-}" ;;
+    publish) shift; publish_delivery "${1:-}" "${2:-}" "${3:-}" "${4:-}" "${5:-}" "${6:-}" ;;
     ask)     shift; put_question     "${1:-}" "${2:-}" "${3:-}" ;;
     receive) shift; read_answer      "${1:-}" "${2:-}" ;;
     state)   shift; delivery_state   "${1:-}" ;;
     land)    shift; land_delivery    "${1:-}" ;;
-    *)       echo "source-github: read <issue> | kind <issue> | claim <issue> <host> | held <issue> | release <issue> <host> | publish <issue> <run> <branch> <title> [word] | ask <issue> <question> <text> | receive <issue> <question> | state <run> | land <run>" >&2
+    *)       echo "source-github: read <issue> | kind <issue> | claim <issue> <host> | held <issue> | release <issue> <host> | publish <issue> <run> <branch> <title> [word] [brief] | ask <issue> <question> <text> | receive <issue> <question> | state <run> | land <run>" >&2
              exit 2 ;;
 esac

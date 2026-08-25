@@ -140,7 +140,7 @@ floor — where work happens.
                                   did not pass
   run.sh open                     check out every selected target in isolation, and print where
   run.sh complete                 may this run deliver? exit 15 names what is missing
-  run.sh deliver <title>          push the work and tell the source where it is
+  run.sh deliver <title> [brief]  push the work, with a file the source carries as the body
   run.sh aside [text]             record what this run cannot act on, or print what it has
   run.sh claim <item>             take it for this host, or say who has it
   run.sh release <item>           let it go, if this host took it
@@ -2337,7 +2337,7 @@ say_the_asides() {
 
 deliver() {
     title=${1:-}
-    [ "$#" -le 1 ] || { usage; exit 2; }
+    [ "$#" -le 2 ] || { usage; exit 2; }
     [ -n "$title" ] || { note "deliver names the change"; exit 2; }
 
     dir=$(active_run) || exit 1
@@ -2346,10 +2346,34 @@ deliver() {
     refuse_unreadable_run "$dir"
     refuse_ungranted_delivery "$dir" "$here"
     refuse_incomplete "$dir"
+    keep_the_brief "$dir" "${2:-}"
 
     send_delivery "$dir" "$here" "$title"
     say_the_asides "$dir"
     emit "$dir" run.delivered
+}
+
+# The brief travels with the run, never as an argument. A body is many lines and
+# a positional one is a shape a shell mangles, so the caller names a
+# file and the run keeps a copy that outlives whatever wrote it.
+#
+# Absent is legal. A source writes what it always wrote, and a delivery
+# saying only which item it answers is a thin one rather than wrong.
+# To pass a path that is not there is the mistake, so it refuses.
+keep_the_brief() {
+    [ -n "$2" ] || return 0
+
+    [ -r "$2" ] || { note "no brief to read at [$2]"; exit 2; }
+    cat "$2" > "$(brief_file "$1")" || die_unwritable "$(brief_file "$1")"
+}
+
+brief_file() { printf '%s/brief' "$1"; }
+
+# A path, or nothing at all. An adapter that is given a path it cannot
+# read has been told a lie. One that was handed no path knows there
+# is nothing at all, and so those are two very different things.
+brief_if_kept() {
+    [ -s "$(brief_file "$1")" ] && printf '%s' "$(brief_file "$1")"
 }
 
 refuse_ungranted_delivery() {
@@ -3709,7 +3733,8 @@ closure_word() {
 }
 
 send_and_record() {
-    said=$(source_says publish "$(item_id "$1")" "$(basename "$1")" "$2" "$3" "$(closure_word "$1")")
+    said=$(source_says publish "$(item_id "$1")" "$(basename "$1")" "$2" "$3" \
+        "$(closure_word "$1")" "$(brief_if_kept "$1")")
     refuse_unless_answered "$?" delivery 19
 
     record_delivery "$1" "$2" "${4:-}" "$said"

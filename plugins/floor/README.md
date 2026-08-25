@@ -148,6 +148,7 @@ ${FOUNDRY_HOME:-$HOME/.foundry}/runs/<date>-<slug>-<short id>/
 ├── evidence           one line per gate that ran, tab-separated
 ├── charter            the bar — one clause, one pin and one command per line
 ├── delivery           the branch this run pushed, the commit it pushed, and where it landed
+├── brief              the body a source carried — absent when `deliver` was handed none
 ├── substitutions      files graded as the base wrote them — absent when the run changed no gate
 ├── observations       what happened, one line each, and nothing granted by any of it
 ├── asides             what this run could not act on — written by `aside`, read by nothing
