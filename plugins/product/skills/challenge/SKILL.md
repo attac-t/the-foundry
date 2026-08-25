@@ -1,9 +1,9 @@
 ---
-name: challenge-claim
+name: challenge
 description: Test one product claim against the evidence and end with a state and one legal next move. Use before acting on a belief about users, value, position, feasibility or strategy — and when a belief has gone unchecked for a while.
 ---
 
-# Challenge Claim
+# Challenge
 
 > "The claim you never test is the one paying for everything."
 
