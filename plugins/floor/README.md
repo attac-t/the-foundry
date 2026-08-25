@@ -179,8 +179,15 @@ nobody granted it.
 The evidence ledger needs no such care. It lives inside the run and is deleted with it, so nothing
 can inherit a record it did not write.
 
-`units/` holds one unit today. The level is there from the first run because adding it later would
-move every path in every adapter.
+`units/` holds one unit today, and the level was there from the first run. **The reason given for it
+was wrong.** Adding it later would not have moved a path in any adapter, because an adapter is handed
+an item id, a question id or a branch and never a directory inside the run — measured across all
+three, which hold none.
+
+What the level actually buys is the directory shape. A second unit's files land at `units/02/` with
+nothing above them moving. **It does not buy the call sites:** `units/01` is written literally in five
+places in `run.sh`, and `01` is stamped as the evidence ledger's unit column in two more. A second
+unit is seven edits in core, and there is no verb that makes one.
 
 `planning/` is scratch space, and deliberately **not** called a workspace. Workspace is a seam in
 RFC-001 with no written contract, this directory holds no checkout, and naming a thing after a
@@ -355,7 +362,7 @@ Nothing moves one into the other. Naming a repository in `item.md` grants nothin
 allowlist below decides, and `policy authorize` is the only thing that writes to it.
 
 Authoritative targets sit under the unit because a workspace belongs to a unit and targets belong to
-a workspace. One unit ships; the level is already there.
+a workspace. One unit ships, the level is already there, and the seven sites naming it are above.
 
 ---
 
