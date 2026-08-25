@@ -1876,7 +1876,7 @@ required by §2.3, not speculative.
 | 12 | Open a shell in a workspace and take over mid-run | the session decomposition | **passes.** It did not at revision 17, and that entry stood six revisions after #115 closed. Re-run 2026-08-25 from a delivered run's workspace with `FOUNDRY_RUN` unset: `path` answers the run's directory and `evidence` prints its ledger. `active_run` looks down at its own feet now |
 | 13 | Two units in one run, in parallel, no interference | the unit/workspace split | not built |
 | 13b | Two deliveries against one target; confirm each is told whether it can join the other | that separation needs no coordinator | **passes.** `reconcile` asks the source what else is open and tries the merge beside the run. No scheduler, no lock, and no run reads another's workspace. Proved on this repository's own queue: three of five clashed |
-| 14 | Skill narrowing vs. kernel's claimed 84% activation | the discovery convention | unmeasured |
+| 14 | Skill narrowing vs. kernel's claimed 84% activation | the discovery convention | **unmeasured, and the claim is withdrawn.** kernel's README stated 20% and 84% as fact while this row called the second unmeasured. Nothing counts activations, so both are gone and the README says so. The experiment is unchanged and still unrun |
 | 15 | Panel's own kill criterion — ten runs | whether Panel earns its cost | **cannot be run as written.** `.gitignore` holds `.claude/panel/`, so a verdict dies with its branch — thirty-seven written here and one tracked by accident. Nothing can count ten runs. #332 owns producing a verdict floor can read |
 
 Experiments 1, 5, 6 and 9 test the properties this RFC claims most loudly. **Experiment 1 falsified

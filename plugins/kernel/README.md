@@ -126,9 +126,14 @@ New sessions begin empty.
 
 ### Skill Activation
 
-Skills activate ~20% naturally. Your patterns get ignored.
+Skills activate rarely on their own. Your patterns get ignored.
 
-**Solution:** `evaluate` forces YES/NO commitment. Activation jumps to 84%.
+**Solution:** `evaluate` forces a YES/NO commitment on each one.
+
+**Neither rate here is measured.** This used to say 20% naturally and 84% after,
+and RFC-001 §8 row 14 has recorded that second number as *unmeasured* the whole
+time. Nothing counts activations, so nothing can say whether the number is right,
+stale, or invented. The mechanism is real; the arithmetic is not evidence.
 
 ### Memory Loss
 
