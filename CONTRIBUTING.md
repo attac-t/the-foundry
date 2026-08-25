@@ -8,8 +8,20 @@ sh bin/agree.sh                 # this table, the workflow, gates.sh and every h
 sh bin/gates.sh linux           # the same eight where `sh` is dash
 ```
 
-CI runs the first two. Leave `agree` out of your run and a PR can still go red on a check this file
-never mentioned — the drift this file exists to prevent, one level up.
+Leave `agree` out of your run and a PR can still go red on a check this file never mentioned — the
+drift this file exists to prevent, one level up.
+
+**CI runs more than the three above, not less.** Each of these has no place in `gates.sh` and is
+yours to run when it applies:
+
+| | Costs | Run it when |
+|---|---|---|
+| `sh bin/agree.sh audit` | five minutes | you change what `agree` reads, or how |
+| the per-plugin tool check | seconds, in the matrix | a plugin starts reaching for something new |
+| three operating systems | a matrix nobody has locally | you touch anything a suite runs |
+
+The last one is the gap no local run closes. **A green tree here says nothing about macOS**, and has
+not since the billing lapsed.
 
 **A green gate is not a working gate.** `bash bin/breaks.sh` drives each one against a tree that
 breaks it and prints what was caught. It is not in `gates.sh` and never will be: it makes the tree red
