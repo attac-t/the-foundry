@@ -76,6 +76,24 @@ named=$( cd "$tmp/one" && FOUNDRY_WHO=a@b FOUNDRY_HOME="$tmp/elsewhere" sh "$joi
 has "a named home is reported as given" "$named" "$tmp/elsewhere"
 lacks "and is not called derived"        "$named" "derived from HOME"
 
+# One home, and the runner owns it. `join` used to derive its own and said `.foundry-runs` where a
+# run lands in `.foundry`, so it named a home no run had ever used. Asking the runner
+# is the fix, and comparing the two answers is the only thing that proves it.
+#
+# Whole field, never a substring. `.foundry` sits inside `.foundry-runs`, so a
+# contains-check passes on the exact pair it exists to catch — which
+# it did, silently, on the first draft of this very line.
+run=$(dirname "$join")/run.sh
+mine=$( cd "$tmp/one" && env -u FOUNDRY_HOME FOUNDRY_WHO=a@b sh "$run" home 2>&1 )
+theirs=$(printf '%s\n' "$said" | awk '$1 == "home" { print $2 }')
+is "the home it reports is the home a run would use" "$theirs" "$mine"
+
+# No home to derive from is not a home called nothing. It used to print `/.foundry-runs`, which is a
+# path, and a path reads as somewhere a run went.
+homeless=$( cd "$tmp/one" && env -u HOME FOUNDRY_WHO=a@b sh "$join" 2>&1 )
+has "with no HOME it says there is nowhere"  "$homeless" "home    nowhere"
+lacks "and names no path at all"             "$homeless" ".foundry-runs"
+
 # --- the repository's half ---
 
 is "a repository carrying neither file joins anyway" "$(code_of "$tmp/one" FOUNDRY_WHO=a@b)" "0"

@@ -98,11 +98,16 @@ refuse_without_an_authority() {
 # Derived, never asked for. Saying which one it chose is the point: a home nobody named is a home
 # nobody can find again, and two hosts that chose differently look like one that lost a run.
 report_home() {
-    home=${FOUNDRY_HOME:-$HOME/.foundry-runs}
+    home=$(run_home) || { say "home    nowhere. No FOUNDRY_HOME, and no HOME either"; return; }
 
     say "home    $home"
     [ -n "${FOUNDRY_HOME:-}" ] || say "        derived from HOME. Set FOUNDRY_HOME to put it elsewhere."
 }
+
+# `run.sh` owns the home, because `run.sh` is what puts a run in one. This
+# used to derive its own, instead, and said `.foundry-runs` where a run
+# would land in `.foundry`. So that is a home that no run ever used.
+run_home() { sh "$(dirname "$0")/run.sh" home 2>/dev/null; }
 
 #
 # Which adapter answers, said out loud. This is the silent one:
