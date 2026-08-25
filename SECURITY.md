@@ -21,9 +21,16 @@ repository, with their credentials. So:
 
 **Merging is not a boundary floor can hold, and it says so.** `.foundry/practice`
 grants grading and delivering, never merging — anything that can run `gh` can
-merge whatever this repository says. Foundry runs under an identity without that
-permission, and the provider is what refuses. A report that Foundry *could* merge
-if its identity allowed it describes the design, not a fault in it.
+merge whatever this repository says. A report that floor did not stop a merge
+describes the design, not a fault in it.
+
+**This used to say the identity lacks that permission and the provider refuses.
+It does not.** Measured 2026-08-25: the identity `gh` holds on the machine doing
+this work has `admin` here, and over a hundred pull requests are merged under it.
+The old sentence dismissed a true report as hypothetical.
+
+Whether the provider *should* refuse is about how this repository is configured,
+and it is open as [#156](https://github.com/attac-t/the-foundry/issues/156).
 
 Nor is a gate you can make pass by editing the gate. A run that rewrites its own
 evaluator and reaches `complete` is [#66](https://github.com/attac-t/the-foundry/issues/66),
