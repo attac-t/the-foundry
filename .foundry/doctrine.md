@@ -2,18 +2,18 @@
 
 Why Foundry exists, who may say what good means here, and what is not true yet.
 
-**A run reads this and never writes it.** Every line was ratified by a human, at a commit, on an
-issue anyone can open. A change here binds nothing until a human commits it and a later run reads it.
+**A run reads this and never writes it.** A human said yes to every line, at a commit, on an issue
+anyone can open. A change here counts for nothing until a human commits it and a later run reads it.
 
 ---
 
 ## Mission
 
-> **Keep every change answerable to the humans who ratified the bar it must meet.**
+> **Every change must answer to the people who signed off its bar.**
 
 The short form:
 
-> **Every change answers to a bar its producer did not ratify.**
+> **Every change answers to a bar its producer did not sign off.**
 
 **Did not, never could not.** *Could not* is a promise this cannot keep. A producer on the same shell
 can edit any file here, and v1 does not close that. What does hold is smaller, and it is set out
@@ -23,7 +23,7 @@ below.
 
 | | |
 |---|---|
-| the producer never owns the bar | it may propose one. It is never the hand whose commit makes one bind |
+| the producer never owns the bar | it can ask for one. It is never the hand whose commit makes one count |
 | a record informs, never grants | who may say yes is read from history, never written by the run that needs it |
 | only a human decides meaning | a machine may grade, draft, ask and refuse. It may not say what good is |
 | every part ships alone | a plugin that needs another to be useful is one plugin wearing two names |
@@ -37,7 +37,7 @@ One person may hold every one. That is a small map, not a different model.
 | Term | Means |
 |---|---|
 | producer | proposes or performs the change. A role per change, never a kind of person |
-| authority | who may ratify a claim. Named by the map, for the claim's pinned source |
+| authority | who may say yes to a claim. Named by the map, for the claim's pinned source |
 | decision-maker | the named authority for one trade-off, recorded inside that decision |
 | acceptor | who accepts a delivery. Today it cannot be withheld, and it is self-reported |
 | accountability | who answers for a result. Traced, never granted, and never authority |
@@ -45,11 +45,11 @@ One person may hold every one. That is a small map, not a different model.
 
 ### The map
 
-One map per governed repository. It says which claims answer to which humans.
+One map per repo Foundry runs on. It says which claims answer to which people.
 
 > **A map states how it changes, or it is not a map.**
 
-Ratified on [#128](https://github.com/attac-t/the-foundry/issues/128), 25 August 2026. Without that
+Signed off on [#128](https://github.com/attac-t/the-foundry/issues/128), 25 August 2026. Without that
 rule, whoever installs it quietly owns the lot. That is the model thrown out here.
 
 | Repository | Its map |
@@ -57,18 +57,19 @@ rule, whoever installs it quietly owns the lot. That is the model thrown out her
 | one person | one generated line. Convention first, so nothing is written by hand |
 | a team | claim authorities and conflict rules, written out |
 
-**A map change is ratified under the rule already in force, and binds later runs only.** A map that
+**A map change is signed off under the rule already in force. It counts for later runs only.** A map that
 changed under its own new rule could rewrite its own authority in a single commit.
 
 ### Six rules
 
 1. The pinned source picks the row. The map names the human.
-2. A change answers only to what was signed off at or before its base. Its own writes bind nothing.
-3. Assent is a dated, attributable record. Silence and merge are never assent.
+2. A change answers only to what was signed off at or before its base. Its own writes count for
+   nothing.
+3. A yes is written down. It is dated and it names who said it. Silence and merge are never a yes.
 4. A real clash goes to a written order of rank. With none, that trade stops until both sides say
    yes together. Only that trade stops. Other work carries on.
-5. Anyone proposes a map change. Only the change row ratifies it.
-6. Cite, never create. Nothing a producer writes may create authority, assent or a verdict.
+5. Anyone can ask for a map change. Only the change row says yes to it.
+6. Point at it, never make it. Nothing a producer writes can make authority, a yes or a verdict.
 
 **A named human in a map is a record, not a control.** Foundry does not claim to know who wrote a
 line. It will not claim that until [#156](https://github.com/attac-t/the-foundry/issues/156) proves it.
@@ -96,7 +97,7 @@ Each line is dated to the issue that would close it. None of them is claimed any
 | Not true today | Owner |
 |---|---|
 | the suite that ran was the suite pinned | [#341](https://github.com/attac-t/the-foundry/issues/341) |
-| who ratified is more than the run's word | [#156](https://github.com/attac-t/the-foundry/issues/156) |
+| who said yes is more than the run's word | [#156](https://github.com/attac-t/the-foundry/issues/156) |
 | a person can answer a judged clause | [#343](https://github.com/attac-t/the-foundry/issues/343) |
 | acceptance can be withheld | [#359](https://github.com/attac-t/the-foundry/issues/359) |
 | the record outlives the run directory | [#337](https://github.com/attac-t/the-foundry/issues/337) |
