@@ -15,9 +15,9 @@ The short form:
 
 > **Every change answers to a bar its producer did not ratify.**
 
-**Did not, never could not.** *Could not* is a guarantee this does not give. A producer on the same
-shell can edit any file here, and v1 does not close that. What holds is narrower, and it is written
-down below.
+**Did not, never could not.** *Could not* is a promise this cannot keep. A producer on the same shell
+can edit any file here, and v1 does not close that. What does hold is smaller, and it is set out
+below.
 
 ## Principles
 
@@ -27,7 +27,7 @@ down below.
 | a record informs, never grants | who may say yes is read from history, never written by the run that needs it |
 | only a human decides meaning | a machine may grade, draft, ask and refuse. It may not say what good is |
 | every part ships alone | a plugin that needs another to be useful is one plugin wearing two names |
-| say what is not true | an unverified claim, a residual risk and a known gap each get a sentence, and the sentence says which it is |
+| say what is not true | an unchecked claim, a left-over risk and a known gap each get a line, and the line says which it is |
 
 ## Authority
 
@@ -50,7 +50,7 @@ One map per governed repository. It says which claims answer to which humans.
 > **A map states how it changes, or it is not a map.**
 
 Ratified on [#128](https://github.com/attac-t/the-foundry/issues/128), 25 August 2026. Without that
-rule the installer quietly becomes the owner of everything. That is the model rejected here.
+rule, whoever installs it quietly owns the lot. That is the model thrown out here.
 
 | Repository | Its map |
 |---|---|
@@ -63,10 +63,10 @@ changed under its own new rule could rewrite its own authority in a single commi
 ### Six rules
 
 1. The pinned source picks the row. The map names the human.
-2. A change answers only to ratifications at or before its base. Its own writes bind nothing for it.
+2. A change answers only to what was signed off at or before its base. Its own writes bind nothing.
 3. Assent is a dated, attributable record. Silence and merge are never assent.
-4. A true conflict goes to written precedence. Absent that, the trade blocks until the conflicting
-   authorities jointly ratify. The block scopes to the trade, and other work carries on.
+4. A real clash goes to a written order of rank. With none, that trade stops until both sides say
+   yes together. Only that trade stops. Other work carries on.
 5. Anyone proposes a map change. Only the change row ratifies it.
 6. Cite, never create. Nothing a producer writes may create authority, assent or a verdict.
 
@@ -82,12 +82,12 @@ A delivery cannot silently claim it was checked against something it was not.
 | the bar was pinned at the base | a swapped pin contradicts the record |
 | every clause was held | an unheld clause is named as unheld |
 | the commit exists | an absent commit is absent |
-| a substitution was recorded | an invented one has no record |
+| a swap was written down | a made-up one has no record |
 
 **Every path to a lower bar runs through a visible, dated commit.** No path is silent.
 
-*Silently* means without the record contradicting itself or history showing the act. It does not mean
-impossible.
+*Silently* means the record does not fight itself and history does not show the act. It does not
+mean it cannot be done.
 
 ## What does not hold yet
 
@@ -103,6 +103,19 @@ Each line is dated to the issue that would close it. None of them is claimed any
 
 **A hostile hand on the same shell defeats every wall here.** This catches accident, drift and the
 easy path. It is not a security boundary. No sentence in this file may imply that it is.
+
+## Strategy
+
+**A bet, not a principle.** Every line here can be wrong, and each one says how we would find out.
+
+| The bet | How it dies |
+|---|---|
+| framework authors first, because their bar is already written down | none of them writes a bar we can pin |
+| Claude Code is today's wrapper, not the product | a second harness costs more to add than it is worth |
+| a repo far from here can run this | the first foreign run needs a hand at every step |
+| the run record is worth keeping | nobody reads one twice |
+
+**Kill dates go on the issue, not here.** A bet with no way to lose is a belief.
 
 ## Vision
 
