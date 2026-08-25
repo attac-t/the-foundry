@@ -34,7 +34,7 @@ approving what it judges.
 Law 4 is the mechanism that makes it structural rather than polite: a judge that cannot write what
 it judges cannot have written what it approves. Read together, not separately.
 
-**Law 1's "leader included" is aspiration in 0.1.0.** Judges are held structurally by an allowlist.
+**Law 1's "leader included" is still aspiration.** Judges are held structurally by an allowlist.
 The parent's own write scope is not constrained yet — see Enforcement. The most strongly worded law
 is currently the least enforced, and it would be dishonest to state it without saying so.
 
@@ -80,10 +80,13 @@ charter gate sees none of them, the author sees them first, the judge sees them 
 Structural     tools: Read, Glob, Grep on judges.
                No escape found under adversarial probing.
 
+Mechanical     bin/verdicts.sh refuses a round claiming a prior verdict
+               that no file records. Fail closed, exit 1.
+
 Architectural  /verdict runs oracles in the parent session.
                Exit codes are harness-observed, never model-reported.
 
-Not shipped    The parent's own write scope is unconstrained in 0.1.0.
+Not shipped    The parent's own write scope is unconstrained.
                Author restraint from verdicts/ is convention, not enforcement.
 ```
 
