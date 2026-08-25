@@ -101,9 +101,13 @@ No loop. No daemon. No next task invented because you are still running.
 
 **Say what you concluded, including *nothing today*.** Then stop.
 
-## What this may never do
+## What a pass may never do
 
-It never decides what the product is. It never grants itself anything. It never puts anything into
-production, and a green gate is not an outcome.
+The plugin's README holds the boundary. One thing is this pass's own to get wrong.
+
+**A green gate is not an outcome.** Engineering finishing says nothing about whether the belief
+behind it held.
 
 **A pull request is not a merge. A merge is not a release. Use is not value.**
+
+Waking does not move anything along that line.
