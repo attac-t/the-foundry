@@ -24,12 +24,13 @@ It is not a job title, and this is not a product manager.
 
 ## What ships today
 
-One skill.
+Two skills.
 
-| `product:challenge-claim` | Take one belief. End with a state and one legal next move |
+| `product:challenge` | Take one belief. End with a state and one legal next move |
+| `product:cycle` | One bounded pass. Ground, resume, look, choose one, act or do nothing, exit |
 
-Two more are planned and not written: `run-cycle` for a bounded daily pass, and `review-outcome` for
-comparing what was expected with what happened.
+One more is planned and not written: `product:outcome`, for comparing what was expected with what
+happened.
 
 **This plugin ships no code.** So no gate here can go green about it, and none pretends to.
 
