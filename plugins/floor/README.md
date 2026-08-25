@@ -97,6 +97,16 @@ charter's, not floor's** — a gate may reach for anything, and on a host withou
 
 ---
 
+## One skill
+
+`floor:brief` — the five shapes a human surface takes. Work, change, update, decision, closure.
+
+A delivery carries a body now, and this says what belongs in one. `deliver` names it when handed
+none.
+
+**A human surface is a decision interface.** It says what becomes true, why it matters, what a
+person must judge, and where the evidence is. The run record holds how the work was done.
+
 ## Every verb
 
 ```bash
