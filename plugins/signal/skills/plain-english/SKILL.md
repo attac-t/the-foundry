@@ -1,11 +1,12 @@
 ---
 name: plain-english
-description: Say it so a ten-year-old gets it on the first read. Short words, short sentences, answer first.
+description: Say it so a ten-year-old gets it on the first read. Covers a reply and any file a person reads. Short words, natural grammar, literal rules, named actors.
 ---
 
 # Skill: Plain English
 
-Read this when the hook blocked your reply, or before you write one.
+Read this before you write a reply, or any file a person will read. **Both are in scope.** The hook
+only sees a reply. The bar covers everything else too, and nothing but a reader enforces it there.
 
 ## The bar
 
@@ -73,6 +74,42 @@ answer belongs in the last.
    - saying what you just said
    - the route you took, when they only need the answer
    - hedging a claim you are sure of
+
+## A sentence a fluent speaker would say
+
+**`signal:economy` owns the cut and the reread.** Two rules belong here instead, because they are
+about being understood rather than being short.
+
+**A fragment is fine as a label. Never as a rule.** A heading, a table cell, a list item — those are
+labels. A sentence that has to be obeyed needs a subject and a verb.
+
+**British spelling, and one variant throughout.**
+
+## Literal first, image second
+
+**State the rule in plain words. Then, if it helps, the memorable line.**
+
+An aphorism is a handle for a rule the reader already knows. On its own it is a riddle, and every
+reader solves it differently.
+
+**One image per model, at most.** A door, a wall, a path, a pin and a hand explaining one idea is
+five ideas. The reader now has to learn the images before the thing.
+
+Define a term you cannot avoid, once, in plain words. Then use only that term for that thing.
+
+## Name who acts
+
+**Every rule says who does it.** "It is checked" hides the checker, and the reader cannot follow a
+rule when they cannot tell whether it is theirs.
+
+| Not this | This |
+|---|---|
+| it, they, the system | the name of the thing |
+| the owner | who decides *this kind* of claim |
+| a role used two ways | one name, one role, throughout |
+
+**There is rarely one owner.** Whoever decides a price may not be whoever decides a schema. A single
+"owner" quietly hands one person every call.
 
 ## Do not game it
 

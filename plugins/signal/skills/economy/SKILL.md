@@ -45,6 +45,20 @@ Both are shorter. Neither is English. This shipped in a doctrine and a reader st
 
 ---
 
+## Useful structure is the fourth step
+
+The order names it and nothing said what it meant. It means four things:
+
+| | |
+|---|---|
+| one job per section | a heading over two sentences was never a section |
+| the answer above the detail | evidence supports a conclusion. It does not lead to one |
+| a table for a real comparison | columns that vary. Never a paragraph hidden in a cell |
+| the shape the content already has | a flow wants a fenced block, a list wants a list |
+
+**A reader should never rebuild the hierarchy from history.** If the order only makes sense to
+someone who watched it being written, it has no order.
+
 ## Before you write
 
 | About to | Ask |
