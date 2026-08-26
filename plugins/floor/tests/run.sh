@@ -26,6 +26,19 @@ wait
 }
 
 set -u
+
+# A suite must never reach the network, and the reason is not purity.
+#
+# `a_delivery_carries_its_brief` calls `deliver`, which pushes. Its fixture's origin is
+# `github.com/acme/br.git`, which does not exist, so git asked for a password and waited. Measured:
+# forty-three minutes on one check, with the gate printing nothing the whole time.
+#
+# **A hang is not a failure, and no exit code tells them apart.** A red suite is read and fixed. A
+# hung one looks exactly like a slow machine, and four grades were abandoned believing that.
+GIT_TERMINAL_PROMPT=0
+GIT_ASKPASS=/bin/echo
+export GIT_TERMINAL_PROMPT GIT_ASKPASS
+
 root="$(cd "$(dirname "$0")/.." && pwd)"
 tmp="${TMPDIR:-/tmp}/floor-audit-$$"
 mkdir -p "$tmp/verdict"
