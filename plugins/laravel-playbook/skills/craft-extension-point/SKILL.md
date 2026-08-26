@@ -34,7 +34,7 @@ description: Crafting extension points. Making code flexible means fewer feature
 Choose the right extension mechanism for the scope:
 
 | Scope                       | Mechanism                     | Example                                  |
-|-----------------------------|-------------------------------|------------------------------------------|
+| --------------------------- | ----------------------------- | ---------------------------------------- |
 | Multi-driver services       | Manager/Driver pattern        | `Scout::extend('elastic', fn () => ...)` |
 | Global (app-wide)           | Config-driven binding         | Swap the `Role` model via config         |
 | Runtime (ad-hoc)            | Macroable registration        | `Collection::macro('toUpper', ...)`      |
@@ -50,7 +50,7 @@ Start with config binding for simple swaps. Use the Manager pattern for driver-b
 ## The Anti-Patterns
 
 | Don't                                    | Do                                                        | Why                                       |
-|------------------------------------------|-----------------------------------------------------------|-------------------------------------------|
+| ---------------------------------------- | --------------------------------------------------------- | ----------------------------------------- |
 | `private` methods that prevent extension | `protected` -- let subclasses override                    | Every `private` is a closed door          |
 | `final` classes that block inheritance   | `final` only on value objects and DTOs                    | Extension is a feature, not a risk        |
 | No events at lifecycle boundaries        | Dispatch events at create, update, delete, attach, detach | Users need hooks without modifying source |

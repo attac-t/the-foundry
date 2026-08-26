@@ -47,7 +47,7 @@ Model-level thinking -> trait. Global service -> facade. Builder/chain -> static
 ## The Quick Test
 
 | Ask                                           | Answer | Use             |
-|-----------------------------------------------|--------|-----------------|
+| --------------------------------------------- | ------ | --------------- |
 | Does it attach to a model?                    | Yes    | Trait           |
 | Is it a global, stateful service?             | Yes    | Facade          |
 | Does it start a fluent chain?                 | Yes    | Static factory  |

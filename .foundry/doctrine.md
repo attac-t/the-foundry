@@ -21,27 +21,27 @@ below.
 
 ## Principles
 
-| | |
-|---|---|
-| the producer never owns the bar | it can ask for one. It is never the hand whose commit makes one count |
-| a record informs, never grants | who may say yes is read from history, never written by the run that needs it |
-| only a human decides meaning | a machine may grade, draft, ask and refuse. It may not say what good is |
-| every part ships alone | a plugin that needs another to be useful is one plugin wearing two names |
-| say what is not true | an unchecked claim, a left-over risk and a known gap each get a line, and the line says which it is |
+|                                 |                                                                                                     |
+| ------------------------------- | --------------------------------------------------------------------------------------------------- |
+| the producer never owns the bar | it can ask for one. It is never the hand whose commit makes one count                               |
+| a record informs, never grants  | who may say yes is read from history, never written by the run that needs it                        |
+| only a human decides meaning    | a machine may grade, draft, ask and refuse. It may not say what good is                             |
+| every part ships alone          | a plugin that needs another to be useful is one plugin wearing two names                            |
+| say what is not true            | an unchecked claim, a left-over risk and a known gap each get a line, and the line says which it is |
 
 ## Authority
 
 **The boundary is the claim, not the file.** A repository has as many authorities as kinds of claim.
 One person may hold every one. That is a small map, not a different model.
 
-| Term | Means |
-|---|---|
-| producer | proposes or performs the change. A role per change, never a kind of person |
-| authority | who may say yes to a claim. Named by the map, for the claim's pinned source |
-| decision-maker | the named authority for one trade-off, recorded inside that decision |
-| acceptor | who accepts a delivery. Today it cannot be withheld, and it is self-reported |
-| accountability | who answers for a result. Traced, never granted, and never authority |
-| ownership | never used bare. Repository, product and IP are three facts, not one |
+| Term           | Means                                                                        |
+| -------------- | ---------------------------------------------------------------------------- |
+| producer       | proposes or performs the change. A role per change, never a kind of person   |
+| authority      | who may say yes to a claim. Named by the map, for the claim's pinned source  |
+| decision-maker | the named authority for one trade-off, recorded inside that decision         |
+| acceptor       | who accepts a delivery. Today it cannot be withheld, and it is self-reported |
+| accountability | who answers for a result. Traced, never granted, and never authority         |
+| ownership      | never used bare. Repository, product and IP are three facts, not one         |
 
 ### The map
 
@@ -52,10 +52,10 @@ One map per repo Foundry runs on. It says which claims answer to which people.
 Signed off on [#128](https://github.com/attac-t/the-foundry/issues/128), 25 August 2026. Without that
 rule, whoever installs it quietly owns the lot. That is the model thrown out here.
 
-| Repository | Its map |
-|---|---|
+| Repository | Its map                                                             |
+| ---------- | ------------------------------------------------------------------- |
 | one person | one generated line. Convention first, so nothing is written by hand |
-| a team | claim authorities and conflict rules, written out |
+| a team     | claim authorities and conflict rules, written out                   |
 
 **A map change is signed off under the rule already in force. It counts for later runs only.** A map that
 changed under its own new rule could rewrite its own authority in a single commit.
@@ -78,12 +78,12 @@ line. It will not claim that until [#156](https://github.com/attac-t/the-foundry
 
 A delivery cannot silently claim it was checked against something it was not.
 
-| Checkable with `git` and `cat` | How it fails loudly |
-|---|---|
+| Checkable with `git` and `cat` | How it fails loudly                  |
+| ------------------------------ | ------------------------------------ |
 | the bar was pinned at the base | a swapped pin contradicts the record |
-| every clause was held | an unheld clause is named as unheld |
-| the commit exists | an absent commit is absent |
-| a swap was written down | a made-up one has no record |
+| every clause was held          | an unheld clause is named as unheld  |
+| the commit exists              | an absent commit is absent           |
+| a swap was written down        | a made-up one has no record          |
 
 **Every path to a lower bar runs through a visible, dated commit.** No path is silent.
 
@@ -94,13 +94,13 @@ mean it cannot be done.
 
 Each line is dated to the issue that would close it. None of them is claimed anywhere.
 
-| Not true today | Owner |
-|---|---|
-| the suite that ran was the suite pinned | [#341](https://github.com/attac-t/the-foundry/issues/341) |
+| Not true today                           | Owner                                                     |
+| ---------------------------------------- | --------------------------------------------------------- |
+| the suite that ran was the suite pinned  | [#341](https://github.com/attac-t/the-foundry/issues/341) |
 | who said yes is more than the run's word | [#156](https://github.com/attac-t/the-foundry/issues/156) |
-| a person can answer a judged clause | [#343](https://github.com/attac-t/the-foundry/issues/343) |
-| acceptance can be withheld | [#359](https://github.com/attac-t/the-foundry/issues/359) |
-| the record outlives the run directory | [#337](https://github.com/attac-t/the-foundry/issues/337) |
+| a person can answer a judged clause      | [#343](https://github.com/attac-t/the-foundry/issues/343) |
+| acceptance can be withheld               | [#359](https://github.com/attac-t/the-foundry/issues/359) |
+| the record outlives the run directory    | [#337](https://github.com/attac-t/the-foundry/issues/337) |
 
 **A hostile hand on the same shell defeats every wall here.** This catches accident, drift and the
 easy path. It is not a security boundary. No sentence in this file may imply that it is.
@@ -109,12 +109,12 @@ easy path. It is not a security boundary. No sentence in this file may imply tha
 
 **A bet, not a principle.** Every line here can be wrong, and each one says how we would find out.
 
-| The bet | How it dies |
-|---|---|
-| framework authors first, because their bar is already written down | none of them writes a bar we can pin |
-| Claude Code is today's wrapper, not the product | a second harness costs more to add than it is worth |
-| a repo far from here can run this | the first foreign run needs a hand at every step |
-| the run record is worth keeping | nobody reads one twice |
+| The bet                                                            | How it dies                                         |
+| ------------------------------------------------------------------ | --------------------------------------------------- |
+| framework authors first, because their bar is already written down | none of them writes a bar we can pin                |
+| Claude Code is today's wrapper, not the product                    | a second harness costs more to add than it is worth |
+| a repo far from here can run this                                  | the first foreign run needs a hand at every step    |
+| the run record is worth keeping                                    | nobody reads one twice                              |
 
 **Kill dates go on the issue, not here.** A bet with no way to lose is a belief.
 

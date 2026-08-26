@@ -31,7 +31,7 @@ If yes, move depth to a docs site. Keep the README as a landing page + quick sta
 ## The Quick Test
 
 | Ask                                            | Answer | Use         |
-|------------------------------------------------|--------|-------------|
+| ---------------------------------------------- | ------ | ----------- |
 | Can you explain all features in 3 code blocks? | Yes    | README-only |
 | More than 15 config keys?                      | Yes    | Docs site   |
 | More than 3k GitHub stars?                     | Yes    | Docs site   |

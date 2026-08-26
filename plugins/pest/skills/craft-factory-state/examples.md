@@ -70,7 +70,7 @@ $doc = Document::factory()
 ## Naming Convention
 
 | Pattern       | Name                                    |
-|---------------|-----------------------------------------|
+| ------------- | --------------------------------------- |
 | Set attribute | `titled()`, `published()`, `active()`   |
 | Add relation  | `withChapters()`, `withAuthor()`        |
 | Post-create   | `revised()`, `verified()`, `approved()` |

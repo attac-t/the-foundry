@@ -11,7 +11,7 @@ Every extension point answers one question: *"Can a consumer customize this with
 ### Match Mechanism to Scale
 
 | Scale              | Pattern           | Example                                     |
-|--------------------|-------------------|---------------------------------------------|
+| ------------------ | ----------------- | ------------------------------------------- |
 | Simple swap        | Config binding    | Spatie model customization                  |
 | Single behavior    | Static callback   | `Sanctum::getAccessTokenFromRequestUsing()` |
 | Runtime methods    | Macroable         | `Collection::macro()`                       |

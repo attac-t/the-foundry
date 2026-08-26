@@ -19,12 +19,12 @@ description: Crafting exceptions. Named constructors, contextual messages, one c
 
 5. **HTTP Status Mapping**: API-facing exceptions extend `HttpException` or implement `getStatusCode()`. Map failures to the correct HTTP semantics.
 
-   | Status | Meaning               | Example                                      |
-   |--------|-----------------------|----------------------------------------------|
-   | 400    | Invalid request input | `InvalidFilterQuery`, `InvalidSortQuery`     |
-   | 403    | Unauthorized action   | `UnauthorizedException`                      |
-   | 404    | Resource not found    | `PermissionDoesNotExist`, `RoleDoesNotExist` |
-   | 422    | Validation failure    | `InvalidConfiguration`                       |
+| Status | Meaning               | Example                                      |
+| ------ | --------------------- | -------------------------------------------- |
+| 400    | Invalid request input | `InvalidFilterQuery`, `InvalidSortQuery`     |
+| 403    | Unauthorized action   | `UnauthorizedException`                      |
+| 404    | Resource not found    | `PermissionDoesNotExist`, `RoleDoesNotExist` |
+| 422    | Validation failure    | `InvalidConfiguration`                       |
 
 6. **Configurable Verbosity**: Security-sensitive packages control what appears in exception messages. Detailed context in development, redacted in production.
 
@@ -35,7 +35,7 @@ description: Crafting exceptions. Named constructors, contextual messages, one c
 ## The Anti-Patterns
 
 | Don't                                    | Do                                             | Why                                                 |
-|------------------------------------------|------------------------------------------------|-----------------------------------------------------|
+| ---------------------------------------- | ---------------------------------------------- | --------------------------------------------------- |
 | Generic `PackageException` class         | One class per failure mode                     | Precise `catch` blocks are impossible otherwise     |
 | `"Invalid input"` messages               | Include what, actual value, and expected value | Developers should not have to debug your exceptions |
 | `new Exception('...')` in business logic | Named constructors: `FileIsTooBig::create()`   | Centralizes message formatting, prevents drift      |

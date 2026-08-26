@@ -24,7 +24,7 @@ description: Crafting package identity. Professional impressions from the first 
 ## The Anti-Patterns
 
 | Don't                                | Do                                          | Why                                                               |
-|--------------------------------------|---------------------------------------------|-------------------------------------------------------------------|
+| ------------------------------------ | ------------------------------------------- | ----------------------------------------------------------------- |
 | No branding at all                   | `art/` directory with full asset set        | First impressions are visual -- no branding signals hobby project |
 | Single resolution PNG                | SVG source + 1x through 4x PNG exports      | Retina is the default -- blurry logos erode trust                 |
 | No social card                       | `socialcard.png` in `art/`                  | You control the impression or the platform generates one for you  |

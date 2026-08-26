@@ -66,12 +66,12 @@ public static $with = ['author'];  // Always eager load
 
 ## Method Comparison
 
-| Method        | When               | Queries         |
-|---------------|--------------------|-----------------|
-| `with()`      | Before `get()`     | 1 + N relations |
-| `load()`      | After `get()`      | N relations     |
-| `withCount()` | Need count only    | 1 subquery      |
-| `loadCount()` | Count after fetch  | N subqueries    |
+| Method        | When              | Queries         |
+| ------------- | ----------------- | --------------- |
+| `with()`      | Before `get()`    | 1 + N relations |
+| `load()`      | After `get()`     | N relations     |
+| `withCount()` | Need count only   | 1 subquery      |
+| `loadCount()` | Count after fetch | N subqueries    |
 
 ---
 

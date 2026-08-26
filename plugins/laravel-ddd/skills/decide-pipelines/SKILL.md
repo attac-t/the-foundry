@@ -31,7 +31,7 @@ Ask: *"Am I transforming a payload, or orchestrating operations?"*
 ## The Quick Test
 
 | Ask Yourself                     | Answer | Use      |
-|----------------------------------|--------|----------|
+| -------------------------------- | ------ | -------- |
 | 3+ sequential steps?             | Yes    | Pipeline |
 | Steps reorderable?               | Yes    | Pipeline |
 | Needs if/else between steps?     | Yes    | Actions  |

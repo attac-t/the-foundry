@@ -11,14 +11,14 @@ description: Crafting API surfaces. Entry points, fluent builders, progressive d
 
 1. **One Obvious Entry Point**: Every package has one clear "start here." Never two equally-valid paths to the same thing.
 
-   | Style                     | Example                          | When                                       |
-   |---------------------------|----------------------------------|--------------------------------------------|
-   | Trait method              | `$model->addMedia($file)`        | Package augments a model                   |
-   | Static factory            | `QueryBuilder::for(User::class)` | Package is standalone                      |
-   | `::make()` schema builder | `TextInput::make('name')`        | Declarative UI/component system (Filament) |
-   | Manager / driver          | `Notification::driver('slack')`  | Multi-implementation service               |
-   | Helper function           | `activity()->log('...')`         | Universal utility, used everywhere         |
-   | Constructor               | `new UserData(name: 'John')`     | Value objects, DTOs                        |
+| Style                     | Example                          | When                                       |
+| ------------------------- | -------------------------------- | ------------------------------------------ |
+| Trait method              | `$model->addMedia($file)`        | Package augments a model                   |
+| Static factory            | `QueryBuilder::for(User::class)` | Package is standalone                      |
+| `::make()` schema builder | `TextInput::make('name')`        | Declarative UI/component system (Filament) |
+| Manager / driver          | `Notification::driver('slack')`  | Multi-implementation service               |
+| Helper function           | `activity()->log('...')`         | Universal utility, used everywhere         |
+| Constructor               | `new UserData(name: 'John')`     | Value objects, DTOs                        |
 
 2. **Fluent Builders**: Configuration methods return `$this`. Terminal methods return the result. Configuration accumulates, execution happens once. The terminal method name makes the action explicit.
 
@@ -37,17 +37,17 @@ description: Crafting API surfaces. Entry points, fluent builders, progressive d
 
 7. **Method Naming**: Consistent verb prefixes across the entire package.
 
-   | Prefix           | Contract               | Example                            |
-   |------------------|------------------------|------------------------------------|
-   | `has`            | Returns `bool`         | `hasRole()`, `hasMedia()`          |
-   | `get`            | Returns the value      | `getMedia()`, `getTranslation()`   |
-   | `set`            | Assigns the value      | `setTranslation()`, `setLocale()`  |
-   | `add`            | Appends                | `addMedia()`, `addLogChange()`     |
-   | `find`           | Looks up by identifier | `findByName()`, `findById()`       |
-   | `sync`           | Replaces all           | `syncRoles()`, `syncPermissions()` |
-   | `clear`          | Removes all            | `clearMediaCollection()`           |
-   | `using` / `with` | Fluent configuration   | `usingName()`, `withProperties()`  |
-   | `scope`          | Query scope            | `scopeRole()`, `scopePermission()` |
+| Prefix           | Contract               | Example                            |
+| ---------------- | ---------------------- | ---------------------------------- |
+| `has`            | Returns `bool`         | `hasRole()`, `hasMedia()`          |
+| `get`            | Returns the value      | `getMedia()`, `getTranslation()`   |
+| `set`            | Assigns the value      | `setTranslation()`, `setLocale()`  |
+| `add`            | Appends                | `addMedia()`, `addLogChange()`     |
+| `find`           | Looks up by identifier | `findByName()`, `findById()`       |
+| `sync`           | Replaces all           | `syncRoles()`, `syncPermissions()` |
+| `clear`          | Removes all            | `clearMediaCollection()`           |
+| `using` / `with` | Fluent configuration   | `usingName()`, `withProperties()`  |
+| `scope`          | Query scope            | `scopeRole()`, `scopePermission()` |
 
    Break these conventions and developers lose trust in the API.
 
@@ -57,15 +57,15 @@ description: Crafting API surfaces. Entry points, fluent builders, progressive d
 
 ## The Anti-Patterns
 
-| Don't                                              | Do                                          | Why                                              |
-|----------------------------------------------------|---------------------------------------------|--------------------------------------------------|
-| Two equally-valid entry points                     | One obvious path                            | Ambiguity erodes confidence                      |
-| Builder methods that execute                       | Separate configuration from execution       | Side effects in configuration are invisible bugs |
-| Return `void` from fluent methods                  | Return `$this` or `static`                  | Breaks method chaining                           |
-| Missing return type annotations                    | Explicit types on every method              | IDE and static analysis depend on it             |
-| Inconsistent verb prefixes                         | Follow the naming table above               | Predictability is the API contract               |
-| Accept only `string` when `BackedEnum` makes sense | Union types: `string` or `BackedEnum`       | Meet developers where they are                   |
-| Manual conditional logic in chains                 | Use `Conditionable` trait                   | `when()` and `unless()` are cleaner              |
+| Don't                                              | Do                                    | Why                                              |
+| -------------------------------------------------- | ------------------------------------- | ------------------------------------------------ |
+| Two equally-valid entry points                     | One obvious path                      | Ambiguity erodes confidence                      |
+| Builder methods that execute                       | Separate configuration from execution | Side effects in configuration are invisible bugs |
+| Return `void` from fluent methods                  | Return `$this` or `static`            | Breaks method chaining                           |
+| Missing return type annotations                    | Explicit types on every method        | IDE and static analysis depend on it             |
+| Inconsistent verb prefixes                         | Follow the naming table above         | Predictability is the API contract               |
+| Accept only `string` when `BackedEnum` makes sense | Union types: `string` or `BackedEnum` | Meet developers where they are                   |
+| Manual conditional logic in chains                 | Use `Conditionable` trait             | `when()` and `unless()` are cleaner              |
 
 **See also:** craft-trait (trait-based entry points), decide-facade (choosing the right entry point pattern).
 

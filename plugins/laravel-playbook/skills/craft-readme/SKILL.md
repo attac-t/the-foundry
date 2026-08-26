@@ -34,7 +34,7 @@ description: Crafting a README. The landing page for your package.
 ## The Anti-Patterns
 
 | Don't                          | Do                                         | Why                                                                              |
-|--------------------------------|--------------------------------------------|----------------------------------------------------------------------------------|
+| ------------------------------ | ------------------------------------------ | -------------------------------------------------------------------------------- |
 | H1 = package name              | H1 = benefit statement                     | The name is on Packagist -- the README sells the value                           |
 | Wall of text before code       | Code in the first screenful                | Developers scan, they don't read -- show, then tell                              |
 | Full documentation in README   | Link to docs site, keep README tight       | README is a landing page, docs are the manual                                    |

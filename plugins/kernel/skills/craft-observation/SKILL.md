@@ -33,7 +33,7 @@ Record an observation when:
 ## The Anti-Patterns
 
 | Don't             | Do                 | Why                    |
-|-------------------|--------------------|------------------------|
+| ----------------- | ------------------ | ---------------------- |
 | Wait until later  | Capture now        | Context fades fast     |
 | Over-explain      | Distill essence    | Signal over noise      |
 | Skip the learning | State the takeaway | That's the whole point |

@@ -53,12 +53,12 @@ Creates cartesian product. Never chain more than 2 datasets.
 
 ## When to Use
 
-| Scenario                        | Use Dataset?       |
-|---------------------------------|--------------------|
-| Many invalid inputs             | Yes                |
-| Same behavior, different data   | Yes                |
-| Different assertion per case    | No—explicit tests  |
-| 3 cases with subtle differences | No—clarity wins    |
+| Scenario                        | Use Dataset?      |
+| ------------------------------- | ----------------- |
+| Many invalid inputs             | Yes               |
+| Same behavior, different data   | Yes               |
+| Different assertion per case    | No—explicit tests |
+| 3 cases with subtle differences | No—clarity wins   |
 
 ---
 

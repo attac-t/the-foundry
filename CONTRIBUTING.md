@@ -14,11 +14,11 @@ drift this file exists to prevent, one level up.
 **CI runs more than the three above, not less.** Each of these has no place in `gates.sh` and is
 yours to run when it applies:
 
-| | Costs | Run it when |
-|---|---|---|
-| `sh bin/agree.sh audit` | five minutes | you change what `agree` reads, or how |
-| the per-plugin tool check | seconds, in the matrix | a plugin starts reaching for something new |
-| three operating systems | a matrix nobody has locally | you touch anything a suite runs |
+|                           | Costs                       | Run it when                                |
+| ------------------------- | --------------------------- | ------------------------------------------ |
+| `sh bin/agree.sh audit`   | five minutes                | you change what `agree` reads, or how      |
+| the per-plugin tool check | seconds, in the matrix      | a plugin starts reaching for something new |
+| three operating systems   | a matrix nobody has locally | you touch anything a suite runs            |
 
 The last one is the gap no local run closes. **A green tree here says nothing about macOS**, and has
 not since the billing lapsed.
@@ -40,16 +40,17 @@ It holds one more thing: **every harness file names the same rules.** Claude rea
 Codex reads `AGENTS.md`, so `bin/project.sh` writes the table into both from `.claude/rules` itself.
 Edit a rule, then run it — a row typed by hand into one file is the drift nothing else would see.
 
-| Gate | Fails when |
-|------|------------|
-| `frontmatter` | a skill, agent or command is missing the frontmatter that registers it |
-| `versions` | a plugin the manifest lists cannot say what version it is |
-| `repeats` | a sentence appears verbatim in two files — scoped to `panel`, `pest` and `signal` |
-| `shell` | shipped shell takes an `else`, or a function body passes 40 lines |
-| `kernel` | the plugin does not run — checked on Linux, macOS and Windows |
-| `signal` | the plugin does not run — checked on Linux, macOS and Windows |
-| `floor` | the plugin does not run — checked on Linux, macOS and Windows |
-| `panel` | a review round accepts a prior verdict that does not exist, or belongs to another review |
+| Gate          | Fails when                                                                               |
+| ------------- | ---------------------------------------------------------------------------------------- |
+| `frontmatter` | a skill, agent or command is missing the frontmatter that registers it                   |
+| `versions`    | a plugin the manifest lists cannot say what version it is                                |
+| `repeats`     | a sentence appears verbatim in two files — scoped to `panel`, `pest` and `signal`        |
+| `shell`       | shipped shell takes an `else`, or a function body passes 40 lines                        |
+| `tables`      | a Markdown table is not what `bin/tables.sh write` would make it                         |
+| `kernel`      | the plugin does not run — checked on Linux, macOS and Windows                            |
+| `signal`      | the plugin does not run — checked on Linux, macOS and Windows                            |
+| `floor`       | the plugin does not run — checked on Linux, macOS and Windows                            |
+| `panel`       | a review round accepts a prior verdict that does not exist, or belongs to another review |
 
 **A gate that could not read its inputs exits 3, and says so.** It never reports a pass over an
 empty set — nothing to check is not a clean check. `bin/shell.sh`'s header holds the codes.

@@ -27,7 +27,7 @@ description: Crafting a CI pipeline. Five workflows, zero manual gates.
 ## The Anti-Patterns
 
 | Don't                          | Do                                      | Why                                          |
-|--------------------------------|-----------------------------------------|----------------------------------------------|
+| ------------------------------ | --------------------------------------- | -------------------------------------------- |
 | No `fail-fast: false`          | `fail-fast: false`                      | See all failures, not just the first         |
 | Manual style fixing            | Pint auto-fix + auto-commit             | Humans should not review whitespace          |
 | Skip `prefer-lowest` in matrix | Always include `prefer-lowest`          | Catches minimum-version compatibility issues |

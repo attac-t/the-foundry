@@ -43,8 +43,8 @@
 
 > Questions asked and answers received during `/spec` interview
 
-| # | Question   | Answer   |
-|---|------------|----------|
-| 1 | [Question] | [Answer] |
-| 2 | [Question] | [Answer] |
-| 3 | [Question] | [Answer] |
+| #   | Question   | Answer   |
+| --- | ---------- | -------- |
+| 1   | [Question] | [Answer] |
+| 2   | [Question] | [Answer] |
+| 3   | [Question] | [Answer] |

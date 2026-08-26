@@ -26,7 +26,7 @@ description: Crafting generators. Artisan commands as onboarding UX.
 ## The Anti-Patterns
 
 | Don't                                 | Do                              | Why                                   |
-|---------------------------------------|---------------------------------|---------------------------------------|
+| ------------------------------------- | ------------------------------- | ------------------------------------- |
 | Force migrations to run on install    | Publish as stubs                | Developers control their own database |
 | Require manual `vendor:publish` steps | Ship an install command         | One command, not four                 |
 | Hardcode stubs in the package         | Check app `stubs/` first        | Users customize without forking       |

@@ -97,7 +97,7 @@ public function hasPendingRefund(): bool
 ### The Substitution Table
 
 | Instead Of                   | Use                                               |
-|------------------------------|---------------------------------------------------|
+| ---------------------------- | ------------------------------------------------- |
 | `foreach` + accumulator      | `Collection::sum()`, `reduce()`, `mapWithKeys()`  |
 | `foreach` + filter           | `Collection::filter()`, `reject()`, `where()`     |
 | `foreach` + first match      | `Collection::first()`, `sole()`, `firstWhere()`   |
@@ -111,7 +111,7 @@ public function hasPendingRefund(): bool
 | `config('key') ?? default`   | `config('key', $default)`                         |
 | `in_array($val, [...])`      | `collect([...])->contains($val)` or enum `->in()` |
 | `if ($cond) { $cb(); }`      | `when($cond, $cb)` if available                   |
-| `function ($x) use ($y) {…}` | `fn ($x) => …` when single-expression              |
+| `function ($x) use ($y) {…}` | `fn ($x) => …` when single-expression             |
 
 ### Collection Pipeline Over Foreach
 **Why?** Same result. Half the lines. Declarative.

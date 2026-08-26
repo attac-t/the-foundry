@@ -28,10 +28,10 @@ Silent wrongness with a wide blast radius is code, or a model behind a gate.
 
 Frequency × ambiguity. Not a binary.
 
-|                     | Low ambiguity                     | High ambiguity                       |
-|---------------------|-----------------------------------|--------------------------------------|
-| **High frequency**  | Code. The economics compound.     | Model — and promote aggressively.    |
-| **Low frequency**   | Either. Don't over-engineer.      | Model. Encoding never pays back.     |
+|                    | Low ambiguity                 | High ambiguity                    |
+| ------------------ | ----------------------------- | --------------------------------- |
+| **High frequency** | Code. The economics compound. | Model — and promote aggressively. |
+| **Low frequency**  | Either. Don't over-engineer.  | Model. Encoding never pays back.  |
 
 ## The Migration
 
@@ -60,13 +60,13 @@ Ask this one first. If the answer is code, there is nobody to delegate to.
 
 ## The Anti-Patterns
 
-| Don't                              | Do                            | Why                                  |
-|------------------------------------|-------------------------------|--------------------------------------|
-| Model doing arithmetic or format   | Code                          | Slower, costlier, sometimes wrong    |
-| Model routing over known branches  | A switch                      | Non-deterministic control flow       |
-| Model reporting its own test result| Harness reads the exit code   | Voids the gate entirely              |
-| Regex over natural language        | Model                         | Open sets do not enumerate           |
-| Rule engine encoding taste         | Model                         | Expert systems died of this          |
+| Don't                               | Do                          | Why                               |
+| ----------------------------------- | --------------------------- | --------------------------------- |
+| Model doing arithmetic or format    | Code                        | Slower, costlier, sometimes wrong |
+| Model routing over known branches   | A switch                    | Non-deterministic control flow    |
+| Model reporting its own test result | Harness reads the exit code | Voids the gate entirely           |
+| Regex over natural language         | Model                       | Open sets do not enumerate        |
+| Rule engine encoding taste          | Model                       | Expert systems died of this       |
 
 ## Real-World Examples
 

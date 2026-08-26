@@ -34,10 +34,10 @@ broken, and the count still passes.
 
 Swapping a word changes the grammar around it. Read the whole sentence out loud after every cut.
 
-| Was | Cut to | What broke |
-|---|---|---|
+| Was                             | Cut to                       | What broke                     |
+| ------------------------------- | ---------------------------- | ------------------------------ |
 | *a bar its owner signed off on* | *a bar its owner signed off* | the preposition the verb needs |
-| *the run it was graded against* | *the run it was graded* | same, and now it says nothing |
+| *the run it was graded against* | *the run it was graded*      | same, and now it says nothing  |
 
 Both are shorter. Neither is English. This shipped in a doctrine and a reader stopped at it.
 
@@ -47,15 +47,15 @@ Both are shorter. Neither is English. This shipped in a doctrine and a reader st
 
 ## Before you write
 
-| About to | Ask |
-|---|---|
-| add a noun — file, flag, table, stage, state | which failing case forces it? No case, no noun |
-| write a second branch | that is a function you have not named. Name it; the `else` goes |
-| add the Nth guard | why did N−1 not catch it? A pile of guards is one missing reader |
-| write a paragraph | is it a table, a line of code, or nothing? |
-| abstract | is there a second caller **today**? |
-| explain the code | can the code say it instead? |
-| state a guarantee | does the mechanism give it, or do you wish it did? |
+| About to                                     | Ask                                                              |
+| -------------------------------------------- | ---------------------------------------------------------------- |
+| add a noun — file, flag, table, stage, state | which failing case forces it? No case, no noun                   |
+| write a second branch                        | that is a function you have not named. Name it; the `else` goes  |
+| add the Nth guard                            | why did N−1 not catch it? A pile of guards is one missing reader |
+| write a paragraph                            | is it a table, a line of code, or nothing?                       |
+| abstract                                     | is there a second caller **today**?                              |
+| explain the code                             | can the code say it instead?                                     |
+| state a guarantee                            | does the mechanism give it, or do you wish it did?               |
 
 Every answer of "none" or "no" removes work rather than tidying it.
 

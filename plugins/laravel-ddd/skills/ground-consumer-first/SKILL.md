@@ -27,13 +27,13 @@ This is why extracting a condition into a named predicate is correct even though
 
 ## The Anti-Patterns
 
-| ❌ Don't                                        | ✅ Do                                          | Why                                              |
-|------------------------------------------------|------------------------------------------------|--------------------------------------------------|
-| Build the domain, then find the call-site ugly | Sketch the call-site first, then satisfy it    | Reshaping is expensive; sketching is free        |
-| Delete a named predicate to "save a line"      | Keep it — the caller reads as a sentence       | It is DX surface, not internal weight            |
-| Add a parameter "in case someone needs it"     | Add it when a call-site needs it               | No caller is clearer for it today                |
-| Wrap a method to "keep the API consistent"     | Let the caller use the real method             | A pass-through answers the question with silence |
-| Return an id from a resolver                   | Return the model; the caller takes `->id`      | One question answered, the rest hidden           |
+| ❌ Don't                                        | ✅ Do                                        | Why                                              |
+| ---------------------------------------------- | ------------------------------------------- | ------------------------------------------------ |
+| Build the domain, then find the call-site ugly | Sketch the call-site first, then satisfy it | Reshaping is expensive; sketching is free        |
+| Delete a named predicate to "save a line"      | Keep it — the caller reads as a sentence    | It is DX surface, not internal weight            |
+| Add a parameter "in case someone needs it"     | Add it when a call-site needs it            | No caller is clearer for it today                |
+| Wrap a method to "keep the API consistent"     | Let the caller use the real method          | A pass-through answers the question with silence |
+| Return an id from a resolver                   | Return the model; the caller takes `->id`   | One question answered, the rest hidden           |
 
 ## Real-World Examples
 

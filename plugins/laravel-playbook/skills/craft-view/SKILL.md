@@ -22,11 +22,11 @@ description: Crafting package views. Blade components, view publishing, and the 
 
 3. **Blade Component Registration**: Three approaches, matched to the need.
 
-   | Approach             | Method                                                          | When                                                   |
-   |----------------------|-----------------------------------------------------------------|--------------------------------------------------------|
-   | Explicit alias       | `Blade::component('pkg-alert', AlertComponent::class)`          | One-off components, maximum clarity                    |
-   | Component namespace  | `Blade::componentNamespace('Vendor\\Views\\Components', 'pkg')` | Many components, auto-discovery via `<x-pkg::alert />` |
-   | Anonymous components | Place in `resources/views/components/`                          | Simple markup-only components, no class needed         |
+| Approach             | Method                                                          | When                                                   |
+| -------------------- | --------------------------------------------------------------- | ------------------------------------------------------ |
+| Explicit alias       | `Blade::component('pkg-alert', AlertComponent::class)`          | One-off components, maximum clarity                    |
+| Component namespace  | `Blade::componentNamespace('Vendor\\Views\\Components', 'pkg')` | Many components, auto-discovery via `<x-pkg::alert />` |
+| Anonymous components | Place in `resources/views/components/`                          | Simple markup-only components, no class needed         |
 
    Spatie's `PackageServiceProvider` handles this: `->hasViewComponents('spatie', Alert::class, Card::class)` registers components with the `<x-spatie-alert />` prefix.
 
@@ -65,7 +65,7 @@ description: Crafting package views. Blade components, view publishing, and the 
 ## The Anti-Patterns
 
 | Don't                                             | Do                                                             | Why                                       |
-|---------------------------------------------------|----------------------------------------------------------------|-------------------------------------------|
+| ------------------------------------------------- | -------------------------------------------------------------- | ----------------------------------------- |
 | Skip view namespace                               | Always `loadViewsFrom()` with a namespace                      | Collisions with other packages are silent |
 | Change published view structure in minor versions | Treat published views as a major-version contract              | Breaks every consumer who customized them |
 | Hardcode CSS frameworks in views                  | Ship framework-agnostic markup or configurable themes          | Forces consumers into your CSS choices    |

@@ -38,18 +38,18 @@ HOOK RESPONSIBILITY              SKILL RESPONSIBILITY
 
 **Critical**: Not all hooks can inject to Claude's context. Know the rules:
 
-| Event | stdout (exit 0) | stderr (exit 2) | JSON additionalContext |
-|-------|-----------------|-----------------|------------------------|
-| `SessionStart` | **→ Claude** | → User only | **→ Claude** |
-| `UserPromptSubmit` | **→ Claude** | → User only | **→ Claude** |
-| `Setup` | **→ Claude** | → User only | **→ Claude** |
-| `PreToolUse` | → User verbose | **→ Claude** | **→ Claude** |
-| `PostToolUse` | → User verbose | **→ Claude** | **→ Claude** |
-| `Stop` | → User verbose | **→ Claude** | decision only |
-| `SubagentStop` | → User verbose | **→ Claude** | decision only |
-| `PreCompact` | → User verbose | → User only | **None** |
-| `Notification` | → Debug only | → User only | None |
-| `SessionEnd` | → Debug only | → User only | None |
+| Event              | stdout (exit 0) | stderr (exit 2) | JSON additionalContext |
+| ------------------ | --------------- | --------------- | ---------------------- |
+| `SessionStart`     | **→ Claude**    | → User only     | **→ Claude**           |
+| `UserPromptSubmit` | **→ Claude**    | → User only     | **→ Claude**           |
+| `Setup`            | **→ Claude**    | → User only     | **→ Claude**           |
+| `PreToolUse`       | → User verbose  | **→ Claude**    | **→ Claude**           |
+| `PostToolUse`      | → User verbose  | **→ Claude**    | **→ Claude**           |
+| `Stop`             | → User verbose  | **→ Claude**    | decision only          |
+| `SubagentStop`     | → User verbose  | **→ Claude**    | decision only          |
+| `PreCompact`       | → User verbose  | → User only     | **None**               |
+| `Notification`     | → Debug only    | → User only     | None                   |
+| `SessionEnd`       | → Debug only    | → User only     | None                   |
 
 ### The Rules
 
@@ -66,10 +66,10 @@ HOOK RESPONSIBILITY              SKILL RESPONSIBILITY
 
 ## 4. Deeper
 
-| | |
-|---|---|
+|                         |                                               |
+| ----------------------- | --------------------------------------------- |
 | [patterns](patterns.md) | the PostToolUse JSON shape, and the Stop hook |
-| [template](template.md) | a thin hook, whole |
-| [matchers](matchers.md) | what SessionStart matches, and when |
-| `craft-plugin` | where a hook sits in a plugin |
-| `craft-adr` | recording why a hook exists |
+| [template](template.md) | a thin hook, whole                            |
+| [matchers](matchers.md) | what SessionStart matches, and when           |
+| `craft-plugin`          | where a hook sits in a plugin                 |
+| `craft-adr`             | recording why a hook exists                   |

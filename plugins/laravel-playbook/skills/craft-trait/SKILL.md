@@ -34,7 +34,7 @@ description: Crafting model traits. The trait-first integration pattern for Lara
 ## The Anti-Patterns
 
 | Don't                                                | Do                                                     | Why                                            |
-|------------------------------------------------------|--------------------------------------------------------|------------------------------------------------|
+| ---------------------------------------------------- | ------------------------------------------------------ | ---------------------------------------------- |
 | Require constructor injection                        | Use boot/initialize methods                            | Models don't support constructor DI            |
 | Side effects in boot beyond event hooks              | Limit boot to event registration                       | Boot runs on every model load -- keep it light |
 | Trait methods named `create()`, `update()`, `save()` | Prefix with domain verbs: `assignRole()`, `addMedia()` | Collides with Eloquent methods                 |

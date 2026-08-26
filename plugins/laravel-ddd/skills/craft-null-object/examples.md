@@ -127,13 +127,13 @@ public function address(): HasOne
 
 ## Decision Table
 
-| Scenario                         | Pattern              |
-|----------------------------------|----------------------|
-| Single null check                | Just check           |
-| Same null check 3+ places        | Null object          |
-| Eloquent relationship            | `withDefault()`      |
-| Complex null behavior            | Custom Null class    |
-| One-off optional access          | `optional()` helper  |
+| Scenario                  | Pattern             |
+| ------------------------- | ------------------- |
+| Single null check         | Just check          |
+| Same null check 3+ places | Null object         |
+| Eloquent relationship     | `withDefault()`     |
+| Complex null behavior     | Custom Null class   |
+| One-off optional access   | `optional()` helper |
 
 ---
 

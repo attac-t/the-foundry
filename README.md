@@ -6,16 +6,16 @@ A curated collection of Claude Code plugins.
 
 ## Plugins
 
-| Plugin | Purpose |
-|--------|---------|
-| [kernel](plugins/kernel/README.md) | Cognitive OS. How to think. |
-| [panel](plugins/panel/README.md) | Adversarial agent teams. How to verify. |
-| [product](plugins/product/README.md) | Beliefs against reality. What to question. |
-| [signal](plugins/signal/README.md) | Plain English harness. How to speak. |
-| [floor](plugins/floor/README.md) | Runs and workspaces. Where work happens. |
-| [laravel-ddd](plugins/laravel-ddd/README.md) | Laravel DDD patterns. What to build. |
-| [laravel-playbook](plugins/laravel-playbook/README.md) | Package author's playbook. How to ship. |
-| [pest](plugins/pest/README.md) | Pest v3 syntax. How to test. |
+| Plugin                                                 | Purpose                                    |
+| ------------------------------------------------------ | ------------------------------------------ |
+| [kernel](plugins/kernel/README.md)                     | Cognitive OS. How to think.                |
+| [panel](plugins/panel/README.md)                       | Adversarial agent teams. How to verify.    |
+| [product](plugins/product/README.md)                   | Beliefs against reality. What to question. |
+| [signal](plugins/signal/README.md)                     | Plain English harness. How to speak.       |
+| [floor](plugins/floor/README.md)                       | Runs and workspaces. Where work happens.   |
+| [laravel-ddd](plugins/laravel-ddd/README.md)           | Laravel DDD patterns. What to build.       |
+| [laravel-playbook](plugins/laravel-playbook/README.md) | Package author's playbook. How to ship.    |
+| [pest](plugins/pest/README.md)                         | Pest v3 syntax. How to test.               |
 
 ---
 

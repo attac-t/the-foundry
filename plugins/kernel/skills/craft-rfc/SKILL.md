@@ -9,10 +9,10 @@ description: Proposing technical designs. How we should build X.
 
 ## RFC vs ADR
 
-| Artifact | Purpose | When |
-|----------|---------|------|
-| **RFC** | Propose a *design* | Before implementation |
-| **ADR** | Record a *decision* | After choice is made |
+| Artifact | Purpose             | When                  |
+| -------- | ------------------- | --------------------- |
+| **RFC**  | Propose a *design*  | Before implementation |
+| **ADR**  | Record a *decision* | After choice is made  |
 
 RFC answers: "How should we build X?"
 ADR answers: "Why did we choose X?"
@@ -42,12 +42,12 @@ Complex systems deserve diagrams. Use liberally:
 
 ## When to Write
 
-| Write RFC | Don't Write RFC |
-|-----------|-----------------|
-| New package/library | Bug fixes |
-| System redesign | Config changes |
-| Complex feature | Simple CRUD |
-| Cross-domain work | Single-file changes |
+| Write RFC           | Don't Write RFC     |
+| ------------------- | ------------------- |
+| New package/library | Bug fixes           |
+| System redesign     | Config changes      |
+| Complex feature     | Simple CRUD         |
+| Cross-domain work   | Single-file changes |
 
 ## Template
 

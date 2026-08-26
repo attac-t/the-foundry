@@ -11,11 +11,11 @@ description: Crafting a service provider. The declarative heart of every Laravel
 
 1. **Choose the Right Base Class**: Three approaches, matched to the package type.
 
-   | Approach                           | Base Class                           | When                                                                        |
-   |------------------------------------|--------------------------------------|-----------------------------------------------------------------------------|
-   | Spatie Package Tools (recommended) | `PackageServiceProvider`             | Most packages. Declarative, minimal boilerplate.                            |
-   | Raw ServiceProvider                | `Illuminate\Support\ServiceProvider` | First-party style (Cashier, Sanctum, Scout). Full control, no dependencies. |
-   | Filament PanelProvider             | `PanelProvider`                      | Platform packages that ship complete admin panels.                          |
+| Approach                           | Base Class                           | When                                                                        |
+| ---------------------------------- | ------------------------------------ | --------------------------------------------------------------------------- |
+| Spatie Package Tools (recommended) | `PackageServiceProvider`             | Most packages. Declarative, minimal boilerplate.                            |
+| Raw ServiceProvider                | `Illuminate\Support\ServiceProvider` | First-party style (Cashier, Sanctum, Scout). Full control, no dependencies. |
+| Filament PanelProvider             | `PanelProvider`                      | Platform packages that ship complete admin panels.                          |
 
    Spatie's `PackageServiceProvider` is recommended for most packages. It eliminates boilerplate. Use a raw `ServiceProvider` when you need full control or want zero external dependencies (Taylor's first-party pattern). Use `PanelProvider` only for Filament panel packages.
 
@@ -28,11 +28,11 @@ description: Crafting a service provider. The declarative heart of every Laravel
 
 4. **Binding Patterns**: Three patterns, each with a clear purpose.
 
-   | Pattern   | Scope           | When                                              |
-   |-----------|-----------------|---------------------------------------------------|
-   | Singleton | App lifetime    | Stateful shared services (registrars, caches)     |
-   | Scoped    | Per-request     | Request-scoped state, Octane-safe                 |
-   | Bind      | Fresh each time | Stateless resolution, interface-to-implementation |
+| Pattern   | Scope           | When                                              |
+| --------- | --------------- | ------------------------------------------------- |
+| Singleton | App lifetime    | Stateful shared services (registrars, caches)     |
+| Scoped    | Per-request     | Request-scoped state, Octane-safe                 |
+| Bind      | Fresh each time | Stateless resolution, interface-to-implementation |
 
    Config-driven binding is the dominant pattern. Read the implementation class from config, bind to an interface. Users swap behavior by editing a config file.
 
@@ -50,16 +50,16 @@ description: Crafting a service provider. The declarative heart of every Laravel
 
 ## The Anti-Patterns
 
-| Don't                                               | Do                                                       | Why                                    |
-|-----------------------------------------------------|----------------------------------------------------------|----------------------------------------|
-| Mix bindings and side effects in one method         | Register phase for bindings, boot phase for side effects | Separation of concerns                 |
-| Hardcode implementation classes                     | Config-driven class resolution                           | Users swap without forking             |
-| Register everything as singleton                    | Match the pattern to the need: singleton, scoped, bind   | Wrong scope causes subtle bugs         |
-| Skip `->name()` or use a bare name                  | Always `->name('laravel-{slug}')` with Spatie tools      | Consistent publish tags and namespaces |
-| One giant boot method                               | Private methods per concern                              | Readable, maintainable                 |
-| Forget `callAfterResolving()` for optional services | Defer registration until the dependency is resolved      | Avoids boot-order issues               |
+| Don't                                               | Do                                                       | Why                                       |
+| --------------------------------------------------- | -------------------------------------------------------- | ----------------------------------------- |
+| Mix bindings and side effects in one method         | Register phase for bindings, boot phase for side effects | Separation of concerns                    |
+| Hardcode implementation classes                     | Config-driven class resolution                           | Users swap without forking                |
+| Register everything as singleton                    | Match the pattern to the need: singleton, scoped, bind   | Wrong scope causes subtle bugs            |
+| Skip `->name()` or use a bare name                  | Always `->name('laravel-{slug}')` with Spatie tools      | Consistent publish tags and namespaces    |
+| One giant boot method                               | Private methods per concern                              | Readable, maintainable                    |
+| Forget `callAfterResolving()` for optional services | Defer registration until the dependency is resolved      | Avoids boot-order issues                  |
 | Eager-load services used on few requests            | `DeferrableProvider` + `provides()`                      | Free performance for rarely-used bindings |
-| Stateful singletons without Octane reset            | Flush state on `RequestReceived` / `TaskReceived`        | Leaked state causes cross-request bugs |
+| Stateful singletons without Octane reset            | Flush state on `RequestReceived` / `TaskReceived`        | Leaked state causes cross-request bugs    |
 
 ## Real-World Examples
 

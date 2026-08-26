@@ -28,14 +28,14 @@ Write it, then cut. **Delete any sentence that would not change what the reader 
 
 State the decision. Then the one case that would prove it wrong. Stop.
 
-| Instead of | Write |
-|---|---|
-| a paragraph explaining a choice | the choice, then the case that decides it |
-| prose listing three things | a table |
-| "we should consider whether…" | the decision |
-| a heading over two sentences | the two sentences |
-| "in order to", "it is worth noting" | nothing — cut it |
-| a second paragraph balancing the first | the first |
+| Instead of                             | Write                                     |
+| -------------------------------------- | ----------------------------------------- |
+| a paragraph explaining a choice        | the choice, then the case that decides it |
+| prose listing three things             | a table                                   |
+| "we should consider whether…"          | the decision                              |
+| a heading over two sentences           | the two sentences                         |
+| "in order to", "it is worth noting"    | nothing — cut it                          |
+| a second paragraph balancing the first | the first                                 |
 
 ---
 
@@ -48,8 +48,15 @@ block. A shape drawn beats the paragraph describing it.
 fifty. The longest is four hundred and ninety-five. That one is a paragraph in a grid, and no amount
 of spacing makes it readable unrendered.
 
-Padding the columns is not the fix and cannot be. `length` counts bytes in one locale and characters
-in another. So a table one `awk` aligns is ragged to the next, and that is why no gate holds this.
+**Padding the columns is a gate now, and this file used to argue it could not be.** The argument was
+that `length` counts bytes in one locale and characters in another, so a table one `awk` aligns is
+ragged to the next.
+
+True of `length`. False of the conclusion. `bin/tables.awk` counts UTF-8 code points itself, under
+`LC_ALL=C`, and gives the same bytes on every machine. **Run `sh bin/tables.sh write`. Never align a
+table by hand.**
+
+What stays a judgement is whether a table was the right shape at all. No gate reads that.
 
 Never a heading to decorate a paragraph. Never a section restating the one above it.
 
@@ -73,9 +80,9 @@ Never claim a guarantee the mechanism does not give. Name the boundary that woul
 
 The bar above covers the rest.
 
-| | |
-|---|---|
+|              |                                                                                                                                                                                                                                                                                                                     |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | pull request | read `.github/PULL_REQUEST_TEMPLATE.md` first — `gh pr create --body` bypasses it. Answer one question: why does this change exist? The reader already sees the diff. Close with `Closes #N` for the issue this finishes and `Refs #N` for the rest — never `@see`, github.com/see is a real person GitHub notifies |
-| issue | goal, contract, what is deliberately not built, and a `## Done when` list of checks that can each fail before the code exists. **Written `- [ ]`, never `- `** — a bullet nobody can tick records nothing at close, and 47 of the first 83 lists were that shape. Name open decisions rather than guessing them |
-| commit | [Commitizen](https://commitizen-tools.github.io/commitizen/) `type(scope): description`. The subject says what changed; the body says why it was wrong before |
-| comment | carries a discovery, never narration. `# the fatal goes to stderr, the argument to stdout` earns its line. `# loop over the files` does not |
+| issue        | goal, contract, what is deliberately not built, and a `## Done when` list of checks that can each fail before the code exists. **Written `- [ ]`, never `- `** — a bullet nobody can tick records nothing at close, and 47 of the first 83 lists were that shape. Name open decisions rather than guessing them     |
+| commit       | [Commitizen](https://commitizen-tools.github.io/commitizen/) `type(scope): description`. The subject says what changed; the body says why it was wrong before                                                                                                                                                       |
+| comment      | carries a discovery, never narration. `# the fatal goes to stderr, the argument to stdout` earns its line. `# loop over the files` does not                                                                                                                                                                         |

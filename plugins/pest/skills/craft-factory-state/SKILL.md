@@ -16,7 +16,7 @@ description: Crafting factory states. DSL for building test state.
 ## The Anti-Patterns
 
 | Don't                 | Do                          | Why           |
-|-----------------------|-----------------------------|---------------|
+| --------------------- | --------------------------- | ------------- |
 | Inline arrays         | Named states                | Readability   |
 | Generic names         | Intent-revealing names      | Clarity       |
 | Deep nesting in tests | `withDeepHierarchy()` state | Encapsulation |

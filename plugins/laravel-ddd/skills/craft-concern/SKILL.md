@@ -17,7 +17,7 @@ description: Crafting Concerns (traits). Thin wiring, not business logic.
 A concern method does **one of three things**:
 
 | Delegation Target | Concern Method Does                  |
-|-------------------|--------------------------------------|
+| ----------------- | ------------------------------------ |
 | **QueryBuilder**  | Returns a query scope or builder     |
 | **Collection**    | Returns a filtered/mapped collection |
 | **Action**        | Calls an action and returns result   |
@@ -27,7 +27,7 @@ If it does more, it's too fat. Extract.
 ## The Anti-Patterns
 
 | Don't                   | Do                            | Why                            |
-|-------------------------|-------------------------------|--------------------------------|
+| ----------------------- | ----------------------------- | ------------------------------ |
 | Business logic in trait | Delegate to Action            | Traits mix in, logic leaks     |
 | Complex queries inline  | Delegate to QueryBuilder      | Reusable, testable             |
 | Collection manipulation | Delegate to custom Collection | Named pipeline                 |

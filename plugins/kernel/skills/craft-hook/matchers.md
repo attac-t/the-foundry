@@ -9,10 +9,10 @@ SessionStart fires on multiple sources. Use matchers to control when:
 }
 ```
 
-| Matcher | When |
-|---------|------|
-| `startup` | New session |
-| `resume` | `--resume`, `--continue`, `/resume` |
-| `clear` | `/clear` |
-| `compact` | After context compaction |
+| Matcher   | When                                |
+| --------- | ----------------------------------- |
+| `startup` | New session                         |
+| `resume`  | `--resume`, `--continue`, `/resume` |
+| `clear`   | `/clear`                            |
+| `compact` | After context compaction            |
 

@@ -46,7 +46,7 @@ If splitting creates a "which one do I need?" moment, keep it together.
 ## The Quick Test
 
 | Ask                                        | Answer | Use                             |
-|--------------------------------------------|--------|---------------------------------|
+| ------------------------------------------ | ------ | ------------------------------- |
 | Can this feature stand completely alone?   | Yes    | Micro                           |
 | Would splitting confuse users?             | Yes    | Macro                           |
 | Are the concerns tightly coupled?          | Yes    | Macro                           |

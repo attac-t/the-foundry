@@ -25,12 +25,12 @@ Ask: *"If I change one, must I change all?"*
 
 ## The Quick Test
 
-| Ask | Answer | Use |
-|-----|--------|-----|
-| First time seeing this pattern? | Yes | Copy-paste |
-| Second time, same context? | Yes | Copy-paste (note it) |
-| Third time, identical pattern? | Yes | Abstract |
-| Slight variations each time? | Yes | Keep separate |
+| Ask                             | Answer | Use                  |
+| ------------------------------- | ------ | -------------------- |
+| First time seeing this pattern? | Yes    | Copy-paste           |
+| Second time, same context?      | Yes    | Copy-paste (note it) |
+| Third time, identical pattern?  | Yes    | Abstract             |
+| Slight variations each time?    | Yes    | Keep separate        |
 
 ## Real-World Examples
 

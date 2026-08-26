@@ -30,7 +30,7 @@ Ask: *"Can this fail, and should we retry without user intervention?"*
 ## The Quick Test
 
 | Ask Yourself  | Answer | Use  |
-|---------------|--------|------|
+| ------------- | ------ | ---- |
 | External API? | Yes    | Job  |
 | User waiting? | Yes    | Sync |
 | Needs retry?  | Yes    | Job  |

@@ -26,12 +26,12 @@ Ask: *"Will another developer need to know what's in this?"*
 
 ## The Quick Test
 
-| Ask | Answer | Use |
-|-----|--------|-----|
-| Does it cross a class boundary? | Yes | DTO |
-| Is it reused elsewhere? | Yes | DTO |
-| Does it need validation? | Yes | DTO |
-| Is it a quick local variable? | Yes | Array |
+| Ask                             | Answer | Use   |
+| ------------------------------- | ------ | ----- |
+| Does it cross a class boundary? | Yes    | DTO   |
+| Is it reused elsewhere?         | Yes    | DTO   |
+| Does it need validation?        | Yes    | DTO   |
+| Is it a quick local variable?   | Yes    | Array |
 
 ## Real-World Examples
 

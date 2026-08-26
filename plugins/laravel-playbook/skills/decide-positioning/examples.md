@@ -17,13 +17,13 @@ Last commit > 12 months = likely abandoned. Responsive to issues but slow on PRs
 
 **Step 2: DX Comparison** -- Install the top 2-3 alternatives. Actually use them.
 
-| Criterion | Package A | Package B | Yours |
-|-----------|-----------|-----------|-------|
-| Lines to first working example | | | |
-| Config keys required | | | |
-| Error message clarity | | | |
-| IDE autocompletion | | | |
-| Test helpers provided | | | |
+| Criterion                      | Package A | Package B | Yours |
+| ------------------------------ | --------- | --------- | ----- |
+| Lines to first working example |           |           |       |
+| Config keys required           |           |           |       |
+| Error message clarity          |           |           |       |
+| IDE autocompletion             |           |           |       |
+| Test helpers provided          |           |           |       |
 
 First-touch DX is the most important metric. The package that gets to "it works" fastest wins.
 
@@ -66,7 +66,7 @@ Kept the engine. Better DX was undeniable, not arguable.
 ### Platform Play: Filament vs Nova vs Backpack
 
 | Dimension             | Nova              | Backpack          | Filament           |
-|-----------------------|-------------------|-------------------|--------------------|
+| --------------------- | ----------------- | ----------------- | ------------------ |
 | License               | Commercial        | Commercial        | MIT                |
 | Components standalone | No                | No                | Yes                |
 | Rendering             | Vue SPA           | Blade             | Livewire           |

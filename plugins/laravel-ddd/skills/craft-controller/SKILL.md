@@ -17,7 +17,7 @@ description: Crafting thin controllers. Traffic cops, not business logic.
 ## The Anti-Patterns
 
 | ❌ Don't                      | ✅ Do                      | Why                        |
-|------------------------------|---------------------------|----------------------------|
+| ---------------------------- | ------------------------- | -------------------------- |
 | Business logic in controller | Delegate to Action        | Single responsibility      |
 | Raw queries in controller    | Use QueryBuilder/scopes   | Controllers don't query    |
 | Transaction in Action        | Transaction in Controller | Enables Action composition |

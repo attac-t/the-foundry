@@ -76,7 +76,7 @@ Bus::batch(
 ## Method Comparison
 
 | Method        | Memory | Modifies Safe | Returns        |
-|---------------|--------|---------------|----------------|
+| ------------- | ------ | ------------- | -------------- |
 | `chunk()`     | Low    | Risky         | void           |
 | `chunkById()` | Low    | Safe          | void           |
 | `cursor()`    | Lowest | No            | LazyCollection |
@@ -130,13 +130,13 @@ Product::chunkById(100, fn ($chunk) => $chunk->each->update([...]));
 Isolated process, PHP 8.4 CLI, Laravel 10.48 Collections, 500k elements,
 `map → filter → values → sum`. Peak memory above baseline:
 
-| Variant                          | Peak        |
-|----------------------------------|-------------|
-| Un-chained, one temp per stage   | **33.60 MB** |
-| Chained pipeline                 | 25.59 MB    |
-| Reassign to the same variable    | 25.59 MB    |
-| `LazyCollection`                 | 9.71 MB     |
-| Eloquent builder chain           | **0.00 MB** |
+| Variant                        | Peak         |
+| ------------------------------ | ------------ |
+| Un-chained, one temp per stage | **33.60 MB** |
+| Chained pipeline               | 25.59 MB     |
+| Reassign to the same variable  | 25.59 MB     |
+| `LazyCollection`               | 9.71 MB      |
+| Eloquent builder chain         | **0.00 MB**  |
 
 ```php
 // Worst: +31% over the chain. Every temp stays pinned for the scope's lifetime.

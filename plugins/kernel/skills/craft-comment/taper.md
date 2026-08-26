@@ -29,12 +29,12 @@ shape does not decorate the comment; it finds the words.
 Word boundaries are coarse. Fifty-nine sentences from this repository's own rules
 and READMEs, each between 90 and 200 characters, taken as written:
 
-| Asked for | Sentences that can |
-|---|---|
-| every step exactly three | 2 of 59 |
-| steps within one | 46 of 59 |
-| steps within three | 55 of 59 |
-| steps within five | 59 of 59 |
+| Asked for                | Sentences that can |
+| ------------------------ | ------------------ |
+| every step exactly three | 2 of 59            |
+| steps within one         | 46 of 59           |
+| steps within three       | 55 of 59           |
+| steps within five        | 59 of 59           |
 
 **That measured the wrong freedom.** A sentence taken as written almost never lands.
 A sentence you may reword, split at a different place, and abandon for two lines

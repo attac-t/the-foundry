@@ -34,7 +34,7 @@ description: Crafting a config file. The self-documenting contract between packa
 ## The Anti-Patterns
 
 | Don't                                        | Do                                     | Why                                               |
-|----------------------------------------------|----------------------------------------|---------------------------------------------------|
+| -------------------------------------------- | -------------------------------------- | ------------------------------------------------- |
 | Use `env()` for model classes or table names | `env()` for runtime toggles only       | Structural config doesn't change per environment  |
 | Ship config keys without comments            | Every key gets a docblock              | The config file IS the documentation              |
 | Require config publishing to work            | Provide zero-config defaults           | First-touch should be `composer require` and done |

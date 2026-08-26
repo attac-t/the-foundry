@@ -41,18 +41,18 @@ No word list ships here, because hard words never stop arriving. Run this on eac
 
 Step 3 is why `worktree` and `idempotent` stay. Vague costs more than long.
 
-| Not this | This |
-|---|---|
-| `utilise`, `leverage` | use |
-| `facilitate`, `assist` | help |
-| `commence`, `initiate` | start |
-| `sufficient` | enough |
-| `in order to` | to |
-| `additionally`, `furthermore` | also |
-| `therefore`, `thus`, `hence` | so |
-| `whilst` | while |
-| `comprehensive`, `robust` | full, strong |
-| `it is worth noting`, `great question` | cut it |
+| Not this                               | This         |
+| -------------------------------------- | ------------ |
+| `utilise`, `leverage`                  | use          |
+| `facilitate`, `assist`                 | help         |
+| `commence`, `initiate`                 | start        |
+| `sufficient`                           | enough       |
+| `in order to`                          | to           |
+| `additionally`, `furthermore`          | also         |
+| `therefore`, `thus`, `hence`           | so           |
+| `whilst`                               | while        |
+| `comprehensive`, `robust`              | full, strong |
+| `it is worth noting`, `great question` | cut it       |
 
 Short words fail the test too. No ten-year-old says `hence`, `thus` or `deem`, and each is one beat,
 so counting beats will never catch them.
@@ -76,10 +76,10 @@ answer belongs in the last.
 
 ## Do not game it
 
-| The dodge | Why it fails |
-|---|---|
-| One clause per line | Long words are counted whatever the lines do, and a sentence ends at a full stop or a blank line |
-| Hard words in a table | Table cells count for long words too |
-| Drop facts to fit | Then the reply is short and wrong |
+| The dodge             | Why it fails                                                                                     |
+| --------------------- | ------------------------------------------------------------------------------------------------ |
+| One clause per line   | Long words are counted whatever the lines do, and a sentence ends at a full stop or a blank line |
+| Hard words in a table | Table cells count for long words too                                                             |
+| Drop facts to fit     | Then the reply is short and wrong                                                                |
 
 The counts are a proxy. The bar is the ten-year-old.

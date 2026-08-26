@@ -22,18 +22,18 @@ Ask mechanism first. If the answer is code, there is nobody to delegate to.
 
 ## The Primitives
 
-| Primitive      | Communication    | Best For                                          |
-|----------------|------------------|---------------------------------------------------|
-| **Self**       | —                | Judgment-heavy, context-dependent, architectural  |
+| Primitive      | Communication     | Best For                                         |
+| -------------- | ----------------- | ------------------------------------------------ |
+| **Self**       | —                 | Judgment-heavy, context-dependent, architectural |
 | **Sub-agent**  | Reports back only | Bounded, mechanical, verifiable                  |
-| **Agent team** | Peer-to-peer     | Research, competing hypotheses, cross-layer work  |
+| **Agent team** | Peer-to-peer      | Research, competing hypotheses, cross-layer work |
 
 ## The Criteria
 
 ### Sub-agent — all four must be true:
 
 | Criterion        | Question                                                   |
-|------------------|------------------------------------------------------------|
+| ---------------- | ---------------------------------------------------------- |
 | **Bounded**      | Can you specify input and expected output in one sentence? |
 | **Context-free** | Does it NOT require knowledge of other in-flight tasks?    |
 | **Mechanical**   | Is the approach obvious once started?                      |
@@ -44,22 +44,22 @@ All yes → `sub-agent`. Any no → check if `team` fits.
 ### Agent team — when the work needs dialogue:
 
 | Signal                       | Example                                           |
-|------------------------------|---------------------------------------------------|
-| **Competing hypotheses**     | Investigate the root cause in parallel             |
-| **Cross-layer coordination** | Frontend, backend, and tests move together         |
-| **Research with challenge**  | Findings should be questioned, not just collected  |
-| **Peer review**              | Multiple lenses on the same artifact               |
+| ---------------------------- | ------------------------------------------------- |
+| **Competing hypotheses**     | Investigate the root cause in parallel            |
+| **Cross-layer coordination** | Frontend, backend, and tests move together        |
+| **Research with challenge**  | Findings should be questioned, not just collected |
+| **Peer review**              | Multiple lenses on the same artifact              |
 
 If none → `self`.
 
 ## Deeper
 
-| | |
-|---|---|
+|                           |                                                   |
+| ------------------------- | ------------------------------------------------- |
 | [authority](authority.md) | privilege attenuation, and the authority gradient |
 | [briefings](briefings.md) | what a sub-agent is told, and what a team is told |
-| [running](running.md) | the workflow, and running in parallel |
-| [examples](examples.md) | delegations that worked, and one that did not |
+| [running](running.md)     | the workflow, and running in parallel             |
+| [examples](examples.md)   | delegations that worked, and one that did not     |
 
 ## The Anti-Patterns
 

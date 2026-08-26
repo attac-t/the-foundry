@@ -32,7 +32,7 @@ One human action: create the GitHub release. Everything else is automated.
 State your support window explicitly in README or SECURITY.md. Three tiers:
 
 | Tier        | Bug Fixes | Security Patches | Example                    |
-|-------------|-----------|------------------|----------------------------|
+| ----------- | --------- | ---------------- | -------------------------- |
 | Active      | Yes       | Yes              | Current major              |
 | Maintenance | No        | Yes              | Previous major (12 months) |
 | End of Life | No        | No               | Everything else            |
@@ -41,14 +41,14 @@ Laravel's window: 18 months bug fixes, 24 months security. For community package
 
 ## The Anti-Patterns
 
-| Don't                              | Do                          | Why                                                |
-|------------------------------------|-----------------------------|----------------------------------------------------|
-| Manual changelog updates           | Auto-changelog on release   | Humans forget. Automation does not                 |
-| Inconsistent tag prefix            | Pick one, be consistent     | Taylor uses `v`, Spatie omits. Both valid          |
-| Manual Packagist publishing        | Packagist webhook           | One-time setup, zero ongoing cost                  |
-| Squash without meaningful messages | Meaningful PR titles        | PR titles become changelog entries                 |
-| Release branches                   | Release from `main`         | One branch, one pipeline, one truth                |
-| Manual release notes               | GitHub auto-generated notes | PR-based, contributor-attributed, link-rich        |
+| Don't                              | Do                          | Why                                         |
+| ---------------------------------- | --------------------------- | ------------------------------------------- |
+| Manual changelog updates           | Auto-changelog on release   | Humans forget. Automation does not          |
+| Inconsistent tag prefix            | Pick one, be consistent     | Taylor uses `v`, Spatie omits. Both valid   |
+| Manual Packagist publishing        | Packagist webhook           | One-time setup, zero ongoing cost           |
+| Squash without meaningful messages | Meaningful PR titles        | PR titles become changelog entries          |
+| Release branches                   | Release from `main`         | One branch, one pipeline, one truth         |
+| Manual release notes               | GitHub auto-generated notes | PR-based, contributor-attributed, link-rich |
 
 **See also:** craft-ci (CI workflows that gate releases), craft-deprecation (sunset lifecycle before major releases).
 

@@ -31,7 +31,7 @@ PHP problem: agnostic core + bridge. Laravel problem: Laravel-only.
 ## The Quick Test
 
 | Ask                                    | Answer | Use           |
-|----------------------------------------|--------|---------------|
+| -------------------------------------- | ------ | ------------- |
 | Does this need the container?          | No     | Agnostic core |
 | Does this need Eloquent?               | Yes    | Laravel-only  |
 | Could Symfony developers use this?     | Yes    | Agnostic core |

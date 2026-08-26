@@ -18,7 +18,7 @@ description: Crafting the Eloquent model. Source of truth.
 ## The Anti-Patterns
 
 | ❌ Don't           | ✅ Do                                 | Why                      |
-|-------------------|--------------------------------------|--------------------------|
+| ----------------- | ------------------------------------ | ------------------------ |
 | No $dataClass     | Define `protected string $dataClass` | Type-safe representation |
 | String status     | Enum cast                            | Type safety              |
 | Scopes in Model   | Custom QueryBuilder                  | Separation               |

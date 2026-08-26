@@ -16,12 +16,12 @@ description: Crafting Result Objects. Rich outcomes beyond success/failure.
 
 ## The Anti-Patterns
 
-| ❌ Don't                | ✅ Do                        | Why                          |
-|------------------------|-----------------------------|-----------------------------|
-| Return bool            | Return Result object        | No context on failure        |
-| Throw on expected fail | Return `Result::failed()`   | Expected != exceptional      |
-| Array with status key  | Typed Result class          | Type safety, IDE support     |
-| Log inside action      | Return Result, log outside  | Action stays pure            |
+| ❌ Don't                | ✅ Do                       | Why                      |
+| ---------------------- | -------------------------- | ------------------------ |
+| Return bool            | Return Result object       | No context on failure    |
+| Throw on expected fail | Return `Result::failed()`  | Expected != exceptional  |
+| Array with status key  | Typed Result class         | Type safety, IDE support |
+| Log inside action      | Return Result, log outside | Action stays pure        |
 
 ## Real-World Examples
 

@@ -29,7 +29,7 @@ argument-hint: <what user provides>
 ## Frontmatter Reference
 
 | Field           | Purpose                               |
-|-----------------|---------------------------------------|
+| --------------- | ------------------------------------- |
 | `description`   | Brief purpose (shown in autocomplete) |
 | `argument-hint` | Expected arguments                    |
 | `allowed-tools` | Restrict tool access                  |

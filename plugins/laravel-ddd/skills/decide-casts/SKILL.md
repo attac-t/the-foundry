@@ -29,7 +29,7 @@ Ask: *"Does this transform how data is stored, or how it's displayed?"*
 ## The Quick Test
 
 | Ask Yourself                 | Answer | Use      |
-|------------------------------|--------|----------|
+| ---------------------------- | ------ | -------- |
 | Reusable across models?      | Yes    | Cast     |
 | Needs read + write?          | Yes    | Cast     |
 | Depends on other attributes? | Yes    | Accessor |

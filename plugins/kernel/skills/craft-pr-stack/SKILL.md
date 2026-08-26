@@ -9,9 +9,9 @@ description: Opening a pull request on top of one that has not merged. When a st
 
 ## When
 
-| Stack | Branch from `main` |
-|---|---|
-| The second change needs the first | Neither needs the other |
+| Stack                                                               | Branch from `main`         |
+| ------------------------------------------------------------------- | -------------------------- |
+| The second change needs the first                                   | Neither needs the other    |
 | Both edit a file every change edits — manifest, lockfile, changelog | They touch different files |
 
 On that second row a green gate is not evidence: each branch passes alone while the merge of both is
@@ -64,8 +64,8 @@ gh pr view <child> --json baseRefName,mergedAt
 
 ## The Anti-Patterns
 
-| Don't | Do | Why |
-|---|---|---|
+| Don't                           | Do                               | Why                                                  |
+| ------------------------------- | -------------------------------- | ---------------------------------------------------- |
 | Merge the parent into the child | Rebase the child onto the parent | A merge puts the parent's diff in the child's review |
-| Stack to keep a PR small | Split only what can merge alone | Size is not the virtue. Independence is |
-| Add a branch to a waiting stack | Land the bottom first | Every parent rewrite rebases everything above it |
+| Stack to keep a PR small        | Split only what can merge alone  | Size is not the virtue. Independence is              |
+| Add a branch to a waiting stack | Land the bottom first            | Every parent rewrite rebases everything above it     |

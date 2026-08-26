@@ -13,11 +13,11 @@ Before context becomes a constraint. The kernel monitors automatically.
 
 ## The Thresholds
 
-| Usage | Action | Why |
-|-------|--------|-----|
-| 60% | Run `/compact` | Prevent drift before it starts |
-| 80% | Delegate to sub-agent | Preserve parent for orchestration |
-| 90% | Emergency compress | Summarize aggressively |
+| Usage | Action                | Why                               |
+| ----- | --------------------- | --------------------------------- |
+| 60%   | Run `/compact`        | Prevent drift before it starts    |
+| 80%   | Delegate to sub-agent | Preserve parent for orchestration |
+| 90%   | Emergency compress    | Summarize aggressively            |
 
 ## The Protocol
 
@@ -36,7 +36,7 @@ Don't wrap up early to "fit" in context. Don't cut corners. Let compaction happe
 ## The Anti-Patterns
 
 | Don't             | Do                        | Why                              |
-|-------------------|---------------------------|----------------------------------|
+| ----------------- | ------------------------- | -------------------------------- |
 | Hoard context     | Write to files            | Files are unlimited              |
 | Wait until 90%    | Compact at 60%            | Late compaction loses objectives |
 | Orphan sub-agents | Handoff before delegating | Context must transfer            |

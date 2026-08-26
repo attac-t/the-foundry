@@ -32,7 +32,7 @@ PHP problems are extractable. Project problems are not.
 ## The Quick Test
 
 | Ask                                                | Answer | Action                        |
-|----------------------------------------------------|--------|-------------------------------|
+| -------------------------------------------------- | ------ | ----------------------------- |
 | Have you copy-pasted this across projects?         | Yes    | Strong extraction signal      |
 | Does it depend on your domain models?              | Yes    | Decouple first, then reassess |
 | Do existing packages solve this well?              | Yes    | Contribute upstream instead   |

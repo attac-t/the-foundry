@@ -50,6 +50,12 @@ jobs:
       - name: Shipped shell reads down, not sideways
         run: bash bin/shell.sh
 
+      # The writing rule argued no gate could hold alignment, because `length` counts bytes in one
+      # locale and characters in another. True of `length`, false of the conclusion: tables.awk
+      # counts UTF-8 code points itself and answers the same on every machine.
+      - name: Every Markdown table is the shape a program made
+        run: sh bin/tables.sh
+
   # The gates above read files. This one runs the plugins that ship code, on each operating system a
   # user installs them on, because that is where both of them broke last: signal's hook was not
   # executable, so it died before reading a word, and kernel's nine hooks named a bare path with no

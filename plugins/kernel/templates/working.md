@@ -39,7 +39,7 @@ Currently: [Active task description]
 > "Leave the wrong turns in context." — Manus
 
 | Attempt | Lesson |
-|---------|--------|
+| ------- | ------ |
 | -       | -      |
 
 ---

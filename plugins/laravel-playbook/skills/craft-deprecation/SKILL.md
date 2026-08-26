@@ -28,7 +28,7 @@ description: Crafting deprecations. Sunset gracefully, remove confidently.
 ## The Anti-Patterns
 
 | Don't                                  | Do                                              | Why                                   |
-|----------------------------------------|-------------------------------------------------|---------------------------------------|
+| -------------------------------------- | ----------------------------------------------- | ------------------------------------- |
 | Remove without deprecating first       | Deprecate in minor, remove in major             | Surprise removals break trust         |
 | `@deprecated` docblock only            | Attribute + runtime notice + docblock           | Docblocks are invisible at runtime    |
 | Deprecate without migration path       | Show the replacement in the deprecation message | A warning without a fix is just noise |

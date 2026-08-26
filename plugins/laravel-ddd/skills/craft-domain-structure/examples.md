@@ -85,17 +85,17 @@ src/Support/
 
 ## Folder Conventions
 
-| Folder | Contains | Example |
-|--------|----------|---------|
-| `Actions/` | Business logic entry points | `CreateInvoiceAction` |
-| `DTOs/` | Data transfer objects | `CreateInvoiceData` |
-| `Models/` | Eloquent models | `Invoice` |
-| `Events/` | Domain events | `InvoicePaidEvent` |
-| `States/` | State pattern classes | `PaidInvoiceState` |
-| `QueryBuilders/` | Custom query builders | `InvoiceQueryBuilder` |
-| `Collections/` | Custom collections | `InvoiceLineCollection` |
-| `Subscribers/` | Event subscribers | `InvoiceSubscriber` |
-| `ValueObjects/` | Immutable value objects | `InvoiceNumber` |
+| Folder           | Contains                    | Example                 |
+| ---------------- | --------------------------- | ----------------------- |
+| `Actions/`       | Business logic entry points | `CreateInvoiceAction`   |
+| `DTOs/`          | Data transfer objects       | `CreateInvoiceData`     |
+| `Models/`        | Eloquent models             | `Invoice`               |
+| `Events/`        | Domain events               | `InvoicePaidEvent`      |
+| `States/`        | State pattern classes       | `PaidInvoiceState`      |
+| `QueryBuilders/` | Custom query builders       | `InvoiceQueryBuilder`   |
+| `Collections/`   | Custom collections          | `InvoiceLineCollection` |
+| `Subscribers/`   | Event subscribers           | `InvoiceSubscriber`     |
+| `ValueObjects/`  | Immutable value objects     | `InvoiceNumber`         |
 
 ---
 

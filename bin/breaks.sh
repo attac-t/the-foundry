@@ -88,6 +88,53 @@ every_break() {
     drive frontmatter plugins/kernel/skills/craft-sh/SKILL.md \
         "sed -i '/^description:/d' plugins/kernel/skills/craft-sh/SKILL.md" \
         'bash bin/frontmatter.sh'
+
+    # Four shapes a table takes when nobody formats it: plain columns, a projection a generator
+    # wrote, an em-dash that is three bytes and one character, and a cell wider than its heading.
+    #
+    # Every one appends to a file git already tracks. The gate reads `git ls-files`, so a break
+    # writing a new file proves nothing — three of these did exactly that, and all three were MISSED
+    # by the break rather than by the gate.
+    drive tables-plain CONTRIBUTING.md \
+        'a_ragged_table >> CONTRIBUTING.md' \
+        'sh bin/tables.sh'
+
+    drive tables-projected CLAUDE.md \
+        "sed -i 's/^| \[closing\]/|  [closing]/' CLAUDE.md" \
+        'sh bin/tables.sh'
+
+    drive tables-unicode CONTRIBUTING.md \
+        'a_ragged_unicode_table >> CONTRIBUTING.md' \
+        'sh bin/tables.sh'
+
+    drive tables-long-cell CONTRIBUTING.md \
+        'a_ragged_long_cell >> CONTRIBUTING.md' \
+        'sh bin/tables.sh'
+
+    # The other half, and this suite had none of it. A gate going red on a pipe inside code blocks
+    # good writing, and that failure never appears in a list of the breaks it caught.
+    leave_alone tables-fenced CONTRIBUTING.md \
+        'pipes_inside_a_fence >> CONTRIBUTING.md' \
+        'sh bin/tables.sh'
+
+    leave_alone tables-escaped CONTRIBUTING.md \
+        'an_escaped_pipe >> CONTRIBUTING.md' \
+        'sh bin/tables.sh'
+}
+
+#
+# `drive` proves a gate notices. This proves it keeps quiet, which is the half
+# that decides whether anybody adopts the gate at all.
+leave_alone() {
+    name=$1; file=$2; write_it=$3; gate=$4
+
+    remember "$file"
+    eval "$write_it"
+
+    runs "$gate" && { note quiet "$name"; caught=$((caught + 1)); } \
+                 || { note NOISY "$name"; missed=$((missed + 1)); }
+
+    restore "$file"
 }
 
 # --- one break ---
@@ -135,6 +182,34 @@ a_wedge() {
 }
 
 a_new_rule() { printf '# Probe\n\nA rule no harness file has a row for.\n'; }
+
+# --- what a table break writes ---
+
+a_ragged_table() {
+    printf '\n| a | bbbbbbbb |\n|---|---|\n| c | d |\n'
+}
+
+# An em-dash is three bytes and one character. A formatter padding by bytes puts this row out by
+# two, and two machines in different locales disagree about which one is right.
+a_ragged_unicode_table() {
+    printf '\n| one \342\200\224 two | x |\n|---|---|\n| y | z |\n'
+}
+
+a_ragged_long_cell() {
+    printf '\n| k | v |\n|---|---|\n| k | a cell far wider than the heading above it |\n'
+}
+
+# A pipe inside a fence is not a column, and a pipe a backslash escaped is content. Both of these are
+# already canonical, so the gate has to stay quiet about both.
+pipes_inside_a_fence() {
+    printf '\n```\n| a | b |\n|---|---|\n```\n'
+}
+
+# Written in the canonical shape on purpose. `\|` is two characters wide and one cell, so a
+# formatter that read it as a column boundary would split the row and this would come back changed.
+an_escaped_pipe() {
+    printf '\n| a   | b   |\n| --- | --- |\n| \\|  | y   |\n'
+}
 
 # --- saying it ---
 

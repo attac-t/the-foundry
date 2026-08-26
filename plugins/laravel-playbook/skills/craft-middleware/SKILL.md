@@ -76,16 +76,16 @@ description: Crafting package middleware. The invisible gatekeepers that guard, 
 
 ## The Anti-Patterns
 
-| Don't | Do | Why |
-|-------|-----|-----|
-| Register as global when route-level suffices | Alias middleware, let consumers apply it | Global middleware runs on every request -- wasteful |
-| Inject HTML into JSON responses | Check `Content-Type` before decorating | Breaks API consumers silently |
-| Use stringly-typed parameters only | Expose a `using()` static method | Type safety, IDE completion, refactor-proof |
-| Hardcode middleware group assignment | Make the target group configurable | Not every app uses `web` for the same purpose |
-| Put slow work in `handle()` | Use `terminate()` for post-response work | Don't block the response for telemetry |
-| Forget to handle unauthenticated users | Check `$request->user()` before accessing | Null user in middleware causes 500 errors |
-| Throw generic exceptions | Throw domain-specific exceptions with context | "Unauthorized" is useless; "Missing role: admin" helps |
-| Skip middleware priority documentation | Document ordering requirements clearly | Middleware order bugs are invisible and maddening |
+| Don't                                        | Do                                            | Why                                                    |
+| -------------------------------------------- | --------------------------------------------- | ------------------------------------------------------ |
+| Register as global when route-level suffices | Alias middleware, let consumers apply it      | Global middleware runs on every request -- wasteful    |
+| Inject HTML into JSON responses              | Check `Content-Type` before decorating        | Breaks API consumers silently                          |
+| Use stringly-typed parameters only           | Expose a `using()` static method              | Type safety, IDE completion, refactor-proof            |
+| Hardcode middleware group assignment         | Make the target group configurable            | Not every app uses `web` for the same purpose          |
+| Put slow work in `handle()`                  | Use `terminate()` for post-response work      | Don't block the response for telemetry                 |
+| Forget to handle unauthenticated users       | Check `$request->user()` before accessing     | Null user in middleware causes 500 errors              |
+| Throw generic exceptions                     | Throw domain-specific exceptions with context | "Unauthorized" is useless; "Missing role: admin" helps |
+| Skip middleware priority documentation       | Document ordering requirements clearly        | Middleware order bugs are invisible and maddening      |
 
 ## Real-World Examples
 

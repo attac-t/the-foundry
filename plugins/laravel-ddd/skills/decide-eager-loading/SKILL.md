@@ -34,7 +34,7 @@ Ask: *"Will I access this relationship in a loop?"*
 ## The Quick Test
 
 | Scenario                    | Method              |
-|-----------------------------|---------------------|
+| --------------------------- | ------------------- |
 | Query time, known relations | `with()`            |
 | Post-query, conditional     | `load()`            |
 | Only need counts            | `withCount()`       |

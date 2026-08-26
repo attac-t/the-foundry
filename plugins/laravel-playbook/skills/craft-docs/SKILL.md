@@ -15,12 +15,12 @@ description: Crafting a documentation site. Progressive depth, not progressive c
 
 3. **Progressive depth**: Introduction, then basic usage, then advanced usage, then API reference. Each layer is self-contained. A developer can stop at "basic usage" and have a working integration.
 
-   | Layer             | Location               | Content                                      |
-   |-------------------|------------------------|----------------------------------------------|
-   | **Pitch**         | README first screenful | What it does + 1-2 line code example         |
-   | **Quick start**   | `introduction.md`      | Install + basic usage                        |
-   | **Features**      | `basic-usage/`         | Individual feature pages                     |
-   | **Customization** | `advanced-usage/`      | Custom implementations, extending interfaces |
+| Layer             | Location               | Content                                      |
+| ----------------- | ---------------------- | -------------------------------------------- |
+| **Pitch**         | README first screenful | What it does + 1-2 line code example         |
+| **Quick start**   | `introduction.md`      | Install + basic usage                        |
+| **Features**      | `basic-usage/`         | Individual feature pages                     |
+| **Customization** | `advanced-usage/`      | Custom implementations, extending interfaces |
 
    Never dump all features at once. Simple things simple, complex things possible.
 
@@ -43,7 +43,7 @@ description: Crafting a documentation site. Progressive depth, not progressive c
 ## The Anti-Patterns
 
 | Don't                                | Do                                              | Why                                                     |
-|--------------------------------------|-------------------------------------------------|---------------------------------------------------------|
+| ------------------------------------ | ----------------------------------------------- | ------------------------------------------------------- |
 | Warnings after the failure step      | Warnings before the step                        | Developers read linearly -- catch them before they fall |
 | Upgrade guides without code examples | Before/after code in every breaking change      | "Renamed X to Y" means nothing without code             |
 | Flat docs with no progressive depth  | Layered structure: intro, basic, advanced       | Developers have different depth needs                   |

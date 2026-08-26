@@ -13,10 +13,10 @@ description: Crafting a package skeleton. The starting template for every Larave
 
 2. **Two Skeleton Templates**: Choose based on the package type.
 
-   | Template                          | When                                                         | Dependencies                 |
-   |-----------------------------------|--------------------------------------------------------------|------------------------------|
-   | With spatie/laravel-package-tools | Most packages. Recommended. Declarative service provider.    | spatie/laravel-package-tools |
-   | Without (raw ServiceProvider)     | First-party style. Zero external dependencies. Full control. | None beyond illuminate/*     |
+| Template                          | When                                                         | Dependencies                 |
+| --------------------------------- | ------------------------------------------------------------ | ---------------------------- |
+| With spatie/laravel-package-tools | Most packages. Recommended. Declarative service provider.    | spatie/laravel-package-tools |
+| Without (raw ServiceProvider)     | First-party style. Zero external dependencies. Full control. | None beyond illuminate/*     |
 
    For framework-agnostic packages (League pattern), skip the service provider entirely. The package is pure PHP with an optional Laravel bridge.
 
@@ -26,11 +26,11 @@ description: Crafting a package skeleton. The starting template for every Larave
 
 5. **Package Naming**:
 
-   | Convention                | Format                   | Example                   |
-   |---------------------------|--------------------------|---------------------------|
-   | Community Laravel package | vendor/laravel-{feature} | spatie/laravel-permission |
-   | Taylor first-party        | laravel/{feature}        | laravel/cashier           |
-   | Framework-agnostic        | vendor/{feature}         | league/flysystem          |
+| Convention                | Format                   | Example                   |
+| ------------------------- | ------------------------ | ------------------------- |
+| Community Laravel package | vendor/laravel-{feature} | spatie/laravel-permission |
+| Taylor first-party        | laravel/{feature}        | laravel/cashier           |
+| Framework-agnostic        | vendor/{feature}         | league/flysystem          |
 
 6. **Auto-Discovery**: Always register in extra.laravel.providers. Register aliases only when the package exposes a facade.
 
@@ -39,7 +39,7 @@ description: Crafting a package skeleton. The starting template for every Larave
 ## The Anti-Patterns
 
 | Don't                                    | Do                                         | Why                                               |
-|------------------------------------------|--------------------------------------------|---------------------------------------------------|
+| ---------------------------------------- | ------------------------------------------ | ------------------------------------------------- |
 | Depend on laravel/framework              | Cherry-pick illuminate/* components        | Lighter installs, broader compatibility           |
 | Skip auto-discovery registration         | Always register in extra.laravel.providers | Zero-ceremony installs                            |
 | Deep nesting in src/ for simple packages | Flat structure (Pattern A)                 | Complexity should match the problem               |

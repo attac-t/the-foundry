@@ -7,12 +7,12 @@
 Threading, moderation, rate limiting, and notifications — three of which have nothing to do with
 comments. Plus the small domain piece that surfaced them.
 
-| Piece | Survives alone | Then |
-|-------|----------------|------|
-| ordering replies under a parent | yes | own charter — likely a package |
-| holding an item for review before it is public | yes | own charter |
-| refusing more than N actions per window | yes | own charter |
-| a comment belongs to a post | no | this charter |
+| Piece                                          | Survives alone | Then                           |
+| ---------------------------------------------- | -------------- | ------------------------------ |
+| ordering replies under a parent                | yes            | own charter — likely a package |
+| holding an item for review before it is public | yes            | own charter                    |
+| refusing more than N actions per window        | yes            | own charter                    |
+| a comment belongs to a post                    | no             | this charter                   |
 
 The three that survive are not comment features. They are capabilities that any content type will
 want, discovered because comments needed them first.

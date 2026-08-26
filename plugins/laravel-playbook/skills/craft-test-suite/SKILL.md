@@ -46,7 +46,7 @@ description: Crafting a test suite. Zero to green in 60 seconds.
 ## The Anti-Patterns
 
 | Don't                             | Do                                          | Why                                                      |
-|-----------------------------------|---------------------------------------------|----------------------------------------------------------|
+| --------------------------------- | ------------------------------------------- | -------------------------------------------------------- |
 | PHPUnit directly                  | Pest                                        | Pest wraps PHPUnit with better DX                        |
 | `Unit/Feature/Integration` dirs   | Domain directories (`Commands/`, `Models/`) | Organize by what, not by how                             |
 | `$this->assertEquals()`           | `expect()->toBe()`                          | One assertion API, not two                               |

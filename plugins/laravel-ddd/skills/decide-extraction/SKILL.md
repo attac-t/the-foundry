@@ -30,7 +30,7 @@ Ask: *"If I delete this code, what breaks?"*
 ## The Quick Test
 
 | Ask Yourself          | Answer | Use    |
-|-----------------------|--------|--------|
+| --------------------- | ------ | ------ |
 | Can name it VerbNoun? | No     | Inline |
 | Multiple consumers?   | Yes    | Action |
 | Has business rules?   | Yes    | Action |

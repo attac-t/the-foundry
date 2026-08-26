@@ -55,7 +55,7 @@ expect($users)
 ```
 
 | Pattern        | Usage                     |
-|----------------|---------------------------|
+| -------------- | ------------------------- |
 | `->each->`     | Assert on each item       |
 | `->sequence()` | Different values per item |
 | `->first->`    | Assert on first item      |

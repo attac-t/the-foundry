@@ -24,7 +24,7 @@ description: Crafting macros. Runtime extension of Laravel core classes.
 ## The Anti-Patterns
 
 | Don't                                  | Do                              | Why                                  |
-|----------------------------------------|---------------------------------|--------------------------------------|
+| -------------------------------------- | ------------------------------- | ------------------------------------ |
 | Put business logic in macros           | Keep macros as thin wrappers    | Macros are hard to test in isolation |
 | Register macros in `register()`        | Register in `boot()`            | Target class may not exist yet       |
 | Add many unrelated macros to one class | Group related macros in a mixin | Cohesion matters                     |

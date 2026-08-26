@@ -38,11 +38,18 @@ gates_run() {
 }
 
 # The rows of the table under the gate heading, first cell only.
+#
+# Matched on the cells, never on the spacing between them. This used to want
+# `| Gate | Fails when |` byte for byte, so the day `bin/tables.sh` aligned that
+# table the header stopped matching and this listed no gate at all.
+#
+# A silent empty list is the worst shape a check can take, and it is why the
+# columns are read rather than the whitespace.
 named_in_contributing() {
     awk '
-        /^\| Gate \| Fails when \|/ { table = 1; next }
-        table && !/^\|/             { exit }
-        table && /^\| `/            { gsub(/[`|]/, "", $2); print $2 }
+        /^\| *Gate *\| *Fails when *\|/ { table = 1; next }
+        table && !/^\|/                 { exit }
+        table && /^\| *`/               { gsub(/[`|]/, "", $2); print $2 }
     ' CONTRIBUTING.md
 }
 

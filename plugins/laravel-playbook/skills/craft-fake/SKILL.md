@@ -28,7 +28,7 @@ description: Crafting fakes. Let consumers test package interactions without tou
 ## The Anti-Patterns
 
 | Don't                                               | Do                                      | Why                                                         |
-|-----------------------------------------------------|-----------------------------------------|-------------------------------------------------------------|
+| --------------------------------------------------- | --------------------------------------- | ----------------------------------------------------------- |
 | Force consumers to mock your internals              | Ship a `::fake()` on the facade         | Mocks couple to implementation, fakes couple to behavior    |
 | Return void from `::fake()`                         | Return the fake instance                | Enables assertion chaining: `$fake = Bus::fake()`           |
 | Only provide `assertDispatched()`                   | Provide the full assertion quartet      | `assertNotDispatched` and `assertNothing` catch regressions |

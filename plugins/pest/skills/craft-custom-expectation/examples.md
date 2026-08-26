@@ -62,12 +62,12 @@ expect($user)
 
 ## When to Extract
 
-| Scenario                       | Extract? |
-|--------------------------------|----------|
-| Same assertion 3+ times        | Yes      |
-| Complex multi-step assertion   | Yes      |
-| Single-use complex assertion   | No       |
-| Built-in exists                | No       |
+| Scenario                     | Extract? |
+| ---------------------------- | -------- |
+| Same assertion 3+ times      | Yes      |
+| Complex multi-step assertion | Yes      |
+| Single-use complex assertion | No       |
+| Built-in exists              | No       |
 
 ---
 

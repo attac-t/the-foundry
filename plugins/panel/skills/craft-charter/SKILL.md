@@ -81,10 +81,10 @@ plugin exists to remove.
 
 ## The Anti-Patterns
 
-| Don't | Do | Why |
-|---|---|---|
-| Start while the goal is fuzzy | Keep asking | Ambiguity resolved by guessing ships wrong work |
-| "Make it better" | A statement that could be false | Nothing to judge against |
-| Infer the panel | Name it at approval | A model choosing its own reviewers is not review |
-| Approve your own charter | A human approves | The one gate a model may not pass |
-| Leave scope open | Name what's excluded | Scope drift is the common failure |
+| Don't                         | Do                              | Why                                              |
+| ----------------------------- | ------------------------------- | ------------------------------------------------ |
+| Start while the goal is fuzzy | Keep asking                     | Ambiguity resolved by guessing ships wrong work  |
+| "Make it better"              | A statement that could be false | Nothing to judge against                         |
+| Infer the panel               | Name it at approval             | A model choosing its own reviewers is not review |
+| Approve your own charter      | A human approves                | The one gate a model may not pass                |
+| Leave scope open              | Name what's excluded            | Scope drift is the common failure                |

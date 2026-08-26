@@ -30,7 +30,7 @@ Ask: *"If I add another consequence later, should the caller change?"*
 ## The Quick Test
 
 | Ask Yourself                 | Answer | Use    |
-|------------------------------|--------|--------|
+| ---------------------------- | ------ | ------ |
 | Multiple reactions possible? | Yes    | Event  |
 | Caller needs result?         | Yes    | Direct |
 | External system involved?    | Yes    | Event  |
