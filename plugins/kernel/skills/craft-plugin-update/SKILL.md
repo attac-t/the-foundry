@@ -35,13 +35,13 @@ Run this when releasing a new version of a plugin.
 
 ## The Versioning
 
-| Change Type        | Bump  | Example       |
-|--------------------|-------|---------------|
-| Bug fix            | Patch | 1.0.0 → 1.0.1 |
-| New skill          | Minor | 1.0.0 → 1.1.0 |
-| Skill refinement   | Patch | 1.0.1 → 1.0.2 |
-| Breaking change    | Major | 1.0.0 → 2.0.0 |
-| Docs only          | Patch | 1.0.0 → 1.0.1 |
+| Change Type      | Bump  | Example       |
+| ---------------- | ----- | ------------- |
+| Bug fix          | Patch | 1.0.0 → 1.0.1 |
+| New skill        | Minor | 1.0.0 → 1.1.0 |
+| Skill refinement | Patch | 1.0.1 → 1.0.2 |
+| Breaking change  | Major | 1.0.0 → 2.0.0 |
+| Docs only        | Patch | 1.0.0 → 1.0.1 |
 
 ## The Anti-Patterns
 

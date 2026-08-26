@@ -38,15 +38,15 @@ Pairs with `kernel:polish` for the wider protocol — enumeration, reporting, te
 
 ## Pass 2: Names — Zero Javaism
 
-| Smell                              | Fix                                                                  |
-|------------------------------------|----------------------------------------------------------------------|
-| `get*()`/`set*()`                  | `lineAmount()` not `getLineAmount()`                                 |
-| `*Manager`/`*Handler`/`*Processor` | What does it DO? `RefundsOrders`? `BuildsPayload`?                   |
-| `*Helper`/`*Utility`               | Decompose into named methods or a trait with identity                |
-| `*Interface` suffix                | `SyncableStore` — PHP doesn't need it                                |
+| Smell                              | Fix                                                                     |
+| ---------------------------------- | ----------------------------------------------------------------------- |
+| `get*()`/`set*()`                  | `lineAmount()` not `getLineAmount()`                                    |
+| `*Manager`/`*Handler`/`*Processor` | What does it DO? `RefundsOrders`? `BuildsPayload`?                      |
+| `*Helper`/`*Utility`               | Decompose into named methods or a trait with identity                   |
+| `*Interface` suffix                | `SyncableStore` — PHP doesn't need it                                   |
 | Over-qualified                     | In `Billing\Aggregation\`, just `BuildResult` — the namespace qualifies |
-| Stuttering                         | `$config->mode` not `$exportConfig->exportMode`                      |
-| Acronym casing                     | `HttpClient`, `XmlParser` — follow Laravel's `Http` convention       |
+| Stuttering                         | `$config->mode` not `$exportConfig->exportMode`                         |
+| Acronym casing                     | `HttpClient`, `XmlParser` — follow Laravel's `Http` convention          |
 
 **Variables**: nouns, short, obvious. `$order`, `$transaction`, `$coverage`. No abbreviations (`$pmTotal` → `$paymentTotal`). `$item` is fine in a short closure.
 

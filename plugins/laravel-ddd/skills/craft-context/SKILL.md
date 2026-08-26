@@ -16,12 +16,12 @@ description: Crafting Context Objects. Parameter encapsulation for complex opera
 
 ## The Anti-Patterns
 
-| ❌ Don't                     | ✅ Do                          | Why                           |
-|-----------------------------|-------------------------------|-------------------------------|
-| 5+ action parameters        | Context object                | Clarity, maintainability      |
-| Generic constructor         | Named constructors            | Intent is explicit            |
-| Mutable context             | Immutable properties          | Prevents bugs in long chains  |
-| Array of options            | Typed properties              | IDE support, validation       |
+| ❌ Don't              | ✅ Do                 | Why                          |
+| -------------------- | -------------------- | ---------------------------- |
+| 5+ action parameters | Context object       | Clarity, maintainability     |
+| Generic constructor  | Named constructors   | Intent is explicit           |
+| Mutable context      | Immutable properties | Prevents bugs in long chains |
+| Array of options     | Typed properties     | IDE support, validation      |
 
 ## Real-World Examples
 

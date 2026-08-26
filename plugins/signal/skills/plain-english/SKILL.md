@@ -41,18 +41,18 @@ No word list ships here, because hard words never stop arriving. Run this on eac
 
 Step 3 is why `worktree` and `idempotent` stay. Vague costs more than long.
 
-| Not this | This |
-|---|---|
-| `utilise`, `leverage` | use |
-| `facilitate`, `assist` | help |
-| `commence`, `initiate` | start |
-| `sufficient` | enough |
-| `in order to` | to |
-| `additionally`, `furthermore` | also |
-| `therefore`, `thus`, `hence` | so |
-| `whilst` | while |
-| `comprehensive`, `robust` | full, strong |
-| `it is worth noting`, `great question` | cut it |
+| Not this                               | This         |
+| -------------------------------------- | ------------ |
+| `utilise`, `leverage`                  | use          |
+| `facilitate`, `assist`                 | help         |
+| `commence`, `initiate`                 | start        |
+| `sufficient`                           | enough       |
+| `in order to`                          | to           |
+| `additionally`, `furthermore`          | also         |
+| `therefore`, `thus`, `hence`           | so           |
+| `whilst`                               | while        |
+| `comprehensive`, `robust`              | full, strong |
+| `it is worth noting`, `great question` | cut it       |
 
 Short words fail the test too. No ten-year-old says `hence`, `thus` or `deem`, and each is one beat,
 so counting beats will never catch them.

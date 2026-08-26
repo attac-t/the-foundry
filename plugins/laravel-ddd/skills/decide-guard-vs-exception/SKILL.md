@@ -27,14 +27,14 @@ Ask: *"Can the caller proceed normally with a return value?"*
 
 ## The Quick Test
 
-| Scenario                    | Answer  | Use       |
-|-----------------------------|---------|-----------|
-| Empty input, nothing to do? | Ok      | Return    |
-| Already processed?          | Ok      | Return    |
-| Rate limited, retry later?  | Maybe   | Return Result |
-| Missing required data?      | Not ok  | Throw     |
-| Unauthorized access?        | Not ok  | Throw     |
-| Invalid state (bug)?        | Not ok  | Throw     |
+| Scenario                    | Answer | Use           |
+| --------------------------- | ------ | ------------- |
+| Empty input, nothing to do? | Ok     | Return        |
+| Already processed?          | Ok     | Return        |
+| Rate limited, retry later?  | Maybe  | Return Result |
+| Missing required data?      | Not ok | Throw         |
+| Unauthorized access?        | Not ok | Throw         |
+| Invalid state (bug)?        | Not ok | Throw         |
 
 ## Real-World Examples
 

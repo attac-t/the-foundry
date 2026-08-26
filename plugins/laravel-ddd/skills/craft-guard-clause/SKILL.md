@@ -15,12 +15,12 @@ description: Crafting Guard Clauses. Early returns for preconditions.
 
 ## The Anti-Patterns
 
-| ❌ Don't                     | ✅ Do                          | Why                           |
-|-----------------------------|-------------------------------|-------------------------------|
-| Nested if/else trees        | Guard clauses                 | Readability, maintainability  |
-| Check then continue         | Check then exit               | Happy path stays clear        |
-| 10+ guards in one method    | Split the method              | Too many guards = too much responsibility |
-| Silent return on failure    | Return Result or throw        | Caller needs to know          |
+| ❌ Don't                  | ✅ Do                   | Why                                       |
+| ------------------------ | ---------------------- | ----------------------------------------- |
+| Nested if/else trees     | Guard clauses          | Readability, maintainability              |
+| Check then continue      | Check then exit        | Happy path stays clear                    |
+| 10+ guards in one method | Split the method       | Too many guards = too much responsibility |
+| Silent return on failure | Return Result or throw | Caller needs to know                      |
 
 ## Real-World Examples
 

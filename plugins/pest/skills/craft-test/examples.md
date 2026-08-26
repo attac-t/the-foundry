@@ -119,18 +119,18 @@ afterEach(function () {
 
 ## Common Expectations
 
-| Expectation                    | Purpose                |
-|--------------------------------|------------------------|
-| `toBe($value)`                 | Strict equality (===)  |
-| `toEqual($value)`              | Loose equality (==)    |
-| `toBeTrue()` / `toBeFalse()`   | Boolean checks         |
-| `toBeNull()` / `toBeEmpty()`   | Null/empty checks      |
-| `toHaveCount($n)`              | Collection/array count |
-| `toContain($item)`             | Array contains         |
-| `toMatchArray($arr)`           | Partial array match    |
-| `toBeInstanceOf($class)`       | Type checking          |
-| `toThrow($exception)`          | Exception assertion    |
-| `->not->`                      | Negate any expectation |
+| Expectation                  | Purpose                |
+| ---------------------------- | ---------------------- |
+| `toBe($value)`               | Strict equality (===)  |
+| `toEqual($value)`            | Loose equality (==)    |
+| `toBeTrue()` / `toBeFalse()` | Boolean checks         |
+| `toBeNull()` / `toBeEmpty()` | Null/empty checks      |
+| `toHaveCount($n)`            | Collection/array count |
+| `toContain($item)`           | Array contains         |
+| `toMatchArray($arr)`         | Partial array match    |
+| `toBeInstanceOf($class)`     | Type checking          |
+| `toThrow($exception)`        | Exception assertion    |
+| `->not->`                    | Negate any expectation |
 
 ---
 

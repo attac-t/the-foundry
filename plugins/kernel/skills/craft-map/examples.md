@@ -32,12 +32,12 @@ craftsman/                        # Cognitive Operating System
 
 **Summary:**
 
-| Layer | Count | Purpose |
-|-------|-------|---------|
-| Agents | 2 | Personas |
-| Commands | 4 | Triggers |
-| Hooks | 7 | Reflexes |
-| Skills | 37 | Knowledge |
+| Layer    | Count | Purpose   |
+| -------- | ----- | --------- |
+| Agents   | 2     | Personas  |
+| Commands | 4     | Triggers  |
+| Hooks    | 7     | Reflexes  |
+| Skills   | 37    | Knowledge |
 
 ---
 

@@ -30,7 +30,7 @@ Ask: *"Do I need to discover or extend implementations at runtime?"*
 ## The Quick Test
 
 | Scenario                               | Use       |
-|----------------------------------------|-----------|
+| -------------------------------------- | --------- |
 | User selects from available strategies | Registry  |
 | Third-party can add implementations    | Registry  |
 | Need `all()` or `getOptions()` methods | Registry  |

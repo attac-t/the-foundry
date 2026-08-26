@@ -28,11 +28,11 @@ description: Crafting a service provider. The declarative heart of every Laravel
 
 4. **Binding Patterns**: Three patterns, each with a clear purpose.
 
-   | Pattern   | Scope           | When                                              |
-   |-----------|-----------------|---------------------------------------------------|
-   | Singleton | App lifetime    | Stateful shared services (registrars, caches)     |
-   | Scoped    | Per-request     | Request-scoped state, Octane-safe                 |
-   | Bind      | Fresh each time | Stateless resolution, interface-to-implementation |
+| Pattern   | Scope           | When                                              |
+| --------- | --------------- | ------------------------------------------------- |
+| Singleton | App lifetime    | Stateful shared services (registrars, caches)     |
+| Scoped    | Per-request     | Request-scoped state, Octane-safe                 |
+| Bind      | Fresh each time | Stateless resolution, interface-to-implementation |
 
    Config-driven binding is the dominant pattern. Read the implementation class from config, bind to an interface. Users swap behavior by editing a config file.
 

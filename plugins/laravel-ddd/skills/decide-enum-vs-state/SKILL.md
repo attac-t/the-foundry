@@ -25,12 +25,12 @@ Ask: *"Does the state DO anything, or just BE something?"*
 
 ## The Quick Test
 
-| Ask | Answer | Use |
-|-----|--------|-----|
-| Do I need methods on the state? | Yes | State Pattern |
-| Are there 3+ places with `if ($status === ...)` | Yes | State Pattern |
-| Do transitions trigger side effects? | Yes | State Pattern |
-| Is it just a label for display? | Yes | Enum |
+| Ask                                             | Answer | Use           |
+| ----------------------------------------------- | ------ | ------------- |
+| Do I need methods on the state?                 | Yes    | State Pattern |
+| Are there 3+ places with `if ($status === ...)` | Yes    | State Pattern |
+| Do transitions trigger side effects?            | Yes    | State Pattern |
+| Is it just a label for display?                 | Yes    | Enum          |
 
 ## Real-World Examples
 

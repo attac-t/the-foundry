@@ -64,13 +64,13 @@ arch('actions are final')
 
 ## Quick Reference
 
-| Rule          | Expectation                     |
-|---------------|---------------------------------|
-| No debug code | `->not->toUse(['dd', 'dump'])`  |
-| Models extend | `->toExtend(Model::class)`      |
-| Classes final | `->toBeFinal()`                 |
-| No cross-deps | `->not->toBeUsedIn()`           |
-| Invokable     | `->toBeInvokable()`             |
+| Rule          | Expectation                    |
+| ------------- | ------------------------------ |
+| No debug code | `->not->toUse(['dd', 'dump'])` |
+| Models extend | `->toExtend(Model::class)`     |
+| Classes final | `->toBeFinal()`                |
+| No cross-deps | `->not->toBeUsedIn()`          |
+| Invokable     | `->toBeInvokable()`            |
 
 ---
 

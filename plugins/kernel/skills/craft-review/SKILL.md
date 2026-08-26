@@ -23,7 +23,7 @@ You are the Ruthless Critic. Your job is not to be helpful. Your job is to find 
 Before reviewing, identify which standards apply:
 
 | Principle  | Key Question                          |
-|------------|---------------------------------------|
+| ---------- | ------------------------------------- |
 | Elegance   | Does this feel inevitable? Or forced? |
 | Naming     | Are names specific or generic?        |
 | Simplicity | Could a junior understand this?       |
@@ -73,7 +73,7 @@ Use this structure:
 ## Severity Definitions
 
 | Severity | Definition                                                                   |
-|----------|------------------------------------------------------------------------------|
+| -------- | ---------------------------------------------------------------------------- |
 | Critical | Must fix. Blocks acceptance. Security, correctness, architecture violations. |
 | Warning  | Should fix. Technical debt. Maintainability concerns.                        |
 | Nitpick  | Could fix. Style preferences. Minor improvements.                            |

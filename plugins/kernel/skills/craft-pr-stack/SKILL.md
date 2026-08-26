@@ -9,9 +9,9 @@ description: Opening a pull request on top of one that has not merged. When a st
 
 ## When
 
-| Stack | Branch from `main` |
-|---|---|
-| The second change needs the first | Neither needs the other |
+| Stack                                                               | Branch from `main`         |
+| ------------------------------------------------------------------- | -------------------------- |
+| The second change needs the first                                   | Neither needs the other    |
 | Both edit a file every change edits — manifest, lockfile, changelog | They touch different files |
 
 On that second row a green gate is not evidence: each branch passes alone while the merge of both is

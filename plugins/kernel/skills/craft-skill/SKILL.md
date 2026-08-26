@@ -25,7 +25,7 @@ description: How to craft an atomic skill. Includes templates and registration.
 ## Choose a Template
 
 | Template                                            | Use When            | Pattern                                |
-|-----------------------------------------------------|---------------------|----------------------------------------|
+| --------------------------------------------------- | ------------------- | -------------------------------------- |
 | [decide](templates/decide.md)                       | X vs Y decision     | Heuristic + Quick Test + examples.md   |
 | [craft](templates/craft.md)                         | How to build X      | Standard + Anti-Patterns + examples.md |
 | [ground-protocol](templates/ground-protocol.md)     | Step-by-step ritual | When + Protocol + Output               |
@@ -62,11 +62,11 @@ through the `Skill` tool at runtime.
 
 So register deliberately, not defensively:
 
-| Preload it | Leave it out |
-|------------|--------------|
-| The agent needs it on **every** run | The agent needs it occasionally |
-| Fetching it late would change the output | A `Skill` call at the right moment is fine |
-| It defines the agent's standards or vocabulary | It is reference material |
+| Preload it                                     | Leave it out                               |
+| ---------------------------------------------- | ------------------------------------------ |
+| The agent needs it on **every** run            | The agent needs it occasionally            |
+| Fetching it late would change the output       | A `Skill` call at the right moment is fine |
+| It defines the agent's standards or vocabulary | It is reference material                   |
 
 Every preloaded skill is startup context the agent pays for whether or not it uses it. A long
 `skills:` list is a cost, not a safety net.

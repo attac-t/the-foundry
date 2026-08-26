@@ -10,11 +10,11 @@ A **run** is one attempt at one work item. It lives outside every repository it 
 
 Working memory used to live in the repo being changed. That breaks three ways.
 
-| Case | Before | Now |
-|---|---|---|
-| Work spans two repos | Two memory folders, no shared record | One run, one record |
-| The target is read-only | Nowhere to write | The run is not in the target |
-| Two attempts, one branch name | They collide | Two runs, two ids |
+| Case                          | Before                               | Now                          |
+| ----------------------------- | ------------------------------------ | ---------------------------- |
+| Work spans two repos          | Two memory folders, no shared record | One run, one record          |
+| The target is read-only       | Nowhere to write                     | The run is not in the target |
+| Two attempts, one branch name | They collide                         | Two runs, two ids            |
 
 ---
 
@@ -213,14 +213,14 @@ write to a target, and nothing enforces that yet because nothing here reads one.
 Measured on one completed run, read with `cat` and `ls` and nothing else. **Five of six facts come
 back. The sixth is recoverable, and the run names where to look.**
 
-| Fact | Answered | |
-|---|---|---|
-| which item, and its words | yes | `source`, `item.md` |
-| what the bar was | yes | `charter` |
-| whether each clause was met | yes | `evidence` |
-| which commit was graded | yes | `evidence`, field six |
-| who said this run may deliver | no | it is in the target's `.foundry/practice` |
-| whether what shipped is what was graded | yes | `delivery`, field two |
+| Fact                                    | Answered |                                           |
+| --------------------------------------- | -------- | ----------------------------------------- |
+| which item, and its words               | yes      | `source`, `item.md`                       |
+| what the bar was                        | yes      | `charter`                                 |
+| whether each clause was met             | yes      | `evidence`                                |
+| which commit was graded                 | yes      | `evidence`, field six                     |
+| who said this run may deliver           | no       | it is in the target's `.foundry/practice` |
+| whether what shipped is what was graded | yes      | `delivery`, field two                     |
 
 **No derived id is load-bearing.** `evidence` names a clause by its label, never by the number the
 charter computes. A reader matches `gates` to `gates`, so nothing has to be recomputed to be read.
@@ -319,10 +319,10 @@ invented clause fails checks 1 and 2, before check 4 is even reached.
 
 A target says **where work starts**. It never says what the work produced.
 
-| Field | Means |
-|---|---|
+| Field  | Means                                                      |
+| ------ | ---------------------------------------------------------- |
 | `repo` | a portable identity, derived from git, credentials removed |
-| `ref` | the base ref the unit starts from |
+| `ref`  | the base ref the unit starts from                          |
 
 ```
 target    = where work starts
@@ -335,12 +335,12 @@ A branch, a commit or a pull request is delivery. None of it belongs here.
 
 A run is meant to move to another machine. So a target may hold no local path, ever:
 
-| Remote | Identity |
-|---|---|
-| `https://tok3n:x@github.com/acme/api.git` | `https://github.com/acme/api.git` — credentials stripped |
-| `git@github.com:acme/api.git` | kept as-is; `git@` is an ssh login, not a credential |
-| `C:/repos/api`, `/home/me/api`, `file://…` | **refused** — not portable |
-| anything holding a space, a newline or a `..` segment | **refused** — not storable |
+| Remote                                                | Identity                                                 |
+| ----------------------------------------------------- | -------------------------------------------------------- |
+| `https://tok3n:x@github.com/acme/api.git`             | `https://github.com/acme/api.git` — credentials stripped |
+| `git@github.com:acme/api.git`                         | kept as-is; `git@` is an ssh login, not a credential     |
+| `C:/repos/api`, `/home/me/api`, `file://…`            | **refused** — not portable                               |
+| anything holding a space, a newline or a `..` segment | **refused** — not storable                               |
 
 A host with no dot in it is a Windows drive letter, which is why `C:/repos/api` cannot pass as
 scp-style. When no portable identity can be derived, floor records nothing and says so — it never
@@ -365,10 +365,10 @@ A work-source repository never becomes the bootstrap target because an item came
 
 ### Two levels, and they are not equal
 
-| Level | Where | Authority |
-|---|---|---|
-| work-item targets | `item.md` | **advisory** — anyone who can file an item can write them |
-| unit targets | `units/NN/targets` | **authoritative** |
+| Level             | Where              | Authority                                                 |
+| ----------------- | ------------------ | --------------------------------------------------------- |
+| work-item targets | `item.md`          | **advisory** — anyone who can file an item can write them |
+| unit targets      | `units/NN/targets` | **authoritative**                                         |
 
 Nothing moves one into the other. Naming a repository in `item.md` grants nothing at all — the
 allowlist below decides, and `policy authorize` is the only thing that writes to it.
@@ -390,9 +390,9 @@ ${FOUNDRY_HOME:-$HOME/.foundry}/policy/runs/<run id>/targets
 One allowlist per run. A grant for one run authorises nothing in the next, so a run that went wrong
 cannot leave a wider reach behind it.
 
-| | |
-|---|---|
-| the file | what is authorised — read it to know |
+|                    |                                                           |
+| ------------------ | --------------------------------------------------------- |
+| the file           | what is authorised — read it to know                      |
 | `policy authorize` | the only thing that authorises — nothing else writes here |
 
 The bootstrap target is authorised without a grant. It is the repository a human invoked Foundry
@@ -440,11 +440,11 @@ the run that wrote it and it gets read by eye.
 
 **Three facts, and a row that names one has answered a different question.**
 
-| | |
-|---|---|
-| host | where it ran — `uname -n`, on every row |
+|          |                                                                       |
+| -------- | --------------------------------------------------------------------- |
+| host     | where it ran — `uname -n`, on every row                               |
 | selector | who permitted it — `authority`, and a run without one may not deliver |
-| worker | what produced it — `FOUNDRY_WORKER`, and left out when nothing says |
+| worker   | what produced it — `FOUNDRY_WORKER`, and left out when nothing says   |
 
 Core names the field and never the value, the same rule that keeps `foundry:defect` out of core.
 
@@ -575,10 +575,10 @@ something no run can know.
 `policy closes` is what changes the word. It is the one grant that names no repository, because a run
 reads one item and there is nothing to point at.
 
-| | |
-|---|---|
+|                 |                                               |
+| --------------- | --------------------------------------------- |
 | nothing granted | `Refs #7` — the item is named, and stays open |
-| `policy closes` | `Closes #7` — GitHub shuts it on merge |
+| `policy closes` | `Closes #7` — GitHub shuts it on merge        |
 
 The grant is keyed by the item, so it cannot outlive the item it was given for.
 
@@ -609,8 +609,8 @@ at **31** rather than making it. A source with nothing to say is fine; a source 
 
 #### The inventory
 
-| Kind | The work is |
-|---|---|
+| Kind     | The work is                                                      |
+| -------- | ---------------------------------------------------------------- |
 | `defect` | something that is wrong, and the item says what right looks like |
 
 **One, because nothing reads a kind yet.** A taxonomy invented ahead of its reader is a vocabulary
@@ -659,11 +659,11 @@ pin     <id>  <target>  <ref>  <source>  <sha>
 gate    <id>  <command>
 ```
 
-| Kind | Truth | Checked by |
-|---|---|---|
-| `Gate:` | deterministic | code |
-| `Judged:` | meaning or quality | an independent judge |
-| `Decided:` | new meaning | a human |
+| Kind       | Truth              | Checked by           |
+| ---------- | ------------------ | -------------------- |
+| `Gate:`    | deterministic      | code                 |
+| `Judged:`  | meaning or quality | an independent judge |
+| `Decided:` | new meaning        | a human              |
 
 A clause's id is its meaning — not its kind. Fold the kind in and `Gate: tests` and `Decided: tests`
 become different clauses, so weakening one goes unnoticed.
@@ -686,20 +686,20 @@ guesses when it does not.
 The charter pins what the detector read and records what it resolved to. `charter check` runs the
 detector again:
 
-| Finding | Means |
-|---|---|
-| `moved` | a pinned file's sha changed |
-| `resolves elsewhere` | the same gate name now yields a different command |
-| `deleted` | something derives that the charter no longer holds |
-| `unpinned` | a gate the detector yields, with no pin on this repository |
-| `unresolved` | a gate whose resolution record is gone |
-| `forged` | a clause whose text is not the text its id was made from |
-| `ambiguous` | one id naming two meanings |
-| `repeated` | one id holding two commands |
-| `unprovenanced` | a gate record with no pin at all |
-| `unclaused` | a gate record with no clause |
-| `notagate` | a gate resting on a clause that is not a `Gate` |
-| `uncheckable` | a pin on another repository — **printed, but the command still exits 0** |
+| Finding              | Means                                                                    |
+| -------------------- | ------------------------------------------------------------------------ |
+| `moved`              | a pinned file's sha changed                                              |
+| `resolves elsewhere` | the same gate name now yields a different command                        |
+| `deleted`            | something derives that the charter no longer holds                       |
+| `unpinned`           | a gate the detector yields, with no pin on this repository               |
+| `unresolved`         | a gate whose resolution record is gone                                   |
+| `forged`             | a clause whose text is not the text its id was made from                 |
+| `ambiguous`          | one id naming two meanings                                               |
+| `repeated`           | one id holding two commands                                              |
+| `unprovenanced`      | a gate record with no pin at all                                         |
+| `unclaused`          | a gate record with no clause                                             |
+| `notagate`           | a gate resting on a clause that is not a `Gate`                          |
+| `uncheckable`        | a pin on another repository — **printed, but the command still exits 0** |
 
 The last four read the charter alone. `unpinned` names a gate the **detector** yields;
 `unprovenanced` names a **record** in the file. Both are about a missing pin, and they are different
@@ -761,11 +761,11 @@ took from the base, because that is the likeliest cause and it used to be invisi
 **recorded and never read** — so a gate exiting 0 satisfied a `Judged:` clause, whose whole point is
 that no command can answer it.
 
-| Kind | Answered by | Written by |
-|---|---|---|
-| `Gate` | `machine` | `gates`, and `evidence record` for a name no pin holds |
-| `Judged` | `judged` | `evidence verdict` |
-| `Decided` | `human` | an answer where the item is |
+| Kind      | Answered by | Written by                                             |
+| --------- | ----------- | ------------------------------------------------------ |
+| `Gate`    | `machine`   | `gates`, and `evidence record` for a name no pin holds |
+| `Judged`  | `judged`    | `evidence verdict`                                     |
+| `Decided` | `human`     | an answer where the item is                            |
 
 **A verdict comes from something that did not produce the work.** That is the whole of what `judged`
 means, so floor refuses one naming the run's own worker.
@@ -935,13 +935,13 @@ someone editing both sides. Containment is the runtime boundary's, and there isn
 Everything `open` refuses answers **16** — the target was authorised and the home is writable, so 5
 and 3 would each name a remedy that changes nothing.
 
-| It says | Means |
-|---|---|
-| `is not a checkout of` | something else is at that path — yours to remove, not floor's |
-| `is being checked out` | another session holds the build path, or one died holding it |
-| `has no ref` | the target has no such branch, tag or sha |
-| `could not clone` | the objects could not be read from this checkout |
-| `appeared while it was being built` | another session published first |
+| It says                             | Means                                                         |
+| ----------------------------------- | ------------------------------------------------------------- |
+| `is not a checkout of`              | something else is at that path — yours to remove, not floor's |
+| `is being checked out`              | another session holds the build path, or one died holding it  |
+| `has no ref`                        | the target has no such branch, tag or sha                     |
+| `could not clone`                   | the objects could not be read from this checkout              |
+| `appeared while it was being built` | another session published first                               |
 
 **It may not exist for a run nobody authorised.** `open` runs `authorise` rather than restating any
 of its twelve reasons; a workspace is where mutation happens.
@@ -985,16 +985,16 @@ empty selection, and any repository the detector reads no gate from produces an 
 selected target is reported `ungradable` rather than passed over. §8's two-target experiment is meant
 to fail today; this is the sentence that fails it.
 
-| Finding | Means |
-|---|---|
-| `unauthorised` | nobody is recorded as having selected this run |
-| `nobar` | the charter holds no clause |
-| `nothing selected` | no target, so every clause is satisfied over nothing |
-| `unmet` | a clause with no passing record at the delivered ref |
-| `ungradable` | a selected target with no checkout here, so nothing can be evidenced at its ref |
-| `introduced` | a clause resting on no pin, which no ref can satisfy |
-| `unverifiable` | a clause pinned to a repository this checkout is not |
-| `nothing delivered` | this checkout has no commit to be graded at |
+| Finding             | Means                                                                           |
+| ------------------- | ------------------------------------------------------------------------------- |
+| `unauthorised`      | nobody is recorded as having selected this run                                  |
+| `nobar`             | the charter holds no clause                                                     |
+| `nothing selected`  | no target, so every clause is satisfied over nothing                            |
+| `unmet`             | a clause with no passing record at the delivered ref                            |
+| `ungradable`        | a selected target with no checkout here, so nothing can be evidenced at its ref |
+| `introduced`        | a clause resting on no pin, which no ref can satisfy                            |
+| `unverifiable`      | a clause pinned to a repository this checkout is not                            |
+| `nothing delivered` | this checkout has no commit to be graded at                                     |
 
 The last three are not failures and not passes. **They take different remedies, which is why they are
 different words.** An `introduced` clause was established by nobody, so the answer is a human's, and
@@ -1124,13 +1124,13 @@ Where a work item comes from, where a delivery is reported, and where a human is
 Five verbs, and **transport is nearly all they are**. What an item means is planning's. What an
 answer means belongs to the stage that asked — this carries the words and reads none of them.
 
-| Verb | Carries | Refuses |
-|---|---|---|
-| `read` | the item's words, into the run | a second, different item |
-| `publish` | this run's delivery, and the word it answers the item with | a second, different branch |
-| `ask` | a question about one clause | the same question in other words |
-| `receive` | the answer, or nothing | an answer handed to it |
-| `claim` | that one host started | a second host |
+| Verb      | Carries                                                    | Refuses                          |
+| --------- | ---------------------------------------------------------- | -------------------------------- |
+| `read`    | the item's words, into the run                             | a second, different item         |
+| `publish` | this run's delivery, and the word it answers the item with | a second, different branch       |
+| `ask`     | a question about one clause                                | the same question in other words |
+| `receive` | the answer, or nothing                                     | an answer handed to it           |
+| `claim`   | that one host started                                      | a second host                    |
 
 
 ### An absence is observed, never assumed
@@ -1158,11 +1158,11 @@ comes back exactly as an approval does, because deciding which one it is belongs
 question = run + stage + clause
 ```
 
-| Term | Is | So an answer cannot |
-|---|---|---|
-| `run` | the run that asked, unique over all time | reach a later run |
-| `stage` | the reader — `authorisation` or `completion` | satisfy a clause whose existence it authorised |
-| `clause` | its text, so an edit is a new clause | answer a requirement that has since changed |
+| Term     | Is                                           | So an answer cannot                            |
+| -------- | -------------------------------------------- | ---------------------------------------------- |
+| `run`    | the run that asked, unique over all time     | reach a later run                              |
+| `stage`  | the reader — `authorisation` or `completion` | satisfy a clause whose existence it authorised |
+| `clause` | its text, so an edit is a new clause         | answer a requirement that has since changed    |
 
 A resumed run recomputes all three and finds what it already asked, so **nothing holds a list of
 outstanding questions.** Such a list is the parallel ledger the charter refuses, and the source is
@@ -1207,10 +1207,10 @@ source can settle which one runs it, because nothing above the source is shared.
 So the claim lives where the item does. `claim` takes it for this host or exits **30** and names
 who holds it; `release` gives it back, and only to the host that took it.
 
-| Adapter | Compare-and-swap |
-|---|---|
-| a directory | `mkdir` — it makes the directory or it fails |
-| GitHub | creating a ref, which the server refuses if it exists |
+| Adapter     | Compare-and-swap                                      |
+| ----------- | ----------------------------------------------------- |
+| a directory | `mkdir` — it makes the directory or it fails          |
+| GitHub      | creating a ref, which the server refuses if it exists |
 
 Both are one step at the far end. Neither reads-then-writes, which is the shape that loses a race.
 
@@ -1241,11 +1241,11 @@ does not cover, and it is the safe half.
 
 ### Two adapters, because one proves nothing
 
-| Adapter | Needs | Holds |
-|---|---|---|
-| `lib/source-dir.sh` | `sh` | files a person opens in an editor |
-| `lib/source-github.sh` | `gh` | issues, and comments under them |
-| `lib/source-read-only.sh` | `sh` | the same files, and no way to write to them |
+| Adapter                   | Needs | Holds                                       |
+| ------------------------- | ----- | ------------------------------------------- |
+| `lib/source-dir.sh`       | `sh`  | files a person opens in an editor           |
+| `lib/source-github.sh`    | `gh`  | issues, and comments under them             |
+| `lib/source-read-only.sh` | `sh`  | the same files, and no way to write to them |
 
 `lib/source.sh` chooses between them, and those three files are the only ones in floor that may know
 where a work item lives. Nothing above them learns which answered: the run records the item's id and
@@ -1335,10 +1335,10 @@ If it cannot run, it says so at the top of the next session. Silence means it is
 
 ## Where it runs
 
-| Platform | Shell | Home |
-|---|---|---|
-| macOS, Linux | `sh` | `$HOME/.foundry` |
-| Windows | the Git Bash Claude Code starts there | `$HOME/.foundry`, which Git Bash sets |
+| Platform     | Shell                                 | Home                                  |
+| ------------ | ------------------------------------- | ------------------------------------- |
+| macOS, Linux | `sh`                                  | `$HOME/.foundry`                      |
+| Windows      | the Git Bash Claude Code starts there | `$HOME/.foundry`, which Git Bash sets |
 
 Git Bash and native Windows disagree about what a path looks like. That is a runtime concern, and
 it stays one: **no file a run writes may hold a machine-local absolute path.** There is no

@@ -26,11 +26,11 @@ description: Crafting a package skeleton. The starting template for every Larave
 
 5. **Package Naming**:
 
-   | Convention                | Format                   | Example                   |
-   |---------------------------|--------------------------|---------------------------|
-   | Community Laravel package | vendor/laravel-{feature} | spatie/laravel-permission |
-   | Taylor first-party        | laravel/{feature}        | laravel/cashier           |
-   | Framework-agnostic        | vendor/{feature}         | league/flysystem          |
+| Convention                | Format                   | Example                   |
+| ------------------------- | ------------------------ | ------------------------- |
+| Community Laravel package | vendor/laravel-{feature} | spatie/laravel-permission |
+| Taylor first-party        | laravel/{feature}        | laravel/cashier           |
+| Framework-agnostic        | vendor/{feature}         | league/flysystem          |
 
 6. **Auto-Discovery**: Always register in extra.laravel.providers. Register aliases only when the package exposes a facade.
 

@@ -83,13 +83,13 @@ Three groups. Every word earns its place by carrying something the others do not
 
 ### Structure
 
-| Word | Means |
-|---|---|
-| `contract` | a shape something must satisfy — a file layout, or a command's exit code |
-| `adapter` | something that satisfies a contract |
-| `seam` | a place an adapter will plug in, whose contract is deliberately not written yet |
-| `plugin` | how adapters and skills are packaged and installed |
-| `skill` | how to perform a reusable procedure |
+| Word       | Means                                                                           |
+| ---------- | ------------------------------------------------------------------------------- |
+| `contract` | a shape something must satisfy — a file layout, or a command's exit code        |
+| `adapter`  | something that satisfies a contract                                             |
+| `seam`     | a place an adapter will plug in, whose contract is deliberately not written yet |
+| `plugin`   | how adapters and skills are packaged and installed                              |
+| `skill`    | how to perform a reusable procedure                                             |
 
 `seam` is new in revision 3. Revision 2 called workspace and delivery "adapters" while defining no
 contracts for them, which broke its own definition of the word. A seam is honest about the gap;
@@ -183,11 +183,11 @@ entirely different things. Who reads it decides:
 question = run + stage + clause
 ```
 
-| Term | Is | So an answer cannot |
-|---|---|---|
-| `run` | the run that asked, **unique over all time** | reach a later run |
-| `stage` | **the reader** — authorisation, or completion | satisfy a clause whose existence it authorised |
-| `clause` | its text, so an edit is a new clause | answer a requirement that has since changed |
+| Term     | Is                                            | So an answer cannot                            |
+| -------- | --------------------------------------------- | ---------------------------------------------- |
+| `run`    | the run that asked, **unique over all time**  | reach a later run                              |
+| `stage`  | **the reader** — authorisation, or completion | satisfy a clause whose existence it authorised |
+| `clause` | its text, so an edit is a new clause          | answer a requirement that has since changed    |
 
 **`run` must never be reclaimed, and today it is.** Floor reserves a slot only while a grant names it,
 so a run that authorised nothing frees its name when its directory goes — and the same base then
@@ -414,11 +414,11 @@ unchanged, and it is the selection that moved.
 
 Mechanical truth is code's. Semantic entailment is a judge's. New meaning is the human's.
 
-| Path | Question | Answered by | Clause trust |
-|---|---|---|---|
-| **mechanical** | Does the artifact *yield* this clause? | code | `machine` |
-| **semantic** | Is this clause *entailed* by the artifact? | an independent judge | `judged` |
-| — | Neither holds | the human | `human` |
+| Path           | Question                                   | Answered by          | Clause trust |
+| -------------- | ------------------------------------------ | -------------------- | ------------ |
+| **mechanical** | Does the artifact *yield* this clause?     | code                 | `machine`    |
+| **semantic**   | Is this clause *entailed* by the artifact? | an independent judge | `judged`     |
+| —              | Neither holds                              | the human            | `human`      |
 
 ```
 clause candidate
@@ -628,10 +628,10 @@ any contract.
 
 **Two levels, and they are not equal:**
 
-| Level | Authority |
-|---|---|
+| Level             | Authority                                                             |
+| ----------------- | --------------------------------------------------------------------- |
 | work-item targets | **advisory.** They arrive from outside and may be attacker-controlled |
-| unit targets | **authoritative**, produced by planning, filtered by policy |
+| unit targets      | **authoritative**, produced by planning, filtered by policy           |
 
 That gap is the first real `policy`. A work item is written by whoever can file one. Without a
 filter, a hostile item naming `attacker/repo` is a push. **The target allowlist is not speculative
@@ -660,10 +660,10 @@ invoking-inside-a-repository ever happened.
 **Being on the allowlist permits a target. Putting it in `units/NN/targets` chooses it.** Two
 different acts, and the bootstrap target does not cross between them on its own.
 
-| | |
-|---|---|
-| **authorised** | policy will not refuse it — §2.3's allowlist |
-| **selected** | planning wrote it into a unit's targets, so work will touch it |
+|                |                                                                |
+| -------------- | -------------------------------------------------------------- |
+| **authorised** | policy will not refuse it — §2.3's allowlist                   |
+| **selected**   | planning wrote it into a unit's targets, so work will touch it |
 
 The error this blocks runs both ways: seeding a unit's targets from the bootstrap target would turn
 *where Foundry was started* into *what the work may change*, silently; and reading a target's
@@ -894,12 +894,12 @@ shapes and exit codes — not by writing interface types with one implementation
 
 A worker is replaceable. **What the work needs is not**, and until now the model had no word for it.
 
-| Capability | The work needs |
-|---|---|
-| `build` | a bounded change made against a stated bar |
-| `challenge` | a premise attacked, and what is false found |
-| `judge` | a verdict from something that did not produce the thing |
-| `read` | a cold reading, reporting confusion rather than resolving it |
+| Capability  | The work needs                                               |
+| ----------- | ------------------------------------------------------------ |
+| `build`     | a bounded change made against a stated bar                   |
+| `challenge` | a premise attacked, and what is false found                  |
+| `judge`     | a verdict from something that did not produce the thing      |
+| `read`      | a cold reading, reporting confusion rather than resolving it |
 
 Four, because removing any one reproduces a failure this repository has had. Without `build` nothing
 changes. Without `challenge` a false premise survives — #150 exists because one did. Without `judge`
@@ -932,12 +932,12 @@ costing something too.
 
 Two lists, and the line between them is #218's: an observation says a thing happened.
 
-| May narrow | May never decide |
-|---|---|
-| which worker is offered the work first | whether a clause was met |
-| how much effort is asked for | what the bar is |
+| May narrow                              | May never decide          |
+| --------------------------------------- | ------------------------- |
+| which worker is offered the work first  | whether a clause was met  |
+| how much effort is asked for            | what the bar is           |
 | whether to ask a person before starting | whether a run may deliver |
-| — | who authorised anything |
+| —                                       | who authorised anything   |
 
 **Narrowing is a preference between things already allowed.** Deciding is what makes one of them
 allowed, and no count of past runs does that.
@@ -1938,20 +1938,20 @@ unordered           the learning-loop skill, and contracts-first planning
 Stages, in the order above, against what floor ships on 2026-08-23. Read from the verb table in
 `bin/run.sh` and the two adapters, not from this document's own history.
 
-| Stage | Built | What is not |
-|---|---|---|
-| run | yes | — |
-| targets | yes | — |
-| policy | yes | — |
-| charter | yes | the semantic path. No judge exists, so condition 2 cannot fire |
-| authorisation | yes | — |
-| evidence | yes | — |
-| gates | yes | *per target* means the one target the caller stands in |
-| work source | yes | — two adapters, four verbs each, and a fifth this section never named |
-| durable grants | yes | `.foundry/practice`, read at the base commit |
+| Stage          | Built       | What is not                                                            |
+| -------------- | ----------- | ---------------------------------------------------------------------- |
+| run            | yes         | —                                                                      |
+| targets        | yes         | —                                                                      |
+| policy         | yes         | —                                                                      |
+| charter        | yes         | the semantic path. No judge exists, so condition 2 cannot fire         |
+| authorisation  | yes         | —                                                                      |
+| evidence       | yes         | —                                                                      |
+| gates          | yes         | *per target* means the one target the caller stands in                 |
+| work source    | yes         | — two adapters, four verbs each, and a fifth this section never named  |
+| durable grants | yes         | `.foundry/practice`, read at the base commit                           |
 | workspace seam | one adapter | a clone. The container interface is unwritten, so the seam is unproven |
-| delivery seam | yes | — |
-| explain | no | nothing prints a default and its reason |
+| delivery seam  | yes         | —                                                                      |
+| explain        | no          | nothing prints a default and its reason                                |
 
 **Three stages this section never had.** `merge` lands what was graded and refuses anything else.
 `reconcile` says whether two open deliveries can be brought together. A work source also carries what

@@ -16,7 +16,7 @@ description: Crafting a test. The unit of specification.
 ## The Anti-Patterns
 
 | Don't                  | Do                      | Why           |
-|------------------------|-------------------------|---------------|
+| ---------------------- | ----------------------- | ------------- |
 | Test private methods   | Test through public API | Coupling      |
 | Assert implementation  | Assert behavior         | Fragility     |
 | Multiple acts per test | One act, one test       | Clarity       |

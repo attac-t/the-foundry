@@ -34,12 +34,12 @@ Nothing → it was never a test.
 
 ## The Quick Test
 
-| Ask | Answer | Then |
-|-----|--------|------|
-| Break the code on purpose — does it fail? | No | It is not guarding. Fix it or cut it |
-| Delete it — is every deliberate break still caught? | Yes | Cut it |
-| Does another check fail first, same cause? | Yes | Cut the later one |
-| Would anything else notice? | No | Keep it, whatever it costs |
+| Ask                                                 | Answer | Then                                 |
+| --------------------------------------------------- | ------ | ------------------------------------ |
+| Break the code on purpose — does it fail?           | No     | It is not guarding. Fix it or cut it |
+| Delete it — is every deliberate break still caught? | Yes    | Cut it                               |
+| Does another check fail first, same cause?          | Yes    | Cut the later one                    |
+| Would anything else notice?                         | No     | Keep it, whatever it costs           |
 
 ## Aim The Break
 
@@ -79,10 +79,10 @@ reads as covered, which is worse than reading as absent.
 
 ## The Anti-Patterns
 
-| Don't | Do | Why |
-|-------|----|-----|
-| Count checks | Count what only they catch | Suites grow checks faster than coverage |
-| Cut on a hunch | Cut, then re-run the breaks | The audit decides, not taste |
-| Keep it "just in case" | Name the case, or cut it | An unnamed case is not a case |
-| Assert existence, then read | Read it | The read already fails on absence |
-| Trust a green suite never seen red | Break it on purpose | Green is evidence only if red was possible |
+| Don't                              | Do                          | Why                                        |
+| ---------------------------------- | --------------------------- | ------------------------------------------ |
+| Count checks                       | Count what only they catch  | Suites grow checks faster than coverage    |
+| Cut on a hunch                     | Cut, then re-run the breaks | The audit decides, not taste               |
+| Keep it "just in case"             | Name the case, or cut it    | An unnamed case is not a case              |
+| Assert existence, then read        | Read it                     | The read already fails on absence          |
+| Trust a green suite never seen red | Break it on purpose         | Green is evidence only if red was possible |

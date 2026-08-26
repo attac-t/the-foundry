@@ -15,12 +15,12 @@ description: Crafting custom expectations. When and how to extract.
 
 ## The Anti-Patterns
 
-| Don't                | Do                             | Why                     |
-|----------------------|--------------------------------|-------------------------|
-| Extract single-use   | Keep inline                    | Clarity over abstraction |
-| Forget `return $this` | Always return                 | Chaining breaks         |
-| Scatter across files | Centralize in `Expectations.php` | Discoverability       |
-| Reinvent built-ins   | Use Pest's expectations        | Maintenance             |
+| Don't                 | Do                               | Why                      |
+| --------------------- | -------------------------------- | ------------------------ |
+| Extract single-use    | Keep inline                      | Clarity over abstraction |
+| Forget `return $this` | Always return                    | Chaining breaks          |
+| Scatter across files  | Centralize in `Expectations.php` | Discoverability          |
+| Reinvent built-ins    | Use Pest's expectations          | Maintenance              |
 
 ## Real-World Examples
 

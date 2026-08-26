@@ -15,21 +15,21 @@ Tests exist to give you confidence to change code. They are not a bureaucratic c
 
 ## What to Test
 
-| Test This | Because |
-|-----------|---------|
-| Business logic with decisions | Logic branches can fail |
-| Complex validation rules | Edge cases hide bugs |
-| Happy path + one error path | Proves it works and fails correctly |
-| Integration points | Boundaries are where bugs live |
+| Test This                     | Because                             |
+| ----------------------------- | ----------------------------------- |
+| Business logic with decisions | Logic branches can fail             |
+| Complex validation rules      | Edge cases hide bugs                |
+| Happy path + one error path   | Proves it works and fails correctly |
+| Integration points            | Boundaries are where bugs live      |
 
 ## What to Skip
 
-| Skip This | Because |
-|-----------|---------|
-| Simple wrappers with no logic | Nothing can break |
-| Framework internals | The framework is already tested |
-| Every edge case | Diminishing returns |
-| Implementation details | Tests become brittle |
+| Skip This                     | Because                         |
+| ----------------------------- | ------------------------------- |
+| Simple wrappers with no logic | Nothing can break               |
+| Framework internals           | The framework is already tested |
+| Every edge case               | Diminishing returns             |
+| Implementation details        | Tests become brittle            |
 
 ## The Structure
 
@@ -51,11 +51,11 @@ Keep this structure explicit. A reader should identify each section instantly.
 
 ## Confidence Hierarchy
 
-| Level | What it Tests | Run Frequency |
-|-------|--------------|---------------|
-| Unit  | Isolated logic | Every change |
+| Level       | What it Tests        | Run Frequency |
+| ----------- | -------------------- | ------------- |
+| Unit        | Isolated logic       | Every change  |
 | Integration | Connected components | Before commit |
-| End-to-End | Full user flows | Before deploy |
+| End-to-End  | Full user flows      | Before deploy |
 
 Focus effort on the level that gives most confidence for that code.
 

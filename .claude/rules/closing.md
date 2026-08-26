@@ -19,10 +19,10 @@ seen.
 
 Say so on the issue, and say which of two things it is:
 
-| | |
-|---|---|
-| unmeetable here | it wants something this stage does not have — move it to the issue that will |
-| wrong when written | the requirement itself was mistaken — strike it, and say why |
+|                    |                                                                              |
+| ------------------ | ---------------------------------------------------------------------------- |
+| unmeetable here    | it wants something this stage does not have — move it to the issue that will |
+| wrong when written | the requirement itself was mistaken — strike it, and say why                 |
 
 Neither is a tick. A box removed silently and a box ticked wrongly read the same six months later.
 

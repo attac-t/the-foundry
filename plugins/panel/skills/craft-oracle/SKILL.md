@@ -34,9 +34,9 @@ gates:
 
 Split by cost, not by category:
 
-| Cadence | What runs | Why |
-|---|---|---|
-| Every loop | tests, types, lint | Cheap, catches most |
+| Cadence     | What runs                 | Why                 |
+| ----------- | ------------------------- | ------------------- |
+| Every loop  | tests, types, lint        | Cheap, catches most |
 | At approval | mutation, full acceptance | Expensive, run once |
 
 ## Promotion
@@ -58,10 +58,10 @@ other — a judge cannot write the check, and it should not arrive as a surprise
 
 Passing is not covering. Two ways a gate exits 0 while certifying nothing:
 
-| Failure | Tell |
-|---|---|
+| Failure                           | Tell                                          |
+| --------------------------------- | --------------------------------------------- |
 | the inputs dodge the failure mode | the data was chosen by whoever wrote the code |
-| the harness passes vacuously | zero cases executed, still exit 0 |
+| the harness passes vacuously      | zero cases executed, still exit 0             |
 
 A charter demanding exact money, tested only on values binary floating point happens to represent
 exactly, has a gate certifying the author's choice of examples.
@@ -78,13 +78,13 @@ either build an oracle first or do not convene.
 
 ## The Anti-Patterns
 
-| Don't | Do | Why |
-|---|---|---|
-| Judge reports "tests pass" | Harness reads the exit code | Voids the gate entirely |
-| Enumerate an open set in a lint | Narrow scope until it closes | Unbounded vocabularies produce false positives |
-| One gate for everything | Name them separately | You cannot tell what failed |
-| Re-specify a project script | `composer test` | Duplication drifts |
-| Gate on a metric nobody agreed | Gate on a command everyone runs | A gate nobody trusts gets overridden |
+| Don't                           | Do                              | Why                                            |
+| ------------------------------- | ------------------------------- | ---------------------------------------------- |
+| Judge reports "tests pass"      | Harness reads the exit code     | Voids the gate entirely                        |
+| Enumerate an open set in a lint | Narrow scope until it closes    | Unbounded vocabularies produce false positives |
+| One gate for everything         | Name them separately            | You cannot tell what failed                    |
+| Re-specify a project script     | `composer test`                 | Duplication drifts                             |
+| Gate on a metric nobody agreed  | Gate on a command everyone runs | A gate nobody trusts gets overridden           |
 
 ## Real-World Examples
 

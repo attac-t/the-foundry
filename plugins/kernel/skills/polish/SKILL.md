@@ -63,11 +63,11 @@ delete the line, and if nothing that should go red goes red, it was never a test
 
 ## Deeper
 
-| | |
-|---|---|
+|                         |                                               |
+| ----------------------- | --------------------------------------------- |
 | [protocol](protocol.md) | the five phases, team mode, and how to report |
-| [lenses](lenses.md) | the passes a stack adds, and how to find them |
-| [passes](passes.md) | before and after, per pass |
+| [lenses](lenses.md)     | the passes a stack adds, and how to find them |
+| [passes](passes.md)     | before and after, per pass                    |
 
 ## Rules
 

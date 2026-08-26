@@ -16,7 +16,7 @@ description: Crafting datasets. Same test, different inputs.
 ## The Anti-Patterns
 
 | Don't                         | Do                     | Why               |
-|-------------------------------|------------------------|-------------------|
+| ----------------------------- | ---------------------- | ----------------- |
 | Anonymous arrays              | Named keys             | Readable failures |
 | Different assertions per case | Explicit tests         | Clarity           |
 | Cartesian explosion           | Max 2 datasets chained | Maintainability   |

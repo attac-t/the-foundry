@@ -9,7 +9,7 @@
 ### Task: "Create User model with authentication"
 
 | Criterion    | Answer  | Why                                              |
-|--------------|---------|--------------------------------------------------|
+| ------------ | ------- | ------------------------------------------------ |
 | Bounded      | No      | "Authentication" is vague. OAuth? JWT? Session?  |
 | Context-free | No      | Depends on auth architecture decisions           |
 | Mechanical   | No      | Requires judgment on field visibility, relations |
@@ -22,7 +22,7 @@
 ### Task: "Write CRUD tests for User model"
 
 | Criterion    | Answer | Why                                    |
-|--------------|--------|----------------------------------------|
+| ------------ | ------ | -------------------------------------- |
 | Bounded      | Yes    | Input: model. Output: passing tests.   |
 | Context-free | Yes    | Model already exists. No dependencies. |
 | Mechanical   | Yes    | Follow existing test patterns.         |

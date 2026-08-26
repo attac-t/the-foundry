@@ -40,7 +40,7 @@ Bloated files get ignored. If Claude violates a rule you wrote, the file is too 
 ### 2. Specific Over Vague
 
 | Wrong                 | Right                        |
-|-----------------------|------------------------------|
+| --------------------- | ---------------------------- |
 | Format code properly  | Use 2-space indentation      |
 | Write good tests      | Tests must cover error paths |
 | Follow best practices | Validate input with Zod      |
@@ -48,7 +48,7 @@ Bloated files get ignored. If Claude violates a rule you wrote, the file is too 
 ### 3. Include What Claude Can't Infer
 
 | Include                               | Exclude                            |
-|---------------------------------------|------------------------------------|
+| ------------------------------------- | ---------------------------------- |
 | Commands Claude can't guess           | Anything in package.json           |
 | Style rules that differ from defaults | Standard language conventions      |
 | Testing instructions                  | Detailed API docs (import instead) |
@@ -59,18 +59,18 @@ Bloated files get ignored. If Claude violates a rule you wrote, the file is too 
 
 ## Deeper
 
-| | |
-|---|---|
+|                           |                                              |
+| ------------------------- | -------------------------------------------- |
 | [mechanism](mechanism.md) | imports, path scoping, and how nesting loads |
-| [protocol](protocol.md) | discover, interview, generate, split |
-| [good](good.md) | two files that work, whole |
-| [scoping](scoping.md) | a monorepo, and what imports compose |
-| [bad](bad.md) | files that get ignored, and why |
+| [protocol](protocol.md)   | discover, interview, generate, split         |
+| [good](good.md)           | two files that work, whole                   |
+| [scoping](scoping.md)     | a monorepo, and what imports compose         |
+| [bad](bad.md)             | files that get ignored, and why              |
 
 ## Anti-Patterns
 
 | Pattern             | Why It Fails             |
-|---------------------|--------------------------|
+| ------------------- | ------------------------ |
 | Duplicate README    | Wastes tokens, drifts    |
 | Giant monorepo file | No conditional loading   |
 | Skip `/memory`      | Duplicate existing rules |

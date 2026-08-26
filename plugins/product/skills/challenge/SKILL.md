@@ -29,27 +29,27 @@ Not a claim: a fact you can check in one command, a preference, a decision alrea
 
 ## End in one state
 
-| | |
-|---|---|
-| **supported** | evidence backs it, and you named what would break it |
-| **contradicted** | evidence cuts against it |
-| **stale** | it held once, and nothing has checked it since the world moved |
-| **unknown** | nobody has looked, or what we have cannot decide |
+|                  |                                                                |
+| ---------------- | -------------------------------------------------------------- |
+| **supported**    | evidence backs it, and you named what would break it           |
+| **contradicted** | evidence cuts against it                                       |
+| **stale**        | it held once, and nothing has checked it since the world moved |
+| **unknown**      | nobody has looked, or what we have cannot decide               |
 
 **Unknown is a real answer.** It is not a soft no and it never becomes a yes because a decision is
 waiting. Missing evidence is missing.
 
 ## Then one move, and only one
 
-| | |
-|---|---|
-| **nothing** | the claim holds, or it is too small to be worth a move |
-| **research** | reading only. Nothing changes |
-| **experiment** | the smallest reversible thing that would settle it |
-| **proposal** | a decision package for a person |
+|                 |                                                                |
+| --------------- | -------------------------------------------------------------- |
+| **nothing**     | the claim holds, or it is too small to be worth a move         |
+| **research**    | reading only. Nothing changes                                  |
+| **experiment**  | the smallest reversible thing that would settle it             |
+| **proposal**    | a decision package for a person                                |
 | **ask a human** | meaning, consequence or authority — one question, with options |
-| **defect** | it is broken, not uncertain |
-| **stop** | it needs something you do not have. Say what |
+| **defect**      | it is broken, not uncertain                                    |
+| **stop**        | it needs something you do not have. Say what                   |
 
 **Pick the cheapest one that shrinks the biggest doubt.** Reading beats building. Nothing beats both
 when nothing is warranted.

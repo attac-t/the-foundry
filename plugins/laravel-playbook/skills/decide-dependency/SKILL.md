@@ -53,7 +53,7 @@ If yes, own it or pin it tightly. If no, suggest it.
 ## The Quick Test
 
 | Ask                                | Answer | Use                                   |
-|------------------------------------|--------|---------------------------------------|
+| ---------------------------------- | ------ | ------------------------------------- |
 | Does core functionality need it?   | Yes    | Depend                                |
 | Is it an optional enhancement?     | Yes    | Suggest                               |
 | Is it a tiny, single-file utility? | Yes    | Vendor                                |

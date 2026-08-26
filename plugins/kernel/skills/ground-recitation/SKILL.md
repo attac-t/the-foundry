@@ -23,14 +23,14 @@ Ask yourself:
 
 ## How to Update
 
-| Section     | Strategy                                       |
-|-------------|------------------------------------------------|
-| Goal        | Rewrite when objective changes                 |
-| Constraints | Add/remove as decisions are made               |
-| Focus       | Rewrite each session                           |
-| Progress    | Pointer to blueprint + active task             |
-| Failures    | Append new. Remove when internalized.          |
-| Scratchpad  | Clear freely. Temporary.                       |
+| Section     | Strategy                              |
+| ----------- | ------------------------------------- |
+| Goal        | Rewrite when objective changes        |
+| Constraints | Add/remove as decisions are made      |
+| Focus       | Rewrite each session                  |
+| Progress    | Pointer to blueprint + active task    |
+| Failures    | Append new. Remove when internalized. |
+| Scratchpad  | Clear freely. Temporary.              |
 
 ## Progress Section
 
@@ -57,14 +57,14 @@ Reset to template when:
 
 Memory has layers. Each artifact serves a distinct purpose.
 
-| Artifact            | Lifespan     | Purpose        | When                     |
-|---------------------|--------------|----------------|--------------------------|
-| `working.md`        | Session      | Cognitive RAM  | Always active            |
-| `blueprint.md`      | Goal         | Task tracking  | Multi-step work          |
-| `spec.md`           | Goal         | Requirements   | New features             |
-| `adr/*.md`          | Permanent    | Decisions      | Architecture choices     |
-| `handoffs/*.md`     | Transitional | State transfer | Manual: `/handoff`       |
-| `observations/*.md` | Permanent    | Learnings      | Manual: `/observe`       |
+| Artifact            | Lifespan     | Purpose        | When                 |
+| ------------------- | ------------ | -------------- | -------------------- |
+| `working.md`        | Session      | Cognitive RAM  | Always active        |
+| `blueprint.md`      | Goal         | Task tracking  | Multi-step work      |
+| `spec.md`           | Goal         | Requirements   | New features         |
+| `adr/*.md`          | Permanent    | Decisions      | Architecture choices |
+| `handoffs/*.md`     | Transitional | State transfer | Manual: `/handoff`   |
+| `observations/*.md` | Permanent    | Learnings      | Manual: `/observe`   |
 
 ### Clarifying Overlaps
 

@@ -17,7 +17,7 @@ description: Crafting QueryBuilders. Eloquent power, not Repositories.
 ## The Anti-Patterns
 
 | ❌ Don't                  | ✅ Do                     | Why                                 |
-|--------------------------|--------------------------|-------------------------------------|
+| ------------------------ | ------------------------ | ----------------------------------- |
 | Repository pattern       | QueryBuilder             | Eloquent is already the abstraction |
 | One-off scope methods    | Reusable builder methods | DRY                                 |
 | `whereStatus('pending')` | `pending()`              | Semantic clarity                    |

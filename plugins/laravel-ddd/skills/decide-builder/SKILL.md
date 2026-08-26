@@ -30,7 +30,7 @@ Ask: *"Do I need to configure this object in multiple ways?"*
 ## The Quick Test
 
 | Scenario                             | Use         |
-|--------------------------------------|-------------|
+| ------------------------------------ | ----------- |
 | 5+ optional parameters               | Builder     |
 | Context-dependent defaults           | Builder     |
 | Method chaining improves readability | Builder     |

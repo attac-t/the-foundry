@@ -17,7 +17,7 @@ description: Recording architectural decisions. Why we chose X over Y.
 ## When to Record
 
 | Record               | Don't Record      |
-|----------------------|-------------------|
+| -------------------- | ----------------- |
 | Package choice       | Trivial fixes     |
 | Pattern choice       | Standard CRUD     |
 | Schema design        | Config changes    |

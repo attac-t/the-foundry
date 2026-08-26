@@ -15,12 +15,12 @@ description: Crafting a documentation site. Progressive depth, not progressive c
 
 3. **Progressive depth**: Introduction, then basic usage, then advanced usage, then API reference. Each layer is self-contained. A developer can stop at "basic usage" and have a working integration.
 
-   | Layer             | Location               | Content                                      |
-   |-------------------|------------------------|----------------------------------------------|
-   | **Pitch**         | README first screenful | What it does + 1-2 line code example         |
-   | **Quick start**   | `introduction.md`      | Install + basic usage                        |
-   | **Features**      | `basic-usage/`         | Individual feature pages                     |
-   | **Customization** | `advanced-usage/`      | Custom implementations, extending interfaces |
+| Layer             | Location               | Content                                      |
+| ----------------- | ---------------------- | -------------------------------------------- |
+| **Pitch**         | README first screenful | What it does + 1-2 line code example         |
+| **Quick start**   | `introduction.md`      | Install + basic usage                        |
+| **Features**      | `basic-usage/`         | Individual feature pages                     |
+| **Customization** | `advanced-usage/`      | Custom implementations, extending interfaces |
 
    Never dump all features at once. Simple things simple, complex things possible.
 

@@ -15,12 +15,12 @@ description: Crafting arch tests. Structure as code.
 
 ## The Anti-Patterns
 
-| Don't                    | Do                      | Why                |
-|--------------------------|-------------------------|--------------------|
-| Skip presets             | Start with presets      | Low-hanging fruit  |
-| Over-constrain           | Meaningful rules only   | Noise              |
-| Silent ignores           | Document ignores        | Traceability       |
-| Test behavior with arch  | Use arch for structure  | Different concerns |
+| Don't                   | Do                     | Why                |
+| ----------------------- | ---------------------- | ------------------ |
+| Skip presets            | Start with presets     | Low-hanging fruit  |
+| Over-constrain          | Meaningful rules only  | Noise              |
+| Silent ignores          | Document ignores       | Traceability       |
+| Test behavior with arch | Use arch for structure | Different concerns |
 
 ## Real-World Examples
 

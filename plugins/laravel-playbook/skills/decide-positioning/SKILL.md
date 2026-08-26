@@ -36,7 +36,7 @@ If no, either sharpen your differentiation or contribute to an existing package 
 ## The Quick Test
 
 | Ask                                                | Answer | Action                               |
-|----------------------------------------------------|--------|--------------------------------------|
+| -------------------------------------------------- | ------ | ------------------------------------ |
 | Have you searched Packagist for alternatives?      | No     | Stop. Research first                 |
 | Have you installed and used the top alternatives?  | No     | Stop. Evaluate DX first              |
 | Can you name your differentiation in one sentence? | No     | Not ready to build                   |

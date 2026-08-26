@@ -14,11 +14,11 @@ This asks **can I tell what is true, and what I need to do?**
 
 ## A reply leads with its state
 
-| Instead of | Write |
-|---|---|
-| the evidence, then the answer | the answer, then the evidence |
-| "I checked X, then Y, so…" | "Yes. X is safe, because Y." |
-| "three checks failed and…" | "Blocked. X must happen first." |
+| Instead of                    | Write                                 |
+| ----------------------------- | ------------------------------------- |
+| the evidence, then the answer | the answer, then the evidence         |
+| "I checked X, then Y, so…"    | "Yes. X is safe, because Y."          |
+| "three checks failed and…"    | "Blocked. X must happen first."       |
 | "the build is unaffected by…" | "No action. The failure is not ours." |
 
 `Yes.` `No.` `Done.` `Blocked.` `No action.` `Choose.` A state, never a label you repeat.
@@ -55,13 +55,13 @@ Prose is the last resort. A person should almost never have to compose one.
 
 ## The rules
 
-| | |
-|---|---|
-| one ask, one decision | two independent decisions are two questions |
-| no false binary | three real choices are offered as three |
-| no question at all | when nothing needs a person |
-| uncertainty survives | a bounded answer must not turn *unsure* into *yes* |
-| facts survive | signal over noise never means short and wrong |
+|                       |                                                    |
+| --------------------- | -------------------------------------------------- |
+| one ask, one decision | two independent decisions are two questions        |
+| no false binary       | three real choices are offered as three            |
+| no question at all    | when nothing needs a person                        |
+| uncertainty survives  | a bounded answer must not turn *unsure* into *yes* |
+| facts survive         | signal over noise never means short and wrong      |
 
 ---
 

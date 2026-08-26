@@ -64,10 +64,10 @@ can show it.
 
 ## Deeper
 
-| | |
-|---|---|
-| [gates](gates.md) | how the draft comes to exist, and what each gate judges |
-| [re-entry](re-entry.md) | discovery runs upward, and what re-opens |
+|                         |                                                         |
+| ----------------------- | ------------------------------------------------------- |
+| [gates](gates.md)       | how the draft comes to exist, and what each gate judges |
+| [re-entry](re-entry.md) | discovery runs upward, and what re-opens                |
 
 ## The Anti-Patterns
 

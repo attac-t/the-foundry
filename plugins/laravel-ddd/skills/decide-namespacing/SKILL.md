@@ -37,7 +37,7 @@ Ask: *"If I copy this to another Laravel project, does it work without changes?"
 ## The Quick Test
 
 | Ask Yourself             | Answer | Use     |
-|--------------------------|--------|---------|
+| ------------------------ | ------ | ------- |
 | Uses `Domain\*` imports? | Yes    | Domain  |
 | Could be a package?      | Yes    | Support |
 | Contains business rules? | Yes    | Domain  |

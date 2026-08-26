@@ -15,12 +15,12 @@ description: Crafting test structure. File layout for large suites.
 
 ## The Anti-Patterns
 
-| Don't                 | Do                   | Why             |
-|-----------------------|----------------------|-----------------|
-| One massive test file | Split by capability  | Maintainability |
-| Split by model        | Split by behavior    | Zero overlap    |
-| Mix config with tests | Separate `Pest.php`  | Clarity         |
-| Run slow tests always | Group and exclude    | Fast feedback   |
+| Don't                 | Do                  | Why             |
+| --------------------- | ------------------- | --------------- |
+| One massive test file | Split by capability | Maintainability |
+| Split by model        | Split by behavior   | Zero overlap    |
+| Mix config with tests | Separate `Pest.php` | Clarity         |
+| Run slow tests always | Group and exclude   | Fast feedback   |
 
 ## Real-World Examples
 

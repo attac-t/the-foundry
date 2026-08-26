@@ -30,7 +30,7 @@ Yes → Mock it. No → Use the real thing.
 ## The Quick Test
 
 | Ask                | Answer | Action             |
-|--------------------|--------|--------------------|
+| ------------------ | ------ | ------------------ |
 | External API?      | Yes    | Mock               |
 | Your own class?    | Yes    | Real               |
 | Database?          | Yes    | Real + transaction |

@@ -28,14 +28,14 @@ Write it, then cut. **Delete any sentence that would not change what the reader 
 
 State the decision. Then the one case that would prove it wrong. Stop.
 
-| Instead of | Write |
-|---|---|
-| a paragraph explaining a choice | the choice, then the case that decides it |
-| prose listing three things | a table |
-| "we should consider whether…" | the decision |
-| a heading over two sentences | the two sentences |
-| "in order to", "it is worth noting" | nothing — cut it |
-| a second paragraph balancing the first | the first |
+| Instead of                             | Write                                     |
+| -------------------------------------- | ----------------------------------------- |
+| a paragraph explaining a choice        | the choice, then the case that decides it |
+| prose listing three things             | a table                                   |
+| "we should consider whether…"          | the decision                              |
+| a heading over two sentences           | the two sentences                         |
+| "in order to", "it is worth noting"    | nothing — cut it                          |
+| a second paragraph balancing the first | the first                                 |
 
 ---
 

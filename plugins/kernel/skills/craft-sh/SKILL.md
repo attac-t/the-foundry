@@ -69,10 +69,10 @@ Seven lines, the whole story. The test: **can a stranger describe the script aft
 
 One subject per file. Open the one the rule sent you to.
 
-| | |
-|---|---|
-| [shape](shape.md) | predicates, guard clauses, `ensure_` |
-| [oracles](oracles.md) | polling what a tool claims, guarding a flag value |
-| [voice](voice.md) | one voice, traps |
-| [comments](comments.md) | the taper, breathing |
-| [portability](portability.md) | what is BSD-only, and what to write instead |
+|                               |                                                   |
+| ----------------------------- | ------------------------------------------------- |
+| [shape](shape.md)             | predicates, guard clauses, `ensure_`              |
+| [oracles](oracles.md)         | polling what a tool claims, guarding a flag value |
+| [voice](voice.md)             | one voice, traps                                  |
+| [comments](comments.md)       | the taper, breathing                              |
+| [portability](portability.md) | what is BSD-only, and what to write instead       |

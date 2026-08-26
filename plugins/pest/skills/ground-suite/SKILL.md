@@ -17,12 +17,12 @@ description: Suite philosophy. What to test, what to skip.
 
 A good test has all four. Trade-offs exist between them.
 
-| Pillar         | Question                       |
-|----------------|--------------------------------|
-| **Protection** | Does it catch real bugs?       |
-| **Resistance** | Does it survive refactoring?   |
-| **Speed**      | Does it run fast?              |
-| **Clarity**    | Is it easy to understand?      |
+| Pillar         | Question                     |
+| -------------- | ---------------------------- |
+| **Protection** | Does it catch real bugs?     |
+| **Resistance** | Does it survive refactoring? |
+| **Speed**      | Does it run fast?            |
+| **Clarity**    | Is it easy to understand?    |
 
 Pillars 1 & 2 matter most. A test that breaks on refactoring is noise.
 

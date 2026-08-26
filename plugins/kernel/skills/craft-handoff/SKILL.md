@@ -34,7 +34,7 @@ Create a handoff when:
 ## The Anti-Patterns
 
 | Don't             | Do                    | Why                           |
-|-------------------|-----------------------|-------------------------------|
+| ----------------- | --------------------- | ----------------------------- |
 | Dump full context | Summarize key points  | Brevity is clarity            |
 | Skip decisions    | Record with rationale | Decisions are cheap to forget |
 | Omit blockers     | State what's stuck    | Prevents wasted cycles        |

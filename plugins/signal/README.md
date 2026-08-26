@@ -16,20 +16,20 @@ back never takes it away. It puts a second reply beside the first.
 
 ## What it does
 
-| Answer | What happens | Cost |
-|---|---|---|
-| pass | Nothing. Last turn's numbers are dropped | none |
-| warn | The numbers wait for the agent, and reach it before it writes again | none |
-| block | The agent gets them now and says it again | one turn, and you read two replies |
+| Answer | What happens                                                        | Cost                               |
+| ------ | ------------------------------------------------------------------- | ---------------------------------- |
+| pass   | Nothing. Last turn's numbers are dropped                            | none                               |
+| warn   | The numbers wait for the agent, and reach it before it writes again | none                               |
+| block  | The agent gets them now and says it again                           | one turn, and you read two replies |
 
 Warn says nothing to you. You are looking at the reply, so its length is not news. The field that
 would tell you never reaches the agent. The numbers go to the one who can act on them.
 
-| What we count | Pass | Warn | Block |
-|---|---|---|---|
-| Long words | up to 10% | over 10%, up to 25% | over 25% |
-| Longest sentence | up to 20 words | 21 to 45 | over 45 |
-| Words in all | up to 120 | 121 to 600 | over 600 |
+| What we count    | Pass           | Warn                | Block    |
+| ---------------- | -------------- | ------------------- | -------- |
+| Long words       | up to 10%      | over 10%, up to 25% | over 25% |
+| Longest sentence | up to 20 words | 21 to 45            | over 45  |
+| Words in all     | up to 120      | 121 to 600          | over 600 |
 
 **The long-word block needs four of them, and the table cannot show that.** Three long words in a
 five-word sentence is 60% and only warns; five in nine is 78% and blocks. A share computed from
@@ -115,12 +115,12 @@ file that did not survive the install. Silence means it is working.
 
 ## Where it runs
 
-| Platform | Shell | awk |
-|---|---|---|
-| macOS | `sh` | the one Apple ships |
-| Debian, Ubuntu | `dash` | `mawk` |
-| Alpine | BusyBox `ash` | BusyBox |
-| Windows | the Git Bash Claude Code starts there | the `awk` Git for Windows ships |
+| Platform       | Shell                                 | awk                             |
+| -------------- | ------------------------------------- | ------------------------------- |
+| macOS          | `sh`                                  | the one Apple ships             |
+| Debian, Ubuntu | `dash`                                | `mawk`                          |
+| Alpine         | BusyBox `ash`                         | BusyBox                         |
+| Windows        | the Git Bash Claude Code starts there | the `awk` Git for Windows ships |
 
 The suite is run on the first three. Windows rests on Git for Windows shipping the same two tools.
 Its own [package list](https://github.com/git-for-windows/build-extra/blob/main/make-file-list.sh)
@@ -128,14 +128,14 @@ says it does.
 
 ## Tune it
 
-| Variable | Ships as |
-|---|---|
-| `SIGNAL_LONG_WARN` | 10 |
-| `SIGNAL_LONG_BLOCK` | 25 |
-| `SIGNAL_SENT_WARN` | 20 |
-| `SIGNAL_SENT_BLOCK` | 45 |
-| `SIGNAL_WORDS_WARN` | 120 |
-| `SIGNAL_WORDS_BLOCK` | 600 |
+| Variable             | Ships as |
+| -------------------- | -------- |
+| `SIGNAL_LONG_WARN`   | 10       |
+| `SIGNAL_LONG_BLOCK`  | 25       |
+| `SIGNAL_SENT_WARN`   | 20       |
+| `SIGNAL_SENT_BLOCK`  | 45       |
+| `SIGNAL_WORDS_WARN`  | 120      |
+| `SIGNAL_WORDS_BLOCK` | 600      |
 
 Set a warn line and the brief quotes it back to the agent. The three warn dials are the budget it
 is told to hold.

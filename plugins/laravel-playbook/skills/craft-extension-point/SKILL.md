@@ -34,7 +34,7 @@ description: Crafting extension points. Making code flexible means fewer feature
 Choose the right extension mechanism for the scope:
 
 | Scope                       | Mechanism                     | Example                                  |
-|-----------------------------|-------------------------------|------------------------------------------|
+| --------------------------- | ----------------------------- | ---------------------------------------- |
 | Multi-driver services       | Manager/Driver pattern        | `Scout::extend('elastic', fn () => ...)` |
 | Global (app-wide)           | Config-driven binding         | Swap the `Role` model via config         |
 | Runtime (ad-hoc)            | Macroable registration        | `Collection::macro('toUpper', ...)`      |

@@ -62,7 +62,7 @@ $model->addMedia($file)
 ## The Rules
 
 | Rule                           | Rationale                   |
-|--------------------------------|-----------------------------|
+| ------------------------------ | --------------------------- |
 | One public method: `execute()` | Single responsibility       |
 | Return Model or void           | Never DTO or Response       |
 | No transactions                | Consumer controls atomicity |
