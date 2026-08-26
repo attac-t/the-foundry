@@ -35,14 +35,17 @@ numbers would have let it through, and did.
 **3 — what is true right now.** One section answers it. Four others mix a promise, a set of bets, a
 future with false words in it, and a rule. The reader has to sort them.
 
-**4 — which sentences are a promise.** The mission is written twice and the two do not match:
+**4 — which sentences are a promise.** The mission is written twice, long form and short form, and
+the two do not match. Line them up on the words that differ:
 
-> Every change must answer to the people who signed off its bar.
+| | Long form | Short form |
+|---|---|---|
+| what a change answers to | *the people* | *a bar* |
+| who signed it off | they *signed off its bar* | its producer *did not sign off* |
 
-> Every change answers to a bar its producer did not sign off.
-
-The first says a change answers to **people**. The second says it answers to **a bar**, and adds a
-claim the first never made. A reader asked which one is the mission cannot say.
+The first says a change answers to **people**. The second says it answers to **a thing**, and adds a
+claim about the producer that the first never made. A reader asked which one is the mission cannot
+say.
 
 **5 — who acts and decides.** Six terms carry it: producer, authority, decision-maker, acceptor,
 accountability, ownership. All six must be held at once before the six rules make sense.
