@@ -1,7 +1,7 @@
 ---
 name: craft-flow
 trigger: flowchart, lifecycle, process diagram, system flow
-description: Generate elegant ASCII flowcharts.
+description: Show what happens next, in what stages, and where it branches. Use for a process, a lifecycle, a state change nobody owns. Not for static structure (craft-map) or who acts at each step (craft-swimlane).
 ---
 
 # Skill: Craft Flow
