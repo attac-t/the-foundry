@@ -1,6 +1,6 @@
 # Writing
 
-Anything written down, not just replies.
+Anything written down, not just replies — and what a person reads is there for a decision, never a log.
 
 `signal` holds every reply to plain English. Nothing held the written record. This does.
 
@@ -75,7 +75,8 @@ The bar above covers the rest.
 
 | | |
 |---|---|
-| pull request | read `.github/PULL_REQUEST_TEMPLATE.md` first — `gh pr create --body` bypasses it. Answer one question: why does this change exist? The reader already sees the diff. Close with `Closes #N` for the issue this finishes and `Refs #N` for the rest — never `@see`, github.com/see is a real person GitHub notifies |
-| issue | goal, contract, what is deliberately not built, and a `## Done when` list of checks that can each fail before the code exists. **Written `- [ ]`, never `- `** — a bullet nobody can tick records nothing at close, and 47 of the first 83 lists were that shape. Name open decisions rather than guessing them |
+| a pull request, an issue, a comment, a question, a closing note | `floor:brief` owns their shapes. Hand the body to `run.sh deliver`, never to `gh pr edit` |
+| a `## Done when` list | **Written `- [ ]`, never `- `.** A bullet nobody can tick records nothing at close, and 47 of the first 83 lists were that shape |
+| `Closes` and `Refs` | `Closes #N` for the issue this finishes, `Refs #N` for the rest. **Never `@see`** — github.com/see is a real person GitHub notifies |
 | commit | [Commitizen](https://commitizen-tools.github.io/commitizen/) `type(scope): description`. The subject says what changed; the body says why it was wrong before |
 | comment | carries a discovery, never narration. `# the fatal goes to stderr, the argument to stdout` earns its line. `# loop over the files` does not |
