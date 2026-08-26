@@ -1277,6 +1277,11 @@ wreck_runner "a host called settled while a run holds a workspace is caught" \
 wreck_runner "a gate reaching a second file is caught" \
   reaches 's#^        \[ "$grown".*#        break#'
 
+# A branch carrying somebody else's commit is a delivery doing work nobody asked this run for. The
+# report is the whole value: a run that says nothing about it looks exactly like a clean one.
+wreck_runner "a foreign commit reported as none is caught" \
+  mutecarried 's#^    note "this branch carries work that names another item:"#    return 0#'
+
 report_breaks
 
 # --- break the install ---

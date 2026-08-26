@@ -2346,11 +2346,49 @@ deliver() {
     refuse_unreadable_run "$dir"
     refuse_ungranted_delivery "$dir" "$here"
     refuse_incomplete "$dir"
+    name_the_foreign_commits "$dir" "$here"
     keep_the_brief "$dir" "${2:-}"
 
     send_delivery "$dir" "$here" "$title"
     say_the_asides "$dir"
     emit "$dir" run.delivered
+}
+
+#
+# Every commit this branch adds whose message names a different item than the run reads.
+#
+# **It reports and does not refuse.** A commit from elsewhere is often deliberate — a fix the branch
+# needs before it can be graded at all. What is never deliberate is not knowing one is there.
+#
+# Silence means the branch carries only its own work.
+name_the_foreign_commits() {
+    mine=$(item_id "$1") || return 0
+    [ -n "$mine" ] || return 0
+
+    base=$(pinned_base "$1") || return 0
+    tree=$(unit_work_tree "$1" "$2") || return 0
+
+    said=$(foreign_in "$tree" "$base" "$mine") || return 0
+    [ -n "$said" ] || return 0
+    note "this branch carries work that names another item:"
+    printf '%s\n' "$said" >&2
+}
+
+# The first pin's ref. Every clause pins the same base, so the first one answers for all of them.
+pinned_base() {
+    awk '$1 == "pin" { print $4; exit }' "$1/charter" 2>/dev/null
+}
+
+# `Refs #N` and `Closes #N` in a commit body, minus the run's own item.
+foreign_in() {
+    git -C "$1" log --format='%h %s%n%b' "$2..HEAD" 2>/dev/null \
+        | awk -v mine="$3" '
+            /^[0-9a-f]+ / { held = $0 }
+            /(Refs|Closes) #[0-9]+/ {
+                match($0, /#[0-9]+/)
+                said = substr($0, RSTART + 1, RLENGTH - 1)
+                if (said != mine && !(held in seen)) { seen[held] = 1; printf "  %s  names #%s\n", held, said }
+            }'
 }
 
 # The brief travels with the run, never as an argument. A body is many lines and
