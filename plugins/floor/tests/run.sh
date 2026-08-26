@@ -31,6 +31,14 @@ tmp="${TMPDIR:-/tmp}/floor-audit-$$"
 mkdir -p "$tmp/verdict"
 trap 'rm -rf "$tmp"' EXIT
 
+# **Git transport isolation, and nothing wider.** `tests/isolate.sh` holds the mechanism and the
+# exact claim; `tests/transport.sh` proves it and proves that removing any part of it is caught.
+#
+# Fixtures address `github.com`, and one of them pushes. Without this, that push resolves a name and
+# waits on a credential helper — a hang, which no exit code tells apart from a slow machine.
+. "$root/tests/isolate.sh"
+isolate_git_transport "$tmp" || { printf 'could not isolate the git transport\n' >&2; exit 2; }
+
 failed=0
 
 # Two ways an audit ends badly, and they take different remedies.
@@ -77,6 +85,7 @@ audit_says_which() {
 audit_says_which
 
 ends_on "$root/tests/run.sh"     'exit $failed'      || bad "tests/run.sh declares breaks below its exit, and nothing runs them"
+ends_on "$root/tests/transport.sh" '[ "$failed" -eq 0 ] || exit 1' || bad "tests/transport.sh runs cases below its exit, and nothing counts them"
 ends_on "$root/tests/model.sh"   'summary "model"'   || bad "tests/model.sh runs cases below its tally, and nothing counts them"
 ends_on "$root/tests/install.sh" 'summary "install"' || bad "tests/install.sh runs cases below its tally, and nothing counts them"
 ends_on "$root/tests/host.sh"    'summary "host"'    || bad "tests/host.sh runs cases below its tally, and nothing counts them"
@@ -88,7 +97,7 @@ ends_on "$root/tests/host.sh"    'summary "host"'    || bad "tests/host.sh runs 
 # exceeded it there and, inverted, read as caught. A mutant is either caught early by `FOUNDRY_FAIL_FAST`
 # or runs about as long as a clean pass. Anything far past that is stuck on any machine.
 #
-for suite in model install host; do
+for suite in transport model install host; do
   began=$(date +%s)
   bash "$root/tests/$suite.sh" || failed=1
   [ "$suite" = model ] && clean=$(( $(date +%s) - began ))
