@@ -2345,8 +2345,11 @@ deliver() {
 
     refuse_unreadable_run "$dir"
     refuse_ungranted_delivery "$dir" "$here"
-    refuse_incomplete "$dir"
+
+    # Before the refusal, never after. A run told it may not deliver still wants to know its branch
+    # picked up somebody else's work, and often that is why it may not.
     name_the_foreign_commits "$dir" "$here"
+    refuse_incomplete "$dir"
     keep_the_brief "$dir" "${2:-}"
 
     send_delivery "$dir" "$here" "$title"
