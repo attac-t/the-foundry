@@ -191,7 +191,16 @@ said_after() {
     printf '%s\n' "$seen" \
         | awk -v mark="$2" -v self="$self" '
             /^floor-comment: /  { open = open || mine; mine = 0
-                                  want = open && substr($0, 16) != self; next }
+                                  who  = substr($0, 16)
+                                  want = open && who != self
+
+                                  # A dropped comment is the one thing a caller cannot infer. It
+                                  # sees an unanswered clause, and an answer nobody wrote reads
+                                  # exactly like an answer this refused.
+                                  if (open && who == self)
+                                      printf "source-github: skipped a comment written as [%s], which is this run\n", \
+                                          who > "/dev/stderr"
+                                  next }
             /^floor-question: / { mine = index($0, mark) > 0; open = 0; want = 0; next }
             want && NF          { print }'
 }
