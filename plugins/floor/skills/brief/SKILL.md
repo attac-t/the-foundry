@@ -82,13 +82,31 @@ Work ended. A closing note.
 
 **Tick the boxes that hold, and say which do not.** A box nobody can tick records nothing.
 
+## The seam names the item, so you never do
+
+**Never write `Closes #N` or `Refs #N` in a brief.** `run.sh deliver` appends one, under the body,
+where a machine reads it. A brief that writes its own gets it twice.
+
+That happened on the first delivery to use this skill. The body ended `Refs #377`, the seam added
+`Refs #377`, and both shipped.
+
+| Where it goes | What writes it |
+|---|---|
+| the body | you. What becomes true, and why |
+| the line under it | the seam. `Refs #N`, or `Closes #N` where the run may close |
+| the line under that | the seam. `floor-run:`, for a machine |
+
+**Reference another item freely.** The rule is about the item this delivery answers, which the run
+already knows.
+
 ## The budget
 
 **Twenty seconds to orient, ninety to read.** For an ordinary change that is about 120 to 180 words.
 
-**A design budget, not a bar.** A qualifier that makes a claim true always beats the count. A body
-that keeps needing more than 250 words is telling you the change is too broad, or another artefact
-is doing the wrong job.
+**A design budget, not a bar.** A qualifier that makes a claim true always beats the count.
+
+A body that keeps needing more than 250 words is telling you something. Either the change is too
+broad, or another artefact is doing the wrong job.
 
 ## Two traps
 
