@@ -1,0 +1,44 @@
+name: Change something
+description: Ask for a new or better outcome.
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Say what should become true, and how anyone would know it did.
+
+        **Not sure yet?** Go back and start a Discussion. Bring it here once you can say what
+        changes in the world.
+
+  - type: textarea
+    id: outcome
+    attributes:
+      label: What should become true
+      description: The change in the world, not the work. Who is better off, and how.
+      placeholder: A person joining a host is told when a plugin they load is older than the tree.
+    validations:
+      required: true
+
+  - type: textarea
+    id: why
+    attributes:
+      label: Why now
+      description: What it costs to leave it. A thing that broke, a person who got stuck, an opening.
+    validations:
+      required: true
+
+  - type: textarea
+    id: done
+    attributes:
+      label: Done when
+      description: Checks a person can watch fail. One per line, written as `- [ ]`.
+      placeholder: |
+        - [ ] join names any plugin behind the tree
+        - [ ] it says nothing when they all agree
+    validations:
+      required: true
+
+  - type: textarea
+    id: open
+    attributes:
+      label: Open decisions
+      description: Anything that genuinely blocks this, or would change its shape. Leave it empty if none.

@@ -1,0 +1,44 @@
+name: Something is broken
+description: Report behaviour that differs from what Foundry says it does.
+labels: ["foundry:defect"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Show it before you explain it. A pasted command and its output beats three paragraphs.
+
+        **If it is a security problem, close this and report it privately.** See SECURITY.md.
+
+  - type: textarea
+    id: happened
+    attributes:
+      label: What happened
+      description: What you ran, and what came back.
+      placeholder: |
+        $ sh bin/run.sh gates
+        floor: gates that did not pass: 1
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What should have happened
+      description: One sentence. If something here promises otherwise, say where.
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: The smallest way to see it
+      description: The fewest steps that show it. Say so if you cannot get it to happen twice.
+    validations:
+      required: true
+
+  - type: input
+    id: where
+    attributes:
+      label: Where
+      description: The commit, and the machine — a shell, an operating system, anything unusual.
+      placeholder: main at ee2fc6e, WSL under dash
