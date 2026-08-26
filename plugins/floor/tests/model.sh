@@ -814,10 +814,12 @@ is "nothing floor stored holds a local path" \
 charter_of() { printf '%s/charter' "$1"; }
 
 # `make_repo` leaves no commit, and a pin is a blob at a ref. Nothing to pin without one.
+# The message defaults to `x`, which is what every caller wanted until one needed a commit that
+# answers an item. A message is content here, not decoration.
 commit_file() {
   printf '%s' "$3" > "$1/$2" || return 1
   git -C "$1" add "$2" >/dev/null 2>&1 || return 1
-  git -C "$1" -c user.email=a@b.c -c user.name=a commit -qm x >/dev/null 2>&1
+  git -C "$1" -c user.email=a@b.c -c user.name=a commit -qm "${4:-x}" >/dev/null 2>&1
 }
 
 # Where a loose object lives, so a test can take one away.
@@ -2178,6 +2180,37 @@ A reader knows what changed.
   has "the run keeps the brief it was handed" "$(cat "$d/brief" 2>/dev/null)" "A reader knows what changed"
 }
 a_delivery_carries_its_brief
+
+#
+# A branch picks up a commit from elsewhere, and nothing said so. Deliberate or not, a delivery that
+# is silent about it looks exactly like one carrying only its own work.
+#
+a_delivery_names_what_it_carried_in() {
+  make_repo "$tmp/fc" main && set_origin "$tmp/fc" 'https://github.com/acme/fc.git'     && mkdir -p "$tmp/fc/.foundry"     && commit_file "$tmp/fc" .foundry/gates 'tests  true
+' || { skip "foreign — git could not make a repo here"; return; }
+
+  floor_new_as "$tmp/fc" ada@example.com "Foreign" >/dev/null
+  floor "$tmp/fc" charter derive >/dev/null 2>&1
+  floor "$tmp/fc" policy authorize 'https://github.com/acme/fc.git' >/dev/null 2>&1
+  floor "$tmp/fc" policy deliver-to 'https://github.com/acme/fc.git' >/dev/null 2>&1
+  floor "$tmp/fc" targets add 'https://github.com/acme/fc.git' main >/dev/null 2>&1
+  floor "$tmp/fc" open >/dev/null 2>&1
+  floor "$tmp/fc" gates >/dev/null 2>&1
+
+  work=$(ls -d "$(floor "$tmp/fc" path)"/units/01/workspace/*/ 2>/dev/null | head -1)
+  [ -n "$work" ] || { skip "foreign — the run opened no workspace"; return; }
+
+  # One commit answering an item this run never read. The message is the only thing that says so.
+  commit_file "$work" carried.txt 'from somewhere else' 'chore: a commit from another branch
+
+Refs #99999
+' >/dev/null 2>&1
+
+  said=$(floor_says "$tmp/fc" deliver 'a change')
+  has "a delivery names a commit answering another item" "$said" "names another item"
+  has "and it names the item it saw"                     "$said" "#99999"
+}
+a_delivery_names_what_it_carried_in
 
 #
 # Two conjuncts that close fail-opens rather than edge cases. Quantified over clauses and over
