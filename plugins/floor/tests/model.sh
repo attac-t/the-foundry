@@ -2189,7 +2189,14 @@ a_delivery_names_what_it_carried_in() {
   make_repo "$tmp/fc" main && set_origin "$tmp/fc" 'https://github.com/acme/fc.git'     && mkdir -p "$tmp/fc/.foundry"     && commit_file "$tmp/fc" .foundry/gates 'tests  true
 ' || { skip "foreign — git could not make a repo here"; return; }
 
+  # The run has to read an item, or there is nothing for a commit's message to disagree with. A run
+  # with none is silent here on purpose, and that silence is what made the first version of this
+  # test pass against a runner with the report torn out.
+  mkdir -p "$home/source/items"
+  printf 'Name what a branch carried\n' > "$home/source/items/42"
+
   floor_new_as "$tmp/fc" ada@example.com "Foreign" >/dev/null
+  floor "$tmp/fc" source read 42 >/dev/null 2>&1
   floor "$tmp/fc" charter derive >/dev/null 2>&1
   floor "$tmp/fc" policy authorize 'https://github.com/acme/fc.git' >/dev/null 2>&1
   floor "$tmp/fc" policy deliver-to 'https://github.com/acme/fc.git' >/dev/null 2>&1
