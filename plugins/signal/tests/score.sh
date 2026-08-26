@@ -235,7 +235,10 @@ not "and still say why"          "$(printf '%s\n' "$report" | awk -F= '$1 == "re
 # A document is not a reply. Both counts measure what a
 # person answers in one turn, and a page
 # explaining them holds many of each.
-for doc in "$root/README.md" "$root/skills/plain-english/SKILL.md" "$root/skills/conclusion/SKILL.md"; do
+
+# Named files let a new skill ship unheld. `stranger` did, and so had `economy` since the day it
+# landed — 35 words in one sentence, in the file teaching people to write shorter ones.
+for doc in "$root/README.md" "$root"/skills/*/SKILL.md; do
   awk -f "$scorer" -v words_warn=99999 -v words_block=99999 -v asks_warn=99999 < "$doc" >/dev/null 2>&1
   rc=$?
   is "$(basename "$doc") clears its own gate" "$rc" 0

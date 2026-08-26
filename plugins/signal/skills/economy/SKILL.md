@@ -7,8 +7,8 @@ description: Say more with less, do more with less — asked before writing, not
 
 > Agents write too much. They also build too much. Same reflex, same cure.
 
-Polish removes words. It cannot remove the noun you invented, the fourth guard you bolted on, or the
-abstraction you built for one caller — those are load-bearing by then. **The expensive waste is
+Polish removes words. It cannot remove the noun you invented, the guard you bolted on, or the
+abstraction you built for one caller. By then all three are load-bearing. **The expensive waste is
 decided before the first character is written.**
 
 So ask first.
@@ -101,8 +101,10 @@ You have already failed when you write:
 
 ## The boundary
 
-**Not cryptic. Not fewer facts.** Precision is the point. A technical distinction lost to brevity is a
-failure, not a saving — and cutting the qualifier that made a claim true is the worst outcome of all,
-because it reads better and says something false.
+**Not cryptic. Not fewer facts.** Precision is the point. A technical distinction lost to brevity is
+a failure, never a saving.
+
+**Cutting the qualifier that made a claim true is the worst outcome of all.** It reads better and
+says something false.
 
 Short and wrong is not economy.

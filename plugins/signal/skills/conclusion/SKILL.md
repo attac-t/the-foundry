@@ -1,6 +1,6 @@
 ---
 name: conclusion
-description: Lead with what is true, say which kind of claim each sentence is, and ask for the smallest answer that settles it. Use for any reply or file a person reads, and before asking a person anything.
+description: Lead with what is true. Say which kind of claim each sentence is. Ask for the smallest answer that settles it. Use for any reply or file a person reads.
 ---
 
 # Conclusion
@@ -50,8 +50,8 @@ the wrong one and the sentence over-claims.
 **Put stable direction apart from a current plan, and both apart from today's status.** A reader who
 cannot tell them apart treats all three as permanent, or none of them.
 
-**Say what you do not know.** *We do not know* beats a polished guess, and it is the one claim
-nobody can misread.
+**Say what you do not know.** *We do not know* beats a polished guess. It is the one claim nobody
+can misread.
 
 ---
 

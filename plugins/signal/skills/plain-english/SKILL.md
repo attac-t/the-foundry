@@ -99,8 +99,8 @@ Define a term you cannot avoid, once, in plain words. Then use only that term fo
 
 ## Name who acts
 
-**Every rule says who does it.** "It is checked" hides the checker, and the reader cannot follow a
-rule when they cannot tell whether it is theirs.
+**Every rule says who does it.** "It is checked" hides the checker. A reader cannot follow a rule
+without knowing whether it is theirs.
 
 | Not this | This |
 |---|---|
