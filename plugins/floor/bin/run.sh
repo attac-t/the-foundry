@@ -2361,13 +2361,21 @@ deliver() {
 # saying only which item it answers is a thin one rather than wrong.
 # To pass a path that is not there is the mistake, so it refuses.
 keep_the_brief() {
-    [ -n "$2" ] || return 0
+    [ -n "$2" ] || { say_what_a_brief_is; return 0; }
 
     [ -r "$2" ] || { note "no brief to read at [$2]"; exit 2; }
     cat "$2" > "$(brief_file "$1")" || die_unwritable "$(brief_file "$1")"
 }
 
 brief_file() { printf '%s/brief' "$1"; }
+
+# Named where a body is missing, and nowhere else. A skill nobody meets
+# at the moment that it applies is a skill that nobody ever invokes,
+# and this is the very last moment that a delivery has to say so.
+say_what_a_brief_is() {
+    note "no brief, so this delivery says only which item it answers"
+    note "  floor:brief names the five shapes a human surface takes"
+}
 
 # A path, or nothing at all. An adapter that is given a path it cannot
 # read has been told a lie. One that was handed no path knows there
