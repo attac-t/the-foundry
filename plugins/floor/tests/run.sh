@@ -31,6 +31,37 @@ tmp="${TMPDIR:-/tmp}/floor-audit-$$"
 mkdir -p "$tmp/verdict"
 trap 'rm -rf "$tmp"' EXIT
 
+# Every fixture URL here points at github.com, and one fixture pushes. On a host whose credential
+# helper prompts, that push waits: 43 minutes on one check, with the gate printing nothing.
+#
+# **A hang is not a failure, and no exit code tells them apart.** A red suite gets read and fixed. A
+# hung one looks exactly like a slow machine, and four grades were abandoned believing that.
+#
+# `pushInsteadOf`, never `insteadOf`. The plain form rewrites what `git remote get-url` reports, and
+# floor reads its own identity through that call — a fixture would introduce itself as a local path
+# and `repo_identity` refuses one. The push form leaves the reported URL alone.
+#
+# `GIT_TERMINAL_PROMPT` is the second layer, for anything the rewrite does not match.
+seal_the_suite_off_the_network() {
+  mkdir -p "$tmp/remotes/acme" || return 1
+  git init -q --bare "$tmp/remotes/acme/br.git" || return 1
+
+  GIT_CONFIG_COUNT=3
+  GIT_CONFIG_KEY_0="url.$tmp/remotes/.pushInsteadOf"; GIT_CONFIG_VALUE_0='https://github.com/'
+  GIT_CONFIG_KEY_1="url.$tmp/remotes/.pushInsteadOf"; GIT_CONFIG_VALUE_1='git@github.com:'
+  GIT_CONFIG_KEY_2="url.$tmp/remotes/.pushInsteadOf"; GIT_CONFIG_VALUE_2='ssh://git@github.com/'
+  GIT_TERMINAL_PROMPT=0
+  GIT_ASKPASS=/bin/echo
+
+  export GIT_CONFIG_COUNT GIT_TERMINAL_PROMPT GIT_ASKPASS
+  export GIT_CONFIG_KEY_0 GIT_CONFIG_VALUE_0
+  export GIT_CONFIG_KEY_1 GIT_CONFIG_VALUE_1
+  export GIT_CONFIG_KEY_2 GIT_CONFIG_VALUE_2
+}
+
+seal_the_suite_off_the_network || { printf 'could not seal the suite off the network
+' >&2; exit 2; }
+
 failed=0
 
 # Two ways an audit ends badly, and they take different remedies.
@@ -1408,6 +1439,33 @@ wreck_join "a plugin that is off reported as reachable is caught" \
 # install something they already have.
 wreck_join "a settings file it cannot read called a missing plugin is caught" \
   blindsettings 's#^    \[ -r "\$settings" \] || { printf .  — cannot tell, no %s. "\$settings"; return; }$#    [ -r "$settings" ] || return#'
+
+echo
+echo "audit — the suite cannot reach a hostname"
+
+# The seal is the one thing above that no fixture exercises, so it is proved here. A push aimed at
+# github.com must land on this disk, and the commit must be findable there afterwards.
+prove_the_seal_holds() {
+  probe="$tmp/probe"
+  git init -q "$probe" || { moot "seal — git could not make a repo here"; return; }
+  git -C "$probe" commit -q --allow-empty -m sealed || { moot "seal — git could not commit here"; return; }
+  git -C "$probe" remote add origin https://github.com/acme/br.git
+
+  timeout 20 git -C "$probe" push -q origin HEAD:refs/heads/sealed 2>/dev/null || {
+    bad "a push aimed at github.com did not land locally"
+    return
+  }
+
+  git --git-dir="$tmp/remotes/acme/br.git" rev-parse --verify -q sealed >/dev/null     && printf '  ok    a push aimed at github.com landed on this disk
+'     || bad "the push reported success and the local remote has no such branch"
+}
+prove_the_seal_holds
+
+# A host it was never told to rewrite has to fail, not wait. Twenty seconds is far longer than a
+# local failure needs and far shorter than the forty-three minutes this replaced.
+timeout 20 git ls-remote https://example.invalid/nope.git >/dev/null 2>&1
+[ "$?" -eq 124 ]   && bad "an unrewritten host waited instead of failing"   || printf '  ok    an unrewritten host fails rather than waiting
+'
 
 [ "$failed" -eq 0 ] && echo "ALL GREEN"
 [ "$failed" -eq 1 ] && echo "FAILURES ABOVE"
