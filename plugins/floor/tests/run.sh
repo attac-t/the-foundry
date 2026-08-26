@@ -1286,6 +1286,20 @@ wreck_runner "a host called settled while a run holds a workspace is caught" \
 wreck_runner "a gate reaching a second file is caught" \
   reaches 's#^        \[ "$grown".*#        break#'
 
+# Provenance is the whole of what tells a commit the run made
+# from one it did not. Each removes one half of it.
+wreck_runner "a foreign commit waved through is caught" \
+  mutestranger 's#^refuse_foreign_ancestry() {#refuse_foreign_ancestry() { return 0;#'
+
+wreck_runner "a base nobody recorded is caught" \
+  nobase 's#^record_base() {#record_base() { return 0;#'
+
+wreck_runner "a commit the operation did not record is caught" \
+  nomade 's#^record_produced() {#record_produced() { git -C "$2" rev-parse HEAD; return 0;#'
+
+wreck_runner "an override matching any commit is caught" \
+  anyaccept 's#grep -q "\^\$sha " "\$said" 2>/dev/null \&\& continue#[ -s "$said" ] \&\& continue#'
+
 report_breaks
 
 # --- break the install ---

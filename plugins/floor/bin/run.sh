@@ -90,6 +90,7 @@ main() {
         evidence)  evidence "$@" ;;
         gates)     gates "$@" ;;
         open)      open_workspace "$@" ;;
+        commit)    commit_work "$@" ;;
         complete)  complete "$@" ;;
         deliver)   deliver "$@" ;;
         aside)     aside "$@" ;;
@@ -133,12 +134,11 @@ floor — where work happens.
   run.sh charter introduce <kind> <text>
                                   add a clause nothing derived — it stays introduced
   run.sh evidence                 print what this run has proved
-  run.sh evidence record <name> <command...>
+  run.sh evidence record <name> <command...>   run it, and stamp what happened
   run.sh evidence verdict <clause> <judge> <what they said>
-                                  run it, and stamp what happened
-  run.sh gates                    run every gate the charter pins, and record each — exit 14 if any
-                                  did not pass
+  run.sh gates                    run every pinned gate and record each — exit 14 if one did not pass
   run.sh open                     check out every selected target in isolation, and print where
+  run.sh commit <message>         commit what is staged, and record that this run made it
   run.sh complete                 may this run deliver? exit 15 names what is missing
   run.sh deliver <title> [brief]  push the work, with a file the source carries as the body
   run.sh aside [text]             record what this run cannot act on, or print what it has
@@ -147,9 +147,10 @@ floor — where work happens.
   run.sh observe [event] [k=v...] record that something happened, or print what did
   run.sh observed [event]         every run's observations, with the run named
   run.sh merge                    land what was graded, or say why it may not be
-  run.sh reconcile                whether every other open delivery can join this one
-  run.sh authorise                refuse a run that describes no work, or whose selection moved
-                                  — exit 1, 5, 8, 9, 10, 11 or 12
+  run.sh reconcile [accept <sha> <reason>]
+                                  what else is open, or account for a commit nobody recorded
+  run.sh authorise                refuse a run describing no work, or whose selection moved —
+                                  exit 1, 5, 8, 9, 10, 11 or 12
 EOF
 }
 
@@ -736,11 +737,154 @@ identity_digest() {
 check_out_target() {
     slot="$1/$(target_slot "$2")"
 
-    attached "$slot" "$2" "$3" && return 0
+    attached "$slot" "$2" "$3" && { record_base "$1" "$2" "$slot"; return 0; }
     refuse_occupied_slot "$slot" "$2"
     [ "$2" = "$4" ] || { note "no checkout here to clone [$2] from — one target, for now"; exit 16; }
 
     build_and_publish "$slot" "$2" "$3"
+    record_base "$1" "$2" "$slot"
+}
+
+# Where this target started. Written once and never again: a
+# second write would move the floor under every later answer.
+#
+# One line per target, because a run may hold several.
+record_base() {
+    file=$(base_file "$1")
+    slot=$(target_slot "$2")
+
+    grep -q "^$slot " "$file" 2>/dev/null && return 0
+
+    sha=$(git -C "$3" rev-parse --verify --quiet HEAD 2>/dev/null) || sha=
+    [ -n "$sha" ] || { note "[$2] has no head to record as its base"; exit 16; }
+
+    mkdir -p "$(dirname "$file")" || die_unwritable "$file"
+    printf '%s %s\n' "$slot" "$sha" >> "$file" || die_unwritable "$file"
+}
+
+#
+# The only operation that makes a commit and the only one
+# that records provenance. A commit made any other way is
+# unrecorded, and `deliver` refuses it.
+#
+# Provenance, never acceptance. A commit this made needs no
+# human. A commit nobody can account for does.
+commit_work() {
+    said=${1:-}
+    [ "$#" -le 1 ] || { usage; exit 2; }
+    [ -n "$said" ] || { note "commit names the change"; exit 2; }
+
+    dir=$(active_run) || exit 1
+    refuse_unreadable_run "$dir"
+
+    tree=$(unit_work_tree "$dir" "$(this_repository)") || exit 16
+    git -C "$tree" diff --cached --quiet 2>/dev/null \
+        && { note "nothing is staged in [$tree]"; exit 2; }
+
+    why=$(git -C "$tree" commit -qm "$said" 2>&1) || {
+        note "could not commit in [$tree]: $why"
+        exit 16
+    }
+
+    record_produced "$dir" "$tree"
+}
+
+# Append-only, written after the commit exists. A sha
+# recorded for a commit that failed proves nothing.
+record_produced() {
+    sha=$(git -C "$2" rev-parse --verify --quiet HEAD 2>/dev/null) || sha=
+    [ -n "$sha" ] || { note "committed in [$2] and could not read the sha back"; exit 16; }
+
+    file=$(produced_file "$(unit_workspace "$1")")
+    mkdir -p "$(dirname "$file")" || die_unwritable "$file"
+    printf '%s\n' "$sha" >> "$file" || die_unwritable "$file"
+    printf '%s\n' "$sha"
+}
+
+#
+# Every commit this delivery carries that the run cannot
+# account for.
+#
+# Provenance comes from the record, never from an author, a
+# message, another ref or a patch id. Those are observations.
+#
+# Fails closed. An unreadable base, head or range refuses,
+# and each says what it saw and what it wanted.
+refuse_foreign_ancestry() {
+    work=$(unit_workspace "$1")
+    tree=$(unit_work_tree "$1" "$2") || exit 16
+
+    base=$(recorded_base "$work" "$(target_slot "$2")")
+    [ -n "$base" ] || {
+        note "no base was recorded for [$2] — saw nothing, wanted a sha from \`open\`"
+        exit 26
+    }
+
+    head=$(git -C "$tree" rev-parse --verify --quiet HEAD 2>/dev/null) || head=
+    [ -n "$head" ] || { note "[$tree] has no head to inspect — saw nothing, wanted a sha"; exit 26; }
+
+    carried=$(git -C "$tree" rev-list "$base..$head" 2>/dev/null) || {
+        note "could not walk [$base..$head] in [$tree] — saw a failed rev-list, wanted a range"
+        exit 26
+    }
+
+    strangers=$(unaccounted_in "$work" "$carried")
+    [ -n "$strangers" ] || return 0
+
+    note "this delivery carries commits the run did not make:"
+    printf '%s\n' "$strangers" >&2
+    note "  \`run.sh reconcile accept <sha> <reason>\` records a person accounting for them"
+    exit 27
+}
+
+# A sha the production record does not hold, and no human has
+# accepted. Both files are append-only; absence is the answer.
+unaccounted_in() {
+    made=$(produced_file "$1")
+    said=$(accepted_file "$1")
+
+    printf '%s\n' "$2" | while IFS= read -r sha; do
+        [ -n "$sha" ] || continue
+        grep -qx "$sha" "$made" 2>/dev/null && continue
+        grep -q "^$sha " "$said" 2>/dev/null && continue
+        printf '  %s\n' "$sha"
+    done
+}
+
+#
+# A person accounting for one commit the run did not make.
+#
+# One sha per call, with a reason, appended and never edited.
+# A record that can be rewritten is not an account.
+accept_ancestry() {
+    sha=${1:-}; shift 2>/dev/null
+    why=$*
+
+    [ -n "$sha" ] || { note "accept names a commit"; exit 2; }
+    [ -n "$why" ] || { note "accept names why [$sha] belongs here"; exit 2; }
+
+    dir=$(active_run) || exit 1
+    refuse_unreadable_run "$dir"
+
+    tree=$(unit_work_tree "$dir" "$(this_repository)") || exit 16
+    full=$(git -C "$tree" rev-parse --verify --quiet "$sha^{commit}" 2>/dev/null) || full=
+    [ -n "$full" ] || { note "[$sha] is not a commit in [$tree]"; exit 2; }
+
+    file=$(accepted_file "$(unit_workspace "$dir")")
+    mkdir -p "$(dirname "$file")" || die_unwritable "$file"
+    printf '%s %s %s %s\n' "$full" "$(selector)" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$why" >> "$file" \
+        || die_unwritable "$file"
+
+    note "recorded: [$full] accepted"
+}
+
+base_file()     { printf '%s/../base' "$1"; }
+produced_file() { printf '%s/../produced' "$1"; }
+accepted_file() { printf '%s/../accepted' "$1"; }
+
+# The base this target started from, or nothing.
+recorded_base() {
+    awk -v want="$2" '$1 == want { print $2; exit }' "$(base_file "$1")" 2>/dev/null
 }
 
 #
@@ -1937,6 +2081,7 @@ refuse_a_check_that_did_not_pass() {
 # answers 26 and the delivery stays exactly where it was.
 #
 reconcile() {
+    [ "${1:-}" = accept ] && { shift; accept_ancestry "$@"; return $?; }
     [ "$#" -eq 0 ] || { usage; exit 2; }
 
     dir=$(active_run) || exit 1
@@ -2345,6 +2490,7 @@ deliver() {
 
     refuse_unreadable_run "$dir"
     refuse_ungranted_delivery "$dir" "$here"
+    refuse_foreign_ancestry "$dir" "$here"
     refuse_incomplete "$dir"
     keep_the_brief "$dir" "${2:-}"
 
