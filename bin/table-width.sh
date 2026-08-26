@@ -36,7 +36,7 @@ main() {
 
     trap 'rm -f "$LIST"' EXIT
 
-    # From a file, never through a pipe — `table-format.sh` says why, and it cost a false pass there.
+    # From a file, never through a pipe. `table-format.sh` says why.
     files_it_reads > "$LIST" || exit 3
     while_each_file < "$LIST"
     report

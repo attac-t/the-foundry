@@ -44,8 +44,8 @@ each_rule() {
 block() {
     rows=$(rows_for "$1" | canonical)
 
-    # A pipeline inside a substitution wrote both harness files empty and reported PASS. `set -e`
-    # does not reach in there, so the emptiness is what gets asked about.
+    # `set -e` does not reach inside a command substitution, so a failing pipeline in one is
+    # invisible and writes an empty block. The emptiness is what gets asked about.
     [ -n "$rows" ] || { echo "FAIL — the rules block came out empty." >&2; exit 3; }
 
     printf '%s\n%s\n%s\n' "$OPEN" "$rows" "$SHUT"

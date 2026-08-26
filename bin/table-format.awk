@@ -13,8 +13,8 @@
 #     one emoji             1 code point,  2 columns   pads 1 too wide
 #     e + a combining mark  2 code points, 1 column    pads 1 too narrow
 #
-# Nothing in this tree is any of those today. The day one arrives, its row is off and the file is
-# still canonical — that is the trade, and it is why the claim above is the narrow one.
+# A row holding one of those is off by the difference, and the file is still canonical. That is the
+# trade, and it is why the claim above is the narrow one.
 #
 # What it will not touch: a fenced block, a line with no pipe, and a pipe a backslash escaped. GFM
 # says an escape is the only way to put a pipe in a cell, inside a code span as much as outside one.
@@ -98,12 +98,9 @@ function width_of(s,   i, n) {
     return n
 }
 
-# **Padding a table makes every row as wide as its widest cell.** Measured over this tree: one table
-# came out at 722 bytes, and the 99th centile was 718. A formatter that does that has not made a
-# table readable. It has made a wall.
-#
-# So a block whose canonical form would go over the budget is left exactly as it was, and
-# `bin/table-width.sh` names it. The two never fight over one row.
+# **Padding makes every row as wide as its widest cell.** One long cell drags the whole table out,
+# so a block whose canonical form would go over the budget is left exactly as written and
+# `bin/table-width.sh` names it. The two never contend for one row.
 #
 # Fills `rows`, `count`, `columns` and the widest cell per column, then answers how wide the result
 # would be. One pass, read twice: once to decide, once to write.
@@ -160,8 +157,7 @@ function padded(s, w,   out) {
 # A divider keeps whichever colons it had, and fills the rest with dashes.
 #
 # Written out rather than with a ternary inside the concatenation. busybox awk reads
-# `(a ? b : c) str` as a call to an undefined function and refuses the whole program — measured, and
-# busybox is what Alpine ships.
+# `(a ? b : c) str` as a call to an undefined function and refuses the whole program.
 function dashes(s, w,   left, right, body, out) {
     left  = ""
     right = ""

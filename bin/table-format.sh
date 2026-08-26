@@ -33,9 +33,8 @@ main() {
 
     trap 'rm -f "$SCRATCH" "$LIST"' EXIT
 
-    # Read from a file, never through a pipe. A `while` after a pipe runs in a subshell, its counter
-    # dies with it, and the EXIT trap the subshell inherited deletes the scratch on the way out.
-    # Both were measured here: the check printed every ragged file and then reported a pass.
+    # Read from a file, never through a pipe. A `while` after a pipe runs in a subshell: its counter
+    # dies there, and the EXIT trap the subshell inherited deletes the scratch on the way out.
     files_it_reads > "$LIST" || exit 3
     while_each_file < "$LIST"
     report
@@ -59,7 +58,7 @@ files_it_reads() {
 }
 
 # `read -r` with an empty `IFS`, so a path holding a space stays one path. `for f in $(...)` splits
-# on it, and this repository has none today — which is exactly when the bug gets written.
+# on it.
 while_each_file() {
     while IFS= read -r file; do
         [ -n "$file" ] || continue

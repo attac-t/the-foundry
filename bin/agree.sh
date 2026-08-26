@@ -38,13 +38,11 @@ gates_run() {
 }
 
 # The rows of the table under the gate heading, first cell only.
+# The rows of the table under the gate heading, first cell only.
 #
-# Matched on the cells, never on the spacing between them. This wanted
-# `| Gate | Fails when |` byte for byte, so the day `bin/table-format.sh`
-# aligned that table the header stopped matching.
-#
-# It then listed no gate at all and said nothing about it. A silent empty list
-# is the worst shape a check can take.
+# Matched on the cells, never on the spacing between them. A pattern wanting
+# `| Gate | Fails when |` byte for byte stops matching the moment
+# `bin/table-format.sh` pads that table, and then lists no gate at all.
 named_in_contributing() {
     awk '
         /^\| *Gate *\| *Fails when *\|/ { table = 1; next }

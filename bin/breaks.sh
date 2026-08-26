@@ -47,8 +47,7 @@ every_gate_is_green() {
     runs 'bash bin/project.sh check' && note green project || note RED project
 
     # The table tools grade the whole tree, so a break appended to one file is only visible over a
-    # clean one. Three `leave_alone` cases read NOISY against a tree nobody had swept — the fault
-    # was the baseline, not the tool.
+    # clean one. A ragged tree makes every quiet case read NOISY.
     runs 'sh bin/table-format.sh' && note green table-format || note RED table-format
     runs 'sh bin/table-width.sh'  && note green table-width  || note RED table-width
 }
@@ -99,8 +98,7 @@ every_break() {
     # wrote, an em-dash that is three bytes and one character, and a cell wider than its heading.
     #
     # Every one appends to a file git already tracks. The tools read `git ls-files`, so a break
-    # writing a new file proves nothing — three of these did, and all three were MISSED by the
-    # break rather than by the gate.
+    # writing a new file is invisible to them and proves nothing.
     drive table-plain CONTRIBUTING.md \
         'a_ragged_table >> CONTRIBUTING.md' \
         'sh bin/table-format.sh'
