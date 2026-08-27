@@ -25,7 +25,10 @@ Name the question, the start and the end. **Never the whole product.**
 
 ## A lane is a responsibility
 
-Every lane answers the same question: **who or what is accountable here?**
+Every lane answers the same question: **who or what does the work here?**
+
+**Responsibility is not accountability.** A system can be responsible for work. What that work means
+to people stays with a person, and no arrow moves it.
 
 A person, a role, a system, a plugin, an adapter. Never a file, a folder or a step.
 
@@ -46,16 +49,23 @@ Put each action in exactly one lane. Start its label with a verb.
 **No bare arrow.** Label what passes.
 
 ```
-──▶   a request, a work item, a decision, a delivery, responsibility
-╌╌▶   information, an observation, evidence. Authority does not
+──▶   a request, a work item, a decision, a delivery
+╌╌▶   information, an observation, evidence
 ```
 
 Two arrows and nothing more. **The label carries the meaning.** An arrow never grants authority by
 being drawn.
 
-## A human touchpoint is a decision
+**An artefact carries no authority.** A work item, a delivery and a merge each move work along. None
+of them is a yes. Authority crosses only where a named person's recorded grant is the thing being
+carried, and the label has to say so.
 
-Where a person is involved, show four things:
+## A human touchpoint is not always a decision
+
+A person may hand over an observation, a fact only they hold, a constraint, or a decision. **Say
+which.** Drawing all four as approval is how a system quietly grows authority nobody gave it.
+
+Where a person does decide, show four things:
 
 | what reaches them |
 | the one decision they own |
@@ -92,3 +102,5 @@ Ask a reader who was not there:
 4. Where does a person get stuck?
 
 **If they cannot say, the drawing failed.** Adding boxes will not fix it.
+
+See [examples](examples.md) — Foundry's own path, and the gap the drawing found.
