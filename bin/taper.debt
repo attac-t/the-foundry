@@ -2,6 +2,7 @@ bin/gates.sh	#   sh bin/gates.sh         run them here
 bin/project.sh	# Where meaning lives, in each harness's own shape. A route and nothing
 bin/project.sh	# Takes the text rather than a path, because a file gets two blocks
 bin/repeats.sh	# The trees this does not reach yet. Named here and not in a caller's
+bin/taper.awk	# `<<-` and either quote are the three spellings. A here-string `<<<` is not one,
 plugins/floor/bin/join.sh	# What this host actually loaded, against what this tree ships. A skill is
 plugins/floor/bin/run.sh	# Whether this host can be replaced. A run holding a workspace has a
 plugins/floor/bin/run.sh	# The run this shell is standing in. A workspace lives inside its run, so a person handed
