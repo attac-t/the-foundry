@@ -101,9 +101,28 @@ open_delivery() {
 # and thin is honest: a body written to fill the space is worse than
 # a shorter one, because a reader reads to the end to learn that.
 body_for() {
-    [ -n "$4" ] && [ -r "$4" ] && printf '%s\n\n' "$(cat "$4")"
+    [ -n "$4" ] && [ -r "$4" ] && printf '%s\n\n' "$(without_its_own_reference "$4" "$1")"
 
     printf '%s #%s\n\nfloor-run: %s\n' "$3" "$1" "$2"
+}
+
+# A brief that names its own item gets named twice. The seam adds the reference, so one
+# written by hand is dropped rather than argued about in prose nobody reads in time.
+#
+# Only this item, and only a line that is nothing else. A sentence
+# mentioning the number is the writer's, and it stays.
+without_its_own_reference() {
+    awk -v item="$2" '
+        $0 ~ "^(Closes|Refs) #" item "[.]?$" { next }
+        { print }
+    ' "$1" | without_trailing_blanks
+}
+
+without_trailing_blanks() {
+    awk '{ held[NR] = $0 }
+         END { last = NR
+               while (last > 0 && held[last] ~ /^[[:space:]]*$/) last--
+               for (i = 1; i <= last; i++) print held[i] }'
 }
 
 put_question() {

@@ -22,6 +22,15 @@ home="$tmp/home"
 mkdir -p "$tmp/bare"
 trap 'rm -rf "$tmp"' EXIT
 
+#
+# Git transport isolation, and nothing wider. `tests/isolate.sh` holds the mechanism.
+#
+# Here, not only in `tests/run.sh`. A fixture addresses `github.com` and one of them pushes, so this
+# file run on its own resolved a name and waited on a credential helper. #395 is that hang, and it
+# came back the first time anybody ran this suite by hand.
+. "$here/tests/isolate.sh"
+isolate_git_transport "$tmp" || { printf 'could not isolate the git transport\n' >&2; exit 3; }
+
 # Run the shipped CLI from a directory, with an explicit home and run variable.
 #
 # The directory adapter, named rather than detected.
@@ -4090,6 +4099,7 @@ case "$*" in
                             url="https://example.invalid/pr/$(cat "$store/prs" 2>/dev/null | grep -c .)"
                             run=$(printf '%s' "$8" | awk '$1 == "floor-run:" { print $2 }')
                             printf '%s' "$8" | head -1 >> "$store/words"
+                            printf '%s' "$8" > "$store/lastbody"
                             printf '%s %s %s\n' "$4" "$url" "$run" >> "$store/prs"
                             printf '%s\n' "$url" ;;
   *) exit 2 ;;
@@ -4326,6 +4336,36 @@ The answer is 9876543210.'
 
   gh_floor source publish work/closing 'The closing attempt' >/dev/null 2>&1
   is "and then a delivery may say the item is finished" "$(tail -1 "$GH_STORE/words")" "Closes #12"
+
+  #
+  # The seam adds the reference, so a brief that adds one too names the item twice.
+  #
+  # Only a line that is nothing else goes. A sentence holding the number is the
+  # writer's, and it stays.
+  #
+  # A brief reaches the seam from the run's own record, never as an argument.
+  # `send_and_record` reads it there, so that is where a test puts one.
+  {
+    echo 'Outcome here.'
+    echo
+    echo 'It also fixes Closes #12 style footers.'
+    echo
+    echo 'Closes #12'
+  } > "$ghrun/brief"
+
+  # Both records, because either one alone answers before a body is built. The
+  # run's own is read first, and the source's search finds the last one after.
+  rm -f "$ghrun/delivery"
+  : > "$GH_STORE/prs"
+
+  gh_floor source publish work/twice 'Named twice' >/dev/null 2>&1
+
+  is  "a brief naming its own item is referenced once" \
+      "$(grep -c '^Closes #12$' "$GH_STORE/lastbody" 2>/dev/null)" "1"
+  has "and a sentence holding the number is left alone" \
+      "$(cat "$GH_STORE/lastbody" 2>/dev/null)" "Closes #12 style footers"
+  is  "and the run reference lands once" \
+      "$(grep -c '^floor-run: ' "$GH_STORE/lastbody" 2>/dev/null)" "1"
 
   unset GH_STORE
 }
