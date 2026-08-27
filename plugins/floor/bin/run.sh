@@ -2716,6 +2716,10 @@ unmet_clauses() {
 #
 # One row per kind, and no order over them. RFC-001 says the kinds are not a
 # scale: a judgement raised to a gate wants a command that cannot exist.
+#
+# **`human` is only as true as the guard behind it.** `said_after` drops any comment written as the
+# account this run posts under, and `posting_as` refuses to guess when it cannot read that account.
+# Without both, a note the run wrote reads back as a person saying yes to it.
 answers_for() {
     case "$1" in
         Gate)    printf 'machine' ;;

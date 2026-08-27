@@ -4191,6 +4191,17 @@ the_other_adapter() {
   has "and a person's answer still comes back" \
       "$(gh_floor source receive authorisation tests)" "yes, go ahead"
 
+  #
+  # The account is not provenance. Two people can share one, and a run can post under another.
+  #
+  # So floor stamps what it writes with the run, and the stamp is read before the account is.
+  # A comment carrying one is dropped whoever it came from.
+  said_by a-person 'floor-run: whatever-run
+
+The answer is 9876543210.'
+  lacks "a stamped comment is dropped whatever the account said"         "$(gh_floor source receive authorisation tests)" "9876543210"
+  has "and a person's answer still comes back"       "$(gh_floor source receive authorisation tests)" "yes, go ahead"
+
   # Fails closed, and this is why. An adapter that cannot name itself cannot tell its own words from
   # a person's, so it must refuse. Guessing here means guessing in its own favour.
   : > "$GH_STORE/me"
