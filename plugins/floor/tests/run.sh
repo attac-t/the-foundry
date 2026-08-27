@@ -1305,6 +1305,11 @@ wreck_runner "an override matching any commit is caught" \
 wreck_runner "a reader blind to the stamp is caught" \
   blindstamp 's#held\[i\] ~ /\^floor-\[a-z\]+: /#held[i] ~ /^never-matches-this: /#' lib/source-github.sh
 
+# The seam adds the reference. Stop dropping the one a brief wrote and the
+# pull request names its item twice.
+wreck_runner "a brief's own reference kept alongside the seam's is caught" \
+  twicenamed 's#\$0 ~ "\^(Closes\|Refs) #\$0 ~ "^(NeverCloses|NeverRefs) #' lib/source-github.sh
+
 # A range is only about this run's work while the base is still behind the head. Ask the
 # question about the base twice and it answers yes for a branch built from anywhere.
 wreck_runner "a base that is not behind the head is caught" \
