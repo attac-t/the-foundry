@@ -105,6 +105,15 @@ Each line is dated to the issue that would close it. None of them is claimed any
 **A hostile hand on the same shell defeats every wall here.** This catches accident, drift and the
 easy path. It is not a security boundary. No sentence in this file may imply that it is.
 
+## Goals
+
+**Not here.** [`goals.md`](goals.md) is the only source, and each goal has its own record beside it.
+
+Doctrine holds what does not change. A goal changes when the work does. Mixing them makes the first
+read noisy, and forces an edit here for an ordinary planning change.
+
+**A merge never accepts a goal.** A named person does, in writing, dated.
+
 ## Strategy
 
 **A bet, not a principle.** Every line here can be wrong, and each one says how we would find out.

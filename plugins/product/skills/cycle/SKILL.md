@@ -14,11 +14,16 @@ description: One bounded pass over a repository — ground, resume, look, choose
 Read, in this order, at the commit you were given:
 
 1. the doctrine — why this repository exists
-2. the goals — what it is chasing now
+2. the goals — `.foundry/goals.md` is the index, and each goal has its own record beside it
 3. the practice — what you may do without asking
 
 **If direction is missing, do not invent it.** Say it is missing. That is the finding, and the pass
 ends there.
+
+**An unaccepted goal is not direction.** A goal reads `Accepted: Not yet` until a named person says
+otherwise, in writing and dated. With none accepted, say so and stop. That is the honest answer.
+
+None of this needs Floor. A goal is a file, and reading one is reading a file.
 
 ## Resume before you start
 
