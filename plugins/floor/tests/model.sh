@@ -3517,6 +3517,41 @@ a_judged_clause_wants_a_verdict() {
 a_judged_clause_wants_a_verdict
 
 #
+# A judged clause a repository declared, and a verdict that satisfies it.
+#
+# #332's whole gap. `introduce` records no pin, so invariant 1 reported `introduced` and no verdict
+# ever reached satisfaction — the machinery all worked and could establish nothing.
+#
+# Declared, it is pinned like a gate, and the kind decides what may answer.
+a_declared_judgement_is_answered_by_a_verdict() {
+  make_repo "$tmp/dj" main && set_origin "$tmp/dj" 'https://gitlab.com/acme/dj.git'     && mkdir -p "$tmp/dj/.foundry"     && commit_file "$tmp/dj" .foundry/gates 'tests  true
+' && commit_file "$tmp/dj" .foundry/judged 'a-reviewer  a stranger can read it
+' || { skip "a declared judgement — git could not make a repo here"; return; }
+
+  floor_new_as "$tmp/dj" ada@example.com "Declared" >/dev/null
+  floor "$tmp/dj" charter derive >/dev/null 2>&1
+  floor "$tmp/dj" policy authorize 'https://gitlab.com/acme/dj.git' >/dev/null 2>&1
+  floor "$tmp/dj" targets add 'https://gitlab.com/acme/dj.git' main >/dev/null 2>&1
+  floor "$tmp/dj" open >/dev/null 2>&1
+
+  has "a declared judgement derives as a Judged clause"       "$(floor "$tmp/dj" charter)" "Judged"
+  has "and it is pinned, so a ref can satisfy it"       "$(floor "$tmp/dj" charter)" ".foundry/judged"
+
+  # The heart of it. Introduced, this said `introduced` and no verdict could ever help.
+  lacks "an unanswered one is not introduced"         "$(floor "$tmp/dj" complete 2>&1)" "introduced: [a stranger can read it]"
+  has   "it is unmet, and names who was never asked"         "$(floor "$tmp/dj" complete 2>&1)" "no verdict from [a-reviewer]"
+
+  floor "$tmp/dj" gates >/dev/null 2>&1
+  is "a verdict from something else is recorded"      "$(code_of floor "$tmp/dj" evidence verdict 'a stranger can read it' 'a-reviewer' 'read in two minutes')" "0"
+
+  lacks "and the clause is met"         "$(floor "$tmp/dj" complete 2>&1)" "a stranger can read it"
+
+  # The refusal that gives `judged` its meaning, on a clause that can now be satisfied.
+  is "a worker still may not judge its own work"      "$(code_of floor_worked "$tmp/dj" 'Some Model 9' evidence verdict 'a stranger can read it' 'Some Model 9' 'fine')" "2"
+}
+a_declared_judgement_is_answered_by_a_verdict
+
+#
 # Whether this host can be replaced. A run holding a workspace has a
 # checkout somebody may be writing to, and swapping the
 # host under it loses work nobody recorded.

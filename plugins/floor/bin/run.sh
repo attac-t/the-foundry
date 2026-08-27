@@ -2692,6 +2692,12 @@ unmet_clauses() {
             || { printf 'unverifiable: [%s] is pinned to a repository this checkout is not\n' "$text"; continue; }
 
         satisfied "$1" "$text" "$ref" "$(answers_for "$(clause_kind "$file" "$id")")" && continue
+
+        # A judged clause names who may answer it. A reader not told that has to
+        # go and find out which of the two kinds is blocking them.
+        who=$(named_judge "$file" "$id")
+        [ -n "$who" ] && { printf 'unmet: [%s] at %s@%s — no verdict from [%s]\n' "$text" "$here" "$ref" "$who"; continue; }
+
         printf 'unmet: [%s] at %s@%s\n' "$text" "$here" "$ref"
     done
 }
@@ -3145,6 +3151,12 @@ gate_resolver() { printf '%s' "${FOUNDRY_GATES:-$(dirname "$0")/../lib/detect-ga
 #
 detect_gates() { sh "$(gate_resolver)" "$(repo_root)"; }
 
+# The same question about judgement. Its own resolver, because a gate and a judged clause are
+# different declarations and a repository may make either without the other.
+judged_resolver() { printf '%s' "${FOUNDRY_JUDGED:-$(dirname "$0")/../lib/detect-judged.sh}"; }
+
+detect_judged() { sh "$(judged_resolver)" "$(repo_root)"; }
+
 #
 # A bar the repository declares and nothing here can read.
 #
@@ -3293,6 +3305,11 @@ derive_charter() {
         exit 6
     }
 
+    detect_judged | while_reading_judged "$file" "$draft" "$boot" "$ref" || {
+        rm -f "$draft"
+        exit 6
+    }
+
     keep_introduced "$file" "$draft" >> "$draft" || { rm -f "$draft"; die_unwritable "$draft"; }
 
     #
@@ -3370,6 +3387,42 @@ while_reading_gates() {
     done
     return 0
 }
+
+#
+# A declared judged clause, pinned exactly as a gate is.
+#
+# The pin is what makes it answerable. An introduced clause rests on none, so invariant 1 reports it
+# `introduced` and no verdict ever reaches satisfaction. #332 is that gap, and this closes it.
+#
+# `judge` records who may answer. Floor does not check that the name is real — §2.5 — but a clause
+# blocking with no judge named tells a reader nothing about who to ask.
+while_reading_judged() {
+    held=$1; draft=$2; target=$3; ref=$4
+
+    while read -r judge source text; do
+        [ -n "$judge" ] || continue
+        [ -n "$text" ] || { note "a judged clause names who answers it and what it says"; return 1; }
+
+        id=$(clause_id "$text")
+        refuse_collision "$held" "$id" "$text" || return 1
+
+        sha=$(blob_sha "$ref" "$source")
+        [ -n "$sha" ] || { note "no sha for [$source] at [$ref] — pin refused"; return 1; }
+
+        refuse_moved_from_base "$source" "$sha" "$ref" || return 1
+
+        print_clause "$id" Judged "$text" >> "$draft" || return 1
+        print_pin    "$id" "$target" "$ref" "$source" "$sha" >> "$draft" || return 1
+        print_judge  "$id" "$judge" >> "$draft" || return 1
+    done
+    return 0
+}
+
+# Who may answer this clause, as the repository named them.
+print_judge() { printf 'judge %s %s
+' "$1" "$2"; }
+
+named_judge() { awk -v want="$2" '$1 == "judge" && $2 == want { print $3; exit }' "$1" 2>/dev/null; }
 
 #
 # Clauses nothing derived survive a re-derivation, unless this run has just derived them.
@@ -3496,6 +3549,7 @@ check_charter() {
         ambiguous_ids "$file"
         unsound_records "$file"
         underived_gates "$file"
+        underived_judged "$file"
         moved_sources "$file"
         moved_resolutions "$file"
     )
@@ -3602,6 +3656,21 @@ underived_gates() {
         [ "$(clause_kind "$1" "$id")" = Gate ] || { printf 'deleted: Gate %s\n' "$name"; continue; }
         has_local_pin "$1" "$id" "$here" || printf 'unpinned: Gate %s\n' "$name"
         has_record "$1" gate "$id"       || printf 'unresolved: Gate %s\n' "$name"
+    done
+}
+
+# The same three questions about a declared judgement. `judge` is its resolution,
+# the way `gate` is a gate's, so a clause with no judge rests on nothing.
+underived_judged() {
+    here=$(this_repository)
+
+    detect_judged | while read -r _ _ text; do
+        [ -n "$text" ] || continue
+        id=$(clause_id "$text")
+
+        [ "$(clause_kind "$1" "$id")" = Judged ] || { printf 'deleted: Judged %s\n' "$text"; continue; }
+        has_local_pin "$1" "$id" "$here" || printf 'unpinned: Judged %s\n' "$text"
+        has_record "$1" judge "$id"      || printf 'unresolved: Judged %s\n' "$text"
     done
 }
 

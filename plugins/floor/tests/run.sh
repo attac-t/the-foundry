@@ -1300,6 +1300,20 @@ wreck_runner "a commit the operation did not record is caught" \
 wreck_runner "an override matching any commit is caught" \
   anyaccept 's#grep -q "\^\$sha " "\$said" 2>/dev/null \&\& continue#[ -s "$said" ] \&\& continue#'
 
+#
+# Three parts of one claim, and any one missing leaves the gap #332 named.
+#
+# Without the reader nothing derives. Without the judge nothing says who to ask. Without the kind a
+# gate could answer a judgement.
+wreck_runner "a declared judgement nothing derives is caught" \
+  nojudged 's#^    detect_judged | while_reading_judged#    false | while_reading_judged#'
+
+wreck_runner "a judged clause naming no judge is caught" \
+  nojudge 's#^        print_judge  "\$id" "\$judge" >> "\$draft" || return 1$#        : >> "$draft" || return 1#'
+
+wreck_runner "a judgement derived as a gate is caught" \
+  judgedasgate 's#print_clause "\$id" Judged "\$text"#print_clause "$id" Gate "$text"#'
+
 # The reader half. The writer half cannot be observed today: the only comment
 # floor writes is a question, and `floor-question:` already bounds one.
 wreck_runner "a reader blind to the stamp is caught" \
