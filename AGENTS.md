@@ -18,7 +18,7 @@ the rule — open the file.
 - `.claude/rules/identity.md` — Who the record says did the work
 - `.claude/rules/plugins.md` — What a plugin owes when it changes
 - `.claude/rules/shell.md` — Reading `craft-sh` before a shipped script is edited
-- `.claude/rules/writing.md` — Anything written down, not just replies — and what a person reads is there for a decision, never a log
+- `.claude/rules/writing.md` — Anything written down, not just replies — a reader came to understand, to act or to decide
 <!-- /rules -->
 
 **This file is generated.** `bin/project.sh` builds the table from the rule files, so no harness owns

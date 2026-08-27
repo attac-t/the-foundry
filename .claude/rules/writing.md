@@ -1,6 +1,6 @@
 # Writing
 
-Anything written down, not just replies — and what a person reads is there for a decision, never a log.
+Anything written down, not just replies — a reader came to understand, to act or to decide.
 
 `signal` holds every reply to plain English. Nothing held the written record. This does.
 
@@ -75,8 +75,26 @@ The bar above covers the rest.
 
 | | |
 |---|---|
-| a pull request, an issue, a comment, a question, a closing note | `floor:brief` owns their shapes. Hand the body to `run.sh deliver`, never to `gh pr edit` |
+| a pull request, an issue, a comment, a question, a closing note | five shapes, named below. `floor:brief` teaches them with examples, and the shapes hold whether or not Floor is installed |
 | a `## Done when` list | **Written `- [ ]`, never `- `.** A bullet nobody can tick records nothing at close, and 47 of the first 83 lists were that shape |
 | `Closes` and `Refs` | `Closes #N` for the issue this finishes, `Refs #N` for the rest. **Never `@see`** — github.com/see is a real person GitHub notifies |
 | commit | [Commitizen](https://commitizen-tools.github.io/commitizen/) `type(scope): description`. The subject says what changed; the body says why it was wrong before |
 | comment | carries a discovery, never narration. `# the fatal goes to stderr, the argument to stdout` earns its line. `# loop over the files` does not |
+
+---
+
+## The five shapes
+
+Named here so the rule stands alone. `floor:brief` teaches the same five, with examples, wherever
+Floor is installed. Neither is the other's dependency.
+
+| Shape | Carries |
+|---|---|
+| work | the outcome wanted, what is deliberately not built, and a list that can each fail |
+| change | what becomes true, the judgement wanted, the change, the evidence, the limits |
+| update | state, delta, consequence, next. No delta, no update |
+| decision | one question, the recommendation, the options and their cost, who decides |
+| closure | which claims hold, which do not, and where the rest went |
+
+**A shape is what the reader needs, never the order the work happened in.** How it was done belongs
+to the run record.

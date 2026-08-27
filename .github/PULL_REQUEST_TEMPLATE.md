@@ -29,7 +29,3 @@ Delete the headings you do not need. Do not write "none" under one.
 Closes #N — the issue this finishes. Refs #N — related work, prior discussion.
 Never @see. github.com/see is a real person, and GitHub notifies them.
 -->
-
----
-
-*Forged with intention.*
