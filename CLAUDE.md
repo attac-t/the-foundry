@@ -28,7 +28,7 @@ in your context, read it.
 | [identity](.claude/rules/identity.md) | Who the record says did the work |
 | [plugins](.claude/rules/plugins.md) | What a plugin owes when it changes |
 | [shell](.claude/rules/shell.md) | Reading `craft-sh` before a shipped script is edited |
-| [writing](.claude/rules/writing.md) | Anything written down, not just replies |
+| [writing](.claude/rules/writing.md) | Anything written down, not just replies — a reader came to understand, to act or to decide |
 <!-- /rules -->
 
 Add a rule or a skill rather than adding to this file — `guidance` decides which. One subject per
