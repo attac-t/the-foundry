@@ -60,6 +60,11 @@
 #      never a refusal about what a run may touch
 #  31  the source says one item is more than one kind. The inventory is short so a reader never
 #      has to choose, and two answers is that choice arriving anyway
+#  32  the delivery carries a commit this run has no record of making, and nobody accounted for it
+#  33  the ancestry cannot be trusted — no base was recorded, it cannot be read, or it is not
+#      behind the head. One remedy for all three: a new run, from where the work actually is
+#  34  the worker may not account for ancestry. It named itself, so a record it writes about its
+#      own commits is the producer signing off its own bar
 #  22  the repository declares a bar in a file that is there and cannot be read. Not 8: that is a
 #      charter holding no clause, and this is one nobody could derive. The remedy is the file
 #
@@ -148,7 +153,7 @@ floor — where work happens.
   run.sh observed [event]         every run's observations, with the run named
   run.sh merge                    land what was graded, or say why it may not be
   run.sh reconcile [accept <sha> <reason>]
-                                  what else is open, or account for a commit nobody recorded
+                                  what else is open, or a person accounting for a stray commit
   run.sh authorise                refuse a run describing no work, or whose selection moved —
                                   exit 1, 5, 8, 9, 10, 11 or 12
 EOF
@@ -737,12 +742,28 @@ identity_digest() {
 check_out_target() {
     slot="$1/$(target_slot "$2")"
 
-    attached "$slot" "$2" "$3" && { record_base "$1" "$2" "$slot"; return 0; }
+    attached "$slot" "$2" "$3" && { refuse_unrecorded_base "$1" "$2"; return 0; }
     refuse_occupied_slot "$slot" "$2"
     [ "$2" = "$4" ] || { note "no checkout here to clone [$2] from — one target, for now"; exit 16; }
 
     build_and_publish "$slot" "$2" "$3"
     record_base "$1" "$2" "$slot"
+}
+
+#
+# A workspace that was here before any base was recorded.
+#
+# Its head is where the work got to, never where it started, so adopting it
+# would name every commit already carried as one this run made.
+#
+# A run that opened before provenance did cannot deliver. Nothing here can be
+# reconstructed, and a guess is the fault this exists to catch.
+refuse_unrecorded_base() {
+    [ -n "$(recorded_base "$1" "$(target_slot "$2")")" ] && return 0
+
+    note "[$2] has a workspace and no recorded base — saw nothing, wanted a sha from \`open\`"
+    note "  this run opened before its base was recorded. Open a new one from where the work is"
+    exit 33
 }
 
 # Where this target started. Written once and never again: a
@@ -817,15 +838,22 @@ refuse_foreign_ancestry() {
     base=$(recorded_base "$work" "$(target_slot "$2")")
     [ -n "$base" ] || {
         note "no base was recorded for [$2] — saw nothing, wanted a sha from \`open\`"
-        exit 26
+        exit 33
     }
 
     head=$(git -C "$tree" rev-parse --verify --quiet HEAD 2>/dev/null) || head=
-    [ -n "$head" ] || { note "[$tree] has no head to inspect — saw nothing, wanted a sha"; exit 26; }
+    [ -n "$head" ] || { note "[$tree] has no head to inspect — saw nothing, wanted a sha"; exit 33; }
+
+    # `base..head` answers for a head the base is not behind, and the answer is
+    # about a history that never held it. A rebuilt branch reads as a grown one.
+    git -C "$tree" merge-base --is-ancestor "$base" "$head" 2>/dev/null || {
+        note "[$base] is not behind [$head] in [$tree] — saw a rebuilt branch, wanted a grown one"
+        exit 33
+    }
 
     carried=$(git -C "$tree" rev-list "$base..$head" 2>/dev/null) || {
         note "could not walk [$base..$head] in [$tree] — saw a failed rev-list, wanted a range"
-        exit 26
+        exit 33
     }
 
     strangers=$(unaccounted_in "$work" "$carried")
@@ -833,8 +861,8 @@ refuse_foreign_ancestry() {
 
     note "this delivery carries commits the run did not make:"
     printf '%s\n' "$strangers" >&2
-    note "  \`run.sh reconcile accept <sha> <reason>\` records a person accounting for them"
-    exit 27
+    note "  a person runs \`reconcile accept <sha> <reason>\`, in a shell with no FOUNDRY_WORKER"
+    exit 32
 }
 
 # A sha the production record does not hold, and no human has
@@ -863,6 +891,7 @@ accept_ancestry() {
     [ -n "$sha" ] || { note "accept names a commit"; exit 2; }
     [ -n "$why" ] || { note "accept names why [$sha] belongs here"; exit 2; }
 
+    refuse_self_accounting
     dir=$(active_run) || exit 1
     refuse_unreadable_run "$dir"
 
@@ -876,6 +905,28 @@ accept_ancestry() {
         || die_unwritable "$file"
 
     note "recorded: [$full] accepted"
+}
+
+#
+# Who may write one of those accounts, and who may not.
+#
+# The worker produced the work. A record it writes about its own commits is
+# the producer signing off its own bar, which never happens here.
+#
+# So the agent is refused and a person is named. Both are records and neither
+# is proof — #156 owns making the actor real, and nothing here may imply it is.
+refuse_self_accounting() {
+    said=$(worker)
+    [ -z "$said" ] || {
+        note "[$said] produced this work, so it may not account for what it did not record"
+        note "  a person runs this in a shell with no FOUNDRY_WORKER set"
+        exit 34
+    }
+
+    [ -n "$(selector)" ] || {
+        note "nobody is named to account for this — saw nothing, wanted FOUNDRY_WHO"
+        exit 34
+    }
 }
 
 base_file()     { printf '%s/../base' "$1"; }
