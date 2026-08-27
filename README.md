@@ -68,6 +68,16 @@ Enable the opinionated voice:
 
 Verify the install: `/evaluate`
 
+## Where the work is
+
+**One board, and it is the front door:** https://github.com/users/attac-t/projects/1
+
+It shows what needs eyes, what is next, what is under review, what only a person can answer, and
+what is done. [`docs/work-system.md`](docs/work-system.md) says where each fact lives and what the
+board cannot do.
+
+---
+
 ## What is true here
 
 This tree answers what is true now; GitHub answers how it got here. Issues hold goals and open
