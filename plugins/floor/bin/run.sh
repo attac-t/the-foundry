@@ -140,7 +140,7 @@ floor — where work happens.
                                   add a clause nothing derived — it stays introduced
   run.sh evidence                 print what this run has proved
   run.sh evidence record <name> <command...>   run it, and stamp what happened
-  run.sh evidence verdict <clause> <judge> <what they said>
+  run.sh evidence verdict <clause> <judge> <approve|reject|revise> <text>
   run.sh gates                    run every pinned gate and record each — exit 14 if one did not pass
   run.sh open                     check out every selected target in isolation, and print where
   run.sh commit <message>         commit what is staged, and record that this run made it
@@ -1566,6 +1566,17 @@ stamp() {
         >> "$(evidence_file "$1")" 2>/dev/null || die_unwritable "$(evidence_file "$1")"
 }
 
+#
+# A verdict, and the judge as its own field.
+#
+# Eight fields, not seven. The judge was folded into `why` as a prefix, so comparing it meant
+# reading prose. Nothing counts the fields, so a trailing one costs no reader anything.
+stamp_verdict() {
+    printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
+        "$(date -u +%Y-%m-%dT%H:%M:%SZ)" judged 01 "$2" "$3" "$4" "$(one_line "$5")" "$(one_line "$6")" \
+        >> "$(evidence_file "$1")" 2>/dev/null || die_unwritable "$(evidence_file "$1")"
+}
+
 # A gate that printed nothing on failure still records the ref it applies to, so `why` is last and
 # may be empty. `\r` as well as `\n`: Git Bash is a platform this ships on, and `is_one_line` counts
 # all three.
@@ -2687,16 +2698,16 @@ unmet_clauses() {
         # looking for a checkout.
         has_record "$file" pin "$id" \
             || { printf 'introduced: [%s] rests on no pin, so no ref can satisfy it\n' "$text"; continue; }
-
         has_local_pin "$file" "$id" "$here" \
             || { printf 'unverifiable: [%s] is pinned to a repository this checkout is not\n' "$text"; continue; }
 
-        satisfied "$1" "$text" "$ref" "$(answers_for "$(clause_kind "$file" "$id")")" && continue
-
-        # A judged clause names who may answer it. A reader not told that has to
-        # go and find out which of the two kinds is blocking them.
+        # The judge, where the kind names one. A Judged clause the charter left
+        # without one takes no verdict, so an empty answer leaves it unmet.
         who=$(named_judge "$file" "$id")
-        [ -n "$who" ] && { printf 'unmet: [%s] at %s@%s — no verdict from [%s]\n' "$text" "$here" "$ref" "$who"; continue; }
+
+        satisfied "$1" "$text" "$ref" "$(answers_for "$(clause_kind "$file" "$id")")" "$who" && continue
+
+        [ -n "$who" ] && { printf 'unmet: [%s] at %s@%s — no approval from [%s]\n' "$text" "$here" "$ref" "$who"; continue; }
 
         printf 'unmet: [%s] at %s@%s\n' "$text" "$here" "$ref"
     done
@@ -2737,9 +2748,15 @@ answers_for() {
 # A pass must come from the kind of authority the clause
 # names. Any failure is a failure whoever read it, so
 # a human's no still stops the gate that said yes.
+#
+# A record answering yes, at the ref delivered, from whoever may answer.
+#
+# `judge` is empty for every kind but `Judged`. Where it is set, a record from anybody else is
+# skipped: they answered a question nobody put to them, which is neither a yes nor a no.
 satisfied() {
-    awk -F'\t' -v name="$2" -v ref="$3" -v trust="$4" '
-        $4 "" != name "" || $6 "" != ref "" { next }
+    awk -F'\t' -v name="$2" -v ref="$3" -v trust="$4" -v judge="$5" '
+        $4 "" != name "" || $6 "" != ref ""   { next }
+        judge "" != "" && $8 "" != judge ""   { next }
         $5 != "0"                             { no = 1; next }
         trust == "" || $2 "" == trust ""      { yes = 1 }
         END { exit !(yes && !no) }' "$(evidence_file "$1")" 2>/dev/null
@@ -2752,16 +2769,54 @@ satisfied() {
 # Floor cannot prove who typed it, because the file is writable by the same
 # user. Refusing the name it already knows is what an honest record can do.
 verdict() {
-    dir=$1; text=${2:-}; judge=${3:-}; said=${4:-}
+    dir=$1; text=${2:-}; judge=${3:-}; outcome=${4:-}; said=${5:-}
 
-    [ -n "$text" ] && [ -n "$judge" ] && [ -n "$said" ] \
-        || { note "a verdict names the clause, who judged it, and what they said"; exit 2; }
+    [ -n "$text" ] && [ -n "$judge" ] && [ -n "$outcome" ] && [ -n "$said" ] \
+        || { note "a verdict names the clause, the judge, the outcome, and what they said"; exit 2; }
+
+    code=$(code_for_outcome "$outcome") || exit 2
 
     refuse_a_kind_that_is_not_judged "$dir" "$text"
     refuse_a_judge_that_is_the_worker "$judge"
+    refuse_a_judge_nobody_asked "$dir" "$text" "$judge"
 
     enter_work_tree "$dir"
-    stamp "$dir" judged "$text" 0 "$(delivered_ref)" "$judge: $said"
+    stamp_verdict "$dir" "$text" "$code" "$(delivered_ref)" "$judge: $said" "$judge"
+}
+
+#
+# A verdict says which of three things happened, and the record carries it.
+#
+# It used to stamp 0 whatever the words said, so a judge writing `REJECT` satisfied the clause they
+# had just refused. The prose was recorded and never read.
+code_for_outcome() {
+    case "$1" in
+        approve) printf 0; return 0 ;;
+        reject)  printf 1; return 0 ;;
+        revise)  printf 2; return 0 ;;
+    esac
+
+    note "[$1] is not an outcome — approve, reject or revise"
+    return 1
+}
+
+#
+# The declared judge, and nobody else.
+#
+# **This compares a name. It proves nothing about who typed it**, because the record is writable by
+# the same user — §2.5. A reviewer who was not asked has answered a question nobody put to them.
+#
+# A clause with no judge recorded takes no verdict at all. A reader that came back empty must never
+# be the reason a requirement quietly went away.
+refuse_a_judge_nobody_asked() {
+    want=$(named_judge "$(charter_file "$1")" "$(clause_id "$2")")
+
+    [ "$want" = "$3" ] && return 0
+
+    # An introduced clause names nobody, because a hand wrote it rather than a declaration. It
+    # takes a verdict from anyone, and rests on no pin, so none satisfies it. Nothing is waived.
+    [ -n "$want" ] && { note "[$2] is answered by [$want], and this verdict is from [$3]"; exit 2; }
+    return 0
 }
 
 refuse_a_kind_that_is_not_judged() {
