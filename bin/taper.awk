@@ -18,7 +18,7 @@ BEGIN {
 
 { line[FNR] = $0 }
 
-END { walk() }
+END { mark_heredocs(); walk() }
 
 # Every paragraph in the file, in order, with the code between them kept.
 #
@@ -27,10 +27,10 @@ END { walk() }
 function walk(   i, j) {
     i = 1
     while (i <= FNR) {
-        if (!prose(line[i])) { emit(i); i++; continue }
+        if (!readable(i)) { emit(i); i++; continue }
 
         j = i
-        while (j <= FNR && prose(line[j]) && indent(line[j]) == indent(line[i])) j++
+        while (j <= FNR && readable(j) && indent(line[j]) == indent(line[i])) j++
 
         judge(i, j - i)
         i = j
@@ -86,6 +86,43 @@ function len(said) { return length(said) }
 # fences a paragraph rather than opening one, so neither is prose.
 function prose(said) {
     return said ~ /^[ \t]*#/ && said !~ /^[ \t]*#[ \t]*$/ && said !~ /^#!/
+}
+
+# Is line `i` a comment this may grade? Inside a heredoc, never.
+function readable(i) { return prose(line[i]) && !inside[i] }
+
+# A heredoc body is data, whatever it looks like. Reflowing one would rewrite
+# what a script prints, so every line to its word is shut.
+function mark_heredocs(   i, word, k) {
+    for (i = 1; i <= FNR; i++) {
+        word = opener_word(line[i])
+        if (word == "") continue
+
+        for (k = i + 1; k <= FNR; k++) {
+            inside[k] = 1
+            if (ends_heredoc(line[k], word)) break
+        }
+        i = k
+    }
+}
+
+# The word a heredoc ends on, or nothing. `<<-` and either quote are the three
+# spellings, and a here-string `<<<` is not a heredoc at all.
+function opener_word(said,   t) {
+    if (said ~ /<<</) return ""
+    if (said !~ /<<-?[ \t]*["']?[A-Za-z_][A-Za-z0-9_]*/) return ""
+
+    t = said
+    sub(/^.*<<-?[ \t]*/, "", t)
+    sub(/^["']/, "", t)
+    sub(/[^A-Za-z0-9_].*$/, "", t)
+    return t
+}
+
+function ends_heredoc(said, word,   t) {
+    t = said
+    sub(/^[ \t]*/, "", t)
+    return t == word
 }
 
 function indent(said,   t) { t = said; sub(/#.*$/, "", t); return t }

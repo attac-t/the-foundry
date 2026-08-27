@@ -156,9 +156,14 @@ audit() {
     catches 'an indented block'                     an_indented_block
     catches 'a block above no code at all'          a_floating_block
 
+    catches 'a block whose words are not ASCII'  a_block_in_another_script
+
     leaves 'a link alone'               a_block_holding_a_link
     leaves 'an indented example alone'  a_block_holding_a_sample
     leaves 'a wrapped paragraph alone'  a_wide_block
+    leaves 'a heredoc alone'            a_block_beside_a_heredoc
+
+    reads_beyond_shipped_shell
 
     reflows_once
 
@@ -232,6 +237,44 @@ a_wide_block() {
     echo '# bbbb'
     echo '# cc'
     echo 'code'
+}
+
+# Bytes, not characters. An em-dash costs three it never shows, so a
+# paragraph holding one is graded on what a formatter reproduces.
+a_block_in_another_script() {
+    echo '# aaaa — bbbb — cccc'
+    echo '# dddd'
+    echo '# ee'
+    echo 'code'
+}
+
+# A heredoc body is not a comment, whatever it holds.
+a_block_beside_a_heredoc() {
+    echo 'cat <<EOF'
+    echo '# aaaaaaaaaaaaaaaaaaaa'
+    echo '# bbbb'
+    echo '# cc'
+    echo 'EOF'
+}
+
+#
+# The scope, which is the whole of what #369 measured.
+#
+# The old check read `plugins/*/bin`, `lib` and `hooks`. A test file and an
+# awk program hold comments too, and nothing was reading either.
+reads_beyond_shipped_shell() {
+    said=$(first_party)
+
+    printf '%s
+' "$said" | grep -q '/tests/.*\.sh$'         || { printf '  FAIL  it reads no test file
+'; broke=1; return; }
+
+    printf '%s
+' "$said" | grep -q '\.awk$'         || { printf '  FAIL  it reads no awk program
+'; broke=1; return; }
+
+    printf '  ok    tests and awk are in scope
+'
 }
 
 # Twelve words that split 25, 22, 19 — wrapped here so that they do not.

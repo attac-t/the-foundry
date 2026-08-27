@@ -56,8 +56,6 @@ plugins/floor/tests/model.sh	  # Exclusivity is `mkdir` being one step, which PO
 plugins/floor/tests/model.sh	# What produced this row. A run graded under one implementation
 plugins/floor/tests/model.sh	# Recorded and not yet refused. Nothing compares two runtimes,
 plugins/floor/tests/model.sh	# Whether this host can be replaced. A run holding a workspace has a
-plugins/floor/tests/model.sh	  # A body written here belongs to whoever `api user` names, because that is who is
-plugins/floor/tests/model.sh	  # Who this run comments as. `posting_as` fails closed on an empty answer, so a
 plugins/floor/tests/model.sh	# The run's own words, in the same place a person's would land. Only a test that means to
 plugins/floor/tests/model.sh	  # The day comes from the run under test. Written out, it was true for one
 plugins/floor/tests/model.sh	  # The other half of the same verb.  already exits 19 when the push is refused; the

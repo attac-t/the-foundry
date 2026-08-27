@@ -7,6 +7,10 @@ description: What a comment is for, what shape it takes, and the space around co
 
 > "A comment you had to write is a name you did not."
 
+**The rule in one sentence: a comment of three lines makes each line three bytes shorter than the
+one above it.** One line and two lines are fine and are not graded. `bin/taper.sh` grades this
+repository's own comments; elsewhere it is craft.
+
 ## The Standard
 
 1. **Carry a discovery, never narration.** `# herd start stops the data services` earns its line.
