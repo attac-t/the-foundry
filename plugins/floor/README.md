@@ -135,6 +135,9 @@ sh bin/run.sh source receive authorisation tests
 sh bin/run.sh charter introduce Decided "pricing copy signed off"
 sh bin/run.sh authorise
 sh bin/run.sh open
+sh bin/run.sh commit "Add the gift card table"
+sh bin/run.sh reconcile
+sh bin/run.sh reconcile accept 9c5e6cf "cherry-picked from the abandoned run"
 sh bin/run.sh complete
 sh bin/run.sh policy deliver-to https://github.com/acme/api.git
 sh bin/run.sh deliver "Gift card flow"
@@ -954,6 +957,64 @@ where this machine happened to be.
 this is one — a clone, on this machine, of a target this checkout already is. It says nothing about
 containers, VMs or sandboxes. A target this checkout is not is named and refused rather than guessed
 at: a URL rebuilt from an identity carries no credential.
+
+---
+
+## Provenance
+
+```bash
+sh bin/run.sh commit "Add the gift card table"
+```
+
+**`commit` is the only verb that commits.** It is also the only one that records. A cherry-pick, a
+merge, a rebase or a bare `git commit` leaves no record, so `deliver` treats it as a stranger.
+
+Three files, beside the workspace. All three are append-only.
+
+| File | Holds | Written by |
+|---|---|---|
+| `base` | the sha each target started from | `open`, once per target, never again |
+| `produced` | every sha this run made | `commit`, after the commit exists |
+| `accepted` | a person's account of one sha | `reconcile accept` |
+
+`deliver` walks from the base to the head and puts every commit it finds to those files.
+
+| Exit | Means | Remedy |
+|---|---|---|
+| 32 | a commit is carried that no record accounts for | account for it, or drop it |
+| 33 | the ancestry cannot be trusted | open a new run, from where the work is |
+| 34 | the worker tried to account for its own ancestry | a person does it |
+
+**33 is the fail-closed path, and it covers three faults.** No base was recorded. The base or the
+head cannot be read. The base is not behind the head. All three end the same way: what this run
+recorded no longer describes what it is delivering, and a new run is the only honest answer.
+
+**A run that opened before its base was recorded cannot deliver.** Adopting its head now would name
+every commit already sitting there as one this run made. That is the exact fault this exists to
+catch, so floor refuses instead of guessing.
+
+### Provenance is not consent
+
+A commit this run made needs no human. Asking a person to sign off every normal commit would end
+unwatched work, and that is not what this is for.
+
+A commit nobody can account for is different. `reconcile accept <sha> <reason>` writes one line: the
+sha, who is named, the date, and why. One sha per call, appended, never edited.
+
+**The worker may not write one.** It produced the work, so a record it writes about its own commits
+is the producer signing off its own bar. `reconcile accept` refuses while `FOUNDRY_WORKER` is set,
+and names the person from `FOUNDRY_WHO`.
+
+**That is a record, not a credential.** Both variables are whatever the environment says. A person
+with a shell can set either. [#156](https://github.com/attac-t/the-foundry/issues/156) owns making
+the actor real, and nothing here claims it already is.
+
+### What provenance does not see
+
+Provenance comes from the record alone. Never an author, a message, another ref or a patch id —
+those are things you notice, not proof.
+
+It says nothing about whether the commits are any good. That is the charter's job.
 
 ---
 

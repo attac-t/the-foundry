@@ -70,6 +70,21 @@ floor_worked() {
       sh "$runner" "$@" 2>/dev/null )
 }
 
+# Named, and never as the thing that produced the work. `reconcile accept` refuses a worker, so
+# an accept in this suite has to say who — and `floor` says nobody.
+floor_accepted_by() {
+  dir=$1; who=$2; shift 2
+  ( cd "$dir" 2>/dev/null || exit 9
+    FOUNDRY_HOME="$home" FOUNDRY_RUN="" FOUNDRY_WHO="$who" FOUNDRY_WORKER=""       sh "$runner" "$@" 2>/dev/null )
+}
+
+# `floor_worked`, keeping what it said while refusing.
+floor_worked_says() {
+  dir=$1; said=$2; shift 2
+  ( cd "$dir" 2>/dev/null || exit 9
+    FOUNDRY_HOME="$home" FOUNDRY_RUN="" FOUNDRY_WHO="" FOUNDRY_WORKER="$said"       sh "$runner" "$@" 2>&1 )
+}
+
 # Everything a gate needs before it can run: a charter, a selection, and a workspace to grade. Four
 # calls in every test that reaches the gate stage, and the gate stage is most of them.
 ready_run() {
@@ -4747,6 +4762,123 @@ a_named_source_answers
 # sends the push somewhere else and leaves `get-url` alone — `insteadOf` rewrites that too, and floor
 # would then see a local path and refuse its own target.
 #
+#
+# Provenance: what a delivery carries that the run did not make.
+#
+# The base is recorded at `open`, `commit` records what it makes, and anything
+# else in `base..head` is unaccounted for.
+#
+a_delivery_carrying_a_commit_nobody_recorded() {
+  git init -q --bare "$tmp/pvremote.git" 2>/dev/null     || { skip "provenance — git could not make a bare repo here"; return; }
+
+  make_repo "$tmp/pv" main && set_origin "$tmp/pv" 'https://github.com/acme/pv.git'     && mkdir -p "$tmp/pv/.foundry"     && commit_file "$tmp/pv" .foundry/gates 'tests  true
+' || { skip "provenance — git could not make a repo here"; return; }
+
+  mkdir -p "$src/items" && printf 'Account for it
+' > "$src/items/43"
+
+  pvrun=$(floor_new_as "$tmp/pv" ada@example.com "Provenance")
+  floor "$tmp/pv" source read 43 >/dev/null 2>&1
+  floor "$tmp/pv" charter derive >/dev/null 2>&1
+  floor "$tmp/pv" policy authorize  'https://github.com/acme/pv.git' >/dev/null 2>&1
+  floor "$tmp/pv" policy deliver-to 'https://github.com/acme/pv.git' >/dev/null 2>&1
+  floor "$tmp/pv" targets add       'https://github.com/acme/pv.git' main >/dev/null 2>&1
+  floor "$tmp/pv" authorise >/dev/null 2>&1
+
+  ws=$(floor "$tmp/pv" open) || { skip "provenance — no workspace"; return; }
+  co=$(find "$ws" -maxdepth 1 -mindepth 1 -type d | head -1)
+  git -C "$co" config "url.$tmp/pvremote.git.pushInsteadOf" 'https://github.com/acme/pv.git'
+
+  # 1. `open` records the base, once, per target.
+  base=$(cut -d' ' -f2 "$ws/../base" 2>/dev/null)
+  is "open records the base it started from" "$base" "$(git -C "$co" rev-parse HEAD)"
+  is "and records one line for one target"   "$(wc -l < "$ws/../base" 2>/dev/null | tr -d ' ')" "1"
+
+  floor "$tmp/pv" open >/dev/null 2>&1
+  is "opening again does not move it" "$(cut -d' ' -f2 "$ws/../base" 2>/dev/null)" "$base"
+
+  # 2. A commit floor made is accounted for; the run may deliver.
+  printf 'one
+' > "$co/made.txt"
+  git -C "$co" add made.txt >/dev/null 2>&1
+  mine=$(floor "$tmp/pv" commit 'chore: a commit floor made')
+  is "commit records the sha it made" "$mine" "$(git -C "$co" rev-parse HEAD)"
+
+  floor "$tmp/pv" gates >/dev/null 2>&1
+  is "a recorded commit delivers" "$(code_of floor "$tmp/pv" deliver 'Accounted for')" "0"
+
+  # 3. A commit made outside that operation is foreign, and refuses.
+  printf 'two
+' > "$co/outside.txt"
+  git -C "$co" add outside.txt >/dev/null 2>&1
+  git -C "$co" -c user.email=a@b.c -c user.name=a commit -qm 'chore: nobody recorded this' >/dev/null 2>&1
+  stranger=$(git -C "$co" rev-parse HEAD)
+
+  floor "$tmp/pv" gates >/dev/null 2>&1
+  said=$(floor_says "$tmp/pv" deliver 'Carrying a stranger')
+
+  is  "foreign ancestry alone refuses delivery"       "$(code_of floor "$tmp/pv" deliver 'Carrying a stranger')" "32"
+  has "and it names the commit it could not account for" "$said" "$stranger"
+
+  # 4. An override for the wrong sha changes nothing.
+  floor_accepted_by "$tmp/pv" ada@example.com reconcile accept "$base" 'the base is not the stranger' >/dev/null 2>&1
+  is "an override naming another commit still refuses"      "$(code_of floor "$tmp/pv" deliver 'Carrying a stranger')" "32"
+
+  # 5. An override naming it permits delivery, and stays readable.
+  floor_accepted_by "$tmp/pv" ada@example.com reconcile accept "$stranger" 'a fix this branch needed' >/dev/null 2>&1
+  is  "the override alone permits delivery"       "$(code_of floor "$tmp/pv" deliver 'Carrying a stranger')" "0"
+  has "and the record names who and why"       "$(cat "$ws/../accepted" 2>/dev/null)" "a fix this branch needed"
+  has "and it names the commit"          "$(cat "$ws/../accepted" 2>/dev/null)" "$stranger"
+
+  # 6. Fail closed: no base to read.
+  cp "$ws/../base" "$tmp/pv-base-kept" && rm -f "$ws/../base"
+  is  "a base it cannot read refuses"       "$(code_of floor "$tmp/pv" deliver 'No base')" "33"
+  has "and says what it wanted" "$(floor_says "$tmp/pv" deliver 'No base')" "wanted a sha"
+  cp "$tmp/pv-base-kept" "$ws/../base"
+
+  # 7. Fail closed: a base no repository holds.
+  printf '%s deadbeefdeadbeefdeadbeefdeadbeefdeadbeef
+' "$(cut -d' ' -f1 "$ws/../base")" > "$ws/../base"
+  is "a range it cannot walk refuses" "$(code_of floor "$tmp/pv" deliver 'No range')" "33"
+  cp "$tmp/pv-base-kept" "$ws/../base"
+
+  # 8. The production record is what accounts for a commit, not the message.
+  printf 'three
+' > "$co/footer.txt"
+  git -C "$co" add footer.txt >/dev/null 2>&1
+  git -C "$co" -c user.email=a@b.c -c user.name=a commit -qm 'chore: says it belongs
+
+Refs #43
+' >/dev/null 2>&1
+  is "a footer naming the run's own item accounts for nothing"      "$(code_of floor "$tmp/pv" deliver 'A footer is not provenance')" "32"
+
+  # 9. The worker produced the work, so it may not account for what it did not record.
+  before=$(wc -l < "$ws/../accepted" 2>/dev/null | tr -d ' ')
+  is  "a named worker may not accept"       "$(code_of floor_worked "$tmp/pv" 'Some Model 9' reconcile accept "$stranger" 'I say so')" "34"
+  is  "and nothing is appended when it tries"       "$(wc -l < "$ws/../accepted" 2>/dev/null | tr -d ' ')" "$before"
+  has "and the refusal names the worker"       "$(floor_worked_says "$tmp/pv" 'Some Model 9' reconcile accept "$stranger" 'I say so')" "Some Model 9"
+
+  # 10. A base that is not behind the head describes another line of work.
+  #
+  # `commit-tree` with no parent, because everything in this repository descends from
+  # the base — a reset can only move within a history the base is still in.
+  other=$(git -C "$co" -c user.email=a@b.c -c user.name=a       commit-tree "$(git -C "$co" rev-parse 'HEAD^{tree}')" -m 'chore: another history' 2>/dev/null)
+  git -C "$co" reset -q --hard "$other" >/dev/null 2>&1
+
+  is  "a base that is not behind the head refuses"       "$(code_of floor "$tmp/pv" deliver 'Rebuilt')" "33"
+  has "and it says the branch was rebuilt"       "$(floor_says "$tmp/pv" deliver 'Rebuilt')" "not behind"
+
+  # 11. A workspace with no recorded base is refused, never adopted.
+  #
+  # This is the whole of the pre-provenance case. Writing the head here would name
+  # every commit already carried as one this run made.
+  rm -f "$ws/../base"
+  is "opening a workspace with no recorded base refuses"       "$(code_of floor "$tmp/pv" open)" "33"
+  is "and no base is written from the head it found"       "$([ -f "$ws/../base" ] && echo wrote || echo nothing)" "nothing"
+  is "and the delivery refuses too"       "$(code_of floor "$tmp/pv" deliver 'No base at all')" "33"
+}
+a_delivery_carrying_a_commit_nobody_recorded
+
 a_delivery_that_succeeds() {
   git init -q --bare "$tmp/dvremote.git" 2>/dev/null \
     || { skip "a delivery that succeeds — git could not make a bare repo here"; return; }

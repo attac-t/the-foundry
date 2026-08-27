@@ -1286,6 +1286,34 @@ wreck_runner "a host called settled while a run holds a workspace is caught" \
 wreck_runner "a gate reaching a second file is caught" \
   reaches 's#^        \[ "$grown".*#        break#'
 
+# Provenance is the whole of what tells a commit the run made
+# from one it did not. Each removes one half of it.
+wreck_runner "a foreign commit waved through is caught" \
+  mutestranger 's#^refuse_foreign_ancestry() {#refuse_foreign_ancestry() { return 0;#'
+
+wreck_runner "a base nobody recorded is caught" \
+  nobase 's#^record_base() {#record_base() { return 0;#'
+
+wreck_runner "a commit the operation did not record is caught" \
+  nomade 's#^record_produced() {#record_produced() { git -C "$2" rev-parse HEAD; return 0;#'
+
+wreck_runner "an override matching any commit is caught" \
+  anyaccept 's#grep -q "\^\$sha " "\$said" 2>/dev/null \&\& continue#[ -s "$said" ] \&\& continue#'
+
+# A range is only about this run's work while the base is still behind the head. Ask the
+# question about the base twice and it answers yes for a branch built from anywhere.
+wreck_runner "a base that is not behind the head is caught" \
+  noancestor 's#merge-base --is-ancestor "\$base" "\$head"#merge-base --is-ancestor "$base" "$base"#'
+
+# The fault this refusal exists for, put back: a workspace already here, and its head named
+# as the place it started.
+wreck_runner "a head adopted as the base it never was is caught" \
+  adoptbase 's#^refuse_unrecorded_base() {#refuse_unrecorded_base() { record_base "$1" "$2" "$1/$(target_slot "$2")"; return 0;#'
+
+# The producer signing off its own bar.
+wreck_runner "a worker accounting for its own ancestry is caught" \
+  selfaccept 's#^refuse_self_accounting() {#refuse_self_accounting() { return 0;#'
+
 report_breaks
 
 # --- break the install ---
