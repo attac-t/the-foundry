@@ -157,6 +157,7 @@ audit() {
     catches 'a block above no code at all'          a_floating_block
 
     catches 'a block whose words are not ASCII'  a_block_in_another_script
+    catches 'a block under a comment naming a heredoc' a_block_under_a_mention
 
     leaves 'a link alone'               a_block_holding_a_link
     leaves 'an indented example alone'  a_block_holding_a_sample
@@ -246,6 +247,14 @@ a_block_in_another_script() {
     echo '# dddd'
     echo '# ee'
     echo 'code'
+}
+
+# A comment naming a heredoc is not one. Reading it as an opener shut every
+# block below it, which is the fault this proves.
+a_block_under_a_mention() {
+    echo '# the body goes in a <<EOF block'
+    echo '#'
+    a_block_that_misses
 }
 
 # A heredoc body is not a comment, whatever it holds.
