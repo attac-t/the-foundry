@@ -116,6 +116,19 @@ scores one message.
 The first three are read before writing. The fourth runs after, and **the writer is never the one who
 runs it.**
 
+**`stranger` is its own skill on purpose.** It runs at a different moment, for a different reader,
+and it leaves a record. Fold it into `plain-english` and every writer loads a review they are not
+running yet.
+
+### What Signal does not do
+
+**Nothing gates any of this.** The scorer reads a reply. No check reads a file before it ships, and
+none is planned. A script guessing at meaning would block good prose and pass the doctrine.
+
+**`stranger` has never been run by a stranger here.** Every reader so far has been the session that
+wrote the file. By the skill's own rule that is the writer, and the recorded example says so. The
+protocol is taught, not proved.
+
 ### What a count can never tell you
 
 Natural grammar. A metaphor hiding a rule. Two sentences that should mean the same thing and do not.
