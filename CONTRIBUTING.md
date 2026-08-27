@@ -46,6 +46,7 @@ Edit a rule, then run it — a row typed by hand into one file is the drift noth
 | `versions` | a plugin the manifest lists cannot say what version it is |
 | `repeats` | a sentence appears verbatim in two files — scoped to `panel`, `pest` and `signal` |
 | `shell` | shipped shell takes an `else`, or a function body passes 40 lines |
+| `taper` | a three-line comment paragraph does not narrow by three, and nothing names it |
 | `kernel` | the plugin does not run — checked on Linux, macOS and Windows |
 | `signal` | the plugin does not run — checked on Linux, macOS and Windows |
 | `floor` | the plugin does not run — checked on Linux, macOS and Windows |

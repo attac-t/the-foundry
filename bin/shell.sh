@@ -15,7 +15,10 @@
 # function is merited, and no exit code reads a signal. This gates one thing, and says so: no body
 # past MAX lines.
 #
-# No `set -e`. Both halves run, so one break never hides the other.
+# No `set -e`. Every half runs, so one break never hides another.
+#
+# Comment shape left here for `bin/taper.sh`, which reads tests and awk too. One rule, one
+# home, and this one no longer has a second opinion about it.
 #
 # Exit: 0 clean, 1 a rule broken, 3 the gate could not read.
 
@@ -24,11 +27,6 @@ set -u
 # The healthy band here tops out at 28 lines. MAX sits above every body anyone wrote and called
 # done, and below both the ones a reviewer has stopped on.
 readonly MAX=40
-
-# Prose wrapped at the margin lands near a hundred; a taper is hand-shaped and does not. Blocks at
-# or past this are read as paragraphs and left alone.
-readonly WIDE=90
-readonly STEP=3
 
 # The two already past MAX — `authorise` at 105 lines, `derive_charter` at 46. Named, not waived by
 # lifting MAX above them, which would gate nothing at all.
@@ -49,7 +47,6 @@ main() {
     report 'an else is a function nobody named' "$(branches)"
     report "a body past $MAX lines"             "$(overlong)"
     report 'a pipe that hides a failure'        "$(piped)"
-    report 'a taper that does not step down by three' "$(tapers)"
 
     verdict
 }
@@ -144,26 +141,6 @@ overlong() {
         }
     ' "$owed" "$measured"
 }
-# --- the taper ---
-
-# Three comment lines above a body, narrowing evenly. `craft-comment` states
-# it, nothing enforced it, and more than half the
-# blocks in this tree had drifted.
-#
-# Bytes under `LC_ALL=C`. `length` counts characters in one locale and bytes
-# in another, so an em-dash costs three bytes that it never shows.
-tapers() {
-    while read -r file; do
-        [ -f "$file" ] && taper_in "$file"
-    done < "$files"
-}
-
-# One file at a time. `END` runs once for a whole stream, so one awk over
-# every file would read the last and call the rest clean. A break said so.
-taper_in() {
-    LC_ALL=C awk -v wide="$WIDE" -v step="$STEP" -f "$(dirname "$0")/taper.awk" "$1"
-}
-
 # --- the verdict ---
 
 # Silence is a pass. Every finding the halves print is a line the reader can go and open.
