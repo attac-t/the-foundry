@@ -23,6 +23,9 @@ ends there.
 **An unaccepted goal is not direction.** A goal reads `Accepted: Not yet` until a named person says
 otherwise, in writing and dated. With none accepted, say so and stop. That is the honest answer.
 
+**A pass that reads its own proposal as a goal has appointed itself.** A draft you wrote is the one
+thing that can never be your direction.
+
 None of this needs Floor. A goal is a file, and reading one is reading a file.
 
 ## Resume before you start
