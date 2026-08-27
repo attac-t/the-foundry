@@ -1097,12 +1097,12 @@ wreck_runner "a work source that cannot be named is caught" \
 # The question names the clause it asks about, so a reader that starts at the marker hands the question
 # back as its answer — and a human who has not replied yet reads as having agreed.
 wreck_runner "a question answering itself is caught" \
-  ghself 's#open = 0; want = 0#open = 1; want = 1#' lib/source-github.sh
+  ghself 's#mine = index($0, mark) > 0; open = 0#mine = 1; open = 1#' lib/source-github.sh
 # The author is the only thing telling the run's own words from a person's. A reader that ignores it
 # hands back a note the run wrote — which is exactly what #373 was, and it stamped a
 # human answer nobody gave.
 wreck_runner "a run answering its own question is caught" \
-  ghauthor 's#want = open \&\& substr($0, 16) != self#want = open#' lib/source-github.sh
+  ghauthor 's#if (who == self) { skipped(#if (0) { skipped(#' lib/source-github.sh
 
 # A lookup that could not answer, read as a delivery that is not there — whose remedy is to open one.
 # The run lives in the body so that one run cannot open a second delivery, and this is the check that
@@ -1299,6 +1299,11 @@ wreck_runner "a commit the operation did not record is caught" \
 
 wreck_runner "an override matching any commit is caught" \
   anyaccept 's#grep -q "\^\$sha " "\$said" 2>/dev/null \&\& continue#[ -s "$said" ] \&\& continue#'
+
+# The reader half. The writer half cannot be observed today: the only comment
+# floor writes is a question, and `floor-question:` already bounds one.
+wreck_runner "a reader blind to the stamp is caught" \
+  blindstamp 's#held\[i\] ~ /\^floor-\[a-z\]+: /#held[i] ~ /^never-matches-this: /#' lib/source-github.sh
 
 # A range is only about this run's work while the base is still behind the head. Ask the
 # question about the base twice and it answers yes for a branch built from anywhere.

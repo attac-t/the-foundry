@@ -115,8 +115,17 @@ put_question() {
     [ "$asked" = "$said" ] || return 4
 }
 
+#
+# Every comment floor writes carries the run that wrote it.
+#
+# The account is not provenance. Two people can share one, and a run can post
+# under another. A stamp says which run, and `said_after` reads it first.
+#
+# The run is already the first field of the question id, so nothing new has to
+# be threaded down here to know it.
 post_question() {
     gh issue comment "$1" --body "floor-question: $2 $3
+floor-run: ${2%%.*}
 
 $4" >/dev/null || return 3
 }
@@ -190,19 +199,37 @@ said_after() {
 
     printf '%s\n' "$seen" \
         | awk -v mark="$2" -v self="$self" '
-            /^floor-comment: /  { open = open || mine; mine = 0
-                                  who  = substr($0, 16)
-                                  want = open && who != self
+            /^floor-comment: / { decide(); who = substr($0, 16); next }
+            /^floor-question: / { decide(); mine = index($0, mark) > 0; open = 0; next }
+            { held[++n] = $0 }
+            END { decide() }
 
-                                  # A dropped comment is the one thing a caller cannot infer. It
-                                  # sees an unanswered clause, and an answer nobody wrote reads
-                                  # exactly like an answer this refused.
-                                  if (open && who == self)
-                                      printf "source-github: skipped a comment written as [%s], which is this run\n", \
-                                          who > "/dev/stderr"
-                                  next }
-            /^floor-question: / { mine = index($0, mark) > 0; open = 0; want = 0; next }
-            want && NF          { print }'
+            # One comment, judged whole. A stamp sits anywhere in the body, so
+            # no line is printed before the last one has been read.
+            function decide() {
+                if (open && n) judge()
+                open = open || mine; mine = 0; n = 0
+            }
+
+            # The stamp decides, then the account. An account is shared and
+            # borrowed; a stamp says which run wrote the words.
+            function judge(   i) {
+                if (stamped()) { skipped("this run wrote it"); return }
+                if (who == self) { skipped("it came from [" who "], the account this run posts as"); return }
+
+                for (i = 1; i <= n; i++) if (held[i] ~ /[^ \t]/) print held[i]
+            }
+
+            function stamped(   i) {
+                for (i = 1; i <= n; i++) if (held[i] ~ /^floor-[a-z]+: /) return 1
+                return 0
+            }
+
+            # A dropped comment is the one thing a caller cannot infer. It sees an
+            # unanswered clause, and an answer nobody wrote reads like a refusal.
+            function skipped(why) {
+                printf "source-github: skipped a comment — %s\n", why > "/dev/stderr"
+            }'
 }
 
 #
