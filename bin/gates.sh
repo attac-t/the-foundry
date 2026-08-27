@@ -88,6 +88,8 @@ gate repeats     bash bin/repeats.sh
 
 gate shell       bash bin/shell.sh
 
+gate taper       sh   bin/taper.sh
+
 for plugin in kernel signal floor panel; do
     gate "$plugin" bash "plugins/$plugin/tests/run.sh"
 done

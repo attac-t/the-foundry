@@ -1,0 +1,94 @@
+bin/gates.sh	#   sh bin/gates.sh         run them here
+bin/project.sh	# Where meaning lives, in each harness's own shape. A route and nothing
+bin/project.sh	# Takes the text rather than a path, because a file gets two blocks
+bin/repeats.sh	# The trees this does not reach yet. Named here and not in a caller's
+plugins/floor/bin/join.sh	# What this host actually loaded, against what this tree ships. A skill is
+plugins/floor/bin/run.sh	# Whether this host can be replaced. A run holding a workspace has a
+plugins/floor/bin/run.sh	# The run this shell is standing in. A workspace lives inside its run, so a person handed
+plugins/floor/bin/run.sh	# The only operation that makes a commit and the only one
+plugins/floor/bin/run.sh	# Advice may not make the source a target. An item filed in a repository
+plugins/floor/bin/run.sh	# A source that cannot say leaves this open. Nothing here can
+plugins/floor/bin/run.sh	# Hit for real. A run stalled inside a copy, was killed, and stamped 143.
+plugins/floor/bin/run.sh	# A gate wanting to fail has 1. Nothing here kills itself to say so,
+plugins/floor/bin/run.sh	# Why a gate failed here and passes by hand. The run changed a
+plugins/floor/bin/run.sh	# Two deliveries against one target, and whether they can be brought
+plugins/floor/bin/run.sh	# The merge, tried and thrown away. In the workspace it would leave
+plugins/floor/bin/run.sh	# Exactly one host may take an item. Two seeing the same one
+plugins/floor/bin/run.sh	# An observation is not evidence. It says a thing occurred, and satisfying
+plugins/floor/bin/run.sh	# A field nobody set is absent rather than empty. Composition follows
+plugins/floor/bin/run.sh	# The recording host names itself, because two machines do not
+plugins/floor/bin/run.sh	# Every run this home holds, one row each, with the run named first. Two
+plugins/floor/bin/run.sh	# What produced this row. A run graded under one implementation
+plugins/floor/bin/run.sh	# Read from the manifest beside this script, because a version compiled
+plugins/floor/bin/run.sh	# Recorded and not yet refused. Nothing here compares
+plugins/floor/bin/run.sh	# Resolved once, before anything moves. `gates` enters the workspace, and a
+plugins/floor/bin/run.sh	# Which agent produced the work, in whatever word its harness uses. Core names the
+plugins/floor/bin/run.sh	# Floor's own moments. An observation is not evidence, so a home that
+plugins/floor/bin/run.sh	# Something this run learned that its own bar does not cover. Recorded so it survives the
+plugins/floor/bin/run.sh	# Never read by completion. An aside is not a clause, not evidence and not
+plugins/floor/bin/run.sh	# Every run's, and never only this one's. An aside is written
+plugins/floor/bin/run.sh	# Printed after the delivery, never before it. A reader who has just been
+plugins/floor/bin/run.sh	# The brief travels with the run, never as an argument. A body is many lines and
+plugins/floor/bin/run.sh	# What may answer a clause, decided by the kind a human wrote. Trust was
+plugins/floor/bin/run.sh	# A verdict from something that did not produce the work. That is the whole of
+plugins/floor/bin/run.sh	# A run authorised before the rename holds `authorised-targets`, and it is
+plugins/floor/bin/run.sh	    # This one blocks rather than exits, because authorisation
+plugins/floor/bin/run.sh	    # A source with no way to carry this is not a source that failed
+plugins/floor/lib/source-dir.sh	# Beside the record, never inside it. The first line of a delivery is three
+plugins/floor/lib/source-github.sh	# What GitHub says it already has, or nothing, and the two are told apart. A search that
+plugins/floor/lib/source-github.sh	# The brief first, then the two lines only a machine reads. A reader opens this
+plugins/floor/lib/source-github.sh	# Where the source read this item from, as a target identity. A directory
+plugins/floor/lib/source-read-only.sh	# Every other verb exits 2. Core reads that as this source having no
+plugins/floor/tests/host.sh	# Whole field, never a substring. `.foundry` sits inside `.foundry-runs`, so a
+plugins/floor/tests/host.sh	# Both variables go. Unsetting `HOME` alone leaves whatever the shell running this
+plugins/floor/tests/lib.sh	# Report the tally, and answer whether it stands. Zero failures over zero
+plugins/floor/tests/model.sh	# Whether `chmod 000` means anything here. Windows records no read bit and root ignores
+plugins/floor/tests/model.sh	# A gate a signal killed is not a gate that failed. The ledger is append-only,
+plugins/floor/tests/model.sh	# An idea outside this run's bar is recorded, never a blocker. A run that
+plugins/floor/tests/model.sh	# Something happened, recorded. Not evidence, not a grant, and not a clause —
+plugins/floor/tests/model.sh	  # Recording that a gate finished says a gate finished. Completion still refuses,
+plugins/floor/tests/model.sh	  # Twenty writers at once, and twenty whole rows. The property is the atomic append
+plugins/floor/tests/model.sh	# How far each run got, from files other verbs already wrote. The only verb not scoped
+plugins/floor/tests/model.sh	# Floor records the moments it already knows. Nothing is kept as a total, so
+plugins/floor/tests/model.sh	# Every run this home holds, one row each, with the run named first. Two
+plugins/floor/tests/model.sh	# Exactly one host may take an item. Two seeing the same one
+plugins/floor/tests/model.sh	  # Exclusivity is `mkdir` being one step, which POSIX gives and this
+plugins/floor/tests/model.sh	# What produced this row. A run graded under one implementation
+plugins/floor/tests/model.sh	# Recorded and not yet refused. Nothing compares two runtimes,
+plugins/floor/tests/model.sh	# Whether this host can be replaced. A run holding a workspace has a
+plugins/floor/tests/model.sh	  # A body written here belongs to whoever `api user` names, because that is who is
+plugins/floor/tests/model.sh	  # Who this run comments as. `posting_as` fails closed on an empty answer, so a
+plugins/floor/tests/model.sh	# The run's own words, in the same place a person's would land. Only a test that means to
+plugins/floor/tests/model.sh	  # The day comes from the run under test. Written out, it was true for one
+plugins/floor/tests/model.sh	  # The other half of the same verb.  already exits 19 when the push is refused; the
+plugins/floor/tests/model.sh	# An item filed in a repository, advising that same repository. The bootstrap
+plugins/floor/tests/model.sh	# A human naming it still can. The refusal is about the path nobody
+plugins/floor/tests/model.sh	# A source that answers `read` and nothing else. §2.1 proposes four
+plugins/floor/tests/model.sh	# The run reads its item and then cannot ask. Both facts matter:
+plugins/floor/tests/model.sh	  # Authorisation is where a person notices. It blocks on an introduced clause, and the
+plugins/floor/tests/model.sh	  # A second run, its own delivery, and the first one may not land it. The adapter finds
+plugins/floor/tests/run.sh	# The tally every check reports through. A break that empties a
+plugins/kernel/tests/lib.sh	# Report the tally, and answer whether it stands. Zero failures over zero
+plugins/kernel/tests/run.sh	# Timeout exits 124 when it kills one. Inverting that gives zero,
+plugins/kernel/tests/run.sh	# Eight times the slowest mutant measured here, which
+plugins/kernel/tests/run.sh	# macOS ships no timeout unless someone installed the GNU tools, so without
+plugins/kernel/tests/run.sh	# The tally every check reports through. A break that empties a
+plugins/kernel/tests/run.sh	# The bound itself, because no mutant has ever hung
+plugins/panel/tests/lib.sh	# Report the tally, and answer whether it stands. Zero failures over zero
+plugins/panel/tests/run.sh	# Timeout exits 124 when it kills one. Inverting that gives zero,
+plugins/panel/tests/run.sh	# Eight times the slowest mutant measured here, which
+plugins/panel/tests/run.sh	# macOS ships no timeout unless someone installed the GNU tools, so without
+plugins/panel/tests/run.sh	# The tally every check reports through. A break that empties a
+plugins/panel/tests/run.sh	# End to end, and not just the bound. A runner that never returns
+plugins/panel/tests/run.sh	# The bound itself, because no mutant has ever hung
+plugins/signal/lib/score.awk	  # Questions in the prose, counted. More than one and a person has
+plugins/signal/lib/score.awk	# A question mark inside a fence never reaches here, and
+plugins/signal/lib/score.awk	# Merging three asks into one sentence beats this count and
+plugins/signal/tests/lib.sh	# Report the tally, and answer whether it stands. Zero failures over zero
+plugins/signal/tests/run.sh	# Timeout exits 124 when it kills one. Inverting that gives zero,
+plugins/signal/tests/run.sh	# Eight times the slowest mutant measured here, which
+plugins/signal/tests/run.sh	# macOS ships no timeout unless someone installed the GNU tools, so without
+plugins/signal/tests/run.sh	# The tally every check reports through. A break that empties a
+plugins/signal/tests/run.sh	# The bound itself, because no mutant has ever hung
+plugins/signal/tests/score.sh	# A person answers one question. Two is two things, and the count is the
+plugins/signal/tests/score.sh	# A document is not a reply. Both counts measure what a
