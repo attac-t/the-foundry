@@ -2,7 +2,9 @@
 
 Anything written down, not just replies — a reader came to understand, to act or to decide.
 
-`signal` holds every reply to plain English. Nothing held the written record. This does.
+**`signal` owns the standard — for a reply and for a file a person reads.** Four skills carry it:
+`plain-english`, `economy`, `conclusion` and `stranger`. This file says only what is true here and
+nowhere else.
 
 **Nothing measures it, and this file does not meet it.** Signal's scorer reads any file. Run against
 all seventeen documents here — three at the root, seven plugin READMEs, seven rules — **two pass.**

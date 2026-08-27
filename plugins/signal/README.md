@@ -1,6 +1,10 @@
 # signal
 
-> Plain English harness. How to speak.
+> Plain English harness. How to speak, and how to write.
+
+**Two things are in scope, and only one is counted.** A reply is scored by a hook. A file a person
+reads is not, and never can be — no script judges whether a reader understood. The skills teach
+both. The hooks catch one.
 
 Agents write too much. This cuts it by ten, and holds the cut with two hooks.
 
@@ -99,6 +103,41 @@ often than it helped.
 The count is gameable in one direction and not the other. Merge three asks into one sentence and the
 sentence-length check fires instead. Split them across replies and nothing here sees it — `Stop`
 scores one message.
+
+### Four skills, and what each one asks
+
+| | |
+|---|---|
+| [`plain-english`](skills/plain-english/SKILL.md) | can the reader understand this on the first read? |
+| [`economy`](skills/economy/SKILL.md) | is every word, fact and section needed? |
+| [`conclusion`](skills/conclusion/SKILL.md) | can they tell what is true, and what to do? |
+| [`stranger`](skills/stranger/SKILL.md) | did somebody who was not there actually get it? |
+
+The first three are read before writing. The fourth runs after, and **the writer is never the one who
+runs it.**
+
+**`stranger` is its own skill on purpose.** It runs at a different moment, for a different reader,
+and it leaves a record. Fold it into `plain-english` and every writer loads a review they are not
+running yet.
+
+### What Signal does not do
+
+**Nothing gates any of this.** The scorer reads a reply. No check reads a file before it ships, and
+none is planned. A script guessing at meaning would block good prose and pass the doctrine.
+
+**`stranger` has never been run by a stranger here.** Every reader so far has been the session that
+wrote the file. By the skill's own rule that is the writer, and the recorded example says so. The
+protocol is taught, not proved.
+
+### What a count can never tell you
+
+Natural grammar. A metaphor hiding a rule. Two sentences that should mean the same thing and do not.
+A promise larger than the thing that keeps it. Whether the reader understood.
+
+**No number here is offered as proof of any of those.** `stranger` says how to check them, and says
+plainly that the answer is a judgement with a name on it.
+
+The doctrine is the case that proves the gap. It passed every count and was still hard to read.
 
 ## Install
 

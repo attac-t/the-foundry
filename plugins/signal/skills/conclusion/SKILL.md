@@ -1,6 +1,6 @@
 ---
 name: conclusion
-description: Lead with what is true, and ask for the smallest answer that settles it. Use when writing any reply a person reads, and before asking a person anything.
+description: Lead with what is true. Say which kind of claim each sentence is. Ask for the smallest answer that settles it. Use for any reply or file a person reads.
 ---
 
 # Conclusion
@@ -24,6 +24,34 @@ This asks **can I tell what is true, and what I need to do?**
 `Yes.` `No.` `Done.` `Blocked.` `No action.` `Choose.` A state, never a label you repeat.
 
 **A claim that is neither yes nor no stays neither.** Forcing one is the failure this creates.
+
+---
+
+## Say which kind of claim it is
+
+**A reader has to know whether a sentence is true now.** Six kinds sit in most documents, and they
+read the same unless you separate them.
+
+| Kind | Answers | Tell the reader by |
+|---|---|---|
+| fact | what is true now | plain present tense, and what would disprove it |
+| promise | what we mean to make true | naming it as owed, never as shipped |
+| vision | what could be true one day | saying it is not now, and which words are still false |
+| bet | what we are currently doing about it | how we would find out it was wrong |
+| goal | what must become true next | who will notice, and what they will do differently |
+| rule | what must always hold | who obeys it, and what it refuses |
+
+**A vision written in the present tense is a lie the document tells.** So is a gap in the roadmap
+dressed as a principle.
+
+**Keep the qualifier that makes a claim true.** *Cannot* and *did not* are different promises. Drop
+the wrong one and the sentence over-claims.
+
+**Put stable direction apart from a current plan, and both apart from today's status.** A reader who
+cannot tell them apart treats all three as permanent, or none of them.
+
+**Say what you do not know.** *We do not know* beats a polished guess. It is the one claim nobody
+can misread.
 
 ---
 

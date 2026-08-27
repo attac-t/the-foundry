@@ -7,8 +7,8 @@ description: Say more with less, do more with less — asked before writing, not
 
 > Agents write too much. They also build too much. Same reflex, same cure.
 
-Polish removes words. It cannot remove the noun you invented, the fourth guard you bolted on, or the
-abstraction you built for one caller — those are load-bearing by then. **The expensive waste is
+Polish removes words. It cannot remove the noun you invented, the guard you bolted on, or the
+abstraction you built for one caller. By then all three are load-bearing. **The expensive waste is
 decided before the first character is written.**
 
 So ask first.
@@ -44,6 +44,20 @@ Both are shorter. Neither is English. This shipped in a doctrine and a reader st
 **If nobody would say it aloud, put the word back.**
 
 ---
+
+## Useful structure is the fourth step
+
+The order names it and nothing said what it meant. It means four things:
+
+| | |
+|---|---|
+| one job per section | a heading over two sentences was never a section |
+| the answer above the detail | evidence supports a conclusion. It does not lead to one |
+| a table for a real comparison | columns that vary. Never a paragraph hidden in a cell |
+| the shape the content already has | a flow wants a fenced block, a list wants a list |
+
+**A reader should never rebuild the hierarchy from history.** If the order only makes sense to
+someone who watched it being written, it has no order.
 
 ## Before you write
 
@@ -87,8 +101,10 @@ You have already failed when you write:
 
 ## The boundary
 
-**Not cryptic. Not fewer facts.** Precision is the point. A technical distinction lost to brevity is a
-failure, not a saving — and cutting the qualifier that made a claim true is the worst outcome of all,
-because it reads better and says something false.
+**Not cryptic. Not fewer facts.** Precision is the point. A technical distinction lost to brevity is
+a failure, never a saving.
+
+**Cutting the qualifier that made a claim true is the worst outcome of all.** It reads better and
+says something false.
 
 Short and wrong is not economy.
