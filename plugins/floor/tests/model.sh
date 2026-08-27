@@ -22,6 +22,15 @@ home="$tmp/home"
 mkdir -p "$tmp/bare"
 trap 'rm -rf "$tmp"' EXIT
 
+#
+# Git transport isolation, and nothing wider. `tests/isolate.sh` holds the mechanism.
+#
+# Here, not only in `tests/run.sh`. A fixture addresses `github.com` and one of them pushes, so this
+# file run on its own resolved a name and waited on a credential helper. #395 is that hang, and it
+# came back the first time anybody ran this suite by hand.
+. "$here/tests/isolate.sh"
+isolate_git_transport "$tmp" || { printf 'could not isolate the git transport\n' >&2; exit 3; }
+
 # Run the shipped CLI from a directory, with an explicit home and run variable.
 #
 # The directory adapter, named rather than detected.
