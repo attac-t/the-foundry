@@ -13,6 +13,11 @@ set -u
 LC_ALL=C
 export LC_ALL
 
+# Pinned for the same reason, and a sharper one. `floor gates` runs this file with a worker named,
+# so an inherited name turned red the one check that wants none.
+FOUNDRY_WORKER=
+export FOUNDRY_WORKER
+
 here="$(cd "$(dirname "$0")/.." && pwd)"
 . "$here/tests/lib.sh"
 
