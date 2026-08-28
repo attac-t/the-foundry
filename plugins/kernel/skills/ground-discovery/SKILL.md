@@ -19,6 +19,15 @@ Before writing any code. Before proposing any solution. Always.
 4. **Package**: "How does the package expect to be used?" -> Read source, not assumptions.
 5. **MCP**: If available, use `model-info`, `search-docs`.
 
+## One sample is not a state
+
+A thing read once is a moment, never a condition. **Read it twice before you name it.**
+
+Stuck and slow look identical in one look. So do finished and dead. Naming the wrong one sends the
+next hour after a cause that was never there.
+
+If it moved, it is working. If it did not, say what you expected to move and by when.
+
 ## The Verification Rule
 
 > **Never assume. Always verify.**

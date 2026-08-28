@@ -41,6 +41,16 @@ Every test follows Arrange-Act-Assert:
 
 Keep this structure explicit. A reader should identify each section instantly.
 
+## Changing a rule finds its old tests first
+
+**A behaviour change is a search before it is an edit.** Every test that asserted the old rule is
+now wrong, and each one is a claim about how the thing works.
+
+Find them, and for each decide: does it prove the new rule, or was it proving the fault?
+
+Running the suite finds them too, and later, after the commit message is written and the reasoning
+has moved on. The search costs a minute. The other way costs the run.
+
 ## The Rules
 
 1. **Test Behavior, Not Implementation**: Test what it does, not how it does it.
