@@ -1309,10 +1309,21 @@ wreck_runner "a declared judgement nothing derives is caught" \
   nojudged 's#^    detect_judged | while_reading_judged#    false | while_reading_judged#'
 
 wreck_runner "a judged clause naming no judge is caught" \
-  nojudge 's#^        print_judge  "\$id" "\$judge" >> "\$draft" || return 1$#        : >> "$draft" || return 1#'
+  nojudge 's#^        print_judges "\$id" "\$judge" >> "\$draft" || return 1$#        : >> "$draft" || return 1#'
 
 wreck_runner "a judgement derived as a gate is caught" \
   judgedasgate 's#print_clause "\$id" Judged "\$text"#print_clause "$id" Gate "$text"#'
+
+#
+# A panel is several minds, and unanimous. Each break takes one half of that.
+#
+# `onejudge` keeps the list whole, so a panel of two becomes one member nobody is called. `anyjudge`
+# lets one approval stand for all of them, which is a majority of one.
+wreck_runner "a panel kept whole instead of split is caught" \
+  onejudge 's#^print_judges() {#print_judges() { printf "judge %s %s\n" "$1" "$2"; return 0;#'
+
+wreck_runner "one approval standing for the whole panel is caught" \
+  anyjudge 's#satisfied "\$1" "\$2" "\$3" judged "\$who" || exit 1#satisfied "$1" "$2" "$3" judged "$who" \&\& exit 0#'
 
 # The reader half. The writer half cannot be observed today: the only comment
 # floor writes is a question, and `floor-question:` already bounds one.

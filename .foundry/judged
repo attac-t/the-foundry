@@ -1,9 +1,21 @@
-# What no command here can answer, and who answers it.
+# What no command here can answer, and the panel that answers it.
 #
-# `judge  source  text`, and the judge is one word. `.foundry/gates` holds the half a command can
-# settle. This holds the half it cannot, and a verdict from the named judge is what settles it.
+# `judges  source  text`, comma separated, and each judge is one word. `.foundry/gates` holds the
+# half a command can settle. This holds the half it cannot.
 #
-# **A run may not answer this one.** That is the whole of what `judged` means, and `run.sh evidence
-# verdict` refuses a judge that is the run's own worker.
+# **A member is a model at a bench**, written `<model>:<role>`. The role is the part played, and
+# Panel ships the parts. The model is who stands there.
+#
+# **Every member must approve, and one dissent stops the work.** A majority would let the members who
+# looked hardest be outvoted by the ones who did not.
+#
+# A repository may name whoever it trusts. `panel:adversary` on one model is a real check: a
+# different role reads for different faults, and finds them. What it cannot claim is a second
+# mind, because it runs in the producing session on the same model.
+#
+# Foundry takes the stricter bar for itself, because what it judges here is its own runtime. That is
+# this repository's choice and not a rule it ships.
+#
+# One member today, so this is a panel of one. A second model is the next piece of work.
 
-panel:adversary  a change to what a run may claim is judged by something that did not write it
+codex:adversary  a change to what a run may claim is judged by something that did not write it

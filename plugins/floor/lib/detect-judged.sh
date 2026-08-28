@@ -14,6 +14,10 @@
 # a space would need quoting, and quoting needs a parser this declares none of. A gate's name is one
 # word for the same reason.
 #
+# **The name means whatever the repository means by it.** Floor compares it and reads nothing into
+# it. One judge, several roles on one model, or several models — each is a repository's choice,
+# and none needs a plugin it has not installed.
+#
 # `source` is the file that yielded it, so the charter can pin it exactly as it pins a gate.
 #
 # **There is no detection half.** A repository cannot be guessed into wanting a judgement, and a

@@ -3601,6 +3601,47 @@ a_rejection_stops_the_work() {
   is "an approval after a rejection at one ref is still a stop" "$(code_of floor "$tmp/rj" complete)" "15"
 }
 a_rejection_stops_the_work
+
+#
+# A panel is several minds, and every one of them has to say yes.
+#
+# One judge per clause is not a panel. A majority is not one either: it lets the members who looked
+# hardest be outvoted by the ones who did not.
+#
+a_panel_agrees_or_nothing_moves() {
+  make_repo "$tmp/jury" main               || { skip "a panel — no repo"; return; }
+  set_origin "$tmp/jury" 'https://gitlab.com/acme/jury.git' || { skip "a panel — no origin"; return; }
+  mkdir -p "$tmp/jury/.foundry"            || { skip "a panel — no .foundry"; return; }
+  commit_file "$tmp/jury" .foundry/gates 'tests  true
+'                                          || { skip "a panel — no gates"; return; }
+  commit_file "$tmp/jury" .foundry/judged 'one,two  a stranger can read it
+'                                          || { skip "a panel — no judged"; return; }
+
+  floor_new_as "$tmp/jury" ada@example.com "Panel" >/dev/null
+  floor "$tmp/jury" charter derive >/dev/null 2>&1
+  floor "$tmp/jury" policy authorize 'https://gitlab.com/acme/jury.git' >/dev/null 2>&1
+  floor "$tmp/jury" targets add 'https://gitlab.com/acme/jury.git' main >/dev/null 2>&1
+  floor "$tmp/jury" open >/dev/null 2>&1
+  floor "$tmp/jury" gates >/dev/null 2>&1
+
+  is "a panel of two is recorded as two members"      "$(floor "$tmp/jury" charter | grep -c '^judge ')" "2"
+
+  has "with nobody heard, both are named"       "$(floor "$tmp/jury" complete 2>&1)" "no approval from [one two]"
+
+  floor "$tmp/jury" evidence verdict 'a stranger can read it' 'one' approve 'reads fine' >/dev/null 2>&1
+  is  "one approval is not the panel"       "$(code_of floor "$tmp/jury" complete)" "15"
+  has "and the silent member is named"      "$(floor "$tmp/jury" complete 2>&1)" "no approval from [two]"
+
+  floor "$tmp/jury" evidence verdict 'a stranger can read it' 'two' approve 'so does this' >/dev/null 2>&1
+  lacks "with both heard, the clause is met"         "$(floor "$tmp/jury" complete 2>&1)" "a stranger can read it"
+
+  # One dissent stops it, whatever the others said.
+  floor "$tmp/jury" evidence verdict 'a stranger can read it' 'two' reject 'on reflection, no' >/dev/null 2>&1
+  is "one member saying no stops the work" "$(code_of floor "$tmp/jury" complete)" "15"
+
+  is "somebody who is not on the panel may not answer"      "$(code_of floor "$tmp/jury" evidence verdict 'a stranger can read it' 'three' approve 'I say yes')" "2"
+}
+a_panel_agrees_or_nothing_moves
 a_declared_judgement_is_answered_by_a_verdict
 
 #
