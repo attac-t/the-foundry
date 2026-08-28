@@ -1,4 +1,4 @@
-# G004 — What is believed stays in touch with what is true
+# What is believed stays in touch with what is true
 
 A belief nothing has checked gets found and tested before it costs a decision.
 

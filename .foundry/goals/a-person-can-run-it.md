@@ -1,4 +1,4 @@
-# G002 — A person can run it without being told how
+# A person can run it without being told how
 
 Someone who has never seen Foundry lands on the README and runs one command. They get back a change
 they did not write.

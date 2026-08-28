@@ -1,4 +1,4 @@
-# G001 — Foundry runs itself
+# Foundry runs itself
 
 Foundry takes its own real work from direction to verified delivery, and the result informs the
 next run.
@@ -12,8 +12,8 @@ Done when:
 State: partly. A declared requirement can be judged, and a rejection blocks delivery.
 No second producer has met the contract. No run has gone the whole way unwatched.
 
-Accepted: 27 August 2026, by the repository owner, in direction given to a run. **No durable record
-exists yet.** [#382](https://github.com/attac-t/the-foundry/pull/382) is where one can be made.
+Accepted: 27 August 2026, by the repository owner. Recorded in
+[the decision](../decisions/foundry-runs-itself-is-critical.md), which quotes the words they used.
 
 Evidence: [#407](https://github.com/attac-t/the-foundry/pull/407),
 [#408](https://github.com/attac-t/the-foundry/pull/408). Both are local-only; hosted checks are unpaid.

@@ -1,4 +1,4 @@
-# G003 — A repository states its bar, and is held to it
+# A repository states its bar, and is held to it
 
 A repository says what good means for it. Every change answers to the bar agreed before that change
 began.
