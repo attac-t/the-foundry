@@ -1,0 +1,66 @@
+#!/bin/bash
+# The brief a judge is handed: what reaches it, and what it refuses to pretend.
+#
+# Run through `sh`, never `bash` — that is what ships.
+#
+# Set RUNNER to point these checks at a deliberately broken copy.
+
+set -u
+here="$(cd "$(dirname "$0")/.." && pwd)"
+. "$here/tests/lib.sh"
+
+runner="${RUNNER:-$here/bin/brief.sh}"
+tmp="${TMPDIR:-/tmp}/panel-brief-$$"
+mkdir -p "$tmp"
+trap 'rm -rf "$tmp"' EXIT
+
+brief() { sh "$runner" "$@" 2>/dev/null; }
+brief_says() { sh "$runner" "$@" 2>&1; }
+code_of() { "$@" >/dev/null 2>&1; printf '%s' "$?"; }
+
+printf 'a\nbar\n' > "$tmp/charter"
+printf 'the work\n' > "$tmp/work"
+
+#
+# A named file that cannot be read is not a file nobody named.
+#
+# `flag_value` ran inside `$(...)`, so its `exit 4` ended the subshell and the script carried on. An
+# unreadable charter became an absent one, the brief said NOT SUPPLIED, and a handoff was recorded
+# as though the bar had gone over.
+a_named_file_that_cannot_be_read_stops_it() {
+  is "an unreadable charter is refused" \
+     "$(code_of brief adversary 'a clause' --charter "$tmp/nothing-here")" "4"
+  has "and it says which file"  "$(brief_says adversary 'a clause' --charter "$tmp/nothing-here")" "cannot read the charter"
+
+  is "an unreadable work file is refused" \
+     "$(code_of brief adversary 'a clause' --work "$tmp/nothing-here")" "4"
+
+  is "a flag with no value is refused"  "$(code_of brief adversary 'a clause' --charter)" "2"
+  is "an argument nobody defined is refused"  "$(code_of brief adversary 'a clause' --wat x)" "2"
+}
+a_named_file_that_cannot_be_read_stops_it
+
+#
+# What the judge is actually given. A path it was told to open is not a thing it was given.
+#
+what_reaches_the_judge() {
+  said=$(brief adversary 'a stranger can read it' --charter "$tmp/charter" --work "$tmp/work")
+
+  has "the role's own words"        "$said" "You are the **Adversary**"
+  has "the clause it answers"       "$said" "a stranger can read it"
+  has "the charter, read and printed" "$said" "bar"
+  has "the work it answers"         "$said" "the work"
+  has "a skill the role declares"   "$said" "Craft Verdict"
+  has "which outcome words bind"    "$said" "VERDICT: revise"
+
+  # Absent is legal. Silent is not.
+  bare=$(brief adversary 'a clause')
+  has "a missing charter is said out loud" "$bare" "NOT SUPPLIED"
+  is  "and that is not an error"           "$(code_of brief adversary 'a clause')" "0"
+
+  is "no role is refused"  "$(code_of brief nobody 'a clause')" "3"
+  is "no clause is refused" "$(code_of brief adversary)" "2"
+}
+what_reaches_the_judge
+
+summary "brief"

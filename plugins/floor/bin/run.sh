@@ -117,6 +117,7 @@ main() {
 
 usage() {
     usage_run
+    usage_evidence
     usage_source
 }
 
@@ -142,10 +143,6 @@ floor — where work happens.
   run.sh charter check            report clauses that drifted from their pins, or went missing
   run.sh charter introduce <kind> <text>
                                   add a clause nothing derived — it stays introduced
-  run.sh evidence                 print what this run has proved
-  run.sh evidence record <name> <command...>   run it, and stamp what happened
-  run.sh evidence handed <clause> <judge> <how> say this judge was given the bar, and how it ran
-  run.sh evidence verdict <clause> <judge> <approve|reject|revise> <text> <sha>
   run.sh gates                    run every pinned gate and record each — exit 14 if one did not pass
   run.sh open                     check out every selected target in isolation, and print where
   run.sh commit <message>         commit what is staged, and record that this run made it
@@ -166,6 +163,17 @@ EOF
 
 # Its own list, because `usage` was one line over the cap the shell gate holds. Split by what a verb
 # reaches rather than by length, or the next verb moves the seam again.
+# The ledger's own list. Split from `usage_run` the same way `usage_source` was — by what a verb
+# reaches, so the next verb added does not move the seam again.
+usage_evidence() {
+    cat <<'EOF'
+  run.sh evidence                 print what this run has proved
+  run.sh evidence record <name> <command...>   run it, and stamp what happened
+  run.sh evidence handed <clause> <judge> <how> say this judge was given the bar, and how it ran
+  run.sh evidence verdict <clause> <judge> <approve|reject|revise> <text> <sha>
+EOF
+}
+
 usage_source() {
     cat <<'EOF'
   run.sh source read <item>       pull the item's words into this run

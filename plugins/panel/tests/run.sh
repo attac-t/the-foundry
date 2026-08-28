@@ -86,6 +86,43 @@ red_against() {
   return 0
 }
 
+bash "$root/tests/brief.sh" || failed=1
+echo
+
+echo "audit — break the brief, the suite must notice"
+
+caught_brief() { red_against brief.sh RUNNER="$tmp/$1/bin/brief.sh"; }
+
+# The role and its skills travel with the mutant. `brief.sh` reads them from its own parent, so a
+# copy alone would fail for want of a role rather than for the rule under test.
+wreck_brief() {
+  local name="$1" tag="$2" mutation="$3"
+
+  rm -rf "${tmp:?}/$tag" && mkdir -p "$tmp/$tag/bin" || { bad "$name — could not stage"; return; }
+  cp -r "$root/agents" "$root/skills" "$tmp/$tag/" || { bad "$name — could not stage the role"; return; }
+  sed "$mutation" "$root/bin/brief.sh" > "$tmp/$tag/bin/brief.sh" \
+    || { bad "$name — sed failed, so this proves nothing"; return; }
+  [ -s "$tmp/$tag/bin/brief.sh" ] || { bad "$name — the mutant is empty"; return; }
+  cmp -s "$tmp/$tag/bin/brief.sh" "$root/bin/brief.sh" \
+    && { bad "$name — the break did not apply, so this proves nothing"; return; }
+  caught_brief "$tag"
+  case $? in
+    1) bad  "$name — the suite passed against a broken brief"; return ;;
+    2) moot "$name — the mutant never answered, so this proves nothing"; return ;;
+  esac
+
+  printf '  ok    %s\n' "$name"
+}
+
+#
+# The finding that put this suite here. A named file nobody can read became a file nobody named, and
+# the handoff was recorded as though the bar had gone over.
+wreck_brief "an unreadable file passing for an absent one is caught" \
+  softread 's#^    \[ -r "\$2" \] || fail 4 "cannot read the \$1 at \[\$2\]"$#    :#'
+
+wreck_brief "a role's declared skills quietly dropped is caught" \
+  noskills 's#^    declared_skills "\$file" | while IFS= read -r skill; do#    false | while IFS= read -r skill; do#'
+
 bash "$root/tests/chain.sh" || failed=1
 echo
 

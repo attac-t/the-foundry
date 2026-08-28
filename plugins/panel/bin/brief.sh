@@ -45,20 +45,25 @@ read_arguments() {
 
     while [ "$#" -gt 0 ]; do
         case $1 in
-            --charter) charter=$(flag_value charter "$@") ;;
-            --work)    work=$(flag_value work "$@") ;;
+            --charter) charter=${2:-}; refuse_unreadable charter "$charter" ;;
+            --work)    work=${2:-};    refuse_unreadable work "$work" ;;
             *)         fail 2 "unknown argument [$1]" ;;
         esac
         shift 2
     done
 }
 
-# Guarded, because `--charter` with nothing after it leaves `shift 2` short and `$#` unchanged, so
-# the loop never ends.
-flag_value() {
-    [ -n "${3:-}" ] || fail 2 "$1 names a file"
-    [ -r "$3" ] || fail 4 "cannot read the $1 at [$3]"
-    printf '%s' "$3"
+#
+# In the caller's own shell, never inside a substitution.
+#
+# `exit` in `$(...)` ends the subshell and the script carries on. An unreadable charter became an
+# absent one, the brief said NOT SUPPLIED, and the handoff was recorded as though the bar went over.
+#
+# The empty guard is first for the same reason it always is: `--charter` with nothing after it
+# leaves `shift 2` short and the loop never ends.
+refuse_unreadable() {
+    [ -n "$2" ] || fail 2 "$1 names a file"
+    [ -r "$2" ] || fail 4 "cannot read the $1 at [$2]"
 }
 
 locate_role() {
