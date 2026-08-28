@@ -1325,6 +1325,17 @@ wreck_runner "a panel kept whole instead of split is caught" \
 wreck_runner "one approval standing for the whole panel is caught" \
   anyjudge 's#satisfied "\$1" "\$2" "\$3" judged "\$who" || exit 1#satisfied "$1" "$2" "$3" judged "$who" \&\& exit 0#'
 
+#
+# A verdict answers for one commit and one bar. Each break unbinds it from one of them.
+#
+# `staleref` lets an answer about an older commit be credited to whatever the workspace is on now.
+# `nohandoff` takes a verdict from a judge nothing records being handed anything.
+wreck_runner "a verdict credited to a commit nobody read is caught" \
+  staleref 's#^    refuse_a_revision_nobody_reviewed "\$reviewed"$#    :#'
+
+wreck_runner "a verdict from a judge nobody handed the bar is caught" \
+  nohandoff 's#^    refuse_a_judge_never_handed_the_bar "\$dir" "\$text" "\$judge" "\$reviewed" "\$version"$#    :#'
+
 # The reader half. The writer half cannot be observed today: the only comment
 # floor writes is a question, and `floor-question:` already bounds one.
 wreck_runner "a reader blind to the stamp is caught" \

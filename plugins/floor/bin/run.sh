@@ -63,6 +63,10 @@
 #  32  the delivery carries a commit this run has no record of making, and nobody accounted for it
 #  33  the ancestry cannot be trusted — no base was recorded, it cannot be read, or it is not
 #      behind the head. One remedy for all three: a new run, from where the work actually is
+#  35  a verdict names a revision this run is not on. A review of one commit is not a review of
+#      another, and the size of the change between them is not the point
+#  36  nothing records this judge being handed the bar. A verdict given without the charter is
+#      worth what it was given, and `evidence handed` is what says it was given
 #  34  the worker may not account for ancestry. It named itself, so a record it writes about its
 #      own commits is the producer signing off its own bar
 #  22  the repository declares a bar in a file that is there and cannot be read. Not 8: that is a
@@ -140,7 +144,8 @@ floor — where work happens.
                                   add a clause nothing derived — it stays introduced
   run.sh evidence                 print what this run has proved
   run.sh evidence record <name> <command...>   run it, and stamp what happened
-  run.sh evidence verdict <clause> <judge> <approve|reject|revise> <text>
+  run.sh evidence handed <clause> <judge> <how> say this judge was given the bar, and how it ran
+  run.sh evidence verdict <clause> <judge> <approve|reject|revise> <text> <sha>
   run.sh gates                    run every pinned gate and record each — exit 14 if one did not pass
   run.sh open                     check out every selected target in isolation, and print where
   run.sh commit <message>         commit what is staged, and record that this run made it
@@ -1445,6 +1450,7 @@ evidence() {
         '')     cat "$(evidence_file "$dir")" 2>/dev/null; return 0 ;;
         record) shift; refuse_wrong_repository "$dir"; record_gate "$dir" "$@" ;;
         verdict) shift; refuse_wrong_repository "$dir"; verdict "$dir" "$@" ;;
+        handed) shift; refuse_wrong_repository "$dir"; handed "$dir" "$@" ;;
         *)      usage; exit 2 ;;
     esac
 }
@@ -1574,6 +1580,14 @@ stamp() {
 stamp_verdict() {
     printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
         "$(date -u +%Y-%m-%dT%H:%M:%SZ)" judged 01 "$2" "$3" "$4" "$(one_line "$5")" "$(one_line "$6")" \
+        >> "$(evidence_file "$1")" 2>/dev/null || die_unwritable "$(evidence_file "$1")"
+}
+
+# The handoff's own row. Same eight columns, so one reader serves both, and a kind of its own so
+# `satisfied` never mistakes a handoff for an answer.
+stamp_handoff() {
+    printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
+        "$(date -u +%Y-%m-%dT%H:%M:%SZ)" handed 01 "$2" 0 "$3" "$4" "$(one_line "$5")" "$(one_line "$6")" \
         >> "$(evidence_file "$1")" 2>/dev/null || die_unwritable "$(evidence_file "$1")"
 }
 
@@ -2818,19 +2832,77 @@ satisfied() {
 # Floor cannot prove who typed it, because the file is writable by the same
 # user. Refusing the name it already knows is what an honest record can do.
 verdict() {
-    dir=$1; text=${2:-}; judge=${3:-}; outcome=${4:-}; said=${5:-}
+    dir=$1; text=${2:-}; judge=${3:-}; outcome=${4:-}; said=${5:-}; reviewed=${6:-}
 
-    [ -n "$text" ] && [ -n "$judge" ] && [ -n "$outcome" ] && [ -n "$said" ] \
-        || { note "a verdict names the clause, the judge, the outcome, and what they said"; exit 2; }
+    [ -n "$text" ] && [ -n "$judge" ] && [ -n "$outcome" ] && [ -n "$said" ] && [ -n "$reviewed" ] \
+        || { note "a verdict names the clause, the judge, the outcome, what they said, and the sha they read"; exit 2; }
 
     code=$(code_for_outcome "$outcome") || exit 2
+    version=$(charter_version "$dir")
 
     refuse_a_kind_that_is_not_judged "$dir" "$text"
     refuse_a_judge_that_is_the_worker "$judge"
     refuse_a_judge_nobody_asked "$dir" "$text" "$judge"
 
     enter_work_tree "$dir"
-    stamp_verdict "$dir" "$text" "$code" "$(delivered_ref)" "$judge: $said" "$judge"
+    refuse_a_revision_nobody_reviewed "$reviewed"
+    refuse_a_judge_never_handed_the_bar "$dir" "$text" "$judge" "$reviewed" "$version"
+
+    stamp_verdict "$dir" "$text" "$code" "$reviewed" "$judge: $said" "$judge"
+}
+
+#
+# Saying a judge was given the bar, before it answers.
+#
+# The recorder cannot read a transcript, so it can never know what reached anyone. What it can hold
+# is this: whoever handed the bar over said so first, at a named charter and a named commit.
+handed() {
+    dir=$1; text=${2:-}; judge=${3:-}; how=${4:-}
+
+    [ -n "$text" ] && [ -n "$judge" ] && [ -n "$how" ] \
+        || { note "a handoff names the clause, the judge, and how that judge was run"; exit 2; }
+
+    version=$(charter_version "$dir")
+
+    refuse_a_kind_that_is_not_judged "$dir" "$text"
+    refuse_a_judge_nobody_asked "$dir" "$text" "$judge"
+
+    enter_work_tree "$dir"
+    stamp_handoff "$dir" "$text" "$(delivered_ref)" "$version" "$judge" "$how"
+}
+
+# The charter's own sum. A bar rewritten after the handoff is a different bar, and a verdict
+# answering the old one answers nothing here.
+charter_version() { cksum < "$(charter_file "$1")" 2>/dev/null | awk '{ print $1 }'; }
+
+# The producer moved on and the review did not. Stamping it anyway credits an old
+# answer to a commit that nobody ever read.
+refuse_a_revision_nobody_reviewed() {
+    [ "$1" = "$(delivered_ref)" ] && return 0
+
+    note "[$1] is not where this run is — its work is at [$(delivered_ref)]"
+    note "a review of one commit is not a review of another"
+    exit 35
+}
+
+refuse_a_judge_never_handed_the_bar() {
+    was_handed "$1" "$2" "$3" "$4" "$5" && return 0
+
+    note "nothing records [$3] being handed the bar for [$2] at [$4]"
+    note "  run.sh evidence handed <clause> <judge> is what says it was"
+    exit 36
+}
+
+# One row is enough and every field must be that row's. A handoff at another commit, or under a
+# charter since rewritten, is a different handoff.
+was_handed() {
+    awk -F'\t' -v name="$2" -v judge="$3" -v ref="$4" -v version="$5" '
+        $2 != "handed"      { next }
+        $4 "" != name ""    { next }
+        $8 "" != judge ""   { next }
+        $6 "" != ref ""     { next }
+        $7 "" == version "" { found = 1 }
+        END { exit !found }' "$(evidence_file "$1")" 2>/dev/null
 }
 
 #
