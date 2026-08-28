@@ -3496,10 +3496,18 @@ a_judged_clause_wants_a_verdict() {
   has "a Judged clause rests on no pin, so it is introduced" \
       "$(floor "$tmp/jd" complete 2>&1)" "introduced: [the interface is understandable]"
 
-  is "a verdict from something else is recorded" \
-     "$(code_of floor "$tmp/jd" evidence verdict 'the interface is understandable' 'A Reviewer' approve 'a stranger read it in two minutes')" "0"
-  has "as judged, never machine" "$(floor "$tmp/jd" evidence)" "	judged	"
-  has "carrying who said it"     "$(floor "$tmp/jd" evidence)" "A Reviewer: a stranger read it"
+  #
+  # An introduced clause names no panel, so nothing may answer it.
+  #
+  # Codex found this. A clause with no member fell through to `satisfied` with no filter, and any
+  # approval satisfied it. The defence was a second guard — that an introduced clause holds no pin —
+  # and a rule held up by another rule will not hold.
+  is  "a verdict for a clause naming nobody is refused" \
+      "$(code_of floor "$tmp/jd" evidence verdict 'the interface is understandable' 'A Reviewer' approve 'a stranger read it')" "2"
+  has "and it says to declare a panel" \
+      "$(floor_says "$tmp/jd" evidence verdict 'the interface is understandable' 'A Reviewer' approve 'a stranger read it')" "names no panel"
+  is  "and nothing is recorded" \
+      "$(floor "$tmp/jd" evidence | grep -c judged)" "0"
 
   # The mirror of the first refusal. An answer here is stamped `human` and satisfaction wants
   # `judged`, so without this the record says a person answered while completion still calls it unmet.
@@ -3601,6 +3609,47 @@ a_rejection_stops_the_work() {
   is "an approval after a rejection at one ref is still a stop" "$(code_of floor "$tmp/rj" complete)" "15"
 }
 a_rejection_stops_the_work
+
+#
+# A panel is several minds, and every one of them has to say yes.
+#
+# One judge per clause is not a panel. A majority is not one either: it lets the members who looked
+# hardest be outvoted by the ones who did not.
+#
+a_panel_agrees_or_nothing_moves() {
+  make_repo "$tmp/jury" main               || { skip "a panel — no repo"; return; }
+  set_origin "$tmp/jury" 'https://gitlab.com/acme/jury.git' || { skip "a panel — no origin"; return; }
+  mkdir -p "$tmp/jury/.foundry"            || { skip "a panel — no .foundry"; return; }
+  commit_file "$tmp/jury" .foundry/gates 'tests  true
+'                                          || { skip "a panel — no gates"; return; }
+  commit_file "$tmp/jury" .foundry/judged 'one,two  a stranger can read it
+'                                          || { skip "a panel — no judged"; return; }
+
+  floor_new_as "$tmp/jury" ada@example.com "Panel" >/dev/null
+  floor "$tmp/jury" charter derive >/dev/null 2>&1
+  floor "$tmp/jury" policy authorize 'https://gitlab.com/acme/jury.git' >/dev/null 2>&1
+  floor "$tmp/jury" targets add 'https://gitlab.com/acme/jury.git' main >/dev/null 2>&1
+  floor "$tmp/jury" open >/dev/null 2>&1
+  floor "$tmp/jury" gates >/dev/null 2>&1
+
+  is "a panel of two is recorded as two members"      "$(floor "$tmp/jury" charter | grep -c '^judge ')" "2"
+
+  has "with nobody heard, both are named"       "$(floor "$tmp/jury" complete 2>&1)" "no approval from [one two]"
+
+  floor "$tmp/jury" evidence verdict 'a stranger can read it' 'one' approve 'reads fine' >/dev/null 2>&1
+  is  "one approval is not the panel"       "$(code_of floor "$tmp/jury" complete)" "15"
+  has "and the silent member is named"      "$(floor "$tmp/jury" complete 2>&1)" "no approval from [two]"
+
+  floor "$tmp/jury" evidence verdict 'a stranger can read it' 'two' approve 'so does this' >/dev/null 2>&1
+  lacks "with both heard, the clause is met"         "$(floor "$tmp/jury" complete 2>&1)" "a stranger can read it"
+
+  # One dissent stops it, whatever the others said.
+  floor "$tmp/jury" evidence verdict 'a stranger can read it' 'two' reject 'on reflection, no' >/dev/null 2>&1
+  is "one member saying no stops the work" "$(code_of floor "$tmp/jury" complete)" "15"
+
+  is "somebody who is not on the panel may not answer"      "$(code_of floor "$tmp/jury" evidence verdict 'a stranger can read it' 'three' approve 'I say yes')" "2"
+}
+a_panel_agrees_or_nothing_moves
 a_declared_judgement_is_answered_by_a_verdict
 
 #

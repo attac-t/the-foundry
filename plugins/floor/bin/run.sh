@@ -2690,26 +2690,75 @@ unmet_clauses() {
     [ -n "$ref" ] || { printf 'nothing delivered: the workspace holds no commit to be graded at\n'; return; }
 
     awk '$1 == "clause" { print $2 }' "$file" 2>/dev/null | while read -r id; do
-        text=$(clause_text "$file" "$id")
+        what_it_lacks "$1" "$file" "$id" "$here" "$ref"
+    done
+}
 
-        # Three ways a clause is not met, and they take different remedies. A clause nothing pinned
-        # is invariant 1's *introduced*: no ref makes it true, and the answer that does is a human's,
-        # which the work source does not carry yet. Naming it `unverifiable` would send a reader
-        # looking for a checkout.
-        has_record "$file" pin "$id" \
-            || { printf 'introduced: [%s] rests on no pin, so no ref can satisfy it\n' "$text"; continue; }
-        has_local_pin "$file" "$id" "$here" \
-            || { printf 'unverifiable: [%s] is pinned to a repository this checkout is not\n' "$text"; continue; }
+#
+# What one clause is short of, or nothing at all.
+#
+# Three ways a clause is not met, and they take different remedies. A clause nothing pinned is
+# invariant 1's *introduced*: no ref makes it true, and the answer that does is a human's, which the
+# work source does not carry yet. Naming it `unverifiable` would send a reader looking for a checkout.
+what_it_lacks() {
+    text=$(clause_text "$2" "$3")
 
-        # The judge, where the kind names one. A Judged clause the charter left
-        # without one takes no verdict, so an empty answer leaves it unmet.
-        who=$(named_judge "$file" "$id")
+    has_record "$2" pin "$3" \
+        || { printf 'introduced: [%s] rests on no pin, so no ref can satisfy it\n' "$text"; return; }
 
-        satisfied "$1" "$text" "$ref" "$(answers_for "$(clause_kind "$file" "$id")")" "$who" && continue
+    has_local_pin "$2" "$3" "$4" \
+        || { printf 'unverifiable: [%s] is pinned to a repository this checkout is not\n' "$text"; return; }
 
-        [ -n "$who" ] && { printf 'unmet: [%s] at %s@%s — no approval from [%s]\n' "$text" "$here" "$ref" "$who"; continue; }
+    panel=$(named_judges "$2" "$3")
+    [ -n "$panel" ] && { what_the_panel_lacks "$1" "$text" "$4" "$5" "$panel"; return; }
 
-        printf 'unmet: [%s] at %s@%s\n' "$text" "$here" "$ref"
+    # A judged clause naming nobody is answered by nobody. Falling through let
+    # any verdict satisfy it, which is a reader removing a requirement.
+    [ "$(clause_kind "$2" "$3")" = Judged ] \
+        && { printf 'unmet: [%s] at %s@%s — its panel names nobody, so nothing can answer it\n' "$text" "$4" "$5"; return; }
+
+    satisfied "$1" "$text" "$5" "$(answers_for "$(clause_kind "$2" "$3")")" "" && return
+
+    printf 'unmet: [%s] at %s@%s\n' "$text" "$4" "$5"
+}
+
+# Every member said yes, or the ones who have not are named.
+what_the_panel_lacks() {
+    judged_by_all "$1" "$2" "$4" "$5" && return
+
+    printf 'unmet: [%s] at %s@%s — no approval from [%s]\n' \
+        "$2" "$3" "$4" "$(spaced "$(unheard_members "$1" "$2" "$4" "$5")")"
+}
+
+#
+# Every member of the panel said yes, at the ref delivered.
+#
+# **One dissent stops it.** A panel answering by majority would let the members who looked hardest
+# be outvoted by the ones who did not.
+#
+# An empty panel is not agreement. A clause naming nobody is answered by nobody.
+judged_by_all() {
+    [ -n "$4" ] || return 1
+
+    printf '%s
+' "$4" | while IFS= read -r who; do
+        [ -n "$who" ] || continue
+        satisfied "$1" "$2" "$3" judged "$who" || exit 1
+    done
+}
+
+# One line, one space between words, and none at either end. `one_line` leaves
+# the separator the loop wrote, which read as an empty member.
+spaced() { printf '%s' "$1" | awk '{ $1 = $1; print }' | tr '
+' ' ' | sed 's/ *$//'; }
+
+# Which members have not approved. Named, because a reader would otherwise
+# guess which of several is holding the work up.
+unheard_members() {
+    printf '%s
+' "$4" | while IFS= read -r who; do
+        [ -n "$who" ] || continue
+        satisfied "$1" "$2" "$3" judged "$who" || printf '%s ' "$who"
     done
 }
 
@@ -2809,14 +2858,20 @@ code_for_outcome() {
 # A clause with no judge recorded takes no verdict at all. A reader that came back empty must never
 # be the reason a requirement quietly went away.
 refuse_a_judge_nobody_asked() {
-    want=$(named_judge "$(charter_file "$1")" "$(clause_id "$2")")
+    panel=$(named_judges "$(charter_file "$1")" "$(clause_id "$2")")
 
-    [ "$want" = "$3" ] && return 0
+    printf '%s
+' "$panel" | grep -qx "$3" && return 0
 
-    # An introduced clause names nobody, because a hand wrote it rather than a declaration. It
-    # takes a verdict from anyone, and rests on no pin, so none satisfies it. Nothing is waived.
-    [ -n "$want" ] && { note "[$2] is answered by [$want], and this verdict is from [$3]"; exit 2; }
-    return 0
+    [ -n "$panel" ] && {
+        note "[$2] is answered by [$(spaced "$panel")], and this verdict is from [$3]"
+        exit 2
+    }
+
+    # A clause naming nobody takes no verdict at all. Letting one in rested on a second
+    # guard — no pin on an introduced clause — and a rule held up by another will not.
+    note "[$2] names no panel, so nothing can answer it — declare one and re-derive"
+    exit 2
 }
 
 refuse_a_kind_that_is_not_judged() {
@@ -3468,16 +3523,26 @@ while_reading_judged() {
 
         print_clause "$id" Judged "$text" >> "$draft" || return 1
         print_pin    "$id" "$target" "$ref" "$source" "$sha" >> "$draft" || return 1
-        print_judge  "$id" "$judge" >> "$draft" || return 1
+        print_judges "$id" "$judge" >> "$draft" || return 1
     done
     return 0
 }
 
 # Who may answer this clause, as the repository named them.
-print_judge() { printf 'judge %s %s
-' "$1" "$2"; }
+#
+# One record per member of the panel.
+#
+# A panel is several minds, and a clause naming one is not a panel. Each member is written on its own
+# line, so a charter says who sits and completion can name whichever has not spoken.
+print_judges() {
+    printf '%s\n' "$2" | tr ',' '\n' | while IFS= read -r who; do
+        [ -n "$who" ] || continue
+        printf 'judge %s %s\n' "$1" "$who"
+    done
+}
 
-named_judge() { awk -v want="$2" '$1 == "judge" && $2 == want { print $3; exit }' "$1" 2>/dev/null; }
+# Every member, one per line, in the order the repository declared them.
+named_judges() { awk -v want="$2" '$1 == "judge" && $2 == want { print $3 }' "$1" 2>/dev/null; }
 
 #
 # Clauses nothing derived survive a re-derivation, unless this run has just derived them.

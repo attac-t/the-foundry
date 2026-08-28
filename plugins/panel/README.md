@@ -92,6 +92,18 @@ Not shipped    The parent's own write scope is unconstrained.
 
 ---
 
+## Looking back
+
+A verdict says whether the work is good. It does not say whether the review was.
+
+`kernel:retrospect` asks that, and needs no Panel. Where Panel is installed, the same judge that
+refused the work is the one who can say what the refusal cost — and `bin/brief.sh` hands any model
+the role to do it in.
+
+**A panel that never reviews itself is a panel nobody has checked.**
+
+---
+
 ## Install
 
 Standalone.
