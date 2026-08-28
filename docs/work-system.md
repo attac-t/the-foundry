@@ -85,7 +85,7 @@ carrying that name reached the evidence file.
 
 | Plugin | Did |
 |---|---|
-| Floor | derived the charter, held the pins, ran the gate, refused delivery, recorded every row |
+| Floor | derived the charter, held the pins, ran the gate, refused to complete, recorded every row |
 | Panel | supplied the adversary's own instructions, handed over by `panel/bin/brief.sh` |
 | Kernel | the craft standard the change was written to, and the look back after |
 | Signal | the words, here and in the pull request |
