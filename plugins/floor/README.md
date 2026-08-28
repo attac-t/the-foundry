@@ -1018,6 +1018,18 @@ It says nothing about whether the commits are any good. That is the charter's jo
 
 ---
 
+## When a run ends
+
+**Nothing here makes you look back, and that is the gap.** A run records what happened. Whether
+anything was learned from it is a person's act, or a skill's.
+
+`kernel:retrospect` asks the four questions and needs no Floor. Where Floor is installed, its
+answers belong in the run's own record — `run.sh observe` takes one, and it outlives the session.
+
+A learning that dies with the harness was never a learning.
+
+---
+
 ## May this run deliver?
 
 ```bash

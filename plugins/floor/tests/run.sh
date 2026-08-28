@@ -864,7 +864,7 @@ wreck_runner "a grader reading a selection nobody authorised is caught" \
 # second and an introduced clause reads as one belonging to another checkout — a reader sent looking
 # for a workspace, where the answer is a human's.
 wreck_runner "an introduced clause reported as another repository's is caught" \
-  introducedaway 's#has_record "$file" pin "$id"#true#'
+  introducedaway 's#has_record "$2" pin "$3"#true#'
 
 # The isolation itself. A worktree shares `.git` with the checkout it came from, so a worker could
 # move the source's refs — and it leaves a `.git` file where a clone leaves a directory, which is

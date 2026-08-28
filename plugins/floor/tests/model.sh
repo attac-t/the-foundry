@@ -3496,10 +3496,18 @@ a_judged_clause_wants_a_verdict() {
   has "a Judged clause rests on no pin, so it is introduced" \
       "$(floor "$tmp/jd" complete 2>&1)" "introduced: [the interface is understandable]"
 
-  is "a verdict from something else is recorded" \
-     "$(code_of floor "$tmp/jd" evidence verdict 'the interface is understandable' 'A Reviewer' approve 'a stranger read it in two minutes')" "0"
-  has "as judged, never machine" "$(floor "$tmp/jd" evidence)" "	judged	"
-  has "carrying who said it"     "$(floor "$tmp/jd" evidence)" "A Reviewer: a stranger read it"
+  #
+  # An introduced clause names no panel, so nothing may answer it.
+  #
+  # Codex found this. A clause with no member fell through to `satisfied` with no filter, and any
+  # approval satisfied it. The defence was a second guard — that an introduced clause holds no pin —
+  # and a rule held up by another rule will not hold.
+  is  "a verdict for a clause naming nobody is refused" \
+      "$(code_of floor "$tmp/jd" evidence verdict 'the interface is understandable' 'A Reviewer' approve 'a stranger read it')" "2"
+  has "and it says to declare a panel" \
+      "$(floor_says "$tmp/jd" evidence verdict 'the interface is understandable' 'A Reviewer' approve 'a stranger read it')" "names no panel"
+  is  "and nothing is recorded" \
+      "$(floor "$tmp/jd" evidence | grep -c judged)" "0"
 
   # The mirror of the first refusal. An answer here is stamped `human` and satisfaction wants
   # `judged`, so without this the record says a person answered while completion still calls it unmet.

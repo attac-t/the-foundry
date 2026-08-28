@@ -2690,33 +2690,44 @@ unmet_clauses() {
     [ -n "$ref" ] || { printf 'nothing delivered: the workspace holds no commit to be graded at\n'; return; }
 
     awk '$1 == "clause" { print $2 }' "$file" 2>/dev/null | while read -r id; do
-        text=$(clause_text "$file" "$id")
-
-        # Three ways a clause is not met, and they take different remedies. A clause nothing pinned
-        # is invariant 1's *introduced*: no ref makes it true, and the answer that does is a human's,
-        # which the work source does not carry yet. Naming it `unverifiable` would send a reader
-        # looking for a checkout.
-        has_record "$file" pin "$id" \
-            || { printf 'introduced: [%s] rests on no pin, so no ref can satisfy it\n' "$text"; continue; }
-        has_local_pin "$file" "$id" "$here" \
-            || { printf 'unverifiable: [%s] is pinned to a repository this checkout is not\n' "$text"; continue; }
-
-        # The panel, where the kind names one. A clause the charter left without
-        # a member takes no verdict, so an empty answer leaves it unmet.
-        panel=$(named_judges "$file" "$id")
-
-        [ -n "$panel" ] && {
-            judged_by_all "$1" "$text" "$ref" "$panel" && continue
-
-            printf 'unmet: [%s] at %s@%s — no approval from [%s]\n' \
-                "$text" "$here" "$ref" "$(spaced "$(unheard_members "$1" "$text" "$ref" "$panel")")"
-            continue
-        }
-
-        satisfied "$1" "$text" "$ref" "$(answers_for "$(clause_kind "$file" "$id")")" "" && continue
-
-        printf 'unmet: [%s] at %s@%s\n' "$text" "$here" "$ref"
+        what_it_lacks "$1" "$file" "$id" "$here" "$ref"
     done
+}
+
+#
+# What one clause is short of, or nothing at all.
+#
+# Three ways a clause is not met, and they take different remedies. A clause nothing pinned is
+# invariant 1's *introduced*: no ref makes it true, and the answer that does is a human's, which the
+# work source does not carry yet. Naming it `unverifiable` would send a reader looking for a checkout.
+what_it_lacks() {
+    text=$(clause_text "$2" "$3")
+
+    has_record "$2" pin "$3" \
+        || { printf 'introduced: [%s] rests on no pin, so no ref can satisfy it\n' "$text"; return; }
+
+    has_local_pin "$2" "$3" "$4" \
+        || { printf 'unverifiable: [%s] is pinned to a repository this checkout is not\n' "$text"; return; }
+
+    panel=$(named_judges "$2" "$3")
+    [ -n "$panel" ] && { what_the_panel_lacks "$1" "$text" "$4" "$5" "$panel"; return; }
+
+    # A judged clause naming nobody is answered by nobody. Falling through let
+    # any verdict satisfy it, which is a reader removing a requirement.
+    [ "$(clause_kind "$2" "$3")" = Judged ] \
+        && { printf 'unmet: [%s] at %s@%s — its panel names nobody, so nothing can answer it\n' "$text" "$4" "$5"; return; }
+
+    satisfied "$1" "$text" "$5" "$(answers_for "$(clause_kind "$2" "$3")")" "" && return
+
+    printf 'unmet: [%s] at %s@%s\n' "$text" "$4" "$5"
+}
+
+# Every member said yes, or the ones who have not are named.
+what_the_panel_lacks() {
+    judged_by_all "$1" "$2" "$4" "$5" && return
+
+    printf 'unmet: [%s] at %s@%s — no approval from [%s]\n' \
+        "$2" "$3" "$4" "$(spaced "$(unheard_members "$1" "$2" "$4" "$5")")"
 }
 
 #
@@ -2852,13 +2863,15 @@ refuse_a_judge_nobody_asked() {
     printf '%s
 ' "$panel" | grep -qx "$3" && return 0
 
-    # An introduced clause names nobody, because a hand wrote it rather than a declaration. It
-    # takes a verdict from anyone, and rests on no pin, so none satisfies it. Nothing is waived.
     [ -n "$panel" ] && {
-        note "[$2] is answered by [$(one_line "$panel")], and this verdict is from [$3]"
+        note "[$2] is answered by [$(spaced "$panel")], and this verdict is from [$3]"
         exit 2
     }
-    return 0
+
+    # A clause naming nobody takes no verdict at all. Letting one in rested on a second
+    # guard — no pin on an introduced clause — and a rule held up by another will not.
+    note "[$2] names no panel, so nothing can answer it — declare one and re-derive"
+    exit 2
 }
 
 refuse_a_kind_that_is_not_judged() {
