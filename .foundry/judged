@@ -1,0 +1,9 @@
+# What no command here can answer, and who answers it.
+#
+# `judge  source  text`, and the judge is one word. `.foundry/gates` holds the half a command can
+# settle. This holds the half it cannot, and a verdict from the named judge is what settles it.
+#
+# **A run may not answer this one.** That is the whole of what `judged` means, and `run.sh evidence
+# verdict` refuses a judge that is the run's own worker.
+
+panel:adversary  a change to what a run may claim is judged by something that did not write it
