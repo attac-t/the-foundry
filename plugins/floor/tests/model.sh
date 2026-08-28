@@ -3585,17 +3585,35 @@ a_rejection_stops_the_work() {
 ' && commit_file "$tmp/rj" .foundry/judged 'a-reviewer  a stranger can read it
 ' || { skip "a rejection — git could not make a repo here"; return; }
 
-  floor_new_as "$tmp/rj" ada@example.com "Rejected" >/dev/null
+  rjid=$(basename "$(floor_new_as "$tmp/rj" ada@example.com "Rejected")")
   floor "$tmp/rj" charter derive >/dev/null 2>&1
   floor "$tmp/rj" policy authorize 'https://gitlab.com/acme/rj.git' >/dev/null 2>&1
+  floor "$tmp/rj" policy deliver-to 'https://gitlab.com/acme/rj.git' >/dev/null 2>&1
   floor "$tmp/rj" targets add 'https://gitlab.com/acme/rj.git' main >/dev/null 2>&1
   floor "$tmp/rj" open >/dev/null 2>&1
   floor "$tmp/rj" gates >/dev/null 2>&1
 
+  #
+  # Green everywhere, then refused. That is the shape that shows the refusal is what stops it.
+  #
+  # Without the approval first, the clause blocks for want of any verdict, and a rejection would
+  # prove nothing about rejections.
+  floor "$tmp/rj" evidence verdict 'a stranger can read it' 'a-reviewer' approve 'it reads' >/dev/null 2>&1
+  is "with the gate green and the judge content, it may deliver" "$(code_of floor "$tmp/rj" complete)" "0"
+
   floor "$tmp/rj" evidence verdict 'a stranger can read it' 'a-reviewer' reject 'it is not understandable' >/dev/null 2>&1
-  is  "a rejection leaves the run unable to deliver" "$(code_of floor "$tmp/rj" complete)" "15"
+  is  "a rejection alone leaves the run unable to deliver" "$(code_of floor "$tmp/rj" complete)" "15"
   has "and the clause is named unmet"               "$(floor "$tmp/rj" complete 2>&1)" "a stranger can read it"
   has "and the rejection is in the record"          "$(floor "$tmp/rj" evidence)" "it is not understandable"
+
+  # `complete` is the question. `deliver` is the act, and a refusal that answers only the
+  # question stops nothing — the same clause has to hold the push back.
+  is  "and the delivery itself is refused, not only the question" \
+      "$(code_of floor "$tmp/rj" deliver 'a change')" "15"
+  has "for the clause, and not for want of a grant" \
+      "$(floor_says "$tmp/rj" deliver 'a change')" "a stranger can read it"
+  is  "and the run is still only graded, never delivered" \
+      "$(floor "$tmp/rj" runs | awk -v id="$rjid" '$2 == id { print $1 }')" "graded"
 
   # A second look, asked for. Neither a yes nor a silence.
   floor "$tmp/rj" evidence verdict 'a stranger can read it' 'a-reviewer' revise 'shorten the second half' >/dev/null 2>&1
