@@ -103,7 +103,7 @@ the_round_before_comes_from_the_chain() {
   said=$(brief adversary 'a clause' --verdicts "$chain" --review R1)
   has "the prior round arrives in full"  "$said" "round one of this review said revise"
   has "and it names the record that was read"  "$said" "verdicts.sh prior"
-  has "and it says nothing was retyped"        "$said" "nothing was retyped"
+  has "and it says who owns the chain"        "$said" "whoever convened it owns that"
 
   first=$(brief adversary 'a clause' --verdicts "$tmp/empty" --review R1)
   has "an empty chain says so, and names itself" "$first" "holds no round"

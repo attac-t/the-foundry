@@ -149,7 +149,9 @@ say_the_prior() {
     printf '\n---\n\n# The round before this one, in full\n\n'
     cat "$prior_file"
     printf '\n`verdicts.sh prior` named that record, for review [%s] round [%s].\n' "$review" "$round"
-    printf 'Nothing else was read, and nothing was retyped on the way.\n'
+    printf 'Nothing else was read. What that record holds is what you were given.\n'
+    printf '\nPanel refuses a missing predecessor inside this chain. It cannot know this is the\n'
+    printf 'chain for your review — whoever convened it owns that.\n'
 }
 
 #
