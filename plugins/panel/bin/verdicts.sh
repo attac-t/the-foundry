@@ -44,11 +44,17 @@ note() { printf 'panel: %s\n' "$1" >&2; }
 # Verdict files are `NNN-<role>-verdict.md`. The number is the round.
 rounds() { ls "$1" 2>/dev/null | sed -n 's/^\([0-9][0-9]*\)-.*-verdict\.md$/\1/p'; }
 
-# The round after the last one recorded. It says which, and still
-# answers: a coordinator asks it before that directory exists.
-# One mistyped path looks exactly the same as an empty one.
+#
+# The round after the last one recorded.
+#
+# **A path that is not there is a mistake, never a new chain.** The comment here used to say those
+# two look the same, and they did: one mistyped directory answered `001`, and a review on its fifth
+# round was handed to a judge as its first.
+#
+# A real directory holding no rounds is still a new chain. That is the only way to be round one.
 next_round() {
     [ -n "$1" ] || { note "next needs a verdicts directory"; exit 2; }
+    [ -d "$1" ] || { note "no directory at [$1] — a chain nobody made is not a chain with no rounds"; exit 2; }
 
     last=$(last_round "$1")
     [ -n "$last" ] || { note "no rounds at [$1] — this is a new chain"; last=0; }

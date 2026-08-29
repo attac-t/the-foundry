@@ -35,10 +35,11 @@ b=$tmp/review-b
 
 # --- numbering ---
 
-is "an empty chain starts at round 1" "$(chain next "$a")" "001"
+mkdir -p "$a" "$b"
 
-# A chain with no rounds and a mistyped path are the same directory to `next`, and `001` is the one
-# round `prior` exempts. It cannot tell them apart — it can say which one it thinks this is.
+# A chain with no rounds is round one. A path nobody made is a mistake, and `next` now tells them
+# apart — the same directory answered both before, and a fifth round reached a judge as its first.
+is "an empty chain starts at round 1" "$(chain next "$a")" "001"
 has   "and says it is a new chain" "$(chain_says next "$a")" "this is a new chain"
 
 verdict "$a" 001 adversary "the charter"
@@ -133,5 +134,21 @@ is "the body is written through, not read" \
 
 is "a role that is not a plain name is refused" \
    "$(code_of sh "$runner" record "$d" '../escape' 'the charter')" "2"
+
+
+#
+# A path that is not there is a mistake, never a new chain. One mistyped directory answered round
+# one, and a review on its fifth round reached a judge as its first.
+#
+a_chain_nobody_made_is_not_an_empty_one() {
+  is "a directory that is not there is refused" \
+     "$(code_of sh "$runner" next "$tmp/no-such-chain")" "2"
+  has "and it says which it is"  "$(chain_says next "$tmp/no-such-chain")" "a chain nobody made"
+
+  mkdir -p "$tmp/real-empty"
+  is "a real directory holding no rounds is round one" \
+     "$(chain next "$tmp/real-empty")" "001"
+}
+a_chain_nobody_made_is_not_an_empty_one
 
 summary "chain"
