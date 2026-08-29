@@ -126,6 +126,8 @@ wreck_brief "a directory passing for a charter is caught" \
 
 wreck_brief "a prior round described instead of handed is caught"   toldprior 's#^    cat "\$prior" || fail 4 "the prior at \[\$prior\] could not be read"$#    printf "there was a prior round\n"#'
 
+wreck_brief "a prior from another review passing for this chain is caught"   anyprior 's#^    grep -Fq -- "\$review" "\$prior" \&\& return 0$#    return 0#'
+
 wreck_brief "a role's declared skills quietly dropped is caught" \
   noskills 's#^    declared_skills "\$file" | while IFS= read -r skill; do#    false | while IFS= read -r skill; do#'
 

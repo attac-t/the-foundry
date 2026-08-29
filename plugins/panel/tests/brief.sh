@@ -92,17 +92,31 @@ what_reaches_the_judge
 # handed, and `verdicts/` may hold another review's leftovers.
 #
 the_round_before_is_handed_over() {
-  printf 'round one said revise, for this reason\n' > "$tmp/prior"
+  printf 'round one of review R1 said revise, for this reason\n' > "$tmp/prior"
 
-  said=$(brief adversary 'a clause' --prior "$tmp/prior")
-  has "the prior round arrives in full"  "$said" "round one said revise, for this reason"
+  said=$(brief adversary 'a clause' --prior "$tmp/prior" --review R1)
+  has "the prior round arrives in full"  "$said" "round one of review R1 said revise"
   has "and it says not to go looking"    "$said" "belongs to another review"
 
   first=$(brief adversary 'a clause')
   has "round one says so plainly"        "$first" "NONE. This is round one."
 
   is "a prior that is not a file is refused" \
-     "$(code_of brief adversary 'a clause' --prior "$tmp/adir")" "4"
+     "$(code_of brief adversary 'a clause' --prior "$tmp/adir" --review R1)" "4"
+
+  #
+  # A file is not a record. Without this the convener could hand any text and call it the chain,
+  # which is the whole thing `verdicts.sh` refuses.
+  printf 'round one of review R7 said revise\n' > "$tmp/stamped"
+
+  is "a prior that does not name the review is refused" \
+     "$(code_of brief adversary 'a clause' --prior "$tmp/stamped" --review R9)" "5"
+  has "and it says whose chain it is not" \
+      "$(brief_says adversary 'a clause' --prior "$tmp/stamped" --review R9)" "another review"
+  is "a prior with no review named is refused" \
+     "$(code_of brief adversary 'a clause' --prior "$tmp/stamped")" "2"
+  is "a prior that names its review is taken" \
+     "$(code_of brief adversary 'a clause' --prior "$tmp/stamped" --review R7)" "0"
 }
 the_round_before_is_handed_over
 

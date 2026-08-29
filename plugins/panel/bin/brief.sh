@@ -7,7 +7,7 @@
 # and whoever convenes the panel writes the reviewer's instructions — a quieter way of writing its
 # verdict.
 #
-#   sh bin/brief.sh adversary "a clause" --charter FILE --work FILE --prior FILE
+#   sh bin/brief.sh adversary "a clause" --charter FILE --work FILE --prior FILE --review ID
 #
 # **A path is not a handoff.** Every part is read here and printed, so what the judge was given is
 # what this command emitted. An audit reads one stream, never a directory it hopes was reachable.
@@ -15,6 +15,7 @@
 # Prints to stdout. Hand it to any model, on any host, however that host takes a prompt.
 #
 # Exit: 0 printed. 2 called wrongly. 3 no such role. 4 a named file could not be read.
+#       5 the prior round belongs to another review.
 
 set -u
 
@@ -23,6 +24,7 @@ root=$(cd "$(dirname "$0")/.." && pwd)
 main() {
     read_arguments "$@"
     locate_role
+    refuse_a_prior_from_elsewhere
 
     say_the_role
     say_the_skills
@@ -41,6 +43,7 @@ read_arguments() {
     charter=
     work=
     prior=
+    review=
 
     [ -n "$role" ] && [ -n "$clause" ] || fail 2 'name a role and the clause it answers'
     [ "$#" -ge 2 ] && shift 2
@@ -50,6 +53,7 @@ read_arguments() {
             --charter) charter=${2:-}; refuse_unreadable charter "$charter" ;;
             --work)    work=${2:-};    refuse_unreadable work "$work" ;;
             --prior)   prior=${2:-}; refuse_unreadable prior "$prior" ;;
+            --review)  review=${2:-}; [ -n "$review" ] || fail 2 "review names the chain" ;;
             *)         fail 2 "unknown argument [$1]" ;;
         esac
         shift 2
@@ -130,18 +134,32 @@ say_the_work() {
 }
 
 #
-# The round before this one, handed rather than described.
+# The round before this one, handed rather than described, and stamped.
 #
 # The Adversary refuses to judge a round whose history it was told. `verdicts/` is Panel's own
 # chain, and a repository recording its rounds elsewhere leaves that directory holding another
 # review's leftovers — which is the case the role is right to refuse.
+#
+# **A file is not a record.** `verdicts.sh` refuses a prior that does not name the review, and so
+# does this: without that check the convener could hand any text and call it the chain.
 say_the_prior() {
     [ -n "$prior" ] || { printf '\n---\n\n# The round before this one\n\nNONE. This is round one.\n'; return; }
 
     printf '\n---\n\n# The round before this one, in full\n\n'
     cat "$prior" || fail 4 "the prior at [$prior] could not be read"
-    printf '\nThat is this chain, handed to you. Do not go looking for it in `verdicts/` — anything\n'
-    printf 'there belongs to another review.\n'
+    printf '\nThat is this chain, handed to you, and it names review [%s].\n' "$review"
+    printf 'Do not go looking in `verdicts/` — anything there belongs to another review.\n'
+}
+
+# The same rule `verdicts.sh` holds, at the seam where a prior enters. A record from another review
+# is not this chain's history.
+refuse_a_prior_from_elsewhere() {
+    [ -n "$prior" ] || return 0
+    [ -n "$review" ] || fail 2 'a prior round needs the review it belongs to — pass --review'
+
+    grep -Fq -- "$review" "$prior" && return 0
+
+    fail 5 "the prior at [$prior] does not name review [$review] — that is another review's chain"
 }
 
 say_the_clause() { printf '\n---\n\n# The clause you answer\n\n    %s\n\n' "$clause"; }
