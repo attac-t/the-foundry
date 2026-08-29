@@ -151,4 +151,30 @@ a_chain_nobody_made_is_not_an_empty_one() {
 }
 a_chain_nobody_made_is_not_an_empty_one
 
+
+#
+# A longer id contains a shorter one, and a body can mention any review it likes. The search used to
+# match anywhere, so `Judged: R10` answered a request for `R1`.
+#
+one_review_id_inside_another_is_not_a_match() {
+  c=$tmp/collide
+  mkdir -p "$c"
+  printf 'nothing to say\n' | chain record "$c" adversary R10 >/dev/null 2>&1
+
+  is "a longer review id does not satisfy a shorter one" \
+     "$(code_of sh "$runner" prior "$c" 2 R1)" "1"
+  has "and it says whose chain it is" \
+      "$(chain_says prior "$c" 2 R1)" "another review's chain"
+
+  b=$tmp/mention
+  mkdir -p "$b"
+  printf 'this one talks about R1 in passing\n' | chain record "$b" adversary R2 >/dev/null 2>&1
+  is "a body that merely mentions a review does not satisfy it" \
+     "$(code_of sh "$runner" prior "$b" 2 R1)" "1"
+
+  is "and the review it does name is satisfied" \
+     "$(code_of sh "$runner" prior "$b" 2 R2)" "0"
+}
+one_review_id_inside_another_is_not_a_match
+
 summary "chain"

@@ -105,7 +105,10 @@ prior_round() {
 
     # A record from another review is not this chain's history. Two reviews in one directory, or a
     # verdict left behind by an older charter, would otherwise satisfy a round it never saw.
-    grep -Fq -- "$review" "$file" || {
+    #
+    # The recorder's own `Judged:` line, whole. A search of the body matched anywhere: `Judged: R10`
+    # answered a request for `R1`, and so did any verdict that merely mentioned it.
+    names_the_review "$file" "$review" || {
         note "the round $want verdict does not name [$review] — that is another review's chain"
         exit 1
     }
@@ -151,6 +154,13 @@ find_verdict() {
     ls "$1" 2>/dev/null \
         | awk -v want="$2" '{ n = $0; sub(/-.*/, "", n); if (n + 0 == want + 0 && /-verdict\.md$/) { print; exit } }' \
         | sed "s|^|$1/|"
+}
+
+# The recorder writes one `Judged:` line and owns it. Compared whole, so a longer id cannot
+# contain a shorter one and a body that mentions a review cannot pass for it.
+names_the_review() {
+    awk -v want="$2" '$1 == "Judged:" { $1 = ""; sub(/^ /, ""); if ($0 == want) found = 1 }
+        END { exit !found }' "$1" 2>/dev/null
 }
 
 main "$@"
