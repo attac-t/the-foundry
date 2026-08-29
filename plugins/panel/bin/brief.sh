@@ -7,7 +7,7 @@
 # and whoever convenes the panel writes the reviewer's instructions — a quieter way of writing its
 # verdict.
 #
-#   sh bin/brief.sh adversary "a clause" --charter FILE --work FILE --verdicts DIR --round N --review ID
+#   sh bin/brief.sh adversary "a clause" --charter FILE --work FILE --verdicts DIR --review ID
 #
 # **A path is not a handoff.** Every part is read here and printed, so what the judge was given is
 # what this command emitted. An audit reads one stream, never a directory it hopes was reachable.
@@ -54,7 +54,6 @@ read_arguments() {
             --charter) charter=${2:-}; refuse_unreadable charter "$charter" ;;
             --work)    work=${2:-};    refuse_unreadable work "$work" ;;
             --verdicts) verdicts=${2:-}; [ -n "$verdicts" ] || fail 2 "verdicts names a directory" ;;
-            --round)   round=${2:-}; [ -n "$round" ] || fail 2 "round names a number" ;;
             --review)  review=${2:-}; [ -n "$review" ] || fail 2 "review names the chain" ;;
             *)         fail 2 "unknown argument [$1]" ;;
         esac
@@ -138,14 +137,14 @@ say_the_work() {
 #
 # The round before this one, fetched through the chain rather than handed in.
 #
-# The Adversary refuses to judge a history it was told. A file passed on the command line is a
-# telling: any prose naming the review would pass, and the convener would be writing the chain it
-# claims to be reading from.
+# The Adversary refuses to judge a history it was told. A file on the command line is a telling: any
+# prose naming the review would pass, and the convener would be writing the chain it claims to read.
 #
-# `verdicts.sh prior` is the mechanism. It reads the review's own directory, finds the round being
-# claimed, and exits 1 when nothing records it. This asks that question and prints what comes back.
+# **The caller does not say which round this is.** It said `--round` once, and omitting it
+# manufactured a round one — a reset anybody could take by leaving a flag out. The chain answers
+# that question now, and the only way to be round one is for the chain to hold nothing.
 say_the_prior() {
-    [ -n "$round" ] || { printf '\n---\n\n# The round before this one\n\nNONE. This is round one.\n'; return; }
+    [ "$round" = 1 ] && { printf '\n---\n\n# The round before this one\n\nNONE. The chain at [%s] holds no round, so this is round one.\n' "$verdicts"; return; }
 
     printf '\n---\n\n# The round before this one, in full\n\n'
     cat "$prior_file"
@@ -160,10 +159,15 @@ say_the_prior() {
 # proceed with the round unmentioned.
 locate_the_prior() {
     prior_file=
-    [ -n "$round" ] || return 0
 
     [ -n "$verdicts" ] && [ -n "$review" ] \
-        || fail 2 'a round after the first needs --verdicts and --review'
+        || fail 2 'a brief names the chain it answers to — pass --verdicts and --review'
+
+    round=$("$root/bin/verdicts.sh" next "$verdicts" 2>/dev/null) \
+        || fail 5 "the chain at [$verdicts] could not say which round this is"
+    round=$((round))
+
+    [ "$round" = 1 ] && return 0
 
     prior_file=$("$root/bin/verdicts.sh" prior "$verdicts" "$round" "$review") \
         || fail 5 "no record of round $((round - 1)) for review [$review] in [$verdicts]"
