@@ -12,6 +12,9 @@ here="$(cd "$(dirname "$0")/.." && pwd)"
 runner="${RUNNER:-$here/bin/brief.sh}"
 tmp="${TMPDIR:-/tmp}/panel-brief-$$"
 mkdir -p "$tmp"
+
+# A real directory holding no rounds. `next` refuses a path nobody made, so this must exist.
+mkdir -p "$tmp/empty"
 trap 'rm -rf "$tmp"' EXIT
 
 brief() { sh "$runner" "$@" 2>/dev/null; }
@@ -29,19 +32,19 @@ printf 'the work\n' > "$tmp/work"
 # as though the bar had gone over.
 a_named_file_that_cannot_be_read_stops_it() {
   is "an unreadable charter is refused" \
-     "$(code_of brief adversary 'a clause' --verdicts \"$tmp/empty\" --review R1 --charter "$tmp/nothing-here")" "4"
-  has "and it says which file"  "$(brief_says adversary 'a clause' --verdicts \"$tmp/empty\" --review R1 --charter "$tmp/nothing-here")" "is not a file"
+     "$(code_of brief adversary 'a clause' --verdicts "$tmp/empty" --review R1 --charter "$tmp/nothing-here")" "4"
+  has "and it says which file"  "$(brief_says adversary 'a clause' --verdicts "$tmp/empty" --review R1 --charter "$tmp/nothing-here")" "is not a file"
 
   is "an unreadable work file is refused" \
-     "$(code_of brief adversary 'a clause' --verdicts \"$tmp/empty\" --review R1 --work "$tmp/nothing-here")" "4"
+     "$(code_of brief adversary 'a clause' --verdicts "$tmp/empty" --review R1 --work "$tmp/nothing-here")" "4"
 
   # A directory is readable. `cat` then failed, `main` carried on, and the brief printed an empty
   # charter block and returned 0.
   mkdir -p "$tmp/adir"
   is "a directory named as the charter is refused" \
-     "$(code_of brief adversary 'a clause' --verdicts \"$tmp/empty\" --review R1 --charter "$tmp/adir")" "4"
+     "$(code_of brief adversary 'a clause' --verdicts "$tmp/empty" --review R1 --charter "$tmp/adir")" "4"
   has "and it says a directory is not one" \
-      "$(brief_says adversary 'a clause' --verdicts \"$tmp/empty\" --review R1 --charter "$tmp/adir")" "is not a file"
+      "$(brief_says adversary 'a clause' --verdicts "$tmp/empty" --review R1 --charter "$tmp/adir")" "is not a file"
 
   #
   # The only case `-f` does not already catch: a real file the caller may not read.
@@ -54,13 +57,13 @@ a_named_file_that_cannot_be_read_stops_it() {
     skip "a file the caller may not read — this shell reads it anyway"
   else
     is "a file that cannot be read is refused" \
-       "$(code_of brief adversary 'a clause' --verdicts \"$tmp/empty\" --review R1 --charter "$tmp/shut")" "4"
+       "$(code_of brief adversary 'a clause' --verdicts "$tmp/empty" --review R1 --charter "$tmp/shut")" "4"
     has "and it says it cannot read it" \
-        "$(brief_says adversary 'a clause' --verdicts \"$tmp/empty\" --review R1 --charter "$tmp/shut")" "cannot read the charter"
+        "$(brief_says adversary 'a clause' --verdicts "$tmp/empty" --review R1 --charter "$tmp/shut")" "cannot read the charter"
   fi
 
-  is "a flag with no value is refused"  "$(code_of brief adversary 'a clause' --verdicts \"$tmp/empty\" --review R1 --charter)" "2"
-  is "an argument nobody defined is refused"  "$(code_of brief adversary 'a clause' --verdicts \"$tmp/empty\" --review R1 --wat x)" "2"
+  is "a flag with no value is refused"  "$(code_of brief adversary 'a clause' --verdicts "$tmp/empty" --review R1 --charter)" "2"
+  is "an argument nobody defined is refused"  "$(code_of brief adversary 'a clause' --verdicts "$tmp/empty" --review R1 --wat x)" "2"
 }
 a_named_file_that_cannot_be_read_stops_it
 
@@ -68,7 +71,7 @@ a_named_file_that_cannot_be_read_stops_it
 # What the judge is actually given. A path it was told to open is not a thing it was given.
 #
 what_reaches_the_judge() {
-  said=$(brief adversary 'a stranger can read it' --verdicts \"$tmp/empty\" --review R1 --charter "$tmp/charter" --work "$tmp/work")
+  said=$(brief adversary 'a stranger can read it' --verdicts "$tmp/empty" --review R1 --charter "$tmp/charter" --work "$tmp/work")
 
   has "the role's own words"        "$said" "You are the **Adversary**"
   has "the clause it answers"       "$said" "a stranger can read it"
@@ -78,11 +81,11 @@ what_reaches_the_judge() {
   has "which outcome words bind"    "$said" "VERDICT: revise"
 
   # Absent is legal. Silent is not.
-  bare=$(brief adversary 'a clause' --verdicts \"$tmp/empty\" --review R1)
+  bare=$(brief adversary 'a clause' --verdicts "$tmp/empty" --review R1)
   has "a missing charter is said out loud" "$bare" "NOT SUPPLIED"
-  is  "and that is not an error"           "$(code_of brief adversary 'a clause' --verdicts \"$tmp/empty\" --review R1)" "0"
+  is  "and that is not an error"           "$(code_of brief adversary 'a clause' --verdicts "$tmp/empty" --review R1)" "0"
 
-  is "no role is refused"  "$(code_of brief nobody 'a clause' --verdicts \"$tmp/empty\" --review R1)" "3"
+  is "no role is refused"  "$(code_of brief nobody 'a clause' --verdicts "$tmp/empty" --review R1)" "3"
   is "no clause is refused" "$(code_of brief adversary --verdicts "$tmp/empty" --review R1)" "2"
 }
 what_reaches_the_judge
