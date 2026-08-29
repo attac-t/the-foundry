@@ -124,9 +124,11 @@ wreck_brief() {
 wreck_brief "a directory passing for a charter is caught" \
   dirbar 's#^    \[ -f "\$2" \] || fail 4 "the \$1 at \[\$2\] is not a file"$#    :#'
 
-wreck_brief "a prior round described instead of handed is caught"   toldprior 's#^    cat "\$prior" || fail 4 "the prior at \[\$prior\] could not be read"$#    printf "there was a prior round\n"#'
-
-wreck_brief "a prior from another review passing for this chain is caught"   anyprior 's#^    grep -Fq -- "\$review" "\$prior" \&\& return 0$#    return 0#'
+#
+  noprior 's#fail 5 #true #g'
+# nothing pass for one that does, which is the fail-closed rule inverted.
+wreck_brief "a chain that records nothing answered as a prior round is caught" \
+  noprior '169s#.*#        || true#; 172s#.*#        || true#'
 
 wreck_brief "a role's declared skills quietly dropped is caught" \
   noskills 's#^    declared_skills "\$file" | while IFS= read -r skill; do#    false | while IFS= read -r skill; do#'

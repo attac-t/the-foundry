@@ -88,36 +88,31 @@ what_reaches_the_judge() {
 what_reaches_the_judge
 
 #
-# The round before this one. The Adversary refuses to judge a history it was told rather than
-# handed, and `verdicts/` may hold another review's leftovers.
+# The round before this one. The Adversary refuses to judge a history it was told, and a file on the
+# command line is a telling — any prose naming the review would pass.
 #
-the_round_before_is_handed_over() {
-  printf 'round one of review R1 said revise, for this reason\n' > "$tmp/prior"
+the_round_before_comes_from_the_chain() {
+  chain="$tmp/chain"
+  mkdir -p "$chain/verdicts"
+  printf 'round one of this review said revise\n' \
+    | sh "$here/bin/verdicts.sh" record "$chain" adversary R1 >/dev/null 2>&1
 
-  said=$(brief adversary 'a clause' --prior "$tmp/prior" --review R1)
-  has "the prior round arrives in full"  "$said" "round one of review R1 said revise"
-  has "and it says not to go looking"    "$said" "belongs to another review"
+  said=$(brief adversary 'a clause' --verdicts "$chain" --round 2 --review R1)
+  has "the prior round arrives in full"  "$said" "round one of this review said revise"
+  has "and it names the record that was read"  "$said" "verdicts.sh prior"
+  has "and it says nothing was retyped"        "$said" "nothing was retyped"
 
   first=$(brief adversary 'a clause')
   has "round one says so plainly"        "$first" "NONE. This is round one."
+  is  "and that is not an error"         "$(code_of brief adversary 'a clause')" "0"
 
-  is "a prior that is not a file is refused" \
-     "$(code_of brief adversary 'a clause' --prior "$tmp/adir" --review R1)" "4"
-
-  #
-  # A file is not a record. Without this the convener could hand any text and call it the chain,
-  # which is the whole thing `verdicts.sh` refuses.
-  printf 'round one of review R7 said revise\n' > "$tmp/stamped"
-
-  is "a prior that does not name the review is refused" \
-     "$(code_of brief adversary 'a clause' --prior "$tmp/stamped" --review R9)" "5"
-  has "and it says whose chain it is not" \
-      "$(brief_says adversary 'a clause' --prior "$tmp/stamped" --review R9)" "another review"
-  is "a prior with no review named is refused" \
-     "$(code_of brief adversary 'a clause' --prior "$tmp/stamped")" "2"
-  is "a prior that names its review is taken" \
-     "$(code_of brief adversary 'a clause' --prior "$tmp/stamped" --review R7)" "0"
+  is "a round claiming a chain that records nothing is refused" \
+     "$(code_of brief adversary 'a clause' --verdicts "$tmp/empty" --round 2 --review R1)" "5"
+  is "a round whose predecessor names another review is refused" \
+     "$(code_of brief adversary 'a clause' --verdicts "$chain" --round 2 --review R9)" "5"
+  is "a round after the first with no chain named is refused" \
+     "$(code_of brief adversary 'a clause' --round 2 --review R1)" "2"
 }
-the_round_before_is_handed_over
+the_round_before_comes_from_the_chain
 
 summary "brief"

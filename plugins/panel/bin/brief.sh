@@ -7,7 +7,7 @@
 # and whoever convenes the panel writes the reviewer's instructions — a quieter way of writing its
 # verdict.
 #
-#   sh bin/brief.sh adversary "a clause" --charter FILE --work FILE --prior FILE --review ID
+#   sh bin/brief.sh adversary "a clause" --charter FILE --work FILE --verdicts DIR --round N --review ID
 #
 # **A path is not a handoff.** Every part is read here and printed, so what the judge was given is
 # what this command emitted. An audit reads one stream, never a directory it hopes was reachable.
@@ -15,7 +15,7 @@
 # Prints to stdout. Hand it to any model, on any host, however that host takes a prompt.
 #
 # Exit: 0 printed. 2 called wrongly. 3 no such role. 4 a named file could not be read.
-#       5 the prior round belongs to another review.
+#       5 the chain has no record of the round before this one.
 
 set -u
 
@@ -24,7 +24,7 @@ root=$(cd "$(dirname "$0")/.." && pwd)
 main() {
     read_arguments "$@"
     locate_role
-    refuse_a_prior_from_elsewhere
+    locate_the_prior
 
     say_the_role
     say_the_skills
@@ -42,7 +42,8 @@ read_arguments() {
     clause=${2:-}
     charter=
     work=
-    prior=
+    verdicts=
+    round=
     review=
 
     [ -n "$role" ] && [ -n "$clause" ] || fail 2 'name a role and the clause it answers'
@@ -52,7 +53,8 @@ read_arguments() {
         case $1 in
             --charter) charter=${2:-}; refuse_unreadable charter "$charter" ;;
             --work)    work=${2:-};    refuse_unreadable work "$work" ;;
-            --prior)   prior=${2:-}; refuse_unreadable prior "$prior" ;;
+            --verdicts) verdicts=${2:-}; [ -n "$verdicts" ] || fail 2 "verdicts names a directory" ;;
+            --round)   round=${2:-}; [ -n "$round" ] || fail 2 "round names a number" ;;
             --review)  review=${2:-}; [ -n "$review" ] || fail 2 "review names the chain" ;;
             *)         fail 2 "unknown argument [$1]" ;;
         esac
@@ -134,32 +136,40 @@ say_the_work() {
 }
 
 #
-# The round before this one, handed rather than described, and stamped.
+# The round before this one, fetched through the chain rather than handed in.
 #
-# The Adversary refuses to judge a round whose history it was told. `verdicts/` is Panel's own
-# chain, and a repository recording its rounds elsewhere leaves that directory holding another
-# review's leftovers — which is the case the role is right to refuse.
+# The Adversary refuses to judge a history it was told. A file passed on the command line is a
+# telling: any prose naming the review would pass, and the convener would be writing the chain it
+# claims to be reading from.
 #
-# **A file is not a record.** `verdicts.sh` refuses a prior that does not name the review, and so
-# does this: without that check the convener could hand any text and call it the chain.
+# `verdicts.sh prior` is the mechanism. It reads the review's own directory, finds the round being
+# claimed, and exits 1 when nothing records it. This asks that question and prints what comes back.
 say_the_prior() {
-    [ -n "$prior" ] || { printf '\n---\n\n# The round before this one\n\nNONE. This is round one.\n'; return; }
+    [ -n "$round" ] || { printf '\n---\n\n# The round before this one\n\nNONE. This is round one.\n'; return; }
 
     printf '\n---\n\n# The round before this one, in full\n\n'
-    cat "$prior" || fail 4 "the prior at [$prior] could not be read"
-    printf '\nThat is this chain, handed to you, and it names review [%s].\n' "$review"
-    printf 'Do not go looking in `verdicts/` — anything there belongs to another review.\n'
+    cat "$prior_file"
+    printf '\n`verdicts.sh prior` named that record, for review [%s] round [%s].\n' "$review" "$round"
+    printf 'Nothing else was read, and nothing was retyped on the way.\n'
 }
 
-# The same rule `verdicts.sh` holds, at the seam where a prior enters. A record from another review
-# is not this chain's history.
-refuse_a_prior_from_elsewhere() {
-    [ -n "$prior" ] || return 0
-    [ -n "$review" ] || fail 2 'a prior round needs the review it belongs to — pass --review'
+#
+# Asked before anything is printed, so a chain that cannot answer stops the brief.
+#
+# Fail closed is the whole rule: a round claiming a predecessor nothing records must refuse, never
+# proceed with the round unmentioned.
+locate_the_prior() {
+    prior_file=
+    [ -n "$round" ] || return 0
 
-    grep -Fq -- "$review" "$prior" && return 0
+    [ -n "$verdicts" ] && [ -n "$review" ] \
+        || fail 2 'a round after the first needs --verdicts and --review'
 
-    fail 5 "the prior at [$prior] does not name review [$review] — that is another review's chain"
+    prior_file=$("$root/bin/verdicts.sh" prior "$verdicts" "$round" "$review") \
+        || fail 5 "no record of round $((round - 1)) for review [$review] in [$verdicts]"
+
+    [ -n "$prior_file" ] && [ -r "$prior_file" ] \
+        || fail 5 "the chain named no readable prior for review [$review] round [$round]"
 }
 
 say_the_clause() { printf '\n---\n\n# The clause you answer\n\n    %s\n\n' "$clause"; }
