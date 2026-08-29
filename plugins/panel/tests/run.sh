@@ -120,6 +120,8 @@ wreck_brief() {
 wreck_brief "an unreadable file passing for an absent one is caught" \
   softread 's#^    \[ -r "\$2" \] || fail 4 "cannot read the \$1 at \[\$2\]"$#    :#'
 
+wreck_brief "a directory passing for a charter is caught"   dirbar 's#^    \[ -f "\$2" \] || fail 4 "the \$1 at \[\$2\] is not a file"$#    :#'
+
 wreck_brief "a role's declared skills quietly dropped is caught" \
   noskills 's#^    declared_skills "\$file" | while IFS= read -r skill; do#    false | while IFS= read -r skill; do#'
 

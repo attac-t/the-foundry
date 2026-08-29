@@ -59,10 +59,14 @@ read_arguments() {
 # `exit` in `$(...)` ends the subshell and the script carries on. An unreadable charter became an
 # absent one, the brief said NOT SUPPLIED, and the handoff was recorded as though the bar went over.
 #
+# `-f` as well as `-r`: a directory is readable, `cat` then fails, and `main` carried on to return 0
+# with an empty charter block. A bar nobody can read and a bar nobody named are the same lie.
+#
 # The empty guard is first for the same reason it always is: `--charter` with nothing after it
 # leaves `shift 2` short and the loop never ends.
 refuse_unreadable() {
     [ -n "$2" ] || fail 2 "$1 names a file"
+    [ -f "$2" ] || fail 4 "the $1 at [$2] is not a file"
     [ -r "$2" ] || fail 4 "cannot read the $1 at [$2]"
 }
 

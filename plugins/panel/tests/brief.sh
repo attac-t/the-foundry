@@ -30,10 +30,18 @@ printf 'the work\n' > "$tmp/work"
 a_named_file_that_cannot_be_read_stops_it() {
   is "an unreadable charter is refused" \
      "$(code_of brief adversary 'a clause' --charter "$tmp/nothing-here")" "4"
-  has "and it says which file"  "$(brief_says adversary 'a clause' --charter "$tmp/nothing-here")" "cannot read the charter"
+  has "and it says which file"  "$(brief_says adversary 'a clause' --charter "$tmp/nothing-here")" "is not a file"
 
   is "an unreadable work file is refused" \
      "$(code_of brief adversary 'a clause' --work "$tmp/nothing-here")" "4"
+
+  # A directory is readable. `cat` then failed, `main` carried on, and the brief printed an empty
+  # charter block and returned 0.
+  mkdir -p "$tmp/adir"
+  is "a directory named as the charter is refused" \
+     "$(code_of brief adversary 'a clause' --charter "$tmp/adir")" "4"
+  has "and it says a directory is not one" \
+      "$(brief_says adversary 'a clause' --charter "$tmp/adir")" "is not a file"
 
   is "a flag with no value is refused"  "$(code_of brief adversary 'a clause' --charter)" "2"
   is "an argument nobody defined is refused"  "$(code_of brief adversary 'a clause' --wat x)" "2"
