@@ -171,7 +171,7 @@ wreck "a chain that answers without a prior verdict is caught" \
 # A verdict from another review is another chain's history. Accepting it lets a stale record from an
 # older charter satisfy a round it never saw.
 wreck "a chain that accepts any review's verdict is caught" \
-  anyreview 's|grep -Fq -- "$review" "$file"|true|'
+  anyreview 's|names_the_review "$file" "$review"|true|'
 
 # A round that is not a round reached the exemption round 1 has. Exit 2 is *asked for something this
 # does not do*; 1 is *a prior was claimed and nothing records it*. Different remedies.
