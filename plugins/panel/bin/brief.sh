@@ -167,7 +167,9 @@ locate_the_prior() {
 
     round=$("$root/bin/verdicts.sh" next "$verdicts" 2>/dev/null) \
         || fail 5 "the chain at [$verdicts] could not say which round this is"
-    round=$((round))
+    # Leading zeros make `$(( ))` read octal, so `010` became 8 and `008` was an error.
+    round=$(printf '%s' "$round" | sed 's/^0*//')
+    [ -n "$round" ] || round=0
 
     [ "$round" = 1 ] && return 0
 

@@ -115,6 +115,22 @@ the_round_before_comes_from_the_chain() {
      "$(code_of brief adversary 'a clause')" "2"
   is "a round whose predecessor names another review is refused" \
      "$(code_of brief adversary 'a clause' --verdicts "$chain" --review R9)" "5"
+
+  #
+  # `next` pads to three digits. `$(( ))` reads a leading zero as octal, so round 010 arrived as 8
+  # and rounds 008 and 009 were arithmetic errors.
+  #
+  deep="$tmp/deep"
+  mkdir -p "$deep"
+  i=1
+  while [ "$i" -le 9 ]; do
+    printf 'round %s of review R1\n' "$i" | sh "$here/bin/verdicts.sh" record "$deep" adversary R1 >/dev/null 2>&1
+    i=$((i + 1))
+  done
+
+  is "the chain is nine rounds deep" "$(sh "$here/bin/verdicts.sh" next "$deep" 2>/dev/null)" "010"
+  has "and the brief calls this round ten" \
+      "$(brief adversary 'a clause' --verdicts "$deep" --review R1)" "round [10]"
 }
 the_round_before_comes_from_the_chain
 
