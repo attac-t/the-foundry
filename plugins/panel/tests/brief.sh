@@ -43,6 +43,22 @@ a_named_file_that_cannot_be_read_stops_it() {
   has "and it says a directory is not one" \
       "$(brief_says adversary 'a clause' --charter "$tmp/adir")" "is not a file"
 
+  #
+  # The only case `-f` does not already catch: a real file the caller may not read.
+  #
+  # Skipped where the shell can read it anyway. Git Bash under an administrator ignores the mode,
+  # and an assertion that passes for that reason is not an oracle.
+  printf 'a bar\n' > "$tmp/shut"
+  chmod 000 "$tmp/shut" 2>/dev/null
+  if [ -r "$tmp/shut" ]; then
+    skip "a file the caller may not read — this shell reads it anyway"
+  else
+    is "a file that cannot be read is refused" \
+       "$(code_of brief adversary 'a clause' --charter "$tmp/shut")" "4"
+    has "and it says it cannot read it" \
+        "$(brief_says adversary 'a clause' --charter "$tmp/shut")" "cannot read the charter"
+  fi
+
   is "a flag with no value is refused"  "$(code_of brief adversary 'a clause' --charter)" "2"
   is "an argument nobody defined is refused"  "$(code_of brief adversary 'a clause' --wat x)" "2"
 }

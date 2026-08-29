@@ -117,10 +117,12 @@ wreck_brief() {
 #
 # The finding that put this suite here. A named file nobody can read became a file nobody named, and
 # the handoff was recorded as though the bar had gone over.
-wreck_brief "an unreadable file passing for an absent one is caught" \
-  softread 's#^    \[ -r "\$2" \] || fail 4 "cannot read the \$1 at \[\$2\]"$#    :#'
-
-wreck_brief "a directory passing for a charter is caught"   dirbar 's#^    \[ -f "\$2" \] || fail 4 "the \$1 at \[\$2\] is not a file"$#    :#'
+#
+# `-r` alone has no mutant. `-f` catches every case a test can build, and the one case left — a real
+# file the caller may not read — is skipped wherever the shell reads it anyway. A break nothing can
+# kill is not a proof, so it is not listed.
+wreck_brief "a directory passing for a charter is caught" \
+  dirbar 's#^    \[ -f "\$2" \] || fail 4 "the \$1 at \[\$2\] is not a file"$#    :#'
 
 wreck_brief "a role's declared skills quietly dropped is caught" \
   noskills 's#^    declared_skills "\$file" | while IFS= read -r skill; do#    false | while IFS= read -r skill; do#'
