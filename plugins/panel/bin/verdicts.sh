@@ -44,11 +44,17 @@ note() { printf 'panel: %s\n' "$1" >&2; }
 # Verdict files are `NNN-<role>-verdict.md`. The number is the round.
 rounds() { ls "$1" 2>/dev/null | sed -n 's/^\([0-9][0-9]*\)-.*-verdict\.md$/\1/p'; }
 
-# The round after the last one recorded. It says which, and still
-# answers: a coordinator asks it before that directory exists.
-# One mistyped path looks exactly the same as an empty one.
+#
+# The round after the last one recorded.
+#
+# **A path that is not there is a mistake, never a new chain.** The comment here used to say those
+# two look the same, and they did: one mistyped directory answered `001`, and a review on its fifth
+# round was handed to a judge as its first.
+#
+# A real directory holding no rounds is still a new chain. That is the only way to be round one.
 next_round() {
     [ -n "$1" ] || { note "next needs a verdicts directory"; exit 2; }
+    [ -d "$1" ] || { note "no directory at [$1] — a chain nobody made is not a chain with no rounds"; exit 2; }
 
     last=$(last_round "$1")
     [ -n "$last" ] || { note "no rounds at [$1] — this is a new chain"; last=0; }
@@ -99,7 +105,10 @@ prior_round() {
 
     # A record from another review is not this chain's history. Two reviews in one directory, or a
     # verdict left behind by an older charter, would otherwise satisfy a round it never saw.
-    grep -Fq -- "$review" "$file" || {
+    #
+    # The recorder's own `Judged:` line, whole. A search of the body matched anywhere: `Judged: R10`
+    # answered a request for `R1`, and so did any verdict that merely mentioned it.
+    names_the_review "$file" "$review" || {
         note "the round $want verdict does not name [$review] — that is another review's chain"
         exit 1
     }
@@ -145,6 +154,18 @@ find_verdict() {
     ls "$1" 2>/dev/null \
         | awk -v want="$2" '{ n = $0; sub(/-.*/, "", n); if (n + 0 == want + 0 && /-verdict\.md$/) { print; exit } }' \
         | sed "s|^|$1/|"
+}
+
+#
+# The recorder's own stamp, and nothing else.
+#
+# `record` writes the title, a blank line, then `Judged:` — so the stamp is line three and every
+# line after it is the judge's. A search of the whole file let a body carrying its own
+# `Judged: R1` claim a chain it was never part of.
+names_the_review() {
+    awk -v want="$2" 'NR == 3 && $1 == "Judged:" { $1 = ""; sub(/^ /, ""); if ($0 == want) found = 1 }
+        NR > 3 { exit }
+        END { exit !found }' "$1" 2>/dev/null
 }
 
 main "$@"

@@ -13,6 +13,11 @@ set -u
 LC_ALL=C
 export LC_ALL
 
+# Pinned for the same reason, and a sharper one. `floor gates` runs this file with a worker named,
+# so an inherited name turned red the one check that wants none.
+FOUNDRY_WORKER=
+export FOUNDRY_WORKER
+
 here="$(cd "$(dirname "$0")/.." && pwd)"
 . "$here/tests/lib.sh"
 
@@ -108,6 +113,26 @@ ready_run() {
 # The one checkout under a workspace. Its name is the runner's business — a test that recomputed it
 # would agree with a wrong answer, which is the whole failure mode here.
 only_slot() { set -- "$1"/*/; [ -d "$1" ] && printf '%s' "${1%/}"; }
+
+#
+# The commit a judge would have read, which is the one the run's workspace is on.
+#
+# Recomputed from the workspace rather than remembered, because a test that commits mid-way wants
+# the new one and would otherwise assert against a sha it wrote down earlier. Read through `path`,
+# never `open`: a second `open` refuses and prints nothing, and the sha then comes back empty.
+reviewed_at() { git -C "$(only_slot "$(floor "$1" path)/units/01/workspace")" rev-parse HEAD 2>/dev/null; }
+
+# Two acts, because one of them is the bar going over. Nearly every check below wants both, and the
+# handful testing a refusal in the second act call the runner directly.
+judged() {
+  floor "$1" evidence handed "$2" "$3" 'a test harness' >/dev/null 2>&1
+  floor "$1" evidence verdict "$2" "$3" "${4:-}" "${5:-}" "$(reviewed_at "$1")"
+}
+
+judged_says() {
+  floor "$1" evidence handed "$2" "$3" 'a test harness' >/dev/null 2>&1
+  floor_says "$1" evidence verdict "$2" "$3" "${4:-}" "${5:-}" "$(reviewed_at "$1")"
+}
 
 # Run any of the above and report only its exit code.
 code_of() { "$@" >/dev/null 2>&1; printf '%s' "$?"; }
@@ -3481,14 +3506,14 @@ a_judged_clause_wants_a_verdict() {
   floor "$tmp/jd" charter introduce Judged 'the interface is understandable' >/dev/null 2>&1
 
   is "a verdict on a Gate clause answers nothing" \
-     "$(code_of floor "$tmp/jd" evidence verdict 'tests' 'a-reviewer' approve 'looks right')" "2"
+     "$(code_of judged "$tmp/jd" 'tests' 'a-reviewer' approve 'looks right')" "2"
   has "and says which verb does answer it" \
-      "$(floor_says "$tmp/jd" evidence verdict 'tests' 'a-reviewer' approve 'looks right')" "answered by \`gates\`"
+      "$(judged_says "$tmp/jd" 'tests' 'a-reviewer' approve 'looks right')" "answered by \`gates\`"
 
   # The whole of what `judged` means. Floor cannot prove who typed it — §2.5 says the file is
   # writable by the same user — so refusing the one name it already knows is what it can do.
   is "a worker may not judge its own work" \
-     "$(code_of floor_worked "$tmp/jd" 'Some Model 9' evidence verdict 'the interface is understandable' 'Some Model 9' approve 'reads fine')" "2"
+     "$(code_of floor_worked "$tmp/jd" 'Some Model 9' evidence verdict 'the interface is understandable' 'Some Model 9' approve 'reads fine' "$(reviewed_at "$tmp/jd")")" "2"
 
   # A `Judged:` clause rests on no pin, so invariant 1 reports it `introduced` and nothing reaches
   # satisfaction. A verdict is recorded and cannot yet satisfy — the derivation is what is missing,
@@ -3503,9 +3528,9 @@ a_judged_clause_wants_a_verdict() {
   # approval satisfied it. The defence was a second guard — that an introduced clause holds no pin —
   # and a rule held up by another rule will not hold.
   is  "a verdict for a clause naming nobody is refused" \
-      "$(code_of floor "$tmp/jd" evidence verdict 'the interface is understandable' 'A Reviewer' approve 'a stranger read it')" "2"
+      "$(code_of judged "$tmp/jd" 'the interface is understandable' 'A Reviewer' approve 'a stranger read it')" "2"
   has "and it says to declare a panel" \
-      "$(floor_says "$tmp/jd" evidence verdict 'the interface is understandable' 'A Reviewer' approve 'a stranger read it')" "names no panel"
+      "$(judged_says "$tmp/jd" 'the interface is understandable' 'A Reviewer' approve 'a stranger read it')" "names no panel"
   is  "and nothing is recorded" \
       "$(floor "$tmp/jd" evidence | grep -c judged)" "0"
 
@@ -3550,12 +3575,12 @@ a_declared_judgement_is_answered_by_a_verdict() {
   has   "it is unmet, and names who was never asked"         "$(floor "$tmp/dj" complete 2>&1)" "no approval from [a-reviewer]"
 
   floor "$tmp/dj" gates >/dev/null 2>&1
-  is "a verdict from something else is recorded"      "$(code_of floor "$tmp/dj" evidence verdict 'a stranger can read it' 'a-reviewer' approve 'read in two minutes')" "0"
+  is "a verdict from something else is recorded"      "$(code_of judged "$tmp/dj" 'a stranger can read it' 'a-reviewer' approve 'read in two minutes')" "0"
 
   lacks "and the clause is met"         "$(floor "$tmp/dj" complete 2>&1)" "a stranger can read it"
 
   # The refusal that gives `judged` its meaning, on a clause that can now be satisfied.
-  is "a worker still may not judge its own work"      "$(code_of floor_worked "$tmp/dj" 'Some Model 9' evidence verdict 'a stranger can read it' 'Some Model 9' approve 'fine')" "2"
+  is "a worker still may not judge its own work"      "$(code_of floor_worked "$tmp/dj" 'Some Model 9' evidence verdict 'a stranger can read it' 'Some Model 9' approve 'fine' "$(reviewed_at "$tmp/dj")")" "2"
 
   #
   # A verdict says which of three things happened, and the record carries it.
@@ -3563,15 +3588,15 @@ a_declared_judgement_is_answered_by_a_verdict() {
   # It stamped 0 whatever the prose said, so a judge writing REJECT satisfied the clause they had
   # just refused. The words were recorded and never read.
   #
-  is "an outcome nobody defined is refused"      "$(code_of floor "$tmp/dj" evidence verdict 'a stranger can read it' 'a-reviewer' looksfine 'yes')" "2"
-  has "and it names the three that are"       "$(floor_says "$tmp/dj" evidence verdict 'a stranger can read it' 'a-reviewer' looksfine 'yes')" "approve, reject or revise"
+  is "an outcome nobody defined is refused"      "$(code_of judged "$tmp/dj" 'a stranger can read it' 'a-reviewer' looksfine 'yes')" "2"
+  has "and it names the three that are"       "$(judged_says "$tmp/dj" 'a stranger can read it' 'a-reviewer' looksfine 'yes')" "approve, reject or revise"
 
-  is "a verdict with no outcome is refused"      "$(code_of floor "$tmp/dj" evidence verdict 'a stranger can read it' 'a-reviewer')" "2"
+  is "a verdict with no outcome is refused"      "$(code_of judged "$tmp/dj" 'a stranger can read it' 'a-reviewer')" "2"
 
   # The judge the charter named, and nobody else. This compares a name and proves nothing
   # about who typed it — the record is writable by the same user.
-  is "a reviewer nobody asked is refused"      "$(code_of floor "$tmp/dj" evidence verdict 'a stranger can read it' 'someone-else' approve 'looks fine')" "2"
-  has "and it names who was asked"       "$(floor_says "$tmp/dj" evidence verdict 'a stranger can read it' 'someone-else' approve 'looks fine')" "answered by [a-reviewer]"
+  is "a reviewer nobody asked is refused"      "$(code_of judged "$tmp/dj" 'a stranger can read it' 'someone-else' approve 'looks fine')" "2"
+  has "and it names who was asked"       "$(judged_says "$tmp/dj" 'a stranger can read it' 'someone-else' approve 'looks fine')" "answered by [a-reviewer]"
 }
 
 #
@@ -3585,30 +3610,98 @@ a_rejection_stops_the_work() {
 ' && commit_file "$tmp/rj" .foundry/judged 'a-reviewer  a stranger can read it
 ' || { skip "a rejection — git could not make a repo here"; return; }
 
-  floor_new_as "$tmp/rj" ada@example.com "Rejected" >/dev/null
+  rjid=$(basename "$(floor_new_as "$tmp/rj" ada@example.com "Rejected")")
   floor "$tmp/rj" charter derive >/dev/null 2>&1
   floor "$tmp/rj" policy authorize 'https://gitlab.com/acme/rj.git' >/dev/null 2>&1
+  floor "$tmp/rj" policy deliver-to 'https://gitlab.com/acme/rj.git' >/dev/null 2>&1
   floor "$tmp/rj" targets add 'https://gitlab.com/acme/rj.git' main >/dev/null 2>&1
   floor "$tmp/rj" open >/dev/null 2>&1
   floor "$tmp/rj" gates >/dev/null 2>&1
 
-  floor "$tmp/rj" evidence verdict 'a stranger can read it' 'a-reviewer' reject 'it is not understandable' >/dev/null 2>&1
-  is  "a rejection leaves the run unable to deliver" "$(code_of floor "$tmp/rj" complete)" "15"
+  #
+  # Green everywhere, then refused. That is the shape that shows the refusal is what stops it.
+  #
+  # Without the approval first, the clause blocks for want of any verdict, and a rejection would
+  # prove nothing about rejections.
+  judged "$tmp/rj" 'a stranger can read it' 'a-reviewer' approve 'it reads' >/dev/null 2>&1
+  is "with the gate green and the judge content, it may deliver" "$(code_of floor "$tmp/rj" complete)" "0"
+
+  judged "$tmp/rj" 'a stranger can read it' 'a-reviewer' reject 'it is not understandable' >/dev/null 2>&1
+  is  "a rejection alone leaves the run unable to deliver" "$(code_of floor "$tmp/rj" complete)" "15"
   has "and the clause is named unmet"               "$(floor "$tmp/rj" complete 2>&1)" "a stranger can read it"
   has "and the rejection is in the record"          "$(floor "$tmp/rj" evidence)" "it is not understandable"
 
+  # `complete` is the question. `deliver` is the act, and a refusal that answers only the
+  # question stops nothing — the same clause has to hold the push back.
+  is  "and the delivery itself is refused, not only the question" \
+      "$(code_of floor "$tmp/rj" deliver 'a change')" "15"
+  has "for the clause, and not for want of a grant" \
+      "$(floor_says "$tmp/rj" deliver 'a change')" "a stranger can read it"
+  is  "and the run is still only graded, never delivered" \
+      "$(floor "$tmp/rj" runs | awk -v id="$rjid" '$2 == id { print $1 }')" "graded"
+
   # A second look, asked for. Neither a yes nor a silence.
-  floor "$tmp/rj" evidence verdict 'a stranger can read it' 'a-reviewer' revise 'shorten the second half' >/dev/null 2>&1
+  judged "$tmp/rj" 'a stranger can read it' 'a-reviewer' revise 'shorten the second half' >/dev/null 2>&1
   is "asking for a revision does not satisfy it either" "$(code_of floor "$tmp/rj" complete)" "15"
 
   #
   # A no and a yes at one ref is a disagreement, never a satisfaction.
   #
   # The judge may change their mind at a new ref. At this one, both records stand and the run stops.
-  floor "$tmp/rj" evidence verdict 'a stranger can read it' 'a-reviewer' approve 'better now' >/dev/null 2>&1
+  judged "$tmp/rj" 'a stranger can read it' 'a-reviewer' approve 'better now' >/dev/null 2>&1
   is "an approval after a rejection at one ref is still a stop" "$(code_of floor "$tmp/rj" complete)" "15"
 }
 a_rejection_stops_the_work
+
+#
+# What a verdict is bound to, which is the commit that was read and the bar that went over.
+#
+# It stamped whatever the workspace was on when the verdict was typed. So an answer about one commit
+# could be credited to another, and nothing recorded that the judge had ever seen a bar at all.
+#
+a_verdict_is_bound_to_what_was_read() {
+  make_repo "$tmp/bd" main && set_origin "$tmp/bd" 'https://gitlab.com/acme/bd.git' \
+    && mkdir -p "$tmp/bd/.foundry" \
+    && commit_file "$tmp/bd" .foundry/gates 'tests  true
+' && commit_file "$tmp/bd" .foundry/judged 'a-reviewer  a stranger can read it
+' || { skip "a bound verdict — git could not make a repo here"; return; }
+
+  floor_new_as "$tmp/bd" ada@example.com "Bound" >/dev/null
+  floor "$tmp/bd" charter derive >/dev/null 2>&1
+  floor "$tmp/bd" policy authorize 'https://gitlab.com/acme/bd.git' >/dev/null 2>&1
+  floor "$tmp/bd" targets add 'https://gitlab.com/acme/bd.git' main >/dev/null 2>&1
+  work=$(only_slot "$(floor "$tmp/bd" open)")
+  floor "$tmp/bd" gates >/dev/null 2>&1
+  at=$(reviewed_at "$tmp/bd")
+
+  # The bar never went over, so nothing here can answer for it.
+  is  "a verdict from a judge nobody handed the bar is refused" \
+      "$(code_of floor "$tmp/bd" evidence verdict 'a stranger can read it' 'a-reviewer' approve 'fine' "$at")" "36"
+  has "and it names the verb that would have said so" \
+      "$(floor_says "$tmp/bd" evidence verdict 'a stranger can read it' 'a-reviewer' approve 'fine' "$at")" "evidence handed"
+
+  is "a handoff that does not say how the judge ran is refused"      "$(code_of floor "$tmp/bd" evidence handed 'a stranger can read it' 'a-reviewer')" "2"
+  is "handing the bar over is recorded"  "$(code_of floor "$tmp/bd" evidence handed 'a stranger can read it' 'a-reviewer' 'gpt-5.6-sol, effort max')" "0"
+  is "and then the verdict is taken"     "$(code_of floor "$tmp/bd" evidence verdict 'a stranger can read it' 'a-reviewer' approve 'fine' "$at")" "0"
+  has "and the record carries the commit that was read" "$(floor "$tmp/bd" evidence)" "$at"
+  has "and how the judge was run"                       "$(floor "$tmp/bd" evidence)" "effort max"
+  is "with the bar held and answered, it may deliver"   "$(code_of floor "$tmp/bd" complete)" "0"
+
+  # The producer moved on and the review did not.
+  commit_file "$work" LATER.md 'a later thought
+' >/dev/null 2>&1
+  moved=$(reviewed_at "$tmp/bd")
+
+  is  "a verdict naming the commit that was read is refused once the work moved" \
+      "$(code_of floor "$tmp/bd" evidence verdict 'a stranger can read it' 'a-reviewer' approve 'still fine' "$at")" "35"
+  has "and it says where the work actually is" \
+      "$(floor_says "$tmp/bd" evidence verdict 'a stranger can read it' 'a-reviewer' approve 'still fine' "$at")" "$moved"
+
+  # And the old handoff does not travel with it.
+  is "nor may the old answer be re-aimed at the new commit" \
+     "$(code_of floor "$tmp/bd" evidence verdict 'a stranger can read it' 'a-reviewer' approve 'still fine' "$moved")" "36"
+}
+a_verdict_is_bound_to_what_was_read
 
 #
 # A panel is several minds, and every one of them has to say yes.
@@ -3636,18 +3729,18 @@ a_panel_agrees_or_nothing_moves() {
 
   has "with nobody heard, both are named"       "$(floor "$tmp/jury" complete 2>&1)" "no approval from [one two]"
 
-  floor "$tmp/jury" evidence verdict 'a stranger can read it' 'one' approve 'reads fine' >/dev/null 2>&1
+  judged "$tmp/jury" 'a stranger can read it' 'one' approve 'reads fine' >/dev/null 2>&1
   is  "one approval is not the panel"       "$(code_of floor "$tmp/jury" complete)" "15"
   has "and the silent member is named"      "$(floor "$tmp/jury" complete 2>&1)" "no approval from [two]"
 
-  floor "$tmp/jury" evidence verdict 'a stranger can read it' 'two' approve 'so does this' >/dev/null 2>&1
+  judged "$tmp/jury" 'a stranger can read it' 'two' approve 'so does this' >/dev/null 2>&1
   lacks "with both heard, the clause is met"         "$(floor "$tmp/jury" complete 2>&1)" "a stranger can read it"
 
   # One dissent stops it, whatever the others said.
-  floor "$tmp/jury" evidence verdict 'a stranger can read it' 'two' reject 'on reflection, no' >/dev/null 2>&1
+  judged "$tmp/jury" 'a stranger can read it' 'two' reject 'on reflection, no' >/dev/null 2>&1
   is "one member saying no stops the work" "$(code_of floor "$tmp/jury" complete)" "15"
 
-  is "somebody who is not on the panel may not answer"      "$(code_of floor "$tmp/jury" evidence verdict 'a stranger can read it' 'three' approve 'I say yes')" "2"
+  is "somebody who is not on the panel may not answer"      "$(code_of judged "$tmp/jury" 'a stranger can read it' 'three' approve 'I say yes')" "2"
 }
 a_panel_agrees_or_nothing_moves
 a_declared_judgement_is_answered_by_a_verdict

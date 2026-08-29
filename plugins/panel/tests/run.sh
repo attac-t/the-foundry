@@ -86,6 +86,53 @@ red_against() {
   return 0
 }
 
+bash "$root/tests/brief.sh" || failed=1
+echo
+
+echo "audit — break the brief, the suite must notice"
+
+caught_brief() { red_against brief.sh RUNNER="$tmp/$1/bin/brief.sh"; }
+
+# The role and its skills travel with the mutant. `brief.sh` reads them from its own parent, so a
+# copy alone would fail for want of a role rather than for the rule under test.
+wreck_brief() {
+  local name="$1" tag="$2" mutation="$3"
+
+  rm -rf "${tmp:?}/$tag" && mkdir -p "$tmp/$tag/bin" || { bad "$name — could not stage"; return; }
+  cp -r "$root/agents" "$root/skills" "$tmp/$tag/" || { bad "$name — could not stage the role"; return; }
+  sed "$mutation" "$root/bin/brief.sh" > "$tmp/$tag/bin/brief.sh" \
+    || { bad "$name — sed failed, so this proves nothing"; return; }
+  [ -s "$tmp/$tag/bin/brief.sh" ] || { bad "$name — the mutant is empty"; return; }
+  cmp -s "$tmp/$tag/bin/brief.sh" "$root/bin/brief.sh" \
+    && { bad "$name — the break did not apply, so this proves nothing"; return; }
+  caught_brief "$tag"
+  case $? in
+    1) bad  "$name — the suite passed against a broken brief"; return ;;
+    2) moot "$name — the mutant never answered, so this proves nothing"; return ;;
+  esac
+
+  printf '  ok    %s\n' "$name"
+}
+
+#
+# The finding that put this suite here. A named file nobody can read became a file nobody named, and
+# the handoff was recorded as though the bar had gone over.
+#
+# `-r` alone has no mutant. `-f` catches every case a test can build, and the one case left — a real
+# file the caller may not read — is skipped wherever the shell reads it anyway. A break nothing can
+# kill is not a proof, so it is not listed.
+wreck_brief "a directory passing for a charter is caught" \
+  dirbar 's#^    \[ -f "\$2" \] || fail 4 "the \$1 at \[\$2\] is not a file"$#    :#'
+
+#
+  noprior 's#fail 5 #true #g'
+# nothing pass for one that does, which is the fail-closed rule inverted.
+wreck_brief "a chain that records nothing answered as a prior round is caught" \
+  noprior '169s#.*#        || true#; 172s#.*#        || true#'
+
+wreck_brief "a role's declared skills quietly dropped is caught" \
+  noskills 's#^    declared_skills "\$file" | while IFS= read -r skill; do#    false | while IFS= read -r skill; do#'
+
 bash "$root/tests/chain.sh" || failed=1
 echo
 
@@ -124,7 +171,7 @@ wreck "a chain that answers without a prior verdict is caught" \
 # A verdict from another review is another chain's history. Accepting it lets a stale record from an
 # older charter satisfy a round it never saw.
 wreck "a chain that accepts any review's verdict is caught" \
-  anyreview 's|grep -Fq -- "$review" "$file"|true|'
+  anyreview 's|names_the_review "$file" "$review"|true|'
 
 # A round that is not a round reached the exemption round 1 has. Exit 2 is *asked for something this
 # does not do*; 1 is *a prior was claimed and nothing records it*. Different remedies.

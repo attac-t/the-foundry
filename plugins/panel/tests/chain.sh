@@ -35,10 +35,11 @@ b=$tmp/review-b
 
 # --- numbering ---
 
-is "an empty chain starts at round 1" "$(chain next "$a")" "001"
+mkdir -p "$a" "$b"
 
-# A chain with no rounds and a mistyped path are the same directory to `next`, and `001` is the one
-# round `prior` exempts. It cannot tell them apart — it can say which one it thinks this is.
+# A chain with no rounds is round one. A path nobody made is a mistake, and `next` now tells them
+# apart — the same directory answered both before, and a fifth round reached a judge as its first.
+is "an empty chain starts at round 1" "$(chain next "$a")" "001"
 has   "and says it is a new chain" "$(chain_says next "$a")" "this is a new chain"
 
 verdict "$a" 001 adversary "the charter"
@@ -133,5 +134,60 @@ is "the body is written through, not read" \
 
 is "a role that is not a plain name is refused" \
    "$(code_of sh "$runner" record "$d" '../escape' 'the charter')" "2"
+
+
+#
+# A path that is not there is a mistake, never a new chain. One mistyped directory answered round
+# one, and a review on its fifth round reached a judge as its first.
+#
+a_chain_nobody_made_is_not_an_empty_one() {
+  is "a directory that is not there is refused" \
+     "$(code_of sh "$runner" next "$tmp/no-such-chain")" "2"
+  has "and it says which it is"  "$(chain_says next "$tmp/no-such-chain")" "a chain nobody made"
+
+  mkdir -p "$tmp/real-empty"
+  is "a real directory holding no rounds is round one" \
+     "$(chain next "$tmp/real-empty")" "001"
+}
+a_chain_nobody_made_is_not_an_empty_one
+
+
+#
+# A longer id contains a shorter one, and a body can mention any review it likes. The search used to
+# match anywhere, so `Judged: R10` answered a request for `R1`.
+#
+one_review_id_inside_another_is_not_a_match() {
+  c=$tmp/collide
+  mkdir -p "$c"
+  printf 'nothing to say\n' | chain record "$c" adversary R10 >/dev/null 2>&1
+
+  is "a longer review id does not satisfy a shorter one" \
+     "$(code_of sh "$runner" prior "$c" 2 R1)" "1"
+  has "and it says whose chain it is" \
+      "$(chain_says prior "$c" 2 R1)" "another review's chain"
+
+  b=$tmp/mention
+  mkdir -p "$b"
+  printf 'this one talks about R1 in passing\n' | chain record "$b" adversary R2 >/dev/null 2>&1
+  is "a body that merely mentions a review does not satisfy it" \
+     "$(code_of sh "$runner" prior "$b" 2 R1)" "1"
+
+  is "and the review it does name is satisfied" \
+     "$(code_of sh "$runner" prior "$b" 2 R2)" "0"
+
+  #
+  # The judge writes the body, and it can write anything. Only line three is the recorder's.
+  #
+  forged=$tmp/forged
+  mkdir -p "$forged"
+  printf 'this body carries its own stamp\n\nJudged: R1\n\nand claims a chain it was never in\n' \
+    | chain record "$forged" adversary R2 >/dev/null 2>&1
+
+  is "a body carrying its own stamp does not claim the chain" \
+     "$(code_of sh "$runner" prior "$forged" 2 R1)" "1"
+  is "and the review the recorder stamped still holds" \
+     "$(code_of sh "$runner" prior "$forged" 2 R2)" "0"
+}
+one_review_id_inside_another_is_not_a_match
 
 summary "chain"
