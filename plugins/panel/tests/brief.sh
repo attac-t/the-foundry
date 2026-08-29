@@ -87,4 +87,23 @@ what_reaches_the_judge() {
 }
 what_reaches_the_judge
 
+#
+# The round before this one. The Adversary refuses to judge a history it was told rather than
+# handed, and `verdicts/` may hold another review's leftovers.
+#
+the_round_before_is_handed_over() {
+  printf 'round one said revise, for this reason\n' > "$tmp/prior"
+
+  said=$(brief adversary 'a clause' --prior "$tmp/prior")
+  has "the prior round arrives in full"  "$said" "round one said revise, for this reason"
+  has "and it says not to go looking"    "$said" "belongs to another review"
+
+  first=$(brief adversary 'a clause')
+  has "round one says so plainly"        "$first" "NONE. This is round one."
+
+  is "a prior that is not a file is refused" \
+     "$(code_of brief adversary 'a clause' --prior "$tmp/adir")" "4"
+}
+the_round_before_is_handed_over
+
 summary "brief"

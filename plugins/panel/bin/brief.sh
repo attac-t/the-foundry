@@ -7,7 +7,7 @@
 # and whoever convenes the panel writes the reviewer's instructions — a quieter way of writing its
 # verdict.
 #
-#   sh bin/brief.sh adversary "the interface is understandable" --charter FILE --work FILE
+#   sh bin/brief.sh adversary "a clause" --charter FILE --work FILE --prior FILE
 #
 # **A path is not a handoff.** Every part is read here and printed, so what the judge was given is
 # what this command emitted. An audit reads one stream, never a directory it hopes was reachable.
@@ -28,6 +28,7 @@ main() {
     say_the_skills
     say_the_bar
     say_the_work
+    say_the_prior
     say_the_clause
     say_what_is_wanted
 }
@@ -39,6 +40,7 @@ read_arguments() {
     clause=${2:-}
     charter=
     work=
+    prior=
 
     [ -n "$role" ] && [ -n "$clause" ] || fail 2 'name a role and the clause it answers'
     [ "$#" -ge 2 ] && shift 2
@@ -47,6 +49,7 @@ read_arguments() {
         case $1 in
             --charter) charter=${2:-}; refuse_unreadable charter "$charter" ;;
             --work)    work=${2:-};    refuse_unreadable work "$work" ;;
+            --prior)   prior=${2:-}; refuse_unreadable prior "$prior" ;;
             *)         fail 2 "unknown argument [$1]" ;;
         esac
         shift 2
@@ -124,6 +127,21 @@ say_the_work() {
 
     printf '\n---\n\n# What the work set out to do\n\n'
     cat "$work"
+}
+
+#
+# The round before this one, handed rather than described.
+#
+# The Adversary refuses to judge a round whose history it was told. `verdicts/` is Panel's own
+# chain, and a repository recording its rounds elsewhere leaves that directory holding another
+# review's leftovers — which is the case the role is right to refuse.
+say_the_prior() {
+    [ -n "$prior" ] || { printf '\n---\n\n# The round before this one\n\nNONE. This is round one.\n'; return; }
+
+    printf '\n---\n\n# The round before this one, in full\n\n'
+    cat "$prior" || fail 4 "the prior at [$prior] could not be read"
+    printf '\nThat is this chain, handed to you. Do not go looking for it in `verdicts/` — anything\n'
+    printf 'there belongs to another review.\n'
 }
 
 say_the_clause() { printf '\n---\n\n# The clause you answer\n\n    %s\n\n' "$clause"; }
