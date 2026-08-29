@@ -156,10 +156,15 @@ find_verdict() {
         | sed "s|^|$1/|"
 }
 
-# The recorder writes one `Judged:` line and owns it. Compared whole, so a longer id cannot
-# contain a shorter one and a body that mentions a review cannot pass for it.
+#
+# The recorder's own stamp, and nothing else.
+#
+# `record` writes the title, a blank line, then `Judged:` — so the stamp is line three and every
+# line after it is the judge's. A search of the whole file let a body carrying its own
+# `Judged: R1` claim a chain it was never part of.
 names_the_review() {
-    awk -v want="$2" '$1 == "Judged:" { $1 = ""; sub(/^ /, ""); if ($0 == want) found = 1 }
+    awk -v want="$2" 'NR == 3 && $1 == "Judged:" { $1 = ""; sub(/^ /, ""); if ($0 == want) found = 1 }
+        NR > 3 { exit }
         END { exit !found }' "$1" 2>/dev/null
 }
 

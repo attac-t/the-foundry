@@ -174,6 +174,19 @@ one_review_id_inside_another_is_not_a_match() {
 
   is "and the review it does name is satisfied" \
      "$(code_of sh "$runner" prior "$b" 2 R2)" "0"
+
+  #
+  # The judge writes the body, and it can write anything. Only line three is the recorder's.
+  #
+  forged=$tmp/forged
+  mkdir -p "$forged"
+  printf 'this body carries its own stamp\n\nJudged: R1\n\nand claims a chain it was never in\n' \
+    | chain record "$forged" adversary R2 >/dev/null 2>&1
+
+  is "a body carrying its own stamp does not claim the chain" \
+     "$(code_of sh "$runner" prior "$forged" 2 R1)" "1"
+  is "and the review the recorder stamped still holds" \
+     "$(code_of sh "$runner" prior "$forged" 2 R2)" "0"
 }
 one_review_id_inside_another_is_not_a_match
 
