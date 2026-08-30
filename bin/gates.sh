@@ -90,6 +90,12 @@ gate shell       bash bin/shell.sh
 
 gate taper       sh   bin/taper.sh
 
+#
+# The audit, not the read. `bin/comments.sh` reaches GitHub, and a gate that needs the network
+# is one that goes red on a train. Its suite drives it through a `gh` it writes itself, so this
+# proves the detector and the detector is run against the live thread before a merge.
+gate comments    sh   bin/comments.sh audit
+
 for plugin in kernel signal floor panel; do
     gate "$plugin" bash "plugins/$plugin/tests/run.sh"
 done

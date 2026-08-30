@@ -47,6 +47,7 @@ Edit a rule, then run it — a row typed by hand into one file is the drift noth
 | `repeats` | a sentence appears verbatim in two files — scoped to `panel`, `pest` and `signal` |
 | `shell` | shipped shell takes an `else`, or a function body passes 40 lines |
 | `taper` | a three-line comment paragraph does not narrow by three, and nothing names it |
+| `comments` | a public comment carrying the seam's marker breaks a rule the seam applies |
 | `kernel` | the plugin does not run — checked on Linux, macOS and Windows |
 | `signal` | the plugin does not run — checked on Linux, macOS and Windows |
 | `floor` | the plugin does not run — checked on Linux, macOS and Windows |
@@ -68,11 +69,12 @@ no such bit.
 
 **What they do not check:** that `laravel-ddd`, `laravel-playbook` or `pest` still load, or
 that their skills say anything true. Those three ship no code, so there is nothing to run — but
-nothing here reads them either. Green means eight gates passed. For those three plugins it does not
+nothing here reads them either. Green means ten gates passed. For those three plugins it does not
 mean the change works.
 
-Bump the version in **both** `plugin.json` and `.claude-plugin/marketplace.json` — the manifest is
-the one that gets forgotten. Commits use [Commitizen](https://commitizen-tools.github.io/commitizen/)
+Bump the version in the plugin's own `plugin.json`, and there only. `marketplace.json` names
+plugins and where they live, and carries no version — a second copy made one shared line every
+branch edits, so plugin work collided for packaging reasons. Commits use [Commitizen](https://commitizen-tools.github.io/commitizen/)
 format.
 
 ---

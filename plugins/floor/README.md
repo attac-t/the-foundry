@@ -1392,6 +1392,53 @@ export FOUNDRY_RUN=$(sh bin/run.sh path)
 
 ---
 
+## Saying something in public
+
+`bin/say.sh` renders one comment from named fields. It holds no credential and calls no `gh` — it
+prints a body, or it refuses.
+
+    sh bin/say.sh --kind finding --subject '#416' --was proposed --now approved                   --because 'two readers agreed' --next 'merge it' --evidence 507a735 < thread.txt
+
+**A comment is an interface, never a log.** Three separate documents already said so — this
+README's own brief skill, `product:cycle`, and a goal record — and a worker still published twelve
+kilobytes of session ids, token counts and a duplicated transcript to a public thread. **Guidance
+was in three places and it failed.** So this takes fields, and nothing reaches the body that was
+not named.
+
+| It refuses | Because |
+|---|---|
+| 2 | a field is missing, or the kind is not `finding`, `decision` or `closure` |
+| 50 | a finding with no delta. That is a status line, and status lines filled the thread |
+| 51 | a key already on the thread. Stdin **is** the thread — a file beside the run is one the same worker writes |
+| 52 | a session id, a token count or a transcript. Named field shapes, never a regex over prose |
+| 53 | evidence naming `none`, `pending` or a dash |
+| 54 | over 180 words or 1,200 characters. **Last, never first** — noise compressed to fit still fails the rows above |
+
+**The key is derived, never given.** A caller that picks its own key publishes the same thing twice
+by picking twice.
+
+**The render is fixed on purpose.** The repository's `bin/comments.sh` reads the public thread back
+and re-runs these rules on what landed, so a comment that did not come through here reads as one
+that did not. A stamp would be forgeable by whoever holds the same account. A rendering is not
+forged, it is matched.
+
+### What this cannot do
+
+**It cannot stop a caller running `gh` directly.** It holds no credential and the caller does. Two
+architecture consultations at maximum effort said the same thing from opposite directions: the only
+control that binds is a comment credential the automated worker cannot reach, held by a person.
+
+So the honest tally is three layers and one gap:
+
+| | Gives |
+|---|---|
+| this script | every call through it is checked |
+| a `PreToolUse` hook | closes the easy path. **Lint** — the worker can edit the hook |
+| `bin/comments.sh` | reads the thread back. **Detection after disclosure**, not prevention |
+| a credential a person holds | not built, and the only one that binds. #419 owns it |
+
+---
+
 ## Install
 
 Needs: Claude Code CLI, `sh`, `awk`, `git`. No Python, no Node, no `jq`.
