@@ -103,7 +103,7 @@ test of whether it earns its place.
 |---|---|
 | **Human direction comes before work.** Every repository says why it exists, who it serves, and what it is reaching for | invented goals, an identity read off the backlog, activity with no intended result |
 | **Authority is specific.** Whoever decides a product trade-off may not decide a design, security or engineering one | the single owner, one person quietly absorbing every trade-off |
-| **Producing work grants no authority over it.** A worker may inspect, ask, challenge, plan, build, test, explain and propose. That is the whole list | self-approval, a rule changed mid-run, a worker rewriting its own definition of done |
+| **Producing work grants no authority over it.** A worker may inspect, ask, challenge, plan, build, test, explain and propose on its own authority. That is the whole list | self-approval, a rule changed mid-run, a worker rewriting its own definition of done |
 | **Automate mechanics; escalate meaning.** Foundry never invents a costly trade-off because nobody stated one. It asks | approval theatre, stripping out the calls only people can rightly make |
 | **Direction and evidence outlive replaceable workers.** Anything durable is written where anyone can read it | lock-in, session memory treated as truth, a worker's identity baked into the design |
 | **Evidence supports judgement; it does not replace it.** A check that failed or never ran never quietly becomes a pass | green means good, unknown read as pass, a record claiming more than a reader can check |
