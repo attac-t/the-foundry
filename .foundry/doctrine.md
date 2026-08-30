@@ -128,7 +128,7 @@ Our current bets. They change as evidence changes, and **never quietly rewrite t
 mission or the principles.** A bet is not authorised work — [`goals.md`](goals.md) is where an
 outcome becomes something to do.
 
-**Each says how it dies.** A bet with no way to lose is a belief in the wrong section.
+A bet with no way to lose is a belief in the wrong section.
 
 | The bet | Dies if |
 |---|---|
