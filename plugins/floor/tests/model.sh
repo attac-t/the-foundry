@@ -2242,18 +2242,18 @@ completion_refuses_what_is_only_vacuously_true() {
   floor_new_as "$tmp/cr" ada@example.com "Vacuous" >/dev/null
   floor "$tmp/cr" policy authorize 'https://github.com/acme/cr.git' >/dev/null 2>&1
   floor "$tmp/cr" targets add 'https://github.com/acme/cr.git' main >/dev/null 2>&1
-  floor "$tmp/cr" open >/dev/null 2>&1
+  floor "$tmp/coldread" open >/dev/null 2>&1
 
-  is  "a run with a target and no charter may not deliver" "$(code_of floor "$tmp/cr" complete)" "15"
+  is  "a run with a target and no charter may not deliver" "$(code_of floor "$tmp/coldread" complete)" "15"
   has "because nothing grades it" "$(floor_says "$tmp/cr" complete)" "nobar"
 
   # Opened after the charter exists, because `open` runs `authorise` and a run with no charter has
   # nothing to authorise.
-  floor "$tmp/cr" charter derive >/dev/null 2>&1
-  floor "$tmp/cr" open >/dev/null 2>&1
-  floor "$tmp/cr" gates >/dev/null 2>&1
+  floor "$tmp/coldread" charter derive >/dev/null 2>&1
+  floor "$tmp/coldread" open >/dev/null 2>&1
+  floor "$tmp/coldread" gates >/dev/null 2>&1
 
-  is  "a gate that ran and failed leaves its clause unmet" "$(code_of floor "$tmp/cr" complete)" "15"
+  is  "a gate that ran and failed leaves its clause unmet" "$(code_of floor "$tmp/coldread" complete)" "15"
   has "and the record it wrote does not satisfy it" "$(floor_says "$tmp/cr" complete)" "unmet: [tests]"
 }
 completion_refuses_what_is_only_vacuously_true
@@ -3711,26 +3711,34 @@ a_verdict_is_bound_to_what_was_read
 # makes an old verdict about it stale, and `verdict` already refuses that.
 #
 a_cold_read_is_declared_like_any_other_bar() {
-  make_repo "$tmp/cr" main && set_origin "$tmp/cr" 'https://gitlab.com/acme/cr.git'     && mkdir -p "$tmp/cr/.foundry"     && commit_file "$tmp/cr" .foundry/gates 'tests  true
-' && commit_file "$tmp/cr" doctrine.md 'what this is for
-' && commit_file "$tmp/cr" .foundry/read 'a-reader  doctrine.md
-' || { skip "a cold read — git could not make a repo here"; return; }
+  # One step, one message. A chain of six joined by `&&` says only that something failed, and the
+  # first version of this reused a fixture name another test owns — so it inherited a repository
+  # whose gate always fails, skipped, and said nothing about why.
+  make_repo "$tmp/coldread" main || { skip "a cold read — no repo"; return; }
+  set_origin "$tmp/coldread" 'https://gitlab.com/acme/cd.git' || { skip "a cold read — no origin"; return; }
+  mkdir -p "$tmp/coldread/.foundry" || { skip "a cold read — no .foundry"; return; }
+  commit_file "$tmp/coldread" .foundry/gates 'tests  true
+' || { skip "a cold read — no gates"; return; }
+  commit_file "$tmp/coldread" doctrine.md 'what this is for
+' || { skip "a cold read — no artefact"; return; }
+  commit_file "$tmp/coldread" .foundry/read 'a-reader  doctrine.md
+' || { skip "a cold read — no declaration"; return; }
 
-  floor_new_as "$tmp/cr" ada@example.com "Read" >/dev/null
-  floor "$tmp/cr" charter derive >/dev/null 2>&1
+  floor_new_as "$tmp/coldread" ada@example.com "Read" >/dev/null
+  floor "$tmp/coldread" charter derive >/dev/null 2>&1
 
-  has "the artefact becomes a judged clause"  "$(floor "$tmp/cr" charter)" "was understood by somebody who did not write it"
-  has "and the reader is its judge"           "$(floor "$tmp/cr" charter)" "a-reader"
-  has "pinned to the artefact, not the declaration" "$(floor "$tmp/cr" charter)" "doctrine.md"
+  has "the artefact becomes a judged clause"  "$(floor "$tmp/coldread" charter)" "was understood by somebody who did not write it"
+  has "and the reader is its judge"           "$(floor "$tmp/coldread" charter)" "a-reader"
+  has "pinned to the artefact, not the declaration" "$(floor "$tmp/coldread" charter)" "doctrine.md"
 
-  floor "$tmp/cr" policy authorize 'https://gitlab.com/acme/cr.git' >/dev/null 2>&1
-  floor "$tmp/cr" targets add 'https://gitlab.com/acme/cr.git' main >/dev/null 2>&1
-  floor "$tmp/cr" open >/dev/null 2>&1
-  floor "$tmp/cr" gates >/dev/null 2>&1
+  floor "$tmp/coldread" policy authorize 'https://gitlab.com/acme/cd.git' >/dev/null 2>&1
+  floor "$tmp/coldread" targets add 'https://gitlab.com/acme/cd.git' main >/dev/null 2>&1
+  floor "$tmp/coldread" open >/dev/null 2>&1
+  floor "$tmp/coldread" gates >/dev/null 2>&1
 
   is "with the gate green and nobody having read it, it may not deliver" \
-     "$(code_of floor "$tmp/cr" complete)" "15"
-  has "and the unread artefact is named"  "$(floor "$tmp/cr" complete 2>&1)" "doctrine.md"
+     "$(code_of floor "$tmp/coldread" complete)" "15"
+  has "and the unread artefact is named"  "$(floor "$tmp/coldread" complete 2>&1)" "doctrine.md"
 }
 a_cold_read_is_declared_like_any_other_bar
 
@@ -3738,15 +3746,19 @@ a_cold_read_is_declared_like_any_other_bar
 # Declared, or nothing. A repository cannot be guessed into wanting a cold read.
 #
 nothing_declares_a_cold_read_by_itself() {
-  make_repo "$tmp/nr" main && set_origin "$tmp/nr" 'https://gitlab.com/acme/nr.git'     && mkdir -p "$tmp/nr/.foundry"     && commit_file "$tmp/nr" .foundry/gates 'tests  true
-' && commit_file "$tmp/nr" doctrine.md 'a file nobody asked to have read
-' || { skip "no cold read — git could not make a repo here"; return; }
+  make_repo "$tmp/noread" main || { skip "no cold read — no repo"; return; }
+  set_origin "$tmp/noread" 'https://gitlab.com/acme/nc.git' || { skip "no cold read — no origin"; return; }
+  mkdir -p "$tmp/noread/.foundry" || { skip "no cold read — no .foundry"; return; }
+  commit_file "$tmp/noread" .foundry/gates 'tests  true
+' || { skip "no cold read — no gates"; return; }
+  commit_file "$tmp/noread" doctrine.md 'a file nobody asked to have read
+' || { skip "no cold read — no artefact"; return; }
 
-  floor_new_as "$tmp/nr" ada@example.com "Unread" >/dev/null
-  floor "$tmp/nr" charter derive >/dev/null 2>&1
+  floor_new_as "$tmp/noread" ada@example.com "Unread" >/dev/null
+  floor "$tmp/noread" charter derive >/dev/null 2>&1
 
   lacks "a file nobody declared is not read cold" \
-        "$(floor "$tmp/nr" charter)" "was understood by somebody who did not write it"
+        "$(floor "$tmp/noread" charter)" "was understood by somebody who did not write it"
 }
 nothing_declares_a_cold_read_by_itself
 
