@@ -2,24 +2,24 @@
 
 Who may say yes to what, and how that arrangement changes.
 
-[Doctrine](doctrine.md) says authority is specific. This file says how. It carries doctrine out and
-never outranks it.
+[Doctrine](doctrine.md) states the core refusal. This file carries it out. It never outranks it, and
+what holds today is in [`status.md`](status.md).
 
 ---
 
-## The boundary is the claim, not the file
-
-A repository has as many authorities as it has kinds of claim. One person may hold every one. That
-is a small map, not a different model.
+## The words
 
 | Term | Means |
 |---|---|
 | producer | proposes or performs the change. A role per change, never a kind of person |
 | authority | who may say yes to a claim. Named by the map, for the claim's pinned source |
 | decision-maker | the named authority for one trade-off, recorded inside that decision |
-| acceptor | who accepts a delivery. Today it cannot be withheld, and it is self-reported |
+| acceptor | who accepts a delivery |
 | accountability | who answers for a result. Traced, never granted, and never authority |
 | ownership | never used bare. Repository, product and IP are three facts, not one |
+
+A repository has as many authorities as it has kinds of claim. One person may hold every one. That
+is a small map, not a different model.
 
 ## The map
 
@@ -31,7 +31,7 @@ Without that rule, whoever installs Foundry quietly owns the lot.
 
 | Repository | Its map |
 |---|---|
-| one person | one generated line. Convention first, so nothing is written by hand |
+| one person | the default: that person answers every claim, and no file is written |
 | a team | claim authorities and conflict rules, written out |
 
 **A map change is signed off under the rule already in force, and it counts for later runs only.** A
@@ -47,6 +47,16 @@ map that changed under its own new rule could rewrite its own authority in a sin
    yes together. Only that trade stops. Other work carries on.
 5. Anyone can ask for a map change. Only the change row says yes to it.
 6. Point at it, never make it. Nothing a producer writes can make authority, a yes or a verdict.
+
+## Direction changes the same way
+
+Doctrine, goals and standing rules are claims like any other, and rule 2 covers them.
+
+**A run may draft a change to any of them. Only a human accepts one.** A run that proposes a change
+gains nothing from it — the change binds later work, never the work that wrote it. What a run reads
+is the version pinned at its base.
+
+That is the rule. [`status.md`](status.md) says the pinned read is not yet a mechanism here.
 
 ## A name is a record, never a control
 

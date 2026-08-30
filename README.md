@@ -85,10 +85,13 @@ board cannot do.
 
 ## What is true here
 
-This tree answers what is true now; GitHub answers how it got here. Issues hold goals and open
-questions, pull requests hold the reasoning, history keeps every deleted page. A merged page is
-read as operative by the next agent — so a proposal starts as an issue, and a thinking pass ends
-as a PR, not in the tree.
+This tree answers what is true now; GitHub answers how it got here. Goals live only in
+[`.foundry/goals.md`](.foundry/goals.md). Issues hold the changes wanted and the open questions, pull
+requests hold the reasoning, history keeps every deleted page. A merged page is read as operative by
+the next agent — so a proposal starts as an issue, and a thinking pass ends as a PR, not in the tree.
+
+**A merge lands a page. It accepts nothing.** A goal a merged page proposes stays proposed until a
+named person says yes, in writing, dated.
 
 The one exception stands marked: `docs/rfc/` is an accepted design still being implemented. Its
 contracts bind, its revision log is history, and what runs now is each plugin's README.
@@ -97,7 +100,7 @@ contracts bind, its revision log is history, and what runs now is each plugin's 
 
 ## Contributing
 
-Read [CONTRIBUTING.md](CONTRIBUTING.md). Eight gates, and they run before a pull request, not after.
+Read [CONTRIBUTING.md](CONTRIBUTING.md). Nine gates, and they run before a pull request, not after.
 
 Found a security problem? [SECURITY.md](SECURITY.md) — report it privately, never as an issue.
 
