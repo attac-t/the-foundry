@@ -110,7 +110,7 @@ test of whether it earns its place.
 
 ## Vision
 
-**Not a promise.** Where this is going.
+**Not a promise.**
 
 Software is never trapped at the moment it was built. It keeps fitting the people it serves as they,
 their knowledge and their tools change — **and none of them has to become an engineer to keep it
