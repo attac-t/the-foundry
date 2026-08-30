@@ -39,7 +39,19 @@ writes_a_comment() {
     return 1
 }
 
-carries_the_marker() { case $1 in *'seam:'*) return 0 ;; esac; return 1; }
+#
+# The command, and the file it names.
+#
+# A rendered body is passed as `--body-file`, so the marker is in the file and never in the command
+# — which is how this denied its own author the first time it ran. Reading the file checks what
+# actually gets posted, which is the thing worth checking.
+carries_the_marker() {
+    case $1 in *'seam:'*) return 0 ;; esac
+
+    named=$(printf '%s' "$1" | sed -n 's/.*--body-file[= ]*\([^ "]*\).*/\1/p')
+    [ -n "$named" ] || return 1
+    grep -q 'seam:' "$named" 2>/dev/null
+}
 
 writes_a_comment "$call" || allow
 carries_the_marker "$call" && allow
