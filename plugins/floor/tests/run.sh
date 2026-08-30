@@ -1308,6 +1308,12 @@ wreck_runner "an override matching any commit is caught" \
 wreck_runner "a declared judgement nothing derives is caught" \
   nojudged 's#^    detect_judged | while_reading_judged#    false | while_reading_judged#'
 
+#
+# A declaration nobody resolves is a bar nobody meets. `noread` drops the second resolver, so a
+# repository asking for a cold read derives a charter that never mentions it and delivers unread.
+wreck_runner "an artefact declared for a cold read and never resolved is caught" \
+  noread 's#^    sh "\$(read_resolver)" "\$(repo_root)"$#    :#'
+
 wreck_runner "a judged clause naming no judge is caught" \
   nojudge 's#^        print_judges "\$id" "\$judge" >> "\$draft" || return 1$#        : >> "$draft" || return 1#'
 

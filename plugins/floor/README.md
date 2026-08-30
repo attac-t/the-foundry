@@ -779,12 +779,23 @@ the one name floor already knows is what an honest record can do — no more.
 **No second producer, so the contract is unproven.** One judge is a judge-shaped costume, by the same
 rule that keeps every seam in §2.6 marked.
 
-**And a verdict cannot satisfy anything yet.** A `Judged:` clause rests on no pin, because nothing
-derives one — the detector reads `.foundry/gates` and yields `Gate` clauses only. So invariant 1
-reports it *introduced*, and no ref makes it true.
+**And a `Judged` clause is derived from a declaration, never guessed.** Two files declare one:
 
-The verdict is recorded and the kind rule is written. **What is missing is a declaration a Judged
-clause can be derived from**, and until one exists the rule above is correct and unexercised.
+| Declared in | One line says | Yields |
+|---|---|---|
+| `.foundry/judged` | `judge  source  text` | that clause, pinned to `source` |
+| `.foundry/read` | `reader  path` | that `path` must be understood by somebody who did not write it, pinned to `path` |
+
+**A cold read is a judgement, so it needs nothing new.** The clause pins to the artefact, so editing
+the file makes an older verdict about it stale and `verdict` refuses it at 35. No verdict blocks
+`complete` and `deliver` at 15. A handoff nobody recorded refuses at 36. The producer as its own
+reader refuses at 2.
+
+**Selective, never every file.** A repository names the few whose meaning has to survive a cold
+read. A bar over the whole tree is a bar nobody meets.
+
+**A check here proves presence, completeness, binding and an outcome. It never proves the words are
+clear.** No script judges prose, and none claims to.
 
 ---
 ### Monotonicity
