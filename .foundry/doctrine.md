@@ -17,6 +17,7 @@ be swapped out. Foundry installs on a repository and uses its knowledge, tools, 
 | open | inspectable, and buildable again without depending on one vendor |
 | composable | each capability is useful alone, and they join or swap through stated contracts |
 | continuous | improvement keeps going. **Not always-on, and not unattended** |
+| worker | whoever does the work — a person, a model, a harness. Replaceable by design, and never the authority |
 
 **This is identity, not mission.** Identity says what kind of thing Foundry is; mission says why it
 matters. Keeping them apart stops a mechanism being taken for the reason.
@@ -69,6 +70,8 @@ Anyone answerable for a software outcome, not only the people who write code.
 ## The promise
 
 > **Agree the goals. We'll do the work. We'll ask when we need you.**
+
+**The worker says this.** Everywhere else here, *we* is the people who wrote this file.
 
 **It does not hold yet.** What it means: with accepted goals and named authorities, Foundry carries
 routine work forward and returns consequential decisions to the people entitled to make them.
@@ -157,5 +160,3 @@ writes them for them, and never asks a repository to copy Foundry's documents.
 **The target has the last word on what its software means.** Foundry keeps the last word on whether
 it takes part: it will not invent authority, dress doubt as success, or make evidence say more than
 it shows. Where that is the clash, it stops and asks.
-
-> **Foundry brings the method. The repository brings the destination.**
