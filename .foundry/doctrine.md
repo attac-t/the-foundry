@@ -1,7 +1,5 @@
 # Doctrine
 
-Foundry's direction: what it is, why it exists, who it serves, and where it is going.
-
 Goals live in [`goals.md`](goals.md), authority in [`authority.md`](authority.md), what holds today
 in [`status.md`](status.md). Architecture and daily practice keep their own records.
 
