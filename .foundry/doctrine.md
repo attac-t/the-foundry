@@ -142,7 +142,7 @@ outcome becomes something to do.
 
 ## Goals
 
-**Not here.** [`goals.md`](goals.md) is the only source, and each goal has its own record.
+[`goals.md`](goals.md) is the only source, and each goal has its own record.
 
 **Every durable goal traces to the mission and a current bet.** One tracing to neither is ungrounded.
 
