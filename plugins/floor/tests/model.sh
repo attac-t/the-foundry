@@ -137,9 +137,18 @@ judged_says() {
 # Run any of the above and report only its exit code.
 code_of() { "$@" >/dev/null 2>&1; printf '%s' "$?"; }
 
+#
 # Make a git repository on a named branch, or say it could not be done.
+#
+# **A name is owned by one test.** `mkdir -p` succeeds on a directory that is already there, so a
+# reused name handed the second test the first one's repository — with its charter, its gate and its
+# commits. Two tests did that here. Both skipped on the state they inherited, and a suite that skips
+# reads exactly like a suite that passed.
+#
+# `mkdir` without `-p` refuses instead. The collision is now a failure at the line that caused it.
+#
 make_repo() {
-  mkdir -p "$1" || return 1
+  mkdir "$1" 2>/dev/null || { echo "  FIXTURE  $1 is already taken" >&2; return 1; }
   git init -q "$1" >/dev/null 2>&1 || return 1
   [ -d "$1/.git" ] || return 1
   git -C "$1" symbolic-ref HEAD "refs/heads/$2" >/dev/null 2>&1
@@ -3728,12 +3737,23 @@ a_cold_read_is_declared_like_any_other_bar() {
   commit_file "$tmp/coldread" .foundry/judged 'a-reader  .foundry/judged  doctrine.md was understood by somebody who did not write it
 ' || { skip "a cold read — no declaration"; return; }
 
-  floor_new_as "$tmp/coldread" ada@example.com "Read" >/dev/null
+  crrun=$(floor_new_as "$tmp/coldread" ada@example.com "Read")
   floor "$tmp/coldread" charter derive >/dev/null 2>&1
 
   has "the artefact becomes a judged clause"  "$(floor "$tmp/coldread" charter)" "was understood by somebody who did not write it"
   has "and the reader is its judge"           "$(floor "$tmp/coldread" charter)" "a-reader"
-  has "pinned to the artefact, not the declaration" "$(floor "$tmp/coldread" charter)" "doctrine.md"
+
+  # The pin, read as the field it is. An earlier version of these two lines asserted `doctrine.md`
+  # appeared in the rendered charter and called that "pinned to the artefact" — it is clause text,
+  # and the assertion would pass with no pin at all.
+  #
+  # A pin names where a bar came from, so it names the declaration. Pinning the artefact was written
+  # and deleted: invariant 1 then forbade the run editing the very file the read exists to protect.
+  # So staleness here is whole-commit, never this file's — and #417 owns the binding this lacks.
+  crid=$(clause_of 'doctrine.md was understood by somebody who did not write it')
+  crpin=$(awk -v id="$crid" '$1 == "pin" && $2 == id { print $5 }' "$(charter_of "$crrun")")
+  is      "the pin names the declaration"      "$crpin" ".foundry/judged"
+  differs "and never the artefact it is about" "$crpin" "doctrine.md"
 
   floor "$tmp/coldread" policy authorize 'https://gitlab.com/acme/cd.git' >/dev/null 2>&1
   floor "$tmp/coldread" targets add 'https://gitlab.com/acme/cd.git' main >/dev/null 2>&1

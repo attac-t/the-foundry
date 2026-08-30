@@ -1439,6 +1439,19 @@ report_breaks
 ( . "$root/tests/lib.sh"; summary 'a suite that ran nothing' ) >/dev/null 2>&1 \
   && bad "a suite that ran nothing passed" \
   || printf '  ok    a suite that ran nothing does not pass\n'
+
+# A skip used to be amber. Two tests reused a fixture name, inherited the other's repository, and
+# skipped on what they found — into a 700-line log, under a green tally, past a gate that said PASS.
+( . "$root/tests/lib.sh"; ok x; skip y; summary 'a suite that skipped' ) >/dev/null 2>&1 \
+  && bad "a suite that skipped a check passed" \
+  || printf '  ok    a suite that skipped a check does not pass\n'
+
+# And the other half of that split: NTFS records no executable bit, so one check here is
+# unanswerable and answerable in the container. Failing on it would make the suite unrunnable on the
+# machine it is written on.
+( . "$root/tests/lib.sh"; ok x; cannot y; summary 'a suite that could not answer' ) >/dev/null 2>&1 \
+  && printf '  ok    a check this platform cannot answer does not fail it\n' \
+  || bad "a check this platform cannot answer failed the suite"
 echo
 
 # --- break the join, the host suite must notice ---
