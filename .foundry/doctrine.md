@@ -17,6 +17,7 @@ be swapped out. Foundry installs on a repository and uses its knowledge, tools, 
 | open | inspectable, and buildable again without depending on one vendor |
 | composable | each capability is useful alone, and they join or swap through stated contracts |
 | continuous | improvement keeps going. **Not always-on, and not unattended** |
+| claim | one statement somebody is answerable for, together with the person entitled to decide it. Never a file, a role, or a worker's inference |
 | worker | whoever does the work — a person, a model, a harness. Replaceable by design, and never the authority |
 
 **This is identity, not mission.** Identity says what kind of thing Foundry is; mission says why it
@@ -54,11 +55,12 @@ The one line Foundry will not trade. [`authority.md`](authority.md) carries it o
 
 Anyone answerable for a software outcome, not only the people who write code.
 
-**None holds in full today.** [`status.md`](status.md) says how far each has got.
+**None holds until [`status.md`](status.md) says it holds.** That file, never this one, says how
+far each has got.
 
-| Person | The promise | How they check it |
+| Person | The promise | What the work hands back must say |
 |---|---|---|
-| a founder | purpose, business limits and costly trade-offs stay visible | the result lists each business claim you own as held, changed, unresolved, or yours to decide |
+| a founder | purpose, business limits and costly trade-offs stay visible | it lists each business claim you own as held, changed, unresolved, or yours to decide |
 | a domain expert, such as a chef | your outcome, limit and exception keep their meaning in ordinary words | each one you stated is accounted for, and an unresolved one stays unresolved |
 | a designer | experience intent is an input to accept, not a late opinion | every user-facing change declares its design impact, and cites a rule or names the decision it needs |
 | an application engineer | the repository's architecture, standards and evidence travel with the work | it names the seams it touched, the rules it used, and what is still in doubt |
@@ -73,8 +75,9 @@ Anyone answerable for a software outcome, not only the people who write code.
 
 **The worker says this.** Everywhere else here, *we* is the people who wrote this file.
 
-**It does not hold yet.** What it means: with accepted goals and named authorities, Foundry carries
-routine work forward and returns consequential decisions to the people entitled to make them.
+**It holds when [`status.md`](status.md) says it holds.** What it means: with accepted goals and
+named authorities, Foundry carries routine work forward and returns consequential decisions
+to the people entitled to make them.
 
 Your expertise guides the work without making you its operator, and **the worker cannot quietly
 become the authority.**
@@ -147,7 +150,8 @@ A bet with no way to lose is a belief in the wrong section.
 
 [`goals.md`](goals.md) is the only source, and each goal has its own record.
 
-**Every durable goal traces to the mission and a current bet.** One tracing to neither is ungrounded.
+**Every durable goal traces to the mission and to a current bet.** Missing either one, it is
+ungrounded.
 
 ## Foundry, and the repositories it improves
 
