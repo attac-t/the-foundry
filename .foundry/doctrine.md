@@ -16,7 +16,7 @@ be swapped out. Foundry installs on a repository and uses its knowledge, tools, 
 |---|---|
 | open | inspectable, and buildable again without depending on one vendor |
 | composable | each capability is useful alone, and they join or swap through stated contracts |
-| continuous | improvement keeps going. **Not always-on, and not unattended** |
+| continuous | improvement keeps going, and a run may work unattended. **Never outside the authority it was given** |
 | claim | one statement somebody is answerable for, together with the person entitled to decide it. Never a file, a role, or a worker's inference |
 | worker | whoever does the work — a person, a model, a harness. Replaceable by design, and never the authority |
 
