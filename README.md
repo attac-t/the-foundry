@@ -1,6 +1,11 @@
 # The Foundry
 
-A curated collection of Claude Code plugins.
+Foundry helps software keep improving while people decide what good means.
+
+**Start with [`.foundry/doctrine.md`](.foundry/doctrine.md).** It says what Foundry is, why it
+exists, who it serves and where it is going. Everything below carries it out.
+
+The plugins ship it, and each one is useful alone.
 
 ---
 

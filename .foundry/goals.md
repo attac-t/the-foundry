@@ -15,6 +15,27 @@ dated, and says who. A merge never accepts a goal. It lands a file.
 **One is accepted, and three are not.** A run may work on the first. On the others it should say
 they are unaccepted rather than pick one. That is the honest answer, not a gap to fill.
 
+## Outcomes with no record yet
+
+[Doctrine](doctrine.md)'s strategy implies five more outcomes. **None is a goal**, because none has a
+record and none has been accepted. They are kept here so the wording is not lost while a person
+decides whether any of them is one.
+
+| Outcome | Nearest record |
+|---|---|
+| a fresh session states the direction from the accepted base, and says which goal its work advances | none |
+| the daily loop makes a readable proposal, or one honest reason nothing useful could proceed | none |
+| the same core path works through a second harness, and each capability stays useful alone | none |
+| a cold reader can name the intent, the change, the evidence, the doubt and the next decision | none |
+| a founder, designer or domain expert states one scoped outcome and reads the result, in their own words | none |
+
+Two more sit in the table above already: an honest first path is
+[a person can run it](goals/a-person-can-run-it.md), and closing the learning loop is
+[beliefs meet reality](goals/beliefs-meet-reality.md).
+
+**Writing a record does not accept a goal.** It moves the wording out of a proposal and into a place
+a person can say yes or no to.
+
 ## Where an acceptance is written
 
 In [`decisions/`](decisions/), one record per decision, quoting the words the person used.

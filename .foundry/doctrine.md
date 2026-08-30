@@ -1,145 +1,417 @@
 # Doctrine
 
-Why Foundry exists, who may say what good means here, and what is not true yet.
+Foundry's first read. What it is, why it exists, what it believes, and where it is going.
 
-**A run reads this and never writes it.** A human said yes to every line, at a commit, on an issue
-anyone can open. A change here counts for nothing until a human commits it and a later run reads it.
+**A run reads this and never writes it.** Anyone may propose a change. Only a human accepts one, and
+a run that proposes a change gains nothing from it. Later work starts from what was accepted.
+
+This is not a manual, an architecture record, a list of today's gaps, or a history.
 
 ---
 
+## The layers, and where each one lives
+
+Direction has parts, and they move at different speeds. Mixing them is what made the last version
+hard to read.
+
+| Layer | Answers | Lives | Changes |
+|---|---|---|---|
+| philosophy | what we believe about people, software and truth | here | rarely |
+| mission | why Foundry keeps existing | here | rarely |
+| people and promises | whose problem we take on, and what we owe them | here | rarely |
+| principles | what must stay true while we chase the mission | here | after a real contradiction |
+| vision | what the world looks like if this works | here | as ambition grows |
+| strategy | which bets give us the best chance | here | as evidence changes |
+| goals | which outcomes the bets must produce next | [`goals.md`](goals.md) | often |
+| architecture | how the system is shaped to carry all this | [`../docs/rfc/`](../docs/rfc/) | as the product proves a need |
+| authority | who may say yes to which claim | [`authority.md`](authority.md) | per repository |
+| practice | what may happen now, under which checks | [`decisions/`](decisions/) | with capability |
+| status | what holds today, and what does not | [`status.md`](status.md) | as work lands |
+| work | what is being done next | issues, runs, history | daily |
+
+**The first six are here. The other six link back and never move in.** A file carrying all twelve
+would need editing for an ordinary planning change, and nobody could tell a belief from a bet.
+
+## What Foundry is
+
+> **An open, composable protocol for continuous software improvement.**
+
+A protocol is a shared way of working. Foundry gives people and replaceable workers one path from
+direction to work, to evidence, to delivery, to learning. It installs on a repository and uses that
+repository's own knowledge, tools, tests and rules.
+
+**Composable means every part is useful alone.** It does not mean a person should have to assemble a
+product from parts. The ordinary path still has to feel whole.
+
+Foundry is larger than any model, agent, harness or plugin. Floor is the first adapter for
+autonomous work. It is not the product. Claude Code is today's wrapper. It is not the mission.
+
+**This is identity, not mission.** Identity says what kind of thing Foundry is. Mission says why it
+matters. Keeping them apart stops a mechanism — a review, a proof, an adapter — from being mistaken
+for the reason.
+
+## Philosophy
+
+What we believe. Each belief has to help decide a question nobody has asked yet. **A sentence that
+only describes today's code is not a belief.**
+
+### Software should grow with the people it serves
+
+Needs, knowledge and circumstances change. Useful software should change with them, rather than stay
+trapped at the moment it was built.
+
+### Software exists to serve people
+
+More capable software does not get to pick its own purpose. People decide what good means, which
+trade-offs are allowed, and which consequences matter.
+
+### Human judgement is scarce; computation is abundant
+
+People should spend attention on purpose, lived context, hard trade-offs and consequence. Machines
+should carry as much of the rest as they safely can.
+
+### Workers change; direction should endure
+
+Models, tools, vendors and sessions come and go. Purpose, decisions, evidence and learning must
+outlive them.
+
+### Truth includes uncertainty
+
+A clear *we do not know* beats a confident guess. Progress that hides doubt is not progress.
+
+### Complexity must earn its place
+
+Every new process, role, service and abstraction bills the future. Foundry adds machinery only when
+a real failure shows why it is needed.
+
 ## Mission
 
-> **Every change must answer to the people who signed off its bar.**
+> **Let software keep improving while people decide what good means.**
 
-The short form:
+Producing change is becoming cheap. Keeping that change true to human purpose, standards and
+consequence stays hard. **That gap is why Foundry exists**, and it grows as machines do more of the
+building.
 
-> **Every change answers to a bar its producer did not sign off.**
+## The people we serve
 
-**Did not, never could not.** *Could not* is a promise this cannot keep. A producer on the same shell
-can edit any file here, and v1 does not close that. What does hold is smaller, and it is set out
-below.
+Foundry serves anyone answerable for a software outcome, not only the people who write code.
 
-## Principles
+**Each promise below is written so the person can tell whether it held.** These are scopes of
+expertise, never a ranking. One person may hold several. A team may split them.
+
+### A founder
+
+Protects the product's purpose, its business limits, and what it costs to get them wrong.
 
 | | |
 |---|---|
-| the producer never owns the bar | it can ask for one. It is never the hand whose commit makes one count |
-| a record informs, never grants | who may say yes is read from history, never written by the run that needs it |
-| only a human decides meaning | a machine may grade, draft, ask and refuse. It may not say what good is |
-| every part ships alone | a plugin that needs another to be useful is one plugin wearing two names |
-| say what is not true | an unchecked claim, a left-over risk and a known gap each get a line, and the line says which it is |
+| the pain | either depend on a technical gatekeeper, or treat generated software as a thing you cannot safely change |
+| the promise | purpose, business limits and costly trade-offs stay visible to the work, and you decide those claims |
+| the check | read the proposal. The business constraint you set is named, and the trade-off was put to you, not taken |
+| not promised | no-code magic, a perfect build, or a say over every technical claim |
 
-## Authority
+### A domain expert, such as a chef
 
-**The boundary is the claim, not the file.** A repository has as many authorities as kinds of claim.
-One person may hold every one. That is a small map, not a different model.
+Protects the truth of the work the software has to support.
 
-| Term | Means |
+| | |
 |---|---|
-| producer | proposes or performs the change. A role per change, never a kind of person |
-| authority | who may say yes to a claim. Named by the map, for the claim's pinned source |
-| decision-maker | the named authority for one trade-off, recorded inside that decision |
-| acceptor | who accepts a delivery. Today it cannot be withheld, and it is self-reported |
-| accountability | who answers for a result. Traced, never granted, and never authority |
-| ownership | never used bare. Repository, product and IP are three facts, not one |
+| the pain | lived knowledge is lost through three translations, and you are asked about screens instead of outcomes |
+| the promise | you state the real outcome, limit and exception in ordinary words, and the work keeps that meaning |
+| the check | read the result. You recognise your own case in it, and you can say it is wrong |
+| not promised | that knowing the work grants a say over security, money, design or engineering trade-offs |
 
-### The map
+### A designer
 
-One map per repo Foundry runs on. It says which claims answer to which people.
+Protects the experience and the behaviour people meet.
 
-> **A map states how it changes, or it is not a map.**
-
-Signed off on [#128](https://github.com/attac-t/the-foundry/issues/128), 25 August 2026. Without that
-rule, whoever installs it quietly owns the lot. That is the model thrown out here.
-
-| Repository | Its map |
+| | |
 |---|---|
-| one person | one generated line. Convention first, so nothing is written by hand |
-| a team | claim authorities and conflict rules, written out |
+| the pain | a change passes every check while quietly wearing down the product's language and logic |
+| the promise | experience intent is an input and a claim to accept, not a late opinion |
+| the check | a change that alters the interaction language reaches you, or an accepted design rule already answered it |
+| not promised | that every preference becomes a rule, or that design review reduces to a test |
 
-**A map change is signed off under the rule already in force. It counts for later runs only.** A map that
-changed under its own new rule could rewrite its own authority in a single commit.
+### An application engineer
 
-### Six rules
+Keeps the system coherent, sound and operable as the volume of change grows.
 
-1. The pinned source picks the row. The map names the human.
-2. A change answers only to what was signed off at or before its base. Its own writes count for
-   nothing.
-3. A yes is written down. It is dated and it names who said it. Silence and merge are never a yes.
-4. A real clash goes to a written order of rank. With none, that trade stops until both sides say
-   yes together. Only that trade stops. Other work carries on.
-5. Anyone can ask for a map change. Only the change row says yes to it.
-6. Point at it, never make it. Nothing a producer writes can make authority, a yes or a verdict.
-
-**A named human in a map is a record, not a control.** Foundry does not claim to know who wrote a
-line. It will not claim that until [#156](https://github.com/attac-t/the-foundry/issues/156) proves it.
-
-## What holds today
-
-A delivery cannot silently claim it was checked against something it was not.
-
-| Checkable with `git` and `cat` | How it fails loudly |
+| | |
 |---|---|
-| the bar was pinned at the base | a swapped pin contradicts the record |
-| every clause was held | an unheld clause is named as unheld |
-| the commit exists | an absent commit is absent |
-| a swap was written down | a made-up one has no record |
+| the pain | locally correct code still builds a system that is inconsistent and costly. Reading every generated line does not scale |
+| the promise | the repository's architecture, standards and evidence travel with the work, and a worker makes its intent and doubt legible |
+| the check | you can find the seam worth your judgement without reading the whole diff |
+| not promised | that review disappears, that every standard can be written as a check, or that the trust boundary is stronger than [`status.md`](status.md) says |
 
-**Every path to a lower bar runs through a visible, dated commit.** No path is silent.
+### A framework engineer
 
-*Silently* means the record does not fight itself and history does not show the act. It does not
-mean it cannot be done.
+Protects public contracts, compatibility, and how the thing feels to build on.
 
-## What does not hold yet
-
-Each line is dated to the issue that would close it. None of them is claimed anywhere.
-
-| Not true today | Owner |
+| | |
 |---|---|
-| the suite that ran was the suite pinned | [#341](https://github.com/attac-t/the-foundry/issues/341) |
-| who said yes is more than the run's word | [#156](https://github.com/attac-t/the-foundry/issues/156) |
-| a person can answer a judged clause | [#343](https://github.com/attac-t/the-foundry/issues/343) |
-| acceptance can be withheld | [#359](https://github.com/attac-t/the-foundry/issues/359) |
-| the record outlives the run directory | [#337](https://github.com/attac-t/the-foundry/issues/337) |
+| the pain | one small inconsistency multiplies across every consumer, and volume makes drift easier to make than to notice |
+| the promise | consumer contracts and developer experience are outcome claims, not polish after the tests pass |
+| the check | the change says what it does to the public surface, and why |
+| not promised | that green tests prove a good developer experience |
 
-**A hostile hand on the same shell defeats every wall here.** This catches accident, drift and the
-easy path. It is not a security boundary. No sentence in this file may imply that it is.
+**Five lenses, not five markets.** [Strategy](#strategy) picks where to start. It does not shrink who
+this is for.
+
+## The promise
+
+> **Agree the goals. We'll do the work. We'll ask when we need you.**
+
+Said longer: your expertise can guide continuous improvement without forcing you to become the
+worker's operator, and **the worker cannot quietly become the authority.**
+
+Six things it has to mean:
+
+| | |
+|---|---|
+| 1 | direction is durable, and it is read before work starts |
+| 2 | each expert states the claim they own, in language they already use |
+| 3 | routine mechanics proceed without routine approval |
+| 4 | meaning, authority, risk and consequence reach the right person |
+| 5 | a result states intent, exact change, evidence, assumptions and uncertainty |
+| 6 | changing workers erases no direction, decision, work or learning |
+
+**When Foundry asks, it says four things:** the decision, what it recommends, why, and what happens
+while it waits. Then it parks that work and carries on with the rest.
+
+**These are commitments to earn.** [`status.md`](status.md) says which hold today and where the edge
+is. No promise here may be quoted without it.
+
+## What Foundry does not promise
+
+A product can be ambitious and honest at once. Naming the limits is how.
+
+| Not promised | Why the line is here |
+|---|---|
+| perfect software | no tool makes it, and Foundry is a tool |
+| proof of who a person is | not until an identity Foundry can check makes the claim real |
+| safety from a hostile hand | not against a process sharing the same shell and credentials, unless a real boundary provides it |
+| that tests capture good | a check is one definition, never the whole one |
+| that evidence replaces judgement | it informs a decision. It never makes one |
+| that every repository runs unattended | some should not, and saying so is the honest answer |
+| that every user decides every claim | authority is specific, and breadth of access is not breadth of say |
+| merge or deploy by default | neither happens because work finished |
+| one model, vendor, harness or plugin forever | any of them may be replaced |
+| a vague wish becoming a trustworthy product | not instantly, and not silently |
+| learning that rewrites purpose | a lesson never promotes itself into a rule |
+| that today's product is the vision | [Vision](#vision) is the destination. [`status.md`](status.md) is the position |
+
+## Principles
+
+What has to stay true while we chase the mission. **Each one refuses something**, and the refusal is
+the test of whether it earns its place.
+
+### 1. Human direction comes before work
+
+Every repository says why it exists, who it serves, and what must stay true. It also says what it is
+trying to reach, and how. **Work that advances no stated goal shows up as ungrounded.**
+
+*Refuses: invented goals, a product identity read off the backlog, activity with no intended result.*
+
+### 2. Authority is specific
+
+Whoever decides a product trade-off may not be whoever decides a design, security, operational or
+engineering one. Each repository says who decides which kind of claim, how a clash is settled, and
+how that arrangement changes. [`authority.md`](authority.md) holds the mechanism.
+
+*Refuses: the single owner, the administrator who decides everything, one person quietly absorbing
+every trade-off.*
+
+### 3. Producing work grants no authority over it
+
+A worker may inspect, ask, challenge, plan, build, test, explain and propose. **It never gains the
+right to approve its own work, or to change the rules that judge it.**
+
+*Refuses: self-approval, a rule changed mid-run, a worker rewriting its own definition of done.*
+
+### 4. Automate mechanics; escalate meaning and consequence
+
+Foundry removes ceremony. It does not remove the decisions that give work its purpose, or that make
+a costly trade-off legitimate. **It never invents a consequential trade-off because nobody stated
+one** — it asks.
+
+*Refuses: approval theatre, and stripping out the calls only people can rightly make.*
+
+### 5. Direction and evidence outlive replaceable workers
+
+Anything durable belongs in an open form anyone can read, tied to the repository and the work.
+Sessions are temporary. Providers and mechanisms are swappable.
+
+*Refuses: lock-in, session memory treated as truth, a worker's identity baked into the design.*
+
+### 6. Evidence supports judgement; it does not replace it
+
+Foundry names the exact change it looked at, the rules it used, and the checks it ran. It also names
+what came back and what is still open. **A check that failed or never ran never quietly becomes a
+pass.**
+
+*Refuses: green means good, unknown read as pass, a record claiming more than a reader can check.*
+
+### 7. Compose with the repository
+
+The repository brings its own purpose, knowledge, people, tools, tests and habits. Foundry uses them
+before inventing substitutes.
+
+*Refuses: pasting Foundry's own direction into a target, and replacing local knowledge that works
+with a generic stack.*
+
+### 8. Learn without silently changing direction
+
+Outcomes should improve later work. A worker may propose a change to doctrine, strategy, goals or
+standing rules. **That proposal reaches later work only after the right people accept it.**
+
+*Refuses: authority that amends itself, and a lesson promoting itself into a rule.*
+
+### 9. Prefer the smallest system that solves the observed problem
+
+Convention before configuration. A file before a service, while a file is enough. New machinery has
+to name the failure that earned it, and the test that would let it go.
+
+*Refuses: machinery built for a problem nobody has had, and a permanent org chart of agents.*
+
+## Vision
+
+**Not a promise.** Where this is going.
+
+Software is never trapped at the moment it was built. It keeps fitting the people it serves as they,
+their knowledge, and their tools change.
+
+A founder grows a product without becoming an engineering manager. A chef improves the software
+behind a shift without learning a software process. A designer protects an experience without
+watching every pixel. An engineer chases coherence and compatibility without policing every
+generated line.
+
+The best intelligence available does more of the work. People spend their attention on purpose,
+judgement and consequence. Any worker can be swapped out. The direction and the memory stay.
+
+Every improvement can say what it meant to achieve, what changed, what was learned, and what is
+still unknown.
+
+**More people get to shape software that fits their lives.** Autonomy grows human agency, instead of
+gathering control into the tools that supply it.
+
+## Strategy
+
+Our current bets. They change as evidence changes, and **they never quietly rewrite the philosophy,
+the mission or the principles.**
+
+**Each bet says how it dies.** A bet with no way to lose is a belief in the wrong section.
+
+### Start where good is already exact
+
+Begin with framework authors and engineering teams who protect public contracts, compatibility,
+quality and developer experience. Their standard is already written down, their change volume is
+high, and incoherent work hurts them fast.
+
+A starting market, never the limit. Use it to build the rigour a founder, a designer and a domain
+expert will need later.
+
+*Dies if: none of them writes a bar we can pin, or they would rather have a coding agent and an
+ordinary review.*
+
+### Use Foundry on Foundry, every day
+
+The daily loop starts from this document and the current goals. It picks useful work, makes a
+proposal a person can read, tests what it did, and leaves something for the next session. **Activity
+that advances no goal is a defect in the loop.**
+
+*Dies if: the loop makes output without moving a goal, or it needs rescuing by its authors.*
+
+### Earn autonomy in honest layers
+
+First a safe proposal a person can read, under human direction. Then stronger evidence, more
+independent judgement, an outcome easier to check. **Never sell a later layer as though it shipped.**
+
+*Dies if: a person cannot tell which layer they are on, or a weaker layer causes harm its language
+implied it prevented.*
+
+### Prove the protocol away from home
+
+Run Foundry through a second harness, on a repository that is not this one, for someone who did not
+build it. Prove a capability ships alone, and that swapping the machinery erases neither direction
+nor evidence.
+
+*Dies if: the second path needs a fork, a hand at every step, or the core behaviour written twice.*
+
+### Make the ordinary path the product
+
+A new person can install Foundry and give a repository its own direction. They can start a run, see
+where it is, recover when it breaks, and get a proposal. **None of that should need Foundry's
+private vocabulary.**
+
+*Dies if: reaching a first useful proposal means learning internal verbs or wiring plugins by hand.*
+
+### Broaden who takes part, without widening authority by accident
+
+Let founders, designers and domain experts state the claims they are qualified to decide, and make
+those claims usable by a worker. Keep a cross-domain trade-off out in the open, rather than handing
+one role quiet control.
+
+*Dies if: a non-engineer cannot state an outcome without a translator, or their input becomes a
+vague say over everything.*
+
+### Turn outcomes into learning
+
+Watch whether delivered work changed what it meant to change. Use that to propose better goals,
+rules and bets. **People accept a change to direction. A worker never promotes its own lesson.**
+
+*Dies if: a measured outcome rewrites a goal by itself, or no later decision changes after an
+outcome is seen.*
 
 ## Goals
 
 **Not here.** [`goals.md`](goals.md) is the only source, and each goal has its own record beside it.
 
-Doctrine holds what does not change. A goal changes when the work does. Mixing them makes the first
-read noisy, and forces an edit here for an ordinary planning change.
+Doctrine holds what does not change. A goal changes when the work does. **Every durable goal traces
+to the mission and a current bet.** A goal that traces to neither is visible as ungrounded.
 
 **A merge never accepts a goal.** A named person does, in writing, dated.
 
-## Strategy
+## How this governs the work
 
-**A bet, not a principle.** Every line here can be wrong, and each one says how we would find out.
+Every fresh worker reads the accepted version of this file before it picks, plans, does or judges
+anything. **It reads the version pinned at the work's base**, never the working tree, so no worker
+can change the instruction it claims to follow. [`status.md`](status.md) says that this is a rule
+today and not yet a mechanism.
 
-| The bet | How it dies |
+Before starting, a worker can answer seven questions. If it cannot, it is not grounded, and it
+should look or ask rather than invent.
+
+| | |
 |---|---|
-| framework authors first, because their bar is already written down | none of them writes a bar we can pin |
-| Claude Code is today's wrapper, not the product | a second harness costs more to add than it is worth |
-| a repo far from here can run this | the first foreign run needs a hand at every step |
-| the run record is worth keeping | nobody reads one twice |
+| goal | which accepted goal does this advance? |
+| person | who gets a better outcome? |
+| change | what becomes observably different? |
+| constraints | which principles and accepted rules apply? |
+| authority | who may decide each claim that is not derived? |
+| evidence | what can be checked, and what stays a judgement? |
+| unknowns | which assumption would make this wrong? |
 
-**Kill dates go on the issue, not here.** A bet with no way to lose is a belief.
+**Anyone may challenge this file.** A worker's edit is only ever a proposal. It applies once a person
+with the right authority accepts it, and later work starts from that.
 
-## Vision
+## Foundry, and the repositories it improves
 
-Not a promise. Dated to the five rows above.
+Two kinds of direction, and they must never be confused.
 
-> However fast change is produced, every delivery carries proof the owner keeps: this exact commit
-> met a bar its producer could not lower.
+| Whose call | What it covers |
+|---|---|
+| the target repository | what its software is for, and what good means there |
+| Foundry | how a worker stays directed and honest while helping it change |
 
-Three of its words are false today: *proof*, *could not lower*, *the owner keeps*. It is kept whole
-because it says where this is going. It is never quoted without these dates.
+**Each target repository brings its own philosophy, mission, principles, vision, strategy, goals and
+authority map.** Foundry helps its people write those in their own words, and never copies its own
+in. It cites this file by pin, never by paste.
 
-## For a repository Foundry is installed on
+The target owns its meaning, and Foundry cannot overwrite it. **Where the two disagree about that
+repository, its own doctrine wins**, and it outranks everything Foundry ships there.
 
-**That repository writes its own doctrine.** Its meaning comes from its humans, never from this file.
+What the target cannot do is make Foundry invent authority, dress doubt as success, or make evidence
+say more than it shows. Where that is the clash, **Foundry stops and asks the people entitled to
+settle it.**
 
-It cites this one by pin, never by paste. Where the two disagree about that repository, **its own
-doctrine wins**, and it outranks everything Foundry ships there.
+> **Foundry brings the method. The repository brings the destination.**

@@ -20,8 +20,8 @@ State: partly, and less than it looked on 28 August 2026.
 Five boundaries sit outside these three, and none of them is a condition here. The graded, delivered
 and merged commit are not shown to be one lineage. The suite that ran is not shown to be the suite
 that was pinned. No identity is authenticated. The verdict does not outlive the run directory.
-Nothing stops a delivery made outside Floor. [Doctrine](../doctrine.md) already names four of them
-with the issue that would close each.
+Nothing stops a delivery made outside Floor. [Status](../status.md) already names four of them with
+the issue that would close each.
 
 **Meeting this goal removes one veto. It does not make Foundry ready elsewhere** — the accepted
 words say *before*, not *therefore*.
