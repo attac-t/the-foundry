@@ -2242,18 +2242,18 @@ completion_refuses_what_is_only_vacuously_true() {
   floor_new_as "$tmp/cr" ada@example.com "Vacuous" >/dev/null
   floor "$tmp/cr" policy authorize 'https://github.com/acme/cr.git' >/dev/null 2>&1
   floor "$tmp/cr" targets add 'https://github.com/acme/cr.git' main >/dev/null 2>&1
-  floor "$tmp/coldread" open >/dev/null 2>&1
+  floor "$tmp/cr" open >/dev/null 2>&1
 
-  is  "a run with a target and no charter may not deliver" "$(code_of floor "$tmp/coldread" complete)" "15"
+  is  "a run with a target and no charter may not deliver" "$(code_of floor "$tmp/cr" complete)" "15"
   has "because nothing grades it" "$(floor_says "$tmp/cr" complete)" "nobar"
 
   # Opened after the charter exists, because `open` runs `authorise` and a run with no charter has
   # nothing to authorise.
-  floor "$tmp/coldread" charter derive >/dev/null 2>&1
-  floor "$tmp/coldread" open >/dev/null 2>&1
-  floor "$tmp/coldread" gates >/dev/null 2>&1
+  floor "$tmp/cr" charter derive >/dev/null 2>&1
+  floor "$tmp/cr" open >/dev/null 2>&1
+  floor "$tmp/cr" gates >/dev/null 2>&1
 
-  is  "a gate that ran and failed leaves its clause unmet" "$(code_of floor "$tmp/coldread" complete)" "15"
+  is  "a gate that ran and failed leaves its clause unmet" "$(code_of floor "$tmp/cr" complete)" "15"
   has "and the record it wrote does not satisfy it" "$(floor_says "$tmp/cr" complete)" "unmet: [tests]"
 }
 completion_refuses_what_is_only_vacuously_true
