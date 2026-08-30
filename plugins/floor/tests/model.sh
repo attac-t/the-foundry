@@ -3706,9 +3706,13 @@ a_verdict_is_bound_to_what_was_read
 #
 # An artefact a repository says must be read cold before it ships.
 #
-# A cold read is answered the same way a judgement is, so it derives the same shape and every
-# refusal below applies to it unchanged. **The clause pins to the artefact**, so changing the file
-# makes an old verdict about it stale, and `verdict` already refuses that.
+# **It needs no new declaration.** A cold read is a judgement — somebody who did not write the file
+# says whether they understood it — so one line in `.foundry/judged` carries it, and every refusal
+# there applies unchanged.
+#
+# A resolver reading its own file was written and deleted. It pinned the clause to the artefact, and
+# a pin names the source a bar came from, never its subject. So invariant 1 then forbade the run
+# from editing the very file the read exists to protect.
 #
 a_cold_read_is_declared_like_any_other_bar() {
   # One step, one message. A chain of six joined by `&&` says only that something failed, and the
@@ -3721,7 +3725,7 @@ a_cold_read_is_declared_like_any_other_bar() {
 ' || { skip "a cold read — no gates"; return; }
   commit_file "$tmp/coldread" doctrine.md 'what this is for
 ' || { skip "a cold read — no artefact"; return; }
-  commit_file "$tmp/coldread" .foundry/read 'a-reader  doctrine.md
+  commit_file "$tmp/coldread" .foundry/judged 'a-reader  .foundry/judged  doctrine.md was understood by somebody who did not write it
 ' || { skip "a cold read — no declaration"; return; }
 
   floor_new_as "$tmp/coldread" ada@example.com "Read" >/dev/null

@@ -781,15 +781,19 @@ rule that keeps every seam in §2.6 marked.
 
 **And a `Judged` clause is derived from a declaration, never guessed.** Two files declare one:
 
-| Declared in | One line says | Yields |
-|---|---|---|
-| `.foundry/judged` | `judge  source  text` | that clause, pinned to `source` |
-| `.foundry/read` | `reader  path` | that `path` must be understood by somebody who did not write it, pinned to `path` |
+`.foundry/judged` declares one, `judge  source  text`, pinned to `source`.
 
-**A cold read is a judgement, so it needs nothing new.** The clause pins to the artefact, so editing
-the file makes an older verdict about it stale and `verdict` refuses it at 35. No verdict blocks
-`complete` and `deliver` at 15. A handoff nobody recorded refuses at 36. The producer as its own
-reader refuses at 2.
+**A cold read needs nothing new.** Somebody who did not write a file says whether they understood
+it — that is a judgement, so one line carries it:
+
+    a-reader  .foundry/judged  doctrine.md was understood by somebody who did not write it
+
+No verdict blocks `complete` and `deliver` at 15. A verdict about an older commit refuses at 35. A
+handoff nobody recorded refuses at 36. The producer as its own reader refuses at 2.
+
+**A second declaration file was written and deleted.** It pinned the clause to the artefact, and a
+pin names the source a bar came from, never its subject. Invariant 1 then forbade the run from
+editing the file the read exists to protect.
 
 **Selective, never every file.** A repository names the few whose meaning has to survive a cold
 read. A bar over the whole tree is a bar nobody meets.

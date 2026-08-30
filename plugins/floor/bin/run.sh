@@ -3344,16 +3344,8 @@ detect_gates() { sh "$(gate_resolver)" "$(repo_root)"; }
 # The same question about judgement. Its own resolver, because a gate and a judged clause are
 # different declarations and a repository may make either without the other.
 judged_resolver() { printf '%s' "${FOUNDRY_JUDGED:-$(dirname "$0")/../lib/detect-judged.sh}"; }
-read_resolver() { printf '%s' "${FOUNDRY_READ:-$(dirname "$0")/../lib/detect-read.sh}"; }
 
-#
-# Both kinds of judged clause, from the two files that declare them. A cold read is answered the same
-# way a judgement is, so it derives the same shape and every refusal below applies to it unchanged.
-detect_judged() {
-    sh "$(judged_resolver)" "$(repo_root)"
-    sh "$(read_resolver)" "$(repo_root)"
-    return 0
-}
+detect_judged() { sh "$(judged_resolver)" "$(repo_root)"; }
 
 #
 # A bar the repository declares and nothing here can read.
