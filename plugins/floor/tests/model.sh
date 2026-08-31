@@ -1534,13 +1534,31 @@ an_observation_is_not_evidence() {
   is "a row too long to land whole refuses" \
      "$(code_of floor "$tmp/ob" observe long.row "note=$(head -c 4100 /dev/zero | tr '\0' 'x')")" "2"
 
-  # Twenty writers at once, and twenty whole rows. The property is the atomic append
-  # rather than this count, and the count is what would notice
-  # if the rows grew past it.
+  #
+  # Twenty writers at once, and twenty whole rows. The property is the atomic append rather than
+  # this count, and the count is what would notice if the rows grew past it.
+  #
+  # **Each writer's exit code is kept.** Without them a row that never arrived and a process that
+  # never started read the same, and this went red on a machine that could not fork:
+  #
+  #     fatal error in forked process - MEM_COMMIT failed, Win32 error 1455
+  #
+  # Measured over five rounds: four exact, one short by three, and all three said that. Floor wrote
+  # every row it was asked to. The count alone accused it of losing them.
+  #
   before=$(floor "$tmp/ob" observe | grep -c .)
+  codes="$tmp/racecodes"
+  rm -rf "$codes" && mkdir -p "$codes"
+
   i=0
-  while [ "$i" -lt 20 ]; do floor "$tmp/ob" observe "race.$i" n="$i" >/dev/null 2>&1 & i=$((i + 1)); done
+  while [ "$i" -lt 20 ]; do
+    { floor "$tmp/ob" observe "race.$i" n="$i" >/dev/null 2>&1; echo "$?" > "$codes/$i"; } &
+    i=$((i + 1))
+  done
   wait
+
+  is "all twenty writers ran"         "$(ls "$codes" 2>/dev/null | grep -c .)" "20"
+  is "and all twenty said they wrote" "$(grep -lx 0 "$codes"/* 2>/dev/null | grep -c .)" "20"
 
   is "twenty writers leave twenty whole rows" \
      "$(floor "$tmp/ob" observe | grep -c .)" "$((before + 20))"
