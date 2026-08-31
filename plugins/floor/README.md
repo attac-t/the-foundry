@@ -1418,9 +1418,17 @@ not named.
 by picking twice.
 
 **The render is fixed on purpose.** The repository's `bin/comments.sh` reads the public thread back
-and re-runs these rules on what landed, so a comment that did not come through here reads as one
-that did not. A stamp would be forgeable by whoever holds the same account. A rendering is not
-forged, it is matched.
+and re-runs **three** of these on what landed — the character limit, the log shapes and the marker.
+It cannot re-run the rest: the word limit, the kind, the delta and the evidence are inputs, and a
+body does not carry them back.
+
+**Three more things it does not do**, each found by a reader who did not write it:
+
+| | |
+|---|---|
+| a comment is editable | every wall guards creation. Post a clean body, then edit it |
+| ten legal comments are the original twelve kilobytes | the limit is per comment, and volume is not bounded |
+| nothing schedules the live read | the gate runs the suite. Reading the real thread is a person's command |
 
 ### What this cannot do
 

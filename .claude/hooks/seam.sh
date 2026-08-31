@@ -20,18 +20,22 @@
 
 set -u
 
-deny() {
-    printf '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny",'
-    printf '"permissionDecisionReason":"%s"}}\n' "$1"
-    exit 0
+main() {
+    call=$(cat)
+
+    writes_a_body "$call" || allow
+    carries_the_marker "$call" && allow
+
+    deny "a public comment is rendered by plugins/floor/bin/say.sh, which takes fields and refuses six ways. This command carries no seam marker. Run say.sh and post what it printed."
 }
 
-allow() { exit 0; }
+#
+# A comment write that carries a body. `gh pr review --approve` carries none, and denying it stopped
+# a legitimate action for lacking a marker it could never have.
+#
+writes_a_body() {
+    carries_no_body "$1" && return 1
 
-call=$(cat)
-
-# `gh pr comment`, `gh issue comment`, and the two API paths that reach the same place.
-writes_a_comment() {
     case $1 in
         *'gh pr comment'*|*'gh issue comment'*|*'gh pr review'*) return 0 ;;
         *'issues/'*'/comments'*|*'pulls/'*'/comments'*)          return 0 ;;
@@ -39,21 +43,47 @@ writes_a_comment() {
     return 1
 }
 
-#
-# The command, and the file it names.
-#
-# A rendered body is passed as `--body-file`, so the marker is in the file and never in the command
-# — which is how this denied its own author the first time it ran. Reading the file checks what
-# actually gets posted, which is the thing worth checking.
-carries_the_marker() {
-    case $1 in *'seam:'*) return 0 ;; esac
-
-    named=$(printf '%s' "$1" | sed -n 's/.*--body-file[= ]*\([^ "]*\).*/\1/p')
-    [ -n "$named" ] || return 1
-    grep -q 'seam:' "$named" 2>/dev/null
+carries_no_body() {
+    case $1 in
+        *--body*) return 1 ;;
+    esac
+    return 0
 }
 
-writes_a_comment "$call" || allow
-carries_the_marker "$call" && allow
+#
+# The whole marker, in the command or in the file it names.
+#
+# A rendered body arrives as `--body-file`, so the marker is in the file and never on the command
+# line — which is how this denied its own author the first time it ran. Reading the named file
+# checks what actually gets posted.
+#
+# `seam:` alone was enough once. Any log mentioning the word walked through, which is the shape this
+# exists to stop.
+carries_the_marker() {
+    case $1 in *'<!-- seam:'*' -->'*) return 0 ;; esac
 
-deny "a public comment is rendered by plugins/floor/bin/say.sh, which takes fields and refuses seven ways. This command carries no seam marker. Run say.sh and post what it printed."
+    # Shell, never a regex. A `sed` backreference is the one line here that a copy through another
+    # tool has already silently broken, twice.
+    #
+    # The quote goes first, turned into a space, so no pattern below has to contain one.
+    said=$(printf '%s' "$1" | tr '"' ' ')
+    named=${said#*--body-file}
+    named=${named#=}
+    named=${named# }
+    named=${named%% *}
+
+    [ "$named" != "$said" ] || return 1
+    [ -n "$named" ] || return 1
+    grep -q '<!-- seam:' "$named" 2>/dev/null
+}
+
+deny() {
+    printf '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny",'
+    printf '"permissionDecisionReason":"%s"}}
+' "$1"
+    exit 0
+}
+
+allow() { exit 0; }
+
+main "$@"

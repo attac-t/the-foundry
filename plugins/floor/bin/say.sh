@@ -19,7 +19,7 @@
 #
 # Exit codes:
 #
-#   0   the body is on stdout, or nothing was worth saying and `published:false` is
+#   0   the body is on stdout
 #   2   a field is missing, or the kind is not one of the three
 #  50   no delta, and this kind needs one
 #  51   this key is already on the thread
@@ -38,6 +38,10 @@ kind=; subject=; was=; now=; because=; next=; evidence=; thread=; key=; found=
 
 main() {
     read_arguments "$@"
+
+    # Never `cat` bare. At a terminal that waits for ever, and the caller sees a hang with no
+    # message — the one failure a refusal cannot explain.
+    [ -t 0 ] && fail 2 'the thread arrives on stdin. Pass the published comments, or </dev/null'
     thread=$(cat)
     refuse_a_kind_nobody_named
     refuse_a_missing_field
@@ -111,8 +115,10 @@ refuse_no_delta() {
 
 # The thread is the ledger. A key already on it was already said.
 refuse_a_key_already_said() {
+    # The whole marker, never the number alone. Keys are variable-length decimals, so `seam:123`
+    # matched inside `seam:1234` and refused a key nobody had published.
     case $thread in
-        *"seam:$key"*) fail 51 "[$key] is already on this thread" ;;
+        *"<!-- seam:$key -->"*) fail 51 "[$key] is already on this thread" ;;
     esac
     return 0
 }
@@ -124,10 +130,12 @@ refuse_a_key_already_said() {
 # learns to phrase around. These are the field shapes that got published: a session identifier, a
 # token count, a transcript marker.
 refuse_a_field_that_is_a_log() {
-    found=$(printf '%s %s %s %s' "$subject" "$because" "$next" "$evidence" | awk '
+    found=$(printf '%s %s %s %s %s %s' "$subject" "$was" "$now" "$because" "$next" "$evidence" | awk '
+        BEGIN { IGNORECASE = 1 }
         /session id|session_id|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}/ { print "a session id"; exit }
         /tokens used|token count|input tokens|output tokens/         { print "a token count"; exit }
         /exec |thinking|```/                                         { print "a transcript"; exit }
+        /seam:/                                                      { print "a seam marker"; exit }
     ')
 
     [ -z "$found" ] || fail 52 "this carries $found"
@@ -144,9 +152,12 @@ refuse_evidence_naming_nothing() {
 #
 # One shape, drawn the same way every time.
 #
-# **Fixed on purpose.** `bin/comments.sh` re-derives this from what GitHub returns and compares, so
-# a comment that did not come through here reads as one that did not. A stamp would be forgeable by
-# whoever holds the same account; a rendering is not something you forge, it is something you match.
+# **Fixed on purpose.** `bin/comments.sh` reads the marker back and re-runs three of the six refusals
+# on what landed. It does not re-derive this body and compare it byte for byte — its own read folds
+# newlines to spaces, so a byte match through it is impossible by design.
+#
+# The marker is not a stamp and claims nothing about who wrote it. Whoever holds the account can type
+# one. It says which key was published, so the same thing is not said twice.
 render() {
     printf '**%s** — %s\n\n' "$(title_for "$kind")" "$subject"
     [ -n "$was" ] && printf '%s → %s\n\n' "$was" "$now"

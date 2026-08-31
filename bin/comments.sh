@@ -8,9 +8,12 @@
 # **The thread is the only ledger neither the worker nor this script can rewrite.** A file beside
 # the run says what the run admits to. GitHub says what happened.
 #
-# `plugins/floor/bin/say.sh` renders a comment from named fields and refuses seven ways. This reads
-# what actually landed and re-runs those rules on it — so a comment posted around the seam reads as
-# exactly what it is.
+# `plugins/floor/bin/say.sh` renders a comment from named fields and refuses six ways. **This
+# re-runs three of them on what landed**: the character limit, the log shapes, and the marker.
+#
+# It cannot re-run the rest. The word limit, the kind, the delta and the evidence are inputs, and
+# the body does not carry them back. **Claiming it re-runs every rule would be a claim it cannot
+# meet**, and an earlier draft of this header said exactly that.
 #
 # **This is detection, not prevention, and the difference matters.** Once GitHub accepts the write,
 # the disclosure has happened; blocking delivery afterwards does not un-send it. Two consultations
@@ -34,7 +37,7 @@ found=0
 read_into=
 
 main() {
-    [ "$number" = audit ] && { bash "$root/tests/comments.sh"; exit $?; }
+    [ "$number" = audit ] && { audit_both; exit $?; }
 
     refuse_no_number
     ensure_gh_answers
@@ -66,7 +69,7 @@ ensure_gh_answers() {
 
 # One comment per line, newlines folded, so `read` gets one record each time.
 comment_bodies() {
-    gh api "repos/{owner}/{repo}/issues/$number/comments" \
+    gh api --paginate "repos/{owner}/{repo}/issues/$number/comments" \
        --jq '.[] | [(.id|tostring), (.body|gsub("\n"; " "))] | join("\t")' 2>/dev/null
 }
 
@@ -86,7 +89,8 @@ check_one() {
     carries_no_log  "$body"   || bad "$id" 'came through the seam and carries a log field'
 }
 
-carries_a_marker() { case $1 in *'<!-- seam:'*) return 0 ;; esac; return 1; }
+# The whole marker. A body that merely mentions the seam is not one the seam rendered.
+carries_a_marker() { case $1 in *'<!-- seam:'*' -->'*) return 0 ;; esac; return 1; }
 
 obeys_the_limit() {
     [ "$(printf '%s' "$1" | wc -c | tr -d ' ')" -le 1200 ]
@@ -94,8 +98,10 @@ obeys_the_limit() {
 
 carries_no_log() {
     printf '%s' "$1" | awk '
+        BEGIN { IGNORECASE = 1 }
         /session id|session_id|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}/ { exit 1 }
-        /tokens used|token count|input tokens|output tokens/         { exit 1 }' >/dev/null
+        /tokens used|token count|input tokens|output tokens/         { exit 1 }
+        /exec |thinking|```/                                         { exit 1 }' >/dev/null
 }
 
 #
@@ -113,6 +119,17 @@ report() {
     [ "$found" -eq 0 ] && { printf 'comments — every rendered comment still obeys the seam\n'; return 0; }
     printf 'comments — a rendered comment broke the rule that rendered it\n'
     return 1
+}
+
+#
+# Both halves, and the second was missing.
+#
+# The hook is the only wall a caller meets before the write, and forty-three checks shipped without
+# one driving it. Its own suite cannot type a tool call on a command line — the live hook would read
+# it — so every case there is a file.
+audit_both() {
+    bash "$root/tests/comments.sh" || return 1
+    bash "$root/tests/seam.sh"
 }
 
 main "$@"
