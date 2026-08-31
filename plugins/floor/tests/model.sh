@@ -1535,7 +1535,7 @@ an_observation_is_not_evidence() {
      "$(code_of floor "$tmp/ob" observe long.row "note=$(head -c 4100 /dev/zero | tr '\0' 'x')")" "2"
 
   #
-  # Twenty writers at once, and twenty whole rows. The property is the atomic append rather than
+  # Five writers at once, and five whole rows. The property is the atomic append rather than
   # this count, and the count is what would notice if the rows grew past it.
   #
   # **Each writer's exit code is kept.** Without them a row that never arrived and a process that
@@ -1543,25 +1543,27 @@ an_observation_is_not_evidence() {
   #
   #     fatal error in forked process - MEM_COMMIT failed, Win32 error 1455
   #
-  # Measured over five rounds: four exact, one short by three, and all three said that. Floor wrote
-  # every row it was asked to. The count alone accused it of losing them.
+  # **Five, not twenty.** Twenty concurrent processes do not fit on a 7 GB machine, and this went
+  # red three times — three writers lost, then thirteen — while floor wrote every row it was
+  # asked to. **An append is atomic or it is not**, and no count decides that. A number only some
+  # machines can reach tests the machine.
   #
   before=$(floor "$tmp/ob" observe | grep -c .)
   codes="$tmp/racecodes"
   rm -rf "$codes" && mkdir -p "$codes"
 
   i=0
-  while [ "$i" -lt 20 ]; do
+  while [ "$i" -lt 5 ]; do
     { floor "$tmp/ob" observe "race.$i" n="$i" >/dev/null 2>&1; echo "$?" > "$codes/$i"; } &
     i=$((i + 1))
   done
   wait
 
-  is "all twenty writers ran"         "$(ls "$codes" 2>/dev/null | grep -c .)" "20"
-  is "and all twenty said they wrote" "$(grep -lx 0 "$codes"/* 2>/dev/null | grep -c .)" "20"
+  is "all five writers ran"           "$(ls "$codes" 2>/dev/null | grep -c .)" "5"
+  is "and all five said they wrote"   "$(grep -lx 0 "$codes"/* 2>/dev/null | grep -c .)" "5"
 
-  is "twenty writers leave twenty whole rows" \
-     "$(floor "$tmp/ob" observe | grep -c .)" "$((before + 20))"
+  is "five writers leave five whole rows" \
+     "$(floor "$tmp/ob" observe | grep -c .)" "$((before + 5))"
   is "and none of them tore" \
      "$(floor "$tmp/ob" observe | awk -F'\t' 'NF != 4' | grep -c .)" "0"
 }
