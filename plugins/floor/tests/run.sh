@@ -114,6 +114,20 @@ deadline=$(( ${clean:-0} * 5 ))
 [ "$deadline" -lt 120 ] && deadline=120
 
 #
+# And a ceiling, because the floor alone is half a bound.
+#
+# `clean` is measured on whatever else the machine was doing, so a contended run bought itself a
+# longer wait: 62,185 seconds once, which is seventeen hours. A mutant hung under it and nothing
+# was ever going to kill it.
+#
+# **A mutant is caught early by `FOUNDRY_FAIL_FAST` or it runs about as long as a clean pass.** The
+# slowest legitimate one measured here is 226 seconds. Fifteen minutes is six times that, and it is
+# the difference between a hang that answers MOOT and a hang that answers tomorrow.
+#
+ceiling=${FOUNDRY_AUDIT_CEILING:-900}
+[ "$deadline" -gt "$ceiling" ] && deadline=$ceiling
+
+#
 # Nothing is audited while the suite is red.
 #
 # Every mutant runs the model suite under `FOUNDRY_FAIL_FAST`, and a red suite stops at its own
