@@ -780,12 +780,12 @@ the one name floor already knows is what an honest record can do — no more.
 rule that keeps every seam in §2.6 marked.
 
 **And a `Judged` clause is derived from a declaration, never guessed.** `.foundry/judged` declares
-one — `judge  source  text` — pinned to `source`.
+one — `judge  text` — and this file is the source, so every clause here pins to it.
 
 **A cold read reuses that and adds nothing.** Somebody who did not write a file says whether they
 understood it. That is a judgement, so one line carries it:
 
-    a-reader  .foundry/judged  doctrine.md was understood by somebody who did not write it
+    a-reader  doctrine.md was understood by somebody who did not write it
 
 No verdict blocks `complete` and `deliver` at 15. A verdict about an older commit refuses at 35. A
 handoff nobody recorded refuses at 36. The producer as its own reader refuses at 2.

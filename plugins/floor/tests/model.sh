@@ -695,7 +695,7 @@ a_claim_that_can_never_land_refuses() {
   # report a guard it never reached.
   if mkdir "$shut/runs/probe" 2>/dev/null; then
     rmdir "$shut/runs/probe"; chmod 700 "$shut/runs" 2>/dev/null
-    skip "a claim that can never land — this filesystem ignores chmod"
+    cannot "a claim that can never land — this filesystem ignores chmod"
     return
   fi
 
@@ -1298,7 +1298,7 @@ records_unreadable() {
 # and the declaration was invisible to everything downstream.
 #
 a_declaration_it_cannot_read_is_not_a_guess() {
-  records_unreadable || { skip "an unreadable declaration — this filesystem records no read bit"; return; }
+  records_unreadable || { cannot "an unreadable declaration — this filesystem records no read bit"; return; }
 
   make_repo "$tmp/ur" main && set_origin "$tmp/ur" 'https://github.com/acme/ur.git' \
     && mkdir -p "$tmp/ur/.foundry" \
@@ -2377,7 +2377,7 @@ a_workspace_is_isolated_from_the_checkout() {
   # `[ -e ]` follows the link, so a dangling one reads as nothing there. Left to the claim below it,
   # the message would name a session that is not running.
   rm -rf "$slot"
-  ln -s /nonexistent-target "$slot" 2>/dev/null || { skip "a dangling slot — this filesystem has no symlinks"; return; }
+  ln -s /nonexistent-target "$slot" 2>/dev/null || { cannot "a dangling slot — this filesystem has no symlinks"; return; }
   has "a slot that is a dangling link is named for what it is" \
       "$(floor_says "$tmp/ws" open)" "remove it and open again"
 }
@@ -2623,7 +2623,7 @@ a_workspace_needs_authorisation
 # other, and root ignores both.
 #
 a_slot_nobody_can_join_is_not_a_workspace() {
-  records_unreadable || { skip "an unwritable slot — this filesystem records no mode bits"; return; }
+  records_unreadable || { cannot "an unwritable slot — this filesystem records no mode bits"; return; }
 
   make_repo "$tmp/nj" main && set_origin "$tmp/nj" 'https://github.com/acme/nj.git' \
     && mkdir -p "$tmp/nj/.foundry" \
@@ -3296,7 +3296,7 @@ the_work_source() {
     chmod 644 "$src/items/7"
     is "and it reads normally once it can be"                "$(code_of ws source read 7)" "0"
   else
-    skip "an unreadable item — this filesystem records no read bit"
+    cannot "an unreadable item — this filesystem records no read bit"
   fi
 
 
@@ -3754,7 +3754,7 @@ a_cold_read_is_declared_like_any_other_bar() {
 ' || { skip "a cold read — no gates"; return; }
   commit_file "$tmp/coldread" doctrine.md 'what this is for
 ' || { skip "a cold read — no artefact"; return; }
-  commit_file "$tmp/coldread" .foundry/judged 'a-reader  .foundry/judged  doctrine.md was understood by somebody who did not write it
+  commit_file "$tmp/coldread" .foundry/judged 'a-reader  doctrine.md was understood by somebody who did not write it
 ' || { skip "a cold read — no declaration"; return; }
 
   crrun=$(floor_new_as "$tmp/coldread" ada@example.com "Read")
@@ -4899,7 +4899,7 @@ a_merge_lands_only_what_was_graded
 # machine with no `gh`, still has a work source. Skipped where a real `gh` would answer instead.
 a_remote_with_no_gh_still_has_a_source() {
   [ -n "${ghrun:-}" ] || { skip "no gh — the other adapter did not run"; return; }
-  command -v gh >/dev/null 2>&1 && { skip "a remote with no gh — this machine has one"; return; }
+  command -v gh >/dev/null 2>&1 && { cannot "a remote with no gh — this machine has one"; return; }
 
   mkdir -p "$src/items"
   printf 'Read from a directory\n' > "$src/items/12"

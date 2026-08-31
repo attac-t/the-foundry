@@ -113,6 +113,25 @@ done
 deadline=$(( ${clean:-0} * 5 ))
 [ "$deadline" -lt 120 ] && deadline=120
 
+#
+# Nothing is audited while the suite is red.
+#
+# Every mutant runs the model suite under `FOUNDRY_FAIL_FAST`, and a red suite stops at its own
+# failure — which this file reads as *the suite noticed the break*. **Forty mutants would report a
+# success none of them earned**, and the audit that grades every other gate would be the greenest
+# thing in the repository.
+#
+refuse_to_audit_a_red_suite() {
+    [ "${failed:-0}" -eq 0 ] && return 0
+
+    printf 'audit — not run. A suite above is red, and every mutant would pass on that failure.
+'
+    printf 'PROVED NOTHING
+'
+    exit 1
+}
+refuse_to_audit_a_red_suite
+
 # --- break the runner ---
 
 printf 'audit — break the runner, the model suite must notice. A mutant has %ss.\n' "$deadline"
