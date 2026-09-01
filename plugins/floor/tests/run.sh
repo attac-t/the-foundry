@@ -234,6 +234,32 @@ a_deadline_is_not_an_answer() {
   bounded 2 sleep 30; answered 2 "a command that never answers"
 }
 
+#
+# And the same three answers from `suite_caught`, which reads a whole suite rather than a command.
+#
+# It is one function so this proves both audits at once. A stand-in suite, because what is under
+# test is how an exit code is read — never what a real suite finds.
+a_suite_that_never_answered_caught_nothing() {
+  local held=$deadline
+
+  printf '#!/bin/sh
+exit 1
+' > "$tmp/red.sh"
+  printf '#!/bin/sh
+exit 0
+' > "$tmp/green.sh"
+  printf '#!/bin/sh
+sleep 30
+' > "$tmp/slow.sh"
+
+  suite_caught x "$tmp/red.sh";   answered 0 "a suite that goes red on the break"
+  suite_caught x "$tmp/green.sh"; answered 1 "a suite that stays green against a broken one"
+
+  deadline=2
+  suite_caught x "$tmp/slow.sh";  answered 2 "a suite that never answers"
+  deadline=$held
+}
+
 # `$?` from the line above. Called immediately after `bounded`, because anything between them is the
 # status this would read instead.
 answered() {
@@ -243,6 +269,7 @@ answered() {
   printf '  ok    %s leaves %s\n' "$2" "$1"
 }
 a_deadline_is_not_an_answer
+a_suite_that_never_answered_caught_nothing
 
 #
 # Does the model suite fail against a broken runner?
@@ -1403,8 +1430,31 @@ echo "audit — break the install, the install suite must notice"
 # Copy the plugin somewhere we can ruin it.
 copy() { rm -rf "${tmp:?}/$1" && cp -R "$root" "$tmp/$1"; }
 
+#
+# Does a suite fail against a broken copy of the plugin?
+#
+#   0  caught · 1  it passed against a broken one · 2  the mutant never answered
+#
+# **One function, because both audits below were wrong in the same two ways.** `bounded` was called
+# in a single place, so seventeen mutants here and in the join audit ran with no deadline at all.
+# Giving them one as `! bounded …` was worse: a timeout answers 2, `!` turns 2 into 0, and a mutant
+# that hung reported *caught* — the false green `a_deadline_is_not_an_answer` exists to refuse.
+#
+# `env`, because `bounded` runs its arguments and an inline assignment would not reach them.
+#
+suite_caught() {
+  local said
+  bounded "$deadline" env PLUGIN_ROOT="$1" bash "$2"
+  said=$?
+
+  [ "$said" -eq 2 ] && return 2
+  [ "$said" -eq 0 ] && return 1
+
+  return 0
+}
+
 # Determine if the install suite fails against the broken copy.
-caught() { ! PLUGIN_ROOT="$tmp/$1" bash "$root/tests/install.sh" >/dev/null 2>&1; }
+caught() { suite_caught "$tmp/$1" "$root/tests/install.sh"; }
 
 # Break one thing about the install and require the suite to notice.
 wreck() {
@@ -1492,8 +1542,8 @@ echo
 echo
 echo "audit — break the join, the host suite must notice"
 
-# The same shape as the install audit above, reading the other suite's exit code.
-hosted() { ! PLUGIN_ROOT="$tmp/$1" bash "$root/tests/host.sh" >/dev/null 2>&1; }
+# The same shape as the install audit above, reading the other suite.
+hosted() { suite_caught "$tmp/$1" "$root/tests/host.sh"; }
 
 wreck_join() {
   local name="$1" tag="$2" mutation="$3"
