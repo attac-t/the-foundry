@@ -71,9 +71,10 @@ or that their skills say anything true. Those four ship no code, so there is not
 nothing here reads them either. Green means nine gates passed. For those four plugins it does not
 mean the change works.
 
-Bump the version in the plugin's own `plugin.json`, and there only. `marketplace.json` names
-plugins and where they live, and **carries no version field at all** — a second copy made one shared
-line every branch edits, so plugin work collided for packaging reasons. Commits use [Commitizen](https://commitizen-tools.github.io/commitizen/)
+Bump the version in the plugin's own `plugin.json`, and there only. `marketplace.json` carries one
+`version`, and it is **the marketplace's own** — it names plugins and where they live, never what
+version each is at. A second copy made one shared line every branch edits, so plugin work collided
+for packaging reasons. Commits use [Commitizen](https://commitizen-tools.github.io/commitizen/)
 format.
 
 ---
