@@ -109,6 +109,7 @@ the role to do it in.
 Standalone.
 
 ```
+/plugin marketplace add attac-t/the-foundry
 /plugin install panel@the-foundry
 ```
 

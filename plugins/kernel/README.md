@@ -229,6 +229,7 @@ The Craftsman voice: direct, opinionated, elegant. No hedging.
 ## Installation
 
 ```
+/plugin marketplace add attac-t/the-foundry
 /plugin install kernel@the-foundry
 ```
 

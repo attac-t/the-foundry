@@ -1420,6 +1420,7 @@ export FOUNDRY_RUN=$(sh bin/run.sh path)
 Needs: Claude Code CLI, `sh`, `awk`, `git`. No Python, no Node, no `jq`.
 
 ```
+/plugin marketplace add attac-t/the-foundry
 /plugin install floor@the-foundry
 ```
 
