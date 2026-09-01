@@ -1,6 +1,6 @@
 # Contributing
 
-Eight gates. Run them before you open a pull request:
+Nine gates. Run them before you open a pull request:
 
 ```bash
 sh bin/gates.sh                 # all eight, here
@@ -68,7 +68,7 @@ no such bit.
 
 **What they do not check:** that `laravel-ddd`, `laravel-playbook` or `pest` still load, or
 that their skills say anything true. Those three ship no code, so there is nothing to run — but
-nothing here reads them either. Green means eight gates passed. For those three plugins it does not
+nothing here reads them either. Green means nine gates passed. For those three plugins it does not
 mean the change works.
 
 Bump the version in **both** `plugin.json` and `.claude-plugin/marketplace.json` — the manifest is

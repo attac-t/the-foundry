@@ -20,7 +20,11 @@ Working memory used to live in the repo being changed. That breaks three ways.
 
 ## Before the first run, on a host that never had one
 
+**Every command below runs from this plugin's own directory**, wherever the marketplace installed
+it. From a checkout of the repository that is `plugins/floor`.
+
 ```bash
+cd plugins/floor        # or wherever this plugin is installed
 sh bin/join.sh
 ```
 
