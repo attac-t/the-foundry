@@ -14,8 +14,10 @@
 # **What this is not.** It cannot stop a caller running `gh` directly, because it holds no
 # credential and the caller does. Two consultations at maximum effort agreed on that, separately:
 # the only control that binds is a comment credential the automated worker cannot reach, and a
-# person has to hold it. `bin/comments.sh` reads the public thread back and re-runs every rule here
-# on what it finds, which is detection after the fact, not prevention. #419 owns the credential.
+# person has to hold it. `bin/comments.sh` reads the public thread back and re-runs three of the
+# six rules below — the character limit and the log shapes. The word limit, the kind, the delta,
+# the evidence and the duplicate key are never re-run. Detection after the fact, and partial.
+# #419 owns the credential.
 #
 # Exit codes:
 #
@@ -131,7 +133,7 @@ refuse_a_key_already_said() {
 # token count, a transcript marker.
 refuse_a_field_that_is_a_log() {
     found=$(printf '%s %s %s %s %s %s' "$subject" "$was" "$now" "$because" "$next" "$evidence" | awk '
-        BEGIN { IGNORECASE = 1 }
+        { $0 = tolower($0) }
         /session id|session_id|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}/ { print "a session id"; exit }
         /tokens used|token count|input tokens|output tokens/         { print "a token count"; exit }
         /exec |thinking|```/                                         { print "a transcript"; exit }

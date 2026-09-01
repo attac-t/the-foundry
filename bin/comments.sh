@@ -98,7 +98,7 @@ obeys_the_limit() {
 
 carries_no_log() {
     printf '%s' "$1" | awk '
-        BEGIN { IGNORECASE = 1 }
+        { $0 = tolower($0) }
         /session id|session_id|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}/ { exit 1 }
         /tokens used|token count|input tokens|output tokens/         { exit 1 }
         /exec |thinking|```/                                         { exit 1 }' >/dev/null

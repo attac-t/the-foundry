@@ -43,9 +43,13 @@ writes_a_body() {
     return 1
 }
 
+# `gh pr review --approve` carries nothing to render, so nothing here may deny it.
+#
+# The short forms count. `-b` is `--body` and `-F` is `--body-file`, and a guard that reads only the
+# long ones lets the exact command it exists to stop through, one character shorter.
 carries_no_body() {
     case $1 in
-        *--body*) return 1 ;;
+        *--body*|*' -b '*|*' -F '*) return 1 ;;
     esac
     return 0
 }

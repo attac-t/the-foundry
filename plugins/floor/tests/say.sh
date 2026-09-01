@@ -140,9 +140,11 @@ a_body_too_long_refuses() {
 a_body_too_long_refuses
 
 #
-# The render is fixed on purpose. `bin/comments.sh` re-derives it from what GitHub returns, so a
-# comment that did not come through here reads as one that did not — and a stamp nobody can forge is
-# a stamp nobody has to hold a key for.
+# The render is fixed on purpose, so a body pinned here stays byte-identical as the code moves.
+#
+# It is not re-derived anywhere. `bin/comments.sh` greps for the marker and folds newlines to
+# spaces, so a byte match through it is impossible by design. The marker is a label, not a
+# signature — anyone who can post can type one.
 the_render_does_not_drift() {
   # Pinned, not compared to itself. Two empty renders are equal, so the old check passed with the
   # function's body deleted — it proved determinism and nothing about the shape.

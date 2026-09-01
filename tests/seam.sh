@@ -60,6 +60,13 @@ an_unrendered_body_is_denied() {
 
   call "$(verb issue comment) 1 --body-file $tmp/missing.md"
   denies "a file that is not there"
+
+  # The short forms. A guard reading only the long ones let the command it exists to stop through.
+  call "$(verb issue comment) 1 -b hello"
+  denies "a body typed behind -b"
+
+  call "$(verb issue comment) 1 -F $tmp/plain.md"
+  denies "a file with no marker, behind -F"
 }
 an_unrendered_body_is_denied
 
