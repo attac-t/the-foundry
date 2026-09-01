@@ -673,6 +673,30 @@ eight_at_once_claim_eight_slots() {
 eight_at_once_claim_eight_slots
 
 #
+# A clock that says nothing must not become part of a name.
+#
+# The eight above minted four ids beginning with `-`, because `date` did not answer under fork
+# pressure and nothing read it before it was a name. Two of those shared a slot, and two runs on one
+# slot share its targets — so a grant a person gave to one authorised the other.
+#
+# The stub answers nothing and succeeds, which is exactly what `date` did. A stub that failed would
+# prove a different thing, and the real one never failed.
+#
+a_clock_that_says_nothing_mints_no_run() {
+  make_repo "$tmp/clock" main && set_origin "$tmp/clock" 'https://github.com/acme/clock.git' \
+    || { skip "silent clock — git could not make a repo here"; return; }
+
+  mkdir -p "$tmp/mute"
+  printf '#!/bin/sh\nexit 0\n' > "$tmp/mute/date"
+  chmod +x "$tmp/mute/date"
+
+  is "a run whose date is empty is refused" \
+     "$(PATH="$tmp/mute:$PATH" code_of floor "$tmp/clock" new 'Silent Clock')" "2"
+  is "and it minted nothing"    "$(ls "$home/runs" 2>/dev/null | grep -c -- '-silent-clock-')" "0"
+}
+a_clock_that_says_nothing_mints_no_run
+
+#
 # `mkdir -p "$RUNS"` succeeds on a `runs/` that already exists and refuses a child, so every claim
 # after it fails for a reason counting cannot fix. Advancing on any failure counts for ever.
 #

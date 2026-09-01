@@ -49,7 +49,27 @@ failed=0
 #
 # Neither is a pass, and a `moot` never downgrades a `bad`.
 bad()  { failed=1; printf '  FAIL  %s\n' "$1"; }
-moot() { [ "$failed" -eq 0 ] && failed=3; printf '  MOOT  %s\n' "$1"; }
+kept() { unanswered=0; printf '  ok    %s\n' "$1"; }
+
+# A mutant that never answered, and the run of them that means the machine stopped answering.
+#
+# One moot is an experiment that missed. Ten in a row is not ten experiments — it is a machine
+# that has run out of something, and every mutant after them misses the same way.
+unanswered=0
+moot() {
+  [ "$failed" -eq 0 ] && failed=3
+  printf '  MOOT  %s\n' "$1"
+
+  unanswered=$((unanswered + 1))
+  [ "$unanswered" -lt 10 ] && return
+
+  # Twelve hours on 1 September 2026 reached 87 of 192. Twenty-one in a row answered nothing,
+  # and the audit kept going, because nothing here read its own run of silence.
+  # Stopping at ten spends two and a half hours of the twenty-six it would have taken.
+  printf '\nSTOPPED — ten mutants in a row never answered.\n'
+  printf 'The machine stopped answering, so the rest would prove nothing either.\n'
+  exit 3
+}
 
 #
 # The line that ends a suite is its last line.
@@ -291,8 +311,21 @@ answered() {
   [ "$got" = "$1" ] || { bad "$2 left $got, not $1"; return; }
   printf '  ok    %s leaves %s\n' "$2" "$1"
 }
+# A run of silence is not a run of experiments.
+#
+# Ten that never answer mean the machine stopped answering, so the audit stops. Nine do not,
+# and one that answers puts the count back to nought — the run must be unbroken to mean this.
+a_run_of_silence_stops_the_audit() {
+  silence() { local i=0; while [ "$i" -lt "$1" ]; do moot "silence $i"; i=$((i + 1)); done; }
+
+  # Each in its own subshell. `moot` exits, and the count it keeps must not follow it out.
+  ( silence 9 )                    >/dev/null 2>&1; answered 0 "nine that never answered"
+  ( silence 10 )                   >/dev/null 2>&1; answered 3 "ten that never answered"
+  ( silence 9; kept x; silence 9 ) >/dev/null 2>&1; answered 0 "a run one answer broke"
+}
 a_deadline_is_not_an_answer
 a_suite_that_never_answered_caught_nothing
+a_run_of_silence_stops_the_audit
 
 #
 # Does the model suite fail against a broken runner?
@@ -1470,7 +1503,7 @@ wreck() {
   [ "$answer" -eq 2 ] && { moot "$name — the mutant never answered, so this proves nothing"; return; }
   [ "$answer" -eq 0 ] || { bad "$name — the suite passed against a broken install"; return; }
 
-  printf '  ok    %s\n' "$name"
+  kept "$name"
 }
 
 # Determine if this filesystem records an executable bit. Windows does not, and removing a bit that
@@ -1562,7 +1595,7 @@ wreck_join() {
   [ "$answer" -eq 2 ] && { moot "$name — the mutant never answered, so this proves nothing"; return; }
   [ "$answer" -eq 0 ] || { bad "$name — the suite passed against a broken join"; return; }
 
-  printf '  ok    %s\n' "$name"
+  kept "$name"
 }
 
 # Each of the three that used to be silent, made silent again one at a time.
