@@ -42,7 +42,10 @@ mechanism      Code or model. What must be deterministic.
 delegation     Know when to code and when to lead.
 interview      Extract requirements via questions.
 topic          Isolate memory per branch.
+stack          Ground the right stack for the work in front of you.
 ```
+
+`ground` runs all of the above at once. It is the one you invoke.
 
 ### Craft — Building
 
@@ -58,6 +61,9 @@ map            Elegant directory trees
 observation    Record learnings and discoveries
 pr-stack       Pull requests that depend on each other
 readme         Documentation that doesn't suck
+memory         CLAUDE.md a model will not ignore
+rfc            Propose a design before building it
+swimlane       Who acts at each step, and what crosses between them
 ```
 
 **OS Extension**
@@ -67,16 +73,21 @@ agent          Sub-agent definitions
 command        Slash command triggers
 hook           OS reflexes
 plugin         Plugin architecture
+plugin-update  Release a version. Bump plugin.json, then commit
 ```
 
 **Quality**
 ```
+sh              Shell that reads like prose. Read it before editing shipped shell
+comment         What a comment carries, and the space that means none was needed
 polish          Deep code polish (seven-pass protocol)
 review          Ruthless critic mentality
 test            Testing philosophy (what to test, not syntax)
 test-merit      Whether a test you already have earns its line
 evaluate        Verify the OS is functioning
 evaluate-plugin Verify plugin structure
+question        Interrogate an ask before acting on it
+retrospect      Find what went wrong before somebody else does
 ```
 
 ---
