@@ -66,13 +66,14 @@ on macOS and under Git Bash is really bash and accepts `&>` and `[[ =~ ]]` witho
 Windows can prove a hook starts without an executable bit, because it is the only one that records
 no such bit.
 
-**What they do not check:** that `laravel-ddd`, `laravel-playbook` or `pest` still load, or
-that their skills say anything true. Those three ship no code, so there is nothing to run — but
-nothing here reads them either. Green means nine gates passed. For those three plugins it does not
+**What they do not check:** that `laravel-ddd`, `laravel-playbook`, `pest` or `product` still load,
+or that their skills say anything true. Those four ship no code, so there is nothing to run — but
+nothing here reads them either. Green means nine gates passed. For those four plugins it does not
 mean the change works.
 
-Bump the version in **both** `plugin.json` and `.claude-plugin/marketplace.json` — the manifest is
-the one that gets forgotten. Commits use [Commitizen](https://commitizen-tools.github.io/commitizen/)
+Bump the version in the plugin's own `plugin.json`, and there only. `marketplace.json` names
+plugins and where they live, and **carries no version field at all** — a second copy made one shared
+line every branch edits, so plugin work collided for packaging reasons. Commits use [Commitizen](https://commitizen-tools.github.io/commitizen/)
 format.
 
 ---
