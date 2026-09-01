@@ -3,9 +3,9 @@
 Nine gates. Run them before you open a pull request:
 
 ```bash
-sh bin/gates.sh                 # all eight, here
+sh bin/gates.sh                 # all nine, here
 sh bin/agree.sh                 # this table, the workflow, gates.sh and every harness file
-sh bin/gates.sh linux           # the same eight where `sh` is dash
+sh bin/gates.sh linux           # the same nine where `sh` is dash
 ```
 
 Leave `agree` out of your run and a PR can still go red on a check this file never mentioned — the
@@ -34,7 +34,7 @@ The second is not a convenience. On macOS and under Git Bash `sh` **is** bash an
 `[[ =~ ]]` without complaint, so neither can fail a bashism — and every runner here opens `#!/bin/sh`.
 
 `bin/agree.sh` holds this table, that workflow and `bin/gates.sh` to the same list. It grades the
-eight and is not one of them. `panel` was advertised here and absent from CI for days.
+nine and is not one of them. `panel` was advertised here and absent from CI for days.
 
 It holds one more thing: **every harness file names the same rules.** Claude reads `CLAUDE.md` and
 Codex reads `AGENTS.md`, so `bin/project.sh` writes the table into both from `.claude/rules` itself.
