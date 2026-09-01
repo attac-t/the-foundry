@@ -235,6 +235,29 @@ a_deadline_is_not_an_answer() {
 }
 
 #
+# Does a suite fail against a broken copy of the plugin?
+#
+#   0  caught · 1  it passed against a broken one · 2  the mutant never answered
+#
+# **One function, because both audits below were wrong in the same two ways.** `bounded` was called
+# in a single place, so seventeen mutants here and in the join audit ran with no deadline at all.
+# Giving them one as `! bounded …` was worse: a timeout answers 2, `!` turns 2 into 0, and a mutant
+# that hung reported *caught* — the false green `a_deadline_is_not_an_answer` exists to refuse.
+#
+# `env`, because `bounded` runs its arguments and an inline assignment would not reach them.
+#
+suite_caught() {
+  local said
+  bounded "$deadline" env PLUGIN_ROOT="$1" bash "$2"
+  said=$?
+
+  [ "$said" -eq 2 ] && return 2
+  [ "$said" -eq 0 ] && return 1
+
+  return 0
+}
+
+#
 # And the same three answers from `suite_caught`, which reads a whole suite rather than a command.
 #
 # It is one function so this proves both audits at once. A stand-in suite, because what is under
@@ -1430,29 +1453,6 @@ echo "audit — break the install, the install suite must notice"
 # Copy the plugin somewhere we can ruin it.
 copy() { rm -rf "${tmp:?}/$1" && cp -R "$root" "$tmp/$1"; }
 
-#
-# Does a suite fail against a broken copy of the plugin?
-#
-#   0  caught · 1  it passed against a broken one · 2  the mutant never answered
-#
-# **One function, because both audits below were wrong in the same two ways.** `bounded` was called
-# in a single place, so seventeen mutants here and in the join audit ran with no deadline at all.
-# Giving them one as `! bounded …` was worse: a timeout answers 2, `!` turns 2 into 0, and a mutant
-# that hung reported *caught* — the false green `a_deadline_is_not_an_answer` exists to refuse.
-#
-# `env`, because `bounded` runs its arguments and an inline assignment would not reach them.
-#
-suite_caught() {
-  local said
-  bounded "$deadline" env PLUGIN_ROOT="$1" bash "$2"
-  said=$?
-
-  [ "$said" -eq 2 ] && return 2
-  [ "$said" -eq 0 ] && return 1
-
-  return 0
-}
-
 # Determine if the install suite fails against the broken copy.
 caught() { suite_caught "$tmp/$1" "$root/tests/install.sh"; }
 
@@ -1462,7 +1462,13 @@ wreck() {
 
   copy "$tag"             || { bad "$name — could not copy the plugin, so this proves nothing"; return; }
   "$break_it" "$tmp/$tag" || { bad "$name — the break did not apply, so this proves nothing"; return; }
-  caught "$tag"           || { bad "$name — the suite passed against a broken install"; return; }
+
+  # Three answers, read as three. `caught` returns 2 for a mutant that never answered, and
+  # `||` read that as *the suite passed against a broken install* — the right red for the
+  # wrong reason, which is a quieter lie than the false green it replaced.
+  caught "$tag"; local answer=$?
+  [ "$answer" -eq 2 ] && { moot "$name — the mutant never answered, so this proves nothing"; return; }
+  [ "$answer" -eq 0 ] || { bad "$name — the suite passed against a broken install"; return; }
 
   printf '  ok    %s\n' "$name"
 }
@@ -1552,7 +1558,9 @@ wreck_join() {
   sed "$mutation" "$root/bin/join.sh" | rewrite "$tmp/$tag/bin/join.sh"
   cmp -s "$tmp/$tag/bin/join.sh" "$root/bin/join.sh" \
     && { moot "$name — the break did not apply, so this proves nothing"; return; }
-  hosted "$tag" || { bad "$name — the suite passed against a broken join"; return; }
+  hosted "$tag"; local answer=$?
+  [ "$answer" -eq 2 ] && { moot "$name — the mutant never answered, so this proves nothing"; return; }
+  [ "$answer" -eq 0 ] || { bad "$name — the suite passed against a broken join"; return; }
 
   printf '  ok    %s\n' "$name"
 }
