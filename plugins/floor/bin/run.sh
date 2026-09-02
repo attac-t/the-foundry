@@ -78,6 +78,13 @@
 
 set -u
 
+# Where this script lives, read once. `dirname` is a process, and three resolvers wanted it
+# on every call. A bare `$0` has no slash to cut, so that case is named rather than assumed.
+case $0 in
+    */*) SELF_DIR=${0%/*} ;;
+    *)   SELF_DIR=. ;;
+esac
+
 main() {
     action=${1:-}
     [ "$#" -gt 0 ] && shift
@@ -216,7 +223,11 @@ list_runs() {
 
     for dir in "$RUNS"/*/; do
         [ -d "$dir" ] || continue
-        printf '%s\t%s\n' "$(how_far "${dir%/}")" "$(basename "$dir")"
+
+        # The glob ends every path with a slash. `basename` strips one and `${x##*/}` does not,
+        # so reading the id without stripping it first returned nothing at all.
+        held=${dir%/}
+        printf '%s\t%s\n' "$(how_far "$held")" "${held##*/}"
     done
 }
 
@@ -437,9 +448,9 @@ recorded_id() { [ -f "$1/id" ] && read -r named < "$1/id" && printf "%s" "$named
 #
 refuse_renamed_run() {
     named=$(recorded_id "$1") || return 0
-    [ "$named" = "$(basename "$1")" ] && return 0
+    [ "$named" = "${1##*/}" ] && return 0
 
-    note "this run is at [$(basename "$1")] and calls itself [$named], so its grants are not here"
+    note "this run is at [${1##*/}] and calls itself [$named], so its grants are not here"
     note "move it back, or start a new run — authority a human gave is not renamed with a directory"
     exit 13
 }
@@ -487,7 +498,7 @@ enclosing_run() {
 
     while [ "$dir" != "/" ] && [ -n "$dir" ]; do
         is_a_run "$dir" && { printf '%s' "$dir"; return 0; }
-        dir=$(dirname "$dir")
+        dir=${dir%/*}
     done
 
     return 1
@@ -498,7 +509,7 @@ enclosing_run() {
 # needs an identity the filesystem cannot supply.
 is_a_run() {
     [ -f "$1/id" ] || return 1
-    [ "$(recorded_id "$1")" = "$(basename "$1")" ]
+    [ "$(recorded_id "$1")" = "${1##*/}" ]
 }
 
 # `-d` matches the check kernel makes before it moves memory. Drop it and floor calls a run active
@@ -513,7 +524,8 @@ pointed_run() {
     mark=$(pointer) || return 1
     [ -f "$mark" ] || return 1
 
-    id=$(head -1 "$mark" 2>/dev/null)
+    # `read` takes the first line without a process. `head -1` cost two.
+    IFS= read -r id < "$mark" 2>/dev/null || id=''
     [ -n "$id" ] || return 1
 
     dir="$RUNS/$id"
@@ -701,7 +713,7 @@ open_workspace() {
 $(selected_targets "$selection")
 EOF
 
-    point_slots_at_run "$root" "$(basename "$dir")" || {
+    point_slots_at_run "$root" "${dir##*/}" || {
         note "[$root] holds a checkout nobody can join — its run pointer could not be written"
         exit 16
     }
@@ -799,7 +811,7 @@ record_base() {
     sha=$(git -C "$3" rev-parse --verify --quiet HEAD 2>/dev/null) || sha=
     [ -n "$sha" ] || { note "[$2] has no head to record as its base"; exit 16; }
 
-    mkdir -p "$(dirname "$file")" || die_unwritable "$file"
+    mkdir -p "${file%/*}" || die_unwritable "$file"
     printf '%s %s\n' "$slot" "$sha" >> "$file" || die_unwritable "$file"
 }
 
@@ -837,7 +849,7 @@ record_produced() {
     [ -n "$sha" ] || { note "committed in [$2] and could not read the sha back"; exit 16; }
 
     file=$(produced_file "$(unit_workspace "$1")")
-    mkdir -p "$(dirname "$file")" || die_unwritable "$file"
+    mkdir -p "${file%/*}" || die_unwritable "$file"
     printf '%s\n' "$sha" >> "$file" || die_unwritable "$file"
     printf '%s\n' "$sha"
 }
@@ -920,7 +932,7 @@ accept_ancestry() {
     [ -n "$full" ] || { note "[$sha] is not a commit in [$tree]"; exit 2; }
 
     file=$(accepted_file "$(unit_workspace "$dir")")
-    mkdir -p "$(dirname "$file")" || die_unwritable "$file"
+    mkdir -p "${file%/*}" || die_unwritable "$file"
     printf '%s %s %s %s\n' "$full" "$(selector)" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$why" >> "$file" \
         || die_unwritable "$file"
 
@@ -997,7 +1009,7 @@ refuse_occupied_slot() {
 build_and_publish() {
     building="$1.building"
 
-    mkdir -p "$(dirname "$1")" 2>/dev/null || die_unwritable "$(dirname "$1")"
+    mkdir -p "${1%/*}" 2>/dev/null || die_unwritable "${1%/*}"
     mkdir "$building" 2>/dev/null \
         || { note "[$2] is being checked out — remove [$building] if no session is"; exit 16; }
 
@@ -1122,7 +1134,7 @@ policy() {
 # every work item this machine ever runs. Project-wide grants can come later, if asking twice turns
 # out to be real friction rather than imagined friction.
 #
-grants_file() { printf '%s/%s/targets' "$GRANTS" "$(basename "$1")"; }
+grants_file() { printf '%s/%s/targets' "$GRANTS" "${1##*/}"; }
 
 #
 # The bootstrap target's identity, without its ref.
@@ -1223,7 +1235,7 @@ list_grants() {
 # Beside the allowlist, never merged into it. One file holding both would make `policy authorize`
 # grant the second power as well.
 #
-deliveries_file() { printf '%s/%s/deliveries' "$GRANTS" "$(basename "$1")"; }
+deliveries_file() { printf '%s/%s/deliveries' "$GRANTS" "${1##*/}"; }
 
 #
 # **No bootstrap exemption, and that asymmetry is the separation.** `is_authorised` passes the
@@ -1256,7 +1268,7 @@ grant() {
 }
 
 record_grant() {
-    mkdir -p "$(dirname "$1")" || die_unwritable "$1"
+    mkdir -p "${1%/*}" || die_unwritable "$1"
     printf '%s\n' "$2" >> "$1" || die_unwritable "$1"
 }
 
@@ -1274,7 +1286,7 @@ closes() {
     record_grant "$(closes_file "$1")" "$item"
 }
 
-closes_file() { printf '%s/%s/closes' "$GRANTS" "$(basename "$1")"; }
+closes_file() { printf '%s/%s/closes' "$GRANTS" "${1##*/}"; }
 
 # Keyed by the item, so a grant cannot outlive the item it was given for.
 may_close_item() {
@@ -1527,6 +1539,7 @@ enter_work_tree() {
 
     tree=$(unit_work_tree "$1" "$here") || exit 16
     cd "$tree" || { note "cannot enter [$tree]"; exit 16; }
+    REPO_ROOT=
 }
 
 #
@@ -1609,7 +1622,24 @@ stamp_handoff() {
 # A gate that printed nothing on failure still records the ref it applies to, so `why` is last and
 # may be empty. `\r` as well as `\n`: Git Bash is a platform this ships on, and `is_one_line` counts
 # all three.
-one_line() { printf '%s' "$1" | tr '\n\r\t' '   '; }
+# Flatten a field to one line. The common case holds nothing to flatten and costs one `case`.
+#
+# The `tr` this replaced spawned two processes every time, on every field of every record,
+# to change nothing at all in almost all of them.
+one_line() {
+    said=$1
+
+    while :; do
+        case $said in
+            *"$NEWLINE"*)         said="${said%%"$NEWLINE"*} ${said#*"$NEWLINE"}" ;;
+            *"$CARRIAGE_RETURN"*) said="${said%%"$CARRIAGE_RETURN"*} ${said#*"$CARRIAGE_RETURN"}" ;;
+            *"$TAB"*)             said="${said%%"$TAB"*} ${said#*"$TAB"}" ;;
+            *)                    break ;;
+        esac
+    done
+
+    printf '%s' "$said"
+}
 
 # The sha the evidence applies to. `check` compares against the base; this is what the run delivers,
 # which is where the work is. It answers for the repository the caller stands in — `evidence` refuses
@@ -1892,6 +1922,7 @@ enter_base_gates() {
     note "grading with the base's own gates: $(printf '%s\n' "$moved" | cut -f2 | tr '\n' ' ')"
     substituted=$moved
     cd "$tree" || { note "cannot enter [$tree]"; exit 16; }
+    REPO_ROOT=
 }
 
 # Said once on stderr, it died with the run. A reader re-running a gate at the delivered ref then ran
@@ -2044,7 +2075,7 @@ unmet_for_delivery() {
 # Beside the other two, never merged into them. One file holding all three would make `policy
 # authorize` grant the third power as well.
 #
-merges_file() { printf '%s/%s/merges' "$GRANTS" "$(basename "$1")"; }
+merges_file() { printf '%s/%s/merges' "$GRANTS" "${1##*/}"; }
 
 #
 # No bootstrap exemption, for the reason `may_deliver_to` has none. Standing somewhere is not
@@ -2098,7 +2129,7 @@ graded_ref() {
 }
 
 land_what_was_graded() {
-    said=$(source_says state "$(basename "$1")")
+    said=$(source_says state "${1##*/}")
     asked=$?
 
     # A source that answered *nothing delivered* is not one that could not be asked.
@@ -2118,7 +2149,7 @@ EOF
     refuse_a_source_that_will_not "$mergeable"
     refuse_a_check_that_did_not_pass "$checks"
 
-    source_says land "$(basename "$1")" || exit 25
+    source_says land "${1##*/}" || exit 25
     note "merged."
 }
 
@@ -2474,7 +2505,7 @@ say_the_rows() {
 # `run.began` was right and the gate rows were wrong,
 # which is the worst shape: the rows worth arguing
 # from are those the version had fallen out of.
-MANIFEST=$(cd "$(dirname "$0")/../.claude-plugin" 2>/dev/null && pwd)/plugin.json
+MANIFEST=$(cd "$SELF_DIR/../.claude-plugin" 2>/dev/null && pwd)/plugin.json
 
 runtime() {
     stated=$(awk -F'"' '/"version"/ { print $4; exit }' "$MANIFEST" 2>/dev/null)
@@ -2659,7 +2690,7 @@ unit_head() { git -C "$(unit_work_tree "$1" "$2")" rev-parse HEAD 2>/dev/null; }
 
 # Derived, never chosen. A branch a worker names is a branch a retry can rename, and then the source
 # holds two deliveries for one run.
-delivery_branch() { printf 'foundry/%s' "$(basename "$1")"; }
+delivery_branch() { printf 'foundry/%s' "${1##*/}"; }
 
 # Invariant 4. A run exists because a human selected the work item, and one that records nobody has
 # no authority to deliver — the stamp lands at `new`, so its absence is a run made before the rule.
@@ -3146,7 +3177,7 @@ note_coverage_remedy() {
 #
 freeze_selection() {
     frozen=$(frozen_selection_file "$1")
-    mkdir -p "$(dirname "$frozen")" || die_unwritable "$frozen"
+    mkdir -p "${frozen%/*}" || die_unwritable "$frozen"
     normalised_selection "$2" > "$frozen" || die_unwritable "$frozen"
 }
 
@@ -3252,9 +3283,23 @@ is_kind() {
 # Measured, not matched. `case "$x" in *"$(printf '\n')"*)` looks right and is not: command
 # substitution strips trailing newlines, so the pattern is `*""*` and matches everything.
 #
+# One newline, carriage return or tab, and it is not one line.
+#
+# The three characters are read once, because a process costs 60ms and `case` costs nothing.
+# The two pipes this replaced spawned five processes for every field of every record.
+NEWLINE='
+'
+CARRIAGE_RETURN=$(printf '\r')
+TAB=$(printf '\t')
+
 is_one_line() {
     [ -n "$1" ] || return 1
-    [ "$(printf '%s' "$1" | tr -d '\n\r\t' | wc -c)" -eq "$(printf '%s' "$1" | wc -c)" ]
+
+    case $1 in
+        *"$NEWLINE"*|*"$CARRIAGE_RETURN"*|*"$TAB"*) return 1 ;;
+    esac
+
+    return 0
 }
 
 # What the charter already says about one meaning, or nothing.
@@ -3337,7 +3382,7 @@ pinned_command() {
 # was derived and compared against the base ever after: a worker owning the checkout can change what
 # the file says and cannot change what runs, because the run refuses instead of running it.
 #
-gate_resolver() { printf '%s' "${FOUNDRY_GATES:-$(dirname "$0")/../lib/detect-gates.sh}"; }
+gate_resolver() { printf '%s' "${FOUNDRY_GATES:-$SELF_DIR/../lib/detect-gates.sh}"; }
 
 #
 # Always the repository root, never the working directory.
@@ -3350,7 +3395,7 @@ detect_gates() { sh "$(gate_resolver)" "$(repo_root)"; }
 
 # The same question about judgement. Its own resolver, because a gate and a judged clause are
 # different declarations and a repository may make either without the other.
-judged_resolver() { printf '%s' "${FOUNDRY_JUDGED:-$(dirname "$0")/../lib/detect-judged.sh}"; }
+judged_resolver() { printf '%s' "${FOUNDRY_JUDGED:-$SELF_DIR/../lib/detect-judged.sh}"; }
 
 detect_judged() { sh "$(judged_resolver)" "$(repo_root)"; }
 
@@ -3421,7 +3466,20 @@ refuse_moved_resolution() {
     return 1
 }
 
-repo_root() { git rev-parse --show-toplevel 2>/dev/null || printf '.'; }
+# The repository this call stands in, asked once.
+#
+# `git rev-parse --show-toplevel` costs about half a second here, and `charter derive` asked it
+# five times for one answer. A process cannot move while it is asking, so the second question
+# always had the first one`s answer.
+#
+# **The two places that `cd` clear it**, because there the answer really does change.
+repo_root() {
+    [ -n "${REPO_ROOT:-}" ] && { printf '%s' "$REPO_ROOT"; return 0; }
+
+    REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null) || REPO_ROOT=.
+    [ -n "$REPO_ROOT" ] || REPO_ROOT=.
+    printf '%s' "$REPO_ROOT"
+}
 
 #
 # A resolver that is not there answers "no gates", and no gates is what a clean charter looks like.
@@ -4007,7 +4065,7 @@ work_source() {
 # `FOUNDRY_SOURCE` names another; the shipped one is the default, and it is the only file here
 # permitted to know a provider exists. Nothing above this line learns which source answered.
 #
-source_resolver() { printf '%s' "${FOUNDRY_SOURCE:-$(dirname "$0")/../lib/source.sh}"; }
+source_resolver() { printf '%s' "${FOUNDRY_SOURCE:-$SELF_DIR/../lib/source.sh}"; }
 
 # A source that is not there answers "no item", and no item is what an unread run looks like.
 #
@@ -4218,7 +4276,7 @@ closure_word() {
 }
 
 send_and_record() {
-    said=$(source_says publish "$(item_id "$1")" "$(basename "$1")" "$2" "$3" \
+    said=$(source_says publish "$(item_id "$1")" "${1##*/}" "$2" "$3" \
         "$(closure_word "$1")" "$(brief_if_kept "$1")")
     refuse_unless_answered "$?" delivery 19
 
@@ -4330,7 +4388,7 @@ accept_answer() {
 #     stage    the reader, so the answer permitting a clause never says the clause was met
 #     clause   its text, so an edited requirement is a different question
 #
-question_id() { printf '%s.%s.%s' "$(basename "$1")" "$2" "$(clause_id "$3")"; }
+question_id() { printf '%s.%s.%s' "${1##*/}" "$2" "$(clause_id "$3")"; }
 
 #
 # A question nothing could ever read is refused before it is put anywhere.
