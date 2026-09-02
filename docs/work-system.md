@@ -23,6 +23,35 @@ and the work does not change. It is a saved question, not a state.
 
 ---
 
+## Before a worker starts
+
+It reads, in this order, from the version pinned at its base: the doctrine, the current goals, the
+standing practice and authority, the architecture the work touches, the current status, then the work
+item and its evidence. Working on another repository, it reads that repository's own answers in
+places two to five.
+
+**Reading the working tree instead lets a worker change the instruction it claims to follow.**
+[`.foundry/status.md`](../.foundry/status.md) says the base pin is a rule here and not yet a
+mechanism.
+
+Then it can answer seven questions. If it cannot, it is not grounded, and it should look or ask
+rather than invent.
+
+| | |
+|---|---|
+| goal | which accepted goal does this advance? |
+| person | who gets a better outcome? |
+| change | what becomes observably different? |
+| constraints | which principles and accepted rules apply? |
+| authority | who may decide each claim that is not derived? |
+| evidence | what can be checked, and what stays a judgement? |
+| unknowns | which assumption would make this wrong? |
+
+**When Foundry asks a person something, it says four things:** the decision, what it recommends, why,
+and what happens while it waits. Then it parks that work and carries on with the rest.
+
+---
+
 ## The five views
 
 Names and filters a host may rename, hide or replace. They are queries, never phases.
