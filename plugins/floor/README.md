@@ -20,7 +20,11 @@ Working memory used to live in the repo being changed. That breaks three ways.
 
 ## Before the first run, on a host that never had one
 
+**Every command below runs from this plugin's own directory**, wherever the marketplace installed
+it. From a checkout of the repository that is `plugins/floor`.
+
 ```bash
+cd plugins/floor        # or wherever this plugin is installed
 sh bin/join.sh
 ```
 
@@ -779,12 +783,31 @@ the one name floor already knows is what an honest record can do — no more.
 **No second producer, so the contract is unproven.** One judge is a judge-shaped costume, by the same
 rule that keeps every seam in §2.6 marked.
 
-**And a verdict cannot satisfy anything yet.** A `Judged:` clause rests on no pin, because nothing
-derives one — the detector reads `.foundry/gates` and yields `Gate` clauses only. So invariant 1
-reports it *introduced*, and no ref makes it true.
+**And a `Judged` clause is derived from a declaration, never guessed.** `.foundry/judged` declares
+one — `judge  text` — and this file is the source, so every clause here pins to it.
 
-The verdict is recorded and the kind rule is written. **What is missing is a declaration a Judged
-clause can be derived from**, and until one exists the rule above is correct and unexercised.
+**A cold read reuses that and adds nothing.** Somebody who did not write a file says whether they
+understood it. That is a judgement, so one line carries it:
+
+    a-reader  doctrine.md was understood by somebody who did not write it
+
+No verdict blocks `complete` and `deliver` at 15. A verdict about an older commit refuses at 35. A
+handoff nobody recorded refuses at 36. The producer as its own reader refuses at 2.
+
+**The pin names the declaration, never the artefact.** `doctrine.md` is clause text and nothing
+more, so no verdict here is bound to that file's blob. **Staleness is whole-commit**: any change
+stales the read, and a change to `doctrine.md` is not told apart from a change beside it.
+
+A second declaration file was written and deleted. It pinned the clause to the artefact, and a pin
+names the source a bar came from, never its subject — so invariant 1 forbade the run from editing the
+very file the read exists to protect. **This is generic `Judged` behaviour pointed at a readable
+file. It is not artefact-bound cold-read enforcement, and #417 owns the binding it lacks.**
+
+**Selective, never every file.** A repository names the few whose meaning has to survive a cold
+read. A bar over the whole tree is a bar nobody meets.
+
+**A check here proves presence, completeness, binding and an outcome. It never proves the words are
+clear.** No script judges prose, and none claims to.
 
 ---
 ### Monotonicity
@@ -1397,6 +1420,7 @@ export FOUNDRY_RUN=$(sh bin/run.sh path)
 Needs: Claude Code CLI, `sh`, `awk`, `git`. No Python, no Node, no `jq`.
 
 ```
+/plugin marketplace add attac-t/the-foundry
 /plugin install floor@the-foundry
 ```
 

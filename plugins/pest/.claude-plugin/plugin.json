@@ -1,6 +1,6 @@
 {
   "name": "pest",
-  "version": "2.1.1",
+  "version": "2.1.2",
   "description": "Pest testing suite skills. Philosophy, organization, factories, datasets, arch testing, mocking decisions.",
   "author": {
     "name": "Christian Attard",

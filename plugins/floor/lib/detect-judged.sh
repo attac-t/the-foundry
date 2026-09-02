@@ -8,7 +8,7 @@
 #
 # One line per clause, whitespace separated:
 #
-#     judge  source  text...
+#     judge  text...
 #
 # `judge` is who may answer, and it is **one word** — `panel:adversary`, `a-reviewer`. A name holding
 # a space would need quoting, and quoting needs a parser this declares none of. A gate's name is one
@@ -18,7 +18,9 @@
 # it. One judge, several roles on one model, or several models — each is a repository's choice,
 # and none needs a plugin it has not installed.
 #
-# `source` is the file that yielded it, so the charter can pin it exactly as it pins a gate.
+# **There is no source column.** This file is the source, so the charter pins every clause here to
+# `.foundry/judged` — exactly as it pins a gate to the file that yielded it. A header once said
+# otherwise, a README copied it, and a test wrote a line whose second word became part of the clause.
 #
 # **There is no detection half.** A repository cannot be guessed into wanting a judgement, and a
 # clause nobody asked for is a bar nobody agreed to. Declared, or nothing.

@@ -42,13 +42,11 @@ plugins/floor/lib/source-github.sh	# Where the source read this item from, as a 
 plugins/floor/lib/source-read-only.sh	# Every other verb exits 2. Core reads that as this source having no
 plugins/floor/tests/host.sh	# Whole field, never a substring. `.foundry` sits inside `.foundry-runs`, so a
 plugins/floor/tests/host.sh	# Both variables go. Unsetting `HOME` alone leaves whatever the shell running this
-plugins/floor/tests/lib.sh	# Report the tally, and answer whether it stands. Zero failures over zero
 plugins/floor/tests/model.sh	# Whether `chmod 000` means anything here. Windows records no read bit and root ignores
 plugins/floor/tests/model.sh	# A gate a signal killed is not a gate that failed. The ledger is append-only,
 plugins/floor/tests/model.sh	# An idea outside this run's bar is recorded, never a blocker. A run that
 plugins/floor/tests/model.sh	# Something happened, recorded. Not evidence, not a grant, and not a clause —
 plugins/floor/tests/model.sh	  # Recording that a gate finished says a gate finished. Completion still refuses,
-plugins/floor/tests/model.sh	  # Twenty writers at once, and twenty whole rows. The property is the atomic append
 plugins/floor/tests/model.sh	# How far each run got, from files other verbs already wrote. The only verb not scoped
 plugins/floor/tests/model.sh	# Floor records the moments it already knows. Nothing is kept as a total, so
 plugins/floor/tests/model.sh	# Every run this home holds, one row each, with the run named first. Two

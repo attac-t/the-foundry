@@ -23,6 +23,7 @@ in your context, read it.
 | Rule | Owns |
 |---|---|
 | [closing](.claude/rules/closing.md) | An issue closes when its own list says it may |
+| [consulting](.claude/rules/consulting.md) | What to send a second model, and what you already hold |
 | [context](.claude/rules/context.md) | What a summary loses, and what to read again before carrying on |
 | [economy](.claude/rules/economy.md) | Say more with less. Do more with less |
 | [guidance](.claude/rules/guidance.md) | Anything an agent should know, before you decide where to put it |

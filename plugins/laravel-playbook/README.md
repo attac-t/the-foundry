@@ -94,9 +94,11 @@ Spatie               laravel-permission, medialibrary, laravel-data, and more
 
 ## Installation
 
-Requires `kernel` for cognitive patterns.
+**Useful alone.** It reads better beside `kernel`, which carries the thinking patterns its skills
+assume — so the line below installs both. Neither needs the other to load.
 
 ```
+/plugin marketplace add attac-t/the-foundry
 /plugin install kernel@the-foundry
 /plugin install laravel-playbook@the-foundry
 ```
