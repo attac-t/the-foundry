@@ -265,7 +265,10 @@ make_run() {
     title=$1
     [ -n "$title" ] || { note "new needs a title"; exit 2; }
 
-    id=$(mint_id "$title") || die_unwritable "$RUNS"
+    day=$(date +%Y-%m-%d)
+    [ -n "$day" ] || { note "the clock did not answer, so this run would have no date"; exit 2; }
+
+    id=$(mint_id "$day" "$title") || die_unwritable "$RUNS"
     dir="$RUNS/$id"
 
     reserve_name "$id"         || die_unwritable "$GRANTS/$id"
@@ -281,8 +284,12 @@ make_run() {
     printf '%s\n' "$dir"
 }
 
-# `<date>-<slug>-<first free slot>`.
-mint_id() { claim_free_slot "$(date +%Y-%m-%d)-$(slug "$1")"; }
+# `<date>-<slug>-<first free slot>`. The day arrives read, because a name cannot check itself.
+#
+# Eight concurrent runs minted four ids beginning with `-`: under fork pressure `date` answered
+# nothing, and the substitution was silently empty. Seven slots served eight runs, and two runs
+# sharing one slot share its targets — so a grant a person gave to one authorises the other.
+mint_id() { claim_free_slot "$1-$(slug "$2")"; }
 
 authority_file() { printf '%s/authority' "$1"; }
 

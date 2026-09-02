@@ -180,7 +180,7 @@ for file in $(runtime_scripts); do
 done
 
 the_files_can_start() {
-  records_exec || { skip "executable bits — this filesystem does not record them"; return; }
+  records_exec || { cannot "executable bits — this filesystem does not record them"; return; }
 
   for file in $(runtime_scripts); do
     [ -x "$file" ] && ok "executable — ${file##*/}" || bad "not executable — ${file##*/}"

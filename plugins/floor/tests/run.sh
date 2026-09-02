@@ -49,7 +49,27 @@ failed=0
 #
 # Neither is a pass, and a `moot` never downgrades a `bad`.
 bad()  { failed=1; printf '  FAIL  %s\n' "$1"; }
-moot() { [ "$failed" -eq 0 ] && failed=3; printf '  MOOT  %s\n' "$1"; }
+kept() { unanswered=0; printf '  ok    %s\n' "$1"; }
+
+# A mutant that never answered, and the run of them that means the machine stopped answering.
+#
+# One moot is an experiment that missed. Ten in a row is not ten experiments — it is a machine
+# that has run out of something, and every mutant after them misses the same way.
+unanswered=0
+moot() {
+  [ "$failed" -eq 0 ] && failed=3
+  printf '  MOOT  %s\n' "$1"
+
+  unanswered=$((unanswered + 1))
+  [ "$unanswered" -lt 10 ] && return
+
+  # Twelve hours on 1 September 2026 reached 87 of 192. Twenty-one in a row answered nothing,
+  # and the audit kept going, because nothing here read its own run of silence.
+  # Stopping at ten spends two and a half hours of the twenty-six it would have taken.
+  printf '\nSTOPPED — ten mutants in a row never answered.\n'
+  printf 'The machine stopped answering, so the rest would prove nothing either.\n'
+  exit 3
+}
 
 #
 # The line that ends a suite is its last line.
@@ -113,6 +133,39 @@ done
 # and the thing it guards against is rare.
 deadline=$(( ${clean:-0} * 5 ))
 [ "$deadline" -lt 120 ] && deadline=120
+
+#
+# And a ceiling, because the floor alone is half a bound.
+#
+# `clean` is measured on whatever else the machine was doing, so a contended run bought itself a
+# longer wait: 62,185 seconds once, which is seventeen hours. A mutant hung under it and nothing
+# was ever going to kill it.
+#
+# **A mutant is caught early by `FOUNDRY_FAIL_FAST` or it runs about as long as a clean pass.** The
+# slowest legitimate one measured here is 226 seconds. Fifteen minutes is six times that, and it is
+# the difference between a hang that answers MOOT and a hang that answers tomorrow.
+#
+ceiling=${FOUNDRY_AUDIT_CEILING:-900}
+[ "$deadline" -gt "$ceiling" ] && deadline=$ceiling
+
+#
+# Nothing is audited while the suite is red.
+#
+# Every mutant runs the model suite under `FOUNDRY_FAIL_FAST`, and a red suite stops at its own
+# failure — which this file reads as *the suite noticed the break*. **Forty mutants would report a
+# success none of them earned**, and the audit that grades every other gate would be the greenest
+# thing in the repository.
+#
+refuse_to_audit_a_red_suite() {
+    [ "${failed:-0}" -eq 0 ] && return 0
+
+    printf 'audit — not run. A suite above is red, and every mutant would pass on that failure.
+'
+    printf 'PROVED NOTHING
+'
+    exit 1
+}
+refuse_to_audit_a_red_suite
 
 # --- break the runner ---
 
@@ -202,6 +255,55 @@ a_deadline_is_not_an_answer() {
   bounded 2 sleep 30; answered 2 "a command that never answers"
 }
 
+#
+# Does a suite fail against a broken copy of the plugin?
+#
+#   0  caught · 1  it passed against a broken one · 2  the mutant never answered
+#
+# **One function, because both audits below were wrong in the same two ways.** `bounded` was called
+# in a single place, so seventeen mutants here and in the join audit ran with no deadline at all.
+# Giving them one as `! bounded …` was worse: a timeout answers 2, `!` turns 2 into 0, and a mutant
+# that hung reported *caught* — the false green `a_deadline_is_not_an_answer` exists to refuse.
+#
+# `env`, because `bounded` runs its arguments and an inline assignment would not reach them.
+#
+suite_caught() {
+  local said
+  bounded "$deadline" env PLUGIN_ROOT="$1" bash "$2"
+  said=$?
+
+  [ "$said" -eq 2 ] && return 2
+  [ "$said" -eq 0 ] && return 1
+
+  return 0
+}
+
+#
+# And the same three answers from `suite_caught`, which reads a whole suite rather than a command.
+#
+# It is one function so this proves both audits at once. A stand-in suite, because what is under
+# test is how an exit code is read — never what a real suite finds.
+a_suite_that_never_answered_caught_nothing() {
+  local held=$deadline
+
+  printf '#!/bin/sh
+exit 1
+' > "$tmp/red.sh"
+  printf '#!/bin/sh
+exit 0
+' > "$tmp/green.sh"
+  printf '#!/bin/sh
+sleep 30
+' > "$tmp/slow.sh"
+
+  suite_caught x "$tmp/red.sh";   answered 0 "a suite that goes red on the break"
+  suite_caught x "$tmp/green.sh"; answered 1 "a suite that stays green against a broken one"
+
+  deadline=2
+  suite_caught x "$tmp/slow.sh";  answered 2 "a suite that never answers"
+  deadline=$held
+}
+
 # `$?` from the line above. Called immediately after `bounded`, because anything between them is the
 # status this would read instead.
 answered() {
@@ -210,7 +312,21 @@ answered() {
   [ "$got" = "$1" ] || { bad "$2 left $got, not $1"; return; }
   printf '  ok    %s leaves %s\n' "$2" "$1"
 }
+# A run of silence is not a run of experiments.
+#
+# Ten that never answer mean the machine stopped answering, so the audit stops. Nine do not,
+# and one that answers puts the count back to nought — the run must be unbroken to mean this.
+a_run_of_silence_stops_the_audit() {
+  silence() { local i=0; while [ "$i" -lt "$1" ]; do moot "silence $i"; i=$((i + 1)); done; }
+
+  # Each in its own subshell. `moot` exits, and the count it keeps must not follow it out.
+  ( silence 9 )                    >/dev/null 2>&1; answered 0 "nine that never answered"
+  ( silence 10 )                   >/dev/null 2>&1; answered 3 "ten that never answered"
+  ( silence 9; kept x; silence 9 ) >/dev/null 2>&1; answered 0 "a run one answer broke"
+}
 a_deadline_is_not_an_answer
+a_suite_that_never_answered_caught_nothing
+a_run_of_silence_stops_the_audit
 
 #
 # Does the model suite fail against a broken runner?
@@ -251,7 +367,7 @@ break_verdict() {
   [ -s "$mutant/$file" ] || { moot "$name — the mutant is empty, so the suite failed for the wrong reason"; return; }
   cmp -s "$mutant/$file" "$root/$file" && { moot "$name — the break did not apply, so this proves nothing"; return; }
   model_caught "$mutant"; local answer=$?
-  [ "$answer" -eq 2 ] && { moot "$name — the mutant never answered, so this proves nothing"; return; }
+  [ "$answer" -eq 2 ] && { moot "$name — killed at ${deadline}s, and a clean pass took ${clean}s"; return; }
   [ "$answer" -eq 0 ] || { bad "$name — the suite passed against a broken runner"; return; }
 
   printf '  ok    %s\n' "$name"
@@ -1372,7 +1488,7 @@ echo "audit — break the install, the install suite must notice"
 copy() { rm -rf "${tmp:?}/$1" && cp -R "$root" "$tmp/$1"; }
 
 # Determine if the install suite fails against the broken copy.
-caught() { ! PLUGIN_ROOT="$tmp/$1" bash "$root/tests/install.sh" >/dev/null 2>&1; }
+caught() { suite_caught "$tmp/$1" "$root/tests/install.sh"; }
 
 # Break one thing about the install and require the suite to notice.
 wreck() {
@@ -1380,9 +1496,15 @@ wreck() {
 
   copy "$tag"             || { bad "$name — could not copy the plugin, so this proves nothing"; return; }
   "$break_it" "$tmp/$tag" || { bad "$name — the break did not apply, so this proves nothing"; return; }
-  caught "$tag"           || { bad "$name — the suite passed against a broken install"; return; }
 
-  printf '  ok    %s\n' "$name"
+  # Three answers, read as three. `caught` returns 2 for a mutant that never answered, and
+  # `||` read that as *the suite passed against a broken install* — the right red for the
+  # wrong reason, which is a quieter lie than the false green it replaced.
+  caught "$tag"; local answer=$?
+  [ "$answer" -eq 2 ] && { moot "$name — killed at ${deadline}s, and a clean pass took ${clean}s"; return; }
+  [ "$answer" -eq 0 ] || { bad "$name — the suite passed against a broken install"; return; }
+
+  kept "$name"
 }
 
 # Determine if this filesystem records an executable bit. Windows does not, and removing a bit that
@@ -1440,6 +1562,19 @@ report_breaks
 ( . "$root/tests/lib.sh"; summary 'a suite that ran nothing' ) >/dev/null 2>&1 \
   && bad "a suite that ran nothing passed" \
   || printf '  ok    a suite that ran nothing does not pass\n'
+
+# A skip used to be amber. Two tests reused a fixture name, inherited the other's repository, and
+# skipped on what they found — into a 700-line log, under a green tally, past a gate that said PASS.
+( . "$root/tests/lib.sh"; ok x; skip y; summary 'a suite that skipped' ) >/dev/null 2>&1 \
+  && bad "a suite that skipped a check passed" \
+  || printf '  ok    a suite that skipped a check does not pass\n'
+
+# And the other half of that split: NTFS records no executable bit, so one check here is
+# unanswerable and answerable in the container. Failing on it would make the suite unrunnable on the
+# machine it is written on.
+( . "$root/tests/lib.sh"; ok x; cannot y; summary 'a suite that could not answer' ) >/dev/null 2>&1 \
+  && printf '  ok    a check this platform cannot answer does not fail it\n' \
+  || bad "a check this platform cannot answer failed the suite"
 echo
 
 # --- break the join, the host suite must notice ---
@@ -1447,8 +1582,8 @@ echo
 echo
 echo "audit — break the join, the host suite must notice"
 
-# The same shape as the install audit above, reading the other suite's exit code.
-hosted() { ! PLUGIN_ROOT="$tmp/$1" bash "$root/tests/host.sh" >/dev/null 2>&1; }
+# The same shape as the install audit above, reading the other suite.
+hosted() { suite_caught "$tmp/$1" "$root/tests/host.sh"; }
 
 wreck_join() {
   local name="$1" tag="$2" mutation="$3"
@@ -1457,9 +1592,11 @@ wreck_join() {
   sed "$mutation" "$root/bin/join.sh" | rewrite "$tmp/$tag/bin/join.sh"
   cmp -s "$tmp/$tag/bin/join.sh" "$root/bin/join.sh" \
     && { moot "$name — the break did not apply, so this proves nothing"; return; }
-  hosted "$tag" || { bad "$name — the suite passed against a broken join"; return; }
+  hosted "$tag"; local answer=$?
+  [ "$answer" -eq 2 ] && { moot "$name — killed at ${deadline}s, and a clean pass took ${clean}s"; return; }
+  [ "$answer" -eq 0 ] || { bad "$name — the suite passed against a broken join"; return; }
 
-  printf '  ok    %s\n' "$name"
+  kept "$name"
 }
 
 # Each of the three that used to be silent, made silent again one at a time.

@@ -37,6 +37,7 @@ happened.
 ## Install
 
 ```
+/plugin marketplace add attac-t/the-foundry
 /plugin install product@the-foundry
 ```
 

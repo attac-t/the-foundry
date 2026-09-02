@@ -144,6 +144,7 @@ The doctrine is the case that proves the gap. It passed every count and was stil
 Needs: Claude Code CLI, `sh`, `awk`. No Python, Node or `jq`.
 
 ```
+/plugin marketplace add attac-t/the-foundry
 /plugin install signal@the-foundry
 ```
 

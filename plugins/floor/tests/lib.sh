@@ -8,6 +8,8 @@
 
 passed=0
 failed=0
+skipped=0
+unanswerable=0
 
 # Record a passing check.
 ok() { passed=$((passed + 1)); printf '  ok    %s\n' "$1"; }
@@ -29,9 +31,28 @@ bad() {
   exit 1
 }
 
-# Note a check this platform cannot answer. Counts as neither, and says why out loud — a skip that
-# reads as a pass is how a suite ends up certifying a platform it never tested.
-skip() { printf '  skip  %s\n' "$1"; }
+#
+# Note a check that did not run because its setup failed. **Red.**
+#
+# It used to be amber. Two tests reused a fixture name another test already owned, inherited that
+# test's repository, and skipped on the state they found. Both printed their reason into a 700-line
+# log, the tally said green, and the gate said PASS. Nobody read the middle.
+#
+# So a skip fails the suite now. A check that did not run has proved nothing, and 160 of these say
+# "git could not make a repo here" — on a machine where that were true, a green suite would be a lie
+# about every one of them.
+skip() { skipped=$((skipped + 1)); printf '  skip  %s\n' "$1"; }
+
+#
+# Note a check this platform cannot answer. **Amber, and it needs a predicate.**
+#
+# `records_exec` is one: NTFS keeps no executable bit, so the check that reads one is unanswerable
+# here and answerable in the container. That is not a defect, and failing on it would make the suite
+# unrunnable on the machine it is written on.
+#
+# The separation is the whole point. A setup that broke and a platform that cannot answer read the
+# same in a log and mean opposite things.
+cannot() { unanswerable=$((unanswerable + 1)); printf '  n/a   %s\n' "$1"; }
 
 # Assert two values match.
 is() {
@@ -79,12 +100,25 @@ absent() {
   ok "$1"
 }
 
-# Report the tally, and answer whether it stands. Zero failures over zero
-# checks is not a suite that passed but one that never ran, and the
-# gate printed PASS for both. A skip counts as neither.
+#
+# Report the tally, and answer whether it stands.
+#
+# Zero failures over zero checks is not a suite that passed but one that never ran, and the gate
+# printed PASS for both.
+#
+# Four numbers, because three of them are how a suite lies. A skip is red. A count this platform
+# could not answer is printed so nobody reads the passes as the whole set.
+#
 summary() {
-  printf '%s — %d passed, %d failed\n' "$1" "$passed" "$failed"
+  printf '%s — %d passed, %d failed, %d skipped, %d n/a\n' \
+         "$1" "$passed" "$failed" "$skipped" "$unanswerable"
 
   [ "$((passed + failed))" -gt 0 ] || { printf 'FAIL — %s ran nothing.\n' "$1"; return 1; }
+
+  [ "$skipped" -eq 0 ] || {
+    printf 'FAIL — %s skipped %d. A check that did not run proved nothing.\n' "$1" "$skipped"
+    return 1
+  }
+
   [ "$failed" -eq 0 ]
 }

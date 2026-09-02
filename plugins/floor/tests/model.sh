@@ -137,9 +137,18 @@ judged_says() {
 # Run any of the above and report only its exit code.
 code_of() { "$@" >/dev/null 2>&1; printf '%s' "$?"; }
 
+#
 # Make a git repository on a named branch, or say it could not be done.
+#
+# **A name is owned by one test.** `mkdir -p` succeeds on a directory that is already there, so a
+# reused name handed the second test the first one's repository — with its charter, its gate and its
+# commits. Two tests did that here. Both skipped on the state they inherited, and a suite that skips
+# reads exactly like a suite that passed.
+#
+# `mkdir` without `-p` refuses instead. The collision is now a failure at the line that caused it.
+#
 make_repo() {
-  mkdir -p "$1" || return 1
+  mkdir "$1" 2>/dev/null || { echo "  FIXTURE  $1 is already taken" >&2; return 1; }
   git init -q "$1" >/dev/null 2>&1 || return 1
   [ -d "$1/.git" ] || return 1
   git -C "$1" symbolic-ref HEAD "refs/heads/$2" >/dev/null 2>&1
@@ -664,6 +673,30 @@ eight_at_once_claim_eight_slots() {
 eight_at_once_claim_eight_slots
 
 #
+# A clock that says nothing must not become part of a name.
+#
+# The eight above minted four ids beginning with `-`, because `date` did not answer under fork
+# pressure and nothing read it before it was a name. Two of those shared a slot, and two runs on one
+# slot share its targets — so a grant a person gave to one authorised the other.
+#
+# The stub answers nothing and succeeds, which is exactly what `date` did. A stub that failed would
+# prove a different thing, and the real one never failed.
+#
+a_clock_that_says_nothing_mints_no_run() {
+  make_repo "$tmp/clock" main && set_origin "$tmp/clock" 'https://github.com/acme/clock.git' \
+    || { skip "silent clock — git could not make a repo here"; return; }
+
+  mkdir -p "$tmp/mute"
+  printf '#!/bin/sh\nexit 0\n' > "$tmp/mute/date"
+  chmod +x "$tmp/mute/date"
+
+  is "a run whose date is empty is refused" \
+     "$(PATH="$tmp/mute:$PATH" code_of floor "$tmp/clock" new 'Silent Clock')" "2"
+  is "and it minted nothing"    "$(ls "$home/runs" 2>/dev/null | grep -c -- '-silent-clock-')" "0"
+}
+a_clock_that_says_nothing_mints_no_run
+
+#
 # `mkdir -p "$RUNS"` succeeds on a `runs/` that already exists and refuses a child, so every claim
 # after it fails for a reason counting cannot fix. Advancing on any failure counts for ever.
 #
@@ -686,7 +719,7 @@ a_claim_that_can_never_land_refuses() {
   # report a guard it never reached.
   if mkdir "$shut/runs/probe" 2>/dev/null; then
     rmdir "$shut/runs/probe"; chmod 700 "$shut/runs" 2>/dev/null
-    skip "a claim that can never land — this filesystem ignores chmod"
+    cannot "a claim that can never land — this filesystem ignores chmod"
     return
   fi
 
@@ -1289,7 +1322,7 @@ records_unreadable() {
 # and the declaration was invisible to everything downstream.
 #
 a_declaration_it_cannot_read_is_not_a_guess() {
-  records_unreadable || { skip "an unreadable declaration — this filesystem records no read bit"; return; }
+  records_unreadable || { cannot "an unreadable declaration — this filesystem records no read bit"; return; }
 
   make_repo "$tmp/ur" main && set_origin "$tmp/ur" 'https://github.com/acme/ur.git' \
     && mkdir -p "$tmp/ur/.foundry" \
@@ -1525,16 +1558,36 @@ an_observation_is_not_evidence() {
   is "a row too long to land whole refuses" \
      "$(code_of floor "$tmp/ob" observe long.row "note=$(head -c 4100 /dev/zero | tr '\0' 'x')")" "2"
 
-  # Twenty writers at once, and twenty whole rows. The property is the atomic append
-  # rather than this count, and the count is what would notice
-  # if the rows grew past it.
+  #
+  # Five writers at once, and five whole rows. The property is the atomic append rather than
+  # this count, and the count is what would notice if the rows grew past it.
+  #
+  # **Each writer's exit code is kept.** Without them a row that never arrived and a process that
+  # never started read the same, and this went red on a machine that could not fork:
+  #
+  #     fatal error in forked process - MEM_COMMIT failed, Win32 error 1455
+  #
+  # **Five, not twenty.** Twenty concurrent processes do not fit on a 7 GB machine, and this went
+  # red three times — three writers lost, then thirteen — while floor wrote every row it was
+  # asked to. **An append is atomic or it is not**, and no count decides that. A number only some
+  # machines can reach tests the machine.
+  #
   before=$(floor "$tmp/ob" observe | grep -c .)
+  codes="$tmp/racecodes"
+  rm -rf "$codes" && mkdir -p "$codes"
+
   i=0
-  while [ "$i" -lt 20 ]; do floor "$tmp/ob" observe "race.$i" n="$i" >/dev/null 2>&1 & i=$((i + 1)); done
+  while [ "$i" -lt 5 ]; do
+    { floor "$tmp/ob" observe "race.$i" n="$i" >/dev/null 2>&1; echo "$?" > "$codes/$i"; } &
+    i=$((i + 1))
+  done
   wait
 
-  is "twenty writers leave twenty whole rows" \
-     "$(floor "$tmp/ob" observe | grep -c .)" "$((before + 20))"
+  is "all five writers ran"           "$(ls "$codes" 2>/dev/null | grep -c .)" "5"
+  is "and all five said they wrote"   "$(grep -lx 0 "$codes"/* 2>/dev/null | grep -c .)" "5"
+
+  is "five writers leave five whole rows" \
+     "$(floor "$tmp/ob" observe | grep -c .)" "$((before + 5))"
   is "and none of them tore" \
      "$(floor "$tmp/ob" observe | awk -F'\t' 'NF != 4' | grep -c .)" "0"
 }
@@ -2348,7 +2401,7 @@ a_workspace_is_isolated_from_the_checkout() {
   # `[ -e ]` follows the link, so a dangling one reads as nothing there. Left to the claim below it,
   # the message would name a session that is not running.
   rm -rf "$slot"
-  ln -s /nonexistent-target "$slot" 2>/dev/null || { skip "a dangling slot — this filesystem has no symlinks"; return; }
+  ln -s /nonexistent-target "$slot" 2>/dev/null || { cannot "a dangling slot — this filesystem has no symlinks"; return; }
   has "a slot that is a dangling link is named for what it is" \
       "$(floor_says "$tmp/ws" open)" "remove it and open again"
 }
@@ -2594,7 +2647,7 @@ a_workspace_needs_authorisation
 # other, and root ignores both.
 #
 a_slot_nobody_can_join_is_not_a_workspace() {
-  records_unreadable || { skip "an unwritable slot — this filesystem records no mode bits"; return; }
+  records_unreadable || { cannot "an unwritable slot — this filesystem records no mode bits"; return; }
 
   make_repo "$tmp/nj" main && set_origin "$tmp/nj" 'https://github.com/acme/nj.git' \
     && mkdir -p "$tmp/nj/.foundry" \
@@ -3267,7 +3320,7 @@ the_work_source() {
     chmod 644 "$src/items/7"
     is "and it reads normally once it can be"                "$(code_of ws source read 7)" "0"
   else
-    skip "an unreadable item — this filesystem records no read bit"
+    cannot "an unreadable item — this filesystem records no read bit"
   fi
 
 
@@ -3702,6 +3755,80 @@ a_verdict_is_bound_to_what_was_read() {
      "$(code_of floor "$tmp/bd" evidence verdict 'a stranger can read it' 'a-reviewer' approve 'still fine' "$moved")" "36"
 }
 a_verdict_is_bound_to_what_was_read
+
+#
+# An artefact a repository says must be read cold before it ships.
+#
+# **It needs no new declaration.** A cold read is a judgement — somebody who did not write the file
+# says whether they understood it — so one line in `.foundry/judged` carries it, and every refusal
+# there applies unchanged.
+#
+# A resolver reading its own file was written and deleted. It pinned the clause to the artefact, and
+# a pin names the source a bar came from, never its subject. So invariant 1 then forbade the run
+# from editing the very file the read exists to protect.
+#
+a_cold_read_is_declared_like_any_other_bar() {
+  # One step, one message. A chain of six joined by `&&` says only that something failed, and the
+  # first version of this reused a fixture name another test owns — so it inherited a repository
+  # whose gate always fails, skipped, and said nothing about why.
+  make_repo "$tmp/coldread" main || { skip "a cold read — no repo"; return; }
+  set_origin "$tmp/coldread" 'https://gitlab.com/acme/cd.git' || { skip "a cold read — no origin"; return; }
+  mkdir -p "$tmp/coldread/.foundry" || { skip "a cold read — no .foundry"; return; }
+  commit_file "$tmp/coldread" .foundry/gates 'tests  true
+' || { skip "a cold read — no gates"; return; }
+  commit_file "$tmp/coldread" doctrine.md 'what this is for
+' || { skip "a cold read — no artefact"; return; }
+  commit_file "$tmp/coldread" .foundry/judged 'a-reader  doctrine.md was understood by somebody who did not write it
+' || { skip "a cold read — no declaration"; return; }
+
+  crrun=$(floor_new_as "$tmp/coldread" ada@example.com "Read")
+  floor "$tmp/coldread" charter derive >/dev/null 2>&1
+
+  has "the artefact becomes a judged clause"  "$(floor "$tmp/coldread" charter)" "was understood by somebody who did not write it"
+  has "and the reader is its judge"           "$(floor "$tmp/coldread" charter)" "a-reader"
+
+  # The pin, read as the field it is. An earlier version of these two lines asserted `doctrine.md`
+  # appeared in the rendered charter and called that "pinned to the artefact" — it is clause text,
+  # and the assertion would pass with no pin at all.
+  #
+  # A pin names where a bar came from, so it names the declaration. Pinning the artefact was written
+  # and deleted: invariant 1 then forbade the run editing the very file the read exists to protect.
+  # So staleness here is whole-commit, never this file's — and #417 owns the binding this lacks.
+  crid=$(clause_of 'doctrine.md was understood by somebody who did not write it')
+  crpin=$(awk -v id="$crid" '$1 == "pin" && $2 == id { print $5 }' "$(charter_of "$crrun")")
+  is      "the pin names the declaration"      "$crpin" ".foundry/judged"
+  differs "and never the artefact it is about" "$crpin" "doctrine.md"
+
+  floor "$tmp/coldread" policy authorize 'https://gitlab.com/acme/cd.git' >/dev/null 2>&1
+  floor "$tmp/coldread" targets add 'https://gitlab.com/acme/cd.git' main >/dev/null 2>&1
+  floor "$tmp/coldread" open >/dev/null 2>&1
+  floor "$tmp/coldread" gates >/dev/null 2>&1
+
+  is "with the gate green and nobody having read it, it may not deliver" \
+     "$(code_of floor "$tmp/coldread" complete)" "15"
+  has "and the unread artefact is named"  "$(floor "$tmp/coldread" complete 2>&1)" "doctrine.md"
+}
+a_cold_read_is_declared_like_any_other_bar
+
+#
+# Declared, or nothing. A repository cannot be guessed into wanting a cold read.
+#
+nothing_declares_a_cold_read_by_itself() {
+  make_repo "$tmp/noread" main || { skip "no cold read — no repo"; return; }
+  set_origin "$tmp/noread" 'https://gitlab.com/acme/nc.git' || { skip "no cold read — no origin"; return; }
+  mkdir -p "$tmp/noread/.foundry" || { skip "no cold read — no .foundry"; return; }
+  commit_file "$tmp/noread" .foundry/gates 'tests  true
+' || { skip "no cold read — no gates"; return; }
+  commit_file "$tmp/noread" doctrine.md 'a file nobody asked to have read
+' || { skip "no cold read — no artefact"; return; }
+
+  floor_new_as "$tmp/noread" ada@example.com "Unread" >/dev/null
+  floor "$tmp/noread" charter derive >/dev/null 2>&1
+
+  lacks "a file nobody declared is not read cold" \
+        "$(floor "$tmp/noread" charter)" "was understood by somebody who did not write it"
+}
+nothing_declares_a_cold_read_by_itself
 
 #
 # A panel is several minds, and every one of them has to say yes.
@@ -4796,7 +4923,7 @@ a_merge_lands_only_what_was_graded
 # machine with no `gh`, still has a work source. Skipped where a real `gh` would answer instead.
 a_remote_with_no_gh_still_has_a_source() {
   [ -n "${ghrun:-}" ] || { skip "no gh — the other adapter did not run"; return; }
-  command -v gh >/dev/null 2>&1 && { skip "a remote with no gh — this machine has one"; return; }
+  command -v gh >/dev/null 2>&1 && { cannot "a remote with no gh — this machine has one"; return; }
 
   mkdir -p "$src/items"
   printf 'Read from a directory\n' > "$src/items/12"

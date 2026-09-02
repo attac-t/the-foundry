@@ -74,6 +74,7 @@ Run `/skills laravel-ddd` to see all.
 Standalone.
 
 ```
+/plugin marketplace add attac-t/the-foundry
 /plugin install laravel-ddd@the-foundry
 ```
 

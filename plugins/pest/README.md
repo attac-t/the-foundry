@@ -27,6 +27,7 @@ expect()       Fluent assertions that read naturally
 Standalone.
 
 ```
+/plugin marketplace add attac-t/the-foundry
 /plugin install pest@the-foundry
 ```
 

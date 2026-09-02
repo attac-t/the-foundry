@@ -21,7 +21,7 @@ jobs:
       - name: The manifest agrees with every plugin
         run: bash bin/versions.sh
 
-      # A meta-check, not one of the seven. It grades them, so counting it among them would make the
+      # A meta-check, and not one of the ten. It grades them, so counting it among them would make the
       # set it checks disagree with itself. `panel` was advertised and unrun for days.
       - name: The documents, the workflow and every harness file agree
         run: sh bin/agree.sh
