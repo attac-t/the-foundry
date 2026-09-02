@@ -366,7 +366,7 @@ break_verdict() {
   [ -s "$mutant/$file" ] || { moot "$name — the mutant is empty, so the suite failed for the wrong reason"; return; }
   cmp -s "$mutant/$file" "$root/$file" && { moot "$name — the break did not apply, so this proves nothing"; return; }
   model_caught "$mutant"; local answer=$?
-  [ "$answer" -eq 2 ] && { moot "$name — the mutant never answered, so this proves nothing"; return; }
+  [ "$answer" -eq 2 ] && { moot "$name — killed at ${deadline}s, and a clean pass took ${clean}s"; return; }
   [ "$answer" -eq 0 ] || { bad "$name — the suite passed against a broken runner"; return; }
 
   printf '  ok    %s\n' "$name"
@@ -1500,7 +1500,7 @@ wreck() {
   # `||` read that as *the suite passed against a broken install* — the right red for the
   # wrong reason, which is a quieter lie than the false green it replaced.
   caught "$tag"; local answer=$?
-  [ "$answer" -eq 2 ] && { moot "$name — the mutant never answered, so this proves nothing"; return; }
+  [ "$answer" -eq 2 ] && { moot "$name — killed at ${deadline}s, and a clean pass took ${clean}s"; return; }
   [ "$answer" -eq 0 ] || { bad "$name — the suite passed against a broken install"; return; }
 
   kept "$name"
@@ -1592,7 +1592,7 @@ wreck_join() {
   cmp -s "$tmp/$tag/bin/join.sh" "$root/bin/join.sh" \
     && { moot "$name — the break did not apply, so this proves nothing"; return; }
   hosted "$tag"; local answer=$?
-  [ "$answer" -eq 2 ] && { moot "$name — the mutant never answered, so this proves nothing"; return; }
+  [ "$answer" -eq 2 ] && { moot "$name — killed at ${deadline}s, and a clean pass took ${clean}s"; return; }
   [ "$answer" -eq 0 ] || { bad "$name — the suite passed against a broken join"; return; }
 
   kept "$name"
