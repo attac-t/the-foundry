@@ -40,7 +40,13 @@ human choose the split.
 
 ## The Artifact
 
-`.claude/panel/charter.md`, committed:
+`.claude/panel/charter.md`, and **it is not committed.** Add it to `.gitignore`.
+
+A charter says what a run is for. Once the run lands, the pull request carries the reasoning
+and the history carries the change. A charter kept after that is a museum piece, and the tree
+answers what is true now.
+
+The shape:
 
 ```markdown
 # Charter: <short name>

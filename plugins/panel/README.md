@@ -121,8 +121,8 @@ Standalone.
 /panel add gift card redemption at checkout
 ```
 
-Answers questions until the goal is gradeable, writes `.claude/panel/charter.md`, and waits for
-you to approve it. Declare the gates:
+Answers questions until the goal is gradeable, writes `.claude/panel/charter.md` — untracked —
+and waits for you to approve it. Declare the gates:
 
 ```yaml
 # panel.yml
