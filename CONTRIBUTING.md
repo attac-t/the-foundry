@@ -144,5 +144,5 @@ a rule pointing at nothing.
 
 `signal` is the one that is easy to skip and expensive to. It states a word budget before each reply
 rather than marking one afterwards. This used to cite 78% of first drafts blocked without it; that
-figure belongs to a commit which also tripled the block threshold, so it measures neither change on
-its own. Signal's README carries the arithmetic.
+figure belongs to a commit which also raised the block threshold from 250 to 600, so it measures
+neither change on its own. Signal's README carries the arithmetic.
