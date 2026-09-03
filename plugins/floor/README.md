@@ -1511,6 +1511,32 @@ the run says so if a break failed to apply — a mutation that changed nothing p
 to a shell — because a suite that calls the scripts itself proves only that the scripts work, never
 that the wiring does, which is where kernel and signal both failed.
 
+### One case, one mutant, one assertion
+
+```bash
+bash tests/run.sh --case-smoke no-ancestor adopt-base
+```
+
+**A red suite says something noticed, never that this rule was noticed.** A break that trips an
+unrelated check reads exactly like the break that was caught. Each one pays for a whole suite to
+find that out.
+
+A case names three things. The state it starts from, the body it runs, and the one assertion its
+mutant must flip.
+
+The clean runner builds that state. It is restored to one pathname, because a run records absolute
+paths. A case starts immediately before the operation its mutant changes, never after it.
+
+The mutant is a git patch. It must apply once, refuse a second application, and reverse to a
+byte-identical file.
+
+The mutant is caught only when its own assertion flips. Anything else red beside it is not a kill.
+
+`tests/cases.sh` holds the cases and the bindings. `tests/mutants/` holds the patches.
+
+**Eight cases exist, and the audit above still runs all 197 breaks.** Nothing was moved out of it.
+This is the seam, proved on eight — not the rebuilt audit.
+
 ---
 
 *One attempt. One record.*
