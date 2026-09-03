@@ -56,8 +56,12 @@ kept() { unanswered=0; printf '  ok    %s\n' "$1"; }
 # One moot is an experiment that missed. Ten in a row is not ten experiments — it is a machine
 # that has run out of something, and every mutant after them misses the same way.
 unanswered=0
+
+# The total, which never resets. `unanswered` is the run and `kept` clears it.
+never_ran=0
 moot() {
   [ "$failed" -eq 0 ] && failed=3
+  never_ran=$((never_ran + 1))
   printf '  MOOT  %s\n' "$1"
 
   unanswered=$((unanswered + 1))
@@ -1648,5 +1652,5 @@ wreck_join "a settings file it cannot read called a missing plugin is caught" \
 
 [ "$failed" -eq 0 ] && echo "ALL GREEN"
 [ "$failed" -eq 1 ] && echo "FAILURES ABOVE"
-[ "$failed" -eq 3 ] && echo "PROVED NOTHING — the experiments above never ran"
+[ "$failed" -eq 3 ] && printf 'PROVED NOTHING — %s experiments never ran\n' "$never_ran"
 exit $failed
