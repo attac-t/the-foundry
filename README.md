@@ -71,7 +71,8 @@ Enable the opinionated voice:
 /output-style kernel:craftsman
 ```
 
-Verify the install: `/evaluate`
+Check kernel is live: `/evaluate`. It tests kernel's hooks, memory and agents — **never that
+the other plugins installed.**
 
 ## Where the work is
 
