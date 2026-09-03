@@ -32,11 +32,27 @@ cd /tmp/foundry && sh bin/gates.sh
 **Clone to the Linux disk.** `/mnt/c` is a network-shaped filesystem and gives most of the
 speed back.
 
-**It also runs checks Windows cannot.** Twenty of them need a file the runner may not read or
-write. Windows records no such bit, so they report *unrunnable* and stand down.
+**It also runs checks Windows cannot.** NTFS records no executable bit and no read bit, keeps no
+symlink, and ignores `chmod`. A check that reads one of those reports *unrunnable* and stands down.
 
-Two real faults hid behind that for months. Panel could not start on Linux at all, and a shipped
-script carried no executable bit.
+**So the pass count is not comparable across platforms.** Measured 3 September on one laptop:
+
+| suite | Git Bash | WSL on ext4 |
+|---|---|---|
+| install | 25 passed, 1 n/a | 30 passed, 0 n/a |
+| host | 44 passed | 45 passed |
+| say | 36 passed | 36 passed |
+
+One `n/a` line hid five passes in install, because the check it guards sits in a loop. **`n/a`
+counts lines, never checks**, so the two columns cannot be reconciled by adding it back.
+
+Read `failed` and `skipped` instead. Both must be zero on every platform, and both mean the same
+thing everywhere.
+
+The model suite is not in that table. Counting it on Git Bash costs 77 minutes, and nobody has.
+
+Two real faults hid behind all this for months. Panel could not start on Linux at all, and a
+shipped script carried no executable bit.
 
 **This is not a fix for macOS.** WSL is how a Windows machine reaches Linux. A gate that only
 runs where its author sits still grades one platform, and that is the fault it just found.

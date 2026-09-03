@@ -171,6 +171,66 @@ refuse_to_audit_a_red_suite() {
 }
 refuse_to_audit_a_red_suite
 
+#
+# And the deadline has to outlast the thing it times.
+#
+# A mutant is caught early or it runs about as long as a clean pass. So a deadline under `clean`
+# answers nothing about a break only reached near the end — that mutant is killed before it speaks,
+# and MOOT then reports the clock rather than the code.
+#
+# It is the ceiling that does this. A 5,940s clean pass under a 900s ceiling gets three per cent of
+# what `clean * 5` asked for, and five mutants went MOOT there for no other reason.
+#
+# **One clean pass, and an adversary argued for two.** The file's own numbers refuse that: `gateref`
+# is the slowest honest mutant at 226s solo and past 300s under load, on a machine whose clean pass
+# is 535s. That is **0.56 of a pass**, so one pass is already close to twice the worst mutant — and
+# two passes would refuse the very 535s machine this design was sized against, which worked.
+#
+# The bar is the thing measured, never a multiple that reads well.
+#
+# **The ceiling is named with its cost, never as advice.** Raising it makes this refusal false
+# without making the deadline sound, and the run it then permits is the seventeen-hour one recorded
+# above. So the hours are printed before the knob is.
+#
+refuse_a_deadline_too_short_to_answer() {
+    headroom=${clean:-0}
+    [ "$deadline" -ge "$headroom" ] && return 0
+
+    printf 'audit — not run. A mutant has %ss, and a clean pass took %ss.\n' "$deadline" "$clean"
+    printf 'audit — one caught late needs a whole pass, and more again under pool load.\n'
+    printf 'audit — grade where the suite is faster. FOUNDRY_AUDIT_CEILING=%s would run it,\n' "$headroom"
+    printf 'audit — and 192 mutants at that deadline is %sh of mutant time, before the pool\n' \
+           "$(( headroom * 192 / 3600 ))"
+    printf 'audit — divides it. That is two ways on the machine this refusal fires on.\n'
+    printf 'PROVED NOTHING\n'
+    exit 3
+}
+
+# Run the refusal against a made-up machine and read what it leaves.
+#
+# `leaves` above does this for the two exit codes; the deadline needs its own because the answer
+# turns on two numbers rather than on `failed`.
+deadline_leaves() {
+  ( deadline=$1; clean=$2; refuse_a_deadline_too_short_to_answer ) >/dev/null 2>&1
+  left=$?
+
+  [ "$left" = "$3" ] || { bad "a ${1}s deadline over a ${2}s pass left $left, not $3"; return; }
+  printf '  ok    a %ss deadline over a %ss pass leaves %s\n' "$1" "$2" "$3"
+}
+
+# Three machines, and the middle one is why the bar is one clean pass rather than two.
+#
+# **A rule with no break is a rule the next edit deletes for free.** Its three siblings each assert
+# themselves and this one did not, until a judge said so.
+a_deadline_shorter_than_its_pass_refuses() {
+  deadline_leaves 245  49   0     # WSL on ext4, five clean passes
+  deadline_leaves 900  535  0     # the machine this ceiling was sized against
+  deadline_leaves 900  5940 3     # Git Bash, three per cent of what the design asked for
+}
+a_deadline_shorter_than_its_pass_refuses
+
+refuse_a_deadline_too_short_to_answer
+
 # --- break the runner ---
 
 # What this run is about to cost, before it spends it.
@@ -180,16 +240,8 @@ refuse_to_audit_a_red_suite
 # the suite will be killed before they answer.
 #
 # **Two nights were spent blaming memory for exactly that.** The numbers were always here;
-# nothing printed them.
-say_what_this_costs() {
-    printf 'audit — break the runner, the model suite must notice. A mutant has %ss.\n' "$deadline"
-
-    [ "${clean:-0}" -gt 1600 ] || return 0
-
-    printf 'audit — a clean pass took %ss here, against the 535s this deadline was sized for.\n' "$clean"
-    printf 'audit — mutants caught late in the suite will be killed before they answer.\n'
-}
-say_what_this_costs
+# nothing printed them. It says the pool size too, below, once there is one — two bounds choose that
+# number now, and a log that prints neither cannot say which did.
 
 #
 # How many breaks run at once.
@@ -203,16 +255,56 @@ say_what_this_costs
 # the other way round. Either can answer with a word rather than a number, so the answer is read
 # before it becomes a pool size.
 #
+# How many workers this machine's memory allows, at 128 MB each.
+#
+# A model suite costs **44 MB**, measured 3 September by sampling `MemAvailable` once a second while
+# one ran on Linux. Twelve of those is 530 MB and the machine had 2.6 GB free, so the pool was never
+# the memory fault here — the `msys` branch below holds the platform where it was.
+#
+# 128 is the measured 44 with room, because one number from one machine is not a floor.
+#
+# **Four things this does not know, and each could make it wrong:**
+#
+# - 44 MB is the first worker alone. **The number the bound wants is the twelfth under load**, and
+#   nothing has measured that
+# - a one-second sample sees no peak shorter than a second
+# - `/proc/meminfo` is not namespaced. Inside the `docker run` this repository grades Linux in, it
+#   **reports the host and not the container's limit**
+# - it is read once, at the start of a run measured in hundreds of seconds. The pool does not shrink
+#   when the machine fills
+#
+# **Only Linux answers at all.** macOS has no `/proc/meminfo`, and MSYS2 has the file without a
+# `MemAvailable` line. Both fall through to the processor count — the number they get today, and no
+# worse. The `msys` branch below returns before either can matter, and this holds if it ever does not.
+#
+workers_memory_allows() {
+  local fits
+  [ -r /proc/meminfo ] || return 1
+
+  fits=$(awk '/^MemAvailable:/ { print int($2 / 131072) }' /proc/meminfo)
+  case "$fits" in ''|*[!0-9]*) return 1 ;; esac
+
+  [ "$fits" -lt 1 ] && fits=1
+  printf '%s' "$fits"
+}
+
 worker_count() {
-  local count
+  local count allowed
   case "${OSTYPE:-}" in msys*|cygwin*) printf '2'; return ;; esac
 
   count=$(getconf _NPROCESSORS_ONLN 2>/dev/null || nproc 2>/dev/null)
-  case "$count" in ''|*[!0-9]*|0) printf '4'; return ;; esac
+  case "$count" in ''|*[!0-9]*|0) count=4 ;; esac
+
+  allowed=$(workers_memory_allows) || { printf '%s' "$count"; return; }
+  [ "$allowed" -lt "$count" ] && count=$allowed
   printf '%s' "$count"
 }
 
 workers=${FOUNDRY_AUDIT_WORKERS:-$(worker_count)}
+
+printf 'audit — break the runner, the model suite must notice. A mutant has %ss, %s at a time.\n' \
+       "$deadline" "$workers"
+
 queued=0
 reported=0
 
