@@ -216,12 +216,39 @@ printf 'audit — break the runner, the model suite must notice. A mutant has %s
 # the other way round. Either can answer with a word rather than a number, so the answer is read
 # before it becomes a pool size.
 #
+#
+# How many workers this machine's memory allows, at 128 MB each.
+#
+# A model suite costs **44 MB**, measured 3 September by sampling `MemAvailable` while one ran on
+# Linux. Twelve of those is 530 MB and the machine had 2.6 GB free, so the pool was never the memory
+# fault here — the `msys` branch below holds the platform where it was.
+#
+# 128 is the measured 44 with room, because one number from one machine is not a floor.
+#
+# **Only Linux answers.** macOS has no `/proc/meminfo`, and MSYS2 has the file without a
+# `MemAvailable` line. Both fall through to the processor count — the number they get today, and no
+# worse. The `msys` branch below returns before either can matter, and this holds if it ever does not.
+#
+workers_memory_allows() {
+  local fits
+  [ -r /proc/meminfo ] || return 1
+
+  fits=$(awk '/^MemAvailable:/ { print int($2 / 131072) }' /proc/meminfo)
+  case "$fits" in ''|*[!0-9]*) return 1 ;; esac
+
+  [ "$fits" -lt 1 ] && fits=1
+  printf '%s' "$fits"
+}
+
 worker_count() {
-  local count
+  local count allowed
   case "${OSTYPE:-}" in msys*|cygwin*) printf '2'; return ;; esac
 
   count=$(getconf _NPROCESSORS_ONLN 2>/dev/null || nproc 2>/dev/null)
-  case "$count" in ''|*[!0-9]*|0) printf '4'; return ;; esac
+  case "$count" in ''|*[!0-9]*|0) count=4 ;; esac
+
+  allowed=$(workers_memory_allows) || { printf '%s' "$count"; return; }
+  [ "$allowed" -lt "$count" ] && count=$allowed
   printf '%s' "$count"
 }
 
