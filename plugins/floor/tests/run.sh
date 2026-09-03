@@ -231,7 +231,7 @@ case_smoke() {
 
   build_every_checkpoint "$@"
   run_every_clean_case "$@"
-  run_every_mutant "$@"
+  run_every_mutant
   say_what_the_cases_cost
 }
 
