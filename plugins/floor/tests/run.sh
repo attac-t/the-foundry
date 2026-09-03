@@ -199,8 +199,9 @@ refuse_a_deadline_too_short_to_answer() {
     printf 'audit — not run. A mutant has %ss, and a clean pass took %ss.\n' "$deadline" "$clean"
     printf 'audit — one caught late needs a whole pass, and more again under pool load.\n'
     printf 'audit — grade where the suite is faster. FOUNDRY_AUDIT_CEILING=%s would run it,\n' "$headroom"
-    printf 'audit — and 192 mutants at that deadline is %sh with none caught early.\n' \
+    printf 'audit — and 192 mutants at that deadline is %sh of mutant time, before the pool\n' \
            "$(( headroom * 192 / 3600 ))"
+    printf 'audit — divides it. That is two ways on the machine this refusal fires on.\n'
     printf 'PROVED NOTHING\n'
     exit 3
 }
