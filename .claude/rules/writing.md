@@ -14,8 +14,9 @@ Twelve warn and three block. This one warns, at 11% long words and a 29-word sen
 awk -f plugins/signal/lib/score.awk -v words_warn=99999 -v words_block=99999     -v asks_warn=99999 < FILE
 ```
 
-Signal gates its own three documents and no others. Widening that would turn fifteen red, so the
-number sits here instead of a gate. **Use the scorer before you commit prose. Nothing else will.**
+Signal gates its own README and every skill it ships, by glob, and nothing else. Widening it would
+turn most of this repository red, so the bar sits here instead of in a gate. **Use the scorer
+before you commit prose. Nothing else will.**
 
 Voice: craftsman, always — `/output-style kernel:craftsman`. Direct, opinionated, no wasted words.
 
