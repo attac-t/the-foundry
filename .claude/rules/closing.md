@@ -38,6 +38,19 @@ contradicts it. Reopening forty-seven issues to tick boxes nobody can check is a
 
 Converting a closed issue's list is worth it only when someone is about to rely on it.
 
+## Look for the work before you start it
+
+**Three charters were written on 1 September, and nobody opened one for two days.** 190 KB on
+disk, while the standing list called all three *not started*.
+
+Their boxes were not failing. **They were unread** — which looks identical from outside the file
+and is the opposite finding. A failing box is work to do. An unread one is work to record.
+
+Reading a 160 KB charter against its brief took one pass and closed eight boxes of nine. The list
+had shown none.
+
+**So look before you start.** A brief says where its output goes. Nothing tells you it arrived.
+
 ## Nothing checks this
 
 The gates are offline and an issue lives on a service. **This is a rule because no exit code can
