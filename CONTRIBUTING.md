@@ -11,6 +11,36 @@ sh bin/gates.sh linux           # the same nine where `sh` is dash
 Leave `agree` out of your run and a PR can still go red on a check this file never mentioned — the
 drift this file exists to prevent, one level up.
 
+## On Windows, run them in WSL from the Linux disk
+
+**Measured 2 September 2026, one laptop, one commit.**
+
+| | Git Bash | WSL on ext4 |
+|---|---|---|
+| floor's model suite | **4,611 s** | **49 s** |
+| the whole floor gate | never finished | **19 m** |
+| `open`, per call | 9,506 ms | 214 ms |
+
+The process count is the same on both. Git Bash charges about 80 ms to start one and Linux
+charges one, so the bill is cygwin process start, not this code.
+
+```bash
+git clone /mnt/c/path/to/the-foundry /tmp/foundry   # ext4, never /mnt/c
+cd /tmp/foundry && sh bin/gates.sh
+```
+
+**Clone to the Linux disk.** `/mnt/c` is a network-shaped filesystem and gives most of the
+speed back.
+
+**It also runs checks Windows cannot.** Twenty of them need a file the runner may not read or
+write. Windows records no such bit, so they report *unrunnable* and stand down.
+
+Two real faults hid behind that for months. Panel could not start on Linux at all, and a shipped
+script carried no executable bit.
+
+**This is not a fix for macOS.** WSL is how a Windows machine reaches Linux. A gate that only
+runs where its author sits still grades one platform, and that is the fault it just found.
+
 **CI runs more than the three above, not less.** Each of these has no place in `gates.sh` and is
 yours to run when it applies:
 
