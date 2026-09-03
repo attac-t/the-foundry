@@ -181,16 +181,27 @@ refuse_to_audit_a_red_suite
 # It is the ceiling that does this. A 5,940s clean pass under a 900s ceiling gets three per cent of
 # what `clean * 5` asked for, and five mutants went MOOT there for no other reason.
 #
-refuse_a_deadline_shorter_than_a_clean_pass() {
-    [ "$deadline" -ge "${clean:-0}" ] && return 0
+# **Twice `clean`, not once**, because a mutant runs alone in one place and under eleven others in
+# the next. `gateref` takes 226s of a 535s pass by itself, and past 300s once two workers share the
+# machine. One whole pass of headroom is the bar the deadline above already argues for.
+#
+# **The ceiling is named with its cost, never as advice.** Raising it makes this refusal false
+# without making the deadline sound, and the run it then permits is the seventeen-hour one recorded
+# above. So the hours are printed before the knob is.
+#
+refuse_a_deadline_too_short_to_answer() {
+    headroom=$(( ${clean:-0} * 2 ))
+    [ "$deadline" -ge "$headroom" ] && return 0
 
     printf 'audit — not run. A mutant has %ss, and a clean pass took %ss.\n' "$deadline" "$clean"
-    printf 'audit — every mutant caught late would be killed before it answered.\n'
-    printf 'audit — raise FOUNDRY_AUDIT_CEILING past %s, or grade where the suite is faster.\n' "$clean"
+    printf 'audit — one caught late needs a whole pass, and more again under pool load.\n'
+    printf 'audit — grade where the suite is faster. FOUNDRY_AUDIT_CEILING=%s would run it,\n' "$headroom"
+    printf 'audit — and 192 mutants at that deadline is %sh with none caught early.\n' \
+           "$(( headroom * 192 / 3600 ))"
     printf 'PROVED NOTHING\n'
     exit 3
 }
-refuse_a_deadline_shorter_than_a_clean_pass
+refuse_a_deadline_too_short_to_answer
 
 # --- break the runner ---
 
@@ -201,8 +212,8 @@ refuse_a_deadline_shorter_than_a_clean_pass
 # the suite will be killed before they answer.
 #
 # **Two nights were spent blaming memory for exactly that.** The numbers were always here;
-# nothing printed them.
-printf 'audit — break the runner, the model suite must notice. A mutant has %ss.\n' "$deadline"
+# nothing printed them. It says the pool size too, below, once there is one — two bounds choose that
+# number now, and a log that prints neither cannot say which did.
 
 #
 # How many breaks run at once.
@@ -216,16 +227,25 @@ printf 'audit — break the runner, the model suite must notice. A mutant has %s
 # the other way round. Either can answer with a word rather than a number, so the answer is read
 # before it becomes a pool size.
 #
-#
 # How many workers this machine's memory allows, at 128 MB each.
 #
-# A model suite costs **44 MB**, measured 3 September by sampling `MemAvailable` while one ran on
-# Linux. Twelve of those is 530 MB and the machine had 2.6 GB free, so the pool was never the memory
-# fault here — the `msys` branch below holds the platform where it was.
+# A model suite costs **44 MB**, measured 3 September by sampling `MemAvailable` once a second while
+# one ran on Linux. Twelve of those is 530 MB and the machine had 2.6 GB free, so the pool was never
+# the memory fault here — the `msys` branch below holds the platform where it was.
 #
 # 128 is the measured 44 with room, because one number from one machine is not a floor.
 #
-# **Only Linux answers.** macOS has no `/proc/meminfo`, and MSYS2 has the file without a
+# **Four things this does not know, and each could make it wrong:**
+#
+# - 44 MB is the first worker alone. **The number the bound wants is the twelfth under load**, and
+#   nothing has measured that
+# - a one-second sample sees no peak shorter than a second
+# - `/proc/meminfo` is not namespaced. Inside the `docker run` this repository grades Linux in, it
+#   **reports the host and not the container's limit**
+# - it is read once, at the start of a run measured in hundreds of seconds. The pool does not shrink
+#   when the machine fills
+#
+# **Only Linux answers at all.** macOS has no `/proc/meminfo`, and MSYS2 has the file without a
 # `MemAvailable` line. Both fall through to the processor count — the number they get today, and no
 # worse. The `msys` branch below returns before either can matter, and this holds if it ever does not.
 #
@@ -253,6 +273,10 @@ worker_count() {
 }
 
 workers=${FOUNDRY_AUDIT_WORKERS:-$(worker_count)}
+
+printf 'audit — break the runner, the model suite must notice. A mutant has %ss, %s at a time.\n' \
+       "$deadline" "$workers"
+
 queued=0
 reported=0
 
