@@ -7,7 +7,7 @@ Anything written down, not just replies — a reader came to understand, to act 
 nowhere else.
 
 **Nothing measures it, and this file does not meet it.** Signal's scorer reads any file. Run against
-all seventeen documents here — three at the root, seven plugin READMEs, seven rules — **two pass.**
+every document here — the root files, the plugin READMEs and the rules — **the ones that pass are the exception.**
 Twelve warn and three block. This one warns, at 11% long words and a 29-word sentence.
 
 ```sh
