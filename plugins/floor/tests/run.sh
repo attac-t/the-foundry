@@ -638,6 +638,12 @@ refuse_a_deadline_too_short_to_answer() {
     printf 'audit — and 192 mutants at that deadline is %sh of mutant time, before the pool\n' \
            "$(( headroom * 192 / 3600 ))"
     printf 'audit — divides it. That is two ways on the machine this refusal fires on.\n'
+
+    # A rule broken above outranks an audit that could not run, and `audit_says_which` holds exactly
+    # that for the two recorders. This refusal owed the same the moment anything ran before it: the
+    # cases do now, and one going red here would have been reported as *nothing ran*.
+    [ "${failed:-0}" -eq 1 ] && { printf 'FAILURES ABOVE\n'; exit 1; }
+
     printf 'PROVED NOTHING\n'
     exit 3
 }
@@ -647,7 +653,7 @@ refuse_a_deadline_too_short_to_answer() {
 # `leaves` above does this for the two exit codes; the deadline needs its own because the answer
 # turns on two numbers rather than on `failed`.
 deadline_leaves() {
-  ( deadline=$1; clean=$2; refuse_a_deadline_too_short_to_answer ) >/dev/null 2>&1
+  ( deadline=$1; clean=$2; failed=${4:-0}; refuse_a_deadline_too_short_to_answer ) >/dev/null 2>&1
   left=$?
 
   [ "$left" = "$3" ] || { bad "a ${1}s deadline over a ${2}s pass left $left, not $3"; return; }
@@ -662,6 +668,7 @@ a_deadline_shorter_than_its_pass_refuses() {
   deadline_leaves 245  49   0     # WSL on ext4, five clean passes
   deadline_leaves 900  535  0     # the machine this ceiling was sized against
   deadline_leaves 900  5940 3     # Git Bash, three per cent of what the design asked for
+  deadline_leaves 900  5940 1 1   # the same machine, with a rule already broken above it
 }
 a_deadline_shorter_than_its_pass_refuses
 
