@@ -99,8 +99,18 @@ Edit a rule, then run it — a row typed by hand into one file is the drift noth
 | `floor` | the plugin does not run — checked on Linux, macOS and Windows |
 | `panel` | a review round accepts a prior verdict that does not exist, or belongs to another review |
 
-**A gate that could not read its inputs exits 3, and says so.** It never reports a pass over an
-empty set — nothing to check is not a clean check. `bin/shell.sh`'s header holds the codes.
+**Exit 3 means the gate did not answer, and it says so.** No gate reports a pass over an empty
+set — nothing to check is not a clean check. `bin/shell.sh`'s header holds the codes.
+
+**Three covers two cases, and the difference matters when you read a red run:**
+
+| | exits 3 when |
+|---|---|
+| `frontmatter`, `versions`, `repeats`, `shell` | the gate could not read what it needed |
+| `kernel`, `signal`, `floor`, `panel` | mutants ran and never answered |
+
+Neither is a broken rule, and neither is a defect in the code you just wrote. **Exit 1 is the one
+that means you broke something.** A plugin suite ending `PROVED NOTHING` is the second case.
 
 `shell` reads `plugins/*/bin`, `lib` and `hooks` — never `tests/`, which are bash on purpose. It
 gates a number, not craft-sh's rule: length is the *signal* that another function is merited, and no
