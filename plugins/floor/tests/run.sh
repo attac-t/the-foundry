@@ -284,6 +284,10 @@ run_every_clean_case() {
 }
 
 the_clean_case_passes() {
+  # Its checkpoint already said why. A second `MOOT` for one cause counts twice towards the run of
+  # silence that stops the audit, and reads as a machine that stopped answering.
+  [ -d "$checkpoints/$1" ] || return 1
+
   restore_the_state "$1" || { moot "$1 — the checkpoint would not restore"; return 1; }
 
   run_the_case "$1" clean
