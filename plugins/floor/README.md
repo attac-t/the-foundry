@@ -1513,6 +1513,8 @@ that the wiring does, which is where kernel and signal both failed.
 
 ### One case, one mutant, one assertion
 
+Every case runs inside `tests/run.sh` above. Name a few to work on one:
+
 ```bash
 bash tests/run.sh --case-smoke no-ancestor adopt-base
 ```
@@ -1534,8 +1536,17 @@ The mutant is caught only when its own assertion flips. Anything else red beside
 
 `tests/cases.sh` holds the cases and the bindings. `tests/mutants/` holds the patches.
 
-**Eight cases exist, and the audit above still runs all 197 breaks.** Nothing was moved out of it.
-This is the seam, proved on eight — not the rebuilt audit.
+**Eight cases exist, and the audit above still runs all 197 breaks.** Nothing was moved out of it,
+so each of the eight is still a `sed` break as well. This is the seam, proved on eight — not the
+rebuilt audit.
+
+Two limits, written down.
+
+**A mutant is credited when its assertion flips, never when it flips for the declared reason.** An
+exit code that is no longer 4 does not say the guard is gone.
+
+**The eight were chosen because they could be made hermetic.** The hard remainder is every check
+that guards on a handle an earlier case left behind. None of those is proved.
 
 ---
 

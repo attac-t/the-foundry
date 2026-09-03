@@ -196,6 +196,10 @@ polled() {
 # A patch, never a `sed`. One that matches twice mutates twice and one that matches nothing mutates
 # nothing, and both of those report the green a break that applied would.
 #
+# `tests/cases.sh` holds the cases and their bindings, and `tests/model.sh` sources the same file.
+# Definitions only: a line that ran at the top of it would run inside this audit.
+. "$root/tests/cases.sh"
+
 copy=$tmp/plugin
 state=$tmp/state
 checkpoints=$tmp/checkpoints
@@ -205,23 +209,30 @@ logs=$tmp/said
 # A case runs one operation on state already built, so this is generous rather than measured.
 case_deadline=${FOUNDRY_CASE_DEADLINE:-120}
 
-# The cases that passed clean, and what their mutants cost.
+# The cases that passed clean, and what each half of the work cost.
+#
+# Sol's budget caps two things and nothing else prints either: 968s over 176 mutants, and 180s for
+# the checkpoints. The checkpoints are the half that dominates, and the half that is worst where
+# a process is dear.
 hermetic=
+checkpoints_built=0
+cases_clean=0
 mutants_run=0
+checkpoint_seconds=0
+clean_seconds=0
 mutant_seconds=0
 
 case_smoke() {
   refuse_a_smoke_with_no_cases "$@"
   refuse_to_smoke_over_a_red_check
 
-  . "$root/tests/cases.sh"
   make_room_for_the_cases
   copy_the_plugin_once
 
   build_every_checkpoint "$@"
   run_every_clean_case "$@"
-  time_every_mutant
-  say_what_the_mutants_cost
+  run_every_mutant "$@"
+  say_what_the_cases_cost
 }
 
 refuse_a_smoke_with_no_cases() {
@@ -264,10 +275,14 @@ copy_the_plugin_once() {
 }
 
 build_every_checkpoint() {
-  local id
+  local id began
 
   printf 'case-smoke — building %s checkpoints with the clean runner\n' "$#"
+  began=$(date +%s)
+
   for id in "$@"; do keep_a_checkpoint "$id"; done
+
+  checkpoint_seconds=$(seconds_since "$began")
 }
 
 # Built by the clean runner, before anything is patched, and kept for both halves of the case.
@@ -280,21 +295,28 @@ keep_a_checkpoint() {
     || { moot "$1 — the checkpoint could not be built: $(tail -1 "$logs/$1.checkpoint")"; return; }
 
   rm -rf "$checkpoints/$1" && cp -R "$state" "$checkpoints/$1" \
-    || moot "$1 — the checkpoint could not be kept"
+    || { moot "$1 — the checkpoint could not be kept"; return; }
+
+  checkpoints_built=$((checkpoints_built + 1))
 }
 
 # Clean first, from the bytes the mutant will get. A case that cannot pass here is not hermetic, and
 # a mutant run on one would be measuring the case.
 run_every_clean_case() {
-  local id
+  local id began
 
   printf 'case-smoke — running each case clean\n'
+  began=$(date +%s)
+
   for id in "$@"; do
     the_clean_case_passes "$id" || continue
 
     kept "$id — the clean case passes"
     hermetic="$hermetic $id"
+    cases_clean=$((cases_clean + 1))
   done
+
+  clean_seconds=$(seconds_since "$began")
 }
 
 the_clean_case_passes() {
@@ -355,7 +377,7 @@ run_the_case() {
 }
 
 # The number a budget is a multiple of, so it is taken around the mutants and around nothing else.
-time_every_mutant() {
+run_every_mutant() {
   local began id
 
   printf 'case-smoke — running each mutant\n'
@@ -364,7 +386,21 @@ time_every_mutant() {
   # Unquoted on purpose: this holds the ids that passed clean, and a case id holds no space.
   for id in $hermetic; do audit_one_mutant "$id"; done
 
-  mutant_seconds=$(( $(date +%s) - began ))
+  mutant_seconds=$(seconds_since "$began")
+}
+
+#
+# Seconds between a reading and now, or -1 when the clock stepped back while they ran.
+#
+# WSL resynchronises with its host and `date` jumps, so this printed `-1s` once — and a negative
+# cost is a number somebody would have multiplied by 22.
+#
+seconds_since() {
+  local now
+  now=$(date +%s)
+
+  [ "$now" -ge "$1" ] && { printf '%s' "$((now - $1))"; return; }
+  printf '%s' '-1'
 }
 
 audit_one_mutant() {
@@ -372,7 +408,7 @@ audit_one_mutant() {
 
   the_patch_is_exact "$1"             || { put_the_copy_back "$1"; return; }
   the_mutant_flips_its_assertion "$1" || { put_the_copy_back "$1"; return; }
-  the_patch_reverses "$1"             || return
+  the_patch_reverses "$1"             || { put_the_copy_back "$1"; return; }
 
   kept "$1 — [$(declared_assertion "$1")] flipped, and nothing else did"
 }
@@ -391,6 +427,7 @@ the_patch_is_exact() {
   local patch=$root/tests/mutants/$1.patch
 
   [ -f "$patch" ] || { moot "$1 — no patch at tests/mutants/$1.patch"; return 1; }
+  the_patch_names_one_file "$1" || return 1
 
   apply_to_the_copy --check    "$patch" 2>/dev/null || { bad "$1 — the patch applies nowhere"; return 1; }
   apply_to_the_copy            "$patch" 2>/dev/null || { bad "$1 — the patch would not apply"; return 1; }
@@ -421,7 +458,7 @@ only_the_declared_assertion_flipped() {
   flipped=$(awk -F'\t' -v want="$want" \
     '$1 == "FAIL" && ($2 == want || index($2, want " — ") == 1)' "$sidecar" | grep -c .)
   others=$(awk -F'\t' -v want="$want" \
-    '$1 == "FAIL" && $2 != want && index($2, want " — ") != 1' "$sidecar" | grep -c .)
+    '$1 != "ok"   && $2 != want && index($2, want " — ") != 1' "$sidecar" | grep -c .)
 
   [ "$flipped" -eq 1 ] || { bad "$1 — [$want] did not flip"; return 1; }
   [ "$others"  -eq 0 ] || { bad "$1 — $others other assertions went red beside it"; return 1; }
@@ -444,6 +481,23 @@ the_copy_is_what_it_was() {
   cmp -s "$copy/$file" "$root/$file"
 }
 
+#
+# One patch, one file, because everything below reads one.
+#
+# `git apply` takes a patch touching any number of files. One naming none leaves `patched_file`
+# empty, and the byte-clean check then compares two directory paths — which always differ, so the
+# audit stops and blames a patch that never applied. One naming two is half verified.
+#
+the_patch_names_one_file() {
+  local named
+  named=$(awk '/^[+][+][+] / { n++ } END { print n + 0 }' "$root/tests/mutants/$1.patch")
+
+  [ "$named" -eq 1 ] && return 0
+
+  bad "$1 — the patch names $named files, and a mutant names one"
+  return 1
+}
+
 # The one file a patch touches, read from the patch rather than written down a second time.
 patched_file() { awk '/^\+\+\+ b\// { print substr($2, 3); exit }' "$root/tests/mutants/$1.patch"; }
 
@@ -462,19 +516,22 @@ put_the_copy_back() {
   exit 3
 }
 
-#
-# What the mutants cost. A budget is a multiple of this number and nothing else prints it.
-#
-# A clock that steps back is not a fast run. WSL resynchronises with its host and `date` jumps, so
-# this printed `-1s` once — and a negative cost is a number somebody would have multiplied by 22.
-#
-say_what_the_mutants_cost() {
-  [ "$mutant_seconds" -ge 0 ] || {
-    printf '\ncase-smoke — %s mutant cases, and the clock stepped back while they ran\n' "$mutants_run"
+# Each half, because a budget caps each half. One worker throughout, so none of these overlap.
+say_what_the_cases_cost() {
+  printf '\n'
+  say_a_phase checkpoints  "$checkpoints_built" "$checkpoint_seconds"
+  say_a_phase 'clean cases'  "$cases_clean"     "$clean_seconds"
+  say_a_phase 'mutant cases' "$mutants_run"     "$mutant_seconds"
+  printf 'case-smoke — one worker\n'
+}
+
+say_a_phase() {
+  [ "$3" -ge 0 ] || {
+    printf 'case-smoke — %s %s, and the clock stepped back while they ran\n' "$2" "$1"
     return
   }
 
-  printf '\ncase-smoke — %s mutant cases in %ss, one worker\n' "$mutants_run" "$mutant_seconds"
+  printf 'case-smoke — %s %s in %ss\n' "$2" "$1" "$3"
 }
 
 case "${1:-}" in --case-smoke) shift; case_smoke "$@"; exit "$failed" ;; esac
@@ -536,6 +593,21 @@ refuse_to_audit_a_red_suite() {
 refuse_to_audit_a_red_suite
 
 #
+# The cases, and they run here rather than only when somebody asks for them.
+#
+# Eight patches pinned to exact context in `bin/run.sh`, and the commit under this one is `8199270`
+# — five mutants broken by rewriting what their anchors named. Those five were caught because this
+# file is what `bin/gates.sh` runs. **A patch nothing runs rots without a word**, and the falsifier
+# that proved the seam would be the first thing to stop working.
+#
+# Every case, never a subset. `--case-smoke` names a few while somebody is working on them; the gate
+# is the only reader that has to answer for all of them.
+#
+# Unquoted on purpose: `case_ids` prints one id a line and a case id holds no space.
+#
+case_smoke $(case_ids)
+
+#
 # And the deadline has to outlast the thing it times.
 #
 # A mutant is caught early or it runs about as long as a clean pass. So a deadline under `clean`
@@ -594,7 +666,6 @@ a_deadline_shorter_than_its_pass_refuses() {
 a_deadline_shorter_than_its_pass_refuses
 
 refuse_a_deadline_too_short_to_answer
-
 # --- break the runner ---
 
 # What this run is about to cost, before it spends it.
