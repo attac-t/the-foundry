@@ -171,6 +171,27 @@ refuse_to_audit_a_red_suite() {
 }
 refuse_to_audit_a_red_suite
 
+#
+# And the deadline has to outlast the thing it times.
+#
+# A mutant is caught early or it runs about as long as a clean pass. So a deadline under `clean`
+# answers nothing about a break only reached near the end — that mutant is killed before it speaks,
+# and MOOT then reports the clock rather than the code.
+#
+# It is the ceiling that does this. A 5,940s clean pass under a 900s ceiling gets three per cent of
+# what `clean * 5` asked for, and five mutants went MOOT there for no other reason.
+#
+refuse_a_deadline_shorter_than_a_clean_pass() {
+    [ "$deadline" -ge "${clean:-0}" ] && return 0
+
+    printf 'audit — not run. A mutant has %ss, and a clean pass took %ss.\n' "$deadline" "$clean"
+    printf 'audit — every mutant caught late would be killed before it answered.\n'
+    printf 'audit — raise FOUNDRY_AUDIT_CEILING past %s, or grade where the suite is faster.\n' "$clean"
+    printf 'PROVED NOTHING\n'
+    exit 3
+}
+refuse_a_deadline_shorter_than_a_clean_pass
+
 # --- break the runner ---
 
 # What this run is about to cost, before it spends it.
@@ -181,15 +202,7 @@ refuse_to_audit_a_red_suite
 #
 # **Two nights were spent blaming memory for exactly that.** The numbers were always here;
 # nothing printed them.
-say_what_this_costs() {
-    printf 'audit — break the runner, the model suite must notice. A mutant has %ss.\n' "$deadline"
-
-    [ "${clean:-0}" -gt 1600 ] || return 0
-
-    printf 'audit — a clean pass took %ss here, against the 535s this deadline was sized for.\n' "$clean"
-    printf 'audit — mutants caught late in the suite will be killed before they answer.\n'
-}
-say_what_this_costs
+printf 'audit — break the runner, the model suite must notice. A mutant has %ss.\n' "$deadline"
 
 #
 # How many breaks run at once.
