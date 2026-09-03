@@ -168,7 +168,23 @@ refuse_to_audit_a_red_suite
 
 # --- break the runner ---
 
-printf 'audit — break the runner, the model suite must notice. A mutant has %ss.\n' "$deadline"
+# What this run is about to cost, before it spends it.
+#
+# The deadline is five clean passes, and a clean pass here is `$clean`. When that is far above
+# the 535s this file was sized against, the machine is slow or busy, and mutants caught late in
+# the suite will be killed before they answer.
+#
+# **Two nights were spent blaming memory for exactly that.** The numbers were always here;
+# nothing printed them.
+say_what_this_costs() {
+    printf 'audit — break the runner, the model suite must notice. A mutant has %ss.\n' "$deadline"
+
+    [ "${clean:-0}" -gt 1600 ] || return 0
+
+    printf 'audit — a clean pass took %ss here, against the 535s this deadline was sized for.\n' "$clean"
+    printf 'audit — mutants caught late in the suite will be killed before they answer.\n'
+}
+say_what_this_costs
 
 #
 # How many breaks run at once.
