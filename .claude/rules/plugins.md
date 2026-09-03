@@ -34,8 +34,8 @@ That is the same failure as a rule naming a skill nobody can invoke.
 
 ## Shipped code
 
-A plugin that ships code declares `sh`, `awk` and `git`. Nothing else — a gate needing a parser
-stops working on Alpine.
+A plugin that ships code declares what it needs, and never more than POSIX plus `git`. **No parser
+and no runtime** — a gate reaching for one stops working on Alpine.
 
 A plugin that ships no code has no gate. Green says nothing about whether its skills are still true.
 

@@ -1504,7 +1504,7 @@ exception. The pointer holds a run id, not a path, and the home is an environmen
 bash tests/run.sh
 ```
 
-Two suites, then a deliberate break for every rule that matters. Each one must turn a suite red, and
+Every suite, then a deliberate break for every rule that matters. Each one must turn a suite red, and
 the run says so if a break failed to apply — a mutation that changed nothing proves nothing.
 
 `model.sh` calls the runner. `install.sh` reads the command out of `hooks/hooks.json` and hands it

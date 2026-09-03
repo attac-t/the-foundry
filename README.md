@@ -71,11 +71,15 @@ Enable the opinionated voice:
 /output-style kernel:craftsman
 ```
 
-Verify the install: `/evaluate`
+Check kernel is live: `/evaluate`. It tests kernel's hooks, memory and agents — **never that
+the other plugins installed.**
 
 ## Where the work is
 
 **One board, and it is the front door:** https://github.com/users/attac-t/projects/1
+
+**It is private today, so that link opens for the owner and nobody else.** The issues it draws
+from are public, and they are where a stranger starts.
 
 It shows what needs eyes, what is next, what is under review, what only a person can answer, and
 what is done. [`docs/work-system.md`](docs/work-system.md) says where each fact lives and what the

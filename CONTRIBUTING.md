@@ -90,7 +90,7 @@ Edit a rule, then run it — a row typed by hand into one file is the drift noth
 |------|------------|
 | `frontmatter` | a skill, agent or command is missing the frontmatter that registers it |
 | `versions` | a plugin the manifest lists cannot say what version it is |
-| `repeats` | a sentence appears verbatim in two files — scoped to `panel`, `pest` and `signal` |
+| `repeats` | a sentence appears verbatim in two files. It reads every `.md` bar a debt list, so a new file is graded the day it lands |
 | `shell` | shipped shell takes an `else`, or a function body passes 40 lines |
 | `taper` | a three-line comment paragraph does not narrow by three, and nothing names it |
 | `comments` | a public comment carrying the seam's marker breaks a rule the seam applies |
@@ -144,5 +144,5 @@ a rule pointing at nothing.
 
 `signal` is the one that is easy to skip and expensive to. It states a word budget before each reply
 rather than marking one afterwards. This used to cite 78% of first drafts blocked without it; that
-figure belongs to a commit which also tripled the block threshold, so it measures neither change on
-its own. Signal's README carries the arithmetic.
+figure belongs to a commit which also raised the block threshold from 250 to 600, so it measures
+neither change on its own. Signal's README carries the arithmetic.

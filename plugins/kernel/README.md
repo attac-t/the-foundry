@@ -74,6 +74,7 @@ command        Slash command triggers
 hook           OS reflexes
 plugin         Plugin architecture
 plugin-update  Release a version. Bump plugin.json, then commit
+repo-identity  One repo, one GitHub account, when a machine holds several
 ```
 
 **Quality**

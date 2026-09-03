@@ -197,6 +197,9 @@ read, and four closed issues — #67, #70, #75 and #77 — each carry a `Judged:
 
 ---
 
+Needs: Claude Code CLI, `sh`, `awk`, `sed`, `find`, `sort`. No `git`, no Python, no Node,
+no `jq`.
+
 ## License
 
 MIT
