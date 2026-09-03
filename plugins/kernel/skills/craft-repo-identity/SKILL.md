@@ -60,8 +60,12 @@ Because plain `git` is affected, the switch belongs on **directory change**, not
 `gh` leaves every `git` command uncovered. In a shell profile, read `github.account` when the
 working directory changes and switch the CLI when it disagrees.
 
-Installing Git Credential Manager removes the need — it serves several accounts at once, keyed by
-the username in the URL. Until then the hook is load-bearing.
+A dedicated credential manager retires half of it. Git Credential Manager serves several accounts
+at once, keyed by the username already in the URL, so `git` stops caring which account the CLI is
+on. Expect one browser sign-in per account to seed it.
+
+The CLI half survives that. `gh pr create` still runs as whoever is active, so the hook still earns
+its place — it just stops being the only thing standing between you and a failed push.
 
 ## The Anti-Patterns
 
