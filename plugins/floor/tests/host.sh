@@ -14,7 +14,10 @@ root="${PLUGIN_ROOT:-$here}"
 join="$root/bin/join.sh"
 tmp="${TMPDIR:-/tmp}/floor-host-$$"
 mkdir -p "$tmp"
-trap 'rm -rf "$tmp"' EXIT
+# `chmod -R u+rwX` first, because two fixtures make a directory read-only to prove the runner
+# refuses one — and `rm -rf` cannot empty a directory it may not write to. A killed run then leaks
+# its whole tree, and they pile up until somebody clears them by hand.
+trap 'chmod -R u+rwX "$tmp" 2>/dev/null; rm -rf "$tmp"' EXIT
 
 # One host, one answer, and this suite decides what the host is. `env -u` rather than an empty
 # value: unset and empty read alike to `join.sh`, and only one of them is what a fresh machine

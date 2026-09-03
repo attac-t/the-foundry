@@ -12,7 +12,10 @@ set -u
 root="$(cd "$(dirname "$0")/.." && pwd)"
 tmp="${TMPDIR:-/tmp}/floor-transport-$$"
 mkdir -p "$tmp" || exit 3
-trap 'rm -rf "$tmp"' EXIT
+# `chmod -R u+rwX` first, because two fixtures make a directory read-only to prove the runner
+# refuses one — and `rm -rf` cannot empty a directory it may not write to. A killed run then leaks
+# its whole tree, and they pile up until somebody clears them by hand.
+trap 'chmod -R u+rwX "$tmp" 2>/dev/null; rm -rf "$tmp"' EXIT
 
 passed=0
 failed=0

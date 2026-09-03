@@ -25,7 +25,10 @@ runner="${RUNNER:-$here/bin/run.sh}"
 tmp="${TMPDIR:-/tmp}/floor-model-$$"
 home="$tmp/home"
 mkdir -p "$tmp/bare"
-trap 'rm -rf "$tmp"' EXIT
+# `chmod -R u+rwX` first, because two fixtures make a directory read-only to prove the runner
+# refuses one — and `rm -rf` cannot empty a directory it may not write to. A killed run then leaks
+# its whole tree, and they pile up until somebody clears them by hand.
+trap 'chmod -R u+rwX "$tmp" 2>/dev/null; rm -rf "$tmp"' EXIT
 
 #
 # Git transport isolation, and nothing wider. `tests/isolate.sh` holds the mechanism.
