@@ -23,10 +23,13 @@ unanswerable=0
 #
 # Off by default, so every suite that does not ask for it writes nothing and behaves as it did.
 #
+# One line per assertion, whatever the name holds. A failing name carries what was wanted and what
+# was got, and what was got can be a whole comment body — so one check wrote several rows, and a row
+# beginning `ok` would have been read as a check that passed. The tab is the only tab.
 record() {
   [ -n "${FOUNDRY_ASSERTIONS:-}" ] || return 0
 
-  printf '%s\t%s\n' "$1" "$2" >> "$FOUNDRY_ASSERTIONS"
+  printf '%s\t%s\n' "$1" "$(printf '%s' "$2" | tr '\n\t' '  ')" >> "$FOUNDRY_ASSERTIONS"
 }
 
 # Record a passing check.
