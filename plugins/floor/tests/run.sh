@@ -369,12 +369,13 @@ audit_one_mutant() {
 # difference a break, so an expression matching twice and one matching a line nobody meant both read
 # as the break that was declared.
 #
+# A copy that already held the mutation is asked about earlier and elsewhere: its clean case fails,
+# and the mutant never runs. A guard for it here could not speak, so there is not one.
 the_patch_is_exact() {
   local patch=$root/tests/mutants/$1.patch
 
   [ -f "$patch" ] || { moot "$1 — no patch at tests/mutants/$1.patch"; return 1; }
 
-  apply_to_the_copy --check -R "$patch" 2>/dev/null && { bad "$1 — the patch is already applied"; return 1; }
   apply_to_the_copy --check    "$patch" 2>/dev/null || { bad "$1 — the patch applies nowhere"; return 1; }
   apply_to_the_copy            "$patch" 2>/dev/null || { bad "$1 — the patch would not apply"; return 1; }
   apply_to_the_copy --check    "$patch" 2>/dev/null && { bad "$1 — the patch applies a second time"; return 1; }
