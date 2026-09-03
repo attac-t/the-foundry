@@ -97,7 +97,7 @@ a_graded_run() {
 }
 
 # The same, granted somewhere to deliver. `refuse_ungranted_delivery` stands before the ancestry
-# check, so a run without this answers 18 and never reaches what these two cases are about.
+# check, so a run without this answers 18 and never reaches what its cases are about.
 a_run_that_may_deliver() {
     a_repository_with_a_gate "$1" || return 1
 
@@ -108,6 +108,15 @@ a_run_that_may_deliver() {
     floor "$tmp/$1" targets add       "https://github.com/acme/$1.git" main >/dev/null 2>&1 || return 1
     floor "$tmp/$1" open >/dev/null 2>&1 || return 1
     floor "$tmp/$1" gates >/dev/null 2>&1 || return 1
+}
+
+# A second target chosen after the freeze. More than one case starts here, and each reads the same
+# fact through a different verb.
+a_run_whose_selection_moved() {
+    a_graded_run "$1" || return 1
+
+    floor "$tmp/$1" policy authorize 'https://github.com/acme/other.git' >/dev/null 2>&1 || return 1
+    floor "$tmp/$1" targets add 'https://github.com/acme/other.git' main >/dev/null 2>&1
 }
 
 a_repository_with_a_gate() {
@@ -152,10 +161,7 @@ case_second_ref_elsewhere() {
 # The checkpoint holds the second target already added, immediately before the `complete`.
 
 checkpoint_live_selection() {
-    a_graded_run lv || return 1
-
-    floor "$tmp/lv" policy authorize 'https://github.com/acme/other.git' >/dev/null 2>&1 || return 1
-    floor "$tmp/lv" targets add 'https://github.com/acme/other.git' main >/dev/null 2>&1 || return 1
+    a_run_whose_selection_moved lv
 }
 
 case_live_selection() {
@@ -172,10 +178,7 @@ case_live_selection() {
 # ledger a recorder writes takes nothing back.
 
 checkpoint_moved_gate_selection() {
-    a_graded_run mg || return 1
-
-    floor "$tmp/mg" policy authorize 'https://github.com/acme/other.git' >/dev/null 2>&1 || return 1
-    floor "$tmp/mg" targets add 'https://github.com/acme/other.git' main >/dev/null 2>&1 || return 1
+    a_run_whose_selection_moved mg
 }
 
 case_moved_gate_selection() {
