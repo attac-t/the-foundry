@@ -82,8 +82,8 @@ run_one_case() {
 #
 # A run with a bar, a selection, a workspace and a graded gate.
 #
-# Named once because four cases start here and none of them is about getting here. Every step is the
-# shipped runner: a checkpoint assembled by hand would be a state floor cannot reach.
+# Named because more than one case starts here, and none of them is about getting here. Every step is
+# the shipped runner: a checkpoint assembled by hand would be a state floor cannot reach.
 #
 a_graded_run() {
     a_repository_with_a_gate "$1" || return 1
