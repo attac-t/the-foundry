@@ -45,12 +45,19 @@ on_linux() {
 
 [ "$mode" = linux ] && { on_linux; exit $?; }
 
-# What a gate's exit code means, repo-wide. `bin/shell.sh` named these first; floor's audit answers
-# 3 when its experiments never ran. A number is only legible to whoever already knows the table.
+# What a gate's exit code means, repo-wide. A number is only legible to whoever already knows the
+# table.
+#
+# **Three means two things, and the word has to hold both.** Four gates answer 3 when they could not
+# read what they needed; floor's audit answers 3 when its mutants never ran. `it could not read` sent
+# a reader after a missing file for an hour, and the file was there.
+#
+# So the word says what both have in common: **the gate did not answer.** Which of the two it was is
+# in the gate's own output, where the detail belongs. Floor's audit already ends `PROVED NOTHING`.
 why_failed() {
     case "$1" in
         1) printf 'a rule broken'     ;;
-        3) printf 'it could not read' ;;
+        3) printf 'it proved nothing' ;;
         *) printf 'it did not run'    ;;
     esac
 }
