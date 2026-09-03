@@ -59,6 +59,15 @@ unanswered=0
 
 # The total, which never resets. `unanswered` is the run and `kept` clears it.
 never_ran=0
+
+# And the ones the clock took, which is a different finding from a mutant that ran and missed.
+#
+# **The deadline is five times a clean pass, and a clean pass runs alone.** A mutant runs under the
+# pool. Those are two different measurements, so when many die on the same number, the number is
+# the thing to look at.
+#
+# 38 of 197 died on 205s here, and three days were spent on the machine instead.
+killed_by_the_clock=0
 moot() {
   [ "$failed" -eq 0 ] && failed=3
   never_ran=$((never_ran + 1))
@@ -73,6 +82,12 @@ moot() {
   printf '\nSTOPPED — ten mutants in a row never answered.\n'
   printf 'The machine stopped answering, so the rest would prove nothing either.\n'
   exit 3
+}
+
+# A mutant the deadline took, which is not a mutant that answered wrong.
+out_of_clock() {
+  killed_by_the_clock=$((killed_by_the_clock + 1))
+  moot "$1 — killed at ${deadline}s, and a clean pass took ${clean}s"
 }
 
 #
@@ -479,7 +494,7 @@ break_verdict() {
   [ -s "$mutant/$file" ] || { moot "$name — the mutant is empty, so the suite failed for the wrong reason"; return; }
   cmp -s "$mutant/$file" "$root/$file" && { moot "$name — the break did not apply, so this proves nothing"; return; }
   model_caught "$mutant"; local answer=$?
-  [ "$answer" -eq 2 ] && { moot "$name — killed at ${deadline}s, and a clean pass took ${clean}s"; return; }
+  [ "$answer" -eq 2 ] && { out_of_clock "$name"; return; }
   [ "$answer" -eq 0 ] || { bad "$name — the suite passed against a broken runner"; return; }
 
   printf '  ok    %s\n' "$name"
@@ -1613,7 +1628,7 @@ wreck() {
   # `||` read that as *the suite passed against a broken install* — the right red for the
   # wrong reason, which is a quieter lie than the false green it replaced.
   caught "$tag"; local answer=$?
-  [ "$answer" -eq 2 ] && { moot "$name — killed at ${deadline}s, and a clean pass took ${clean}s"; return; }
+  [ "$answer" -eq 2 ] && { out_of_clock "$name"; return; }
   [ "$answer" -eq 0 ] || { bad "$name — the suite passed against a broken install"; return; }
 
   kept "$name"
@@ -1705,7 +1720,7 @@ wreck_join() {
   cmp -s "$tmp/$tag/bin/join.sh" "$root/bin/join.sh" \
     && { moot "$name — the break did not apply, so this proves nothing"; return; }
   hosted "$tag"; local answer=$?
-  [ "$answer" -eq 2 ] && { moot "$name — killed at ${deadline}s, and a clean pass took ${clean}s"; return; }
+  [ "$answer" -eq 2 ] && { out_of_clock "$name"; return; }
   [ "$answer" -eq 0 ] || { bad "$name — the suite passed against a broken join"; return; }
 
   kept "$name"
@@ -1741,6 +1756,26 @@ wreck_join "a plugin that is off reported as reachable is caught" \
 # install something they already have.
 wreck_join "a settings file it cannot read called a missing plugin is caught" \
   blindsettings 's#^    \[ -r "\$settings" \] || { printf .  — cannot tell, no %s. "\$settings"; return; }$#    [ -r "$settings" ] || return#'
+
+#
+# Say when the clock took them.
+#
+# **No threshold and no verdict.** Three numbers, printed together, so a reader can see whether the
+# bound or the code is the suspect. **Nothing here knows which**, and a guess would read as a
+# finding.
+#
+# The two are different measurements: the deadline is five clean passes, a clean pass runs alone,
+# and a mutant runs under the pool. Print all three and the arithmetic is the reader's.
+#
+say_when_the_clock_took_them() {
+  [ "$killed_by_the_clock" -eq 0 ] && return 0
+
+  printf 'audit — %s of %s were killed at %ss, and never answered.\n' \
+         "$killed_by_the_clock" "$queued" "$deadline"
+  printf 'audit — that is five times a clean pass, and a clean pass took %ss.\n' "$clean"
+  printf 'audit — a clean pass runs alone. A mutant runs under %s of them.\n' "$workers"
+}
+say_when_the_clock_took_them
 
 [ "$failed" -eq 0 ] && echo "ALL GREEN"
 [ "$failed" -eq 1 ] && echo "FAILURES ABOVE"
