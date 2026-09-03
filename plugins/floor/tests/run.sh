@@ -205,6 +205,30 @@ refuse_a_deadline_too_short_to_answer() {
     printf 'PROVED NOTHING\n'
     exit 3
 }
+
+# Run the refusal against a made-up machine and read what it leaves.
+#
+# `leaves` above does this for the two exit codes; the deadline needs its own because the answer
+# turns on two numbers rather than on `failed`.
+deadline_leaves() {
+  ( deadline=$1; clean=$2; refuse_a_deadline_too_short_to_answer ) >/dev/null 2>&1
+  left=$?
+
+  [ "$left" = "$3" ] || { bad "a ${1}s deadline over a ${2}s pass left $left, not $3"; return; }
+  printf '  ok    a %ss deadline over a %ss pass leaves %s\n' "$1" "$2" "$3"
+}
+
+# Three machines, and the middle one is why the bar is one clean pass rather than two.
+#
+# **A rule with no break is a rule the next edit deletes for free.** Its three siblings each assert
+# themselves and this one did not, until a judge said so.
+a_deadline_shorter_than_its_pass_refuses() {
+  deadline_leaves 245  49   0     # WSL on ext4, five clean passes
+  deadline_leaves 900  535  0     # the machine this ceiling was sized against
+  deadline_leaves 900  5940 3     # Git Bash, three per cent of what the design asked for
+}
+a_deadline_shorter_than_its_pass_refuses
+
 refuse_a_deadline_too_short_to_answer
 
 # --- break the runner ---
