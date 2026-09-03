@@ -181,16 +181,19 @@ refuse_to_audit_a_red_suite
 # It is the ceiling that does this. A 5,940s clean pass under a 900s ceiling gets three per cent of
 # what `clean * 5` asked for, and five mutants went MOOT there for no other reason.
 #
-# **Twice `clean`, not once**, because a mutant runs alone in one place and under eleven others in
-# the next. `gateref` takes 226s of a 535s pass by itself, and past 300s once two workers share the
-# machine. One whole pass of headroom is the bar the deadline above already argues for.
+# **One clean pass, and an adversary argued for two.** The file's own numbers refuse that: `gateref`
+# is the slowest honest mutant at 226s solo and past 300s under load, on a machine whose clean pass
+# is 535s. That is **0.56 of a pass**, so one pass is already close to twice the worst mutant — and
+# two passes would refuse the very 535s machine this design was sized against, which worked.
+#
+# The bar is the thing measured, never a multiple that reads well.
 #
 # **The ceiling is named with its cost, never as advice.** Raising it makes this refusal false
 # without making the deadline sound, and the run it then permits is the seventeen-hour one recorded
 # above. So the hours are printed before the knob is.
 #
 refuse_a_deadline_too_short_to_answer() {
-    headroom=$(( ${clean:-0} * 2 ))
+    headroom=${clean:-0}
     [ "$deadline" -ge "$headroom" ] && return 0
 
     printf 'audit — not run. A mutant has %ss, and a clean pass took %ss.\n' "$deadline" "$clean"
