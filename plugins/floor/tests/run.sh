@@ -374,11 +374,12 @@ the_patch_is_exact() {
 
   [ -f "$patch" ] || { moot "$1 — no patch at tests/mutants/$1.patch"; return 1; }
 
-  git -C "$copy" apply --check    "$patch" 2>/dev/null || { bad "$1 — the patch applies nowhere"; return 1; }
-  git -C "$copy" apply --check -R "$patch" 2>/dev/null && { bad "$1 — the patch changes nothing"; return 1; }
-  git -C "$copy" apply            "$patch" 2>/dev/null || { bad "$1 — the patch would not apply"; return 1; }
-  git -C "$copy" apply --check    "$patch" 2>/dev/null && { bad "$1 — the patch applies a second time"; return 1; }
-  git -C "$copy" apply --check -R "$patch" 2>/dev/null || { bad "$1 — the patch will not reverse"; return 1; }
+
+  apply_to_the_copy --check    "$patch" 2>/dev/null || { bad "$1 — the patch applies nowhere"; return 1; }
+  apply_to_the_copy --check -R "$patch" 2>/dev/null && { bad "$1 — the patch changes nothing"; return 1; }
+  apply_to_the_copy            "$patch" 2>/dev/null || { bad "$1 — the patch would not apply"; return 1; }
+  apply_to_the_copy --check    "$patch" 2>/dev/null && { bad "$1 — the patch applies a second time"; return 1; }
+  apply_to_the_copy --check -R "$patch" 2>/dev/null || { bad "$1 — the patch will not reverse"; return 1; }
 }
 
 the_mutant_flips_its_assertion() {
@@ -411,7 +412,7 @@ only_the_declared_assertion_flipped() {
 }
 
 the_patch_reverses() {
-  git -C "$copy" apply -R "$root/tests/mutants/$1.patch" 2>/dev/null \
+  apply_to_the_copy -R "$root/tests/mutants/$1.patch" 2>/dev/null \
     || { bad "$1 — the patch would not come back off"; return 1; }
 
   the_copy_is_what_it_was "$1" && return 0
@@ -430,10 +431,15 @@ the_copy_is_what_it_was() {
 # The one file a patch touches, read from the patch rather than written down a second time.
 patched_file() { awk '/^\+\+\+ b\// { print substr($2, 3); exit }' "$root/tests/mutants/$1.patch"; }
 
+# Line endings are the ambient config's business, never this patch's. `core.autocrlf` is on by
+# default on Windows, so `git apply` rewrites every line it touches and the whole file with it — the
+# reversal then reads as dirty, and the mutant as one nobody declared.
+apply_to_the_copy() { git -C "$copy" -c core.autocrlf=false apply "$@"; }
+
 # A patch left applied would mutate every case after it, and each of those would answer for a break
 # it was never handed.
 put_the_copy_back() {
-  git -C "$copy" apply -R "$root/tests/mutants/$1.patch" 2>/dev/null
+  apply_to_the_copy -R "$root/tests/mutants/$1.patch" 2>/dev/null
   the_copy_is_what_it_was "$1" && return 0
 
   printf '\nSTOPPED — the plugin copy is still patched, so nothing after it could answer.\n'

@@ -1,0 +1,13 @@
+diff --git a/bin/run.sh b/bin/run.sh
+index 10e5c23..8c70c5d 100644
+--- a/bin/run.sh
++++ b/bin/run.sh
+@@ -886,7 +886,7 @@ refuse_foreign_ancestry() {
+ 
+     # `base..head` answers for a head the base is not behind, and the answer is
+     # about a history that never held it. A rebuilt branch reads as a grown one.
+-    git -C "$tree" merge-base --is-ancestor "$base" "$head" 2>/dev/null || {
++    git -C "$tree" merge-base --is-ancestor "$base" "$base" 2>/dev/null || {
+         note "[$base] is not behind [$head] in [$tree] — saw a rebuilt branch, wanted a grown one"
+         exit 33
+     }
