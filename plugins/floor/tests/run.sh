@@ -215,6 +215,7 @@ case_smoke() {
   refuse_to_smoke_over_a_red_check
 
   . "$root/tests/cases.sh"
+  make_room_for_the_cases
   copy_the_plugin_once
 
   build_every_checkpoint "$@"
@@ -239,11 +240,24 @@ refuse_to_smoke_over_a_red_check() {
   exit 1
 }
 
-# One tree, patched and put back in place. The per-mutant copy this replaces costs a second each.
-copy_the_plugin_once() {
+#
+# Where the checkpoints and the words go, and the wrapper that keeps the words.
+#
+# `bounded` runs its arguments and discards what they say. That is right for 176 mutants and blind
+# for eight, so a case runs through a wrapper that keeps what it said beside what it asserted.
+#
+make_room_for_the_cases() {
   mkdir -p "$checkpoints" "$logs" \
     && printf '#!/bin/sh\nexec "$@" > "$FOUNDRY_CASE_LOG" 2>&1\n' > "$tmp/keep-what-it-said.sh" \
-    && rm -rf "${copy:?}" && cp -R "$root" "$copy" && return 0
+    && return 0
+
+  printf 'case-smoke — could not make room under %s\n' "$tmp" >&2
+  exit 2
+}
+
+# One tree, patched and put back in place. The per-mutant copy this replaces costs a second each.
+copy_the_plugin_once() {
+  rm -rf "${copy:?}" && cp -R "$root" "$copy" && return 0
 
   printf 'case-smoke — the plugin could not be copied to %s\n' "$copy" >&2
   exit 2
@@ -331,9 +345,7 @@ restore_the_state() {
   rm -rf "${state:?}" && cp -R "$checkpoints/$1" "$state"
 }
 
-# One case against whatever the copy currently is, with its assertions left on disk. `bounded`
-# discards what its arguments say, which is right for 176 mutants and blind for eight — so the words
-# are kept beside the assertions rather than thrown away.
+# One case against whatever the copy currently is, with its assertions left on disk.
 run_the_case() {
   : > "$sidecar"
 
