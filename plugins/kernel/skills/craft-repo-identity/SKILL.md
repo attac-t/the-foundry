@@ -9,14 +9,13 @@ description: Binding one repository to one GitHub account when a machine holds s
 
 ## When
 
-Two GitHub accounts on one machine — work and personal, client and self. Then the global git
-identity is right for one of them and silently wrong for the rest.
-
-Silently is the word. A commit signed by the wrong account still lands. Nobody is asked.
+Two GitHub accounts on one machine — work and personal, client and self. The global git identity
+is right for one of them and silently wrong for the rest. A commit signed by the wrong account
+still lands, and nobody is asked.
 
 ## The Standard
 
-Every binding is `--local`. The global one stays whatever it was, and each repo overrides it.
+Every binding is `--local`. The global one stays whatever it was; each repo overrides it.
 
 ```bash
 git config --local user.name  "Full Name"
@@ -25,53 +24,47 @@ git config --local github.account "<user>"
 git remote set-url origin "https://<user>@github.com/<owner>/<repo>.git"
 ```
 
-Three distinct jobs, and only the first two are git's:
+Three jobs, and only the first two are git's:
 
 | Binding | Decides |
 |---|---|
 | `user.email` | Who the commit is attributed to |
 | Username in the remote URL | Which account git asks the credential helper for |
-| `github.account` | What the sync hook below reads |
+| `github.account` | What the sync hook reads |
 
-Read `<id>` from `gh api user --jq .id`. The noreply address needs it; a bare
-`<user>@users.noreply.github.com` will not attribute. Read `.name` too — it is often null, so set
-`user.name` by hand rather than piping a blank into it.
+`<id>` comes from `gh api user --jq .id` — a bare `<user>@users.noreply.github.com` will not
+attribute. `.name` is often null, so set `user.name` by hand rather than piping a blank in.
 
 ## The Global One
 
-Everything above is per repo. **The CLI's active account is not.** `gh auth switch` moves one
-global setting, and `gh auth git-credential` answers only for whoever is active — ask it for any
-other account and it returns nothing.
-
-So `git push` fails in a repo the CLI is not currently pointed at. Not `gh push`. Plain `git`.
-
-The username in the URL does not rescue this; it is what makes the mismatch visible instead of
-letting the wrong token through. Verify a repo before trusting it:
+Everything above is per repo. **The CLI's active account is not.** `gh auth git-credential` answers
+only for whoever is active, so `git push` fails in a repo the CLI is not pointed at. Not `gh push`.
+Plain `git`. Check a repo before trusting it:
 
 ```bash
 git credential fill <<< "url=$(git config remote.origin.url)"
 ```
 
-A password means the pairing holds. `could not read Password` means the CLI is on another account.
+A password means the pairing holds. `could not read Password` means the CLI is somewhere else.
+
+The username in the URL does not prevent that. It causes it — and that is the point. Bare, the
+wrong token is accepted in silence.
+
+A credential manager settles this half for good, and one usually ships with git already. Getting
+it to run is its own problem: see [chain.md](chain.md).
 
 ## The Sync
 
-Because plain `git` is affected, the switch belongs on **directory change**, not on `gh`. Wrapping
-`gh` leaves every `git` command uncovered. In a shell profile, read `github.account` when the
-working directory changes and switch the CLI when it disagrees.
-
-A dedicated credential manager retires half of it. Git Credential Manager serves several accounts
-at once, keyed by the username already in the URL, so `git` stops caring which account the CLI is
-on. Expect one browser sign-in per account to seed it.
-
-The CLI half survives that. `gh pr create` still runs as whoever is active, so the hook still earns
-its place — it just stops being the only thing standing between you and a failed push.
+The other half survives every fix above. `gh pr create` runs as whoever is active, and no
+per-directory setting exists, so read `github.account` on directory change and switch the CLI to
+match. Wrapping `gh` is the tempting shape and the wrong one — until a manager serves `git`, plain
+`git push` needs the same switch and never calls `gh`.
 
 ## The Anti-Patterns
 
 | Don't | Do | Why |
 |---|---|---|
 | Set the identity globally per project | `--local`, in the repo | The next clone inherits the wrong one |
-| Wrap `gh` to switch accounts | Sync on directory change | `git` needs the switch too, and never calls `gh` |
+| Assume a configured helper runs | Print the origin of each | A blank value upstream deletes it silently |
 | Leave the remote URL bare | Put the username in it | Bare fails open — a wrong token is accepted |
 | Trust a green `gh auth status` | Run `git credential fill` | Status reports the CLI, not this repo |
