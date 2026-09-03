@@ -374,9 +374,8 @@ the_patch_is_exact() {
 
   [ -f "$patch" ] || { moot "$1 — no patch at tests/mutants/$1.patch"; return 1; }
 
-
+  apply_to_the_copy --check -R "$patch" 2>/dev/null && { bad "$1 — the patch is already applied"; return 1; }
   apply_to_the_copy --check    "$patch" 2>/dev/null || { bad "$1 — the patch applies nowhere"; return 1; }
-  apply_to_the_copy --check -R "$patch" 2>/dev/null && { bad "$1 — the patch changes nothing"; return 1; }
   apply_to_the_copy            "$patch" 2>/dev/null || { bad "$1 — the patch would not apply"; return 1; }
   apply_to_the_copy --check    "$patch" 2>/dev/null && { bad "$1 — the patch applies a second time"; return 1; }
   apply_to_the_copy --check -R "$patch" 2>/dev/null || { bad "$1 — the patch will not reverse"; return 1; }
