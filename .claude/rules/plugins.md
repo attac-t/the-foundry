@@ -15,6 +15,23 @@ Patch for a fix or docs. Minor for a new skill or command. Major for a break.
 branches touching different plugins conflicted anyway and work was stacked for packaging reasons.
 `craft-pr-stack` is for work that genuinely builds on work.
 
+## A bump nobody pulled is a bump nobody has
+
+**A version in `plugin.json` changes nothing in the session that wrote it.** The installed copy
+comes from the marketplace cache, and the cache does not move on its own.
+
+Two commands, and only a person can run them:
+
+```
+/plugin marketplace update the-foundry
+/reload-plugins
+```
+
+**Ask for them after a bump.** An agent that bumps and carries on holds the new rule from memory
+while the session runs the old one.
+
+That is the same failure as a rule naming a skill nobody can invoke.
+
 ## Shipped code
 
 A plugin that ships code declares `sh`, `awk` and `git`. Nothing else — a gate needing a parser

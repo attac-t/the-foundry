@@ -169,7 +169,23 @@ refuse_to_audit_a_red_suite
 
 # --- break the runner ---
 
-printf 'audit — break the runner, the model suite must notice. A mutant has %ss.\n' "$deadline"
+# What this run is about to cost, before it spends it.
+#
+# The deadline is five clean passes, and a clean pass here is `$clean`. When that is far above
+# the 535s this file was sized against, the machine is slow or busy, and mutants caught late in
+# the suite will be killed before they answer.
+#
+# **Two nights were spent blaming memory for exactly that.** The numbers were always here;
+# nothing printed them.
+say_what_this_costs() {
+    printf 'audit — break the runner, the model suite must notice. A mutant has %ss.\n' "$deadline"
+
+    [ "${clean:-0}" -gt 1600 ] || return 0
+
+    printf 'audit — a clean pass took %ss here, against the 535s this deadline was sized for.\n' "$clean"
+    printf 'audit — mutants caught late in the suite will be killed before they answer.\n'
+}
+say_what_this_costs
 
 #
 # How many breaks run at once.
@@ -677,7 +693,7 @@ wreck_runner "a run that authorises after a derived clause was removed is caught
 # Also caught by the credential check, which shares the grants file — so a red here does not on its
 # own point at scoping. Kept because it is the only break aimed at that line.
 wreck_runner "a grant shared across runs is caught" \
-  global 's|printf .%s/%s/targets. "$GRANTS" "$(basename "$1")"|printf "%s/targets" "$GRANTS"|'
+  global 's@printf .%s/%s/targets. "$GRANTS" "${1##\*/}"@printf "%s/targets" "$GRANTS"@'
 
 # A newline turns `grep -Fxq` into a pattern list, so one grant matches a second repo and the append
 # writes both. The whole exploit is one unguarded argument.
@@ -1082,7 +1098,7 @@ wreck_runner "an answer that satisfies without naming the clause is caught" \
 # other two let a question be asked that no stage will ever look for.
 #
 wreck_runner "a question that does not name its run is caught" \
-  srcrun 's#"$(basename "$1")" "$2" "$(clause_id "$3")"#"$2" "$(clause_id "$3")" ""#'
+  srcrun 's@"${1##\*/}" "$2" "$(clause_id "$3")"@"$2" "$(clause_id "$3")" ""@'
 
 wreck_runner "a stage nothing reads is caught" \
   srcstage 's#authorisation | completion) return 0 ;;#*) return 0 ;;#'
@@ -1160,7 +1176,7 @@ audit_the_unjoinable_slot() {
   }
 
   wreck_runner "a workspace whose pointer never landed is caught" \
-    nopointer 's#point_slots_at_run "$root" "$(basename "$dir")" || {#point_slots_at_run "$root" "$(basename "$dir")"; : || {#'
+    nopointer 's@point_slots_at_run "$root" "${dir##\*/}" || {@point_slots_at_run "$root" "${dir##*/}"; : || {@'
 }
 audit_the_unjoinable_slot
 # A file that is there and cannot be read is not a file nobody wrote. #200 taught the other adapter
@@ -1210,7 +1226,7 @@ wreck_runner "silence answered as an answer is caught" \
 # Which adapter answers, decided by whatever the machine has installed. The suite's own checks
 # changed answer on a machine with `gh`, and nothing said so — #176.
 wreck_runner "a work source that cannot be named is caught" \
-  namedsource 's#"${FOUNDRY_SOURCE:-$(dirname "$0")/../lib/source.sh}"#"$(dirname "$0")/../lib/source.sh"#'
+  namedsource 's#"${FOUNDRY_SOURCE:-$SELF_DIR/../lib/source.sh}"#"$SELF_DIR/../lib/source.sh"#'
 # The question names the clause it asks about, so a reader that starts at the marker hands the question
 # back as its answer — and a human who has not replied yet reads as having agreed.
 wreck_runner "a question answering itself is caught" \
@@ -1262,7 +1278,7 @@ wreck_runner "a question carrying nothing a human can act on is caught" \
   blankask 's#"May this clause exist?.*to authorise it."#"Please answer."#'
 
 wreck_runner "a question any run can answer is caught" \
-  sharedask 's#printf .%s.%s.%s. "$(basename "$1")"#printf "%s.%s.%s" "shared"#'
+  sharedask 's@printf .%s.%s.%s. "${1##\*/}"@printf "%s.%s.%s" "shared"@'
 
 # The last field of a tab-separated row is a gate's own output. Unflattened, a gate writes rows — and
 # for a clause no gate grades, nothing would ever stand beside the one it wrote.

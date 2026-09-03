@@ -257,6 +257,12 @@ is "a variable pointing at nothing falls through to the pointer" \
 is "and with no pointer either, it is no run" \
    "$(floor_as "$tmp/bare" "$home" "$tmp/never" path)" ""
 
+# A path a person typed may end in a slash, and twelve places read the last segment with
+# `${x##*/}` — which returns nothing when it does. `basename` strips one first and that does
+# not, so the run answered to a name of its own and refused its own grants.
+is "a run named with a trailing slash is the same run" \
+   "$(floor_as "$tmp/repo" "$home" "$first/" path)" "$first"
+
 
 #
 # A shell standing inside a run, handed nothing else.
