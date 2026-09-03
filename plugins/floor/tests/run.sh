@@ -462,8 +462,18 @@ put_the_copy_back() {
   exit 3
 }
 
+#
 # What the mutants cost. A budget is a multiple of this number and nothing else prints it.
+#
+# A clock that steps back is not a fast run. WSL resynchronises with its host and `date` jumps, so
+# this printed `-1s` once — and a negative cost is a number somebody would have multiplied by 22.
+#
 say_what_the_mutants_cost() {
+  [ "$mutant_seconds" -ge 0 ] || {
+    printf '\ncase-smoke — %s mutant cases, and the clock stepped back while they ran\n' "$mutants_run"
+    return
+  }
+
   printf '\ncase-smoke — %s mutant cases in %ss, one worker\n' "$mutants_run" "$mutant_seconds"
 }
 
