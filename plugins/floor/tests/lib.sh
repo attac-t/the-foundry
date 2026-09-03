@@ -11,8 +11,29 @@ failed=0
 skipped=0
 unanswerable=0
 
+#
+# The same check, in a shape the audit can read.
+#
+# One line per assertion — its result and its name — and only when a caller asks for the file. The
+# `--case-smoke` audit binds one mutant to one of these names, and credits a kill only when that name
+# flips. Reading whether the suite went red cannot tell that from a break tripping something else.
+#
+# All four results, never the two that decide. A case that skipped its own assertion proved nothing
+# about its mutant, and a reader of passes alone would never see that.
+#
+# Off by default, so every suite that does not ask for it writes nothing and behaves as it did.
+#
+# One line per assertion, whatever the name holds. A failing name carries what was wanted and what
+# was got, and what was got can be a whole comment body — so one check wrote several rows, and a row
+# beginning `ok` would have been read as a check that passed. The tab is the only tab.
+record() {
+  [ -n "${FOUNDRY_ASSERTIONS:-}" ] || return 0
+
+  printf '%s\t%s\n' "$1" "$(printf '%s' "$2" | tr '\n\t' '  ')" >> "$FOUNDRY_ASSERTIONS"
+}
+
 # Record a passing check.
-ok() { passed=$((passed + 1)); printf '  ok    %s\n' "$1"; }
+ok() { passed=$((passed + 1)); record ok "$1"; printf '  ok    %s\n' "$1"; }
 
 #
 # Record a failing check.
@@ -24,6 +45,7 @@ ok() { passed=$((passed + 1)); printf '  ok    %s\n' "$1"; }
 #
 bad() {
   failed=$((failed + 1))
+  record FAIL "$1"
   printf '  FAIL  %s\n' "$1"
 
   [ -n "${FOUNDRY_FAIL_FAST:-}" ] || return 0
@@ -41,7 +63,7 @@ bad() {
 # So a skip fails the suite now. A check that did not run has proved nothing, and 160 of these say
 # "git could not make a repo here" — on a machine where that were true, a green suite would be a lie
 # about every one of them.
-skip() { skipped=$((skipped + 1)); printf '  skip  %s\n' "$1"; }
+skip() { skipped=$((skipped + 1)); record skip "$1"; printf '  skip  %s\n' "$1"; }
 
 #
 # Note a check this platform cannot answer. **Amber, and it needs a predicate.**
@@ -52,7 +74,7 @@ skip() { skipped=$((skipped + 1)); printf '  skip  %s\n' "$1"; }
 #
 # The separation is the whole point. A setup that broke and a platform that cannot answer read the
 # same in a log and mean opposite things.
-cannot() { unanswerable=$((unanswerable + 1)); printf '  n/a   %s\n' "$1"; }
+cannot() { unanswerable=$((unanswerable + 1)); record n/a "$1"; printf '  n/a   %s\n' "$1"; }
 
 # Assert two values match.
 is() {

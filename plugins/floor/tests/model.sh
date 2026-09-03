@@ -22,13 +22,28 @@ here="$(cd "$(dirname "$0")/.." && pwd)"
 . "$here/tests/lib.sh"
 
 runner="${RUNNER:-$here/bin/run.sh}"
-tmp="${TMPDIR:-/tmp}/floor-model-$$"
+
+#
+# Where the fixtures live, and who removes them.
+#
+# A `$$` is the whole suite's answer and the wrong one for a case: a run records absolute paths — a
+# workspace's origin, a push redirect, the home it lives in — so a checkpoint restored under another
+# pid is a checkpoint of somewhere that is no longer there. `FOUNDRY_CASE_STATE` is that one
+# pathname, and whoever set it owns what is in it.
+#
+tmp="${FOUNDRY_CASE_STATE:-${TMPDIR:-/tmp}/floor-model-$$}"
 home="$tmp/home"
 mkdir -p "$tmp/bare"
-# `chmod -R u+rwX` first, because two fixtures make a directory read-only to prove the runner
-# refuses one — and `rm -rf` cannot empty a directory it may not write to. A killed run then leaks
-# its whole tree, and they pile up until somebody clears them by hand.
-trap 'chmod -R u+rwX "$tmp" 2>/dev/null; rm -rf "$tmp"' EXIT
+# Two guards, and they answer different questions.
+#
+# **Whether to clean up at all:** not when `FOUNDRY_CASE_STATE` is set. That pathname is a
+# checkpoint somebody else built and owns, and this suite is a guest in it.
+#
+# **Whether cleaning up can work:** `chmod -R u+rwX` first. Two fixtures make a directory read-only
+# to prove the runner refuses one, and `rm -rf` cannot empty a directory it may not write to
+# either. A killed run then leaks its whole tree, and they pile up until somebody clears them by
+# hand.
+[ -n "${FOUNDRY_CASE_STATE:-}" ] || trap 'chmod -R u+rwX "$tmp" 2>/dev/null; rm -rf "$tmp"' EXIT
 
 #
 # Git transport isolation, and nothing wider. `tests/isolate.sh` holds the mechanism.
@@ -156,6 +171,158 @@ make_repo() {
   [ -d "$1/.git" ] || return 1
   git -C "$1" symbolic-ref HEAD "refs/heads/$2" >/dev/null 2>&1
 }
+
+#
+# The fixture vocabulary, kept with the harness rather than beside whichever case first wanted it.
+#
+# That was fine while this file ran top to bottom and wrong the moment it stopped: `--case` below
+# runs one case and nothing above it, so a helper defined halfway down is a helper that case does
+# not have.
+#
+set_origin() { git -C "$1" remote add origin "$2" >/dev/null 2>&1; }
+
+# `make_repo` leaves no commit, and a pin is a blob at a ref. Nothing to pin without one.
+commit_file() {
+  printf '%s' "$3" > "$1/$2" || return 1
+  git -C "$1" add "$2" >/dev/null 2>&1 || return 1
+  git -C "$1" -c user.email=a@b.c -c user.name=a commit -qm x >/dev/null 2>&1
+}
+
+#
+# The second adapter, driven by a `gh` that is not GitHub. It answers from files, so the adapter's
+# own conventions run for real — the marker line, the digest, the search for this run's delivery.
+#
+# **What it cannot say is whether the service behaves that way.** Nothing here has spoken to it, and
+# a suite that needs a network and a token is a suite nobody runs.
+#
+fake_gh() {
+  mkdir -p "$1" || return 1
+  cat > "$1/gh" <<'STUB'
+#!/bin/sh
+# Not GitHub. It answers from $GH_STORE so the adapter's conventions can be exercised offline.
+set -u
+store=${GH_STORE:?}
+mkdir -p "$store"
+
+case "$*" in
+  # The comments, as `gh` returns them: a list of bodies. **`gh` evaluates `--jq` itself**, so this
+  # honours the one expression the adapter sends — a chosen line before each body — and emits bodies
+  # alone if it stops asking for one. A fixture that printed the boundary regardless would be
+  # agreeing with the adapter instead of the service.
+  # Labels a repository already had sit beside the ones Foundry owns. The adapter takes only its
+  # own, and the fixture carries both so it can be caught taking more.
+  "issue view"*"--json labels"*)   [ -f "$store/reads-fail" ] && { echo "HTTP 401: Bad credentials" >&2; exit 1; }
+                            cat "$store/labels" 2>/dev/null ;;
+  "issue view"*"--json comments"*) [ -f "$store/reads-fail" ] && { echo "could not resolve host: api.github.com" >&2; exit 1; }
+                            case "$*" in *floor-comment*) mark='floor-comment:' ;; *) mark='' ;; esac
+                            for body in "$store/comments"/*; do
+                                [ -f "$body" ] || continue
+                                slot=${body##*/}
+                                who=$(cat "$store/authors/$slot" 2>/dev/null || printf 'foundry-run')
+                                [ -n "$mark" ] && printf '%s %s\n' "$mark" "$who"
+                                cat "$body"
+                            done ;;
+  # An item nobody filed and a source nobody could ask both fail here, and only the probe below tells
+  # them apart. GitHub answers 1 for each.
+  "issue view"*)            [ -f "$store/reads-fail" ] && { echo "HTTP 401: Bad credentials" >&2; exit 1; }
+                            cat "$store/item" 2>/dev/null ;;
+  # The probe. A repository cannot be absent, so failing here is the host and never the item.
+  # The stub answers a repository view with a url only when asked for
+  # one. Real gh applies the jq itself, so a fixture printing the
+  # same field regardless would be agreeing with the adapter.
+  "repo view"*"--json url"*)  [ -f "$store/reads-fail" ] && { echo "HTTP 401: Bad credentials" >&2; exit 1; }
+                            sed -e 's/\.git$//' "$store/repo" 2>/dev/null ;;
+  "repo view"*)             [ -f "$store/reads-fail" ] && { echo "HTTP 401: Bad credentials" >&2; exit 1; }
+                            printf '{"name":"gh"}\n' ;;
+  # One comment, one body, in order. GitHub keeps a list and the adapter asks for the field, so the
+  # fixture keeps a list too — a single file with separators in it would be a rendering nobody serves.
+  #
+  # A body written here belongs to whoever `api user` names, because that is who is
+  # running. A test drops another person's words by writing both files
+  # itself, which is the only way two authors exist offline.
+  "issue comment"*)         mkdir -p "$store/comments" "$store/authors"
+                            slot=$(printf '%03d' "$(find "$store/comments" -type f | grep -c .)")
+                            printf '%s\n' "$5" > "$store/comments/$slot"
+                            cat "$store/me" 2>/dev/null > "$store/authors/$slot" \
+                                || printf 'foundry-run\n' > "$store/authors/$slot" ;;
+  # Who this run comments as. `posting_as` fails closed on an empty answer, so a
+  # store with no `me` still names somebody — the absent case is its
+  # own fixture, set by emptying the file rather than deleting it.
+  "api user"*)              [ -f "$store/reads-fail" ] && { echo "HTTP 401: Bad credentials" >&2; exit 1; }
+                            cat "$store/me" 2>/dev/null || printf 'foundry-run\n' ;;
+  # A read that cannot answer. GitHub fails this way for a network, a token or a rate limit, and none
+  # of them mean "nothing is there yet" — which is what both readers below used to conclude.
+  # `gh` matches words in a body, so a run made the same day as another comes back on shared tokens.
+  # The stub answers the same way, and evaluates the `--jq` the adapter sends rather than
+  # filtering for it — a fixture that pre-filtered would grade its own assumption.
+  "pr list"*)               [ -f "$store/reads-fail" ] && { echo "could not resolve host: api.github.com" >&2; exit 1; }
+                            want=${6%% *}
+                            case "$*" in *"floor-run: $want"*) exact=1 ;; *) exact=0 ;; esac
+                            awk -v run="$want" -v exact="$exact" '
+                              exact && $3 == run                      { print $1, $2; next }
+                              !exact && index($3, substr(run, 1, 10)) { print $1, $2 }
+                            ' "$store/prs" 2>/dev/null || true ;;
+  # `gh` joins the four fields itself, so the fixture holds the answer already joined — the same
+  # shape the adapter's `--jq` produces, and one a test can move a head in.
+  "pr view"*)               [ -f "$store/reads-fail" ] && { echo "HTTP 502: Bad gateway" >&2; exit 1; }
+                            cat "$store/state" 2>/dev/null ;;
+  "pr merge"*)              [ -f "$store/reads-fail" ] && { echo "could not resolve host" >&2; exit 1; }
+                            printf '%s
+' "$3" >> "$store/merged" ;;
+  "pr create"*)             [ -f "$store/writes-fail" ] && { echo "GraphQL: Head sha can't be blank (createPullRequest)" >&2; exit 1; }
+                            url="https://example.invalid/pr/$(cat "$store/prs" 2>/dev/null | grep -c .)"
+                            run=$(printf '%s' "$8" | awk '$1 == "floor-run:" { print $2 }')
+                            printf '%s' "$8" | head -1 >> "$store/words"
+                            printf '%s' "$8" > "$store/lastbody"
+                            printf '%s %s %s\n' "$4" "$url" "$run" >> "$store/prs"
+                            printf '%s\n' "$url" ;;
+  *) exit 2 ;;
+esac
+STUB
+  chmod +x "$1/gh"
+}
+
+# A person comments, and order is what makes an answer come *after* a question. Numbered the way the
+# stub numbers them, because a name that sorts differently is a transcript nobody wrote.
+#
+# The author is a person, never the run. #373 is what the two being one costs: the run's own
+# note, holding a clause number so a person could copy it, was read back as
+# that person saying yes. A second author is what tells them apart.
+gh_says() { said_by a-person "$1"; }
+
+# The run's own words, in the same place a person's would land. Only a test that means to
+# check the refusal calls this — every other comment in this suite is a
+# person's, and reads that way.
+run_says() { said_by foundry-run "$1"; }
+
+said_by() {
+  mkdir -p "$GH_STORE/comments" "$GH_STORE/authors"
+  slot=$(printf '%03d' "$(find "$GH_STORE/comments" -type f | grep -c .)")
+  printf '%s\n' "$2" > "$GH_STORE/comments/$slot"
+  printf '%s\n' "$1" > "$GH_STORE/authors/$slot"
+}
+
+#
+# One case, alone, on state the clean runner built.
+#
+# `--checkpoint` builds what a case starts from; `--case` runs the case against whatever `RUNNER`
+# names. The audit restores the same bytes to the same pathname before each, so a mutant answers
+# about the operation it changes and about nothing that ran before it.
+#
+# **Both exit here.** Everything below is the whole suite, and a case that ran it would be answering
+# for 717 checks rather than its own.
+#
+answer_a_case_request() {
+  case "${1:-}" in
+    --checkpoint) . "$here/tests/cases.sh"; build_checkpoint "${2:-}"; exit $? ;;
+    --case)       . "$here/tests/cases.sh"; run_one_case    "${2:-}"; exit $? ;;
+    '')           return 0 ;;
+  esac
+
+  printf 'model.sh takes --checkpoint <case> or --case <case>, or no argument at all\n' >&2
+  exit 2
+}
+answer_a_case_request "$@"
 
 echo "model"
 
@@ -330,8 +497,6 @@ a_home_that_cannot_be_written() {
 a_home_that_cannot_be_written
 
 # Zero or one. A run started outside a repository is not a broken run.
-
-set_origin() { git -C "$1" remote add origin "$2" >/dev/null 2>&1; }
 
 # It had no `else` at all, so a git failure here skipped four checks in silence — which lib.sh calls
 # the way a suite ends up certifying a platform it never tested.
@@ -903,13 +1068,6 @@ is "nothing floor stored holds a local path" \
 # which is why `slot_is_free` reads both — see the policy section.
 
 charter_of() { printf '%s/charter' "$1"; }
-
-# `make_repo` leaves no commit, and a pin is a blob at a ref. Nothing to pin without one.
-commit_file() {
-  printf '%s' "$3" > "$1/$2" || return 1
-  git -C "$1" add "$2" >/dev/null 2>&1 || return 1
-  git -C "$1" -c user.email=a@b.c -c user.name=a commit -qm x >/dev/null 2>&1
-}
 
 # Where a loose object lives, so a test can take one away.
 loose_object() { printf '%s/.git/objects/%.2s/%s' "$1" "$2" "${2#??}"; }
@@ -4378,120 +4536,6 @@ a_missing_source_is_not_silence() {
          sh "$runner" source read 7 >/dev/null 2>&1; printf '%s' "$?" )" "3"
 }
 a_missing_source_is_not_silence
-
-#
-# The second adapter, driven by a `gh` that is not GitHub. It answers from files, so the adapter's
-# own conventions run for real — the marker line, the digest, the search for this run's delivery.
-#
-# **What it cannot say is whether the service behaves that way.** Nothing here has spoken to it, and
-# a suite that needs a network and a token is a suite nobody runs.
-#
-fake_gh() {
-  mkdir -p "$1" || return 1
-  cat > "$1/gh" <<'STUB'
-#!/bin/sh
-# Not GitHub. It answers from $GH_STORE so the adapter's conventions can be exercised offline.
-set -u
-store=${GH_STORE:?}
-mkdir -p "$store"
-
-case "$*" in
-  # The comments, as `gh` returns them: a list of bodies. **`gh` evaluates `--jq` itself**, so this
-  # honours the one expression the adapter sends — a chosen line before each body — and emits bodies
-  # alone if it stops asking for one. A fixture that printed the boundary regardless would be
-  # agreeing with the adapter instead of the service.
-  # Labels a repository already had sit beside the ones Foundry owns. The adapter takes only its
-  # own, and the fixture carries both so it can be caught taking more.
-  "issue view"*"--json labels"*)   [ -f "$store/reads-fail" ] && { echo "HTTP 401: Bad credentials" >&2; exit 1; }
-                            cat "$store/labels" 2>/dev/null ;;
-  "issue view"*"--json comments"*) [ -f "$store/reads-fail" ] && { echo "could not resolve host: api.github.com" >&2; exit 1; }
-                            case "$*" in *floor-comment*) mark='floor-comment:' ;; *) mark='' ;; esac
-                            for body in "$store/comments"/*; do
-                                [ -f "$body" ] || continue
-                                slot=${body##*/}
-                                who=$(cat "$store/authors/$slot" 2>/dev/null || printf 'foundry-run')
-                                [ -n "$mark" ] && printf '%s %s\n' "$mark" "$who"
-                                cat "$body"
-                            done ;;
-  # An item nobody filed and a source nobody could ask both fail here, and only the probe below tells
-  # them apart. GitHub answers 1 for each.
-  "issue view"*)            [ -f "$store/reads-fail" ] && { echo "HTTP 401: Bad credentials" >&2; exit 1; }
-                            cat "$store/item" 2>/dev/null ;;
-  # The probe. A repository cannot be absent, so failing here is the host and never the item.
-  # The stub answers a repository view with a url only when asked for
-  # one. Real gh applies the jq itself, so a fixture printing the
-  # same field regardless would be agreeing with the adapter.
-  "repo view"*"--json url"*)  [ -f "$store/reads-fail" ] && { echo "HTTP 401: Bad credentials" >&2; exit 1; }
-                            sed -e 's/\.git$//' "$store/repo" 2>/dev/null ;;
-  "repo view"*)             [ -f "$store/reads-fail" ] && { echo "HTTP 401: Bad credentials" >&2; exit 1; }
-                            printf '{"name":"gh"}\n' ;;
-  # One comment, one body, in order. GitHub keeps a list and the adapter asks for the field, so the
-  # fixture keeps a list too — a single file with separators in it would be a rendering nobody serves.
-  #
-  # A body written here belongs to whoever `api user` names, because that is who is
-  # running. A test drops another person's words by writing both files
-  # itself, which is the only way two authors exist offline.
-  "issue comment"*)         mkdir -p "$store/comments" "$store/authors"
-                            slot=$(printf '%03d' "$(find "$store/comments" -type f | grep -c .)")
-                            printf '%s\n' "$5" > "$store/comments/$slot"
-                            cat "$store/me" 2>/dev/null > "$store/authors/$slot" \
-                                || printf 'foundry-run\n' > "$store/authors/$slot" ;;
-  # Who this run comments as. `posting_as` fails closed on an empty answer, so a
-  # store with no `me` still names somebody — the absent case is its
-  # own fixture, set by emptying the file rather than deleting it.
-  "api user"*)              [ -f "$store/reads-fail" ] && { echo "HTTP 401: Bad credentials" >&2; exit 1; }
-                            cat "$store/me" 2>/dev/null || printf 'foundry-run\n' ;;
-  # A read that cannot answer. GitHub fails this way for a network, a token or a rate limit, and none
-  # of them mean "nothing is there yet" — which is what both readers below used to conclude.
-  # `gh` matches words in a body, so a run made the same day as another comes back on shared tokens.
-  # The stub answers the same way, and evaluates the `--jq` the adapter sends rather than
-  # filtering for it — a fixture that pre-filtered would grade its own assumption.
-  "pr list"*)               [ -f "$store/reads-fail" ] && { echo "could not resolve host: api.github.com" >&2; exit 1; }
-                            want=${6%% *}
-                            case "$*" in *"floor-run: $want"*) exact=1 ;; *) exact=0 ;; esac
-                            awk -v run="$want" -v exact="$exact" '
-                              exact && $3 == run                      { print $1, $2; next }
-                              !exact && index($3, substr(run, 1, 10)) { print $1, $2 }
-                            ' "$store/prs" 2>/dev/null || true ;;
-  # `gh` joins the four fields itself, so the fixture holds the answer already joined — the same
-  # shape the adapter's `--jq` produces, and one a test can move a head in.
-  "pr view"*)               [ -f "$store/reads-fail" ] && { echo "HTTP 502: Bad gateway" >&2; exit 1; }
-                            cat "$store/state" 2>/dev/null ;;
-  "pr merge"*)              [ -f "$store/reads-fail" ] && { echo "could not resolve host" >&2; exit 1; }
-                            printf '%s
-' "$3" >> "$store/merged" ;;
-  "pr create"*)             [ -f "$store/writes-fail" ] && { echo "GraphQL: Head sha can't be blank (createPullRequest)" >&2; exit 1; }
-                            url="https://example.invalid/pr/$(cat "$store/prs" 2>/dev/null | grep -c .)"
-                            run=$(printf '%s' "$8" | awk '$1 == "floor-run:" { print $2 }')
-                            printf '%s' "$8" | head -1 >> "$store/words"
-                            printf '%s' "$8" > "$store/lastbody"
-                            printf '%s %s %s\n' "$4" "$url" "$run" >> "$store/prs"
-                            printf '%s\n' "$url" ;;
-  *) exit 2 ;;
-esac
-STUB
-  chmod +x "$1/gh"
-}
-
-# A person comments, and order is what makes an answer come *after* a question. Numbered the way the
-# stub numbers them, because a name that sorts differently is a transcript nobody wrote.
-#
-# The author is a person, never the run. #373 is what the two being one costs: the run's own
-# note, holding a clause number so a person could copy it, was read back as
-# that person saying yes. A second author is what tells them apart.
-gh_says() { said_by a-person "$1"; }
-
-# The run's own words, in the same place a person's would land. Only a test that means to
-# check the refusal calls this — every other comment in this suite is a
-# person's, and reads that way.
-run_says() { said_by foundry-run "$1"; }
-
-said_by() {
-  mkdir -p "$GH_STORE/comments" "$GH_STORE/authors"
-  slot=$(printf '%03d' "$(find "$GH_STORE/comments" -type f | grep -c .)")
-  printf '%s\n' "$2" > "$GH_STORE/comments/$slot"
-  printf '%s\n' "$1" > "$GH_STORE/authors/$slot"
-}
 
 the_other_adapter() {
   make_repo "$tmp/gh" main && set_origin "$tmp/gh" 'https://github.com/acme/gh.git' \

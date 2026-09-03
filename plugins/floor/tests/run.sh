@@ -134,6 +134,409 @@ ends_on "$root/tests/host.sh"    'summary "host"'    || bad "tests/host.sh runs 
 ends_on "$root/tests/say.sh"     'summary "say"'     || bad "tests/say.sh runs cases below its tally, and nothing counts them"
 
 #
+# Run a command with a deadline, and answer **2 when the deadline passed** — never the command's own
+# status, because a command that never answered did not answer badly.
+#
+# `timeout` exits 124 when it kills one. `!` used to invert that to 0, which is this file's word for
+# *the suite noticed the break*, so **a mutant that hung was recorded `ok`** — a false green in the
+# thing that grades every other gate.
+#
+bounded() {
+  local seconds="$1"
+  shift
+
+  command -v timeout >/dev/null 2>&1 && { timed "$seconds" "$@"; return; }
+
+  polled "$seconds" "$@"
+}
+
+timed() {
+  local seconds="$1" said
+  shift
+
+  timeout "$seconds" "$@" >/dev/null 2>&1
+  said=$?
+
+  [ "$said" -eq 124 ] && return 2
+  return "$said"
+}
+
+# The same deadline without `timeout`. **macOS is the platform that needs this** — it ships no
+# `timeout` unless someone installed GNU coreutils, and without one there is no bound at all.
+#
+# Polled the way `await_a_free_worker` polls: `wait -n` with a deadline is bash 4.3, and macOS ships
+# 3.2. The same platform, twice, for the same reason.
+polled() {
+  local seconds="$1" job waited=0
+  shift
+
+  "$@" >/dev/null 2>&1 &
+  job=$!
+
+  while kill -0 "$job" 2>/dev/null; do
+    [ "$waited" -ge "$seconds" ] && { kill -9 "$job" 2>/dev/null; wait "$job" 2>/dev/null; return 2; }
+    sleep 1
+    waited=$((waited + 1))
+  done
+
+  wait "$job"
+}
+
+#
+# --- one case, one mutant, one assertion ---
+#
+# The audit below runs the whole model suite once per break and reads whether it went red. That
+# answers *something noticed*, never *this rule was noticed* — a break that trips an unrelated check
+# reads exactly like the break that was caught.
+#
+# This reads the check. `tests/cases.sh` binds one mutant to one assertion inside one case; the case
+# is restored from state the clean runner built, run clean, then run again under an exact patch, and
+# the mutant is caught only when the assertion it names flips.
+#
+# A patch, never a `sed`. One that matches twice mutates twice and one that matches nothing mutates
+# nothing, and both of those report the green a break that applied would.
+#
+# `tests/cases.sh` holds the cases and their bindings, and `tests/model.sh` sources the same file.
+# Definitions only: a line that ran at the top of it would run inside this audit.
+. "$root/tests/cases.sh"
+
+copy=$tmp/plugin
+state=$tmp/state
+checkpoints=$tmp/checkpoints
+sidecar=$tmp/assertions
+logs=$tmp/said
+
+# A case runs one operation on state already built, so this is generous rather than measured.
+case_deadline=${FOUNDRY_CASE_DEADLINE:-120}
+
+# The cases that passed clean, and what each half of the work cost.
+#
+# Sol's budget caps two things and nothing else prints either: 968s over 176 mutants, and 180s for
+# the checkpoints. The checkpoints are the half that dominates, and the half that is worst where
+# a process is dear.
+hermetic=
+checkpoints_built=0
+cases_clean=0
+mutants_run=0
+checkpoint_seconds=0
+clean_seconds=0
+mutant_seconds=0
+
+case_smoke() {
+  refuse_a_smoke_with_no_cases "$@"
+  refuse_to_smoke_over_a_red_check
+
+  make_room_for_the_cases
+  copy_the_plugin_once
+
+  build_every_checkpoint "$@"
+  run_every_clean_case "$@"
+  run_every_mutant
+  say_what_the_cases_cost
+}
+
+refuse_a_smoke_with_no_cases() {
+  [ "$#" -gt 0 ] && return 0
+
+  printf -- '--case-smoke names at least one case. tests/cases.sh holds them.\n' >&2
+  exit 2
+}
+
+# The same rule the audit below opens with. A red check above is a broken harness, and a case run on
+# a broken harness answers for the harness.
+refuse_to_smoke_over_a_red_check() {
+  [ "$failed" -eq 0 ] && return 0
+
+  printf 'case-smoke — not run. A check above is red.\n'
+  exit 1
+}
+
+#
+# Where the checkpoints and the words go, and the wrapper that keeps the words.
+#
+# `bounded` runs its arguments and discards what they say. That is right for 176 mutants and blind
+# for eight, so a case runs through a wrapper that keeps what it said beside what it asserted.
+#
+make_room_for_the_cases() {
+  mkdir -p "$checkpoints" "$logs" \
+    && printf '#!/bin/sh\nexec "$@" > "$FOUNDRY_CASE_LOG" 2>&1\n' > "$tmp/keep-what-it-said.sh" \
+    && return 0
+
+  printf 'case-smoke — could not make room under %s\n' "$tmp" >&2
+  exit 2
+}
+
+# One tree, patched and put back in place. The per-mutant copy this replaces costs a second each.
+copy_the_plugin_once() {
+  rm -rf "${copy:?}" && cp -R "$root" "$copy" && return 0
+
+  printf 'case-smoke — the plugin could not be copied to %s\n' "$copy" >&2
+  exit 2
+}
+
+build_every_checkpoint() {
+  local id began
+
+  printf 'case-smoke — building %s checkpoints with the clean runner\n' "$#"
+  began=$(date +%s)
+
+  for id in "$@"; do keep_a_checkpoint "$id"; done
+
+  checkpoint_seconds=$(seconds_since "$began")
+}
+
+# Built by the clean runner, before anything is patched, and kept for both halves of the case.
+keep_a_checkpoint() {
+  rm -rf "${state:?}" && mkdir -p "$state" || { moot "$1 — no state directory"; return; }
+
+  bounded "$case_deadline" env RUNNER="$copy/bin/run.sh" FOUNDRY_CASE_STATE="$state" \
+      FOUNDRY_CASE_LOG="$logs/$1.checkpoint" \
+      sh "$tmp/keep-what-it-said.sh" bash "$root/tests/model.sh" --checkpoint "$1" \
+    || { moot "$1 — the checkpoint could not be built: $(tail -1 "$logs/$1.checkpoint")"; return; }
+
+  rm -rf "$checkpoints/$1" && cp -R "$state" "$checkpoints/$1" \
+    || { moot "$1 — the checkpoint could not be kept"; return; }
+
+  checkpoints_built=$((checkpoints_built + 1))
+}
+
+# Clean first, from the bytes the mutant will get. A case that cannot pass here is not hermetic, and
+# a mutant run on one would be measuring the case.
+run_every_clean_case() {
+  local id began
+
+  printf 'case-smoke — running each case clean\n'
+  began=$(date +%s)
+
+  for id in "$@"; do
+    the_clean_case_passes "$id" || continue
+
+    kept "$id — the clean case passes"
+    hermetic="$hermetic $id"
+    cases_clean=$((cases_clean + 1))
+  done
+
+  clean_seconds=$(seconds_since "$began")
+}
+
+the_clean_case_passes() {
+  # Its checkpoint already said why. A second `MOOT` for one cause counts twice towards the run of
+  # silence that stops the audit, and reads as a machine that stopped answering.
+  [ -d "$checkpoints/$1" ] || return 1
+
+  restore_the_state "$1" || { moot "$1 — the checkpoint would not restore"; return 1; }
+
+  run_the_case "$1" clean
+  [ "$?" -eq 2 ] && { moot "$1 — the clean case was killed at ${case_deadline}s"; return 1; }
+
+  every_assertion_passed "$1" && the_declared_assertion_is_there "$1"
+}
+
+every_assertion_passed() {
+  local red
+
+  [ -s "$sidecar" ] \
+    || { bad "$1 — the clean case asserted nothing: $(tail -1 "$logs/$1.clean")"; return 1; }
+
+  red=$(awk -F'\t' '$1 != "ok" { print $2; exit }' "$sidecar")
+  [ -z "$red" ] || { bad "$1 — the clean case is not hermetic: [$red]"; return 1; }
+}
+
+# The binding, checked while it can still be answered. A mutant bound to an assertion its case never
+# makes could never be caught, and *never caught* reads exactly like *never asked*.
+the_declared_assertion_is_there() {
+  local want held
+
+  want=$(declared_assertion "$1")
+  held=$(awk -F'\t' -v want="$want" '$2 == want' "$sidecar" | grep -c .)
+  [ "$held" -eq 1 ] && return 0
+
+  bad "$1 — the clean case makes [$want] $held times, and a binding names one"
+  return 1
+}
+
+#
+# The state a case starts from, put back at one pathname.
+#
+# A run records absolute paths — a workspace's origin, a push redirect, the home it lives in — so a
+# checkpoint restored anywhere else is a checkpoint of somewhere that is no longer there.
+#
+restore_the_state() {
+  [ -d "$checkpoints/$1" ] || return 1
+
+  rm -rf "${state:?}" && cp -R "$checkpoints/$1" "$state"
+}
+
+# One case against whatever the copy currently is, with its assertions left on disk.
+run_the_case() {
+  : > "$sidecar"
+
+  bounded "$case_deadline" env RUNNER="$copy/bin/run.sh" FOUNDRY_CASE_STATE="$state" \
+      FOUNDRY_ASSERTIONS="$sidecar" FOUNDRY_CASE_LOG="$logs/$1.$2" \
+      sh "$tmp/keep-what-it-said.sh" bash "$root/tests/model.sh" --case "$1"
+}
+
+# The number a budget is a multiple of, so it is taken around the mutants and around nothing else.
+run_every_mutant() {
+  local began id
+
+  printf 'case-smoke — running each mutant\n'
+  began=$(date +%s)
+
+  # Unquoted on purpose: this holds the ids that passed clean, and a case id holds no space.
+  for id in $hermetic; do audit_one_mutant "$id"; done
+
+  mutant_seconds=$(seconds_since "$began")
+}
+
+#
+# Seconds between a reading and now, or -1 when the clock stepped back while they ran.
+#
+# WSL resynchronises with its host and `date` jumps, so this printed `-1s` once — and a negative
+# cost is a number somebody would have multiplied by 22.
+#
+seconds_since() {
+  local now
+  now=$(date +%s)
+
+  [ "$now" -ge "$1" ] && { printf '%s' "$((now - $1))"; return; }
+  printf '%s' '-1'
+}
+
+audit_one_mutant() {
+  mutants_run=$((mutants_run + 1))
+
+  the_patch_is_exact "$1"             || { put_the_copy_back "$1"; return; }
+  the_mutant_flips_its_assertion "$1" || { put_the_copy_back "$1"; return; }
+  the_patch_reverses "$1"             || { put_the_copy_back "$1"; return; }
+
+  kept "$1 — [$(declared_assertion "$1")] flipped, and nothing else did"
+}
+
+#
+# Three things make a patch a mutant rather than an edit: it applies, it applies once, and it comes
+# back off.
+#
+# A `sed` answered none of them. `break_verdict` compares the mutant with the original and calls any
+# difference a break, so an expression matching twice and one matching a line nobody meant both read
+# as the break that was declared.
+#
+# A copy that already held the mutation is asked about earlier and elsewhere: its clean case fails,
+# and the mutant never runs. A guard for it here could not speak, so there is not one.
+the_patch_is_exact() {
+  local patch=$root/tests/mutants/$1.patch
+
+  [ -f "$patch" ] || { moot "$1 — no patch at tests/mutants/$1.patch"; return 1; }
+  the_patch_names_one_file "$1" || return 1
+
+  apply_to_the_copy --check    "$patch" 2>/dev/null || { bad "$1 — the patch applies nowhere"; return 1; }
+  apply_to_the_copy            "$patch" 2>/dev/null || { bad "$1 — the patch would not apply"; return 1; }
+  apply_to_the_copy --check    "$patch" 2>/dev/null && { bad "$1 — the patch applies a second time"; return 1; }
+  apply_to_the_copy --check -R "$patch" 2>/dev/null || { bad "$1 — the patch will not reverse"; return 1; }
+}
+
+the_mutant_flips_its_assertion() {
+  restore_the_state "$1" || { moot "$1 — the checkpoint would not restore for the mutant"; return 1; }
+
+  run_the_case "$1" mutant
+  [ "$?" -eq 2 ] && { moot "$1 — the mutant case was killed at ${case_deadline}s"; return 1; }
+
+  only_the_declared_assertion_flipped "$1"
+}
+
+#
+# Caught when its own assertion flipped, and only then.
+#
+# `is` and its kin append what they wanted and what they got to a failing name, so the declared name
+# is matched whole or as that prefix. An incidental red beside it is not a kill — it is the cascade
+# this whole shape exists to refuse.
+#
+only_the_declared_assertion_flipped() {
+  local want flipped others
+
+  want=$(declared_assertion "$1")
+  flipped=$(awk -F'\t' -v want="$want" \
+    '$1 == "FAIL" && ($2 == want || index($2, want " — ") == 1)' "$sidecar" | grep -c .)
+  others=$(awk -F'\t' -v want="$want" \
+    '$1 != "ok"   && $2 != want && index($2, want " — ") != 1' "$sidecar" | grep -c .)
+
+  [ "$flipped" -eq 1 ] || { bad "$1 — [$want] did not flip"; return 1; }
+  [ "$others"  -eq 0 ] || { bad "$1 — $others other assertions went red beside it"; return 1; }
+}
+
+the_patch_reverses() {
+  apply_to_the_copy -R "$root/tests/mutants/$1.patch" 2>/dev/null \
+    || { bad "$1 — the patch would not come back off"; return 1; }
+
+  the_copy_is_what_it_was "$1" && return 0
+
+  bad "$1 — $(patched_file "$1") is not what it was before the patch"
+  return 1
+}
+
+the_copy_is_what_it_was() {
+  local file
+  file=$(patched_file "$1")
+
+  cmp -s "$copy/$file" "$root/$file"
+}
+
+#
+# One patch, one file, because everything below reads one.
+#
+# `git apply` takes a patch touching any number of files. One naming none leaves `patched_file`
+# empty, and the byte-clean check then compares two directory paths — which always differ, so the
+# audit stops and blames a patch that never applied. One naming two is half verified.
+#
+the_patch_names_one_file() {
+  local named
+  named=$(awk '/^[+][+][+] / { n++ } END { print n + 0 }' "$root/tests/mutants/$1.patch")
+
+  [ "$named" -eq 1 ] && return 0
+
+  bad "$1 — the patch names $named files, and a mutant names one"
+  return 1
+}
+
+# The one file a patch touches, read from the patch rather than written down a second time.
+patched_file() { awk '/^\+\+\+ b\// { print substr($2, 3); exit }' "$root/tests/mutants/$1.patch"; }
+
+# Line endings are the ambient config's business, never this patch's. `core.autocrlf` is on by
+# default on Windows, so `git apply` rewrites every line it touches and the whole file with it — the
+# reversal then reads as dirty, and the mutant as one nobody declared.
+apply_to_the_copy() { git -C "$copy" -c core.autocrlf=false apply "$@"; }
+
+# A patch left applied would mutate every case after it, and each of those would answer for a break
+# it was never handed.
+put_the_copy_back() {
+  apply_to_the_copy -R "$root/tests/mutants/$1.patch" 2>/dev/null
+  the_copy_is_what_it_was "$1" && return 0
+
+  printf '\nSTOPPED — the plugin copy is still patched, so nothing after it could answer.\n'
+  exit 3
+}
+
+# Each half, because a budget caps each half. One worker throughout, so none of these overlap.
+say_what_the_cases_cost() {
+  printf '\n'
+  say_a_phase checkpoints  "$checkpoints_built" "$checkpoint_seconds"
+  say_a_phase 'clean cases'  "$cases_clean"     "$clean_seconds"
+  say_a_phase 'mutant cases' "$mutants_run"     "$mutant_seconds"
+  printf 'case-smoke — one worker\n'
+}
+
+say_a_phase() {
+  [ "$3" -ge 0 ] || {
+    printf 'case-smoke — %s %s, and the clock stepped back while they ran\n' "$2" "$1"
+    return
+  }
+
+  printf 'case-smoke — %s %s in %ss\n' "$2" "$1" "$3"
+}
+
+case "${1:-}" in --case-smoke) shift; case_smoke "$@"; exit "$failed" ;; esac
+
+#
 # The clean suite's own time. **Every deadline below is measured from it.**
 #
 # 300 seconds was one machine's number, and the same suite takes minutes on another — so two breaks
@@ -190,6 +593,21 @@ refuse_to_audit_a_red_suite() {
 refuse_to_audit_a_red_suite
 
 #
+# The cases, and they run here rather than only when somebody asks for them.
+#
+# Eight patches pinned to exact context in `bin/run.sh`, and the commit under this one is `8199270`
+# — five mutants broken by rewriting what their anchors named. Those five were caught because this
+# file is what `bin/gates.sh` runs. **A patch nothing runs rots without a word**, and the falsifier
+# that proved the seam would be the first thing to stop working.
+#
+# Every case, never a subset. `--case-smoke` names a few while somebody is working on them; the gate
+# is the only reader that has to answer for all of them.
+#
+# Unquoted on purpose: `case_ids` prints one id a line and a case id holds no space.
+#
+case_smoke $(case_ids)
+
+#
 # And the deadline has to outlast the thing it times.
 #
 # A mutant is caught early or it runs about as long as a clean pass. So a deadline under `clean`
@@ -220,6 +638,12 @@ refuse_a_deadline_too_short_to_answer() {
     printf 'audit — and 192 mutants at that deadline is %sh of mutant time, before the pool\n' \
            "$(( headroom * 192 / 3600 ))"
     printf 'audit — divides it. That is two ways on the machine this refusal fires on.\n'
+
+    # A rule broken above outranks an audit that could not run, and `audit_says_which` holds exactly
+    # that for the two recorders. This refusal owed the same the moment anything ran before it: the
+    # cases do now, and one going red here would have been reported as *nothing ran*.
+    [ "${failed:-0}" -eq 1 ] && { printf 'FAILURES ABOVE\n'; exit 1; }
+
     printf 'PROVED NOTHING\n'
     exit 3
 }
@@ -229,7 +653,7 @@ refuse_a_deadline_too_short_to_answer() {
 # `leaves` above does this for the two exit codes; the deadline needs its own because the answer
 # turns on two numbers rather than on `failed`.
 deadline_leaves() {
-  ( deadline=$1; clean=$2; refuse_a_deadline_too_short_to_answer ) >/dev/null 2>&1
+  ( deadline=$1; clean=$2; failed=${4:-0}; refuse_a_deadline_too_short_to_answer ) >/dev/null 2>&1
   left=$?
 
   [ "$left" = "$3" ] || { bad "a ${1}s deadline over a ${2}s pass left $left, not $3"; return; }
@@ -244,11 +668,11 @@ a_deadline_shorter_than_its_pass_refuses() {
   deadline_leaves 245  49   0     # WSL on ext4, five clean passes
   deadline_leaves 900  535  0     # the machine this ceiling was sized against
   deadline_leaves 900  5940 3     # Git Bash, three per cent of what the design asked for
+  deadline_leaves 900  5940 1 1   # the same machine, with a rule already broken above it
 }
 a_deadline_shorter_than_its_pass_refuses
 
 refuse_a_deadline_too_short_to_answer
-
 # --- break the runner ---
 
 # What this run is about to cost, before it spends it.
@@ -325,55 +749,6 @@ printf 'audit — break the runner, the model suite must notice. A mutant has %s
 
 queued=0
 reported=0
-
-#
-# Run a command with a deadline, and answer **2 when the deadline passed** — never the command's own
-# status, because a command that never answered did not answer badly.
-#
-# `timeout` exits 124 when it kills one. `!` used to invert that to 0, which is this file's word for
-# *the suite noticed the break*, so **a mutant that hung was recorded `ok`** — a false green in the
-# thing that grades every other gate.
-#
-bounded() {
-  local seconds="$1"
-  shift
-
-  command -v timeout >/dev/null 2>&1 && { timed "$seconds" "$@"; return; }
-
-  polled "$seconds" "$@"
-}
-
-timed() {
-  local seconds="$1" said
-  shift
-
-  timeout "$seconds" "$@" >/dev/null 2>&1
-  said=$?
-
-  [ "$said" -eq 124 ] && return 2
-  return "$said"
-}
-
-# The same deadline without `timeout`. **macOS is the platform that needs this** — it ships no
-# `timeout` unless someone installed GNU coreutils, and without one there is no bound at all.
-#
-# Polled the way `await_a_free_worker` polls: `wait -n` with a deadline is bash 4.3, and macOS ships
-# 3.2. The same platform, twice, for the same reason.
-polled() {
-  local seconds="$1" job waited=0
-  shift
-
-  "$@" >/dev/null 2>&1 &
-  job=$!
-
-  while kill -0 "$job" 2>/dev/null; do
-    [ "$waited" -ge "$seconds" ] && { kill -9 "$job" 2>/dev/null; wait "$job" 2>/dev/null; return 2; }
-    sleep 1
-    waited=$((waited + 1))
-  done
-
-  wait "$job"
-}
 
 #
 # What a deadline answers, and it is not what an answer answers. Three seconds, and the only check
