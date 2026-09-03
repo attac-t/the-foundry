@@ -11,8 +11,23 @@ failed=0
 skipped=0
 unanswerable=0
 
+#
+# The same check, in a shape the audit can read.
+#
+# One line per assertion — its result and its name — and only when a caller asks for the file. The
+# `--case-smoke` audit binds one mutant to one of these names, and credits a kill only when that name
+# flips. Reading whether the suite went red cannot tell that from a break tripping something else.
+#
+# Off by default, so every suite that does not ask for it writes nothing and behaves as it did.
+#
+record() {
+  [ -n "${FOUNDRY_ASSERTIONS:-}" ] || return 0
+
+  printf '%s\t%s\n' "$1" "$2" >> "$FOUNDRY_ASSERTIONS"
+}
+
 # Record a passing check.
-ok() { passed=$((passed + 1)); printf '  ok    %s\n' "$1"; }
+ok() { passed=$((passed + 1)); record ok "$1"; printf '  ok    %s\n' "$1"; }
 
 #
 # Record a failing check.
@@ -24,6 +39,7 @@ ok() { passed=$((passed + 1)); printf '  ok    %s\n' "$1"; }
 #
 bad() {
   failed=$((failed + 1))
+  record FAIL "$1"
   printf '  FAIL  %s\n' "$1"
 
   [ -n "${FOUNDRY_FAIL_FAST:-}" ] || return 0
