@@ -514,9 +514,17 @@ is_a_run() {
 
 # `-d` matches the check kernel makes before it moves memory. Drop it and floor calls a run active
 # that kernel has already fallen back from, while announce stays quiet because the variable is set.
+# A caller may write the path with a trailing slash. Twelve places read the last segment with
+# `${x##*/}`, which returns nothing when the path ends in one — `basename` strips it first and
+# this does not. Stripped here, where the path enters, rather than at each of the twelve.
+#
+# A run at `/` keeps its own name, because stripping that would leave nothing at all.
 named_run() {
     [ -n "${FOUNDRY_RUN:-}" ] && [ -d "$FOUNDRY_RUN" ] || return 1
-    printf '%s' "$FOUNDRY_RUN"
+
+    said=${FOUNDRY_RUN%/}
+    [ -n "$said" ] || said=$FOUNDRY_RUN
+    printf '%s' "$said"
 }
 
 # The run this checkout was pointed at, when it is still there.
@@ -1539,7 +1547,6 @@ enter_work_tree() {
 
     tree=$(unit_work_tree "$1" "$here") || exit 16
     cd "$tree" || { note "cannot enter [$tree]"; exit 16; }
-    REPO_ROOT=
 }
 
 #
@@ -1922,7 +1929,6 @@ enter_base_gates() {
     note "grading with the base's own gates: $(printf '%s\n' "$moved" | cut -f2 | tr '\n' ' ')"
     substituted=$moved
     cd "$tree" || { note "cannot enter [$tree]"; exit 16; }
-    REPO_ROOT=
 }
 
 # Said once on stderr, it died with the run. A reader re-running a gate at the delivered ref then ran
@@ -3473,13 +3479,16 @@ refuse_moved_resolution() {
 # always had the first one`s answer.
 #
 # **The two places that `cd` clear it**, because there the answer really does change.
-repo_root() {
-    [ -n "${REPO_ROOT:-}" ] && { printf '%s' "$REPO_ROOT"; return 0; }
-
-    REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null) || REPO_ROOT=.
-    [ -n "$REPO_ROOT" ] || REPO_ROOT=.
-    printf '%s' "$REPO_ROOT"
-}
+# The repository this call stands in.
+#
+# **A cache was tried here and removed.** Every caller reads it as `$(repo_root)`, and a command
+# substitution runs in a subshell — so the assignment died with the subshell and the next call
+# computed it again. The saving was claimed and never delivered.
+#
+# Caching it properly means reading a variable at each of the six call sites rather than calling
+# a function, or computing it eagerly for every verb including those that never ask. Neither is
+# worth 497ms on a shell where the whole gate already runs in 29 minutes.
+repo_root() { git rev-parse --show-toplevel 2>/dev/null || printf '.'; }
 
 #
 # A resolver that is not there answers "no gates", and no gates is what a clean charter looks like.
