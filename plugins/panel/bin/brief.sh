@@ -165,7 +165,7 @@ locate_the_prior() {
     [ -n "$verdicts" ] && [ -n "$review" ] \
         || fail 2 'a brief names the chain it answers to — pass --verdicts and --review'
 
-    round=$("$root/bin/verdicts.sh" next "$verdicts" 2>/dev/null) \
+    round=$(sh "$root/bin/verdicts.sh" next "$verdicts" 2>/dev/null) \
         || fail 5 "the chain at [$verdicts] could not say which round this is"
     # Leading zeros make `$(( ))` read octal, so `010` became 8 and `008` was an error.
     round=$(printf '%s' "$round" | sed 's/^0*//')
@@ -173,7 +173,7 @@ locate_the_prior() {
 
     [ "$round" = 1 ] && return 0
 
-    prior_file=$("$root/bin/verdicts.sh" prior "$verdicts" "$round" "$review") \
+    prior_file=$(sh "$root/bin/verdicts.sh" prior "$verdicts" "$round" "$review") \
         || fail 5 "no record of round $((round - 1)) for review [$review] in [$verdicts]"
 
     [ -n "$prior_file" ] && [ -r "$prior_file" ] \

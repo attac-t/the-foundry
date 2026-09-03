@@ -21,7 +21,7 @@ jobs:
       - name: The manifest agrees with every plugin
         run: bash bin/versions.sh
 
-      # A meta-check, and not one of the nine. It grades them, so counting it among them would make the
+      # A meta-check, and not one of the ten. It grades them, so counting it among them would make the
       # set it checks disagree with itself. `panel` was advertised and unrun for days.
       - name: The documents, the workflow and every harness file agree
         run: sh bin/agree.sh
@@ -57,6 +57,12 @@ jobs:
 
       - name: The taper gate can go red
         run: sh bin/taper.sh audit
+
+      # The seam renders a public comment from fields; this proves the audit that reads the thread
+      # back and re-runs those rules on what landed. The audit itself needs `gh` and the network, so
+      # what runs here is its suite, driven through a `gh` the suite writes.
+      - name: A comment through the seam still obeys it
+        run: sh bin/comments.sh audit
 
   # The gates above read files. This one runs the plugins that ship code, on each operating system a
   # user installs them on, because that is where both of them broke last: signal's hook was not

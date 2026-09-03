@@ -1,11 +1,11 @@
 # Contributing
 
-Nine gates. Run them before you open a pull request:
+Ten gates. Run them before you open a pull request:
 
 ```bash
-sh bin/gates.sh                 # all nine, here
+sh bin/gates.sh                 # all ten, here
 sh bin/agree.sh                 # this table, the workflow, gates.sh and every harness file
-sh bin/gates.sh linux           # the same nine where `sh` is dash
+sh bin/gates.sh linux           # the same ten where `sh` is dash
 ```
 
 Leave `agree` out of your run and a PR can still go red on a check this file never mentioned — the
@@ -64,7 +64,7 @@ The second is not a convenience. On macOS and under Git Bash `sh` **is** bash an
 `[[ =~ ]]` without complaint, so neither can fail a bashism — and every runner here opens `#!/bin/sh`.
 
 `bin/agree.sh` holds this table, that workflow and `bin/gates.sh` to the same list. It grades the
-nine and is not one of them. `panel` was advertised here and absent from CI for days.
+ten and is not one of them. `panel` was advertised here and absent from CI for days.
 
 It holds one more thing: **every harness file names the same rules.** Claude reads `CLAUDE.md` and
 Codex reads `AGENTS.md`, so `bin/project.sh` writes the table into both from `.claude/rules` itself.
@@ -77,6 +77,7 @@ Edit a rule, then run it — a row typed by hand into one file is the drift noth
 | `repeats` | a sentence appears verbatim in two files — scoped to `panel`, `pest` and `signal` |
 | `shell` | shipped shell takes an `else`, or a function body passes 40 lines |
 | `taper` | a three-line comment paragraph does not narrow by three, and nothing names it |
+| `comments` | a public comment carrying the seam's marker breaks a rule the seam applies |
 | `kernel` | the plugin does not run — checked on Linux, macOS and Windows |
 | `signal` | the plugin does not run — checked on Linux, macOS and Windows |
 | `floor` | the plugin does not run — checked on Linux, macOS and Windows |
@@ -98,7 +99,7 @@ no such bit.
 
 **What they do not check:** that `laravel-ddd`, `laravel-playbook`, `pest` or `product` still load,
 or that their skills say anything true. Those four ship no code, so there is nothing to run — but
-nothing here reads them either. Green means nine gates passed. For those four plugins it does not
+nothing here reads them either. Green means ten gates passed. For those four plugins it does not
 mean the change works.
 
 Bump the version in the plugin's own `plugin.json`, and there only. `marketplace.json` carries one
