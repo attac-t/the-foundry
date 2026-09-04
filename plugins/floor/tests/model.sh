@@ -3692,6 +3692,17 @@ a_rejection_stops_the_work() {
   is  "a rejection alone leaves the run unable to deliver" "$(code_of floor "$tmp/rj" complete)" "15"
   has "and the clause is named unmet"               "$(floor "$tmp/rj" complete 2>&1)" "a stranger can read it"
   has "and the rejection is in the record"          "$(floor "$tmp/rj" evidence)" "it is not understandable"
+  #
+  # A refusal and a silence are not the same fact, and the remedies are opposite.
+  #
+  # Both used to print `no approval from`, because `satisfied` returns non-zero for either. A reader
+  # told that goes and asks. **On a refusal that is a wasted trip** — the dissent holds at this ref
+  # for good, and only a new commit moves it.
+  #
+  has "a refusal says so, and says a new ref is the way out" \
+      "$(floor "$tmp/rj" complete 2>&1)" "refused here, and only a new ref moves it"
+  lacks "and it is not reported as nobody having answered" \
+        "$(floor "$tmp/rj" complete 2>&1)" "no approval from [a-reviewer]"
 
   # `complete` is the question. `deliver` is the act, and a refusal that answers only the
   # question stops nothing — the same clause has to hold the push back.

@@ -2816,12 +2816,60 @@ what_it_lacks() {
     printf 'unmet: [%s] at %s@%s\n' "$text" "$4" "$5"
 }
 
-# Every member said yes, or the ones who have not are named.
+#
+# A judge that answered, and said no.
+#
+# `satisfied` returns non-zero for a refusal and for silence alike, because both mean *not yes*. The
+# two want opposite things next. A silent judge is asked again. **A refusal is answered by changing
+# the work** — one dissent stops that ref for good, so asking the same judge again cannot help.
+#
+# Told apart by field 5, which the recorder already writes. Nothing new is stored.
+#
+refused() {
+    awk -F'\t' -v name="$2" -v ref="$3" -v judge="$4" '
+        $4 "" != name "" || $6 "" != ref "" { next }
+        $8 "" != judge ""                   { next }
+        $5 != "0"                           { found = 1 }
+        END { exit !found }' "$(evidence_file "$1")" 2>/dev/null
+}
+
+# The members who answered no.
+members_who_refused() {
+    printf '%s
+' "$4" | while IFS= read -r who; do
+        [ -n "$who" ] || continue
+        refused "$1" "$2" "$3" "$who" && printf '%s ' "$who"
+    done
+}
+
+# The members who have not answered at all.
+members_never_asked() {
+    printf '%s
+' "$4" | while IFS= read -r who; do
+        [ -n "$who" ] || continue
+        satisfied "$1" "$2" "$3" judged "$who" && continue
+        refused    "$1" "$2" "$3" "$who"       || printf '%s ' "$who"
+    done
+}
+
+# Every member said yes, or the ones who have not are named — and a refusal is named as one.
+#
+# It said `no approval from` for both, and the two want opposite things. A reader told that goes and
+# asks. On a refusal that is a wasted trip: the dissent holds at this ref for good, and only a new
+# commit moves it.
 what_the_panel_lacks() {
     judged_by_all "$1" "$2" "$4" "$5" && return
 
-    printf 'unmet: [%s] at %s@%s — no approval from [%s]\n' \
-        "$2" "$3" "$4" "$(spaced "$(unheard_members "$1" "$2" "$4" "$5")")"
+    said_no=$(spaced "$(members_who_refused "$1" "$2" "$4" "$5")")
+    silent=$(spaced "$(members_never_asked "$1" "$2" "$4" "$5")")
+
+    [ -n "$silent" ] && printf 'unmet: [%s] at %s@%s — no approval from [%s]\n' \
+        "$2" "$3" "$4" "$silent"
+
+    [ -n "$said_no" ] && printf 'unmet: [%s] at %s@%s — [%s] refused here, and only a new ref moves it\n' \
+        "$2" "$3" "$4" "$said_no"
+
+    return 0
 }
 
 #
@@ -2845,16 +2893,6 @@ judged_by_all() {
 # the separator the loop wrote, which read as an empty member.
 spaced() { printf '%s' "$1" | awk '{ $1 = $1; print }' | tr '
 ' ' ' | sed 's/ *$//'; }
-
-# Which members have not approved. Named, because a reader would otherwise
-# guess which of several is holding the work up.
-unheard_members() {
-    printf '%s
-' "$4" | while IFS= read -r who; do
-        [ -n "$who" ] || continue
-        satisfied "$1" "$2" "$3" judged "$who" || printf '%s ' "$who"
-    done
-}
 
 #
 # A record answering *was this clause met* with yes, at the ref delivered.
