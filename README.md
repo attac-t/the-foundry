@@ -65,6 +65,12 @@ Have work judged by something that did not write it:
 /plugin install panel@the-foundry
 ```
 
+Keep what the repository believes in contact with what is true:
+
+```
+/plugin install product@the-foundry
+```
+
 Enable the opinionated voice:
 
 ```
