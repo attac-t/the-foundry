@@ -1504,6 +1504,21 @@ exception. The pointer holds a run id, not a path, and the home is an environmen
 bash tests/run.sh
 ```
 
+**On Windows, grade it under WSL from the Linux disk.** Starting a process costs about 80 ms under
+Git Bash and about 1 ms under Linux, and this suite starts a great many. `model.sh` measured
+**4,611 s** on Git Bash against **49 s** under WSL on ext4 — 2 September, one laptop, one commit.
+
+```bash
+git clone /mnt/c/path/to/the-foundry /tmp/floor
+bash /tmp/floor/plugins/floor/tests/run.sh
+```
+
+Clone to ext4 first. Grading over `/mnt/c` hands most of the win straight back.
+
+**The pass count is not the same on every platform, and that is not a fault.** A check the
+filesystem cannot answer stands down and prints `n/a`; so does one needing a tool the box has not
+got. Read `failed` and `skipped`, which mean the same thing everywhere.
+
 Every suite, then a deliberate break for every rule that matters. Each one must turn a suite red, and
 the run says so if a break failed to apply — a mutation that changed nothing proves nothing.
 
