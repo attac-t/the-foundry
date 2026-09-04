@@ -23,8 +23,16 @@ Say so on the issue, and say which of two things it is:
 |---|---|
 | unmeetable here | it wants something this stage does not have — move it to the issue that will |
 | wrong when written | the requirement itself was mistaken — strike it, and say why |
+| ungateable | the outcome is reachable and no check can hold it — say which half is which |
 
-Neither is a tick. A box removed silently and a box ticked wrongly read the same six months later.
+None of the three is a tick. A box removed silently and a box ticked wrongly read the same six months later.
+
+**Ungateable is the one that gets miscalled.** #305 wants a markdown table readable as raw text.
+Pad the columns and it is. **No gate can prove it** — `length` counts bytes in one locale and
+characters in another, so a table one `awk` calls aligned is ragged to the next.
+
+I nearly filed that as unmeetable, from the rule rather than the issue. **A discipline nobody can
+check is still a discipline**, and writing it off closes an issue that was never blocked.
 
 ## A list that was never a list
 
