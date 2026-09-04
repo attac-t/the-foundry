@@ -3623,7 +3623,7 @@ a_declared_judgement_is_answered_by_a_verdict() {
 ' && commit_file "$tmp/dj" .foundry/judged 'a-reviewer  a stranger can read it
 ' || { skip "a declared judgement — git could not make a repo here"; return; }
 
-  floor_new_as "$tmp/dj" ada@example.com "Declared" >/dev/null
+  djrun=$(floor_new_as "$tmp/dj" ada@example.com "Declared")
   floor "$tmp/dj" charter derive >/dev/null 2>&1
   floor "$tmp/dj" policy authorize 'https://gitlab.com/acme/dj.git' >/dev/null 2>&1
   floor "$tmp/dj" targets add 'https://gitlab.com/acme/dj.git' main >/dev/null 2>&1
@@ -3635,6 +3635,26 @@ a_declared_judgement_is_answered_by_a_verdict() {
   # The heart of it. Introduced, this said `introduced` and no verdict could ever help.
   lacks "an unanswered one is not introduced"         "$(floor "$tmp/dj" complete 2>&1)" "introduced: [a stranger can read it]"
   has   "it is unmet, and names who was never asked"         "$(floor "$tmp/dj" complete 2>&1)" "no approval from [a-reviewer]"
+  #
+  # Deleting the clause is how a run would make this pass, and for a while it worked.
+  #
+  # `check_charter` catches a charter that has drifted from its pin. It runs at `charter check` and
+  # inside `gates`, and neither runs again on the way out. So a clause removed after the gates
+  # passed reached `complete` with nothing looking, and completion answered that the charter held.
+  #
+  # `authorise` reads the gate half of the same question. It never reached the judged half, which is
+  # the half no person can re-run.
+  #
+  kept=$(charter_of "$djrun")
+  [ -n "$kept" ] && [ -f "$kept" ] && {
+    cp "$kept" "$kept.keep"
+    grep -v 'a stranger can read it' "$kept" > "$kept.cut" && mv "$kept.cut" "$kept"
+
+    is  "a clause deleted from the charter does not deliver"  "$(code_of floor "$tmp/dj" complete)" "15"
+    has "and completion names it as deleted"  "$(floor "$tmp/dj" complete 2>&1)" "deleted: Judged"
+
+    mv "$kept.keep" "$kept"
+  }
 
   floor "$tmp/dj" gates >/dev/null 2>&1
   is "a verdict from something else is recorded"      "$(code_of judged "$tmp/dj" 'a stranger can read it' 'a-reviewer' approve 'read in two minutes')" "0"
