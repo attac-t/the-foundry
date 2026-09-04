@@ -2067,7 +2067,21 @@ unmet_for_delivery() {
     empty_bar "$1"
     empty_selection "$1"
     ungradable_targets "$1"
+    underived_clauses "$1"
     unmet_clauses "$1"
+}
+#
+# A clause the charter no longer derives.
+#
+# `check_charter` reads this at `charter check` and inside `gates`. **Neither runs again on the way
+# out.** So a `Judged` clause deleted from the charter after the gates passed reached `complete` and
+# `deliver` with nothing looking, and completion answered that the charter was fully satisfied.
+#
+# `authorise` reads the gate half — `underived_gates`, filtered to `deleted:`. It never reaches the
+# judged half, and the judged half is the one a person cannot re-run.
+#
+underived_clauses() {
+    underived_judged "$(charter_file "$1")"
 }
 
 #
