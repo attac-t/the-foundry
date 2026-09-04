@@ -3924,6 +3924,21 @@ a_receipt_is_read_and_not_believed() {
   has "and it says the claim has no subject" \
       "$(floor_says "$tmp/rcpt" evidence receipt "$tmp/rcpt.nocontext")" "names none"
 
+  #
+  # The one column the charter calls attestable, and the shape of it is what floor can gate.
+  #
+  # A thread was new or it was carried on. `probably` reads as an answer to a question nobody put,
+  # and floor did not issue the handle, so the truth of a `yes` stays the producer's word.
+  sed 's/^fresh .*/fresh probably/' "$base" > "$tmp/rcpt.maybefresh"
+  is  "a freshness answering neither yes nor no is refused" \
+      "$(code_of floor "$tmp/rcpt" evidence receipt "$tmp/rcpt.maybefresh")" "37"
+  has "and it says there are two answers" \
+      "$(floor_says "$tmp/rcpt" evidence receipt "$tmp/rcpt.maybefresh")" "a thread was new or it was not"
+
+  sed 's/^fresh .*/fresh no/' "$base" > "$tmp/rcpt.stale"
+  lacks "a thread carried on is a receipt floor still reads" \
+        "$(floor_says "$tmp/rcpt" evidence receipt "$tmp/rcpt.stale")" "a thread was new or it was not"
+
   sed 's/^round .*/round none/' "$base" > "$tmp/rcpt.noround"
   is  "a round nobody can count is refused" \
       "$(code_of floor "$tmp/rcpt" evidence receipt "$tmp/rcpt.noround")" "37"

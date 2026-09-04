@@ -129,7 +129,7 @@ sh bin/run.sh charter check
 sh bin/run.sh evidence
 sh bin/run.sh evidence record tests ./check
 sh bin/run.sh evidence handed "the interface is understandable" "A Reviewer" "a harness" 4e1f9c
-sh bin/run.sh evidence verdict "the interface is understandable" "A Reviewer" "read in two minutes"
+sh bin/run.sh evidence verdict "the interface is understandable" "A Reviewer" approve "read in two minutes" 4e1f9c
 sh bin/run.sh evidence receipt ./judgement-receipt
 sh bin/run.sh gates
 sh bin/run.sh source read 7
@@ -865,6 +865,13 @@ whether that thread was new.
 
 **A missing field is the honest answer.** Nothing is defaulted and nothing is written `unknown`.
 
+**`context` and `fresh` are optional, and that is a decision.** A fresh thread hands back a new
+handle and a resumed one hands back the same. So a producer with threads can attest both. One with
+none would be made to write `context unknown`, which reads exactly like a handle somebody checked —
+the failure the missing `model` key exists to prevent. So the shape is gated and the truth is not.
+`fresh` needs a context to be about, and it says `yes` or `no`. **Floor cannot verify a handle it
+did not issue.**
+
 ### What a receipt is refused for
 
 | | Exit |
@@ -872,7 +879,9 @@ whether that thread was new.
 | there is none, or it holds nothing | 37 |
 | a key with no reading, said twice, or claiming nothing | 37 |
 | a required field absent | 37 |
-| `fresh` naming no context, or a later round naming no prior | 37 |
+| `fresh` naming no context, or answering neither `yes` nor `no` | 37 |
+| a round that is not a count, or a later round naming no prior | 37 |
+| a bare `model`, `provider` or `effort` | 37 |
 | the handoff recorded no brief, so there is nothing to compare | 37 |
 | it answers for another run, or for a brief that changed | 38 |
 | the candidate is not where the work is | 35 |
@@ -892,6 +901,12 @@ none of it is a credential — #156 owns making the actor real.
 one at the handoff and one on the receipt, and reads no brief. One adapter writes both, so matching
 digests say the bar did not move under the judge. They do not say the digest is of the brief it
 claims.
+
+**A substitution nobody records is invisible.** `adapter` is a label floor reads nothing into. Ask
+harness A and get nothing at all. Let harness B write a receipt naming itself. **Floor takes B's**,
+because the first it hears of either is the name on the file. Refusing that needs `handed` to record
+the harness as an identity before the answer comes back, and `how` is prose for a person. #332
+leaves it open.
 
 **No second producer, so the contract is unproven.** These refusals are driven by fixture receipts
 the suite writes. A real second harness writing one is the other half, and it is not built.

@@ -1619,11 +1619,23 @@ wreck_runner "a verdict from a judge nobody handed the bar is caught" \
 #
 # The receipt — #332. Floor reads one, and every refusal it makes is broken here.
 #
-# **The one the whole contract rests on.** Only the existence test is inverted, never the whole
-# guard: without the empty-argument check above it, the readers below are handed an empty filename,
-# and what a mutant that hangs proves is nothing at all.
-wreck_runner "a receipt nobody wrote, waved through, is caught" \
-  noreceipt 's#\[ -f "\$1" \] || { note "no receipt at#[ -n "$1" ] || { note "no receipt at#'
+# **No mutation makes a missing receipt satisfy anything, and the guard is named for what it does.**
+#
+# It fails closed four deep — the existence test, then the emptiness test, then the required-field
+# reader, then an outcome that is not one of the five. So a break on any one of them changes which
+# sentence a reader gets, never whether the run is refused. **This mutant proves the sentence**, and
+# it says so rather than claiming a refusal it cannot reach.
+#
+# Verdict 050 asked for the guard to be split so the existence test could be broken alone. It is,
+# and the split is right on its own terms — one function was doing three jobs — but the second half
+# of the finding stands: the exit code cannot tell these apart, and only a `has` can.
+wreck_runner "a missing receipt reported as an empty one is caught" \
+  noreceipt 's#^refuse_a_receipt_that_is_not_there() {#refuse_a_receipt_that_is_not_there() { return 0;#'
+
+# The half the split made reachable. Blind it and the empty argument reaches the existence test,
+# which answers 37 about a file nobody named rather than 2 about a caller who named none.
+wreck_runner "a receipt verb given no file at all is caught" \
+  nonamed 's#^refuse_a_receipt_nobody_named() {#refuse_a_receipt_nobody_named() { return 0;#'
 
 #
 # The vocabulary is closed, and this opens it. A key floor has no reading for reads exactly like one
@@ -1642,6 +1654,11 @@ wreck_runner "a receipt missing a field it must carry is caught" \
 # stderr, so the guard after it reads as having passed.
 wreck_runner "a freshness claim about no context is caught" \
   freshnothing 's#^refuse_a_freshness_about_nothing() {#refuse_a_freshness_about_nothing() { return 0;#'
+
+# The one column the charter calls attestable. Blind this and `fresh probably` is recorded as an
+# answer to a question that has two.
+wreck_runner "a freshness answering neither yes nor no is caught" \
+  anyfresh 's#^refuse_a_freshness_that_answers_neither() {#refuse_a_freshness_that_answers_neither() { return 0;#'
 
 wreck_runner "a round nobody can count is caught" \
   anyround 's#^refuse_a_round_that_is_not_a_count() {#refuse_a_round_that_is_not_a_count() { return 0;#'
@@ -1781,6 +1798,33 @@ wreck "hooks.json pointing at nothing is caught"       nofile rewire
 wreck "a hook that ships but is never wired is caught" nowire unwire
 wreck "an announce hook that says nothing is caught"   quiet  mute
 wreck "a hook moved to an event that cannot inject is caught" event misfire
+
+#
+# The vocabulary gate, audited the way `craft-oracle` says to audit one: break the thing it guards
+# and require it to go red. **A gate that stays green was never a gate.**
+#
+# Four breaks, because it makes three claims and can fail a fourth way. The last is the one that
+# matters most — two empty sets compare equal, so an extraction that finds nothing would pass and
+# certify nothing.
+#
+# **`rewrite` alone made three of these red for the wrong reason.** It writes a new file, a new file
+# carries no executable bit, and the suite's own `not executable — run.sh` fired before the check
+# under test ever ran. That is the bad break `bin/breaks.sh` warns about, and it looks exactly like a
+# gate that works. Measured, then fixed here.
+rewrite_script() { rewrite "$1" && chmod +x "$1"; }
+
+dropkey()  { sed "s/^RECEIPT_KEYS='run clause/RECEIPT_KEYS='clause/" "$1/bin/run.sh" | rewrite_script "$1/bin/run.sh"; }
+movekey()  { sed 's/^| `brief` `verdict` `report` `round` `time` |/| `brief` `verdict` `report` `round` | `time`/' "$1/README.md" | rewrite "$1/README.md"; }
+needsgone(){ sed "s/^RECEIPT_REQUIRED='run /RECEIPT_REQUIRED='wibble run /" "$1/bin/run.sh" | rewrite_script "$1/bin/run.sh"; }
+noreads()  { sed "s/^RECEIPT_KEYS='/RECEIPT_KEYS_RENAMED='/" "$1/bin/run.sh" | rewrite_script "$1/bin/run.sh"; }
+
+# Named for the check that kills each, not for the edit that makes it. `movekey` and `needsgone` are
+# one claim from opposite sides — a key the README requires and the runner does not, and a key the
+# runner requires and the README does not.
+wreck "a key the runner no longer reads is caught"           dropkey   dropkey
+wreck "a key the README stops requiring is caught"           movekey   movekey
+wreck "a key the runner starts requiring alone is caught"    needsgone needsgone
+wreck "a vocabulary the gate cannot read at all is caught"   noreads   noreads
 
 audit_the_executable_bit() {
   records_exec || {

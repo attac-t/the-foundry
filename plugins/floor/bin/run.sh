@@ -3181,6 +3181,18 @@ refuse_a_judge_that_is_the_worker() {
 #
 # Core names the fields and never their values. What an adapter or a model is called is whatever
 # wrote the receipt, exactly as `worker` takes a word and reads nothing into it.
+#
+# **So `adapter` is a label, and a substitution nobody records is invisible here.** Harness A is
+# asked, writes nothing at all, and harness B writes a receipt naming itself — floor takes B's,
+# because the first thing it ever learns about either is the name on the file in front of it.
+# Refusing that needs `handed` to record the harness as an identity before the answer comes back,
+# and `how` is prose for a person. **#332 leaves this open, and the README says so.**
+#
+# `context` and `fresh` stay optional for the reason `model` is not a key at all: **requiring a
+# field is how a producer is made to invent one.** A runner with no thread to name would write
+# `context unknown`, which reads in a record exactly like a handle somebody checked. What is gated
+# is the shape — `fresh` needs a context to be about, and it says yes or no — never that the thread
+# was new. Floor cannot verify a handle it did not issue.
 RECEIPT_KEYS='run clause candidate role adapter brief verdict report round prior time
               context fresh
               requested_model    self_reported_model
@@ -3256,14 +3268,43 @@ refuse_a_malformed_receipt() {
 }
 
 #
-# Three ways there is nothing to read, and one remedy for all three: write one.
+# Three ways there is nothing to read, and each one is its own guard.
 #
-# A missing receipt is the refusal the whole contract rests on. **Green gates do not reach here** —
-# a `Judged` clause is answered by a judge's record and by nothing else, so a run with every gate
-# passing and no receipt is a run that has not been judged.
+# They were one function, and a break on the middle one still exited 37 through the third — so the
+# only thing that could tell them apart was the sentence. **A refusal a mutant cannot reach alone is
+# a refusal resting on its neighbour**, which is the shape `craft-sh` splits.
 refuse_an_unreadable_receipt() {
-    [ -n "$1" ] || { note "receipt needs the file to read"; exit 2; }
-    [ -f "$1" ] || { note "no receipt at [$1], and a Judged clause is answered by one"; exit 37; }
+    refuse_a_receipt_nobody_named "$1"
+    refuse_a_receipt_that_is_not_there "$1"
+    refuse_a_receipt_holding_nothing "$1"
+}
+
+# The caller named no file. Ahead of the two below, because every reader here is handed `$1` as a
+# filename, and awk given an empty one answers about a file nobody asked for.
+refuse_a_receipt_nobody_named() {
+    [ -n "$1" ] && return 0
+
+    note "receipt needs the file to read"
+    exit 2
+}
+
+#
+# The refusal the whole contract rests on. **Green gates do not reach here** — a `Judged` clause is
+# answered by a judge's record and by nothing else, so a run with every gate passing and no receipt
+# is a run nothing has judged.
+#
+# **No mutation makes a missing receipt satisfy anything**, and that is worth writing down rather
+# than mistaking for an untested path. Blind this and the next guard answers 37; blind that too and
+# the required-field reader answers 37; blind that and the outcome is empty, which is not one of the
+# five. It fails closed four deep, so what a break here changes is which sentence a reader gets.
+refuse_a_receipt_that_is_not_there() {
+    [ -f "$1" ] && return 0
+
+    note "no receipt at [$1], and a Judged clause is answered by one"
+    exit 37
+}
+
+refuse_a_receipt_holding_nothing() {
     [ -r "$1" ] && [ -s "$1" ] && return 0
 
     note "[$1] is there and holds nothing this can read as a receipt"
@@ -3316,6 +3357,7 @@ refuse_a_field_that_is_not_there() {
 # A field standing on one that is not there. Each of these reads as checked and rests on nothing.
 refuse_a_claim_nobody_checked() {
     refuse_a_freshness_about_nothing "$1"
+    refuse_a_freshness_that_answers_neither "$1"
     refuse_a_round_that_is_not_a_count "$1"
     refuse_a_round_with_no_prior "$1"
 }
@@ -3328,6 +3370,22 @@ refuse_a_freshness_about_nothing() {
     [ -n "$(said_in "$1" context)" ] && return 0
 
     note "$1 says the context was [$fresh] and names none, so the claim is about nothing"
+    exit 37
+}
+
+#
+# Yes or no, and nothing else. A thread was new or it was carried on, and there is no third answer.
+#
+# **This gates the shape and never the truth.** Floor did not issue the handle and cannot go and
+# look, so `fresh yes` is the producer's word — a record, like every other field. What it stops is
+# free text in the one column the charter calls attestable, where `probably` or `n/a` would read as
+# an answer to a question nobody put.
+refuse_a_freshness_that_answers_neither() {
+    case "$(said_in "$1" fresh)" in
+        ''|yes|no) return 0 ;;
+    esac
+
+    note "$1 says fresh [$(said_in "$1" fresh)], and a thread was new or it was not"
     exit 37
 }
 
