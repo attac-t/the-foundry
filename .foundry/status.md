@@ -53,13 +53,18 @@ Each line names the issue that would close it. **None of them is claimed anywher
 
 Doctrine names five people and a promise to each. **None holds in full.**
 
-| The promise | Where it has got to |
-|---|---|
-| a founder's business claims are listed and dispositioned | not built. A result names constraints in prose, and nothing lists them |
-| a domain expert's outcome, limit and exception are each accounted for | not built |
-| a user-facing change declares its design impact | not built |
-| the seams, rules, evidence and doubt are named | partly. A run records evidence and doubt. It does not name seams |
-| public surface, compatibility and developer experience are stated | not built |
+| The promise | Where it has got to | What would say it broke |
+|---|---|---|
+| a founder's business claims are listed and dispositioned | not built. A result names constraints in prose, and nothing lists them | **nothing can.** A limit nobody wrote down leaves no trace to miss |
+| a domain expert's outcome, limit and exception are each accounted for | not built | one they stated is absent from the account, or is closed without being answered |
+| a user-facing change declares its design impact | not built | **nothing can.** A change that declared nothing produces no record to read |
+| the seams, rules, evidence and doubt are named | partly. A run records evidence and doubt. It does not name seams | a run touched a seam its own record does not name |
+| public surface, compatibility and developer experience are stated | not built | a delivery changed the public surface and the record is silent about it |
+
+**Two of the five cannot break loudly, and that is a gap rather than a caveat.** Both turn on an
+absence: a constraint nobody captured, and a change that declared nothing. **Absence leaves no
+record**, so each reads clean at the moment it has failed. The other three can be checked against
+what a run wrote down.
 
 **Agree the goals. We'll do the work. We'll ask when we need you** rests on all five, plus a
 question reaching a person and coming back. It does not hold today.
