@@ -50,6 +50,13 @@ has   "and says it is a new chain" "$(chain_says next "$a")" "this is a new chai
 verdict "$a" 001 adversary "the charter" 1
 is "and counts on from what is there" "$(chain next "$a")" "002"
 
+# A slot is a sequence over the directory, and a directory holds more than verdicts — architect
+# notes, human decisions, proposals. Counting only `*-verdict.md` handed back a slot four of them
+# already held, and nothing overwrote anything only because the rest of each name differed.
+printf 'a proposal
+' > "$a/002-proposed-revision-9.md"
+is "a record that is not a verdict still takes its slot" "$(chain next "$a")" "003"
+
 # --- what a round is ---
 
 #
