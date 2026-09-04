@@ -1616,6 +1616,84 @@ wreck_runner "a verdict credited to a commit nobody read is caught" \
 wreck_runner "a verdict from a judge nobody handed the bar is caught" \
   nohandoff 's#^    refuse_a_judge_never_handed_the_bar "\$dir" "\$text" "\$judge" "\$reviewed" "\$version"$#    :#'
 
+#
+# The receipt — #332. Floor reads one, and every refusal it makes is broken here.
+#
+# **The one the whole contract rests on.** Only the existence test is inverted, never the whole
+# guard: without the empty-argument check above it, the readers below are handed an empty filename,
+# and what a mutant that hangs proves is nothing at all.
+wreck_runner "a receipt nobody wrote, waved through, is caught" \
+  noreceipt 's#\[ -f "\$1" \] || { note "no receipt at#[ -n "$1" ] || { note "no receipt at#'
+
+#
+# The vocabulary is closed, and this opens it. A key floor has no reading for reads exactly like one
+# it checked — which is the whole reason the list is a list and not a suggestion.
+wreck_runner "a key floor has no reading for is caught" \
+  anykey 's#^refuse_a_line_that_is_not_a_receipt_line() {#refuse_a_line_that_is_not_a_receipt_line() { return 0;#'
+
+wreck_runner "a receipt missing a field it must carry is caught" \
+  nofield 's#^refuse_a_field_that_is_not_there() {#refuse_a_field_that_is_not_there() { return 0;#'
+
+#
+# Three fields that stand on one which is not there. Each break lets a claim through that reads as
+# checked and rests on nothing.
+#
+# `anyround` is the one that bites quietly: `[ abc -gt 1 ]` returns non-zero and complains to
+# stderr, so the guard after it reads as having passed.
+wreck_runner "a freshness claim about no context is caught" \
+  freshnothing 's#^refuse_a_freshness_about_nothing() {#refuse_a_freshness_about_nothing() { return 0;#'
+
+wreck_runner "a round nobody can count is caught" \
+  anyround 's#^refuse_a_round_that_is_not_a_count() {#refuse_a_round_that_is_not_a_count() { return 0;#'
+
+wreck_runner "a later round with no prior verdict is caught" \
+  noprior 's#^refuse_a_round_with_no_prior() {#refuse_a_round_with_no_prior() { return 0;#'
+
+# A judgement that really happened, about something else. Replayed here it credits this work with a
+# reading nobody gave it.
+wreck_runner "a receipt from another run replayed here is caught" \
+  otherrun 's#^refuse_a_receipt_from_another_run() {#refuse_a_receipt_from_another_run() { return 0;#'
+
+#
+# The bar the receipt answers, and the bar that went over. Three breaks, because the claim has three
+# halves: the baseline is recorded, an absent baseline is not a match, and a moved one is refused.
+wreck_runner "a handoff that records no brief is caught" \
+  nohandedbrief 's#stamp_handoff "\$dir" "\$text" "\$(delivered_ref)" "\$version" "\$judge" "\$how" "\$brief"#stamp_handoff "$dir" "$text" "$(delivered_ref)" "$version" "$judge" "$how"#'
+
+wreck_runner "an unknown bar taken as a match is caught" \
+  unknownbar 's#^refuse_a_brief_nothing_recorded() {#refuse_a_brief_nothing_recorded() { return 0;#'
+
+# The comparison alone, not the whole guard. Blinding the function takes the baseline check with it,
+# and the mutant is then killed by the earlier claim rather than by this one.
+wreck_runner "a receipt answering a brief that changed is caught" \
+  briefmoved 's#\[ "\$was" = "\$6" \] && return 0#[ 1 = 1 ] \&\& return 0#'
+
+#
+# What came back, and whether it was an answer at all.
+#
+# `anyoutcome` stamps every receipt as an approval, which is the defect `code_for_outcome` was
+# written for arriving through the newer verb. `nostopped` leaves a deadlock and an unreachable
+# harness reported as a judge nobody asked — a reader then goes and asks, which cannot help.
+wreck_runner "a receipt outcome stamped as an approval whatever it said is caught" \
+  anyoutcome 's#^code_for_judgement() {#code_for_judgement() { printf 0; return 0;#'
+
+wreck_runner "a judgement that never happened, read as silence, is caught" \
+  nostopped 's#^stopped() {#stopped() { return 1;#'
+
+# The receipt is read and nothing of it is kept, so the run holds no record of what it took.
+wreck_runner "a receipt read and not recorded is caught" \
+  noattested 's#^attested() {#attested() { return 0;#'
+
+#
+# **Green gates do not satisfy a Judged clause**, and this is the break that proves it.
+#
+# Both filters at once, because either alone still holds. Drop the trust and a machine row is still
+# skipped for naming no judge; drop the judge and it is still skipped for not being `judged`. The
+# claim is that a judgement is answered by a judge's record and by nothing else, so the break has to
+# be the whole of it.
+wreck_runner "a gate answering for a judge is caught" \
+  gatejudges 's#satisfied "\$1" "\$2" "\$3" judged "\$who" || exit 1#satisfied "$1" "$2" "$3" "" "" || exit 1#'
+
 # The reader half. The writer half cannot be observed today: the only comment
 # floor writes is a question, and `floor-question:` already bounds one.
 wreck_runner "a reader blind to the stamp is caught" \

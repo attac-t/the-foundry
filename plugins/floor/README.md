@@ -128,7 +128,9 @@ sh bin/run.sh charter derive
 sh bin/run.sh charter check
 sh bin/run.sh evidence
 sh bin/run.sh evidence record tests ./check
+sh bin/run.sh evidence handed "the interface is understandable" "A Reviewer" "a harness" 4e1f9c
 sh bin/run.sh evidence verdict "the interface is understandable" "A Reviewer" "read in two minutes"
+sh bin/run.sh evidence receipt ./judgement-receipt
 sh bin/run.sh gates
 sh bin/run.sh source read 7
 sh bin/run.sh claim 7
@@ -777,8 +779,11 @@ that no command can answer it.
 | Kind | Answered by | Written by |
 |---|---|---|
 | `Gate` | `machine` | `gates`, and `evidence record` for a name no pin holds |
-| `Judged` | `judged` | `evidence verdict` |
+| `Judged` | `judged` | `evidence verdict`, or `evidence receipt` |
 | `Decided` | `human` | an answer where the item is |
+
+**A green gate does not satisfy a `Judged` clause**, whatever name it is recorded under. That is
+what the kinds are for.
 
 **A verdict comes from something that did not produce the work.** That is the whole of what `judged`
 means, so floor refuses one naming the run's own worker.
@@ -814,6 +819,82 @@ read. A bar over the whole tree is a bar nobody meets.
 
 **A check here proves presence, completeness, binding and an outcome. It never proves the words are
 clear.** No script judges prose, and none claims to.
+
+### A receipt is what a runner writes down
+
+`evidence verdict` takes five things typed at a prompt. `evidence receipt` reads a file, and the
+file is the whole contract: **any harness able to write these lines answers the same clause.** Floor
+writes none and names none.
+
+One key per line, the value is the rest of the line, `#` comments and blanks ignored.
+
+**The vocabulary is closed.** A key floor has no reading for is refused. In a record it looks
+exactly like a key that was checked.
+
+```
+run        2026-09-04-a-receipt-01
+clause     a stranger can read it
+candidate  4e1f9c07b1d0a2f3e5c8b9a7d6e4f2c1a0b3d5e7
+role       a-reviewer
+adapter    some-harness
+brief      2f8a1c
+verdict    approve
+report     9d3e7b
+round      1
+time       2026-09-04T11:02:00Z
+```
+
+| Required | Vouched for, or absent |
+|---|---|
+| `run` `clause` `candidate` `role` `adapter` | `context` `fresh` `prior` |
+| `brief` `verdict` `report` `round` `time` | `requested_model` `self_reported_model` |
+| | `requested_provider` `self_reported_provider` |
+| | `requested_effort` `self_reported_effort` |
+
+**There is no `model` key, and that is measured rather than careful.** An adapter was driven here in
+its json mode. Its stream carries a thread handle, the reply and the usage. It names no model, no
+provider and no effort. Asked outright which model it was, it gave a different name from the one
+requested.
+
+So the doubt sits in the key. `requested_` proves intent and no more — an alias or a fallback
+changes what ran. `self_reported_` is what the thing said about itself. **A bare `model` reads as
+fact to every reader and every script, and the caveat beside it gets skipped.**
+
+**What a receipt proves outright is narrower and real:** one thread returned review text, and
+whether that thread was new.
+
+**A missing field is the honest answer.** Nothing is defaulted and nothing is written `unknown`.
+
+### What a receipt is refused for
+
+| | Exit |
+|---|---|
+| there is none, or it holds nothing | 37 |
+| a key with no reading, said twice, or claiming nothing | 37 |
+| a required field absent | 37 |
+| `fresh` naming no context, or a later round naming no prior | 37 |
+| the handoff recorded no brief, so there is nothing to compare | 37 |
+| it answers for another run, or for a brief that changed | 38 |
+| the candidate is not where the work is | 35 |
+| nothing handed that judge the bar | 36 |
+| the role is this run's own worker, is nobody the charter asked, or the clause is not `Judged` | 2 |
+
+**`verdict` may also say `deadlock` or `unavailable`.** Neither is a judgement. They record an
+exhausted review budget, or a harness nobody could reach. Both stop the delivery, and **completion
+keeps them apart from a refusal.** A refusal is answered by new work. Neither of these is.
+
+### What the receipt cannot do
+
+**Every field is written by whatever wrote the receipt.** A fuller record is still a record, and
+none of it is a credential — #156 owns making the actor real.
+
+**The brief check proves consistency, never authorship.** Floor compares two digests it was handed,
+one at the handoff and one on the receipt, and reads no brief. One adapter writes both, so matching
+digests say the bar did not move under the judge. They do not say the digest is of the brief it
+claims.
+
+**No second producer, so the contract is unproven.** These refusals are driven by fixture receipts
+the suite writes. A real second harness writing one is the other half, and it is not built.
 
 ---
 ### Monotonicity
