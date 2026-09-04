@@ -45,6 +45,19 @@ a_rendered_file_is_allowed() {
 
   call "$(verb pr comment) 1 --body-file=$tmp/body.md"
   allows "and the same path given with an equals"
+  # Quoted, which is how anyone writing a path with a space in it types it. The `tr` that flattens
+  # the quote leaves two spaces, and one strip left the field before them empty — so every quoted
+  # path was denied, under both flags, while every test here passed on a bare one.
+  call "$(verb issue comment) 1 --body-file \"$tmp/body.md\""
+  allows "and the same path in quotes"
+
+  # `-F` carrying a body the seam did render. The short form was only ever tested with a file that
+  # had no marker, so a guard that could not resolve `-F` at all still passed that case.
+  call "$(verb issue comment) 1 -F $tmp/body.md"
+  allows "and a rendered body behind -F"
+
+  call "$(verb issue comment) 1 -F \"$tmp/body.md\""
+  allows "and behind -F in quotes"
 }
 a_rendered_file_is_allowed
 
