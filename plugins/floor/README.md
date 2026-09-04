@@ -557,9 +557,15 @@ grant of its own and absent by default.
 
 `merge` refuses unless the run is authorised, complete, and the delivery's head is the commit its
 evidence names. That last one is the contract: a head that moved after grading is a tree nothing
-answered for. It also refuses a source that will not take the delivery, a required check that did not
-pass, and a check that has not answered — **a pending rollup carries no failure, and a reader looking
-for one calls it clean.**
+answered for. It also refuses a source that will not take the delivery.
+
+**Then the checks the target branch requires, asked rather than assumed.** The branch's own rules
+name them; every other check in the rollup belongs to the repository and bars nothing. Each one that
+did not pass is named, and one that never started is named apart from one that came back red.
+
+**So the bar is the source's bar.** A branch requiring nothing is a branch checking nothing, and
+floor inherits that instead of holding a line nobody drew. Weaker than refusing on the whole rollup,
+and honest.
 
 A retry after a merge that already landed says so and merges nothing twice.
 
