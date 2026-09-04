@@ -4395,6 +4395,14 @@ set -u
 store=${GH_STORE:?}
 mkdir -p "$store"
 
+# What `gh` says on stderr when the call worked — a new release, a deprecation, a rate-limit hint.
+# A reader folding stderr into stdout turns one of those into data, and here data is a check the
+# target is said to require. Off unless a test asks for it.
+chatter() {
+  [ -f "$store/gh-chatter" ] && echo "gh: A new release of gh is available: 2.94.0 -> 2.95.0" >&2
+  return 0
+}
+
 case "$*" in
   # The comments, as `gh` returns them: a list of bodies. **`gh` evaluates `--jq` itself**, so this
   # honours the one expression the adapter sends — a chosen line before each body — and emits bodies
@@ -4443,8 +4451,20 @@ case "$*" in
   # `rules-fail` is its own switch. A source that could not say what it requires
   # must never read as one that requires nothing, and `reads-fail`
   # stops the delivery read first.
+  #
+  # **The `--jq` never runs here, and nothing on this host can make it.** Real `gh` evaluates the
+  # expression itself; this answers pre-shaped, so a wrong field path stays green — the same hole the
+  # `pr view` arm has always had. There is no `jq` here or under WSL, and floor may not add one:
+  # `plugins.md` allows no parser and no runtime in shipped code, and a suite that needs one is a
+  # suite nobody runs. **Ungateable**, in the third sense `closing.md` names — the outcome is
+  # reachable and no exit code holds it.
+  #
+  # Measured instead, and this is what stands in for the gate. Both expressions were run live:
+  # `github/docs` (34 required contexts), `vercel/next.js` and `home-assistant/core` for the rules
+  # one, and pull request 467 of this repository for the delivery one. One source, and it is named.
   "api repos/"*"/rules/branches/"*)
                             [ -f "$store/rules-fail" ] && { echo "HTTP 502: Bad gateway" >&2; exit 1; }
+                            chatter
                             cat "$store/required" 2>/dev/null ;;
   # Who this run comments as. `posting_as` fails closed on an empty answer, so a
   # store with no `me` still names somebody — the absent case is its
@@ -4466,6 +4486,7 @@ case "$*" in
   # `gh` joins the four fields itself, so the fixture holds the answer already joined — the same
   # shape the adapter's `--jq` produces, and one a test can move a head in.
   "pr view"*)               [ -f "$store/reads-fail" ] && { echo "HTTP 502: Bad gateway" >&2; exit 1; }
+                            chatter
                             cat "$store/state" 2>/dev/null ;;
   "pr merge"*)              [ -f "$store/reads-fail" ] && { echo "could not resolve host" >&2; exit 1; }
                             printf '%s
@@ -4939,6 +4960,14 @@ And only what was graded.
 
   printf '%s OPEN MERGEABLE main\nSUCCESS tests\nFAILURE docs\n' "$graded" > "$store/state"
   is "a required check that passed lands, beside one nobody required" "$(code_of mg merge)" "0"
+
+  # `gh` talks on stderr about calls that worked. Folded into the answer, one of those notices is a
+  # line the caller reads as a check the target requires and nothing ran — refusing a merge over a
+  # release announcement. The delivery read has the same shape and the same fix.
+  : > "$store/gh-chatter"
+  printf '%s OPEN MERGEABLE main\nSUCCESS tests\n' "$graded" > "$store/state"
+  is "a notice on stderr is not a check the target requires" "$(code_of mg merge)" "0"
+  rm -f "$store/gh-chatter"
 
   # What has landed so far, so the retry below is measured against it rather than a number.
   landed=$(grep -c . "$store/merged" 2>/dev/null)

@@ -311,14 +311,18 @@ delivery_state() {
 
 # The header first, then the rollup one check to a line. `.name` is a check run and `.context` a
 # status, and the caller cares which check it was, never which kind.
+#
+# **Stderr stays off the answer.** `2>&1` on a path that succeeded folds a `gh` notice into the
+# lines the caller then parses, and one stray line here is a check nothing ran. A failure still
+# speaks: `gh` writes it to the stderr this inherits.
 delivery_facts() {
     shape='(.headRefOid + " " + .state + " " + (.mergeable // "UNKNOWN") + " " + .baseRefName),
            (.statusCheckRollup[]? | (.conclusion // .state // "PENDING") + " " + (.name // .context))'
 
     said=$(gh pr view "$1" --json headRefOid,state,mergeable,baseRefName,statusCheckRollup \
-               --jq "$shape" 2>&1) && { printf '%s\n' "$said"; return 0; }
+               --jq "$shape") && { printf '%s\n' "$said"; return 0; }
 
-    printf 'source-github: could not ask about the delivery: %s\n' "$said" >&2
+    printf 'source-github: could not ask about the delivery\n' >&2
     return 3
 }
 
@@ -337,14 +341,20 @@ delivery_facts() {
 # classic protection does not, so a check required only there goes unnamed. GitHub still refuses the
 # merge itself, so nothing lands that should not; the message degrades, never the bar.
 #
+# The branch goes into the path as it is. Measured: `rules/branches/feature/x` answers `[]` and not
+# a 404, so the route takes the slashes, and encoding them is what would break it.
+#
+# **Stderr stays off the answer**, for the reason `delivery_facts` gives. A notice folded in here is
+# worse: it reads as one more check the target requires.
+#
 checks_required_on() {
     shape='[.[] | select(.type == "required_status_checks")
                 | .parameters.required_status_checks[]?.context] | unique | .[]'
 
-    said=$(gh api "repos/{owner}/{repo}/rules/branches/$1" --jq "$shape" 2>&1) \
+    said=$(gh api "repos/{owner}/{repo}/rules/branches/$1" --jq "$shape") \
         && { printf '%s\n' "$said"; return 0; }
 
-    printf 'source-github: could not ask what [%s] requires: %s\n' "$1" "$said" >&2
+    printf 'source-github: could not ask what [%s] requires\n' "$1" >&2
     return 3
 }
 

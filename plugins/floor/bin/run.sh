@@ -2155,7 +2155,10 @@ EOF
     refuse_a_source_that_will_not "$mergeable"
     refuse_a_required_check_that_did_not_pass "$target" "$(what_the_target_requires "$said")"
 
-    source_says land "${1##*/}" || exit 25
+    source_says land "${1##*/}" || {
+        note "the source would not land it — a bar floor cannot read may be what refused"
+        exit 25
+    }
     note "merged."
 }
 
@@ -2191,6 +2194,11 @@ refuse_a_source_that_will_not() {
 # A check that has not answered is still refused. **A check that did not answer is not a check that
 # passed**, and a required check still pending reads as an empty failure list to anybody who looks
 # only for a `FAILURE`.
+#
+# **Only `SUCCESS` passes, which is stricter than the source may be.** GitHub may hold `SKIPPED` and
+# `NEUTRAL` to have met a required check. Nothing here has measured that, and no branch this runs
+# against requires a check to measure it against — so both refuse, which is the safe side of a
+# question nobody has answered. It is the one place this is tighter than the bar, not looser.
 #
 # **The cost, said plainly: the bar is now the source's bar.** A target requiring nothing is a
 # target checking nothing, and deferring to it inherits exactly that — weaker than refusing on
