@@ -25,12 +25,21 @@ The process count is the same on both. Git Bash charges about 80 ms to start one
 charges one, so the bill is cygwin process start, not this code.
 
 ```bash
-git clone /mnt/c/path/to/the-foundry /tmp/foundry   # ext4, never /mnt/c
-cd /tmp/foundry && sh bin/gates.sh
+mkdir -p ~/wsl-tmp && export TMPDIR=~/wsl-tmp        # survives a reboot; /tmp does not
+git clone /mnt/c/path/to/the-foundry ~/foundry       # ext4, never /mnt/c
+cd ~/foundry && sh bin/gates.sh
 ```
 
 **Clone to the Linux disk.** `/mnt/c` is a network-shaped filesystem and gives most of the
 speed back.
+
+**Home, not `/tmp`.** Ubuntu ships `D /tmp` in `tmpfiles.d`, which empties that directory on every
+boot, and the WSL machine reboots when it feels like it. A clone put there vanishes mid-run and
+leaves nothing behind to read. Two runs were lost that way on 4 September 2026.
+
+**`TMPDIR` matters as much as the clone.** Floor's audit builds its own trees from
+`${TMPDIR:-/tmp}`, so moving only the clone leaves nearly two hundred mutant trees in the path that
+gets emptied.
 
 **It also runs checks Windows cannot.** NTFS records no executable bit and no read bit, keeps no
 symlink, and ignores `chmod`. A check that reads one of those reports *unrunnable* and stands down.

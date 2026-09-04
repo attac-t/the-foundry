@@ -1509,11 +1509,15 @@ Git Bash and about 1 ms under Linux, and this suite starts a great many. `model.
 **4,611 s** on Git Bash against **49 s** under WSL on ext4 — 2 September, one laptop, one commit.
 
 ```bash
-git clone /mnt/c/path/to/the-foundry /tmp/floor
-bash /tmp/floor/plugins/floor/tests/run.sh
+mkdir -p ~/wsl-tmp && export TMPDIR=~/wsl-tmp
+git clone /mnt/c/path/to/the-foundry ~/floor
+bash ~/floor/plugins/floor/tests/run.sh
 ```
 
 Clone to ext4 first. Grading over `/mnt/c` hands most of the win straight back.
+
+**Home, not `/tmp`.** That directory is emptied on every boot, and the audit puts its trees under
+`${TMPDIR:-/tmp}` — so both the clone and `TMPDIR` have to move, or a reboot takes the run.
 
 **The pass count is not the same on every platform, and that is not a fault.** A check the
 filesystem cannot answer stands down and prints `n/a`; so does one needing a tool the box has not
