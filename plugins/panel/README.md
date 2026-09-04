@@ -81,14 +81,22 @@ Structural     tools: Read, Glob, Grep on judges.
                No escape found under adversarial probing.
 
 Mechanical     bin/verdicts.sh refuses a round claiming a prior verdict
-               that no file records. Fail closed, exit 1.
+               that no file stamps for that review. Fail closed, exit 1.
 
 Architectural  /verdict runs oracles in the parent session.
                Exit codes are harness-observed, never model-reported.
 
 Not shipped    The parent's own write scope is unconstrained.
                Author restraint from verdicts/ is convention, not enforcement.
+               Nothing checks the review name a convener passes, so a new
+               name opens a chain owing no prior round. That leaves a stamp
+               saying so; a fresh --verdicts leaves no trace at all.
 ```
+
+**A chain is a directory and a review, not a directory.** Reviews share `verdicts/` and neither feeds
+the other: a record's filename is a slot, a sequence over the directory, and the round it answers for
+lives in its `Judged:` stamp. So one review's round one can sit in slot 017, and did — reading the
+slot as the round refused every round of every chain written here.
 
 ---
 
