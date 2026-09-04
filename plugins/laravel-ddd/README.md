@@ -2,6 +2,11 @@
 
 Opinionated Laravel patterns for domain-driven design.
 
+**Written against Laravel 9 and 10 — 10.48 is the newest release its examples name. Last compared
+with the package index on 4 September 2026, when the framework stood at v13.30.1.** The comparison
+is what carries a date, not the guidance. [Run it
+again](../../CONTRIBUTING.md#is-a-stack-plugin-still-current) before trusting either.
+
 This plugin knows **what to build** and **when to use it**. The kernel knows how to think. This knows how to code Laravel.
 
 ---

@@ -34,6 +34,11 @@ happened.
 
 **This plugin ships no code.** So no gate here can go green about it, and none pretends to.
 
+**It teaches no stack either.** No framework, no language, no package — so unlike `pest` or
+`laravel-ddd` it carries no version stamp, and no release can date it. That is a finding, not an
+omission: [the currency check](../../CONTRIBUTING.md#is-a-stack-plugin-still-current) has nothing
+here to ask about.
+
 ## Install
 
 ```
