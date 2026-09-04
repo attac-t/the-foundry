@@ -275,7 +275,12 @@ posting_as() {
 digest() { printf '%s' "$1" | cksum | awk '{ print $1 }'; }
 
 #
-# What the source says about one run's delivery: `<head> <state> <mergeable> <checks>`.
+# What the source says about one run's delivery. A header, then the checks:
+#
+#     <head> <state> <mergeable> <target>
+#     <conclusion> <check>
+#
+# One check line for every check the target requires, and none at all when it requires none.
 #
 # **Four questions in one call, because four calls are four moments.** A head that moves between them
 # is the case a merge exists to refuse, and asking twice is how it slips through.
@@ -283,24 +288,85 @@ digest() { printf '%s' "$1" | cksum | awk '{ print $1 }'; }
 # `headRefOid` and not the branch name. A branch is a pointer a push moves; the caller compares a
 # commit against the one its evidence names, and only a commit answers that.
 #
-# `NONE` when the source requires no check, told apart from a check that has not answered. A source
-# that runs nothing is not a source that is still thinking.
+# The rollup holds every check that ran and says nothing about which of them the target insists on.
+# Reporting all of them made the caller refuse on a bar nobody set, so the requiring is asked here
+# and what crosses the seam is the answer.
 #
 delivery_state() {
     had=$(delivery_of "$1") || return 3
     [ -n "$had" ] || return 1
 
-    shape='.headRefOid + " " + .state + " " + (.mergeable // "UNKNOWN") + " "
-           + ([.statusCheckRollup[]? | (.conclusion // .state // "PENDING")]
-              | if length == 0 then "NONE" else join(",") end)'
+    said=$(delivery_facts "${had##* }") || return 3
 
-    said=$(gh pr view "${had##* }" --json headRefOid,state,mergeable,statusCheckRollup \
-               --jq "$shape" 2>&1) || {
-        printf 'source-github: could not ask about the delivery: %s\n' "$said" >&2
-        return 3
-    }
+    facts=$(printf '%s\n' "$said" | sed -n 1p)
+    ran=$(printf '%s\n' "$said" | sed 1d)
+    wanted=$(checks_required_on "${facts##* }") || return 3
 
-    printf '%s\n' "$said"
+    printf '%s\n' "$facts"
+    say_what_the_target_requires "$wanted" "$ran"
+}
+
+# The header first, then the rollup one check to a line. `.name` is a check run and `.context` a
+# status, and the caller cares which check it was, never which kind.
+delivery_facts() {
+    shape='(.headRefOid + " " + .state + " " + (.mergeable // "UNKNOWN") + " " + .baseRefName),
+           (.statusCheckRollup[]? | (.conclusion // .state // "PENDING") + " " + (.name // .context))'
+
+    said=$(gh pr view "$1" --json headRefOid,state,mergeable,baseRefName,statusCheckRollup \
+               --jq "$shape" 2>&1) && { printf '%s\n' "$said"; return 0; }
+
+    printf 'source-github: could not ask about the delivery: %s\n' "$said" >&2
+    return 3
+}
+
+#
+# Every check the target branch requires, one per line, and nothing when it requires none.
+#
+# `rules/branches` and not `branches/<b>/protection`. The protection endpoint answers 404 for a
+# branch nobody protected *and* for a caller who may not look, and nothing in the
+# reply tells the two apart — measured, `cli/cli` answers a
+# stranger the way this repository answers its owner.
+#
+# A signal that cannot be read is worse than one that is missing, and this one reads for anybody
+# with pull access. Rules set on the repository and rules set on the organisation both arrive here.
+#
+# **What it misses is the old `Branch protection rules` page.** Rulesets reach this endpoint and
+# classic protection does not, so a check required only there goes unnamed. GitHub still refuses the
+# merge itself, so nothing lands that should not; the message degrades, never the bar.
+#
+checks_required_on() {
+    shape='[.[] | select(.type == "required_status_checks")
+                | .parameters.required_status_checks[]?.context] | unique | .[]'
+
+    said=$(gh api "repos/{owner}/{repo}/rules/branches/$1" --jq "$shape" 2>&1) \
+        && { printf '%s\n' "$said"; return 0; }
+
+    printf 'source-github: could not ask what [%s] requires: %s\n' "$1" "$said" >&2
+    return 3
+}
+
+#
+# What became of each required check, in the order the target names them.
+#
+# `MISSING` for one the rollup never mentions. A required check that never ran is not one that
+# failed — the source lands neither, and only one of the two is a failure anybody can go and read.
+#
+say_what_the_target_requires() {
+    printf '%s\n' "$2" | awk -v wanted="$1" '
+        { ran[check_that_ran()] = $1 }
+        END { say_each() }
+
+        function check_that_ran(   name) { name = $0; sub(/^[^ ]* /, "", name); return name }
+
+        function say_each(   i, n, want) {
+            n = split(wanted, want, "\n")
+            for (i = 1; i <= n; i++) {
+                if (want[i] == "") continue
+                if (want[i] in ran) { print ran[want[i]], want[i]; continue }
+                print "MISSING", want[i]
+            }
+        }
+    '
 }
 
 # `--merge`, never `--squash`. The delivery is the run's own history, and a squash throws away every

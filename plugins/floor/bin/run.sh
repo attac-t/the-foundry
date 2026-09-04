@@ -2142,7 +2142,7 @@ land_what_was_graded() {
     [ "$asked" -eq 1 ] && { note "this run has delivered nothing, so there is nothing to merge"; exit 24; }
     [ "$asked" -eq 0 ] || exit 25
 
-    read -r head state mergeable checks <<EOF
+    read -r head state mergeable target <<EOF
 $said
 EOF
 
@@ -2153,7 +2153,7 @@ EOF
     refuse_a_delivery_not_open   "$state"
     refuse_a_moved_head          "$head" "$2"
     refuse_a_source_that_will_not "$mergeable"
-    refuse_a_check_that_did_not_pass "$checks"
+    refuse_a_required_check_that_did_not_pass "$target" "$(what_the_target_requires "$said")"
 
     source_says land "${1##*/}" || exit 25
     note "merged."
@@ -2184,17 +2184,37 @@ refuse_a_source_that_will_not() {
 }
 
 #
-# Every check, or none. **A check that did not answer is not a check that passed** — the whole reason
-# this is spelled out is that a pending rollup reads as an empty failure list.
+# **Only what the target requires, and every one of those.** The rollup holds checks nobody made a
+# condition of landing, and refusing on those was floor holding a bar the source never set. A target
+# requiring nothing could not be merged into at all.
 #
-refuse_a_check_that_did_not_pass() {
-    [ "$1" = NONE ] && return 0
+# A check that has not answered is still refused. **A check that did not answer is not a check that
+# passed**, and a required check still pending reads as an empty failure list to anybody who looks
+# only for a `FAILURE`.
+#
+# **The cost, said plainly: the bar is now the source's bar.** A target requiring nothing is a
+# target checking nothing, and deferring to it inherits exactly that — weaker than refusing on
+# everything, and true. What a repository must pass is not floor's to decide.
+#
+refuse_a_required_check_that_did_not_pass() {
+    failed=$(printf '%s\n' "$2" | awk 'NF && $1 != "SUCCESS"')
+    [ -n "$failed" ] || return 0
 
-    printf '%s\n' "$1" | tr ',' '\n' | grep -qvx SUCCESS || return 0
-
-    note "a check the source requires did not pass: $1"
+    printf '%s\n' "$failed" | while read -r conclusion check; do
+        note "[$check] is required to land on [$1], and $(what_became_of "$conclusion")"
+    done
     exit 24
 }
+
+# A check that never ran is not a check that failed. The source lands neither, and only one of the
+# two is a failure somebody can go and read.
+what_became_of() {
+    [ "$1" = MISSING ] && { printf 'it never ran'; return 0; }
+    printf 'it answered [%s]' "$1"
+}
+
+# The check lines of what the source said, which is everything after the header.
+what_the_target_requires() { printf '%s\n' "$1" | sed 1d; }
 
 
 #
