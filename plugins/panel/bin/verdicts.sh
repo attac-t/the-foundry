@@ -74,10 +74,16 @@ ensure_the_chain_exists() {
 # The filename's leading number. Never a round, and read back nowhere but here.
 slot_of() { name=${1##*/}; printf '%s\n' "${name%%-*}"; }
 
-# Every slot taken in this directory. The `case` drops a name that is not numbered, and drops the
-# unmatched glob with it — that is the pattern itself, which starts with a star.
+# Every slot taken in this directory — every numbered record, never only the verdicts.
+#
+# A chain directory also holds architect notes, human decisions and proposals. Globbing
+# `*-verdict.md` counted none of them, so `next` handed back a slot four records already held, and
+# the header above promises a sequence over the directory.
+#
+# Three digits, because that is what `record` writes. A looser glob would read a date-named file as
+# the year.
 slots() {
-    for file in "$1"/*-verdict.md; do
+    for file in "$1"/[0-9][0-9][0-9]-*; do
         case ${file##*/} in [0-9]*) slot_of "$file" ;; esac
     done
 }
