@@ -285,6 +285,9 @@ digest() { printf '%s' "$1" | cksum | awk '{ print $1 }'; }
 # **Four questions in one call, because four calls are four moments.** A head that moves between them
 # is the case a merge exists to refuse, and asking twice is how it slips through.
 #
+# What the target requires is a second call and not a fifth moment. A branch's rules are no property
+# of the delivery, so they cannot move under the head the first call read.
+#
 # `headRefOid` and not the branch name. A branch is a pointer a push moves; the caller compares a
 # commit against the one its evidence names, and only a commit answers that.
 #
