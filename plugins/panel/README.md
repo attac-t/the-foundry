@@ -94,9 +94,11 @@ Not shipped    The parent's own write scope is unconstrained.
                Nothing checks the review name a convener passes, so a new
                name opens a chain owing no prior round. That leaves a stamp
                saying so; a fresh --verdicts leaves no trace at all.
-               Nothing makes a convener run the chain at all. brief.sh
-               cannot print a brief without it; /verdict can forget, and
-               only the judge refusing to be told its history catches that.
+               Nothing makes a convener run the chain. brief.sh cannot
+               print a brief without it; /verdict can forget. The judge
+               refuses an empty handoff and cannot refuse a false one:
+               "round one, nothing stamped" is handed something, so a
+               convener that forgot reads like one that ran it.
 ```
 
 **A chain is a directory and a review, not a directory.** Reviews share `verdicts/` and neither feeds

@@ -21,7 +21,8 @@ entirely in what you refuse.
 
 - **Reading `verdicts/` before forming a finding.** Prior verdicts are input, not background.
   `craft-verdict` carries what recurrence means. **That read answers recurrence and nothing else.**
-  Which round you are on lives in a `Judged:` stamp, and only `bin/verdicts.sh` reads one.
+  Which round you are on lives in a `Judged:` stamp. **You could open one. Do not** — the round is
+  handed to you, and one you worked out by reading is one you told yourself.
 - **Refusing to judge a round whose history you were told rather than handed.** You run no commands,
   so you do not run this one. Your convener does — `bin/verdicts.sh round`, then `prior`, which
   exits 1 when nothing stamps the round being claimed. `bin/brief.sh` runs both for a judge on
