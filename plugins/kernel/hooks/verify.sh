@@ -21,15 +21,28 @@ CONTINUING=$(printf '%s' "$PAYLOAD" | awk -f "$SCRIPT_DIR/lib/unjson.awk" -v pat
 # No blueprint? Allow stop.
 [ -f "$BLUEPRINT" ] || exit 0
 
-# Count in-progress tasks. `grep -c` exits 1 on no match, so the fallback is the empty count.
-IN_PROGRESS=$(grep -c '| in-progress |' "$BLUEPRINT" 2>/dev/null) || IN_PROGRESS=0
+# The three states that mean work is still moving.
+#
+# `craft-blueprint` runs a self task `pending -> in-progress -> done`, and an agent task
+# `pending -> delegated -> in-review -> done`. `templates/blueprint.md` adds `deferred` to either.
+# Six states, and this read one of them — the self lane. Three agents could be working, or three
+# could have reported with nobody looking, and the turn ended clean either way.
+#
+# `in-review` is the worst of the three to miss: it means output arrived and no one has read it.
+#
+# Named here rather than counted, because a reader waits on `delegated` and reviews `in-review`.
+# A number cannot tell them which.
+IN_FLIGHT=
+for state in in-progress delegated in-review; do
+    grep -q "| $state |" "$BLUEPRINT" 2>/dev/null && IN_FLIGHT="$IN_FLIGHT $state"
+done
 
-# No in-progress tasks? Allow stop.
-[ "$IN_PROGRESS" -eq 0 ] && exit 0
+# Nothing moving? Allow stop. `pending` has not started; `done` and `deferred` have stopped.
+[ -n "$IN_FLIGHT" ] || exit 0
 
 cat <<EOF
 {
   "decision": "block",
-  "reason": "Blueprint shows $IN_PROGRESS task(s) in-progress. Either complete them, mark as deferred, or create a handoff before stopping."
+  "reason": "Blueprint shows work in flight:$IN_FLIGHT. Complete it, review it, mark it deferred, or create a handoff before stopping."
 }
 EOF
