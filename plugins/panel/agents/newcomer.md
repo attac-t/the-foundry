@@ -93,6 +93,9 @@ only thing that sees six months of gradual decay — every individual change loo
 to staying cold, and it is not a contradiction: past timings tell you nothing about the code, only
 about how long other strangers took. That is calibration, not context.
 
+In session you open it yourself. Handed a brief on another host you will not have it — say so and
+carry on. A missing log costs you calibration, not the read.
+
 If `locate` has gone 2m → 2m → 6m, **that is the finding**, and it outranks anything you noticed in
 this read. Report it as a Warning even when every individual test passed.
 

@@ -53,6 +53,24 @@ Prior verdicts are input, not archive. Before forming a finding, read `verdicts/
 
 Slop is invisible in one diff and obvious across forty. A judge that can't see forty can't see slop.
 
+## What The Convener Runs
+
+That read answers recurrence. It cannot say which round you are on, and no judge can ask — the
+toolset is `Read`, `Glob`, `Grep`. So everything mechanical runs here, in the parent session, before
+a judge is spawned. The gates, and the chain:
+
+```sh
+sh bin/verdicts.sh round <dir> <review>          # which round this is
+sh bin/verdicts.sh prior <dir> <round> <review>  # the record before it; exit 1 if none stamps one
+```
+
+Hand over the round, and that record in full. On round one, word that this review has stamped none.
+**A path is not a handoff:** a judge sent to go and look has been told its history.
+
+`bin/brief.sh` does all this for a judge on another host. It refuses to print a brief when the chain
+cannot answer. **Nothing refuses you here.** Forget it and the judge refuses instead, which is the
+whole of the enforcement.
+
 ## Deeper
 
 | | |

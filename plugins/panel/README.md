@@ -53,7 +53,8 @@ charter ──▶ [ APPROVED BY A HUMAN ]
                   │
                   │ commit
                   ▼
-           /verdict ──── runs the gates; the harness reads exit codes
+           /verdict ──── runs the gates and the chain; the harness reads
+                  │        exit codes, and hands the judge both answers
                   │
                   ▼
              adversary ──── tools: Read, Glob, Grep. Nothing else.
@@ -82,6 +83,8 @@ Structural     tools: Read, Glob, Grep on judges.
 
 Mechanical     bin/verdicts.sh refuses a round claiming a prior verdict
                that no file stamps for that review. Fail closed, exit 1.
+               Run by bin/brief.sh off-host, by /verdict in session.
+               By no judge: none of them holds a tool that runs a command.
 
 Architectural  /verdict runs oracles in the parent session.
                Exit codes are harness-observed, never model-reported.
@@ -91,6 +94,9 @@ Not shipped    The parent's own write scope is unconstrained.
                Nothing checks the review name a convener passes, so a new
                name opens a chain owing no prior round. That leaves a stamp
                saying so; a fresh --verdicts leaves no trace at all.
+               Nothing makes a convener run the chain at all. brief.sh
+               cannot print a brief without it; /verdict can forget, and
+               only the judge refusing to be told its history catches that.
 ```
 
 **A chain is a directory and a review, not a directory.** Reviews share `verdicts/` and neither feeds
@@ -149,7 +155,8 @@ Then:
 /verdict
 ```
 
-Runs the gates, hands the output to the adversary, records a verdict under `verdicts/`.
+Runs the gates and the chain, hands both answers to the adversary, records a verdict under
+`verdicts/`. Hand the adversary neither and it refuses — `craft-verdict` says what it is owed.
 
 ---
 
