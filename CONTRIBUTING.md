@@ -144,11 +144,44 @@ or that their skills say anything true. Those four ship no code, so there is not
 nothing here reads them either. Green means ten gates passed. For those four plugins it does not
 mean the change works.
 
+**Whether their guidance has aged is answered, not gated.** Each README that teaches a version names
+it beside the date someone last compared it with the package index. The command is below.
+
 Bump the version in the plugin's own `plugin.json`, and there only. `marketplace.json` carries one
 `version`, and it is **the marketplace's own** — it names plugins and where they live, never what
 version each is at. A second copy made one shared line every branch edits, so plugin work collided
 for packaging reasons. Commits use [Commitizen](https://commitizen-tools.github.io/commitizen/)
 format.
+
+## Is a stack plugin still current?
+
+`pest`, `laravel-ddd` and `laravel-playbook` teach a version. `product` names no framework, language
+or package, so it has none to go stale.
+
+Ask the package index:
+
+```bash
+for pkg in pestphp/pest laravel/framework; do
+  printf '%-20s ' "$pkg"
+  curl -s "https://repo.packagist.org/p2/$pkg.json" \
+    | tr ',' '\n' | grep -m2 -E '"(version|time)":' | cut -d'"' -f4 | tr '\n' ' '
+  echo
+done
+```
+
+**It reaches the network, so it stays out of `gates.sh`** — `plugins.md` refuses a gate that goes red
+on a train. That is why the `comments` gate runs `bin/comments.sh audit`, the offline half, and
+leaves the half that reads GitHub to the delivery path.
+
+Answered 4 September 2026:
+
+| Package | Released | What the plugin teaches |
+|---|---|---|
+| `pestphp/pest` | v5.1.3, 25 August 2026 | Pest 3 — two majors back |
+| `laravel/framework` | v13.30.1, 1 September 2026 | Laravel 11–12 in `laravel-playbook`, 9–10 in `laravel-ddd` |
+
+**Then write the answer into the README it makes wrong**, beside the date you checked. A number
+recorded here and nowhere else is one nobody installing the plugin will ever read.
 
 ---
 
