@@ -1,14 +1,21 @@
 # RFC-001: The Portable Composition Model
 
-**Status:** Accepted — revision 16, 2026-08-22
+**Status:** Accepted at revision 16, 2026-08-22. **Now at revision 25, 2026-08-25.**
 **Plugin:** `floor`
 **Author:** Christian Attard
 **Date:** 2026-08-12
 **Issue:** [#66](https://github.com/attac-t/the-foundry/issues/66)
 
 The contracts here bind until a revision changes them. Every claim about what is *built* is dated
-at the revision above — code ships between revisions, so `plugins/floor` (README, tests, code)
-answers what runs now, and §6's revision log is history, never current state.
+at **the second number above, never the first** — code ships between revisions, so `plugins/floor`
+(README, tests, code) answers what runs now, and §6's revision log is history, never current state.
+
+**The two numbers differ on purpose.** Nine revisions have landed since acceptance, and **a merge
+accepts nothing** — the tree says so. So 16 is what a person said yes to, in writing, dated; 25 is
+what this page now says. A reader who needs the accepted text reads the log back to 16.
+
+The header carried only the first number until 4 September, which dated every built-claim here nine
+revisions early.
 
 ---
 
