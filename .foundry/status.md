@@ -36,14 +36,19 @@ act cannot be done.
 
 Each line names the issue that would close it. **None of them is claimed anywhere.**
 
+**Two of them named merged work, and merged work is not an owner.** A reader who followed either
+link found a closed page and read the gap as handled. `#343` shipped the guard that *refuses* a
+person here; `#359` measured that the identity is an admin and the provider refuses nothing.
+Both are true, both are done, and neither closes the line above it.
+
 | Not true today | Owner |
 |---|---|
 | a worker reads the doctrine pinned at its base | [#274](https://github.com/attac-t/the-foundry/issues/274) |
 | the suite that ran was the suite pinned | [#341](https://github.com/attac-t/the-foundry/issues/341) |
 | who said yes is more than the run's word | [#156](https://github.com/attac-t/the-foundry/issues/156) |
-| a person can answer a judged clause | [#343](https://github.com/attac-t/the-foundry/issues/343) |
+| a person can answer a judged clause | **none yet.** [#343](https://github.com/attac-t/the-foundry/pull/343) is merged and refuses one |
 | a verdict is written by something that did not do the work | [#332](https://github.com/attac-t/the-foundry/issues/332) |
-| acceptance can be withheld | [#359](https://github.com/attac-t/the-foundry/issues/359) |
+| acceptance can be withheld | **none yet.** [#359](https://github.com/attac-t/the-foundry/pull/359) is merged and only measured it |
 | the record outlives the run directory | [#337](https://github.com/attac-t/the-foundry/issues/337) |
 | a question reaches a person and comes back | none yet |
 | end-to-end work runs without a hand at some step | none yet |
