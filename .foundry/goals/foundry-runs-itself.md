@@ -5,9 +5,9 @@ next run.
 
 Done when:
 
-- A real change completes the supported workflow, from a declared requirement to a merged delivery.
-- Required independent review can reject work, and a rejection blocks completion and delivery.
-- A separate producer satisfies the same contract, so one build is not the whole proof.
+- [ ] A real change completes the supported workflow, from a declared requirement to a merged delivery.
+- [ ] Required independent review can reject work, and a rejection blocks completion and delivery.
+- [ ] A separate producer satisfies the same contract, so one build is not the whole proof.
 
 State: partly, and less than it looked on 28 August 2026.
 
