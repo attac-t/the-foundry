@@ -42,6 +42,7 @@ Each line names the issue that would close it. **None of them is claimed anywher
 | the suite that ran was the suite pinned | [#341](https://github.com/attac-t/the-foundry/issues/341) |
 | who said yes is more than the run's word | [#156](https://github.com/attac-t/the-foundry/issues/156) |
 | a person can answer a judged clause | [#343](https://github.com/attac-t/the-foundry/issues/343) |
+| a verdict is written by something that did not do the work | [#332](https://github.com/attac-t/the-foundry/issues/332) |
 | acceptance can be withheld | [#359](https://github.com/attac-t/the-foundry/issues/359) |
 | the record outlives the run directory | [#337](https://github.com/attac-t/the-foundry/issues/337) |
 | a question reaches a person and comes back | none yet |
