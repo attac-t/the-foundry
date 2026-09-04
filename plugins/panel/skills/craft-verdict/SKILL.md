@@ -53,6 +53,36 @@ Prior verdicts are input, not archive. Before forming a finding, read `verdicts/
 
 Slop is invisible in one diff and obvious across forty. A judge that can't see forty can't see slop.
 
+## What The Convener Runs
+
+That read answers recurrence. It cannot say which round you are on, and no judge can ask — the
+toolset is `Read`, `Glob`, `Grep`. So everything mechanical runs here, in the parent session, before
+a judge is spawned. The gates, and the chain:
+
+```sh
+# which round this review is on
+sh "${CLAUDE_PLUGIN_ROOT}/bin/verdicts.sh" round <dir> <review>
+
+# the record before it — exit 1 when nothing stamps one
+sh "${CLAUDE_PLUGIN_ROOT}/bin/verdicts.sh" prior <dir> <round> <review>
+```
+
+**That `bin/` is Panel's, never the project you are reviewing.** Installed, your working directory
+is the user's repository, and a bare `bin/verdicts.sh` finds their script or none. Unset, the
+variable leaves `/bin/verdicts.sh` and exit 127 — loud, which is the point.
+
+Hand over the round, and that record in full. On round one, word that this review has stamped none.
+**A path is not a handoff:** a judge sent to go and look has been told its history.
+
+Hand over each gate too: its name, its exit code, and what it printed. **A gate nobody ran is not a
+gate that passed.** Name the ones you skipped, or the judge records that box unticked — and it
+should.
+
+`bin/brief.sh` does all this for a judge on another host. It refuses to print a brief when the chain
+cannot answer. **Nothing refuses you here.** Forget it and the judge refuses instead, which is the
+whole of the enforcement. **Refuse when the gap makes a verdict wrong; say so and carry on when it
+only makes one smaller.**
+
 ## Deeper
 
 | | |
