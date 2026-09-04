@@ -4923,9 +4923,11 @@ And only what was graded.
   printf '%s OPEN MERGEABLE main\nPENDING tests\n' "$graded" > "$store/state"
   is "and one that has not answered is not one that passed" "$(code_of mg merge)" "24"
 
-  # The refusal names the check the source needs, never the rollup around it.
+  # The refusal names the check the source needs, never the rollup around it. Both halves, because
+  # a refusal naming nothing at all passes the second one on its own.
   printf '%s OPEN MERGEABLE main\nFAILURE tests\nFAILURE docs\n' "$graded" > "$store/state"
-  lacks "the refusal leaves a check nobody required out of it" "$(mg_said merge)" "docs"
+  has   "the refusal names the check the target asked for" "$(mg_said merge)" "[tests] is required"
+  lacks "and leaves out the one nobody required"           "$(mg_said merge)" "docs"
 
   # A source that could not say what it requires is not a source that requires nothing. This is the
   # one silent weakening the change could have shipped, so it is the one written down.
