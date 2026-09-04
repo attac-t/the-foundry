@@ -26,6 +26,29 @@ wait
 }
 
 set -u
+
+# A suite must never reach the network, and the reason is not purity.
+#
+# Two fixtures set an origin on `github.com/acme`, a host that does not answer. A check that pushes
+# there makes git ask for a password and wait. Measured once at forty-three minutes on a single
+# check, with the gate printing nothing the whole time.
+#
+# **A hang is not a failure, and no exit code tells them apart.** A red suite is read and fixed. A
+# hung one looks exactly like a slow machine, and grades have been abandoned on that reading.
+# **Two of the three are not enough, and this was measured.** A push to that host with only the
+# first two set still waited past a twelve-second cap. With the helper cleared as well it failed in
+# under one, saying authentication failed — which is a red suite, and readable.
+#
+# The helper here is `manager`, a window `GIT_TERMINAL_PROMPT` cannot reach. `GIT_CONFIG_*` clears
+# it for this suite alone, so nobody's own checkout is touched. An empty value resets the list,
+# which is the whole point: any inherited helper is gone for every git call below.
+GIT_TERMINAL_PROMPT=0
+GIT_ASKPASS=/bin/echo
+GIT_CONFIG_COUNT=1
+GIT_CONFIG_KEY_0=credential.helper
+GIT_CONFIG_VALUE_0=
+export GIT_TERMINAL_PROMPT GIT_ASKPASS GIT_CONFIG_COUNT GIT_CONFIG_KEY_0 GIT_CONFIG_VALUE_0
+
 root="$(cd "$(dirname "$0")/.." && pwd)"
 tmp="${TMPDIR:-/tmp}/floor-audit-$$"
 mkdir -p "$tmp/verdict"
