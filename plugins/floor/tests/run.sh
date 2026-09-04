@@ -824,6 +824,10 @@ wreck_runner "authorising before deriving, reported as a lost clause, is caught"
 
 wreck_runner "a run that authorises after a derived clause was removed is caught" \
   lowered 's#^    gates_with_no_clause=.*#    gates_with_no_clause=#'
+# A refusal reported as a silence sends a reader to ask a judge that already answered no. The
+# dissent holds at that ref, so the trip cannot help.
+wreck_runner "a refusal reported as nobody answering is caught" \
+  saidno 's#^    said_no=.*#    said_no=#'
 
 # One allowlist for every run is one run's grant handed to all of them.
 #
