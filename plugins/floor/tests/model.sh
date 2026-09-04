@@ -4395,6 +4395,14 @@ set -u
 store=${GH_STORE:?}
 mkdir -p "$store"
 
+# What `gh` says on stderr when the call worked — a new release, a deprecation, a rate-limit hint.
+# A reader folding stderr into stdout turns one of those into data, and here data is a check the
+# target is said to require. Off unless a test asks for it.
+chatter() {
+  [ -f "$store/gh-chatter" ] && echo "gh: A new release of gh is available: 2.94.0 -> 2.95.0" >&2
+  return 0
+}
+
 case "$*" in
   # The comments, as `gh` returns them: a list of bodies. **`gh` evaluates `--jq` itself**, so this
   # honours the one expression the adapter sends — a chosen line before each body — and emits bodies
@@ -4436,6 +4444,28 @@ case "$*" in
                             printf '%s\n' "$5" > "$store/comments/$slot"
                             cat "$store/me" 2>/dev/null > "$store/authors/$slot" \
                                 || printf 'foundry-run\n' > "$store/authors/$slot" ;;
+  # What the target requires, as the rules that apply to it answer. A branch nobody set a rule on
+  # answers with an empty list and never an error, which is the whole
+  # reason the adapter asks here.
+  #
+  # `rules-fail` is its own switch. A source that could not say what it requires
+  # must never read as one that requires nothing, and `reads-fail`
+  # stops the delivery read first.
+  #
+  # **The `--jq` never runs here, and nothing on this host can make it.** Real `gh` evaluates the
+  # expression itself; this answers pre-shaped, so a wrong field path stays green — the same hole the
+  # `pr view` arm has always had. There is no `jq` here or under WSL, and floor may not add one:
+  # `plugins.md` allows no parser and no runtime in shipped code, and a suite that needs one is a
+  # suite nobody runs. **Ungateable**, in the third sense `closing.md` names — the outcome is
+  # reachable and no exit code holds it.
+  #
+  # Measured instead, and this is what stands in for the gate. Both expressions were run live:
+  # `github/docs` (34 required contexts), `vercel/next.js` and `home-assistant/core` for the rules
+  # one, and pull request 467 of this repository for the delivery one. One source, and it is named.
+  "api repos/"*"/rules/branches/"*)
+                            [ -f "$store/rules-fail" ] && { echo "HTTP 502: Bad gateway" >&2; exit 1; }
+                            chatter
+                            cat "$store/required" 2>/dev/null ;;
   # Who this run comments as. `posting_as` fails closed on an empty answer, so a
   # store with no `me` still names somebody — the absent case is its
   # own fixture, set by emptying the file rather than deleting it.
@@ -4456,6 +4486,7 @@ case "$*" in
   # `gh` joins the four fields itself, so the fixture holds the answer already joined — the same
   # shape the adapter's `--jq` produces, and one a test can move a head in.
   "pr view"*)               [ -f "$store/reads-fail" ] && { echo "HTTP 502: Bad gateway" >&2; exit 1; }
+                            chatter
                             cat "$store/state" 2>/dev/null ;;
   "pr merge"*)              [ -f "$store/reads-fail" ] && { echo "could not resolve host" >&2; exit 1; }
                             printf '%s
@@ -4847,6 +4878,8 @@ And only what was graded.
 
   mg() { ( cd "$tmp/mg" && PATH="$tmp/mgbin:$PATH" GH_STORE="$store" FOUNDRY_HOME="$home" \
            FOUNDRY_RUN="$mgrun" FOUNDRY_WHO=a@b sh "$runner" "$@" 2>/dev/null ); }
+  mg_said() { ( cd "$tmp/mg" && PATH="$tmp/mgbin:$PATH" GH_STORE="$store" FOUNDRY_HOME="$home" \
+                FOUNDRY_RUN="$mgrun" FOUNDRY_WHO=a@b sh "$runner" "$@" 2>&1 ); }
   mgrun=$( cd "$tmp/mg" && PATH="$tmp/mgbin:$PATH" GH_STORE="$store" FOUNDRY_HOME="$home" \
            FOUNDRY_RUN="" FOUNDRY_WHO=a@b sh "$runner" new "Merge" 2>/dev/null )
 
@@ -4866,34 +4899,84 @@ And only what was graded.
   mg source publish work/mg 'The work' >/dev/null 2>&1
   graded=$(git -C "$work" rev-parse HEAD)
 
+  # A target that requires nothing, which is what an unprotected branch is.
+  : > "$store/required"
+
   # The first falsifier. Grade one commit, move the delivery to another, merge.
-  printf '0000000000000000000000000000000000000000 OPEN MERGEABLE NONE\n' > "$store/state"
+  printf '0000000000000000000000000000000000000000 OPEN MERGEABLE main\n' > "$store/state"
   is "a delivery whose head moved is refused" "$(code_of mg merge)" "24"
   is "and nothing was landed"                 "$(cat "$store/merged" 2>/dev/null)" ""
 
-  printf '%s OPEN MERGEABLE FAILURE\n' "$graded" > "$store/state"
-  is "a check that did not pass is refused"   "$(code_of mg merge)" "24"
+  printf '%s OPEN CONFLICTING main\n' "$graded" > "$store/state"
+  is "a source that will not take it is refused" "$(code_of mg merge)" "24"
+
+  printf '%s CLOSED MERGEABLE main\n' "$graded" > "$store/state"
+  is "and a delivery nobody left open is not merged" "$(code_of mg merge)" "24"
+
+  #
+  # What the target requires, and nothing else. The rollup carries a check that failed and a check
+  # that has not answered, and the target asked for neither — so neither is a bar on landing, and
+  # refusing on them was floor holding a bar the source never set.
+  #
+  # This is the case the plugin could not do at all. Every merge into an unprotected branch failed
+  # here, which is every merge in the repository floor is written in.
+  #
+  printf '%s OPEN MERGEABLE main\nFAILURE build\nPENDING lint\n' "$graded" > "$store/state"
+  is "a target requiring nothing does not block on checks it never asked for" \
+     "$(code_of mg merge)" "0"
+  matches "and the source was told to land it" "$(cat "$store/merged" 2>/dev/null)" "^https://"
+
+  # A required check that failed. The bar the source set, enforced.
+  printf 'tests\n' > "$store/required"
+  printf '%s OPEN MERGEABLE main\nFAILURE tests\n' "$graded" > "$store/state"
+  is "a required check that failed is refused"  "$(code_of mg merge)" "24"
+  has "and the refusal names it"                "$(mg_said merge)" "[tests] is required to land on [main]"
+  has "and says what it answered"               "$(mg_said merge)" "it answered [FAILURE]"
+
+  # A required check nobody ran. GitHub reports the checks that reported, so a required context that
+  # never started is absent from the rollup rather than failing in it.
+  printf '%s OPEN MERGEABLE main\nSUCCESS build\n' "$graded" > "$store/state"
+  is "a required check that never ran is refused" "$(code_of mg merge)" "24"
+  has "and it is told apart from one that failed" "$(mg_said merge)" "[tests] is required to land on [main], and it never ran"
 
   # A pending rollup carries no failure, so a reader looking for one finds an empty list and calls it
   # clean. Named separately because that is the shape it fails in.
-  printf '%s OPEN MERGEABLE PENDING\n' "$graded" > "$store/state"
+  printf '%s OPEN MERGEABLE main\nPENDING tests\n' "$graded" > "$store/state"
   is "and one that has not answered is not one that passed" "$(code_of mg merge)" "24"
 
-  printf '%s OPEN CONFLICTING NONE\n' "$graded" > "$store/state"
-  is "a source that will not take it is refused" "$(code_of mg merge)" "24"
+  # The refusal names the check the source needs, never the rollup around it. Both halves, because
+  # a refusal naming nothing at all passes the second one on its own.
+  printf '%s OPEN MERGEABLE main\nFAILURE tests\nFAILURE docs\n' "$graded" > "$store/state"
+  has   "the refusal names the check the target asked for" "$(mg_said merge)" "[tests] is required"
+  lacks "and leaves out the one nobody required"           "$(mg_said merge)" "docs"
 
-  printf '%s CLOSED MERGEABLE NONE\n' "$graded" > "$store/state"
-  is "and a delivery nobody left open is not merged" "$(code_of mg merge)" "24"
+  # A source that could not say what it requires is not a source that requires nothing. This is the
+  # one silent weakening the change could have shipped, so it is the one written down.
+  : > "$store/rules-fail"
+  printf '%s OPEN MERGEABLE main\nSUCCESS tests\n' "$graded" > "$store/state"
+  is "a target that could not be asked never reads as one requiring nothing" \
+     "$(code_of mg merge)" "25"
+  rm -f "$store/rules-fail"
 
-  printf '%s OPEN MERGEABLE SUCCESS,SUCCESS\n' "$graded" > "$store/state"
-  is "the thing that was graded is merged" "$(code_of mg merge)" "0"
-  matches "and the source was told to land it" "$(cat "$store/merged" 2>/dev/null)" "^https://"
+  printf '%s OPEN MERGEABLE main\nSUCCESS tests\nFAILURE docs\n' "$graded" > "$store/state"
+  is "a required check that passed lands, beside one nobody required" "$(code_of mg merge)" "0"
+
+  # `gh` talks on stderr about calls that worked. Folded into the answer, one of those notices is a
+  # line the caller reads as a check the target requires and nothing ran — refusing a merge over a
+  # release announcement. The delivery read has the same shape and the same fix.
+  : > "$store/gh-chatter"
+  printf '%s OPEN MERGEABLE main\nSUCCESS tests\n' "$graded" > "$store/state"
+  is "a notice on stderr is not a check the target requires" "$(code_of mg merge)" "0"
+  rm -f "$store/gh-chatter"
+
+  # What has landed so far, so the retry below is measured against it rather than a number.
+  landed=$(grep -c . "$store/merged" 2>/dev/null)
 
   # A retry after a merge that landed. Refusing would read as a merge that never happened, and
   # merging again is not something a source forgives twice.
-  printf '%s MERGED MERGEABLE SUCCESS\n' "$graded" > "$store/state"
+  printf '%s MERGED MERGEABLE main\nSUCCESS tests\n' "$graded" > "$store/state"
   is "a retry settles rather than landing twice" "$(code_of mg merge)" "0"
-  is "and the source was asked once"  "$(grep -c . "$store/merged" 2>/dev/null)" "1"
+  is "and the source was not asked again"  "$(grep -c . "$store/merged" 2>/dev/null)" "$landed"
 
   # Fail-safe, and the one that has to be said out loud: nobody answering is not the source saying
   # yes.
@@ -4923,8 +5006,8 @@ And only what was graded.
 
   is "a run that delivered nothing may not land what another did" \
      "$(code_of theirs merge)" "24"
-  is "and the source was still asked once" \
-     "$(grep -c . "$store/merged" 2>/dev/null)" "1"
+  is "and the source was still not asked again" \
+     "$(grep -c . "$store/merged" 2>/dev/null)" "$landed"
 }
 a_merge_lands_only_what_was_graded
 
