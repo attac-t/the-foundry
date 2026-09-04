@@ -15,6 +15,10 @@ because nobody looks again.
 #163 closed with two of five unmet. The list was read down to the third line and the rest were never
 seen.
 
+**And say so when the last box is ticked.** Five items here had every box ticked and no word that
+they were done, one of them saying DONE in its prose while its list stayed silent. A reader scans
+boxes, not paragraphs, and an unannounced finish reads as work still open.
+
 ## A box that cannot be met
 
 Say so on the issue, and say which of two things it is:
