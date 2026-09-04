@@ -18,6 +18,7 @@ main() {
     disagree CONTRIBUTING "$(named_in_contributing)"
     disagree workflow "$(named_in_workflow)"
 
+    counts_agree
     projections_agree
 
     verdict
@@ -79,6 +80,54 @@ disagree() {
 
     [ -z "$absent" ] || printf '  FAIL  %s does not name: %s\n' "$1" "$absent"
     [ -z "$unrun" ]  || printf '  FAIL  %s names what nothing runs: %s\n' "$1" "$unrun"
+    disagreed=$((disagreed + 1))
+}
+
+# The number the prose writes, against the number that ran.
+#
+# `disagree` above reads identities and says so: a count cannot name the gate that went missing. But
+# it never looked at the figure `verdict` prints, and the prose carries that figure in three places.
+# It has drifted twice — on 30 August three of them said `Eight` while nine gates ran, and a second
+# model reviewing something else found it.
+#
+# The check runs count to word, never the other way. `.claude/rules/writing.md` prefers the word, and
+# a gate that read only digits would quietly push every number in this repository into numerals.
+NUMBER_WORDS='zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty'
+
+# `zero` sits at position one, so shifting by the count lands on its own name.
+#
+# Past twenty it hands back the digit rather than inventing a word. A repository with twenty-one
+# gates has a bigger problem than its prose.
+word_for_the_count() {
+    count=$1
+    set -- zero one two three four five six seven eight nine ten \
+           eleven twelve thirteen fourteen fifteen sixteen seventeen eighteen nineteen twenty
+    [ "$count" -lt $# ] || { printf '%s' "$count"; return; }
+
+    shift "$count"
+    printf '%s' "$1"
+}
+
+# Every number written beside the word `gates`, lowercased and deduplicated. A digit counts too — the
+# prose may change its mind about that, and this gate is not the place to argue.
+counted_in_prose() {
+    grep -ioE "($NUMBER_WORDS|[0-9]+) gates" "$1" |
+        cut -d' ' -f1 |
+        tr 'A-Z' 'a-z' |
+        sort -u
+}
+
+counts_agree() {
+    total=$(wc -l < "$listed" | tr -d ' ')
+    wanted=$(word_for_the_count "$total")
+
+    # Either spelling passes. This holds the number, never the house style.
+    wrong=$( { counted_in_prose README.md; counted_in_prose CONTRIBUTING.md; } |
+        sort -u | grep -vx "$wanted" | grep -vx "$total")
+
+    [ -z "$wrong" ] && { printf '  PASS  %s\n' "the number in prose"; return; }
+
+    printf '  FAIL  the prose says %s gates, and %s ran\n' "$(printf '%s' "$wrong" | tr '\n' ' ')" "$wanted"
     disagreed=$((disagreed + 1))
 }
 
