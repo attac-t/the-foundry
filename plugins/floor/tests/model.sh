@@ -3797,6 +3797,376 @@ a_verdict_is_bound_to_what_was_read() {
 a_verdict_is_bound_to_what_was_read
 
 #
+# A whole receipt, as an adapter would write one.
+#
+# Every check below changes exactly one line of it, so the line a check edits is what the check is
+# about. Sixteen lines written out per check would bury that in the noise.
+#
+# **No `model` line, and that is the point.** One adapter was driven in its json mode: its stream
+# carries a thread handle, the reply and the usage, and names no model, provider or effort. So what
+# it can write down is what it asked for and what the thing said about itself, each said as such.
+a_receipt() {
+  printf 'run %s
+clause %s
+candidate %s
+role a-reviewer
+adapter a-test-harness
+requested_model a-model
+self_reported_model another-model
+requested_provider a-provider
+requested_effort max
+context a-thread-handle
+fresh yes
+brief %s
+verdict approve
+report a-report-digest
+round 1
+time 2026-09-04T00:00:00Z
+' "$1" "$2" "$3" "$4"
+}
+
+#
+# A judgement receipt: what floor takes from one, and what it will not.
+#
+# #332. `verdict` records five things typed at a prompt. The decision on that issue names a runner
+# that is neither the author nor the convener, and sixteen fields it writes down — so floor reads a
+# file, and any harness able to write these lines answers the same clause.
+#
+# **Floor's half only.** These receipts are written by this suite. A second producer writing one is
+# the other half of the slice, and it stays unproven.
+#
+a_receipt_is_read_and_not_believed() {
+  make_repo "$tmp/rcpt" main && set_origin "$tmp/rcpt" 'https://gitlab.com/acme/rcpt.git' \
+    && mkdir -p "$tmp/rcpt/.foundry" \
+    && commit_file "$tmp/rcpt" .foundry/gates 'tests  true
+' && commit_file "$tmp/rcpt" .foundry/judged 'a-reviewer  a stranger can read it
+' || { skip "a receipt — git could not make a repo here"; return; }
+
+  rcrun=$(floor_new_as "$tmp/rcpt" ada@example.com "Receipt")
+  floor "$tmp/rcpt" charter derive >/dev/null 2>&1
+  floor "$tmp/rcpt" policy authorize 'https://gitlab.com/acme/rcpt.git' >/dev/null 2>&1
+  floor "$tmp/rcpt" targets add 'https://gitlab.com/acme/rcpt.git' main >/dev/null 2>&1
+  floor "$tmp/rcpt" open >/dev/null 2>&1
+  floor "$tmp/rcpt" gates >/dev/null 2>&1
+
+  base="$tmp/rcpt.receipt"
+  a_receipt "$(basename "$rcrun")" 'a stranger can read it' "$(reviewed_at "$tmp/rcpt")" 'a-brief-digest' > "$base"
+
+  # Nothing to read at all. This is the refusal the whole contract rests on.
+  is  "a receipt nobody wrote is refused" \
+      "$(code_of floor "$tmp/rcpt" evidence receipt "$tmp/rcpt.none")" "37"
+  has "and it says none is there" \
+      "$(floor_says "$tmp/rcpt" evidence receipt "$tmp/rcpt.none")" "no receipt at"
+  is  "and the verb with no file named is refused" \
+      "$(code_of floor "$tmp/rcpt" evidence receipt)" "2"
+
+  #
+  # There and empty, which is not the same as absent — and the sentence is what tells them apart.
+  #
+  # **Every guard here answers 37**, so the exit code cannot say which refused. Without the message
+  # asserted, blinding this one lets the required-field reader answer for it and the suite stays
+  # green. Verdict 051 found exactly that: the split covered two of three guards.
+  : > "$tmp/rcpt.empty"
+  is  "a receipt holding nothing is refused" \
+      "$(code_of floor "$tmp/rcpt" evidence receipt "$tmp/rcpt.empty")" "37"
+  has "and it says so, rather than naming the first field it wanted" \
+      "$(floor_says "$tmp/rcpt" evidence receipt "$tmp/rcpt.empty")" "holds nothing"
+
+  #
+  # The other half of the same guard: there, not empty, and not readable.
+  #
+  # **Amber where the filesystem has no such bit.** NTFS keeps none, so `chmod 000` changes nothing
+  # and the check would assert against a file it can still read. That is a platform that cannot
+  # answer, never a defect — the probe is asked rather than the platform guessed at.
+  cp "$base" "$tmp/rcpt.unreadable" && chmod 000 "$tmp/rcpt.unreadable" 2>/dev/null
+  if [ -r "$tmp/rcpt.unreadable" ]; then
+    cannot "a receipt that will not read — this filesystem ignores chmod"
+  else
+    is  "a receipt floor may not read is refused" \
+        "$(code_of floor "$tmp/rcpt" evidence receipt "$tmp/rcpt.unreadable")" "37"
+    has "and it is told apart from one that is not there" \
+        "$(floor_says "$tmp/rcpt" evidence receipt "$tmp/rcpt.unreadable")" "holds nothing"
+  fi
+  chmod u+rw "$tmp/rcpt.unreadable" 2>/dev/null
+
+  #
+  # The vocabulary is closed. A key floor has no reading for is a claim nobody checked, wearing the
+  # look of one that was — and a reader cannot tell those apart from the file.
+  { cat "$base"; printf 'confidence high
+'; } > "$tmp/rcpt.unknown"
+  is  "a key floor does not read is refused" \
+      "$(code_of floor "$tmp/rcpt" evidence receipt "$tmp/rcpt.unknown")" "37"
+  has "and it names the key" \
+      "$(floor_says "$tmp/rcpt" evidence receipt "$tmp/rcpt.unknown")" "[confidence] is a key floor has no reading for"
+
+  { cat "$base"; printf 'round 2
+'; } > "$tmp/rcpt.twice"
+  is  "a key said twice is refused" \
+      "$(code_of floor "$tmp/rcpt" evidence receipt "$tmp/rcpt.twice")" "37"
+  has "and it says two answers is not one" \
+      "$(floor_says "$tmp/rcpt" evidence receipt "$tmp/rcpt.twice")" "said twice"
+
+  sed 's/^requested_effort .*/requested_effort/' "$base" > "$tmp/rcpt.novalue"
+  is  "a key claiming nothing is refused" \
+      "$(code_of floor "$tmp/rcpt" evidence receipt "$tmp/rcpt.novalue")" "37"
+  has "and it says what it recorded" \
+      "$(floor_says "$tmp/rcpt" evidence receipt "$tmp/rcpt.novalue")" "claims nothing"
+
+  #
+  # The one key an author reaches for first, and the one the adapter cannot vouch for.
+  #
+  # Measured: driven in its json mode, the adapter's stream carries a thread handle, the reply and
+  # the usage, and names no model. Asked outright, it gave a different name from the one requested.
+  # So a bare `model` is a claim nobody checked, and a caveat written beside it is the part every
+  # reader and every script skips.
+  sed 's/^requested_model /model /' "$base" > "$tmp/rcpt.claimsmodel"
+  is  "a bare model field is refused" \
+      "$(code_of floor "$tmp/rcpt" evidence receipt "$tmp/rcpt.claimsmodel")" "37"
+  has "and it says nothing checked it" \
+      "$(floor_says "$tmp/rcpt" evidence receipt "$tmp/rcpt.claimsmodel")" "would state what ran, and nothing checked it"
+  has "and it names the two that may be said instead" \
+      "$(floor_says "$tmp/rcpt" evidence receipt "$tmp/rcpt.claimsmodel")" "say requested_model or self_reported_model"
+
+  sed 's/^requested_provider /provider /' "$base" > "$tmp/rcpt.claimsprovider"
+  is "a bare provider field is refused too" \
+     "$(code_of floor "$tmp/rcpt" evidence receipt "$tmp/rcpt.claimsprovider")" "37"
+
+  sed 's/^requested_effort /effort /' "$base" > "$tmp/rcpt.claimseffort"
+  is "and so is a bare effort" \
+     "$(code_of floor "$tmp/rcpt" evidence receipt "$tmp/rcpt.claimseffort")" "37"
+
+  grep -v '^brief ' "$base" > "$tmp/rcpt.nobrief"
+  is  "a required field absent is refused" \
+      "$(code_of floor "$tmp/rcpt" evidence receipt "$tmp/rcpt.nobrief")" "37"
+  has "and it names the field" \
+      "$(floor_says "$tmp/rcpt" evidence receipt "$tmp/rcpt.nobrief")" "carries no [brief]"
+
+  #
+  # A field standing on one that is not there. Each of these reads as checked and rests on nothing.
+  grep -v '^context ' "$base" > "$tmp/rcpt.nocontext"
+  is  "freshness about a context nobody named is refused" \
+      "$(code_of floor "$tmp/rcpt" evidence receipt "$tmp/rcpt.nocontext")" "37"
+  has "and it says the claim has no subject" \
+      "$(floor_says "$tmp/rcpt" evidence receipt "$tmp/rcpt.nocontext")" "names none"
+
+  #
+  # The one column the charter calls attestable, and the shape of it is what floor can gate.
+  #
+  # A thread was new or it was carried on. `probably` reads as an answer to a question nobody put,
+  # and floor did not issue the handle, so the truth of a `yes` stays the producer's word.
+  sed 's/^fresh .*/fresh probably/' "$base" > "$tmp/rcpt.maybefresh"
+  is  "a freshness answering neither yes nor no is refused" \
+      "$(code_of floor "$tmp/rcpt" evidence receipt "$tmp/rcpt.maybefresh")" "37"
+  has "and it says there are two answers" \
+      "$(floor_says "$tmp/rcpt" evidence receipt "$tmp/rcpt.maybefresh")" "a thread was new or it was not"
+
+  sed 's/^fresh .*/fresh no/' "$base" > "$tmp/rcpt.stale"
+  lacks "a thread carried on is a receipt floor still reads" \
+        "$(floor_says "$tmp/rcpt" evidence receipt "$tmp/rcpt.stale")" "a thread was new or it was not"
+
+  sed 's/^round .*/round none/' "$base" > "$tmp/rcpt.noround"
+  is  "a round nobody can count is refused" \
+      "$(code_of floor "$tmp/rcpt" evidence receipt "$tmp/rcpt.noround")" "37"
+  has "and it says a round is counted" \
+      "$(floor_says "$tmp/rcpt" evidence receipt "$tmp/rcpt.noround")" "counted from one"
+
+  sed 's/^round .*/round 2/' "$base" > "$tmp/rcpt.round2"
+  is  "a later round naming no prior verdict is refused" \
+      "$(code_of floor "$tmp/rcpt" evidence receipt "$tmp/rcpt.round2")" "37"
+  has "and it says which is missing" \
+      "$(floor_says "$tmp/rcpt" evidence receipt "$tmp/rcpt.round2")" "names no prior verdict"
+
+  # A judgement that really happened, about something else. Replayed here it credits this work with
+  # a reading nobody gave it.
+  sed 's/^run .*/run 2026-01-01-another-run-01/' "$base" > "$tmp/rcpt.otherrun"
+  is  "a receipt answering for another run is refused" \
+      "$(code_of floor "$tmp/rcpt" evidence receipt "$tmp/rcpt.otherrun")" "38"
+  has "and it names both runs" \
+      "$(floor_says "$tmp/rcpt" evidence receipt "$tmp/rcpt.otherrun")" "2026-01-01-another-run-01"
+
+  # Every refusal `verdict` makes, made here too.
+  sed 's/^role .*/role someone-else/' "$base" > "$tmp/rcpt.stranger"
+  is  "a role nobody asked is refused" \
+      "$(code_of floor "$tmp/rcpt" evidence receipt "$tmp/rcpt.stranger")" "2"
+  has "and it names who was asked" \
+      "$(floor_says "$tmp/rcpt" evidence receipt "$tmp/rcpt.stranger")" "answered by [a-reviewer]"
+
+  sed 's/^clause .*/clause tests/' "$base" > "$tmp/rcpt.gate"
+  is  "a receipt against a Gate clause answers nothing" \
+      "$(code_of floor "$tmp/rcpt" evidence receipt "$tmp/rcpt.gate")" "2"
+
+  is "a worker may not receipt its own work" \
+     "$(code_of floor_worked "$tmp/rcpt" 'a-reviewer' evidence receipt "$base")" "2"
+
+  # No bar went over, so nothing here can answer for one.
+  is "a receipt from a judge nobody handed the bar is refused" \
+     "$(code_of floor "$tmp/rcpt" evidence receipt "$base")" "36"
+
+  #
+  # A handoff, and still nothing to check the receipt's brief against. Unverifiable rather than
+  # wrong: floor holds no brief and never reads one, so with no baseline it has nothing to compare.
+  floor "$tmp/rcpt" evidence handed 'a stranger can read it' 'a-reviewer' 'a test harness' >/dev/null 2>&1
+  is  "a receipt whose handoff recorded no brief is refused" \
+      "$(code_of floor "$tmp/rcpt" evidence receipt "$base")" "37"
+  has "and it says the bar is unknown" \
+      "$(floor_says "$tmp/rcpt" evidence receipt "$base")" "unknown bar"
+
+  floor "$tmp/rcpt" evidence handed 'a stranger can read it' 'a-reviewer' 'a test harness' 'a-brief-digest' >/dev/null 2>&1
+
+  sed 's/^brief .*/brief another-brief-digest/' "$base" > "$tmp/rcpt.moved"
+  is  "a receipt answering a brief that changed is refused" \
+      "$(code_of floor "$tmp/rcpt" evidence receipt "$tmp/rcpt.moved")" "38"
+  has "and it names the brief that went over" \
+      "$(floor_says "$tmp/rcpt" evidence receipt "$tmp/rcpt.moved")" "was handed brief [a-brief-digest]"
+
+  #
+  # **The charter and the brief are two artefacts, and only one of them is floor's.**
+  #
+  # `was_handed` matches on the charter's own sum, so a bar rewritten after the handoff refuses at
+  # 36 — any edit moves the sum, and this appends one line to show it. That is the run's bar.
+  #
+  # The brief is what actually went to the judge, and floor never sees it. A charter left alone
+  # while the brief was rewritten is the case above, and the charter's sum cannot see it. Two
+  # facts, two columns, and neither stands in for the other.
+  kept=$(charter_of "$rcrun")
+  [ -n "$kept" ] && [ -f "$kept" ] && {
+    cp "$kept" "$kept.keep"
+    printf '# a bar rewritten after the handoff
+' >> "$kept"
+
+    is "a receipt under a charter rewritten since the handoff is refused" \
+       "$(code_of floor "$tmp/rcpt" evidence receipt "$base")" "36"
+
+    mv "$kept.keep" "$kept"
+  }
+
+  #
+  # **Green gates do not satisfy a Judged clause.** The charter's own bar for #332.
+  #
+  # `gates` is green above. This records a machine pass under the judged clause's own name, which is
+  # the closest a command can come to answering a question no command can answer.
+  floor "$tmp/rcpt" evidence record 'a stranger can read it' true >/dev/null 2>&1
+
+  has "a green gate under the clause's own name does not satisfy it" \
+      "$(floor "$tmp/rcpt" complete 2>&1)" "no approval from [a-reviewer]"
+  is  "and the run still may not deliver" "$(code_of floor "$tmp/rcpt" complete)" "15"
+
+  # And then it is taken.
+  is "a receipt carrying the contract is recorded" \
+     "$(code_of floor "$tmp/rcpt" evidence receipt "$base")" "0"
+  is "and with it the run may deliver" "$(code_of floor "$tmp/rcpt" complete)" "0"
+
+  held=$(floor "$tmp/rcpt" evidence)
+
+  has "the record keeps the adapter"             "$held" "adapter=a-test-harness"
+  has "and the model that was asked for"         "$held" "requested_model=a-model"
+  has "and the different one it claimed to be"   "$held" "self_reported_model=another-model"
+  has "and the provider that was asked for"      "$held" "requested_provider=a-provider"
+  has "and the effort that was asked for"        "$held" "requested_effort=max"
+  has "the thread, and that it was fresh"        "$held" "context=a-thread-handle fresh=yes"
+  has "and the brief digest"                     "$held" "brief=a-brief-digest"
+  has "and the round"                            "$held" "round=1"
+  has "and when the judgement was made"          "$held" "time=2026-09-04T00:00:00Z"
+  has "and the report digest, as what came back" "$held" "a-reviewer: approve, report a-report-digest"
+  has "and the commit that was read"             "$held" "$(reviewed_at "$tmp/rcpt")"
+
+  # Nothing here says which model answered, because nothing here knows.
+  lacks "and the record states no model that ran" "$held" " model="
+
+  #
+  # A property no adapter could attest, absent rather than claimed.
+  #
+  # The line the charter says cannot be fixed and must be said: **every field is written by whatever
+  # wrote the receipt.** What floor adds is that a field left out stays out. `self_reported_model=unknown`
+  # would be a claim nobody checked, and in a record it reads exactly like one that was.
+  grep -v '^self_reported_model ' "$base" > "$tmp/rcpt.nomodel"
+
+  is    "a receipt vouching for no self-reported model is still taken" \
+        "$(code_of floor "$tmp/rcpt" evidence receipt "$tmp/rcpt.nomodel")" "0"
+  lacks "and nothing is written in its place" \
+        "$(floor "$tmp/rcpt" evidence | tail -1)" "self_reported_model="
+}
+a_receipt_is_read_and_not_believed
+
+#
+# An exhausted review budget, and a harness nobody could reach.
+#
+# **Neither is a verdict and neither is silence.** A silent judge is asked again. A refusal is
+# answered by new work. These are answered by whoever owns the budget or the harness — three facts
+# and three remedies, and reported as a refusal a reader commits their way out of a harness that was
+# never reached.
+#
+a_judgement_that_never_happened_is_recorded() {
+  make_repo "$tmp/stopped" main && set_origin "$tmp/stopped" 'https://gitlab.com/acme/stopped.git' \
+    && mkdir -p "$tmp/stopped/.foundry" \
+    && commit_file "$tmp/stopped" .foundry/gates 'tests  true
+' && commit_file "$tmp/stopped" .foundry/judged 'a-reviewer  a stranger can read it
+' || { skip "a deadlock — git could not make a repo here"; return; }
+
+  dlrun=$(floor_new_as "$tmp/stopped" ada@example.com "Deadlock")
+  floor "$tmp/stopped" charter derive >/dev/null 2>&1
+  floor "$tmp/stopped" policy authorize 'https://gitlab.com/acme/stopped.git' >/dev/null 2>&1
+  floor "$tmp/stopped" policy deliver-to 'https://gitlab.com/acme/stopped.git' >/dev/null 2>&1
+  floor "$tmp/stopped" targets add 'https://gitlab.com/acme/stopped.git' main >/dev/null 2>&1
+  work=$(only_slot "$(floor "$tmp/stopped" open)")
+  floor "$tmp/stopped" gates >/dev/null 2>&1
+
+  at=$(reviewed_at "$tmp/stopped")
+  floor "$tmp/stopped" evidence handed 'a stranger can read it' 'a-reviewer' 'a test harness' 'a-brief-digest' >/dev/null 2>&1
+
+  a_receipt "$(basename "$dlrun")" 'a stranger can read it' "$at" 'a-brief-digest' \
+    | sed 's/^verdict .*/verdict deadlock/' > "$tmp/stopped.deadlock"
+
+  is    "an exhausted budget is recorded, never refused" \
+        "$(code_of floor "$tmp/stopped" evidence receipt "$tmp/stopped.deadlock")" "0"
+  has   "and the record says which, in words" \
+        "$(floor "$tmp/stopped" evidence)" "a-reviewer: deadlock"
+  is    "and the run may not deliver"  "$(code_of floor "$tmp/stopped" complete)" "15"
+  has   "and completion says nothing judged it" \
+        "$(floor "$tmp/stopped" complete 2>&1)" "never judged it"
+  lacks "not that the judge was never asked" \
+        "$(floor "$tmp/stopped" complete 2>&1)" "no approval from [a-reviewer]"
+  lacks "and not that the judge said no" \
+        "$(floor "$tmp/stopped" complete 2>&1)" "refused here"
+  is    "and the delivery itself is refused, not only the question" \
+        "$(code_of floor "$tmp/stopped" deliver 'a change')" "15"
+
+  # A gate cannot stand in for a judgement that never happened, whatever it exits.
+  floor "$tmp/stopped" evidence record 'a stranger can read it' true >/dev/null 2>&1
+  is "a green gate does not answer for a deadlock either" "$(code_of floor "$tmp/stopped" complete)" "15"
+
+  #
+  # A deadlock holds its ref for good, so the harness half needs a ref of its own. That is the
+  # append-only ledger working, not a limitation of the fixture.
+  commit_file "$work" LATER.md 'a later thought
+' >/dev/null 2>&1
+  moved=$(reviewed_at "$tmp/stopped")
+
+  is "a receipt naming the commit that was read is refused once the work moved" \
+     "$(code_of floor "$tmp/stopped" evidence receipt "$tmp/stopped.deadlock")" "35"
+
+  floor "$tmp/stopped" evidence handed 'a stranger can read it' 'a-reviewer' 'a test harness' 'a-brief-digest' >/dev/null 2>&1
+
+  a_receipt "$(basename "$dlrun")" 'a stranger can read it' "$moved" 'a-brief-digest' \
+    | sed 's/^verdict .*/verdict unavailable/' > "$tmp/stopped.unavailable"
+
+  is  "a harness nobody could reach is recorded too" \
+      "$(code_of floor "$tmp/stopped" evidence receipt "$tmp/stopped.unavailable")" "0"
+  has "and the record names it" "$(floor "$tmp/stopped" evidence)" "a-reviewer: unavailable"
+  is  "and nothing falls back to answer in its place" "$(code_of floor "$tmp/stopped" complete)" "15"
+
+  a_receipt "$(basename "$dlrun")" 'a stranger can read it' "$moved" 'a-brief-digest' \
+    | sed 's/^verdict .*/verdict looksfine/' > "$tmp/stopped.wibble"
+
+  is  "an outcome the contract does not name is refused" \
+      "$(code_of floor "$tmp/stopped" evidence receipt "$tmp/stopped.wibble")" "2"
+  has "and it names all five that are" \
+      "$(floor_says "$tmp/stopped" evidence receipt "$tmp/stopped.wibble")" \
+      "approve, reject, revise, deadlock or unavailable"
+}
+a_judgement_that_never_happened_is_recorded
+
+#
 # An artefact a repository says must be read cold before it ships.
 #
 # **It needs no new declaration.** A cold read is a judgement — somebody who did not write the file

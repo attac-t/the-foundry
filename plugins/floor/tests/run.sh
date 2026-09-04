@@ -149,6 +149,23 @@ audit_says_which() {
 }
 audit_says_which
 
+#
+# **There is no check that every `refuse_*` has a break, and that is a decision.**
+#
+# Verdict 051 asked for one. Measured on main: 44 refusals, 18 named by some mutation, 26 not. The
+# 26 are mostly not holes — a `sed` that rewrites a refusal's body proves it perfectly well and
+# never types its name. So the check would go red on 26 lines the day it landed, and **26 exemptions
+# is not a gate but a list nobody maintains** — `craft-oracle`'s green gate over an exemption list.
+#
+# A version that held would need each break to declare the refusal it targets. Nothing records that:
+# a `wreck_runner` line carries a claim in prose and a `sed` in shell, and neither names a function.
+# **Adding that field is sixteen call sites and its own charter**, not a rider on a receipt.
+#
+# What is done instead, and it is the half this file can stand behind: **every refusal the receipt
+# adds is named by a break, and each dies on its own check.** The three composites are not — they
+# only delegate, so a break on one is killed by whichever child fixture runs first, which is the
+# fault 050 and 051 both named rather than a cure for it.
+#
 ends_on "$root/tests/run.sh"     'exit $failed'      || bad "tests/run.sh declares breaks below its exit, and nothing runs them"
 ends_on "$root/tests/transport.sh" '[ "$failed" -eq 0 ] || exit 1' || bad "tests/transport.sh runs cases below its exit, and nothing counts them"
 ends_on "$root/tests/model.sh"   'summary "model"'   || bad "tests/model.sh runs cases below its tally, and nothing counts them"
@@ -1616,6 +1633,117 @@ wreck_runner "a verdict credited to a commit nobody read is caught" \
 wreck_runner "a verdict from a judge nobody handed the bar is caught" \
   nohandoff 's#^    refuse_a_judge_never_handed_the_bar "\$dir" "\$text" "\$judge" "\$reviewed" "\$version"$#    :#'
 
+#
+# The receipt — #332. Floor reads one, and every refusal it makes is broken here.
+#
+# **No mutation makes a missing receipt satisfy anything, and the guard is named for what it does.**
+#
+# It fails closed four deep — the existence test, then the emptiness test, then the required-field
+# reader, then an outcome that is not one of the five. So a break on any one of them changes which
+# sentence a reader gets, never whether the run is refused. **This mutant proves the sentence**, and
+# it says so rather than claiming a refusal it cannot reach.
+#
+# Verdict 050 asked for the guard to be split so the existence test could be broken alone. It is,
+# and the split is right on its own terms — one function was doing three jobs — but the second half
+# of the finding stands: the exit code cannot tell these apart, and only a `has` can.
+wreck_runner "a missing receipt reported as an empty one is caught" \
+  noreceipt 's#^refuse_a_receipt_that_is_not_there() {#refuse_a_receipt_that_is_not_there() { return 0;#'
+
+# The half the split made reachable. Blind it and the empty argument reaches the existence test,
+# which answers 37 about a file nobody named rather than 2 about a caller who named none.
+wreck_runner "a receipt verb given no file at all is caught" \
+  nonamed 's#^refuse_a_receipt_nobody_named() {#refuse_a_receipt_nobody_named() { return 0;#'
+
+#
+# The third of the split, which the split itself left uncovered.
+#
+# Verdict 051: blind this and the required-field reader answers 37 in its place, so the exit code
+# says nothing and the suite stayed green. **The split fixed the shape and left one guard behind** —
+# the same fault 050 named, made by the fix for it.
+#
+# Killed by a `has` on *holds nothing*, and it has to be: all four guards here answer 37, so no
+# comparison of exit codes can tell one from another. The message is the only observable there is.
+wreck_runner "a receipt that will not read, waved through, is caught" \
+  noholding 's#^refuse_a_receipt_holding_nothing() {#refuse_a_receipt_holding_nothing() { return 0;#'
+
+#
+# The vocabulary is closed, and this opens it. A key floor has no reading for reads exactly like one
+# it checked — which is the whole reason the list is a list and not a suggestion.
+wreck_runner "a key floor has no reading for is caught" \
+  anykey 's#^refuse_a_line_that_is_not_a_receipt_line() {#refuse_a_line_that_is_not_a_receipt_line() { return 0;#'
+
+wreck_runner "a receipt missing a field it must carry is caught" \
+  nofield 's#^refuse_a_field_that_is_not_there() {#refuse_a_field_that_is_not_there() { return 0;#'
+
+#
+# Three fields that stand on one which is not there. Each break lets a claim through that reads as
+# checked and rests on nothing.
+#
+# `anyround` is the one that bites quietly: `[ abc -gt 1 ]` returns non-zero and complains to
+# stderr, so the guard after it reads as having passed.
+wreck_runner "a freshness claim about no context is caught" \
+  freshnothing 's#^refuse_a_freshness_about_nothing() {#refuse_a_freshness_about_nothing() { return 0;#'
+
+# The one column the charter calls attestable. Blind this and `fresh probably` is recorded as an
+# answer to a question that has two.
+wreck_runner "a freshness answering neither yes nor no is caught" \
+  anyfresh 's#^refuse_a_freshness_that_answers_neither() {#refuse_a_freshness_that_answers_neither() { return 0;#'
+
+wreck_runner "a round nobody can count is caught" \
+  anyround 's#^refuse_a_round_that_is_not_a_count() {#refuse_a_round_that_is_not_a_count() { return 0;#'
+
+wreck_runner "a later round with no prior verdict is caught" \
+  noprior 's#^refuse_a_round_with_no_prior() {#refuse_a_round_with_no_prior() { return 0;#'
+
+# A judgement that really happened, about something else. Replayed here it credits this work with a
+# reading nobody gave it.
+wreck_runner "a receipt from another run replayed here is caught" \
+  otherrun 's#^refuse_a_receipt_from_another_run() {#refuse_a_receipt_from_another_run() { return 0;#'
+
+#
+# The bar the receipt answers, and the bar that went over. Three breaks, because the claim has three
+# halves: the baseline is recorded, an absent baseline is not a match, and a moved one is refused.
+wreck_runner "a handoff that records no brief is caught" \
+  nohandedbrief 's#stamp_handoff "\$dir" "\$text" "\$(delivered_ref)" "\$version" "\$judge" "\$how" "\$brief"#stamp_handoff "$dir" "$text" "$(delivered_ref)" "$version" "$judge" "$how"#'
+
+wreck_runner "an unknown bar taken as a match is caught" \
+  unknownbar 's#^refuse_a_brief_nothing_recorded() {#refuse_a_brief_nothing_recorded() { return 0;#'
+
+# The comparison alone, not the whole guard. Blinding the function takes the baseline check with it,
+# and the mutant is then killed by the earlier claim rather than by this one.
+#
+# Addressed to the function it is about, the way `namedgate` is. A body-only `sed` proves the
+# refusal perfectly well and never types its name, so nothing reading these lines could say which
+# refusal it targets — and that is the whole reason a coverage gate over them is not cheap.
+wreck_runner "a receipt answering a brief that changed is caught" \
+  briefmoved '/^refuse_a_brief_that_changed()/,/^}/ s#\[ "\$was" = "\$6" \] && return 0#[ 1 = 1 ] \&\& return 0#'
+
+#
+# What came back, and whether it was an answer at all.
+#
+# `anyoutcome` stamps every receipt as an approval, which is the defect `code_for_outcome` was
+# written for arriving through the newer verb. `nostopped` leaves a deadlock and an unreachable
+# harness reported as a judge nobody asked — a reader then goes and asks, which cannot help.
+wreck_runner "a receipt outcome stamped as an approval whatever it said is caught" \
+  anyoutcome 's#^code_for_judgement() {#code_for_judgement() { printf 0; return 0;#'
+
+wreck_runner "a judgement that never happened, read as silence, is caught" \
+  nostopped 's#^stopped() {#stopped() { return 1;#'
+
+# The receipt is read and nothing of it is kept, so the run holds no record of what it took.
+wreck_runner "a receipt read and not recorded is caught" \
+  noattested 's#^attested() {#attested() { return 0;#'
+
+#
+# **Green gates do not satisfy a Judged clause**, and this is the break that proves it.
+#
+# Both filters at once, because either alone still holds. Drop the trust and a machine row is still
+# skipped for naming no judge; drop the judge and it is still skipped for not being `judged`. The
+# claim is that a judgement is answered by a judge's record and by nothing else, so the break has to
+# be the whole of it.
+wreck_runner "a gate answering for a judge is caught" \
+  gatejudges 's#satisfied "\$1" "\$2" "\$3" judged "\$who" || exit 1#satisfied "$1" "$2" "$3" "" "" || exit 1#'
+
 # The reader half. The writer half cannot be observed today: the only comment
 # floor writes is a question, and `floor-question:` already bounds one.
 wreck_runner "a reader blind to the stamp is caught" \
@@ -1703,6 +1831,33 @@ wreck "hooks.json pointing at nothing is caught"       nofile rewire
 wreck "a hook that ships but is never wired is caught" nowire unwire
 wreck "an announce hook that says nothing is caught"   quiet  mute
 wreck "a hook moved to an event that cannot inject is caught" event misfire
+
+#
+# The vocabulary gate, audited the way `craft-oracle` says to audit one: break the thing it guards
+# and require it to go red. **A gate that stays green was never a gate.**
+#
+# Four breaks, because it makes three claims and can fail a fourth way. The last is the one that
+# matters most — two empty sets compare equal, so an extraction that finds nothing would pass and
+# certify nothing.
+#
+# **`rewrite` alone made three of these red for the wrong reason.** It writes a new file, a new file
+# carries no executable bit, and the suite's own `not executable — run.sh` fired before the check
+# under test ever ran. That is the bad break `bin/breaks.sh` warns about, and it looks exactly like a
+# gate that works. Measured, then fixed here.
+rewrite_script() { rewrite "$1" && chmod +x "$1"; }
+
+dropkey()  { sed "s/^RECEIPT_KEYS='run clause/RECEIPT_KEYS='clause/" "$1/bin/run.sh" | rewrite_script "$1/bin/run.sh"; }
+movekey()  { sed 's/^| `brief` `verdict` `report` `round` `time` |/| `brief` `verdict` `report` `round` | `time`/' "$1/README.md" | rewrite "$1/README.md"; }
+needsgone(){ sed "s/^RECEIPT_REQUIRED='run /RECEIPT_REQUIRED='wibble run /" "$1/bin/run.sh" | rewrite_script "$1/bin/run.sh"; }
+noreads()  { sed "s/^RECEIPT_KEYS='/RECEIPT_KEYS_RENAMED='/" "$1/bin/run.sh" | rewrite_script "$1/bin/run.sh"; }
+
+# Named for the check that kills each, not for the edit that makes it. `movekey` and `needsgone` are
+# one claim from opposite sides — a key the README requires and the runner does not, and a key the
+# runner requires and the README does not.
+wreck "a key the runner no longer reads is caught"           dropkey   dropkey
+wreck "a key the README stops requiring is caught"           movekey   movekey
+wreck "a key the runner starts requiring alone is caught"    needsgone needsgone
+wreck "a vocabulary the gate cannot read at all is caught"   noreads   noreads
 
 audit_the_executable_bit() {
   records_exec || {

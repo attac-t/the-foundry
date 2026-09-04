@@ -67,6 +67,11 @@
 #      another, and the size of the change between them is not the point
 #  36  nothing records this judge being handed the bar. A verdict given without the charter is
 #      worth what it was given, and `evidence handed` is what says it was given
+#  37  the receipt cannot be read as evidence — it is not there, it is there and holds nothing, it
+#      carries a line this has no reading for, or it claims a thing it did not check. One remedy for
+#      all four: a receipt saying what the contract names, and nothing beyond it
+#  38  the receipt is about other work. It answers for another run, or for a bar that has changed
+#      since it went over. The judgement is real and it is not about this
 #  34  the worker may not account for ancestry. It named itself, so a record it writes about its
 #      own commits is the producer signing off its own bar
 #  22  the repository declares a bar in a file that is there and cannot be read. Not 8: that is a
@@ -176,8 +181,10 @@ usage_evidence() {
     cat <<'EOF'
   run.sh evidence                 print what this run has proved
   run.sh evidence record <name> <command...>   run it, and stamp what happened
-  run.sh evidence handed <clause> <judge> <how> say this judge was given the bar, and how it ran
+  run.sh evidence handed <clause> <judge> <how> [brief]
+                                  say this judge was given the bar, how it ran, and which brief
   run.sh evidence verdict <clause> <judge> <approve|reject|revise> <text> <sha>
+  run.sh evidence receipt <file>  read a judgement receipt, and stamp what it attests
 EOF
 }
 
@@ -1486,6 +1493,7 @@ evidence() {
         record) shift; refuse_wrong_repository "$dir"; record_gate "$dir" "$@" ;;
         verdict) shift; refuse_wrong_repository "$dir"; verdict "$dir" "$@" ;;
         handed) shift; refuse_wrong_repository "$dir"; handed "$dir" "$@" ;;
+        receipt) shift; refuse_wrong_repository "$dir"; receipt "$dir" "${1:-}" ;;
         *)      usage; exit 2 ;;
     esac
 }
@@ -1618,11 +1626,27 @@ stamp_verdict() {
         >> "$(evidence_file "$1")" 2>/dev/null || die_unwritable "$(evidence_file "$1")"
 }
 
+#
+# A receipt's row. `stamp_verdict`'s eight and one more, holding what the receipt vouched for.
+#
+# Its own stamper rather than an optional field on that one. A verdict typed by hand attests nothing
+# beyond its five arguments, and an empty ninth column on it would say it attested nothing — when
+# nobody ever asked it to.
+stamp_receipt() {
+    printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
+        "$(date -u +%Y-%m-%dT%H:%M:%SZ)" judged 01 "$2" "$3" "$4" "$(one_line "$5")" "$(one_line "$6")" "$(one_line "$7")" \
+        >> "$(evidence_file "$1")" 2>/dev/null || die_unwritable "$(evidence_file "$1")"
+}
+
 # The handoff's own row. Same eight columns, so one reader serves both, and a kind of its own so
 # `satisfied` never mistakes a handoff for an answer.
+#
+# Ten now. The last is the digest of the brief that went over, and a receipt answering a different
+# one is answering a bar this run did not set. A handoff that recorded none leaves it empty, and an
+# empty baseline satisfies nothing — `refuse_a_brief_nothing_recorded` says so.
 stamp_handoff() {
-    printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
-        "$(date -u +%Y-%m-%dT%H:%M:%SZ)" handed 01 "$2" 0 "$3" "$4" "$(one_line "$5")" "$(one_line "$6")" \
+    printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
+        "$(date -u +%Y-%m-%dT%H:%M:%SZ)" handed 01 "$2" 0 "$3" "$4" "$(one_line "$5")" "$(one_line "$6")" "$(one_line "$7")" \
         >> "$(evidence_file "$1")" 2>/dev/null || die_unwritable "$(evidence_file "$1")"
 }
 
@@ -2839,11 +2863,32 @@ what_it_lacks() {
 #
 # Told apart by field 5, which the recorder already writes. Nothing new is stored.
 #
+#
+# One and two, not merely non-zero. `reject` and `revise` are a judge answering; three and four are
+# a judgement that never happened, and `stopped` holds those — reporting one as a refusal would send
+# a reader to commit their way out of a harness that was never reached.
 refused() {
     awk -F'\t' -v name="$2" -v ref="$3" -v judge="$4" '
         $4 "" != name "" || $6 "" != ref "" { next }
         $8 "" != judge ""                   { next }
-        $5 != "0"                           { found = 1 }
+        $5 == "1" || $5 == "2"              { found = 1 }
+        END { exit !found }' "$(evidence_file "$1")" 2>/dev/null
+}
+
+#
+# A judgement that never happened, recorded rather than left silent.
+#
+# An exhausted review budget or a harness nobody could reach. **Neither is a refusal and neither is
+# silence.** A silent judge is asked again, a refusal is answered by new work, and this is answered
+# by whoever owns the budget or the harness — three facts, three remedies.
+#
+# Told apart by the code the receipt's outcome mapped to, which the recorder already writes. Nothing
+# new is stored.
+stopped() {
+    awk -F'\t' -v name="$2" -v ref="$3" -v judge="$4" '
+        $4 "" != name "" || $6 "" != ref "" { next }
+        $8 "" != judge ""                   { next }
+        $5 == "3" || $5 == "4"              { found = 1 }
         END { exit !found }' "$(evidence_file "$1")" 2>/dev/null
 }
 
@@ -2856,13 +2901,24 @@ members_who_refused() {
     done
 }
 
-# The members who have not answered at all.
+# The members a judgement was never reached for.
+members_who_stopped() {
+    printf '%s
+' "$4" | while IFS= read -r who; do
+        [ -n "$who" ] || continue
+        stopped "$1" "$2" "$3" "$who" && printf '%s ' "$who"
+    done
+}
+
+# The members who have not answered at all. Three ways one has spoken, and anything else is silence.
 members_never_asked() {
     printf '%s
 ' "$4" | while IFS= read -r who; do
         [ -n "$who" ] || continue
         satisfied "$1" "$2" "$3" judged "$who" && continue
-        refused    "$1" "$2" "$3" "$who"       || printf '%s ' "$who"
+        refused    "$1" "$2" "$3" "$who"       && continue
+        stopped    "$1" "$2" "$3" "$who"       && continue
+        printf '%s ' "$who"
     done
 }
 
@@ -2871,10 +2927,13 @@ members_never_asked() {
 # It said `no approval from` for both, and the two want opposite things. A reader told that goes and
 # asks. On a refusal that is a wasted trip: the dissent holds at this ref for good, and only a new
 # commit moves it.
+# A judgement that never happened gets its own line, for the same reason a refusal did. Which of the
+# two it was — an exhausted budget or an unreachable harness — is in the record, in words.
 what_the_panel_lacks() {
     judged_by_all "$1" "$2" "$4" "$5" && return
 
     said_no=$(spaced "$(members_who_refused "$1" "$2" "$4" "$5")")
+    halted=$(spaced "$(members_who_stopped "$1" "$2" "$4" "$5")")
     silent=$(spaced "$(members_never_asked "$1" "$2" "$4" "$5")")
 
     [ -n "$silent" ] && printf 'unmet: [%s] at %s@%s — no approval from [%s]\n' \
@@ -2882,6 +2941,9 @@ what_the_panel_lacks() {
 
     [ -n "$said_no" ] && printf 'unmet: [%s] at %s@%s — [%s] refused here, and only a new ref moves it\n' \
         "$2" "$3" "$4" "$said_no"
+
+    [ -n "$halted" ] && printf 'unmet: [%s] at %s@%s — [%s] never judged it. The record says why, and a new ref does not change it\n' \
+        "$2" "$3" "$4" "$halted"
 
     return 0
 }
@@ -2988,8 +3050,11 @@ verdict() {
 #
 # The recorder cannot read a transcript, so it can never know what reached anyone. What it can hold
 # is this: whoever handed the bar over said so first, at a named charter and a named commit.
+# `brief` is the digest of what was actually sent, and it is the caller's to supply — floor never
+# reads a brief and has no idea where one lives. Absent, the handoff still records; what it costs is
+# that a receipt has nothing to be checked against.
 handed() {
-    dir=$1; text=${2:-}; judge=${3:-}; how=${4:-}
+    dir=$1; text=${2:-}; judge=${3:-}; how=${4:-}; brief=${5:-}
 
     [ -n "$text" ] && [ -n "$judge" ] && [ -n "$how" ] \
         || { note "a handoff names the clause, the judge, and how that judge was run"; exit 2; }
@@ -3000,7 +3065,7 @@ handed() {
     refuse_a_judge_nobody_asked "$dir" "$text" "$judge"
 
     enter_work_tree "$dir"
-    stamp_handoff "$dir" "$text" "$(delivered_ref)" "$version" "$judge" "$how"
+    stamp_handoff "$dir" "$text" "$(delivered_ref)" "$version" "$judge" "$how" "$brief"
 }
 
 # The charter's own sum. A bar rewritten after the handoff is a different bar, and a verdict
@@ -3095,6 +3160,367 @@ refuse_a_judge_that_is_the_worker() {
     note "[$1] produced the work, so its verdict on that work says nothing"
     note "a verdict comes from something that did not write what it grades"
     exit 2
+}
+
+#
+# Every key a receipt may carry. **Closed on purpose.** A key this has no reading for is a claim
+# nobody checked wearing the look of one that was, so it is refused rather than kept.
+#
+# **`model`, `provider` and `effort` are not keys, and that is measured rather than careful.** One
+# adapter was driven here in its json mode: its stream carries a thread handle, the reply and the
+# usage, and names none of the three. Asked outright which model it was, it answered with a
+# different name from the one requested.
+#
+# So the doubt sits in the key and never in a footnote beside it. `requested_` says what was asked
+# for, which proves intent and nothing more — an alias, a routing rule or a fallback changes what
+# ran. `self_reported_` says what the thing claimed about itself. **A bare `model` reads as fact to
+# every reader and every script, and the caveat beside it is the part that gets skipped.**
+#
+# What a receipt proves outright is narrower and real: one thread returned review text, and whether
+# that thread was new. Two runs gave two handles, so `context` and `fresh` are attestable.
+#
+# Core names the fields and never their values. What an adapter or a model is called is whatever
+# wrote the receipt, exactly as `worker` takes a word and reads nothing into it.
+#
+# **So `adapter` is a label, and a substitution nobody records is invisible here.** Harness A is
+# asked, writes nothing at all, and harness B writes a receipt naming itself — floor takes B's,
+# because the first thing it ever learns about either is the name on the file in front of it.
+# Refusing that needs `handed` to record the harness as an identity before the answer comes back,
+# and `how` is prose for a person. **#332 leaves this open, and the README says so.**
+#
+# `context` and `fresh` stay optional for the reason `model` is not a key at all: **requiring a
+# field is how a producer is made to invent one.** A runner with no thread to name would write
+# `context unknown`, which reads in a record exactly like a handle somebody checked. What is gated
+# is the shape — `fresh` needs a context to be about, and it says yes or no — never that the thread
+# was new. Floor cannot verify a handle it did not issue.
+RECEIPT_KEYS='run clause candidate role adapter brief verdict report round prior time
+              context fresh
+              requested_model    self_reported_model
+              requested_provider self_reported_provider
+              requested_effort   self_reported_effort'
+
+# The three a receipt may not say plainly, and what to say instead. Outside the vocabulary already,
+# so this only replaces the sentence — the one key an author reaches for first deserves the reason.
+RECEIPT_UNPROVABLE='model provider effort'
+
+#
+# The ones without which it is not a receipt at all.
+#
+# **The rest are vouched for or absent, and absence is the honest answer.** An adapter that cannot
+# say which model answered leaves `model` out; nothing here writes a default, and nothing writes
+# `unknown`. A missing field says nobody checked, which is true. A filled-in one would be a claim.
+RECEIPT_REQUIRED='run clause candidate role adapter brief verdict report round time'
+
+#
+# A judgement receipt — what a runner writes down when something judged this work.
+#
+# **This reads one. It produces none, and knows nothing about what did.** The file is the whole
+# contract: any harness able to write these lines satisfies a `Judged` clause here, and none of them
+# is named in this repository. That is the difference between consuming evidence and depending on a
+# producer.
+#
+# `verdict` above takes a judgement typed by hand — five things, and five refusals. This takes one a
+# runner made, makes every refusal that one makes, and adds what the extra fields let it ask. It
+# extends that verb rather than replacing it.
+#
+# **A receipt is a record and never a credential.** Every field in it was written by whatever wrote
+# the file, and none of them proves who answered — #156 owns making the actor real. What this adds
+# is that a receipt cannot claim what it did not check.
+#
+receipt() {
+    dir=$1; file=${2:-}
+
+    refuse_a_malformed_receipt "$file"
+    refuse_a_claim_nobody_checked "$file"
+
+    # Every field read before `enter_work_tree`, because that leaves this directory for good and a
+    # caller may have named the receipt relative to the one it started in.
+    clause=$(said_in "$file" clause)
+    judge=$(said_in "$file" role)
+    candidate=$(said_in "$file" candidate)
+    outcome=$(said_in "$file" verdict)
+    brief=$(said_in "$file" brief)
+    report=$(said_in "$file" report)
+    vouched=$(attested "$file")
+
+    code=$(code_for_judgement "$outcome") || exit 2
+    version=$(charter_version "$dir")
+
+    refuse_a_receipt_from_another_run "$dir" "$(said_in "$file" run)"
+    refuse_a_kind_that_is_not_judged "$dir" "$clause"
+    refuse_a_judge_that_is_the_worker "$judge"
+    refuse_a_judge_nobody_asked "$dir" "$clause" "$judge"
+
+    enter_work_tree "$dir"
+    refuse_a_revision_nobody_reviewed "$candidate"
+    refuse_a_judge_never_handed_the_bar "$dir" "$clause" "$judge" "$candidate" "$version"
+    refuse_a_brief_that_changed "$dir" "$clause" "$judge" "$candidate" "$version" "$brief"
+
+    stamp_receipt "$dir" "$clause" "$code" "$candidate" \
+        "$judge: $outcome, report $report" "$judge" "$vouched"
+}
+
+# Whether the file is a receipt at all, before anything asks what it says.
+refuse_a_malformed_receipt() {
+    refuse_an_unreadable_receipt "$1"
+    refuse_a_line_that_is_not_a_receipt_line "$1"
+    refuse_a_field_that_is_not_there "$1"
+}
+
+#
+# Three ways there is nothing to read, and each one is its own guard.
+#
+# They were one function, and a break on the middle one still exited 37 through the third — so the
+# only thing that could tell them apart was the sentence. **A refusal a mutant cannot reach alone is
+# a refusal resting on its neighbour**, which is the shape `craft-sh` splits.
+refuse_an_unreadable_receipt() {
+    refuse_a_receipt_nobody_named "$1"
+    refuse_a_receipt_that_is_not_there "$1"
+    refuse_a_receipt_holding_nothing "$1"
+}
+
+# The caller named no file. Ahead of the two below, because every reader here is handed `$1` as a
+# filename, and awk given an empty one answers about a file nobody asked for.
+refuse_a_receipt_nobody_named() {
+    [ -n "$1" ] && return 0
+
+    note "receipt needs the file to read"
+    exit 2
+}
+
+#
+# The refusal the whole contract rests on. **Green gates do not reach here** — a `Judged` clause is
+# answered by a judge's record and by nothing else, so a run with every gate passing and no receipt
+# is a run nothing has judged.
+#
+# **No mutation makes a missing receipt satisfy anything**, and that is worth writing down rather
+# than mistaking for an untested path. Blind this and the next guard answers 37; blind that too and
+# the required-field reader answers 37; blind that and the outcome is empty, which is not one of the
+# five. It fails closed four deep, so what a break here changes is which sentence a reader gets.
+refuse_a_receipt_that_is_not_there() {
+    [ -f "$1" ] && return 0
+
+    note "no receipt at [$1], and a Judged clause is answered by one"
+    exit 37
+}
+
+refuse_a_receipt_holding_nothing() {
+    [ -r "$1" ] && [ -s "$1" ] && return 0
+
+    note "[$1] is there and holds nothing this can read as a receipt"
+    exit 37
+}
+
+#
+# The grammar, in one pass, and the first bad line is named.
+#
+# Four ways a line is not a receipt line — a key that would claim what nobody checked, a key with no
+# reading at all, a key said twice, and a key claiming nothing. One reader for all four, because the
+# remedy for each is that same line.
+#
+# **Two answers is not one.** A key said twice leaves whoever reads it choosing which was meant, and
+# §2.2's rule for ambiguity is that it escalates rather than resolves itself.
+refuse_a_line_that_is_not_a_receipt_line() {
+    said=$(awk -v known="$RECEIPT_KEYS" -v unprovable="$RECEIPT_UNPROVABLE" '
+        BEGIN { n = split(known, key);      for (i = 1; i <= n; i++) reads[key[i]] = 1
+                n = split(unprovable, said); for (i = 1; i <= n; i++) claims[said[i]] = 1 }
+
+        /^[ \t]*#/ || !NF { next }
+
+        $1 in claims { print "[" $1 "] would state what ran, and nothing checked it" \
+                             " — say requested_" $1 " or self_reported_" $1; exit }
+        !($1 in reads) { print "[" $1 "] is a key floor has no reading for"; exit }
+        $1 in seen     { print "[" $1 "] is said twice, and two answers is not one"; exit }
+        NF < 2         { print "[" $1 "] claims nothing, so nothing is what it says"; exit }
+
+        { seen[$1] = 1 }' "$1" 2>/dev/null)
+
+    [ -n "$said" ] || return 0
+
+    note "$1: $said"
+    exit 37
+}
+
+# A required key absent, named one at a time so a reader fixes one line and asks again.
+refuse_a_field_that_is_not_there() {
+    said=$(awk -v want="$RECEIPT_REQUIRED" '
+        !/^[ \t]*#/ && NF { seen[$1] = 1 }
+        END { n = split(want, keys, " ")
+              for (i = 1; i <= n; i++) if (!(keys[i] in seen)) { print keys[i]; exit } }' "$1" 2>/dev/null)
+
+    [ -n "$said" ] || return 0
+
+    note "$1 carries no [$said], and a receipt without one is evidence of nothing"
+    exit 37
+}
+
+# A field standing on one that is not there. Each of these reads as checked and rests on nothing.
+refuse_a_claim_nobody_checked() {
+    refuse_a_freshness_about_nothing "$1"
+    refuse_a_freshness_that_answers_neither "$1"
+    refuse_a_round_that_is_not_a_count "$1"
+    refuse_a_round_with_no_prior "$1"
+}
+
+# Fresh about what? A context nobody named can be neither new nor used, so the claim has no subject.
+refuse_a_freshness_about_nothing() {
+    fresh=$(said_in "$1" fresh)
+
+    [ -n "$fresh" ] || return 0
+    [ -n "$(said_in "$1" context)" ] && return 0
+
+    note "$1 says the context was [$fresh] and names none, so the claim is about nothing"
+    exit 37
+}
+
+#
+# Yes or no, and nothing else. A thread was new or it was carried on, and there is no third answer.
+#
+# **This gates the shape and never the truth.** Floor did not issue the handle and cannot go and
+# look, so `fresh yes` is the producer's word — a record, like every other field. What it stops is
+# free text in the one column the charter calls attestable, where `probably` or `n/a` would read as
+# an answer to a question nobody put.
+refuse_a_freshness_that_answers_neither() {
+    case "$(said_in "$1" fresh)" in
+        ''|yes|no) return 0 ;;
+    esac
+
+    note "$1 says fresh [$(said_in "$1" fresh)], and a thread was new or it was not"
+    exit 37
+}
+
+# `[ abc -gt 1 ]` is not a comparison. The shell complains to stderr and returns non-zero, so the
+# guard below would read as having passed — a round nobody can count is refused before one counts it.
+refuse_a_round_that_is_not_a_count() {
+    round=$(said_in "$1" round)
+    is_a_count "$round" && return 0
+
+    note "$1 says round [$round], and a round is counted from one"
+    exit 37
+}
+
+is_a_count() {
+    case "$1" in
+        ''|*[!0-9]*|0) return 1 ;;
+    esac
+    return 0
+}
+
+# Round two answers round one. A later round naming no prior verdict is a first round wearing a
+# number, and the chain it says it is in is one nobody can follow.
+refuse_a_round_with_no_prior() {
+    round=$(said_in "$1" round)
+
+    [ "$round" -gt 1 ] || return 0
+    [ -n "$(said_in "$1" prior)" ] && return 0
+
+    note "$1 says round [$round] and names no prior verdict, so the round before it is missing"
+    exit 37
+}
+
+#
+# A receipt is about one run's work.
+#
+# One from another run is a judgement that really happened, about something else. Replaying it here
+# credits this work with a reading nobody gave it — which is why `run` is a field at all.
+#
+# A run whose id will not read matches nothing, so it refuses. That is the safe way round: the
+# alternative accepts every receipt on a run that cannot say its own name.
+refuse_a_receipt_from_another_run() {
+    [ "$2" = "$(recorded_id "$1")" ] && return 0
+
+    note "this receipt answers for run [$2], and this run is [$(recorded_id "$1")]"
+    exit 38
+}
+
+#
+# The bar as it went over, against the bar the receipt answers.
+#
+# **Floor holds neither.** It compares two digests it was handed — one at the handoff, one on the
+# receipt — and reads no brief, because what a brief is and where it lives belongs to whatever
+# writes them. A brief edited between the handoff and the answer makes the two differ, and that is
+# the whole of what this can see.
+#
+# **It proves consistency and never authorship.** One adapter writes both, so matching digests say
+# the bar did not move under the judge. They do not say the digest is of the brief it claims.
+refuse_a_brief_that_changed() {
+    was=$(handed_brief "$1" "$2" "$3" "$4" "$5")
+
+    refuse_a_brief_nothing_recorded "$was" "$2" "$3"
+    [ "$was" = "$6" ] && return 0
+
+    note "[$3] was handed brief [$was] and this receipt answers [$6]"
+    exit 38
+}
+
+# Nothing to compare against is not a match. A handoff that recorded no brief leaves the receipt
+# answering a bar nobody wrote down — unverifiable, rather than wrong.
+refuse_a_brief_nothing_recorded() {
+    [ -n "$1" ] && return 0
+
+    note "nothing records which brief [$3] was handed for [$2], so this answers an unknown bar"
+    note "  run.sh evidence handed <clause> <judge> <how> <brief> is what records it"
+    exit 37
+}
+
+# The brief digest recorded when the bar went over. `was_handed` has already found this row, so an
+# empty answer means the handoff carried no brief — never that there was no handoff.
+handed_brief() {
+    awk -F'\t' -v name="$2" -v judge="$3" -v ref="$4" -v version="$5" '
+        $2 != "handed"      { next }
+        $4 "" != name ""    { next }
+        $8 "" != judge ""   { next }
+        $6 "" != ref ""     { next }
+        $7 "" != version "" { next }
+        { said = $10 }
+        END { print said }' "$(evidence_file "$1")" 2>/dev/null
+}
+
+#
+# What the receipt says came back, as a code the ledger compares.
+#
+# The judge's three, and two the judge never gave. **A deadlock and an unavailable harness are not
+# verdicts** — they are the runner recording that no judgement happened, which is a different fact
+# from silence and takes a different remedy. Both are non-zero, so neither satisfies anything, and
+# both stop the delivery where they stand.
+#
+code_for_judgement() {
+    case "$1" in
+        deadlock)    printf 3; return 0 ;;
+        unavailable) printf 4; return 0 ;;
+    esac
+
+    # The judge's own three, with its sentence suppressed: it names three, a receipt may say five,
+    # and a reader told the wrong list goes looking for a word that is there.
+    code_for_outcome "$1" 2>/dev/null && return 0
+
+    note "[$1] is not what a receipt may say — approve, reject, revise, deadlock or unavailable"
+    return 1
+}
+
+#
+# One key's value, and nothing when the receipt does not carry it.
+#
+# The value is the rest of the line, taken verbatim: a clause holding two spaces has to match the
+# charter's text exactly, and awk rebuilding `$0` would collapse them.
+said_in() {
+    awk -v want="$2" '!/^[ \t]*#/ && NF && $1 "" == want "" {
+                          sub(/^[ \t]*[^ \t]+[ \t]+/, ""); print; exit }' "$1" 2>/dev/null
+}
+
+#
+# What the receipt vouched for, carried into the record so the run keeps it once the file is gone.
+#
+# Every key but the six the row already holds as columns. Written `k=v` for a person to read and
+# never for a parser — a value may hold a space, and the receipt itself is the artefact anything
+# parsing should read.
+#
+# **Only what is there.** A field the adapter left out is left out here too, so a record with no
+# `model=` says nobody checked which model answered.
+attested() {
+    awk '!/^[ \t]*#/ && NF && $1 !~ /^(run|clause|candidate|role|verdict|report)$/ {
+             key = $1; sub(/^[ \t]*[^ \t]+[ \t]+/, "")
+             printf "%s%s=%s", sep, key, $0; sep = " " }' "$1" 2>/dev/null
 }
 
 #
