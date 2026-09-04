@@ -828,6 +828,12 @@ wreck_runner "a run that authorises after a derived clause was removed is caught
 # dissent holds at that ref, so the trip cannot help.
 wreck_runner "a refusal reported as nobody answering is caught" \
   saidno 's#^    said_no=.*#    said_no=#'
+# The half nobody read. `check_charter` catches a drifted charter at `charter check` and inside
+# `gates`, and neither runs again on the way out — so a clause deleted after the gates passed reached
+# `complete` with nothing looking. `authorise` reads the gate half of the same question and stops
+# there.
+wreck_runner "a clause deleted after the gates, delivered anyway, is caught" \
+  latedelete 's#^    underived_clauses "$1"$##'
 
 # One allowlist for every run is one run's grant handed to all of them.
 #
