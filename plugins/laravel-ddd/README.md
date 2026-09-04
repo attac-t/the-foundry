@@ -50,12 +50,13 @@ Defensive code        Fail fast, guard clauses, null objects
 
 ## Skills
 
-47 skills. Three types.
+47 skills. Four types.
 
 ```
 ground-*     Philosophy and mindset (8 skills)
 craft-*      How to build (22 skills)
 decide-*     When to use what (16 skills)
+polish       PHP and Laravel standards, pass by pass (1 skill)
 ```
 
 ### Highlights
