@@ -3860,9 +3860,34 @@ a_receipt_is_read_and_not_believed() {
   is  "and the verb with no file named is refused" \
       "$(code_of floor "$tmp/rcpt" evidence receipt)" "2"
 
+  #
+  # There and empty, which is not the same as absent — and the sentence is what tells them apart.
+  #
+  # **Every guard here answers 37**, so the exit code cannot say which refused. Without the message
+  # asserted, blinding this one lets the required-field reader answer for it and the suite stays
+  # green. Verdict 051 found exactly that: the split covered two of three guards.
   : > "$tmp/rcpt.empty"
   is  "a receipt holding nothing is refused" \
       "$(code_of floor "$tmp/rcpt" evidence receipt "$tmp/rcpt.empty")" "37"
+  has "and it says so, rather than naming the first field it wanted" \
+      "$(floor_says "$tmp/rcpt" evidence receipt "$tmp/rcpt.empty")" "holds nothing"
+
+  #
+  # The other half of the same guard: there, not empty, and not readable.
+  #
+  # **Amber where the filesystem has no such bit.** NTFS keeps none, so `chmod 000` changes nothing
+  # and the check would assert against a file it can still read. That is a platform that cannot
+  # answer, never a defect — the probe is asked rather than the platform guessed at.
+  cp "$base" "$tmp/rcpt.unreadable" && chmod 000 "$tmp/rcpt.unreadable" 2>/dev/null
+  if [ -r "$tmp/rcpt.unreadable" ]; then
+    cannot "a receipt that will not read — this filesystem ignores chmod"
+  else
+    is  "a receipt floor may not read is refused" \
+        "$(code_of floor "$tmp/rcpt" evidence receipt "$tmp/rcpt.unreadable")" "37"
+    has "and it is told apart from one that is not there" \
+        "$(floor_says "$tmp/rcpt" evidence receipt "$tmp/rcpt.unreadable")" "holds nothing"
+  fi
+  chmod u+rw "$tmp/rcpt.unreadable" 2>/dev/null
 
   #
   # The vocabulary is closed. A key floor has no reading for is a claim nobody checked, wearing the

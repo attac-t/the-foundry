@@ -149,6 +149,23 @@ audit_says_which() {
 }
 audit_says_which
 
+#
+# **There is no check that every `refuse_*` has a break, and that is a decision.**
+#
+# Verdict 051 asked for one. Measured on main: 44 refusals, 18 named by some mutation, 26 not. The
+# 26 are mostly not holes — a `sed` that rewrites a refusal's body proves it perfectly well and
+# never types its name. So the check would go red on 26 lines the day it landed, and **26 exemptions
+# is not a gate but a list nobody maintains** — `craft-oracle`'s green gate over an exemption list.
+#
+# A version that held would need each break to declare the refusal it targets. Nothing records that:
+# a `wreck_runner` line carries a claim in prose and a `sed` in shell, and neither names a function.
+# **Adding that field is sixteen call sites and its own charter**, not a rider on a receipt.
+#
+# What is done instead, and it is the half this file can stand behind: **every refusal the receipt
+# adds is named by a break, and each dies on its own check.** The three composites are not — they
+# only delegate, so a break on one is killed by whichever child fixture runs first, which is the
+# fault 050 and 051 both named rather than a cure for it.
+#
 ends_on "$root/tests/run.sh"     'exit $failed'      || bad "tests/run.sh declares breaks below its exit, and nothing runs them"
 ends_on "$root/tests/transport.sh" '[ "$failed" -eq 0 ] || exit 1' || bad "tests/transport.sh runs cases below its exit, and nothing counts them"
 ends_on "$root/tests/model.sh"   'summary "model"'   || bad "tests/model.sh runs cases below its tally, and nothing counts them"
@@ -1638,6 +1655,18 @@ wreck_runner "a receipt verb given no file at all is caught" \
   nonamed 's#^refuse_a_receipt_nobody_named() {#refuse_a_receipt_nobody_named() { return 0;#'
 
 #
+# The third of the split, which the split itself left uncovered.
+#
+# Verdict 051: blind this and the required-field reader answers 37 in its place, so the exit code
+# says nothing and the suite stayed green. **The split fixed the shape and left one guard behind** —
+# the same fault 050 named, made by the fix for it.
+#
+# Killed by a `has` on *holds nothing*, and it has to be: all four guards here answer 37, so no
+# comparison of exit codes can tell one from another. The message is the only observable there is.
+wreck_runner "a receipt that will not read, waved through, is caught" \
+  noholding 's#^refuse_a_receipt_holding_nothing() {#refuse_a_receipt_holding_nothing() { return 0;#'
+
+#
 # The vocabulary is closed, and this opens it. A key floor has no reading for reads exactly like one
 # it checked — which is the whole reason the list is a list and not a suggestion.
 wreck_runner "a key floor has no reading for is caught" \
@@ -1682,8 +1711,12 @@ wreck_runner "an unknown bar taken as a match is caught" \
 
 # The comparison alone, not the whole guard. Blinding the function takes the baseline check with it,
 # and the mutant is then killed by the earlier claim rather than by this one.
+#
+# Addressed to the function it is about, the way `namedgate` is. A body-only `sed` proves the
+# refusal perfectly well and never types its name, so nothing reading these lines could say which
+# refusal it targets — and that is the whole reason a coverage gate over them is not cheap.
 wreck_runner "a receipt answering a brief that changed is caught" \
-  briefmoved 's#\[ "\$was" = "\$6" \] && return 0#[ 1 = 1 ] \&\& return 0#'
+  briefmoved '/^refuse_a_brief_that_changed()/,/^}/ s#\[ "\$was" = "\$6" \] && return 0#[ 1 = 1 ] \&\& return 0#'
 
 #
 # What came back, and whether it was an answer at all.
