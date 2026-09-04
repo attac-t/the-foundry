@@ -142,9 +142,9 @@ say_the_work() {
 #
 # **The caller does not say which round this is.** It said `--round` once, and omitting it
 # manufactured a round one — a reset anybody could take by leaving a flag out. The chain answers
-# that question now, and the only way to be round one is for the chain to hold nothing.
+# that question now, and the only way to be round one is for this review to have stamped nothing.
 say_the_prior() {
-    [ "$round" = 1 ] && { printf '\n---\n\n# The round before this one\n\nNONE. The chain at [%s] holds no round, so this is round one.\n' "$verdicts"; return; }
+    [ "$round" = 1 ] && { printf '\n---\n\n# The round before this one\n\nNONE. The chain at [%s] holds no round for [%s], so this is round one.\n' "$verdicts" "$review"; return; }
 
     printf '\n---\n\n# The round before this one, in full\n\n'
     cat "$prior_file"
@@ -165,14 +165,23 @@ locate_the_prior() {
     [ -n "$verdicts" ] && [ -n "$review" ] \
         || fail 2 'a brief names the chain it answers to — pass --verdicts and --review'
 
-    round=$(sh "$root/bin/verdicts.sh" next "$verdicts" 2>/dev/null) \
-        || fail 5 "the chain at [$verdicts] could not say which round this is"
-    # Leading zeros make `$(( ))` read octal, so `010` became 8 and `008` was an error.
-    round=$(printf '%s' "$round" | sed 's/^0*//')
-    [ -n "$round" ] || round=0
+    # `round`, not `next`. `next` answers the slot the next file takes, which counts every review in
+    # the directory — so a review opening in this repository's own `verdicts/` would have been told it
+    # was on round 25, and asked for a round 24 it never had. It padded too, and `$(( ))` read `010`
+    # as octal.
+    #
+    # No `2>/dev/null`. The chain says which of its refusals fired — a path nobody made, or a review
+    # name carrying its own round — and hiding that left the line below guessing. It printed *could
+    # not say which round this is* over *drop the [R2]*, which was the answer.
+    #
+    round=$(sh "$root/bin/verdicts.sh" round "$verdicts" "$review") \
+        || fail 5 "the chain at [$verdicts] could not say which round [$review] is on"
 
     [ "$round" = 1 ] && return 0
 
+    # Both refusals below now guard a race, not a mistake. `round` and `prior` read the same stamps,
+    # so a chain that answered the first cannot fail the second — unless the directory changed
+    # between the two processes. They stay for that, and neither has a mutant that could kill them.
     prior_file=$(sh "$root/bin/verdicts.sh" prior "$verdicts" "$round" "$review") \
         || fail 5 "no record of round $((round - 1)) for review [$review] in [$verdicts]"
 
