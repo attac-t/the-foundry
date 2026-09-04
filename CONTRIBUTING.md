@@ -35,16 +35,23 @@ speed back.
 **It also runs checks Windows cannot.** NTFS records no executable bit and no read bit, keeps no
 symlink, and ignores `chmod`. A check that reads one of those reports *unrunnable* and stands down.
 
-**So the pass count is not comparable across platforms.** Measured 3 September on one laptop:
+**So the pass count is not comparable across platforms.** Measured 4 September on one laptop:
 
 | suite | Git Bash | WSL on ext4 |
 |---|---|---|
 | install | 25 passed, 1 n/a | 30 passed, 0 n/a |
 | host | 44 passed | 45 passed |
 | say | 36 passed | 36 passed |
+| transport | 11 passed | 11 passed |
 
 One `n/a` line hid five passes in install, because the check it guards sits in a loop. **`n/a`
 counts lines, never checks**, so the two columns cannot be reconciled by adding it back.
+
+**The filesystem is not the only cause, and host proves it.** Its extra pass comes from a `gh` branch:
+one check when `gh` is installed, two when it is not. This WSL has no `gh` and
+Windows has one, so the row reads as a platform difference and is not.
+
+**A count belongs to the box, never to the platform.** Install `gh` in WSL and the column moves.
 
 Read `failed` and `skipped` instead. Both must be zero on every platform, and both mean the same
 thing everywhere.
