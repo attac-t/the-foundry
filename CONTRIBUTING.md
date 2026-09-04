@@ -81,6 +81,11 @@ yours to run when it applies:
 | `sh bin/agree.sh audit` | five minutes | you change what `agree` reads, or how |
 | the per-plugin tool check | seconds, in the matrix | a plugin starts reaching for something new |
 | three operating systems | a matrix nobody has locally | you touch anything a suite runs |
+| `sh bin/unticked.sh` | a minute, and it reaches GitHub | before you close an issue, and after a `Closes #N` merge |
+
+**`unticked` finds, and cannot tick.** A tick is a judgement — did this box hold? — and that lives
+in the pull request and the gate output. `Closes #N` flips an issue closed and never touches its
+body, so eighteen met boxes sat blank on 4 September until somebody looked.
 
 The last one is the gap no local run closes. **A green tree here says nothing about macOS**, and has
 not since the billing lapsed.
