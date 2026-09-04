@@ -66,6 +66,11 @@ far each has got.
 | an application engineer | the repository's architecture, standards and evidence travel with the work | it names the seams it touched, the rules it used, and what is still in doubt |
 | a framework engineer | consumer contracts and developer experience are outcomes, not polish | it states what happened to the public surface, to compatibility, and to developer experience |
 
+**Two of these five checks cannot be run, and that is a gap rather than a caveat.** The founder
+cannot see a business limit nobody wrote down, and the designer cannot see a change that declared
+nothing. **Absence leaves no record**, so both checks read clean at the moment they have failed.
+The other three answer from what the work hands back, and that record exists.
+
 **A lens is not authority.** Who decides which claim comes from the repository's own map, in
 [`authority.md`](authority.md). Five kinds of judgement, never five ranks.
 
