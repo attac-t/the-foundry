@@ -212,9 +212,26 @@ ensure_the_declaration_exists() {
         '' > "$DECLARED" || fail_unwritable "$DECLARED"
 }
 
+#
+# A hand-written file is the one this command exists to replace, and plenty of editors leave the
+# last line unterminated. Appending to one glues the reach onto whatever was there — the reader
+# then sees a clause whose first word is not `reach`, so the reach is invisible and the clause is
+# wrong. It reported success.
+#
+# `$( )` strips trailing newlines, so a file already ending in one yields the empty string here.
+#
+ensure_the_last_line_ended() {
+    [ -s "$DECLARED" ] || return 0
+    [ -n "$(tail -c 1 "$DECLARED")" ] || return 0
+
+    printf '\n' >> "$DECLARED" || fail_unwritable "$DECLARED"
+}
+
 # Appended, never inserted. Order means nothing to the reader, and a writer that picks a place in
 # somebody else's file is a writer that reformats it.
 append_the_reach() {
+    ensure_the_last_line_ended
+
     printf 'reach  %s  @adapter %s %s\n' "$1" "$2" "$3" >> "$DECLARED" || fail_unwritable "$DECLARED"
 
     say "wrote into $DECLARED:"

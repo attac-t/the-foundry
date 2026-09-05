@@ -269,4 +269,31 @@ is  "an adapter this plugin does not ship is refused" \
 has "and it says what this plugin does ship" \
     "$(adopt_at "$tmp/plain" adopt ok:one no-such-adapter)" "this plugin ships: a-shipped"
 
+# --- a file whose last line never ended ---
+#
+# The file this command exists to replace is hand-written, and plenty of editors leave the last
+# line unterminated. Appending to one used to glue the reach onto whatever was there.
+
+make_repo "$tmp/raw"
+mkdir -p "$tmp/raw/.foundry"
+printf '%s' 'a-person  is this ready' > "$tmp/raw/.foundry/judged"
+commit_all "$tmp/raw"
+adopt_at "$tmp/raw" adopt ok:one a-shipped >/dev/null 2>&1
+
+is "a declaration with no final newline keeps its last line whole" \
+   "$(awk 'NR == 1 { print $1, $2 }' "$tmp/raw/.foundry/judged")" "a-person is"
+is "and the reach lands on a line of its own" \
+   "$(awk '$1 == "reach" { print $2 }' "$tmp/raw/.foundry/judged")" "ok:one"
+is "so the declaration holds two lines, not one" \
+   "$(awk 'END { print NR }' "$tmp/raw/.foundry/judged")" "2"
+
+make_repo "$tmp/ended"
+mkdir -p "$tmp/ended/.foundry"
+printf '%s\n' 'a-person  is this ready' > "$tmp/ended/.foundry/judged"
+commit_all "$tmp/ended"
+adopt_at "$tmp/ended" adopt ok:one a-shipped >/dev/null 2>&1
+
+is "a declaration that did end gains no blank line" \
+   "$(awk 'END { print NR }' "$tmp/ended/.foundry/judged")" "2"
+
 summary "adopt"

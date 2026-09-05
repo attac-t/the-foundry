@@ -2464,7 +2464,10 @@ wreck_adopt "an upgrade that says nothing about what it did is caught" \
 # A declaration still not naming what this plugin ships is not a repository that upgraded.
 wreck_adopt "a reach left behind that does not turn the command red is caught" \
   nocount 's#^    LEFT=$((LEFT + 1))$#    :#'
-
+# The file a person wrote by hand is the one that arrives unterminated, and appending to it glued
+# the reach onto the clause above. The command said it had written a reach nothing could read.
+wreck_adopt "a declaration whose last line never ended is caught" \
+  noeol 's#^    ensure_the_last_line_ended$#    :#'
 #
 # Two breaks, one check.
 #
