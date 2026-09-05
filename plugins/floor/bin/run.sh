@@ -2196,9 +2196,11 @@ ask_the_judge() {
 # this run's own answers has been handed its reply, which is the rule the README states about a
 # receipt and is no less true of a brief.
 #
+# The base is named beside the candidate, because a judge asked what changed needs both ends. They
+# are the same commit on a run that has done no work yet, and that is an answer too.
 write_brief() {
-    printf 'run %s\nclause %s\ncandidate %s\njudge %s\nround %s\n\n' \
-        "$(recorded_id "$1")" "$2" "$3" "$4" "$(next_round "$1" "$2" "$4")"
+    printf 'run %s\nclause %s\ncandidate %s\nbase %s\njudge %s\nround %s\n\n' \
+        "$(recorded_id "$1")" "$2" "$3" "$(bootstrap_base "$1")" "$4" "$(next_round "$1" "$2" "$4")"
     printf -- '--- the charter this work is graded against ---\n'
     cat "$(charter_file "$1")"
 }

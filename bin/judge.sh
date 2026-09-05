@@ -85,7 +85,9 @@ prompt_from() {
 You are an adversary judging work you did not write. Read the repository you are standing in
 against the bar below, and report what is wrong with it.
 
-Do not repair anything. Do not write to any file.
+The checkout is a clone at the candidate commit, with its own history. `git log` and `git diff`
+answer, and `git diff origin/HEAD...HEAD` is the work when the base and the candidate are the same
+commit. Do not repair anything, and do not write to any file.
 
 EOF
     cat "$1"
