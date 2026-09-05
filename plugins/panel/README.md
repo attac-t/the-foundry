@@ -205,12 +205,16 @@ run. **If ten runs show no catches that self-review would have missed, delete th
 `craft-oracle`.** That part has unconditional value.
 
 **Nothing can be instrumented yet, and this said the opposite.** It claimed verdicts were committed
-data. `.gitignore` holds `.claude/panel/` — thirty-seven verdicts have been written here and one is
-tracked, by accident. So a verdict dies with the branch, no run can count them, and nothing outside
-the session that produced one can read it.
+data. `.gitignore` holds `.claude/panel/` — **56 verdicts have been written here and none is
+tracked**, counted 5 September. So a verdict dies with the branch, no run can count them, and
+nothing outside the session that produced one can read it. #500 owns deciding whether that is right.
 
-**That is why a `Judged:` clause has never been satisfied.** #332 owns producing a verdict floor can
-read, and four closed issues — #67, #70, #75 and #77 — each carry a `Judged:` box waiting on it.
+**A `Judged:` clause has now been satisfied, and not by a verdict file.** The owner's #332 decision
+separated the two. Floor consumes a receipt. The verdict stays Panel's human-readable artefact.
+The slice ran on 5 September — a clause went unmet to met, and floor refused twice without one.
+
+So the untracked verdict no longer blocks a clause. **What it blocks is a chain.** `verdicts.sh prior`
+refuses a review claiming a round nothing stamps. Across sessions, nothing ever stamps one. Four closed issues — #67, #70, #75 and #77 — each carry a `Judged:` box from before this.
 
 ---
 
