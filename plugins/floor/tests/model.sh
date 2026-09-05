@@ -4468,6 +4468,290 @@ a-reviewer  a stranger can read it
 the_runner_believes_no_more_than_a_person
 
 #
+# A plugin tree shipping an adapter, built from the runner under test.
+#
+# **From the runner, never from this file's own plugin.** `wreck_runner` breaks a copy of the plugin
+# and points `RUNNER` at it, so a fixture built from the original would hand every mutant an unbroken
+# runner — and every break below would survive.
+#
+# `bin` and `lib` only. The suites are most of the plugin's bytes and nothing here runs them.
+#
+# Adds rather than resets, so two checks can ship two adapters and one of them can be rewritten
+# under its own pin.
+#
+# **The space in the name is deliberate.** A plugin installs under a user's home, and a home holding
+# a space is ordinary on Windows. Put the adapter's path inside a `sh -c` string and it splits into
+# two words there and nowhere else, so a fixture without one would leave that untested on every
+# machine anybody develops on.
+a_plugin_shipping() {
+  [ -d "$tmp/a plugin/bin" ] || {
+    mkdir -p "$tmp/a plugin" \
+      && cp -R "$(dirname "$runner")" "$tmp/a plugin/bin" \
+      && cp -R "$(dirname "$runner")/../lib" "$tmp/a plugin/lib" || return 1
+  }
+
+  mkdir -p "$tmp/a plugin/adapters/$1" && printf '%s' "$2" > "$tmp/a plugin/adapters/$1/run.sh"
+}
+
+# What a shipped adapter is pinned to: the content, as git names it.
+pin_of() { git hash-object --no-filters -- "$tmp/a plugin/adapters/$1/run.sh" 2>/dev/null; }
+
+# `floor`, through the plugin tree above. An adapter resolves under the runner's own plugin root, so
+# a check about one needs a root it can put an adapter in.
+floor_at() {
+  dir=$1; shift
+  ( cd "$dir" 2>/dev/null || exit 9
+    FOUNDRY_HOME="$home" FOUNDRY_RUN="" FOUNDRY_WHO="" FOUNDRY_SOURCE="$dir_source" \
+      sh "$tmp/a plugin/bin/run.sh" "$@" 2>/dev/null )
+}
+
+# The same, keeping what it said while refusing.
+floor_at_says() {
+  dir=$1; shift
+  ( cd "$dir" 2>/dev/null || exit 9
+    FOUNDRY_HOME="$home" FOUNDRY_RUN="" FOUNDRY_WHO="" FOUNDRY_SOURCE="$dir_source" \
+      sh "$tmp/a plugin/bin/run.sh" "$@" 2>&1 )
+}
+
+# A repository that declares a judge and owns no code for it. **The point of the transport is what
+# is missing here**: no script to copy, to drift, or to fix.
+a_repo_that_owns_no_judge() {
+  make_repo "$1" main && set_origin "$1" "https://gitlab.com/acme/$2.git" \
+    && mkdir -p "$1/.foundry" \
+    && commit_file "$1" .foundry/gates 'tests  true
+' && commit_file "$1" .foundry/judged "$3"
+}
+
+#
+# An adapter the plugin ships, reached at the content the repository authorised — #512.
+#
+# **The repository commits a digest and no code.** So a fix to the adapter reaches every repository
+# that authorises the new digest, and an upgrade is a line somebody edited rather than something
+# that happened to a machine.
+#
+# The pin and the digest agree on a healthy run, and that is the whole check: one is what the
+# repository committed, the other is what the file on disk actually is.
+#
+a_shipped_adapter_is_reached_at_the_content_authorised() {
+  a_plugin_shipping a-shipped "$(a_judge_that_approves)" \
+    || { skip "a shipped adapter — the plugin could not be copied"; return; }
+
+  pin=$(pin_of a-shipped)
+  a_repo_that_owns_no_judge "$tmp/shipped" shipped "reach  a-reviewer  @adapter a-shipped $pin
+a-reviewer  a stranger can read it
+" || { skip "a shipped adapter — git could not make a repo here"; return; }
+
+  ready_run "$tmp/shipped" 'https://gitlab.com/acme/shipped.git'
+  floor "$tmp/shipped" gates >/dev/null 2>&1
+
+  absent "the repository holds no judge code of its own" "$tmp/shipped/bin"
+  has    "and the charter pins the adapter by digest" \
+         "$(floor "$tmp/shipped" charter)" "a-reviewer @adapter a-shipped $pin"
+
+  is "the runner reaches the adapter the plugin ships" "$(code_of floor_at "$tmp/shipped" judged)" "0"
+  is "and with that the run may deliver"               "$(code_of floor "$tmp/shipped" complete)" "0"
+
+  answer=$(cat "$(floor "$tmp/shipped" path)"/judged/*.receipt)
+  has "the receipt carries the pin the repository authorised" "$answer" "adapter_pin $pin"
+  has "and the digest of what actually resolved and ran"      "$answer" "adapter_digest $pin"
+  has "and the ledger keeps the binding once the file is gone" \
+      "$(floor "$tmp/shipped" evidence)" "adapter_pin=$pin"
+
+  #
+  # **The receipt is named for the clause, and this is why the check exists.**
+  #
+  # The resolver's first draft read the adapter id into `id`, which is the clause id two lines
+  # further up its own caller. Every receipt landed under the adapter's name — one file for however
+  # many clauses that adapter answers — and the run passed. 903 checks did not notice.
+  #
+  # Driven from the charter's own record, because a test that recomputed the id would agree with a
+  # wrong answer.
+  named=$(floor "$tmp/shipped" charter | awk '$1 == "judge" { print $2; exit }')
+  exists "the receipt is named for the clause the charter holds" \
+         "$(floor "$tmp/shipped" path)/judged/$named.receipt"
+  absent "and never for the adapter that answered it" \
+         "$(floor "$tmp/shipped" path)/judged/a-shipped.receipt"
+}
+a_shipped_adapter_is_reached_at_the_content_authorised
+
+#
+# What the transport refuses, and each one before anything judges anything.
+#
+# **None of these falls back.** A second candidate anywhere — a `$PATH` lookup, a neighbouring
+# version, the repository's own copy — is the failure the pin exists to make impossible.
+#
+a_reach_this_cannot_honour_asks_nobody() {
+  a_plugin_shipping a-shipped "$(a_judge_that_approves)" \
+    || { skip "a reach that cannot be honoured — the plugin could not be copied"; return; }
+
+  pin=$(pin_of a-shipped)
+
+  # A version reads as a pin and is not one. It moves while the repository says nothing changed.
+  a_repo_that_owns_no_judge "$tmp/tagged" tagged 'reach  a-reviewer  @adapter a-shipped v1.2.3
+a-reviewer  a stranger can read it
+' || { skip "a version instead of a digest — git could not make a repo here"; return; }
+
+  ready_run "$tmp/tagged" 'https://gitlab.com/acme/tagged.git'
+
+  is  "a version where a digest belongs is refused" "$(code_of floor_at "$tmp/tagged" judged)" "40"
+  has "and it says why a version is not a pin" \
+      "$(floor_at_says "$tmp/tagged" judged)" "moves while the repository says nothing changed"
+  lacks "and nothing was recorded as judged" "$(floor "$tmp/tagged" evidence)" "judged"
+
+  # An adapter this plugin does not ship. The remedy is an install, never a substitute.
+  a_repo_that_owns_no_judge "$tmp/missing" missing "reach  a-reviewer  @adapter no-such-adapter $pin
+a-reviewer  a stranger can read it
+" || { skip "an adapter nobody ships — git could not make a repo here"; return; }
+
+  ready_run "$tmp/missing" 'https://gitlab.com/acme/missing.git'
+
+  is  "an adapter this plugin does not ship fails closed" \
+      "$(code_of floor_at "$tmp/missing" judged)" "21"
+  has "and names what is missing"     "$(floor_at_says "$tmp/missing" judged)" "no-such-adapter"
+  has "and says nothing else answers" \
+      "$(floor_at_says "$tmp/missing" judged)" "nothing else answers for it"
+  lacks "and no judgement is recorded" "$(floor "$tmp/missing" evidence)" "judged"
+
+  # A name that is a path reaches out of the adapters directory. It is not a name.
+  a_repo_that_owns_no_judge "$tmp/climb" climb "reach  a-reviewer  @adapter ../../bin/run $pin
+a-reviewer  a stranger can read it
+" || { skip "an adapter name that is a path — git could not make a repo here"; return; }
+
+  ready_run "$tmp/climb" 'https://gitlab.com/acme/climb.git'
+
+  is  "an adapter name holding a path is refused" "$(code_of floor_at "$tmp/climb" judged)" "40"
+  has "and says what a name is" "$(floor_at_says "$tmp/climb" judged)" "is not an adapter name"
+
+  # A transport nobody wrote. `@` is reserved, so this is named rather than handed to a shell.
+  a_repo_that_owns_no_judge "$tmp/wibble" wibble 'reach  a-reviewer  @wibble a-shipped
+a-reviewer  a stranger can read it
+' || { skip "an unknown transport — git could not make a repo here"; return; }
+
+  ready_run "$tmp/wibble" 'https://gitlab.com/acme/wibble.git'
+
+  is  "a transport nobody wrote is refused" "$(code_of floor_at "$tmp/wibble" judged)" "7"
+  has "and it is named rather than run"     "$(floor_at_says "$tmp/wibble" judged)" "is not a transport"
+}
+a_reach_this_cannot_honour_asks_nobody
+
+#
+# The adapter is here, and it is not the one the repository authorised.
+#
+# **This is what the pin buys.** A run cannot reach the plugin, but the host it runs on can — and a
+# rewritten adapter is invisible to every other check floor makes. The digest is the only thing that
+# would notice, and it refuses before the file reads a line of the work.
+#
+an_adapter_rewritten_under_its_pin_is_refused() {
+  a_plugin_shipping a-moved "$(a_judge_that_approves)" \
+    || { skip "an adapter rewritten under its pin — the plugin could not be copied"; return; }
+
+  pin=$(pin_of a-moved)
+  a_repo_that_owns_no_judge "$tmp/moved" moved "reach  a-reviewer  @adapter a-moved $pin
+a-reviewer  a stranger can read it
+" || { skip "an adapter rewritten under its pin — git could not make a repo here"; return; }
+
+  ready_run "$tmp/moved" 'https://gitlab.com/acme/moved.git'
+  printf '%s' "$(a_judge_that_approves reject)" > "$tmp/a plugin/adapters/a-moved/run.sh"
+
+  is  "an adapter rewritten under its pin is refused" "$(code_of floor_at "$tmp/moved" judged)" "40"
+  has "and it says the repository authorised another" \
+      "$(floor_at_says "$tmp/moved" judged)" "not the adapter this repository committed"
+  lacks "and the rewritten one judged nothing" "$(floor "$tmp/moved" evidence)" "judged"
+}
+an_adapter_rewritten_under_its_pin_is_refused
+
+#
+# A repository's own command still works, and `@custom` is how a line says so on purpose.
+#
+# Two forms and one behaviour. A bare command is what every declaration written before the transport
+# existed says, and it keeps working. `@custom` is what a repository writes when a reader six months
+# on should be able to tell a deliberate script from a copy nobody ever migrated.
+#
+a_custom_adapter_stays_the_repositorys_own() {
+  a_plugin_shipping a-shipped "$(a_judge_that_approves)" \
+    || { skip "a custom adapter — the plugin could not be copied"; return; }
+
+  a_judged_repo "$tmp/declared" declared "$(a_judge_that_approves)" 'reach  a-reviewer  @custom sh bin/fake-judge.sh
+a-reviewer  a stranger can read it
+' || { skip "a custom adapter — git could not make a repo here"; return; }
+
+  ready_run "$tmp/declared" 'https://gitlab.com/acme/declared.git'
+
+  is "a repository declaring its own command is asked it" "$(code_of floor_at "$tmp/declared" judged)" "0"
+
+  answer=$(cat "$(floor "$tmp/declared" path)"/judged/*.receipt)
+  has   "and the receipt carries what the adapter vouched for" "$answer" "adapter a-fixture"
+  lacks "and nothing pins a repository's own command"          "$answer" "adapter_pin"
+
+  # A run that rewrote its own script is still refused, whichever form declared it.
+  printf '#!/bin/sh\nexit 0\n' > "$(only_slot "$(floor "$tmp/declared" path)/units/01/workspace")/bin/fake-judge.sh"
+
+  is "a custom judge this run rewrote is refused" "$(code_of floor_at "$tmp/declared" judged)" "7"
+}
+a_custom_adapter_stays_the_repositorys_own
+
+#
+# A run may not change the adapter that judges it, nor the digest authorising one.
+#
+# The declaration is pinned to the base like every other source a bar comes from, so the charter and
+# the tree disagree the moment a run edits it. **Changing only the pin is the sharpest form**: the
+# judge, the role and the adapter all still read the same, and one field decides which code runs.
+#
+a_run_may_not_move_its_own_pin() {
+  a_plugin_shipping a-shipped "$(a_judge_that_approves)" \
+    || { skip "a run moving its own pin — the plugin could not be copied"; return; }
+
+  pin=$(pin_of a-shipped)
+  a_repo_that_owns_no_judge "$tmp/repin" repin "reach  a-reviewer  @adapter a-shipped $pin
+a-reviewer  a stranger can read it
+" || { skip "a run moving its own pin — git could not make a repo here"; return; }
+
+  ready_run "$tmp/repin" 'https://gitlab.com/acme/repin.git'
+
+  printf 'reach  a-reviewer  @adapter a-shipped %s\na-reviewer  a stranger can read it\n' \
+    "$(printf '%040d' 0)" > "$tmp/repin/.foundry/judged"
+
+  has "a pin the run moved is drift the charter names" \
+      "$(floor_at_says "$tmp/repin" charter check)" "reaches elsewhere: a-reviewer"
+  is  "and the runner refuses before it asks anyone" "$(code_of floor_at "$tmp/repin" judged)" "7"
+}
+a_run_may_not_move_its_own_pin
+
+#
+# The receipt binds two facts, and a gap between them is a refusal.
+#
+# `judged` refused each of these before the adapter ran. These are the same three against a receipt
+# somebody hands over, because **a run may reach no satisfaction a hand-written receipt could not**,
+# and a hand-written one may reach none a run could not.
+#
+a_receipt_binds_the_adapter_that_answered() {
+  [ -d "$tmp/shipped" ] || { skip "a receipt binding an adapter — the shipped run is not there"; return; }
+
+  base=$tmp/shipped.receipt
+  cp "$(floor "$tmp/shipped" path)"/judged/*.receipt "$base" 2>/dev/null \
+    || { skip "a receipt binding an adapter — nothing was written to copy"; return; }
+
+  sed '/^adapter_digest /d' "$base" > "$tmp/shipped.nodigest"
+  is  "a pin with nothing that looked is refused" \
+      "$(code_of floor "$tmp/shipped" evidence receipt "$tmp/shipped.nodigest")" "40"
+  has "and it says nothing recorded what ran" \
+      "$(floor_says "$tmp/shipped" evidence receipt "$tmp/shipped.nodigest")" "says nothing about what ran"
+
+  sed '/^adapter_pin /d' "$base" > "$tmp/shipped.nopin"
+  is  "a digest nothing authorised is refused" \
+      "$(code_of floor "$tmp/shipped" evidence receipt "$tmp/shipped.nopin")" "40"
+  has "and it says nothing stands behind it" \
+      "$(floor_says "$tmp/shipped" evidence receipt "$tmp/shipped.nopin")" "names nothing that authorised it"
+
+  sed "s/^adapter_digest .*/adapter_digest $(printf '%040d' 0)/" "$base" > "$tmp/shipped.gap"
+  is  "a receipt whose pin and digest disagree is refused" \
+      "$(code_of floor "$tmp/shipped" evidence receipt "$tmp/shipped.gap")" "40"
+  has "and it names both" \
+      "$(floor_says "$tmp/shipped" evidence receipt "$tmp/shipped.gap")" "is what answered"
+}
+a_receipt_binds_the_adapter_that_answered
+
+#
 # An artefact a repository says must be read cold before it ships.
 #
 # **It needs no new declaration.** A cold read is a judgement — somebody who did not write the file

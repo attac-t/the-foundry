@@ -147,11 +147,13 @@ gate taper       sh   bin/taper.sh
 gate comments    sh   bin/comments.sh audit
 
 #
-# The adapter, not the harness. `bin/judge.sh` reaches a vendor and turns what came back into a
-# receipt, and its suite drives it through a `codex` the suite writes. **Nothing here reaches a
-# network.** Four faults in its readers were found by a judge rather than a check, which is why
-# this line exists.
-gate judge       sh   bin/judge.sh audit
+# The adapter, not the harness. It reaches a vendor and turns what came back into a receipt, and its
+# suite drives it through a `codex` the suite writes. **Nothing here reaches a network.** Four faults
+# in its readers were found by a judge rather than a check, which is why this line exists.
+#
+# It ships inside floor now, outside floor core, and a repository authorises it by digest. So this
+# gate reads a file no consumer owns a copy of — a fix here reaches all of them.
+gate codex-exec  sh   plugins/floor/adapters/codex-exec/run.sh audit
 
 for plugin in kernel signal floor panel; do
     gate "$plugin" bash "plugins/$plugin/tests/run.sh"

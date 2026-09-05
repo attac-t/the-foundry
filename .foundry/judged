@@ -25,7 +25,13 @@
 # this repository's choice and not a rule it ships.
 #
 # One member today, so this is a panel of one. A second model is the next piece of work.
+#
+# **The reach below names an adapter floor ships, and this repository owns no line of it.** The
+# digest is what says which content may judge here. Upgrading is editing that word, in a commit this
+# history keeps — never something that happens to a machine.
+#
+# Take a new one with `git hash-object --no-filters -- plugins/floor/adapters/codex-exec/run.sh`.
 
-reach  codex:adversary  sh bin/judge.sh
+reach  codex:adversary  @adapter codex-exec 07db887225733d37360838fbd2dde6f4e0f29c6a
 
 codex:adversary  a change to what a run may claim is judged by something that did not write it

@@ -67,7 +67,7 @@ jobs:
       # The adapter that reaches a judge, driven through a `codex` its suite writes. Four faults in
       # its readers were found by a judge rather than a check, so this line exists. No network.
       - name: The adapter answers for itself
-        run: sh bin/judge.sh audit
+        run: sh plugins/floor/adapters/codex-exec/run.sh audit
 
   # The gates above read files. This one runs the plugins that ship code, on each operating system a
   # user installs them on, because that is where both of them broke last: signal's hook was not

@@ -813,6 +813,82 @@ one — `judge  text` — and this file is the source, so every clause here pins
 reserved first word, so no judge may be called one. Two record kinds in one file need a word to tell
 them apart, and only the first field can carry it — the clause text is already the line's tail.
 
+### A repository owns the choice of judge, not the code that reaches one
+
+Reaching a standard judge used to cost a repository 227 lines it kept, copied and never fixed.
+
+Three forms of reach, told apart by the first word:
+
+| Written | Runs |
+|---|---|
+| `@adapter <id> <digest>` | an adapter this plugin ships, at exactly that content |
+| `@custom  <command...>` | the repository's own command, and the line says so on purpose |
+| `<command...>` | the repository's own command. Every declaration written before `@` existed |
+
+**A first word beginning with `@` is a transport and never a command.** A mistyped one is named
+here. Handed to a shell it would answer *command not found* about a fault in the declaration.
+
+The two custom forms are one behaviour and two records. A bare command works and always will.
+`@custom` says the choice was deliberate — so a reader six months on can tell a script somebody
+meant from a copy nobody migrated.
+
+**The path is built, never searched.** One directory under the plugin root this runner ships in, one
+file, and no second candidate anywhere:
+
+```
+<plugin>/adapters/<id>/run.sh
+```
+
+**No `$PATH`.** An install elsewhere would answer for this one. **No newest-installed.** That is a
+package manager written in shell, on the one path where being wrong is worst. **No file in the
+repository.** That is the copy this exists to end.
+
+**The pin is a digest and nothing else.** A tag, a version and a range all read as a yes while the
+thing they name moves underneath. `git hash-object --no-filters` takes one, and floor reads the same
+way — the bytes, never what a repository's line-ending rules make of them.
+
+| | Exit |
+|---|---|
+| the pin is not a digest, or the id is not a name | 40 |
+| the adapter is not one this plugin ships | 21 |
+| the adapter is here and is not what the pin says | 40 |
+| the first word is a transport nothing reads | 7 |
+
+**Upgrading is a line somebody edited.** Foundry ships the fix. The repository commits the new
+digest, in a commit its own history keeps.
+
+**A run may not edit that line.** The declaration is pinned to the base, like every other source a
+bar comes from. So the charter and the tree disagree, and `judged` refuses at 7 before it asks
+anyone.
+
+**One bad release does not break every repository at once**, and that is the objection this answers.
+Each repository judges at the digest it committed. A bad adapter shipped tomorrow is a digest nobody
+has said yes to, so nothing changes for anyone. It reaches only a repository that upgrades to it —
+which is a commit, reviewed like any other.
+
+**What it costs is the other half of that.** Install a new plugin and every repository pinned to the
+old adapter refuses at 40 until it commits the new digest. That is the design working, and it is
+still work — the refusal prints both digests, so the fix is one line.
+
+#### What the pin proves, and what it does not
+
+| | |
+|---|---|
+| proves | the file about to judge is the file the repository named |
+| proves | a run that rewrote the adapter is refused. Nothing else here sees that |
+| does not | that the plugin is what Foundry shipped |
+| does not | anything about the harness the adapter calls. #332, still open |
+| does not | that a receipt's own two keys were checked |
+
+**The binding refusal happens before the adapter runs**, and that is the one that counts. An adapter
+handed the receipt can rewrite the whole file, matching keys included. Floor read the digest first.
+
+Whoever can rewrite the adapter can rewrite the core that digests it. The digest is git's, so it is
+SHA-1 — a strong accident detector, a weak defence against a prepared collision.
+
+**A repository on a non-default git object format pins what that format produces.** Floor compares
+what it computes against what was committed. A mismatch refuses, which is the safe way round.
+
 **A cold read reuses that and adds nothing.** Somebody who did not write a file says whether they
 understood it. That is a judgement, so one line carries it:
 
@@ -867,9 +943,15 @@ time       2026-09-04T11:02:00Z
 | Required | Vouched for, or absent |
 |---|---|
 | `run` `clause` `candidate` `role` `adapter` | `context` `fresh` `prior` |
-| `brief` `verdict` `report` `round` `time` | `requested_model` `self_reported_model` |
+| `brief` `verdict` `report` `round` `time` | `adapter_pin` `adapter_digest` |
+| | `requested_model` `self_reported_model` |
 | | `requested_provider` `self_reported_provider` |
 | | `requested_effort` `self_reported_effort` |
+
+**`adapter_pin` and `adapter_digest` are the runner's, and they come in pairs.** The first is the
+content the repository authorised; the second is what the file on disk actually was. A repository's
+own command has neither, because nothing pins one and an invented key reads exactly like a checked
+one. **A gap between them is a refusal**, whether a run caused the receipt or a person wrote it.
 
 **There is no `model` key, and that is measured rather than careful.** An adapter was driven here in
 its json mode. Its stream carries a thread handle, the reply and the usage. It names no model, no
@@ -915,9 +997,12 @@ FOUNDRY_RECEIPT   the file to append to. Floor has already written the fields it
 ```
 
 **A key floor wrote is a key the judge may not restate.** `run`, `clause`, `candidate`, `role`,
-`brief`, `round` and `prior` are the runner's. The grammar already calls a key said twice two
-answers, so an adapter writing its own `candidate` is refused rather than believed. **That refusal is
-the whole mechanism**, and there is no second one.
+`brief`, `round`, `prior`, `adapter_pin` and `adapter_digest` are the runner's. The grammar already
+calls a key said twice two answers, so an adapter writing its own `candidate` is refused rather than
+believed. **That refusal is the whole mechanism**, and there is no second one.
+
+**The binding keys are core's for a reason of their own.** They say the vendor code had authority,
+so vendor code writing them would be vouching for itself.
 
 **The receipt is read by the verb a person types.** Same keys, same refusals: a runner cannot reach a
 satisfaction a hand-written receipt could not.
@@ -925,8 +1010,9 @@ satisfaction a hand-written receipt could not.
 | | Exit |
 |---|---|
 | the charter names no judge | 8 |
-| a judge nobody said how to reach, or a run that rewrote the file its judge runs | 7 |
-| the command is not on this host, or a signal killed it | 21 |
+| a judge nobody said how to reach, a run that rewrote the file its judge runs, or a transport nothing reads | 7 |
+| the command is not on this host, or a signal killed it. An adapter this plugin does not ship | 21 |
+| the adapter that would judge is not the one the repository authorised | 40 |
 | a judge answered and did not approve, or could not answer at all | 39 |
 
 **The base is named beside the candidate**, because a judge asked what changed needs both ends. A
@@ -969,6 +1055,7 @@ this run introduced has nothing to compare against. #341 owns the rest of that s
 | a round that is not a count, or a later round naming no prior | 37 |
 | a bare `model`, `provider` or `effort` | 37 |
 | the handoff recorded no brief, so there is nothing to compare | 37 |
+| it authorises an adapter and names none that ran, names one nothing authorised, or the two differ | 40 |
 | it answers for another run, or for a brief that changed | 38 |
 | the candidate is not where the work is | 35 |
 | nothing handed that judge the bar | 36 |
@@ -989,11 +1076,16 @@ one at the handoff and one on the receipt, and reads no brief. One adapter write
 digests say the bar did not move under the judge. They do not say the digest is of the brief it
 claims.
 
-**A substitution nobody records is invisible.** `adapter` is a label floor reads nothing into. Ask
-harness A and get nothing at all. Let harness B write a receipt naming itself. **Floor takes B's**,
-because the first it hears of either is the name on the file. Refusing that needs `handed` to record
-the harness as an identity before the answer comes back, and `how` is prose for a person. #332
-leaves it open.
+**A substitution nobody records is invisible, and half of that is now closed.** `adapter` is still a
+label floor reads nothing into. What is no longer a label is which code had authority: a shipped
+adapter is reached at a content the repository committed, and `adapter_pin` beside `adapter_digest`
+says both. **What that does not cover is the harness the adapter then calls.** Ask harness A, get
+nothing, let harness B answer — floor sees one adapter running, exactly as pinned, and cannot see
+past it. #332 leaves that half open, and `how` is prose for a person.
+
+**A repository's own command has none of this.** `@custom` and a bare command are unpinned by
+design, because a repository that wrote the script already owns it. The pin answers a different
+question: whether the code Foundry shipped is the code Foundry shipped.
 
 **Every refusal the suite checks is driven by fixtures the suite writes.** A fixture is written by
 whatever is being tested. So these prove the reading holds, never that a producer elsewhere would
