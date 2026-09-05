@@ -1694,10 +1694,10 @@ and `lib.sh` hands over its name rather than the audit cutting one out of a mess
   ok    a runner that ignores FOUNDRY_HOME is caught — killed by [home follows FOUNDRY_HOME]
 ```
 
-**A break whose record does not name exactly one check fails the audit.** Nothing answered means the
-red came from a fixture rather than a rule — `broke` is how a suite says a setup would not build.
-Several answered means fail-fast is not reaching that suite, so the first of them is being recorded
-as the one that mattered. Every audit before this read both as a catch.
+**A break whose record cannot say which rule it broke fails the audit.** Three ways it cannot.
+Nothing answered, so the red came from a `skip` at the tally. A setup would not build, which a suite
+reports with `broke`. Or several answered, which means fail-fast is not reaching that suite and the
+first of them is being recorded as the one. Every audit before this read all three as a catch.
 
 **Breaks that share a killing check are listed at the end, and nothing fails on them.** One of each
 group proves nothing the other did not. A break that breaks something fundamental dies at the first

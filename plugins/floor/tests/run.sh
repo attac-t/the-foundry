@@ -491,18 +491,24 @@ suite_caught() {
 # printed line at its em dash, and `install.sh` names checks that carry em dashes of their own — so
 # the cut dropped the script each one names, and read two scripts as a single check.
 #
-# One line, because `FOUNDRY_FAIL_FAST` stops a suite at its first failure. Two ways that is not
-# true, and neither can be used:
+# One line, because `FOUNDRY_FAIL_FAST` stops a suite at its first failure. **Three answers that are
+# not a rule the break broke**, and `refuse_a_record_the_audit_cannot_use` refuses all three:
 #
-#   nothing  a red no check answered for — a fixture that would not build, or a `skip` at the tally
+#   nothing  a red no check answered for — a `skip` at the tally, or a suite that died first
 #   several  fail-fast not reaching the suite, so the first of many is recorded as the one
+#   setup    `broke` — a fixture that would not build, which is red and is not a rule
+#
+# **`setup` is `lib.sh`'s sentence, written down twice.** The self-test calls the real `broke` and
+# compares what comes back with this, so the two cannot drift apart in silence.
 #
 # Sentences rather than a blank field, because a blank reads as something nobody filled in.
-# `refuse_a_record_that_names_no_single_check` reads both as failures.
 #
 unnamed='nothing named a check'
 several='more than one check answered'
+setup='a setup that would not build'
 
+# `grep -m1 .`, not `head -n 1`: the count is of lines holding something, so the name has to be read
+# the same way. A blank first line made the two disagree and returned nothing at all.
 killed_by() {
   local said
   said=$(grep -c . "$1" 2>/dev/null) || said=0
@@ -510,7 +516,7 @@ killed_by() {
   [ "$said" -eq 0 ] && { printf '%s' "$unnamed"; return; }
   [ "$said" -eq 1 ] || { printf '%s' "$several"; return; }
 
-  head -n 1 "$1"
+  printf '%s' "$(grep -m1 . "$1")"
 }
 
 #
@@ -549,16 +555,20 @@ breaks_sharing_a_check() {
 }
 
 #
-# Breaks whose record does not name exactly one check.
+# Breaks whose record cannot say which rule they broke.
 #
-# **The right red for the wrong reason**, twice over. A break is meant to violate a rule some check
-# holds. One that breaks a fixture reddens the suite through `skip` or `broke` and names no check,
-# and every audit before this one read that as *caught*. One read without fail-fast names several,
-# and the first of them is recorded as though it were the one.
+# **The right red for the wrong reason**, three ways. A break is meant to violate a rule some check
+# holds. One that breaks a fixture reddens the suite through `skip` or `broke`; one read without
+# fail-fast names several, and the first is recorded as though it were the one. Every audit before
+# this read all three as *caught*.
 #
-breaks_with_no_single_check() {
-  awk -F'\t' -v a="$unnamed" -v b="$several" \
-      '$2 == a || $2 == b { printf "      %s — %s\n", $3, $2 }' "$1"
+# **`broke` names its own sentence, so it needs its own row here.** Leaving it out made the refusal
+# below miss the case it was written for: two breaks resting on a fixture that would not build, and
+# `ALL GREEN` printed over them. Measured, not argued.
+#
+breaks_with_an_unusable_record() {
+  awk -F'\t' -v a="$unnamed" -v b="$several" -v c="$setup" \
+      '$2 == a || $2 == b || $2 == c { printf "      %s — %s\n", $3, $2 }' "$1"
 }
 
 # One value against the one wanted, for the readers this file grades rather than the plugin.
@@ -612,15 +622,22 @@ a_killer_is_named_by_the_check_that_wrote_it() {
   same "a bad with no name is named by its message" \
        "$(killed_by "$checks")" "not executable — run.sh"
 
+  # `broke`'s sentence is `lib.sh`'s, and `$setup` is this file's copy of it. Read the real one back
+  # and compare, or the two drift and the refusal below stops recognising what it refuses.
   ask_lib_sh broke "could not make a repository to test against"
-  same "a setup that would not build is not a check" \
-       "$(killed_by "$checks")" "a setup that would not build"
+  same "a setup that would not build is lib.sh's own words" "$(killed_by "$checks")" "$setup"
 
   : > "$checks"
-  same "a suite no check answered for says so" "$(killed_by "$checks")" "nothing named a check"
+  same "a suite no check answered for says so" "$(killed_by "$checks")" "$unnamed"
 
   printf 'one\ntwo\n' > "$checks"
-  same "a suite read without fail-fast says so" "$(killed_by "$checks")" "more than one check answered"
+  same "a suite read without fail-fast says so" "$(killed_by "$checks")" "$several"
+
+  # The count reads lines holding something and the name has to read the same way. `head -n 1` did
+  # not: a blank first line counted as one check and came back as nothing at all.
+  printf '\na check under a blank line\n' > "$checks"
+  same "a blank first line does not swallow the name" \
+       "$(killed_by "$checks")" "a check under a blank line"
 }
 
 # One assertion from the real library, into the file the audit reads. Its own shell, because `bad`
@@ -639,8 +656,9 @@ ask_lib_sh() {
 # because what is under test is what reaches the suite's environment.
 #
 # `model_caught` names `model.sh` and takes no stand-in, so nothing here can ask it the same way. The
-# 202 breaks it reads answer for it: drop its fail-fast and each one names several checks, which is
-# the failure `refuse_a_record_that_names_no_single_check` exists for.
+# 202 breaks it reads answer for it, and that was measured rather than assumed: with its fail-fast
+# taken away, `collide`, `worktree` and `nohome` each answered *more than one check answered* and the
+# refusal below went red. **They pass because fail-fast arrives, and stop the moment it does not.**
 #
 a_suite_is_read_under_fail_fast() {
   local checks="$tmp/asked.check"
@@ -668,11 +686,14 @@ a_shared_killer_is_reported_with_the_breaks_that_share_it() {
   printf 'model\tits own\ta break\nhost\tits own\tanother break\n' > "$tmp/rows"
   same "one check each, in two suites, is not sharing" "$(breaks_sharing_a_check "$tmp/rows")" ""
 
-  printf 'model\t%s\ta silent break\nmodel\t%s\ta noisy break\nmodel\tits own\ta break\n' \
-         "$unnamed" "$several" > "$tmp/rows"
-  same "a record naming no single check is picked out" \
-       "$(breaks_with_no_single_check "$tmp/rows")" \
-       "$(printf '      a silent break — %s\n      a noisy break — %s' "$unnamed" "$several")"
+  # All three, because the one that was missing is the one that let two breaks rest on a fixture
+  # that would not build while the audit printed ALL GREEN.
+  printf 'model\t%s\ta silent break\nmodel\t%s\ta noisy break\nmodel\t%s\ta break on sand\nmodel\tits own\ta break\n' \
+         "$unnamed" "$several" "$setup" > "$tmp/rows"
+  same "a record that cannot say which rule broke is picked out" \
+       "$(breaks_with_an_unusable_record "$tmp/rows")" \
+       "$(printf '      a silent break — %s\n      a noisy break — %s\n      a break on sand — %s' \
+                 "$unnamed" "$several" "$setup")"
 }
 
 # `$?` from the line above. Called immediately after `bounded`, because anything between them is the
@@ -2234,25 +2255,25 @@ say_when_two_breaks_share_a_check() {
 }
 
 #
-# The other half, and **this one is a failure**: a record that does not name exactly one check.
+# The other half, and **this one is a failure**: a record that cannot say which rule was broken.
 #
 # No exemptions, and the bar is zero. It is the part of the finding above that an exit code can hold,
 # and it is what proves the premise every row above rests on — one check answered, and it is the one
 # named. **The audit measures that over every break, every run.** Nothing else has to be believed.
 #
-# It rests on `lib.sh` telling a setup failure from a check. `broke` is how a suite says so, and a
-# suite calling `bad` for a fixture that would not build would slip past this reading as a rule.
+# It rests on `lib.sh` telling a setup failure from a check, and on `setup` above matching what
+# `broke` writes. A suite calling `bad` for a fixture that would not build still reads as a rule.
 #
-refuse_a_record_that_names_no_single_check() {
+refuse_a_record_the_audit_cannot_use() {
   local wrong
-  wrong=$(breaks_with_no_single_check "$killed")
+  wrong=$(breaks_with_an_unusable_record "$killed")
 
-  [ -n "$wrong" ] || { printf '  ok    every break names one check, and it is the one that stopped the suite\n'; return; }
+  [ -n "$wrong" ] || { printf '  ok    every break rests on one check, and it is the one that stopped the suite\n'; return; }
 
-  printf '  FAIL  breaks whose record does not name exactly one check\n%s\n' "$wrong"
+  printf '  FAIL  breaks whose record cannot say which rule they broke\n%s\n' "$wrong"
   failed=1
 }
-refuse_a_record_that_names_no_single_check
+refuse_a_record_the_audit_cannot_use
 say_when_two_breaks_share_a_check
 
 #
