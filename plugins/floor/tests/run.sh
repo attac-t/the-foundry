@@ -208,10 +208,10 @@ core_names_no_vendor() {
 }
 
 vendor_words() {
-  local name
-  for dir in "$root"/adapters/*/; do
-    [ -d "$dir" ] || continue
-    name=${dir%/}; name=${name##*/}
+  local held name
+  for held in "$root"/adapters/*/; do
+    [ -d "$held" ] || continue
+    name=${held%/}; name=${name##*/}
     printf '%s\n%s\n' "$name" "${name%%-*}"
   done | sort -u
 }
