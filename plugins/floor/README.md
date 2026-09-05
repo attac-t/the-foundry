@@ -1687,6 +1687,20 @@ got. Read `failed` and `skipped`, which mean the same thing everywhere.
 Every suite, then a deliberate break for every rule that matters. Each one must turn a suite red, and
 the run says so if a break failed to apply — a mutation that changed nothing proves nothing.
 
+**Each break names the check that killed it.** The suite runs under fail-fast, so the first assertion
+to go red is the whole answer, and the audit prints its name:
+
+```
+  ok    a runner that ignores FOUNDRY_HOME is caught — killed by [home follows FOUNDRY_HOME]
+```
+
+**A break the suite went red for with no assertion behind it fails the audit.** That red came from a
+broken fixture, not a broken rule. Every audit before this one read it as a catch.
+
+**Breaks that share a killing check are listed at the end, and nothing fails on them.** One of each
+group proves nothing the other did not. A break that breaks something fundamental dies at the first
+check that touches it. No aiming of its `sed` changes that. A checkpoint per break would.
+
 `model.sh` calls the runner. `install.sh` reads the command out of `hooks/hooks.json` and hands it
 to a shell — because a suite that calls the scripts itself proves only that the scripts work, never
 that the wiring does, which is where kernel and signal both failed.

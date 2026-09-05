@@ -162,9 +162,9 @@ audit_says_which
 # **Adding that field is sixteen call sites and its own charter**, not a rider on a receipt.
 #
 # What is done instead, and it is the half this file can stand behind: **every refusal the receipt
-# adds is named by a break, and each dies on its own check.** The three composites are not — they
-# only delegate, so a break on one is killed by whichever child fixture runs first, which is the
-# fault 050 and 051 both named rather than a cure for it.
+# adds is named by a break.** Whether each dies on a check of its own was a claim nobody could check
+# until `say_when_two_breaks_share_a_check` printed the answer — and the answer is that several do
+# not. The list is at the foot of this file, and it is a finding rather than a claim now.
 #
 ends_on "$root/tests/run.sh"     'exit $failed'      || bad "tests/run.sh declares breaks below its exit, and nothing runs them"
 ends_on "$root/tests/transport.sh" '[ "$failed" -eq 0 ] || exit 1' || bad "tests/transport.sh runs cases below its exit, and nothing counts them"
@@ -443,6 +443,27 @@ a_deadline_is_not_an_answer() {
 }
 
 #
+# The same three from `polled`, which nothing here would otherwise run.
+#
+# `bounded` prefers `timed` wherever `timeout` exists, and it exists on every machine this gate runs
+# on. **macOS is the platform `polled` is for**, and it had never been asked a question — so the two
+# runners are one edit apart and only one of them was ever proved.
+#
+# The transcript too. Every break below proves whichever runner this machine uses keeps what it ran;
+# this proves the other one does.
+#
+a_deadline_without_timeout_answers_the_same() {
+  local transcript="$tmp/polled.log"
+
+  polled 5 true;     answered 0 "a polled command that passes"
+  polled 5 false;    answered 1 "a polled command that fails"
+  polled 2 sleep 30; answered 2 "a polled command that never answers"
+
+  polled 5 printf 'said'
+  same "and polled keeps what it ran" "$(cat "$transcript")" "said"
+}
+
+#
 # Does a suite fail against a broken copy of the plugin?
 #
 #   0  caught · 1  it passed against a broken one · 2  the mutant never answered
@@ -477,9 +498,11 @@ suite_caught() {
 #
 # **It always answers, and one of its answers is that nothing did.** A `skip` fails at the tally,
 # which writes `FAIL — ` in the first column rather than a check's name, and a suite that died before
-# its first assertion names nothing at all. Blank there would read as a field nobody filled in, and
-# these breaks are worth grouping too: a killer nothing can name proves no rule in particular.
+# its first assertion names nothing at all. Blank there would read as a field nobody filled in, so it
+# is a sentence instead — and `refuse_a_break_no_assertion_answered` reads it as a failure.
 #
+unnamed='nothing named a check'
+
 killed_by() {
   local killer
   killer=$(awk '
@@ -492,7 +515,7 @@ killed_by() {
     }
   ' "$1")
 
-  printf '%s' "${killer:-nothing named a check}"
+  printf '%s' "${killer:-$unnamed}"
 }
 
 #
@@ -528,6 +551,17 @@ breaks_sharing_a_check() {
 
     function show() { if (n > 1) printf "    [%s]\n%s", killer, names }
   '
+}
+
+#
+# Breaks the suite went red for with no assertion behind it.
+#
+# **The right red for the wrong reason.** A break is meant to violate a rule some assertion holds.
+# One that breaks a fixture instead reddens the suite through `skip`, which fails at the tally and
+# names no check — and every audit before this one read that as *caught*.
+#
+breaks_no_assertion_answered() {
+  awk -F'\t' -v unnamed="$unnamed" '$2 == unnamed { printf "      %s\n", $3 }' "$1"
 }
 
 # One value against the one wanted, for the readers this file grades rather than the plugin.
@@ -596,6 +630,10 @@ a_shared_killer_is_reported_with_the_breaks_that_share_it() {
 
   printf 'model\tits own\ta break\nhost\tits own\tanother break\n' > "$tmp/rows"
   same "one check each, in two suites, is not sharing" "$(breaks_sharing_a_check "$tmp/rows")" ""
+
+  printf 'model\t%s\ta silent break\nmodel\tits own\ta break\n' "$unnamed" > "$tmp/rows"
+  same "a break no assertion answered is picked out" \
+       "$(breaks_no_assertion_answered "$tmp/rows")" "      a silent break"
 }
 
 # `$?` from the line above. Called immediately after `bounded`, because anything between them is the
@@ -619,6 +657,7 @@ a_run_of_silence_stops_the_audit() {
   ( silence 9; kept x; silence 9 ) >/dev/null 2>&1; answered 0 "a run one answer broke"
 }
 a_deadline_is_not_an_answer
+a_deadline_without_timeout_answers_the_same
 a_suite_that_never_answered_caught_nothing
 a_run_of_silence_stops_the_audit
 a_killer_is_named_by_the_check_that_wrote_it
@@ -2120,18 +2159,27 @@ wreck_join "a settings file it cannot read called a missing plugin is caught" \
 #
 # Two breaks, one check.
 #
-# **This is the finding no exit code could ever carry**, and five adversary rounds asked for it —
-# verdicts 050 to 054. A break proves a rule only when a check goes red *for that rule*. Fail-fast
-# stops the suite at its first failure, so a break that also trips something checked earlier never
-# reaches the one it was written for, and the audit records it caught either way. `needsfresh` did
-# exactly that: its first shape required `context` and died three checks above its own.
+# **The finding no exit code could carry**, and five adversary rounds asked for it — verdicts 050 to
+# 054. A break proves a rule only when a check goes red *for that rule*. Fail-fast stops the suite at
+# its first failure, so a break that also trips something checked earlier never reaches the one it
+# was written for, and the audit recorded it caught either way. `needsfresh` did exactly that: its
+# first shape required `context` and died three checks above its own.
 #
-# Two breaks under one check is that made visible. Whichever of them was aimed further down proves
-# nothing the other had not already proved, and the rule it was written for is unwatched.
+# Two breaks under one check is that, made visible. One of them proves nothing the other had not
+# already proved, and the rule it was aimed at is unwatched.
 #
-# **The remedy is the break, never this list.** Anchor the mutation at the rule it is about, or drop
-# the break that duplicates another — an exemption list here would be a green gate over the very
-# thing it exists to find.
+# **No exit code turns on this, and that was measured rather than conceded.** `reclone` blinds
+# `attached` and `localorigin` blinds `remote set-url`. Both break the workspace itself, so both die
+# at the first check that touches one — and no anchoring of a `sed` moves that. **A break that breaks
+# something fundamental cannot be given a check of its own while the suite runs in one order from
+# the top.**
+#
+# **What separates them is a checkpoint per break and a declared assertion** — PR #434's seam, open
+# and undecided. This list is the cost side and the benefit side of that decision, and neither
+# existed before it printed.
+#
+# **A baseline would be a snapshot**, blessing whatever was true the day it was taken. So the list is
+# printed whole, every run, and nothing here calls any of it acceptable.
 #
 say_when_two_breaks_share_a_check() {
   local shared
@@ -2139,10 +2187,28 @@ say_when_two_breaks_share_a_check() {
 
   [ -n "$shared" ] || { printf '  ok    every break has a killing check of its own\n'; return; }
 
-  printf '  FAIL  breaks that share a killing check — the later-aimed one proves nothing\n'
+  printf 'audit — breaks that share a killing check. One of each group proves nothing new:\n'
   printf '%s\n' "$shared"
+  printf 'audit — a check of its own needs a checkpoint per break. That is #434, and it is open.\n'
+}
+
+#
+# The other half, and **this one is a failure**: a break the suite went red for with no assertion
+# behind it.
+#
+# It carries no exemptions, because nothing answers this way today. The bar is zero and stays zero,
+# and it is the part of the finding above that an exit code can hold.
+#
+refuse_a_break_no_assertion_answered() {
+  local silent
+  silent=$(breaks_no_assertion_answered "$killed")
+
+  [ -n "$silent" ] || { printf '  ok    every break was killed by an assertion that named itself\n'; return; }
+
+  printf '  FAIL  breaks the suite went red for with no assertion behind it\n%s\n' "$silent"
   failed=1
 }
+refuse_a_break_no_assertion_answered
 say_when_two_breaks_share_a_check
 
 #
