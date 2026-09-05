@@ -7,6 +7,23 @@ keep now. **Nothing here is a promise, and no promise there is quoted without th
 
 ---
 
+## The doctrine on `main` is a candidate
+
+**Merging is not acceptance.** Nothing in `.foundry/` records the current doctrine as accepted.
+Only a named person, on a dated line, can say so.
+
+Goals carry an `Accepted:` field and three of them read *Not yet*. Doctrine has never carried one.
+
+Until a blob is accepted, no run cites the doctrine as accepted direction, and no
+identity-sensitive change proceeds from it. **Every other lane carries on.**
+
+[#128](https://github.com/attac-t/the-foundry/issues/128) owns the goal.
+[#430](https://github.com/attac-t/the-foundry/issues/430) holds the contradictions.
+[#274](https://github.com/attac-t/the-foundry/issues/274) owns the other half. Nothing pins a
+worker's read to a blob. So a worker cannot tell an accepted doctrine from a merged one.
+
+---
+
 ## What Foundry runs on today
 
 | | |
