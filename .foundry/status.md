@@ -43,6 +43,20 @@ A delivery cannot silently claim it was checked against something it was not.
 | the commit exists | an absent commit is absent |
 | a swap was written down | a made-up one has no record |
 
+### A verdict is written by something that did not do the work
+
+**True since 5 September**, and it is the one row that moved here from below.
+
+The runner invokes the judge the charter pins, and floor consumes the receipt. No person types it.
+
+Proved unattended, end to end. **The judge said *revise*, so floor refused rather than passing:**
+`judged clauses no judge approved: 1`, exit 39. Where the harness is absent it records
+`unavailable`, asks nothing else, and never falls back. PR #506, floor 0.69.0.
+
+**Three things this does not say.** Nothing counts rounds, so an exhausted budget is recordable and
+still undetectable. The adapter that reaches the judge is run by no test - #508. And one harness,
+once, is not two: RFC-001 wants a second and this is the first.
+
 **Every path to a lower bar runs through a visible, dated commit.** That holds for the supported
 workflow, with history intact and no hostile hand. It is not a wall — see below.
 
@@ -64,7 +78,6 @@ Both are true, both are done, and neither closes the line above it.
 | the suite that ran was the suite pinned | [#341](https://github.com/attac-t/the-foundry/issues/341) |
 | who said yes is more than the run's word | [#156](https://github.com/attac-t/the-foundry/issues/156) |
 | a person can answer a judged clause | **none yet.** [#343](https://github.com/attac-t/the-foundry/pull/343) is merged and refuses one |
-| a verdict is written by something that did not do the work | [#332](https://github.com/attac-t/the-foundry/issues/332) |
 | acceptance can be withheld | **none yet.** [#359](https://github.com/attac-t/the-foundry/pull/359) is merged and only measured it |
 | the record outlives the run directory | [#337](https://github.com/attac-t/the-foundry/issues/337) |
 | a question reaches a person and comes back | none yet |
