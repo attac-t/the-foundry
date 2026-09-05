@@ -43,6 +43,21 @@ review round. Once promoted to a forbidden-import check, it costs an exit code â
 
 ---
 
+## Who may look outside the tree
+
+| Role | Outside | Why |
+|---|---|---|
+| adversary | **yes**, for prior art | a judge that reads only this repo can say the work is consistent. It cannot say the world already knows it is wrong |
+| newcomer | **no** | the cold read is the instrument. Looking a thing up mends the confusion this role exists to record |
+| author | yes | it builds. `kernel:ground-discovery` already tells it to read the official source first |
+
+**Prior art shapes a design. It never grades a commit.** A fetched page has no `file:line` here, so
+it cannot carry a Critical alone, and a judge marks what it took from outside.
+
+**Nobody is required to search.** A round with nothing to look up should not pretend otherwise.
+
+---
+
 ## The Loop
 
 ```
