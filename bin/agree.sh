@@ -61,6 +61,14 @@ named_in_workflow() {
             if (name !~ /^(agree|gates)$/) print name
         }
 
+        # An adapter answers for itself, and it is named for itself. It ships inside a plugin rather
+        # than under `bin/`, so the pattern above cannot see it — and a gate CI silently stopped
+        # running is exactly what this file exists to catch.
+        /adapters\/[a-z0-9-]+\/run\.sh/ {
+            match($0, /adapters\/[a-z0-9-]+\//)
+            print substr($0, RSTART + 9, RLENGTH - 10)
+        }
+
         # The step that runs the suites, not the matrix that declares them. Delete the step and keep
         # the matrix and CI runs none of them, which reading the declaration alone calls agreement.
         /plugins\/\$\{\{ matrix\.plugin \}\}\/tests\/run\.sh/ { step = 1 }

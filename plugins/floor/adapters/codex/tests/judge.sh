@@ -1,5 +1,5 @@
 #!/bin/bash
-# What `bin/judge.sh` makes of what a harness hands back.
+# What this adapter makes of what a harness hands back.
 #
 # Driven through a `codex` this suite writes, so every check is the real script reading a real
 # answer. Mocking its readers would prove the parts and leave the join — and the join is where an
@@ -8,7 +8,7 @@
 # **No network, ever.** A gate that needs one goes red on a train.
 
 set -u
-root="$(cd "$(dirname "$0")/.." && pwd)"
+adapter="$(cd "$(dirname "$0")/.." && pwd)/run.sh"
 
 passed=0
 failed=0
@@ -52,18 +52,18 @@ handed() {
 
 judged() {
   ( cd "$1" && PATH="$tmp/bin:$PATH" TMP="$tmp" FOUNDRY_BRIEF="$1/brief" \
-    FOUNDRY_RECEIPT="$1/r.receipt" sh "$root/bin/judge.sh" >/dev/null 2>&1 )
+    FOUNDRY_RECEIPT="$1/r.receipt" sh "$adapter" >/dev/null 2>&1 )
 }
 
 # --- what floor must have handed over ---
 
 d=$(handed nobrief)
 is "a run with no brief is refused" \
-   "$( ( cd "$d" && FOUNDRY_RECEIPT="$d/r.receipt" sh "$root/bin/judge.sh" >/dev/null 2>&1 ); printf '%s' "$?")" "2"
+   "$( ( cd "$d" && FOUNDRY_RECEIPT="$d/r.receipt" sh "$adapter" >/dev/null 2>&1 ); printf '%s' "$?")" "2"
 
 d=$(handed noreceipt)
 is "a run with no receipt is refused" \
-   "$( ( cd "$d" && FOUNDRY_BRIEF="$d/brief" sh "$root/bin/judge.sh" >/dev/null 2>&1 ); printf '%s' "$?")" "2"
+   "$( ( cd "$d" && FOUNDRY_BRIEF="$d/brief" sh "$adapter" >/dev/null 2>&1 ); printf '%s' "$?")" "2"
 
 # --- the harness is not here ---
 #
@@ -82,7 +82,7 @@ if PATH="$bare" command -v codex >/dev/null 2>&1; then
   bad "the absence check cannot run — codex is on the bare PATH"
   out=""
 else
-  out=$( ( cd "$d" && PATH="$bare" FOUNDRY_BRIEF="$d/brief" FOUNDRY_RECEIPT="$d/r.receipt" sh "$root/bin/judge.sh" 2>&1 ) )
+  out=$( ( cd "$d" && PATH="$bare" FOUNDRY_BRIEF="$d/brief" FOUNDRY_RECEIPT="$d/r.receipt" sh "$adapter" 2>&1 ) )
 fi
 has "a harness that is not here says so" "$out" "not on this host"
 has "and records it unavailable"         "$(cat "$d/r.receipt")" "unavailable"
