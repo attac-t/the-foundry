@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# An adapter this plugin ships. A repository declares `@adapter codex-exec <digest>` and owns no line
+# An adapter this plugin ships. A repository declares `@adapter codex <digest>` and owns no line
 # of it, so a fix here reaches every repository that authorises the new digest.
 #
 # **Floor core knows nothing about this file.** It builds one path under its own plugin root, checks
@@ -41,7 +41,7 @@ set -u
 
 readonly MODEL=gpt-5.6-sol
 readonly EFFORT=max
-readonly ADAPTER=codex-exec
+readonly ADAPTER=codex
 
 here=$(cd "$(dirname "$0")" && pwd)
 

@@ -2293,7 +2293,7 @@ reach_the_shipped_adapter() {
     refuse_an_adapter_this_plugin_does_not_ship "$adapter" "$at"
 
     REACH_DIGEST=$(digest_on_disk "$at")
-    refuse_an_adapter_nobody_authorised "$adapter" "$pin" "$REACH_DIGEST"
+    refuse_an_adapter_nobody_authorised "$adapter" "$pin" "$REACH_DIGEST" "$at"
 
     REACH_COMMAND=
     REACH_FILE=$at
@@ -2312,6 +2312,11 @@ adapter_file() { printf '%s/adapters/%s/run.sh' "$PLUGIN_ROOT" "$1"; }
 #
 # `--no-filters`, so the answer is the bytes rather than what a repository's line-ending rules would
 # make of them. A pin taken on one platform has to mean the same file on the next.
+#
+# **That also settles where this may be called from.** Attributes are what a repository would bring
+# to the answer, and filters are off, so the digest is the same inside the workspace, inside the
+# checkout, or outside any repository at all. It is asked after `enter_work_tree` and does not
+# depend on it.
 #
 digest_on_disk() { git hash-object --no-filters -- "$1" 2>/dev/null; }
 
@@ -2372,13 +2377,22 @@ refuse_an_adapter_this_plugin_does_not_ship() {
     exit 21
 }
 
+#
 # The adapter is here and it is not the one the repository authorised. Something rewrote the file,
-# or the plugin moved and nobody said so in the repository.
+# or the plugin was upgraded and nobody said so in the repository.
+#
+# **The upgrade is the ordinary case, so the remedy goes in the message.** This is where a consumer
+# lands the first time their plugin moves under a pin, and two digests with nothing to do about
+# them is a dead end. The README says the same thing eight hundred lines in, where nobody is.
+#
 refuse_an_adapter_nobody_authorised() {
     [ "$2" = "$3" ] && return 0
 
     note "[$1] is authorised at [$2] and what is here digests to [${3:-nothing}]"
     note "  the adapter about to judge this run is not the adapter this repository committed"
+    note "  read the new one, then commit its digest in .foundry/judged:"
+    note "    git hash-object --no-filters -- $4"
+    note "  or declare a command of your own with \`@custom\`"
     exit 40
 }
 
@@ -2507,10 +2521,20 @@ refuse_a_judge_this_run_rewrote() {
     }
 }
 
+#
 # The panel's records as `id command...`, which is the shape `moved_gate_scripts` reads. A member
 # nobody said how to reach has no command and no file, so it is dropped rather than read as one.
+#
+# **A shipped adapter is dropped too, and that is not a saving.** `moved_gate_scripts` asks which
+# repository files a command names, so an `@adapter` record has its id and its digest read as
+# filenames — a no-op only while no repository holds a file named for an adapter. One that did, and
+# changed it, would be told it had rewritten its own judge.
+#
+# The adapter is not a repository file, so no run can rewrite it. What guards it is the digest.
+#
 judge_commands() {
-    printf '%s\n' "$1" | awk 'NF > 2 { id = $1; $1 = ""; $2 = ""; sub(/^ +/, ""); print id, $0 }'
+    printf '%s\n' "$1" | awk '$3 == "@adapter" { next }
+                              NF > 2 { id = $1; $1 = ""; $2 = ""; sub(/^ +/, ""); print id, $0 }'
 }
 
 #
@@ -3729,6 +3753,12 @@ receipt() {
     report=$(said_in "$file" report)
     vouched=$(attested "$file")
 
+    # Read here with the rest, and not where it is used. `refuse_a_kind_that_is_not_judged` takes the
+    # charter into `file`, `sh` has no locals, and a guard reading the receipt after that reads the
+    # charter instead — which answers *no pin at all* about a receipt that carries one. Found by
+    # running it, on the third turn of `craft-sh` rule 10 in this change alone.
+    claimed=$(said_in "$file" adapter_pin)
+
     code=$(code_for_judgement "$outcome") || exit 2
     version=$(charter_version "$dir")
 
@@ -3736,6 +3766,7 @@ receipt() {
     refuse_a_kind_that_is_not_judged "$dir" "$clause"
     refuse_a_judge_that_is_the_worker "$judge"
     refuse_a_judge_nobody_asked "$dir" "$clause" "$judge"
+    refuse_a_pin_the_charter_did_not_give "$dir" "$clause" "$judge" "$claimed"
 
     enter_work_tree "$dir"
     refuse_a_revision_nobody_reviewed "$candidate"
@@ -3838,6 +3869,37 @@ refuse_a_field_that_is_not_there() {
 
     note "$1 carries no [$said], and a receipt without one is evidence of nothing"
     exit 37
+}
+
+#
+# The pin the receipt claims, against the pin the charter actually gives.
+#
+# **Without this the pair is consistency and never authority.** The three guards below ask only
+# whether a receipt agrees with itself, so a hand-written pair agreeing on a digest nobody
+# authorised passes — and the ledger then carries it under a name that says the repository agreed
+# to it. This is what makes `adapter_pin` mean what the README says it means.
+#
+# Driven from the charter, which is where the reach was pinned when a person authorised the bar.
+# A judge the charter reaches by a command of the repository's own has no pin, and a receipt
+# claiming one for it is claiming an authority nothing gave.
+#
+refuse_a_pin_the_charter_did_not_give() {
+    given=$(pin_in_reach "$(judge_command "$(charter_file "$1")" "$(clause_id "$2")" "$3")")
+
+    [ "$4" = "$given" ] && return 0
+
+    note "[$3] is reached at [${given:-no pin at all}] and this receipt answers for [${4:-none}]"
+    exit 40
+}
+
+# The digest an `@adapter` reach names, and nothing for any other reach. `rest` is the tail after a
+# transport word here and in `reach_the_shipped_adapter`, which is one name for one meaning.
+pin_in_reach() {
+    [ "${1%% *}" = "@adapter" ] || return 0
+
+    rest=${1#@adapter}; rest=${rest# }
+    rest=${rest#"${rest%% *}"}
+    printf '%s' "${rest# }"
 }
 
 #
@@ -4715,6 +4777,8 @@ while_reading_judged() {
     held=$1; draft=$2; target=$3; ref=$4
     reaches=$(declared_reaches)
 
+    refuse_a_reach_no_charter_may_hold "$reaches" || return 1
+
     while read -r judge source text; do
         [ -n "$judge" ] || continue
         [ "$judge" = reach ] && continue
@@ -4733,6 +4797,60 @@ while_reading_judged() {
         print_judges "$id" "$judge" "$reaches" >> "$draft" || return 1
     done
     return 0
+}
+
+#
+# A reach no charter may hold, refused before one holds it.
+#
+# **A pin that is not a digest is wrong everywhere.** That is a fact about the declaration, not about
+# this machine — which is what separates it from a command that is simply not installed here. That
+# one derives, and `judged` answers 21 on the host that lacks it.
+#
+# So a charter never records an unhonourable reach as authorised, and a person is never asked to
+# approve a bar nothing could meet. **The run-time readers stay** and are unreachable through any
+# supported path afterwards — `check` refuses a charter the declaration disagrees with, so a bad
+# pin can only arrive by hand. They are defence with no break, and the audit says why.
+#
+# Shape only. Whether the adapter is installed is a question about a machine, and a repository may
+# authorise one before it installs it.
+#
+refuse_a_reach_no_charter_may_hold() {
+    unusable=$(unusable_reaches "$1")
+    [ -z "$unusable" ] && return 0
+
+    note "a reach no charter may hold:"
+    printf '%s\n' "$unusable" | sed 's/^/floor:   /' >&2
+    return 1
+}
+
+# Every declared reach whose shape could never be honoured, one line each. A pipe, so the finding
+# comes back as output — a flag raised in a subshell dies with it.
+unusable_reaches() {
+    printf '%s\n' "$1" | while read -r who command; do
+        [ -n "$who" ] || continue
+        say_why_unusable "$who" "$command"
+    done
+}
+
+# One reach, and the reason it could not be honoured anywhere. Nothing for a reach that is fine, and
+# nothing for a command of the repository's own — which is every reach written before `@` existed.
+say_why_unusable() {
+    case ${2%% *} in
+        @adapter) say_why_the_adapter_reach_is_unusable "$1" "${2#@adapter}" ;;
+        @custom)  [ -n "${2#@custom}" ] || printf '%s says @custom and no command\n' "$1" ;;
+        @*)       printf '%s reaches by [%s], which is no transport\n' "$1" "${2%% *}" ;;
+    esac
+}
+
+# `rest`, `adapter` and `pin` mean here what they mean in `reach_the_shipped_adapter`, which is one
+# grammar read by two stages rather than two readings of it.
+say_why_the_adapter_reach_is_unusable() {
+    rest=${2# }
+    adapter=${rest%% *}
+    pin=${rest#"$adapter"}; pin=${pin# }
+
+    is_an_adapter_name "$adapter" || { printf '%s names no adapter\n' "$1"; return 0; }
+    is_a_digest "$pin" || printf '%s pins [%s], which is not a digest\n' "$1" "$pin"
 }
 
 # Who may answer this clause, as the repository named them, and how each is reached.

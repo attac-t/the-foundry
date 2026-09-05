@@ -30,8 +30,8 @@
 # digest is what says which content may judge here. Upgrading is editing that word, in a commit this
 # history keeps — never something that happens to a machine.
 #
-# Take a new one with `git hash-object --no-filters -- plugins/floor/adapters/codex-exec/run.sh`.
+# Take a new one with `git hash-object --no-filters -- plugins/floor/adapters/codex/run.sh`.
 
-reach  codex:adversary  @adapter codex-exec 07db887225733d37360838fbd2dde6f4e0f29c6a
+reach  codex:adversary  @adapter codex a758b76d7ec5383720966deb4189541f0628ac88
 
 codex:adversary  a change to what a run may claim is judged by something that did not write it

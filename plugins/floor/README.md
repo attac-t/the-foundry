@@ -847,12 +847,20 @@ repository.** That is the copy this exists to end.
 thing they name moves underneath. `git hash-object --no-filters` takes one, and floor reads the same
 way — the bytes, never what a repository's line-ending rules make of them.
 
-| | Exit |
-|---|---|
-| the pin is not a digest, or the id is not a name | 40 |
-| the adapter is not one this plugin ships | 21 |
-| the adapter is here and is not what the pin says | 40 |
-| the first word is a transport nothing reads | 7 |
+**A shape nothing could honour is refused at `charter derive`, before a person is asked.** A pin that
+is not a digest, a name that is a path, a transport nobody wrote. None works on any machine. None
+reaches the file somebody authorises.
+
+| | When | Exit |
+|---|---|---|
+| the pin is not a digest, or the id is not a name | derive | 6 |
+| the first word is a transport nothing reads | derive | 6 |
+| the adapter is not one this plugin ships | judged | 21 |
+| the adapter is here and is not what the pin says | judged | 40 |
+
+**An adapter this host lacks still derives.** That is a fact about a machine, not about the
+declaration. A repository may authorise an adapter before it installs one, exactly as it may declare
+a gate whose command is not here yet.
 
 **Upgrading is a line somebody edited.** Foundry ships the fix. The repository commits the new
 digest, in a commit its own history keeps.
@@ -881,7 +889,13 @@ still work — the refusal prints both digests, so the fix is one line.
 | does not | that a receipt's own two keys were checked |
 
 **The binding refusal happens before the adapter runs**, and that is the one that counts. An adapter
-handed the receipt can rewrite the whole file, matching keys included. Floor read the digest first.
+handed the receipt can rewrite the whole file, matching keys included — and it can rewrite them to
+the charter's own pin, because it can read the charter. Floor read the digest first.
+
+**A repository is answerable for its own pin, and that is a check somebody can run.** Nothing in
+floor compares the digest a repository commits to the adapter its tree holds. Here, `bin/judged.sh`
+does — one gate, `git hash-object --no-filters`, red on a drifted pin. A repository installing floor
+inherits none of that and would write its own.
 
 Whoever can rewrite the adapter can rewrite the core that digests it. The digest is git's, so it is
 SHA-1 — a strong accident detector, a weak defence against a prepared collision.
@@ -952,6 +966,11 @@ time       2026-09-04T11:02:00Z
 content the repository authorised; the second is what the file on disk actually was. A repository's
 own command has neither, because nothing pins one and an invented key reads exactly like a checked
 one. **A gap between them is a refusal**, whether a run caused the receipt or a person wrote it.
+
+**And the pin answers to the charter, not only to its own receipt.** A pair agreeing with each other
+and with nothing else would be consistency wearing the look of authority — so `adapter_pin` must be
+the digest the charter's reach gives, and a receipt claiming one for a judge reached by a command of
+the repository's own is refused. That is what makes the key mean what this page says it means.
 
 **There is no `model` key, and that is measured rather than careful.** An adapter was driven here in
 its json mode. Its stream carries a thread handle, the reply and the usage. It names no model, no
@@ -1056,6 +1075,7 @@ this run introduced has nothing to compare against. #341 owns the rest of that s
 | a bare `model`, `provider` or `effort` | 37 |
 | the handoff recorded no brief, so there is nothing to compare | 37 |
 | it authorises an adapter and names none that ran, names one nothing authorised, or the two differ | 40 |
+| its pin is not the one the charter's reach gives | 40 |
 | it answers for another run, or for a brief that changed | 38 |
 | the candidate is not where the work is | 35 |
 | nothing handed that judge the bar | 36 |
@@ -1189,6 +1209,10 @@ requested_effort max
 
 **The receipt says `codex-exec`, and floor reads nothing into that.** `codex-cli 0.150.1` is the
 version the caller ran, not a fact the record checked.
+
+**That adapter is called `codex` now, and this record is not edited to match.** Nobody edited it is
+the sentence above, and a quoted record rewritten to agree with today makes that false. A name
+floor reads nothing into is a name that may move.
 
 **What it left out is the finding.** It could see the reply it had produced, and not the thread that
 carried it. So it wrote no `context` and no `fresh`. Nobody asked it what model it was, so it wrote

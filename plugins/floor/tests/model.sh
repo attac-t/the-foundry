@@ -4575,64 +4575,89 @@ a-reviewer  a stranger can read it
 a_shipped_adapter_is_reached_at_the_content_authorised
 
 #
-# What the transport refuses, and each one before anything judges anything.
+# A reach no charter may hold, refused before one holds it.
 #
-# **None of these falls back.** A second candidate anywhere — a `$PATH` lookup, a neighbouring
-# version, the repository's own copy — is the failure the pin exists to make impossible.
+# **A pin that is not a digest is wrong everywhere.** That is a fact about the declaration, not about
+# this machine � so it belongs where a declaration becomes an authorised bar, and a person is never
+# asked to approve a bar nothing could meet.
 #
-a_reach_this_cannot_honour_asks_nobody() {
-  a_plugin_shipping a-shipped "$(a_judge_that_approves)" \
-    || { skip "a reach that cannot be honoured — the plugin could not be copied"; return; }
-
-  pin=$(pin_of a-shipped)
+# The run-time readers stay and are unreachable through any supported path afterwards: `check`
+# refuses a charter the declaration disagrees with, so a bad pin can only arrive by hand. The audit
+# says which breaks went with them.
+#
+a_reach_no_charter_may_hold_never_reaches_one() {
+  a_plugin_shipping a-shipped "$(a_judge_that_approves)"     || { skip "a reach no charter may hold � the plugin could not be copied"; return; }
 
   # A version reads as a pin and is not one. It moves while the repository says nothing changed.
   a_repo_that_owns_no_judge "$tmp/tagged" tagged 'reach  a-reviewer  @adapter a-shipped v1.2.3
 a-reviewer  a stranger can read it
-' || { skip "a version instead of a digest — git could not make a repo here"; return; }
+' || { skip "a version instead of a digest � git could not make a repo here"; return; }
 
-  ready_run "$tmp/tagged" 'https://gitlab.com/acme/tagged.git'
+  floor_new_as "$tmp/tagged" ada@example.com "Tagged" >/dev/null
 
-  is  "a version where a digest belongs is refused" "$(code_of floor_at "$tmp/tagged" judged)" "40"
-  has "and it says why a version is not a pin" \
-      "$(floor_at_says "$tmp/tagged" judged)" "moves while the repository says nothing changed"
-  lacks "and nothing was recorded as judged" "$(floor "$tmp/tagged" evidence)" "judged"
-
-  # An adapter this plugin does not ship. The remedy is an install, never a substitute.
-  a_repo_that_owns_no_judge "$tmp/missing" missing "reach  a-reviewer  @adapter no-such-adapter $pin
-a-reviewer  a stranger can read it
-" || { skip "an adapter nobody ships — git could not make a repo here"; return; }
-
-  ready_run "$tmp/missing" 'https://gitlab.com/acme/missing.git'
-
-  is  "an adapter this plugin does not ship fails closed" \
-      "$(code_of floor_at "$tmp/missing" judged)" "21"
-  has "and names what is missing"     "$(floor_at_says "$tmp/missing" judged)" "no-such-adapter"
-  has "and says nothing else answers" \
-      "$(floor_at_says "$tmp/missing" judged)" "nothing else answers for it"
-  lacks "and no judgement is recorded" "$(floor "$tmp/missing" evidence)" "judged"
+  is  "a version where a digest belongs never reaches a charter"       "$(code_of floor_at "$tmp/tagged" charter derive)" "6"
+  has "and it names the judge and what it pinned"       "$(floor_at_says "$tmp/tagged" charter derive)" "a-reviewer pins [v1.2.3], which is not a digest"
+  is  "and nothing was written for a person to authorise"       "$(floor "$tmp/tagged" charter)" ""
 
   # A name that is a path reaches out of the adapters directory. It is not a name.
-  a_repo_that_owns_no_judge "$tmp/climb" climb "reach  a-reviewer  @adapter ../../bin/run $pin
+  a_repo_that_owns_no_judge "$tmp/climb" climb 'reach  a-reviewer  @adapter ../../bin/run abc
 a-reviewer  a stranger can read it
-" || { skip "an adapter name that is a path — git could not make a repo here"; return; }
+' || { skip "an adapter name that is a path � git could not make a repo here"; return; }
 
-  ready_run "$tmp/climb" 'https://gitlab.com/acme/climb.git'
+  floor_new_as "$tmp/climb" ada@example.com "Climb" >/dev/null
 
-  is  "an adapter name holding a path is refused" "$(code_of floor_at "$tmp/climb" judged)" "40"
-  has "and says what a name is" "$(floor_at_says "$tmp/climb" judged)" "is not an adapter name"
+  is  "an adapter name holding a path never reaches a charter"       "$(code_of floor_at "$tmp/climb" charter derive)" "6"
+  has "and says the name is the fault, not the pin"       "$(floor_at_says "$tmp/climb" charter derive)" "a-reviewer names no adapter"
 
   # A transport nobody wrote. `@` is reserved, so this is named rather than handed to a shell.
   a_repo_that_owns_no_judge "$tmp/wibble" wibble 'reach  a-reviewer  @wibble a-shipped
 a-reviewer  a stranger can read it
-' || { skip "an unknown transport — git could not make a repo here"; return; }
+' || { skip "an unknown transport � git could not make a repo here"; return; }
 
-  ready_run "$tmp/wibble" 'https://gitlab.com/acme/wibble.git'
+  floor_new_as "$tmp/wibble" ada@example.com "Wibble" >/dev/null
 
-  is  "a transport nobody wrote is refused" "$(code_of floor_at "$tmp/wibble" judged)" "7"
-  has "and it is named rather than run"     "$(floor_at_says "$tmp/wibble" judged)" "is not a transport"
+  is  "a transport nobody wrote never reaches a charter"       "$(code_of floor_at "$tmp/wibble" charter derive)" "6"
+  has "and it is named rather than run"       "$(floor_at_says "$tmp/wibble" charter derive)" "which is no transport"
+
+  # `@custom` and nothing after it. A record of a choice, and no command to run.
+  a_repo_that_owns_no_judge "$tmp/nocmd" nocmd 'reach  a-reviewer  @custom
+a-reviewer  a stranger can read it
+' || { skip "a custom reach with no command � git could not make a repo here"; return; }
+
+  floor_new_as "$tmp/nocmd" ada@example.com "Nocmd" >/dev/null
+
+  is  "a custom reach naming no command never reaches a charter"       "$(code_of floor_at "$tmp/nocmd" charter derive)" "6"
+  has "and says which half is missing"       "$(floor_at_says "$tmp/nocmd" charter derive)" "says @custom and no command"
 }
-a_reach_this_cannot_honour_asks_nobody
+a_reach_no_charter_may_hold_never_reaches_one
+
+#
+# An adapter this host does not have. **A fact about a machine, so it derives and refuses later.**
+#
+# This is the one a repository meets legitimately: it may authorise an adapter before it installs
+# one, exactly as it may declare a gate whose command is not on this host.
+#
+# **Nothing falls back.** A second candidate anywhere � a `$PATH` lookup, a neighbouring version,
+# the repository's own copy � is the failure the pin exists to make impossible.
+#
+an_adapter_this_host_does_not_have_fails_closed() {
+  a_plugin_shipping a-shipped "$(a_judge_that_approves)"     || { skip "an adapter nobody ships � the plugin could not be copied"; return; }
+
+  pin=$(pin_of a-shipped)
+  a_repo_that_owns_no_judge "$tmp/missing" missing "reach  a-reviewer  @adapter no-such-adapter $pin
+a-reviewer  a stranger can read it
+" || { skip "an adapter nobody ships � git could not make a repo here"; return; }
+
+  ready_run "$tmp/missing" 'https://gitlab.com/acme/missing.git'
+
+  has "an adapter nobody installed still derives into a charter"       "$(floor "$tmp/missing" charter)" "@adapter no-such-adapter"
+
+  is  "and the runner fails closed when it is asked for"       "$(code_of floor_at "$tmp/missing" judged)" "21"
+  has "and names what is missing"     "$(floor_at_says "$tmp/missing" judged)" "no-such-adapter"
+  has "and says nothing else answers"       "$(floor_at_says "$tmp/missing" judged)" "nothing else answers for it"
+  lacks "and no judgement is recorded" "$(floor "$tmp/missing" evidence)" "judged"
+}
+an_adapter_this_host_does_not_have_fails_closed
 
 #
 # The adapter is here, and it is not the one the repository authorised.
@@ -4657,6 +4682,14 @@ a-reviewer  a stranger can read it
   has "and it says the repository authorised another" \
       "$(floor_at_says "$tmp/moved" judged)" "not the adapter this repository committed"
   lacks "and the rewritten one judged nothing" "$(floor "$tmp/moved" evidence)" "judged"
+
+  #
+  # **The remedy, in the message.** This is where a consumer lands the first time a plugin upgrade
+  # moves the adapter under their pin, and two digests with nothing to do about them is a dead end.
+  # The README says the same thing eight hundred lines in, where nobody is.
+  has "and hands over the command that takes the new digest" \
+      "$(floor_at_says "$tmp/moved" judged)" "git hash-object --no-filters --"
+  has "and names the other way out"    "$(floor_at_says "$tmp/moved" judged)" "@custom"
 }
 an_adapter_rewritten_under_its_pin_is_refused
 
@@ -4727,6 +4760,9 @@ a_run_may_not_move_its_own_pin
 a_receipt_binds_the_adapter_that_answered() {
   [ -d "$tmp/shipped" ] || { skip "a receipt binding an adapter — the shipped run is not there"; return; }
 
+  # Read again rather than inherited. `pin` is a global here, and a check resting on whichever
+  # function last set it is a check about the order of this file.
+  pin=$(pin_of a-shipped)
   base=$tmp/shipped.receipt
   cp "$(floor "$tmp/shipped" path)"/judged/*.receipt "$base" 2>/dev/null \
     || { skip "a receipt binding an adapter — nothing was written to copy"; return; }
@@ -4748,6 +4784,34 @@ a_receipt_binds_the_adapter_that_answered() {
       "$(code_of floor "$tmp/shipped" evidence receipt "$tmp/shipped.gap")" "40"
   has "and it names both" \
       "$(floor_says "$tmp/shipped" evidence receipt "$tmp/shipped.gap")" "is what answered"
+
+  #
+  # **A pair that agrees with itself and with nothing else.**
+  #
+  # The three guards above ask only whether a receipt is consistent, so a hand-written pin and
+  # digest agreeing on a digest nobody authorised passed all of them — and the ledger carried it
+  # under a key the README calls the content the repository authorised. The charter is what gave
+  # the pin, so the charter is what it answers to.
+  sed "s/^adapter_pin .*/adapter_pin $(printf '%040d' 0)/; s/^adapter_digest .*/adapter_digest $(printf '%040d' 0)/" \
+      "$base" > "$tmp/shipped.selfpin"
+  is  "a pin the charter never gave is refused, however consistent" \
+      "$(code_of floor "$tmp/shipped" evidence receipt "$tmp/shipped.selfpin")" "40"
+  has "and it names the pin the charter does give" \
+      "$(floor_says "$tmp/shipped" evidence receipt "$tmp/shipped.selfpin")" "is reached at [$pin]"
+  lacks "and the ledger records no such authority" \
+      "$(floor "$tmp/shipped" evidence)" "adapter_pin=$(printf '%040d' 0)"
+
+  # A receipt claiming a pin for a judge the charter reaches by a command of the repository's own.
+  [ -d "$tmp/declared" ] && {
+    own=$(ls "$(floor "$tmp/declared" path)"/judged/*.receipt 2>/dev/null)
+    [ -n "$own" ] && {
+      { cat "$own"; printf 'adapter_pin %s\nadapter_digest %s\n' "$pin" "$pin"; } > "$tmp/declared.claims"
+      is  "a pin claimed for a repository's own command is refused" \
+          "$(code_of floor "$tmp/declared" evidence receipt "$tmp/declared.claims")" "40"
+      has "and says nothing pinned that judge at all" \
+          "$(floor_says "$tmp/declared" evidence receipt "$tmp/declared.claims")" "no pin at all"
+    }
+  }
 }
 a_receipt_binds_the_adapter_that_answered
 

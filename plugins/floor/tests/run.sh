@@ -2138,14 +2138,20 @@ wreck_runner "a judged clause met by any receipt at all is caught" \
 wreck_runner "a transport handed to a shell instead of resolved is caught" \
   noresolve 's#^        @adapter) reach_the_shipped_adapter.*#        @adapter) : ;;#'
 
-# A pin that may be a tag. A version reads as an authorisation and moves underneath one.
-wreck_runner "a pin that need not be a digest is caught" \
-  anypin 's#^refuse_a_pin_that_is_not_a_digest() {#refuse_a_pin_that_is_not_a_digest() { return 0;#'
-
-# A name that may be a path. Two dots walk out of the adapters directory, and the trusted root is
-# then whatever the declaration says it is.
-wreck_runner "an adapter name that may hold a path is caught" \
-  anyname 's#^refuse_an_adapter_name_this_cannot_resolve() {#refuse_an_adapter_name_this_cannot_resolve() { return 0;#'
+#
+# A charter that may hold a reach nothing could honour.
+#
+# **The shape is a fact about the declaration, so it is refused where a declaration becomes a bar.**
+# A pin that is not a digest, a name that is a path, a transport nobody wrote: none of them could
+# work on any machine, and none may reach the file a person authorises.
+#
+# **Three breaks went with this one, and they are not missing.** `refuse_a_pin_that_is_not_a_digest`,
+# `refuse_an_adapter_name_this_cannot_resolve` and `refuse_an_unknown_transport` still stand at run
+# time, and `check` refuses a charter the declaration disagrees with � so nothing supported can put
+# a bad reach in front of them, and a break on any of the three would survive. They are defence with
+# no break, named here rather than left for a reader to find.
+wreck_runner "a charter that may hold a reach nothing could honour is caught" \
+  anyreach 's#^    refuse_a_reach_no_charter_may_hold "\$reaches" || return 1$#    :#'
 
 # An adapter nobody ships, run anyway. The whole of *fails closed, and never falls back*.
 wreck_runner "an adapter this plugin does not ship, run anyway, is caught" \
@@ -2155,10 +2161,6 @@ wreck_runner "an adapter this plugin does not ship, run anyway, is caught" \
 # with a receipt naming the digest the repository authorised and nothing having checked it.
 wreck_runner "an adapter that is not the one authorised is caught" \
   anycontent 's#^refuse_an_adapter_nobody_authorised() {#refuse_an_adapter_nobody_authorised() { return 0;#'
-
-# A transport nobody wrote, shelled out rather than named.
-wreck_runner "a transport this runner has no reading for is caught" \
-  anytransport 's#^refuse_an_unknown_transport() {#refuse_an_unknown_transport() { return 0;#'
 
 #
 # The clause id, clobbered by the resolver. **This is the defect, not a hypothetical.**
@@ -2189,6 +2191,25 @@ wreck_runner "a receipt naming an adapter nothing authorised is caught" \
 
 wreck_runner "a receipt whose pin and digest disagree is caught" \
   pingap 's#^refuse_an_adapter_that_moved() {#refuse_an_adapter_that_moved() { return 0;#'
+
+#
+# **The pin against the charter, which is the one that makes it authority.**
+#
+# The three above ask only whether a receipt agrees with itself. Blind this and a hand-written pair
+# agreeing on a digest nobody authorised is taken, and the ledger carries it under a key that says
+# the repository agreed to it.
+wreck_runner "a receipt claiming a pin the charter never gave is caught" \
+  ownpin 's#^refuse_a_pin_the_charter_did_not_give() {#refuse_a_pin_the_charter_did_not_give() { return 0;#'
+
+#
+# The remedy in the message a consumer meets. A plugin upgrade lands here, and two digests with
+# nothing to do about them is a dead end.
+#
+# **The command, not the sentence above it.** The first version of this break blanked the framing
+# line and the suite stayed green, because the check reads the command — a break aimed beside the
+# thing under test, which is the shape that reports a rule as held when nothing holds it.
+wreck_runner "an upgrade refusal that names no remedy is caught" \
+  deadend 's#^    note "    git hash-object --no-filters -- \$4"$#    :#'
 
 report_breaks
 
