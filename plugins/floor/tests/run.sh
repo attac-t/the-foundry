@@ -383,6 +383,9 @@ reported=0
 #
 transcript=/dev/null
 
+# And where the suite writes the name of the check that failed. Same rule, same default.
+checks=/dev/null
+
 #
 # Run a command with a deadline, and answer **2 when the deadline passed** — never the command's own
 # status, because a command that never answered did not answer badly.
@@ -475,9 +478,15 @@ a_deadline_without_timeout_answers_the_same() {
 #
 # `env`, because `bounded` runs its arguments and an inline assignment would not reach them.
 #
+#
+# **`FOUNDRY_FAIL_FAST`, and it was missing here.** Only `model_caught` set it, so the install and
+# host suites ran to the end and named every check that went red rather than the one that stopped
+# them. `nofile` reddened five and was recorded against the first — which is not the one it was
+# written for. That is the fault this file exists to catch, made by the fix for it.
+#
 suite_caught() {
   local said
-  bounded "$deadline" env PLUGIN_ROOT="$1" bash "$2"
+  bounded "$deadline" env PLUGIN_ROOT="$1" FOUNDRY_FAIL_FAST=1 FOUNDRY_CHECK="$checks" bash "$2"
   said=$?
 
   [ "$said" -eq 2 ] && return 2
@@ -487,35 +496,32 @@ suite_caught() {
 }
 
 #
-# Which assertion killed the mutant, by name.
+# Which check killed the mutant, by name.
 #
-# `FOUNDRY_FAIL_FAST` stops a suite at its first failure, so the first `  FAIL  ` line is the whole
-# answer — everything under it is a suite that never ran.
+# **`lib.sh` writes the name. Nothing here parses one out of a message.** An earlier shape cut the
+# printed line at its em dash, and `install.sh` has two check names carrying one — so it dropped the
+# `$script` those names exist to supply and read two scripts as a single check.
 #
-# **The name is cut at the em dash, and the cut is the point.** `lib.sh` writes `<name> — want [x],
-# got [y]`, and that tail carries a tmp path holding this process's pid. Keep it and every break's
-# killer is unique, so the count below reports nothing while looking like it works.
+# One line, because `FOUNDRY_FAIL_FAST` stops a suite at its first failure. Two ways that is not
+# true, and neither can be used:
 #
-# **It always answers, and one of its answers is that nothing did.** A `skip` fails at the tally,
-# which writes `FAIL — ` in the first column rather than a check's name, and a suite that died before
-# its first assertion names nothing at all. Blank there would read as a field nobody filled in, so it
-# is a sentence instead — and `refuse_a_break_no_assertion_answered` reads it as a failure.
+#   nothing  a red no check answered for — a fixture that would not build, or a `skip` at the tally
+#   several  fail-fast not reaching the suite, so the first of many is recorded as the one
+#
+# Sentences rather than a blank field, because a blank reads as something nobody filled in.
+# `refuse_a_record_that_names_no_single_check` reads both as failures.
 #
 unnamed='nothing named a check'
+several='more than one check answered'
 
 killed_by() {
-  local killer
-  killer=$(awk '
-    /^  FAIL  / {
-      sub(/^  FAIL  /, "")
-      cut = index($0, " — ")
-      if (cut) $0 = substr($0, 1, cut - 1)
-      print
-      exit
-    }
-  ' "$1")
+  local said
+  said=$(grep -c . "$1" 2>/dev/null) || said=0
 
-  printf '%s' "${killer:-$unnamed}"
+  [ "$said" -eq 0 ] && { printf '%s' "$unnamed"; return; }
+  [ "$said" -eq 1 ] || { printf '%s' "$several"; return; }
+
+  head -n 1 "$1"
 }
 
 #
@@ -554,14 +560,16 @@ breaks_sharing_a_check() {
 }
 
 #
-# Breaks the suite went red for with no assertion behind it.
+# Breaks whose record does not name exactly one check.
 #
-# **The right red for the wrong reason.** A break is meant to violate a rule some assertion holds.
-# One that breaks a fixture instead reddens the suite through `skip`, which fails at the tally and
-# names no check — and every audit before this one read that as *caught*.
+# **The right red for the wrong reason**, twice over. A break is meant to violate a rule some check
+# holds. One that breaks a fixture reddens the suite through `skip` or `broke` and names no check,
+# and every audit before this one read that as *caught*. One read without fail-fast names several,
+# and the first of them is recorded as though it were the one.
 #
-breaks_no_assertion_answered() {
-  awk -F'\t' -v unnamed="$unnamed" '$2 == unnamed { printf "      %s\n", $3 }' "$1"
+breaks_with_no_single_check() {
+  awk -F'\t' -v a="$unnamed" -v b="$several" \
+      '$2 == a || $2 == b { printf "      %s — %s\n", $3, $2 }' "$1"
 }
 
 # One value against the one wanted, for the readers this file grades rather than the plugin.
@@ -597,22 +605,62 @@ sleep 30
 }
 
 #
-# The killer is read out of `lib.sh`'s own words, so `lib.sh` is what it has to be read from.
+# The killer comes out of `lib.sh`, so `lib.sh` is what it is read from.
 #
-# **A separator this file assumes and the library owns is the coupling that breaks quietly.** Change
-# lib.sh's em dash and `killed_by` keeps the whole message — a tmp path with a pid in it — every
-# killer becomes unique, and the grouping below goes silent while every line still says `ok`. That
-# is the exact shape of failure this whole change exists to end, so it gets a check rather than a
-# comment.
+# **The name carrying an em dash is the case that was wrong.** An earlier shape cut the printed line
+# at the first ` — `, and `install.sh` names two checks `declares its shell — <script>` and `fires on
+# SessionStart — <script>`. The cut dropped the script and read two scripts as one check. So the
+# name here carries one on purpose.
 #
 a_killer_is_named_by_the_check_that_wrote_it() {
-  ( . "$root/tests/lib.sh"; suite=model; FOUNDRY_FAIL_FAST=1; is "a check with a name" got want ) \
-    > "$tmp/said" 2>&1
+  local checks="$tmp/checks"
 
-  same "the killer is the check's name" "$(killed_by "$tmp/said")" "a check with a name"
+  ask_lib_sh is "declares its shell — announce.sh" bash ''
+  same "the name is kept whole, em dash and all" \
+       "$(killed_by "$checks")" "declares its shell — announce.sh"
 
-  printf 'model — 0 passed, 0 failed, 1 skipped, 0 n/a\nFAIL — model skipped 1.\n' > "$tmp/said"
-  same "a suite no assertion failed says so" "$(killed_by "$tmp/said")" "nothing named a check"
+  ask_lib_sh bad "not executable — run.sh"
+  same "a bad with no name is named by its message" \
+       "$(killed_by "$checks")" "not executable — run.sh"
+
+  ask_lib_sh broke "could not make a repository to test against"
+  same "a setup that would not build is not a check" \
+       "$(killed_by "$checks")" "a setup that would not build"
+
+  : > "$checks"
+  same "a suite no check answered for says so" "$(killed_by "$checks")" "nothing named a check"
+
+  printf 'one\ntwo\n' > "$checks"
+  same "a suite read without fail-fast says so" "$(killed_by "$checks")" "more than one check answered"
+}
+
+# One assertion from the real library, into the file the audit reads. Its own shell, because `bad`
+# leaves under fail-fast and its counters must not follow it out.
+ask_lib_sh() {
+  : > "$checks"
+  ( . "$root/tests/lib.sh"; suite=model; FOUNDRY_FAIL_FAST=1; FOUNDRY_CHECK="$checks"; "$@" ) \
+    >/dev/null 2>&1
+}
+
+#
+# **Both readers hand their suite fail-fast**, and every record rests on it.
+#
+# `suite_caught` did not. The install and host suites ran to the end, so `nofile` reddened five
+# checks and was recorded against the first — a check it was not written for. A stand-in suite,
+# because what is under test is what reaches the suite's environment.
+#
+# `model_caught` names `model.sh` and takes no stand-in, so nothing here can ask it the same way. The
+# 202 breaks it reads answer for it: drop its fail-fast and each one names several checks, which is
+# the failure `refuse_a_record_that_names_no_single_check` exists for.
+#
+a_suite_is_read_under_fail_fast() {
+  local checks="$tmp/asked.check"
+
+  printf '#!/bin/sh\nprintf "%%s\\n" "${FOUNDRY_FAIL_FAST:-off}" > "$FOUNDRY_CHECK"\nexit 1\n' \
+    > "$tmp/asks.sh"
+
+  suite_caught x "$tmp/asks.sh"
+  same "suite_caught hands its suite fail-fast" "$(cat "$checks")" "1"
 }
 
 #
@@ -631,9 +679,11 @@ a_shared_killer_is_reported_with_the_breaks_that_share_it() {
   printf 'model\tits own\ta break\nhost\tits own\tanother break\n' > "$tmp/rows"
   same "one check each, in two suites, is not sharing" "$(breaks_sharing_a_check "$tmp/rows")" ""
 
-  printf 'model\t%s\ta silent break\nmodel\tits own\ta break\n' "$unnamed" > "$tmp/rows"
-  same "a break no assertion answered is picked out" \
-       "$(breaks_no_assertion_answered "$tmp/rows")" "      a silent break"
+  printf 'model\t%s\ta silent break\nmodel\t%s\ta noisy break\nmodel\tits own\ta break\n' \
+         "$unnamed" "$several" > "$tmp/rows"
+  same "a record naming no single check is picked out" \
+       "$(breaks_with_no_single_check "$tmp/rows")" \
+       "$(printf '      a silent break — %s\n      a noisy break — %s' "$unnamed" "$several")"
 }
 
 # `$?` from the line above. Called immediately after `bounded`, because anything between them is the
@@ -661,6 +711,7 @@ a_deadline_without_timeout_answers_the_same
 a_suite_that_never_answered_caught_nothing
 a_run_of_silence_stops_the_audit
 a_killer_is_named_by_the_check_that_wrote_it
+a_suite_is_read_under_fail_fast
 a_shared_killer_is_reported_with_the_breaks_that_share_it
 
 #
@@ -675,7 +726,8 @@ a_shared_killer_is_reported_with_the_breaks_that_share_it
 #
 model_caught() {
   local said
-  bounded "$deadline" env RUNNER="$1/bin/run.sh" FOUNDRY_FAIL_FAST=1 bash "$root/tests/model.sh"
+  bounded "$deadline" env RUNNER="$1/bin/run.sh" FOUNDRY_FAIL_FAST=1 FOUNDRY_CHECK="$checks" \
+          bash "$root/tests/model.sh"
   said=$?
 
   [ "$said" -eq 2 ] && return 2
@@ -701,7 +753,7 @@ model_caught() {
 #
 break_verdict() {
   local slot="$1" name="$2" tag="$3" mutation="$4" file="${5:-bin/run.sh}"
-  local mutant="$tmp/$slot-$tag" transcript="$tmp/$slot-$tag.log"
+  local mutant="$tmp/$slot-$tag" transcript="$tmp/$slot-$tag.log" checks="$tmp/$slot-$tag.check"
 
   rm -rf "${mutant:?}" && cp -R "$root" "$mutant" || { moot "$name — could not copy the plugin"; return; }
   sed "$mutation" "$root/$file" > "$mutant/$file" || { moot "$name — sed failed, so this proves nothing"; return; }
@@ -711,7 +763,7 @@ break_verdict() {
   [ "$answer" -eq 2 ] && { out_of_clock "$name"; return; }
   [ "$answer" -eq 0 ] || { bad "$name — the suite passed against a broken runner"; return; }
 
-  killed_by "$transcript" > "$tmp/verdict/$slot.killer"
+  killed_by "$checks" > "$tmp/verdict/$slot.killer"
   printf '  ok    %s\n' "$name"
 }
 
@@ -1986,7 +2038,7 @@ caught() { suite_caught "$tmp/$1" "$root/tests/install.sh"; }
 # Break one thing about the install and require the suite to notice.
 wreck() {
   local name="$1" tag="$2" break_it="$3"
-  local transcript="$tmp/$tag.log" killer
+  local transcript="$tmp/$tag.log" checks="$tmp/$tag.check" killer
 
   copy "$tag"             || { bad "$name — could not copy the plugin, so this proves nothing"; return; }
   "$break_it" "$tmp/$tag" || { bad "$name — the break did not apply, so this proves nothing"; return; }
@@ -1998,7 +2050,7 @@ wreck() {
   [ "$answer" -eq 2 ] && { out_of_clock "$name"; return; }
   [ "$answer" -eq 0 ] || { bad "$name — the suite passed against a broken install"; return; }
 
-  killer=$(killed_by "$transcript")
+  killer=$(killed_by "$checks")
   remember_the_killer install "$killer" "$name"
   kept "$name — killed by [$killer]"
 }
@@ -2110,7 +2162,7 @@ hosted() { suite_caught "$tmp/$1" "$root/tests/host.sh"; }
 
 wreck_join() {
   local name="$1" tag="$2" mutation="$3"
-  local transcript="$tmp/$tag.log" killer
+  local transcript="$tmp/$tag.log" checks="$tmp/$tag.check" killer
 
   copy "$tag" || { bad "$name — could not copy the plugin, so this proves nothing"; return; }
   sed "$mutation" "$root/bin/join.sh" | rewrite "$tmp/$tag/bin/join.sh"
@@ -2120,7 +2172,7 @@ wreck_join() {
   [ "$answer" -eq 2 ] && { out_of_clock "$name"; return; }
   [ "$answer" -eq 0 ] || { bad "$name — the suite passed against a broken join"; return; }
 
-  killer=$(killed_by "$transcript")
+  killer=$(killed_by "$checks")
   remember_the_killer host "$killer" "$name"
   kept "$name — killed by [$killer]"
 }
@@ -2193,22 +2245,25 @@ say_when_two_breaks_share_a_check() {
 }
 
 #
-# The other half, and **this one is a failure**: a break the suite went red for with no assertion
-# behind it.
+# The other half, and **this one is a failure**: a record that does not name exactly one check.
 #
-# It carries no exemptions, because nothing answers this way today. The bar is zero and stays zero,
-# and it is the part of the finding above that an exit code can hold.
+# No exemptions, and the bar is zero. It is the part of the finding above that an exit code can hold,
+# and it is what proves the premise every row above rests on — one check answered, and it is the one
+# named. **The audit measures that over every break, every run.** Nothing else has to be believed.
 #
-refuse_a_break_no_assertion_answered() {
-  local silent
-  silent=$(breaks_no_assertion_answered "$killed")
+# It rests on `lib.sh` telling a setup failure from a check. `broke` is how a suite says so, and a
+# suite calling `bad` for a fixture that would not build would slip past this reading as a rule.
+#
+refuse_a_record_that_names_no_single_check() {
+  local wrong
+  wrong=$(breaks_with_no_single_check "$killed")
 
-  [ -n "$silent" ] || { printf '  ok    every break was killed by an assertion that named itself\n'; return; }
+  [ -n "$wrong" ] || { printf '  ok    every break names one check, and it is the one that stopped the suite\n'; return; }
 
-  printf '  FAIL  breaks the suite went red for with no assertion behind it\n%s\n' "$silent"
+  printf '  FAIL  breaks whose record does not name exactly one check\n%s\n' "$wrong"
   failed=1
 }
-refuse_a_break_no_assertion_answered
+refuse_a_record_that_names_no_single_check
 say_when_two_breaks_share_a_check
 
 #
