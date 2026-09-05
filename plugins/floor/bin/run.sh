@@ -1442,10 +1442,19 @@ is_usable_ref() {
 #
 # What must be true for this run to be good.
 #
-# Two records, sharing an id:
+# Four records, sharing an id:
 #
 #     clause  <id>  Gate|Judged|Decided  <text>
 #     pin     <id>  <target>  <ref>  <source>  <sha>
+#     gate    <id>  <command...>
+#     judge   <id>  <who>
+#
+# `print_clause`, `print_pin`, `print_gate` and `print_judges` write them, and each is the only
+# writer of its kind. This header said two for long enough that a reader built a design question on
+# the missing pair.
+#
+# A command is the last field on purpose. `pinned_command` strips two and prints the rest, so spaces,
+# quotes and `&&` need no parser and get none.
 #
 # One clause, many pins — a clause whose meaning comes from two repositories names both. They are
 # separate records because inline pins make dropping a target and deleting a clause the same edit,
