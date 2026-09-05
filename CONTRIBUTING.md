@@ -3,9 +3,9 @@
 Thirteen gates. Run them before you open a pull request:
 
 ```bash
-sh bin/gates.sh                 # all twelve, here
+sh bin/gates.sh                 # all thirteen, here
 sh bin/agree.sh                 # this table, the workflow, gates.sh and every harness file
-sh bin/gates.sh linux           # the same twelve where `sh` is dash
+sh bin/gates.sh linux           # the same thirteen where `sh` is dash
 ```
 
 Leave `agree` out of your run and a PR can still go red on a check this file never mentioned — the
@@ -116,6 +116,7 @@ Edit a rule, then run it — a row typed by hand into one file is the drift noth
 | `taper` | a three-line comment paragraph does not narrow by three, and nothing names it |
 | `comments` | a public comment carrying the seam's marker breaks a rule the seam applies |
 | `judged` | `.foundry/judged` pins an adapter this tree does not ship at that content |
+| `bytes` | a tracked text file holds a byte no decoder can read, or a character already lost |
 | `codex` | the adapter reaching a judge takes a verdict that was not the reply's last word, or claims a thread the harness never opened |
 | `kernel` | the plugin does not run — checked on Linux, macOS and Windows |
 | `signal` | the plugin does not run — checked on Linux, macOS and Windows |

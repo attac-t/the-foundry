@@ -11,9 +11,13 @@
 #
 # **Neither is ever wanted, so the bar is zero and no threshold has to be argued.**
 #
-# POSIX plus `git`. `iconv` decides validity because that is its job, and the U+FFFD pattern is
-# built by `printf` because `$'...'` is a bashism. `-I` skips what git calls binary, so an image
-# can never fail this.
+# POSIX plus `git`, and `iconv`, which decides validity because that is its job. The U+FFFD
+# pattern is built by `printf` because `$'...'` is a bashism. `audit` also needs `bash`, because
+# the suite is bash like every other suite here.
+#
+# `-I` skips what git calls binary, and git calls a file binary on a NUL near its start. **So a
+# UTF-16 file is text a person reads and this gate never grades it.** That is the known gap, and
+# it costs nothing here because nothing in this tree is UTF-16.
 #
 # **Tracked files only, working tree.** An untracked scratch file is nobody's to grade, and reading
 # the working tree catches the byte before the commit that would carry it.
@@ -28,12 +32,17 @@ root=$(cd "$(dirname "$0")/.." && pwd)
 cd "$root" || exit 3
 
 LOST=$(printf '\357\277\275')
+text=
 unreadable=
 lost=
 
 main() {
     ensure_the_tree_reads
+    ensure_iconv_is_here
     [ "${1:-}" = audit ] && prove_it_can_go_red
+
+    text=$(tracked_text_files)
+    ensure_something_was_read
 
     unreadable=$(files_no_decoder_can_read)
     lost=$(lines_that_lost_a_character)
@@ -47,19 +56,49 @@ ensure_the_tree_reads() {
     exit 3
 }
 
+# Absent, every `iconv` call fails and the gate names the whole tree as broken — then tells the
+# reader to run the tool that is missing.
+ensure_iconv_is_here() {
+    command -v iconv >/dev/null 2>&1 && return 0
+
+    printf 'FAIL — iconv is not on this host, so nothing was decoded.\n'
+    exit 3
+}
+
+# Nothing to check is not a clean check. An empty list means `git grep` answered nothing, and a
+# PASS over that says only that the gate ran.
+ensure_something_was_read() {
+    [ -n "$text" ] && return 0
+
+    printf 'FAIL — no tracked text file was read.\n'
+    exit 3
+}
+
 # A gate that has only ever been green proves nothing about what it would catch. The suite builds a
 # repository, plants each byte and reads this script's exit code, so the gate line runs the proof
 # and the scan in that order.
 prove_it_can_go_red() {
+    command -v bash >/dev/null 2>&1 || {
+        printf 'FAIL — bash is not on this host, so the suite did not run.\n'
+        exit 3
+    }
+
     bash "$root/tests/bytes.sh" || exit 1
     printf '\n'
 }
 
-# `git grep -I` names the text files without listing the binaries, so one call decides what is worth
-# decoding. Reading them here rather than in `git grep` is the only way: git has no opinion on
-# whether a text file decodes.
+# `git grep -I` names the text files without listing the binaries, so one call decides what is
+# worth decoding.
+tracked_text_files() {
+    git grep -I -l '' -- . 2>/dev/null
+}
+
+# Decoding happens here rather than in `git grep`, because git has no opinion on whether a text
+# file decodes. The list is the one already read, so a gate cannot grade a different set than the
+# one it counted.
 files_no_decoder_can_read() {
-    git grep -I -l '' -- . 2>/dev/null | while read -r file; do
+    printf '%s\n' "$text" | while read -r file; do
+        [ -n "$file" ] || continue
         iconv -f UTF-8 -t UTF-8 < "$file" >/dev/null 2>&1 || printf '%s\n' "$file"
     done
 }
@@ -70,7 +109,8 @@ lines_that_lost_a_character() {
 
 verdict() {
     [ -z "$unreadable" ] && [ -z "$lost" ] && {
-        printf 'PASS — every tracked text file decodes, and none says a character was lost.\n'
+        printf 'PASS — %d tracked text files decode, and none says a character was lost.\n' \
+            "$(printf '%s\n' "$text" | wc -l)"
         return 0
     }
 

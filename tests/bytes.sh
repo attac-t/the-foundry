@@ -16,6 +16,7 @@ bad() { failed=$((failed + 1)); printf '  FAIL  %s\n' "$1"; }
 
 is() { [ "$2" = "$3" ] && { ok "$1"; return; }; bad "$1 — want [$3], got [$2]"; }
 has() { case $2 in *"$3"*) ok "$1" ;; *) bad "$1 — [$3] missing" ;; esac; }
+lacks() { case $2 in *"$3"*) bad "$1 — [$3] is there and should not be" ;; *) ok "$1" ;; esac; }
 
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
@@ -71,7 +72,7 @@ a_binary_file_is_left_alone() {
     out=$(cd "$d" && sh bin/bytes.sh 2>&1); rc=$?
 
     is 'a binary file exits 0' "$rc" 0
-    has 'and is not named' "$out" 'PASS'
+    lacks 'and the file is not named' "$out" 'logo.png'
 }
 
 # The working tree is read, so a defect is caught before the commit that carries it. An untracked
@@ -122,7 +123,7 @@ a_binary_file_that_is_not_utf8_is_left_alone() {
     out=$(cd "$d" && sh bin/bytes.sh 2>&1); rc=$?
 
     is 'a binary file that is not UTF-8 exits 0' "$rc" 0
-    has 'and the tree passes' "$out" 'PASS'
+    lacks 'and the file is not named' "$out" 'logo.png'
 }
 
 a_tree_that_is_no_checkout_exits_3() {
