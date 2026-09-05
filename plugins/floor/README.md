@@ -929,6 +929,18 @@ satisfaction a hand-written receipt could not.
 | the command is not on this host, or a signal killed it | 21 |
 | a judge answered and did not approve, or could not answer at all | 39 |
 
+**The receipt decides, not the command's exit code.** A judge that exits non-zero has its words put
+on stderr and its receipt read anyway, because a harness that failed and said `unavailable` in the
+file has told floor more than its exit code did. Only 126, 127 and a signal are read as *nothing
+ran*, which is what `evidence record` already does.
+
+**The handoff is written before the judge is asked**, so a judge that never ran still leaves a row
+saying the bar went over. That is the point of `handed`: whoever handed it over said so first. What
+is absent is the verdict, and absence is what refuses.
+
+**Nothing bounds how long a judge may take.** `gates` bounds none either. A judge that hangs hangs
+the run, and the remedy is the caller's.
+
 **One judge with no reach stops the verb, and that is deliberate.** A charter mixing a reachable
 judge with one only a person can answer cannot be run through `judged` at all. Skipping the second
 would leave its clause unmet and look exactly like a judge that refused, so the runner names the

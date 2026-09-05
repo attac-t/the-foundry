@@ -2236,7 +2236,13 @@ print_prior() {
 #
 # Counted from the ledger and never from the receipt, because the ledger is the run's and the receipt
 # is the producer's. A round the producer names is a record; this is the count floor can make.
+#
+# **A run with no ledger yet is round one, and this is what says so.** `awk` handed a file that is
+# not there never reaches its `END`, so the count came back empty — and the first brief a judge was
+# ever handed said `round` and nothing after it. Found by running it, not by reading it.
 next_round() {
+    [ -f "$(evidence_file "$1")" ] || { printf 1; return 0; }
+
     awk -F'\t' -v name="$2" -v judge="$3" '
         $2 != "judged"    { next }
         $4 "" != name ""  { next }

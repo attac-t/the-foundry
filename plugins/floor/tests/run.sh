@@ -2071,6 +2071,11 @@ wreck_runner "a reach that moved since the charter is caught" \
 wreck_runner "a runner that writes none of the receipt is caught" \
   noncontext 's#^write_receipt_context() {#write_receipt_context() { return 0;#'
 
+# The first round of all, counted against a ledger that is not there yet. `awk` never reaches its
+# `END` on a missing file, so the count comes back empty and the brief says `round` and nothing more.
+wreck_runner "a first round counted against no ledger is caught" \
+  firstround 's#^    \[ -f "\$(evidence_file "\$1")" \] ||.*#    :#'
+
 # A verdict read off whether the receipt was recorded rather than what it said. Recording an
 # `unavailable` succeeds, and the clause it answers is still unmet.
 wreck_runner "a judged clause met by any receipt at all is caught" \

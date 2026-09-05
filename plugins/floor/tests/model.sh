@@ -4328,9 +4328,20 @@ a-reviewer  a stranger can read it
 
   ready_run "$tmp/norun" 'https://gitlab.com/acme/norun.git'
 
-  is  "a judge whose command is not on this host answers nothing" \
-      "$(code_of floor "$tmp/norun" judged)" "21"
-  has   "and the runner says so, rather than recording a refusal" \
+  is "a judge whose command is not on this host answers nothing" \
+     "$(code_of floor "$tmp/norun" judged)" "21"
+
+  #
+  # **Read after the first invocation and no later.** Nothing had written a ledger when that brief
+  # went out, and the handoff it recorded makes one — so a second `judged` counts against a file the
+  # first did not have, and rewrites the brief with the answer this is asking for.
+  #
+  # `awk` handed a file that is not there never reaches its `END`, so the count came back empty and
+  # the first brief a judge was ever handed said `round` and nothing after it.
+  first=$(cat "$(floor "$tmp/norun" path)"/judged/*.brief)
+  has "and the brief it wrote counted this as round one" "$first" "round 1"
+
+  has   "the runner says it could not run, rather than recording a refusal" \
         "$(floor_says "$tmp/norun" judged)" "could not run on this host"
   has   "the handoff still says the bar went over" "$(floor "$tmp/norun" evidence)" "handed"
   lacks "and nothing at all was recorded as judged" "$(floor "$tmp/norun" evidence)" "judged"
