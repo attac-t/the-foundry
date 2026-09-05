@@ -73,8 +73,17 @@ is "a run with no receipt is refused" \
 # then prove the suite broke rather than the script refusing.
 
 d=$(handed gone)
-out=$( ( cd "$d" && PATH="$tmp/nocodex:/usr/bin:/bin" FOUNDRY_BRIEF="$d/brief" \
-         FOUNDRY_RECEIPT="$d/r.receipt" sh "$root/bin/judge.sh" 2>&1 ) )
+bare="$tmp/nocodex:/usr/bin:/bin"
+
+# **Look before calling.** That PATH keeps a shell, and a `codex` installed under `/usr` is still
+# on it — `npm i -g` with a `/usr` prefix puts one there. `reachable` would find it and the gate
+# would call a vendor, which is the one thing this file says it never does.
+if PATH="$bare" command -v codex >/dev/null 2>&1; then
+  bad "the absence check cannot run — codex is on the bare PATH"
+  out=""
+else
+  out=$( ( cd "$d" && PATH="$bare" FOUNDRY_BRIEF="$d/brief" FOUNDRY_RECEIPT="$d/r.receipt" sh "$root/bin/judge.sh" 2>&1 ) )
+fi
 has "a harness that is not here says so" "$out" "not on this host"
 has "and records it unavailable"         "$(cat "$d/r.receipt")" "unavailable"
 hasnt "and asks nothing else"            "$(cat "$d/r.receipt")" "context"
@@ -86,7 +95,7 @@ VERDICT: approve'
 d=$(handed yes); judged "$d"
 has   "a verdict on the last line is taken"    "$(cat "$d/r.receipt")" "approve"
 has   "and the thread it opened is recorded"   "$(cat "$d/r.receipt")" "01a0-beef"
-hasnt "with no colon carried in from the JSON" "$(cat "$d/r.receipt")" ":01a0"
+is    "the thread is the handle and nothing else" "$(awk '$1 == "context" { print $2 }' "$d/r.receipt")" "01a0-beef"
 
 # A verdict that is not the last word is not the answer. It was taken from anywhere before.
 a_codex_that_says '{"type":"thread.started","thread_id":"01a0-cafe"}' 'VERDICT: approve
@@ -99,6 +108,11 @@ a_codex_that_says '{"type":"turn.started"}' 'VERDICT: reject'
 d=$(handed nothread); judged "$d"
 has   "a verdict still lands with no thread"           "$(cat "$d/r.receipt")" "reject"
 hasnt "and a stream that opened none claims no context" "$(cat "$d/r.receipt")" "context"
+
+# A suite that ran nothing passes everything. The checks above are top-level, so this is unreachable
+# today - and it is what makes that a fact rather than an assumption.
+[ $((passed + failed)) -gt 0 ] || { printf '  FAIL  no check ran
+'; failed=1; }
 
 printf '\njudge — %s passed, %s failed\n' "$passed" "$failed"
 [ "$failed" -eq 0 ]
