@@ -49,10 +49,10 @@ review round. Once promoted to a forbidden-import check, it costs an exit code �
 |---|---|---|
 | adversary | **yes**, for prior art | a judge that reads only this repo can say the work is consistent. It cannot say the world already knows it is wrong |
 | newcomer | **no** | the cold read is the instrument. Looking a thing up mends the confusion this role exists to record |
-| author | yes | it builds. `kernel:ground-discovery` already tells it to read the official source first |
+| author | yes, **inherited** | it declares no `tools:` line, so it holds them all. `kernel:ground-discovery` already tells it to read the official source first |
 
 **Prior art shapes a design. It never grades a commit.** A fetched page has no `file:line` here, so
-it cannot carry a Critical alone, and a judge marks what it took from outside.
+it cannot carry a Critical alone, and a judge marks what it took with `prior art: <source>`.
 
 **Nobody is required to search.** A round with nothing to look up should not pretend otherwise.
 
@@ -72,7 +72,7 @@ charter ──▶ [ APPROVED BY A HUMAN ]
                   │        exit codes, and hands the judge both answers
                   │
                   ▼
-             adversary ──── tools: Read, Glob, Grep. Nothing else.
+             adversary ──── reads, searches, fetches. Writes nothing, runs nothing.
                   │
           ┌───────┼───────────┐
           ▼       ▼           ▼
@@ -93,8 +93,9 @@ charter gate sees none of them, the author sees them first, the judge sees them 
 ## Enforcement
 
 ```
-Structural     tools: Read, Glob, Grep on judges.
-               No escape found under adversarial probing.
+Structural     no judge holds a tool that writes or runs a command.
+               Probed adversarially when that was the whole list. The adversary
+               gained WebSearch and WebFetch in 0.17.0, unprobed since.
 
 Mechanical     bin/verdicts.sh refuses a round claiming a prior verdict
                that no file stamps for that review. Fail closed, exit 1.
