@@ -35,7 +35,11 @@ readonly MODEL=gpt-5.6-sol
 readonly EFFORT=max
 readonly ADAPTER=codex-exec
 
+root=$(cd "$(dirname "$0")/.." && pwd)
+
 main() {
+    [ "${1:-}" = audit ] && { bash "$root/tests/judge.sh"; return $?; }
+
     ensure_floor_handed_both
 
     report="${FOUNDRY_RECEIPT%.receipt}.report"
