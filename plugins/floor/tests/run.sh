@@ -1856,7 +1856,7 @@ wreck_runner "a declared judgement nothing derives is caught" \
   nojudged 's#^    detect_judged | while_reading_judged#    false | while_reading_judged#'
 
 wreck_runner "a judged clause naming no judge is caught" \
-  nojudge 's#^        print_judges "\$id" "\$judge" >> "\$draft" || return 1$#        : >> "$draft" || return 1#'
+  nojudge 's#^        print_judges "\$id" "\$judge" "\$reaches" >> "\$draft" || return 1$#        : >> "$draft" || return 1#'
 
 wreck_runner "a judgement derived as a gate is caught" \
   judgedasgate 's#print_clause "\$id" Judged "\$text"#print_clause "$id" Gate "$text"#'

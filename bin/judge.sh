@@ -7,8 +7,8 @@
 # our judge reached*, and another repository's answer is its own.
 #
 # What floor already wrote into the receipt is what floor knows: the run, the clause, the candidate,
-# the role, the brief digest and the round. **This may not restate any of them** — a key said twice
-# is two answers, and floor refuses the file rather than choosing.
+# the role, the brief digest, the round and whatever came before it. **This may not restate any of
+# them** — a key said twice is two answers, and floor refuses the file rather than choosing.
 #
 # So what this appends is only what it saw happen:
 #
