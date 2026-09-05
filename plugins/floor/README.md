@@ -1771,7 +1771,7 @@ and `lib.sh` hands over its name rather than the audit cutting one out of a mess
 ```
 
 **A break whose record cannot say which rule it broke fails the audit.** Three ways it cannot.
-Nothing answered, so the red came from a `skip` at the tally. A setup would not build, which a suite
+Nothing answered, so the red came from a `skip` at the tally, or a suite that died first. A setup would not build, which a suite
 reports with `broke`. Or several answered, which means fail-fast is not reaching that suite and the
 first of them is being recorded as the one. Every audit before this read all three as a catch.
 
