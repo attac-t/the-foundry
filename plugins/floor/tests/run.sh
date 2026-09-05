@@ -367,23 +367,21 @@ queued=0
 reported=0
 
 #
-# Where a bounded run's words go. **A break names a file. Nothing else keeps them.**
+# Where the suite writes the name of the check that failed. **A break names a file. Nothing else
+# keeps one.**
 #
-# Both runners below used to redirect to `/dev/null`, so an exit code was the whole of what a break
-# could ever learn — the reason `killed_by` had nothing to read and a break could die at a check it
-# was not written for.
+# An exit code was once the whole of what a break could learn, which is why one could die at a check
+# it was not written for and still read as proof of another. `lib.sh` writes the name here now.
 #
-# `local transcript=` in the break is what points them at a file: bash lends a local to everything
-# the declaring function calls, so neither runner takes an argument and `suite_caught` still answers
-# one question. This file is already bash on purpose — its first check is that the shell it is under
-# counts a background job.
+# `local checks=` in the break is what points it at a file: bash lends a local to everything the
+# declaring function calls, so `suite_caught` and `model_caught` take no new argument and each still
+# answers one question. This file is already bash on purpose — its first check is that the shell it
+# is under counts a background job.
 #
-# The default stays `/dev/null`, and `a_deadline_is_not_an_answer` runs `true`, `false` and `sleep`
-# under it. Those have nothing to say, so keeping their silence is not discarding evidence.
+# **The runners below still discard the suite's own output, and that is not the hole it looks like.**
+# Reading a name back out of printed prose was the first shape here, and it cut two scripts down to
+# one check. Nothing needs stdout once the library names the check itself.
 #
-transcript=/dev/null
-
-# And where the suite writes the name of the check that failed. Same rule, same default.
 checks=/dev/null
 
 #
@@ -407,7 +405,7 @@ timed() {
   local seconds="$1" said
   shift
 
-  timeout "$seconds" "$@" >"$transcript" 2>&1
+  timeout "$seconds" "$@" >/dev/null 2>&1
   said=$?
 
   [ "$said" -eq 124 ] && return 2
@@ -423,7 +421,7 @@ polled() {
   local seconds="$1" job waited=0
   shift
 
-  "$@" >"$transcript" 2>&1 &
+  "$@" >/dev/null 2>&1 &
   job=$!
 
   while kill -0 "$job" 2>/dev/null; do
@@ -449,21 +447,13 @@ a_deadline_is_not_an_answer() {
 # The same three from `polled`, which nothing here would otherwise run.
 #
 # `bounded` prefers `timed` wherever `timeout` exists, and it exists on every machine this gate runs
-# on. **macOS is the platform `polled` is for**, and it had never been asked a question — so the two
-# runners are one edit apart and only one of them was ever proved.
-#
-# The transcript too. Every break below proves whichever runner this machine uses keeps what it ran;
-# this proves the other one does.
+# on. **macOS is the platform `polled` is for**, and it had never been asked a question — a deadline
+# nobody has run is a deadline nobody has, and the two runners sit one edit apart.
 #
 a_deadline_without_timeout_answers_the_same() {
-  local transcript="$tmp/polled.log"
-
   polled 5 true;     answered 0 "a polled command that passes"
   polled 5 false;    answered 1 "a polled command that fails"
   polled 2 sleep 30; answered 2 "a polled command that never answers"
-
-  polled 5 printf 'said'
-  same "and polled keeps what it ran" "$(cat "$transcript")" "said"
 }
 
 #
@@ -477,7 +467,6 @@ a_deadline_without_timeout_answers_the_same() {
 # that hung reported *caught* — the false green `a_deadline_is_not_an_answer` exists to refuse.
 #
 # `env`, because `bounded` runs its arguments and an inline assignment would not reach them.
-#
 #
 # **`FOUNDRY_FAIL_FAST`, and it was missing here.** Only `model_caught` set it, so the install and
 # host suites ran to the end and named every check that went red rather than the one that stopped
@@ -499,8 +488,8 @@ suite_caught() {
 # Which check killed the mutant, by name.
 #
 # **`lib.sh` writes the name. Nothing here parses one out of a message.** An earlier shape cut the
-# printed line at its em dash, and `install.sh` has two check names carrying one — so it dropped the
-# `$script` those names exist to supply and read two scripts as a single check.
+# printed line at its em dash, and `install.sh` names checks that carry em dashes of their own — so
+# the cut dropped the script each one names, and read two scripts as a single check.
 #
 # One line, because `FOUNDRY_FAIL_FAST` stops a suite at its first failure. Two ways that is not
 # true, and neither can be used:
@@ -721,8 +710,8 @@ a_shared_killer_is_reported_with_the_breaks_that_share_it
 #
 # `env`, because `bounded` runs its arguments and an inline assignment would not reach them.
 #
-# **The transcript is the caller's.** Whoever wants to know which check killed the mutant declares a
-# `transcript` and reads it afterwards; this answers the exit code either way.
+# **The check file is the caller's.** Whoever wants to know which check killed the mutant declares a
+# `checks` and reads it afterwards; this answers the exit code either way.
 #
 model_caught() {
   local said
@@ -753,7 +742,7 @@ model_caught() {
 #
 break_verdict() {
   local slot="$1" name="$2" tag="$3" mutation="$4" file="${5:-bin/run.sh}"
-  local mutant="$tmp/$slot-$tag" transcript="$tmp/$slot-$tag.log" checks="$tmp/$slot-$tag.check"
+  local mutant="$tmp/$slot-$tag" checks="$tmp/$slot-$tag.check"
 
   rm -rf "${mutant:?}" && cp -R "$root" "$mutant" || { moot "$name — could not copy the plugin"; return; }
   sed "$mutation" "$root/$file" > "$mutant/$file" || { moot "$name — sed failed, so this proves nothing"; return; }
@@ -2038,7 +2027,7 @@ caught() { suite_caught "$tmp/$1" "$root/tests/install.sh"; }
 # Break one thing about the install and require the suite to notice.
 wreck() {
   local name="$1" tag="$2" break_it="$3"
-  local transcript="$tmp/$tag.log" checks="$tmp/$tag.check" killer
+  local checks="$tmp/$tag.check" killer
 
   copy "$tag"             || { bad "$name — could not copy the plugin, so this proves nothing"; return; }
   "$break_it" "$tmp/$tag" || { bad "$name — the break did not apply, so this proves nothing"; return; }
@@ -2162,7 +2151,7 @@ hosted() { suite_caught "$tmp/$1" "$root/tests/host.sh"; }
 
 wreck_join() {
   local name="$1" tag="$2" mutation="$3"
-  local transcript="$tmp/$tag.log" checks="$tmp/$tag.check" killer
+  local checks="$tmp/$tag.check" killer
 
   copy "$tag" || { bad "$name — could not copy the plugin, so this proves nothing"; return; }
   sed "$mutation" "$root/bin/join.sh" | rewrite "$tmp/$tag/bin/join.sh"

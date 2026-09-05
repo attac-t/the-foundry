@@ -1687,15 +1687,17 @@ got. Read `failed` and `skipped`, which mean the same thing everywhere.
 Every suite, then a deliberate break for every rule that matters. Each one must turn a suite red, and
 the run says so if a break failed to apply — a mutation that changed nothing proves nothing.
 
-**Each break names the check that killed it.** The suite runs under fail-fast, so the first assertion
-to go red is the whole answer, and the audit prints its name:
+**Each break names the check that killed it.** Every suite runs under fail-fast, so one check answers,
+and `lib.sh` hands over its name rather than the audit cutting one out of a message:
 
 ```
   ok    a runner that ignores FOUNDRY_HOME is caught — killed by [home follows FOUNDRY_HOME]
 ```
 
-**A break the suite went red for with no assertion behind it fails the audit.** That red came from a
-broken fixture, not a broken rule. Every audit before this one read it as a catch.
+**A break whose record does not name exactly one check fails the audit.** Nothing answered means the
+red came from a fixture rather than a rule — `broke` is how a suite says a setup would not build.
+Several answered means fail-fast is not reaching that suite, so the first of them is being recorded
+as the one that mattered. Every audit before this read both as a catch.
 
 **Breaks that share a killing check are listed at the end, and nothing fails on them.** One of each
 group proves nothing the other did not. A break that breaks something fundamental dies at the first

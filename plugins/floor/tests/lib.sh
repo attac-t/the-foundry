@@ -19,8 +19,8 @@ ok() { passed=$((passed + 1)); printf '  ok    %s\n' "$1"; }
 #
 # **A name is not a message.** The helpers below append what they wanted and what they got, and that
 # tail holds a tmp path with a pid in it. An audit reading the printed line would have to cut the
-# name back out at the em dash — and `install.sh` has two names that carry one, so the cut would drop
-# the `$script` they exist to supply and read two scripts as one check.
+# name back out at the em dash — and names here carry em dashes of their own, so the cut dropped the
+# script each one exists to name and read two scripts as a single check.
 #
 # So the name is handed over rather than parsed back. A `bad` called with no name records its whole
 # message, which is that check's identity when there is no other.
