@@ -146,6 +146,13 @@ gate taper       sh   bin/taper.sh
 # step in the delivery path calls `bin/comments.sh read`, so the detection is built and unscheduled.
 gate comments    sh   bin/comments.sh audit
 
+#
+# The adapter, not the harness. `bin/judge.sh` reaches a vendor and turns what came back into a
+# receipt, and its suite drives it through a `codex` the suite writes. **Nothing here reaches a
+# network.** Four faults in its readers were found by a judge rather than a check, which is why
+# this line exists.
+gate judge       sh   bin/judge.sh audit
+
 for plugin in kernel signal floor panel; do
     gate "$plugin" bash "plugins/$plugin/tests/run.sh"
 done
