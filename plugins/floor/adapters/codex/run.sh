@@ -1,14 +1,22 @@
 #!/bin/sh
 #
-# The judge this repository reaches. `.foundry/judged` pins it, and `run.sh judged` runs it.
+# An adapter this plugin ships. A repository declares `@adapter codex <digest>` and owns no line
+# of it, so a fix here reaches every repository that authorises the new digest.
 #
-# **Floor knows nothing about this file.** It writes a brief, points at a receipt it has already half
-# filled, and runs whatever the charter says. Everything below is this repository's answer to *how is
-# our judge reached*, and another repository's answer is its own.
+# **Floor core knows nothing about this file.** It builds one path under its own plugin root, checks
+# the content against the digest the repository committed, and runs what is there. No `$PATH`, no
+# *newest installed*, and no repository file. A gap between the pin and the content refuses.
+#
+# **This is outside floor core on purpose.** `bin` and `lib` name no vendor and never may; the
+# vendor lives here, where a repository can authorise a version of it.
 #
 # What floor already wrote into the receipt is what floor knows: the run, the clause, the candidate,
-# the role, the brief digest, the round and whatever came before it. **This may not restate any of
-# them** — a key said twice is two answers, and floor refuses the file rather than choosing.
+# the role, the brief digest, the round, whatever came before it, and the two keys binding this
+# adapter to the digest the repository authorised. **This may not restate any of them** — a key said
+# twice is two answers, and floor refuses the file rather than choosing.
+#
+# **The binding keys are the runner's, and that is the point.** An adapter writing its own
+# `adapter_pin` would be vendor code vouching for its own authority.
 #
 # So what this appends is only what it saw happen:
 #
@@ -25,7 +33,7 @@
 # `--sandbox read-only` because a judge writes no code. The receipt and the report are written by
 # this script, outside the tree being read.
 #
-# Usage: floor sets FOUNDRY_BRIEF and FOUNDRY_RECEIPT, and runs it. Nothing else calls it.
+# Usage: floor sets FOUNDRY_BRIEF and FOUNDRY_RECEIPT, and runs it. `audit` runs its own suite.
 #
 # Exit: 0 a judgement came back, 1 none did, 2 nothing was handed over
 
@@ -33,12 +41,12 @@ set -u
 
 readonly MODEL=gpt-5.6-sol
 readonly EFFORT=max
-readonly ADAPTER=codex-exec
+readonly ADAPTER=codex
 
-root=$(cd "$(dirname "$0")/.." && pwd)
+here=$(cd "$(dirname "$0")" && pwd)
 
 main() {
-    [ "${1:-}" = audit ] && { bash "$root/tests/judge.sh"; return $?; }
+    [ "${1:-}" = audit ] && { bash "$here/tests/judge.sh"; return $?; }
 
     ensure_floor_handed_both
 

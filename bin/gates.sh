@@ -147,11 +147,20 @@ gate taper       sh   bin/taper.sh
 gate comments    sh   bin/comments.sh audit
 
 #
-# The adapter, not the harness. `bin/judge.sh` reaches a vendor and turns what came back into a
-# receipt, and its suite drives it through a `codex` the suite writes. **Nothing here reaches a
-# network.** Four faults in its readers were found by a judge rather than a check, which is why
-# this line exists.
-gate judge       sh   bin/judge.sh audit
+# The adapter, not the harness. It reaches a vendor and turns what came back into a receipt, and its
+# suite drives it through a `codex` the suite writes. **Nothing here reaches a network.** Four faults
+# in its readers were found by a judge rather than a check, which is why this line exists.
+#
+# It ships inside floor now, outside floor core, and a repository authorises it by digest. So this
+# gate reads a file no consumer owns a copy of â€” a fix here reaches all of them.
+gate codex       sh   plugins/floor/adapters/codex/run.sh audit
+
+#
+# The pin, against the adapter this tree ships. Floor fails closed at 40 when the two drift, so the
+# fault is already caught — by whoever next runs a judge, on a run that then stops. This catches it
+# at the commit that caused it, and editing the adapter and forgetting the digest is always one
+# commit away.
+gate judged      sh   bin/judged.sh
 
 for plugin in kernel signal floor panel; do
     gate "$plugin" bash "plugins/$plugin/tests/run.sh"

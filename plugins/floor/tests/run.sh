@@ -173,6 +173,50 @@ ends_on "$root/tests/install.sh" 'summary "install"' || bad "tests/install.sh ru
 ends_on "$root/tests/host.sh"    'summary "host"'    || bad "tests/host.sh runs cases below its tally, and nothing counts them"
 ends_on "$root/tests/say.sh"     'summary "say"'     || bad "tests/say.sh runs cases below its tally, and nothing counts them"
 
+# An adapter answers for itself, so its suite is read for the same fault. Driven off the directory
+# rather than named, because floor may ship one adapter or several and neither is this file's to know.
+for suite in "$root"/adapters/*/tests/*.sh; do
+  [ -f "$suite" ] || continue
+  ends_on "$suite" '[ "$failed" -eq 0 ]' \
+    || bad "${suite#"$root/"} runs checks below its exit, and nothing counts them"
+done
+
+#
+# Floor core names no vendor, and the adapters directory is where every vendor is — #512.
+#
+# **The set is closed by what the plugin ships.** Each adapter directory yields two words: its own
+# name, and the vendor it is named for, which is the part before the first hyphen. An adapter is
+# named `<vendor>-<how>`, and that convention is what makes this a gate rather than a list somebody
+# has to maintain.
+#
+# **Word-bound, always.** `sol` sits inside `resolver` and `panel` is an ordinary noun, so a
+# substring match would go red on core prose naming no vendor at all.
+#
+# The count is printed for the reason `host.sh` prints its own: a check that looked at nothing and a
+# check that found nothing read the same in a log.
+#
+core_names_no_vendor() {
+  local word found
+
+  for word in $(vendor_words); do
+    found=$(grep -rlw -- "$word" "$root/bin" "$root/lib" 2>/dev/null | tr '\n' ' ')
+    [ -z "$found" ] || bad "floor core names [$word]: $found"
+  done
+
+  printf '  ok    floor core names none of the %s words its adapters yield\n' \
+         "$(vendor_words | wc -w | tr -d ' ')"
+}
+
+vendor_words() {
+  local held name
+  for held in "$root"/adapters/*/; do
+    [ -d "$held" ] || continue
+    name=${held%/}; name=${name##*/}
+    printf '%s\n%s\n' "$name" "${name%%-*}"
+  done | sort -u
+}
+core_names_no_vendor
+
 #
 # The clean suite's own time. **Every deadline below is measured from it.**
 #
@@ -2047,7 +2091,7 @@ wreck_runner "a charter naming no judge, asked anyway, is caught" \
   nobench 's#^    \[ -n "\$bench" \] ||.*#    :#'
 
 wreck_runner "a judge nobody said how to reach, run anyway, is caught" \
-  noreach 's#^    \[ -n "\$command" \] || { note "the charter says.*#    :#'
+  noreach 's#^    \[ -n "\$REACH_COMMAND\$REACH_FILE" \]#    [ -n "always" ]#'
 
 # A judge whose command is not on this host. Stamping it as an answer poisons the ref for good, which
 # is the fault `stamp_command` names and this verb has its own copy of.
@@ -2080,6 +2124,92 @@ wreck_runner "a first round counted against no ledger is caught" \
 # `unavailable` succeeds, and the clause it answers is still unmet.
 wreck_runner "a judged clause met by any receipt at all is caught" \
   anyjudged 's#^    satisfied "\$dir" "\$text" "\$ref" judged "\$who"$#    true#'
+
+#
+# The adapter a repository authorises, and the ways a run could reach another one — #512.
+#
+# **Every one of these ends with something other than the pinned adapter judging the work**, and each
+# break is a different hand: a transport that never resolved, a pin nobody read, a lookup that took
+# what it found, and a receipt recording a binding it never checked.
+#
+
+# The transport read as a command. `sh -c "@adapter ..."` is *command not found*, which reads as a
+# host missing a tool rather than a runner that stopped resolving.
+wreck_runner "a transport handed to a shell instead of resolved is caught" \
+  noresolve 's#^        @adapter) reach_the_shipped_adapter.*#        @adapter) : ;;#'
+
+#
+# A charter that may hold a reach nothing could honour.
+#
+# **The shape is a fact about the declaration, so it is refused where a declaration becomes a bar.**
+# A pin that is not a digest, a name that is a path, a transport nobody wrote: none of them could
+# work on any machine, and none may reach the file a person authorises.
+#
+# **Three breaks went with this one, and they are not missing.** `refuse_a_pin_that_is_not_a_digest`,
+# `refuse_an_adapter_name_this_cannot_resolve` and `refuse_an_unknown_transport` still stand at run
+# time, and `check` refuses a charter the declaration disagrees with — so nothing supported can put
+# a bad reach in front of them, and a break on any of the three would survive. They are defence with
+# no break, named here rather than left for a reader to find.
+wreck_runner "a charter that may hold a reach nothing could honour is caught" \
+  anyreach 's#^    refuse_a_reach_no_charter_may_hold "\$reaches" || return 1$#    :#'
+
+# An adapter nobody ships, run anyway. The whole of *fails closed, and never falls back*.
+wreck_runner "an adapter this plugin does not ship, run anyway, is caught" \
+  anyadapter 's#^refuse_an_adapter_this_plugin_does_not_ship() {#refuse_an_adapter_this_plugin_does_not_ship() { return 0;#'
+
+# **The break that answers what the pin is for.** Blind it and a rewritten adapter judges the work,
+# with a receipt naming the digest the repository authorised and nothing having checked it.
+wreck_runner "an adapter that is not the one authorised is caught" \
+  anycontent 's#^refuse_an_adapter_nobody_authorised() {#refuse_an_adapter_nobody_authorised() { return 0;#'
+
+#
+# The clause id, clobbered by the resolver. **This is the defect, not a hypothetical.**
+#
+# The first draft read the adapter id into `id`, which is the clause id in its own caller. Every
+# receipt then landed under the adapter's name — one file for however many clauses that adapter
+# answers — and the run passed. It survived 903 checks and was found by reading.
+wreck_runner "a resolver that clobbers the clause id is caught" \
+  clobberid 's#^    adapter=\${rest%% \*}$#    adapter=${rest%% *}; id=$adapter#'
+
+# The adapter's path built into a command string. A plugin installed under a directory holding a
+# space then splits into two words, and the judge is a file nobody can name.
+wreck_runner "an adapter path interpreted rather than run is caught" \
+  quotedpath 's#^        || { FOUNDRY_BRIEF="\$1" FOUNDRY_RECEIPT="\$2" sh "\$REACH_FILE" </dev/null; return; }#        || { FOUNDRY_BRIEF="$1" FOUNDRY_RECEIPT="$2" sh -c "sh $REACH_FILE" </dev/null; return; }#'
+
+# The binding left out of the receipt. The adapter still ran, and nothing records which one had
+# authority — so the record says an adapter judged and never which the repository agreed to.
+wreck_runner "a receipt carrying no adapter binding is caught" \
+  nobinding 's#^say_the_adapter_binding() {#say_the_adapter_binding() { return 0;#'
+
+# The three halves of that binding, read back. Each owns one case, and blinding any one lets a
+# receipt through that no other guard sees.
+wreck_runner "a receipt authorising an adapter and naming none is caught" \
+  nolooked 's#^refuse_a_pin_nobody_checked() {#refuse_a_pin_nobody_checked() { return 0;#'
+
+wreck_runner "a receipt naming an adapter nothing authorised is caught" \
+  nopin 's#^refuse_a_digest_nobody_authorised() {#refuse_a_digest_nobody_authorised() { return 0;#'
+
+wreck_runner "a receipt whose pin and digest disagree is caught" \
+  pingap 's#^refuse_an_adapter_that_moved() {#refuse_an_adapter_that_moved() { return 0;#'
+
+#
+# **The pin against the charter, which is the one that makes it authority.**
+#
+# The three above ask only whether a receipt agrees with itself. Blind this and a hand-written pair
+# agreeing on a digest nobody authorised is taken, and the ledger carries it under a key that says
+# the repository agreed to it.
+wreck_runner "a receipt claiming a pin the charter never gave is caught" \
+  ownpin 's#^refuse_a_pin_the_charter_did_not_give() {#refuse_a_pin_the_charter_did_not_give() { return 0;#'
+
+#
+# The remedy in the message a consumer meets. A plugin upgrade lands here, and two digests with
+# nothing to do about them is a dead end.
+#
+# **The command, not the sentence above it.** The first version of this break blanked the framing
+# line and the suite stayed green, because the check reads the command — a break aimed beside the
+# thing under test, which is the shape that reports a rule as held when nothing holds it.
+wreck_runner "an upgrade refusal that names no remedy is caught" \
+  deadend 's#^    note "    git hash-object --no-filters -- \$4"$#    :#'
 
 report_breaks
 
