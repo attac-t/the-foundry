@@ -53,9 +53,27 @@ Proved unattended, end to end. **The judge said *revise*, so floor refused rathe
 `judged clauses no judge approved: 1`, exit 39. Where the harness is absent it records
 `unavailable`, asks nothing else, and never falls back. PR #506, floor 0.69.0.
 
-**Three things this does not say.** Nothing counts rounds, so an exhausted budget is recordable and
-still undetectable. The adapter that reaches the judge is run by no test - #508. And one harness,
-once, is not two: RFC-001 wants a second and this is the first.
+**Two things this does not say.** Nothing counts rounds, so an exhausted budget is recordable and
+still undetectable. And one harness, once, is not two: RFC-001 wants a second and this is the first.
+
+**The adapter is shipped and tested now.** It was run by no test when the line above was written.
+#511 gave it one, and #516 moved it under `plugins/floor/adapters/`, where Foundry owns it. Eleven
+checks drive the real script, and thirteen mutants each die on a different one. Floor 0.71.0.
+
+**A repository names the adapter it trusts, and the digest it trusts it at.** `.foundry/judged`
+carries `reach`, and `@adapter <id> <digest>` resolves only under the plugin. Never `PATH`, never
+*latest*. A pin that is not a digest refuses at derive, so nobody authorises a bar nothing could
+meet. A shipped adapter this host lacks refuses at 21, and content the pin does not name refuses
+at 40.
+
+A gate named `judged` holds this repository's own declaration to that rule. It goes red on a
+drifted pin. Red too on an adapter this tree does not ship, and on a declaration naming none.
+
+**What this still does not give a consumer.** A repository onboarded before the adapter existed has
+no route to it - #517.
+
+And nothing says what a capability expects a repository to own - #519. So nothing can stop work that
+crosses that line - #520. And nothing reports the gap without naming where it was found - #521.
 
 **Every path to a lower bar runs through a visible, dated commit.** That holds for the supported
 workflow, with history intact and no hostile hand. It is not a wall — see below.
