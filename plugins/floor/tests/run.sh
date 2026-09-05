@@ -1689,6 +1689,15 @@ wreck_runner "a freshness claim about no context is caught" \
 wreck_runner "a freshness answering neither yes nor no is caught" \
   anyfresh 's#^refuse_a_freshness_that_answers_neither() {#refuse_a_freshness_that_answers_neither() { return 0;#'
 
+#
+# The other side of those two. Not a claim let through, but a field made compulsory.
+#
+# **A producer that cannot see its own thread handle writes neither key**, and the one harness
+# outside this repository that has written a receipt is exactly that producer. Requiring `context`
+# would refuse it. Every receipt this suite writes names a thread, so nothing above would notice.
+wreck_runner "a thread handle made compulsory is caught" \
+  needsthread "s#^RECEIPT_REQUIRED='run #RECEIPT_REQUIRED='context run #"
+
 wreck_runner "a round nobody can count is caught" \
   anyround 's#^refuse_a_round_that_is_not_a_count() {#refuse_a_round_that_is_not_a_count() { return 0;#'
 

@@ -4085,6 +4085,22 @@ a_receipt_is_read_and_not_believed() {
         "$(code_of floor "$tmp/rcpt" evidence receipt "$tmp/rcpt.nomodel")" "0"
   lacks "and nothing is written in its place" \
         "$(floor "$tmp/rcpt" evidence | tail -1)" "self_reported_model="
+
+  #
+  # **A producer with no thread handle to name**, which is the case `context` was made optional for.
+  #
+  # The first receipt written here by something outside this repository left both keys out: the
+  # harness could see the reply it had produced and not the thread that carried it. Every other
+  # receipt in this suite names one, so `RECEIPT_REQUIRED` could grow `context` and every check
+  # above would stay green. **An optionality nothing breaks on is not a decision.**
+  grep -v -e '^context ' -e '^fresh ' "$base" > "$tmp/rcpt.nothread"
+
+  is    "a receipt naming no thread at all is still taken" \
+        "$(code_of floor "$tmp/rcpt" evidence receipt "$tmp/rcpt.nothread")" "0"
+  lacks "and the record names no thread" \
+        "$(floor "$tmp/rcpt" evidence | tail -1)" "context="
+  lacks "and says nothing about its freshness" \
+        "$(floor "$tmp/rcpt" evidence | tail -1)" "fresh="
 }
 a_receipt_is_read_and_not_believed
 
