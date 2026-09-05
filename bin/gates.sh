@@ -157,10 +157,19 @@ gate codex       sh   plugins/floor/adapters/codex/run.sh audit
 
 #
 # The pin, against the adapter this tree ships. Floor fails closed at 40 when the two drift, so the
-# fault is already caught � by whoever next runs a judge, on a run that then stops. This catches it
+# fault is already caught — by whoever next runs a judge, on a run that then stops. This catches it
 # at the commit that caused it, and editing the adapter and forgetting the digest is always one
 # commit away.
 gate judged      sh   bin/judged.sh
+
+#
+# A byte, not a word. This file held one no decoder could read — a Windows em dash written raw —
+# and nothing objected. Eleven replacement characters reached a branch in one commit under twelve
+# green gates, five of them in messages a person reads as output.
+#
+# `git grep` reads the working tree, so the byte is caught before the commit that carries it.
+# `audit` runs the suite first, because a gate that has only ever been green proves nothing.
+gate bytes       sh   bin/bytes.sh audit
 
 for plugin in kernel signal floor panel; do
     gate "$plugin" bash "plugins/$plugin/tests/run.sh"
