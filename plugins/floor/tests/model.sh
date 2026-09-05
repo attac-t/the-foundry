@@ -4578,7 +4578,7 @@ a_shipped_adapter_is_reached_at_the_content_authorised
 # A reach no charter may hold, refused before one holds it.
 #
 # **A pin that is not a digest is wrong everywhere.** That is a fact about the declaration, not about
-# this machine � so it belongs where a declaration becomes an authorised bar, and a person is never
+# this machine — so it belongs where a declaration becomes an authorised bar, and a person is never
 # asked to approve a bar nothing could meet.
 #
 # The run-time readers stay and are unreachable through any supported path afterwards: `check`
@@ -4586,12 +4586,12 @@ a_shipped_adapter_is_reached_at_the_content_authorised
 # says which breaks went with them.
 #
 a_reach_no_charter_may_hold_never_reaches_one() {
-  a_plugin_shipping a-shipped "$(a_judge_that_approves)"     || { skip "a reach no charter may hold � the plugin could not be copied"; return; }
+  a_plugin_shipping a-shipped "$(a_judge_that_approves)"     || { skip "a reach no charter may hold — the plugin could not be copied"; return; }
 
   # A version reads as a pin and is not one. It moves while the repository says nothing changed.
   a_repo_that_owns_no_judge "$tmp/tagged" tagged 'reach  a-reviewer  @adapter a-shipped v1.2.3
 a-reviewer  a stranger can read it
-' || { skip "a version instead of a digest � git could not make a repo here"; return; }
+' || { skip "a version instead of a digest — git could not make a repo here"; return; }
 
   floor_new_as "$tmp/tagged" ada@example.com "Tagged" >/dev/null
 
@@ -4602,7 +4602,7 @@ a-reviewer  a stranger can read it
   # A name that is a path reaches out of the adapters directory. It is not a name.
   a_repo_that_owns_no_judge "$tmp/climb" climb 'reach  a-reviewer  @adapter ../../bin/run abc
 a-reviewer  a stranger can read it
-' || { skip "an adapter name that is a path � git could not make a repo here"; return; }
+' || { skip "an adapter name that is a path — git could not make a repo here"; return; }
 
   floor_new_as "$tmp/climb" ada@example.com "Climb" >/dev/null
 
@@ -4612,7 +4612,7 @@ a-reviewer  a stranger can read it
   # A transport nobody wrote. `@` is reserved, so this is named rather than handed to a shell.
   a_repo_that_owns_no_judge "$tmp/wibble" wibble 'reach  a-reviewer  @wibble a-shipped
 a-reviewer  a stranger can read it
-' || { skip "an unknown transport � git could not make a repo here"; return; }
+' || { skip "an unknown transport — git could not make a repo here"; return; }
 
   floor_new_as "$tmp/wibble" ada@example.com "Wibble" >/dev/null
 
@@ -4622,7 +4622,7 @@ a-reviewer  a stranger can read it
   # `@custom` and nothing after it. A record of a choice, and no command to run.
   a_repo_that_owns_no_judge "$tmp/nocmd" nocmd 'reach  a-reviewer  @custom
 a-reviewer  a stranger can read it
-' || { skip "a custom reach with no command � git could not make a repo here"; return; }
+' || { skip "a custom reach with no command — git could not make a repo here"; return; }
 
   floor_new_as "$tmp/nocmd" ada@example.com "Nocmd" >/dev/null
 
@@ -4637,16 +4637,16 @@ a_reach_no_charter_may_hold_never_reaches_one
 # This is the one a repository meets legitimately: it may authorise an adapter before it installs
 # one, exactly as it may declare a gate whose command is not on this host.
 #
-# **Nothing falls back.** A second candidate anywhere � a `$PATH` lookup, a neighbouring version,
-# the repository's own copy � is the failure the pin exists to make impossible.
+# **Nothing falls back.** A second candidate anywhere — a `$PATH` lookup, a neighbouring version,
+# the repository's own copy — is the failure the pin exists to make impossible.
 #
 an_adapter_this_host_does_not_have_fails_closed() {
-  a_plugin_shipping a-shipped "$(a_judge_that_approves)"     || { skip "an adapter nobody ships � the plugin could not be copied"; return; }
+  a_plugin_shipping a-shipped "$(a_judge_that_approves)"     || { skip "an adapter nobody ships — the plugin could not be copied"; return; }
 
   pin=$(pin_of a-shipped)
   a_repo_that_owns_no_judge "$tmp/missing" missing "reach  a-reviewer  @adapter no-such-adapter $pin
 a-reviewer  a stranger can read it
-" || { skip "an adapter nobody ships � git could not make a repo here"; return; }
+" || { skip "an adapter nobody ships — git could not make a repo here"; return; }
 
   ready_run "$tmp/missing" 'https://gitlab.com/acme/missing.git'
 

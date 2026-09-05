@@ -2147,7 +2147,7 @@ wreck_runner "a transport handed to a shell instead of resolved is caught" \
 #
 # **Three breaks went with this one, and they are not missing.** `refuse_a_pin_that_is_not_a_digest`,
 # `refuse_an_adapter_name_this_cannot_resolve` and `refuse_an_unknown_transport` still stand at run
-# time, and `check` refuses a charter the declaration disagrees with � so nothing supported can put
+# time, and `check` refuses a charter the declaration disagrees with — so nothing supported can put
 # a bad reach in front of them, and a break on any of the three would survive. They are defence with
 # no break, named here rather than left for a reader to find.
 wreck_runner "a charter that may hold a reach nothing could honour is caught" \
