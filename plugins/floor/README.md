@@ -902,7 +902,7 @@ Four steps, and floor does three of them:
 
 | | |
 |---|---|
-| floor writes the brief | the run, the clause, the candidate, the round, and the charter — into `judged/<id>.brief` |
+| floor writes the brief | the run, the clause, the candidate, the base, the round, and the charter — into `judged/<id>.brief` |
 | floor records the handoff | with that file's digest, so the bar going over is written down first |
 | floor writes the binding half of the receipt | into `judged/<id>.receipt`, before anything is asked |
 | the judge appends what it saw | `adapter`, `verdict`, `report`, `time`, and whatever else it can vouch for |
@@ -928,6 +928,9 @@ satisfaction a hand-written receipt could not.
 | a judge nobody said how to reach, or a run that rewrote the file its judge runs | 7 |
 | the command is not on this host, or a signal killed it | 21 |
 | a judge answered and did not approve, or could not answer at all | 39 |
+
+**The base is named beside the candidate**, because a judge asked what changed needs both ends. A
+run whose base is its own head has no range between them, and what such a judge reads is the tree.
 
 **The receipt decides, not the command's exit code.** A judge that exits non-zero has its words put
 on stderr and its receipt read anyway, because a harness that failed and said `unavailable` in the

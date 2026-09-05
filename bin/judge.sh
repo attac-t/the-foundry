@@ -43,7 +43,8 @@ main() {
 
     reachable || { record_unreachable "$report"; return 1; }
 
-    ask "$report" "$trail"
+    forget_the_last_round "$report" "$trail"
+    ask "$report" "$trail" || note "the harness exited $? — reading what it left"
     record_what_came_back "$report" "$trail"
 }
 
@@ -59,6 +60,20 @@ ensure_floor_handed_both() {
 # Whether it is on this host at all. **There is no second answer**, and adding one would make every
 # receipt this ever wrote worth less than the name it carries.
 reachable() { command -v codex >/dev/null 2>&1; }
+
+#
+# Every round writes to the same two names, so every round empties them first.
+#
+# **A harness killed before it answered leaves the round before it standing** — a report that is
+# there, not empty, and carrying a verdict about another commit. `record_what_came_back` asks only
+# whether the file holds anything, so that stale approval would be attached to this candidate and
+# this brief. Emptying first is what makes *holds anything* mean *this round wrote it*.
+#
+# Found by the adversary reading its own round-two receipt, which is the state that proves it: the
+# brief and the stream were round two's while the report was still round one's.
+forget_the_last_round() {
+    : > "$1" && : > "$2" || fail "cannot write beside [$FOUNDRY_RECEIPT]"
+}
 
 #
 # Ask, and keep both halves of the answer.
@@ -85,9 +100,9 @@ prompt_from() {
 You are an adversary judging work you did not write. Read the repository you are standing in
 against the bar below, and report what is wrong with it.
 
-The checkout is a clone at the candidate commit, with its own history. `git log` and `git diff`
-answer, and `git diff origin/HEAD...HEAD` is the work when the base and the candidate are the same
-commit. Do not repair anything, and do not write to any file.
+The checkout is a clone at the candidate commit, with its own history. The work under judgement is
+`git diff <base>..<candidate>`, both named below. When those are the same commit there is no range,
+and what you are judging is the tree at that commit. Do not repair anything, and write to no file.
 
 EOF
     cat "$1"
@@ -97,10 +112,15 @@ Report, in this order:
 
   - each finding, with a severity of Critical, Warning or Nitpick
   - the residual risks you would have recorded
-  - one last line, exactly: VERDICT: approve
+  - a last line, and nothing after it, reading exactly one of:
 
-Approve only when nothing Critical stands. A Warning or a Nitpick does not block. Say `VERDICT:
-reject` when the work is wrong, and `VERDICT: revise` when it is close and something must change.
+        VERDICT: approve
+        VERDICT: reject
+        VERDICT: revise
+
+Approve only when nothing Critical stands — a Warning or a Nitpick does not block. Reject when the
+work is wrong. Revise when it is close and something must change. Only the last line is read, so
+anything written after it means no verdict was given at all.
 EOF
 }
 
@@ -171,18 +191,27 @@ say_the_thread() {
 
 # --- reading what came back ---
 
-# The last verdict line the judge wrote, and nothing when it wrote none. Last, not first: a reply
-# quoting the instruction above its own answer would otherwise be read as the answer.
+#
+# The verdict, and only when it is the reply's last word.
+#
+# **The last line that carries anything, never a matching line anywhere.** A reply quoting the
+# instruction, weighing two answers, or contradicting itself after saying one, would otherwise be
+# read as having chosen — and the one it chose would be whichever came last by accident.
+#
+# Nothing when the last line is not a verdict. Floor refuses a receipt carrying none, which is the
+# right refusal: picking a word for a judge that named none is the invention this all exists to stop.
 verdict_in() {
-    awk '/^[ \t]*VERDICT:[ \t]*(approve|reject|revise)[ \t]*$/ {
-             said = $2 } END { print said }' "$1"
+    awk 'NF { last = $0 }
+         END { if (last !~ /^[ \t]*VERDICT:[ \t]*(approve|reject|revise)[ \t]*$/) exit
+               sub(/^[ \t]*VERDICT:[ \t]*/, "", last); sub(/[ \t]*$/, "", last); print last }' "$1"
 }
 
-# The thread the harness opened, off the first line of its own stream. One quoted field, and the
-# only thing in that stream this reads.
+# The thread the harness opened, off its own stream. Cut to the value rather than counted to it: a
+# split on `"` puts the JSON colon after the key, so counting one field along printed `:` into every
+# receipt this wrote. Found by an adversary reading the receipt it had just been handed.
 thread_in() {
-    awk -F'"' '/"thread.started"/ { for (i = 1; i < NF; i++) if ($i ~ /thread_id/) { print $(i + 1); exit } }' \
-        "$1" 2>/dev/null
+    awk '/"thread.started"/ && /"thread_id"[ \t]*:[ \t]*"/ {
+             sub(/^.*"thread_id"[ \t]*:[ \t]*"/, ""); sub(/".*$/, ""); print; exit }' "$1" 2>/dev/null
 }
 
 # --- one voice ---

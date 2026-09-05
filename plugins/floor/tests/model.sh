@@ -4304,7 +4304,8 @@ a-reviewer  a stranger can read it
   # Floor digested the file it wrote and recorded the digest at the handoff, so the two cannot differ
   # by a caller's word. What the judge appends is checked against it.
   wrote=$(cat "$(floor "$tmp/asked" path)"/judged/*.brief)
-  has   "the brief names the candidate"            "$wrote" "$(reviewed_at "$tmp/asked")"
+  has   "the brief names the candidate"            "$wrote" "candidate $(reviewed_at "$tmp/asked")"
+  has   "and the base it is judged against"        "$wrote" "base $(reviewed_at "$tmp/asked")"
   has   "and carries the bar it is judged against" "$wrote" "Judged a stranger can read it"
   lacks "and hands the judge none of this run's own answers" "$wrote" "machine"
 
@@ -4312,6 +4313,28 @@ a-reviewer  a stranger can read it
   has "the runner wrote the run into the receipt"    "$answer" "run $(basename "$askrun")"
   has "and the candidate, before anything was asked" "$answer" "candidate $(reviewed_at "$tmp/asked")"
   has "and the judge appended what it saw"           "$answer" "verdict approve"
+
+  #
+  # Round two, and the work has moved. **A refused judgement is answered by new work**, so a second
+  # round is a second invocation at a second commit and never a second pass inside one.
+  #
+  # It is also the only shape where the base and the candidate differ. A run that has committed
+  # nothing has no range between them, and a judge asked what changed reads the tree instead.
+  commit_file "$(only_slot "$(floor "$tmp/asked" path)/units/01/workspace")" LATER.md 'a later thought
+' >/dev/null 2>&1
+
+  is "a second invocation asks again, at the commit the work moved to" \
+     "$(code_of floor "$tmp/asked" judged)" "0"
+
+  again=$(cat "$(floor "$tmp/asked" path)"/judged/*.brief)
+  has     "the brief names the commit the work moved to" "$again" "candidate $(reviewed_at "$tmp/asked")"
+  lacks   "and a base that is no longer the same commit" "$again" "base $(reviewed_at "$tmp/asked")"
+  has     "and counts this as the second round"          "$again" "round 2"
+
+  carried=$(cat "$(floor "$tmp/asked" path)"/judged/*.receipt)
+  has "the receipt carries the round the runner counted" "$carried" "round 2"
+  has "and the verdict that came before it"              "$carried" "prior a-reviewer: approve"
+  has "and the ledger keeps both"                        "$(floor "$tmp/asked" evidence)" "round=2"
 }
 the_runner_asks_the_judge
 
