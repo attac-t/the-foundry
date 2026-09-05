@@ -791,8 +791,9 @@ means, so floor refuses one naming the run's own worker.
 **It cannot prove who typed it.** The file is writable by the same user, and §2.5 says so. Refusing
 the one name floor already knows is what an honest record can do — no more.
 
-**No second producer, so the contract is unproven.** One judge is a judge-shaped costume, by the same
-rule that keeps every seam in §2.6 marked.
+**A second producer has now written one.** *A second harness wrote one*, below, records what it
+attested and what it left out. One judge is still one judge, by the same rule that keeps every seam
+in §2.6 marked.
 
 **And a `Judged` clause is derived from a declaration, never guessed.** `.foundry/judged` declares
 one — `judge  text` — and this file is the source, so every clause here pins to it.
@@ -825,6 +826,10 @@ clear.** No script judges prose, and none claims to.
 `evidence verdict` takes five things typed at a prompt. `evidence receipt` reads a file, and the
 file is the whole contract: **any harness able to write these lines answers the same clause.** Floor
 writes none and names none.
+
+**Everything from here through *What the receipt cannot do* is what a producer is handed.** So no
+run's own answers belong inside it — a judge given them has been given its reply. The block ends
+where *Monotonicity* begins, and a generator cutting it stops on that heading.
 
 One key per line, the value is the rest of the line, `#` comments and blanks ignored.
 
@@ -892,6 +897,7 @@ did not issue.**
 exhausted review budget, or a harness nobody could reach. Both stop the delivery, and **completion
 keeps them apart from a refusal.** A refusal is answered by new work. Neither of these is.
 
+
 ### What the receipt cannot do
 
 **Every field is written by whatever wrote the receipt.** A fuller record is still a record, and
@@ -908,8 +914,9 @@ because the first it hears of either is the name on the file. Refusing that need
 the harness as an identity before the answer comes back, and `how` is prose for a person. #332
 leaves it open.
 
-**No second producer, so the contract is unproven.** These refusals are driven by fixture receipts
-the suite writes. A real second harness writing one is the other half, and it is not built.
+**Every refusal the suite checks is driven by fixtures the suite writes.** A fixture is written by
+whatever is being tested. So these prove the reading holds, never that a producer elsewhere would
+write one floor could read.
 
 ---
 ### Monotonicity
@@ -974,6 +981,53 @@ Containment is the workspace boundary's, and `open` holds it.
 declared and never cloned, so there is nothing on disk to read for any other target until the
 workspace seam lands. Deriving clauses for a repository nobody checked out would be introduction
 wearing provenance.
+
+### A second harness wrote one
+
+**This sits outside the block above on purpose.** That block is what a producer is handed, and this
+one holds a producer's answers. Put it back among them and the next judge is given its reply.
+
+**Every receipt before this was written by a person or by the suite.** `codex-cli 0.150.1` wrote
+one, and floor took it.
+
+It was handed the clause its repository pins, the reviewer it answers as, and the run that asked. The
+path to the code, and this format verbatim from here. **Nothing else about the work, and no model
+named anywhere.** It read the code, ran the tests, wrote its report and hashed it. Then it wrote the
+receipt, in the one directory it could write to. **Nobody edited it.** Its last act was to print the
+file back. The stream's copy of that is byte for byte what floor read.
+
+The clause went unmet to met. Then the four breaks refused against that same file. A missing `time`
+and a bare `model` at 37, a changed brief at 38, a moved candidate at 35.
+
+```
+run        2026-09-05-r2-0000
+clause     every refusal names the field that was missing
+candidate  24b640d6b904a953426b324d8da8e850138e9332
+role       a-reviewer
+adapter    codex-exec
+brief      bec729d7f932df65812ce15ceb6ea5e62b6eebb4
+verdict    approve
+report     837782a2962482ac32db95453cd9a69be11420a4
+round      1
+time       2026-09-04T23:21:57Z
+requested_model  gpt-5.6-sol
+requested_effort max
+```
+
+**The receipt says `codex-exec`, and floor reads nothing into that.** `codex-cli 0.150.1` is the
+version the caller ran, not a fact the record checked.
+
+**What it left out is the finding.** It could see the reply it had produced, and not the thread that
+carried it. So it wrote no `context` and no `fresh`. Nobody asked it what model it was, so it wrote
+no `self_reported_model`. Five of the seven optional keys are absent, and the record says nobody
+checked them.
+
+**`requested_model` and `requested_effort` came out of this run's own ledger.** The brief named
+neither. The handoff had recorded the command that invoked the judge, and the judge read it back.
+That is what `requested_` means, and the only place the answer existed.
+
+**One producer is not two.** One harness, one call, one outcome. The four breaks were driven through
+that file by hand, once. Every refusal the suite checks is still a fixture's.
 
 ---
 
