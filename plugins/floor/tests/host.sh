@@ -43,7 +43,7 @@ is "outside a repository it refuses"  "$(code_of "$tmp/nowhere" FOUNDRY_WHO=a@b)
 has "and says a repository is what it wants" \
     "$(joined "$tmp/nowhere" FOUNDRY_WHO=a@b)" "no repository here"
 
-bare one || bad "could not make a repository to test against"
+bare one || broke "could not make a repository to test against"
 
 is "with no git author it refuses"    "$(code_of "$tmp/one" FOUNDRY_WHO=a@b)" "1"
 has "and says git is what refuses, not floor" \

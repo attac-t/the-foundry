@@ -162,9 +162,9 @@ audit_says_which
 # **Adding that field is sixteen call sites and its own charter**, not a rider on a receipt.
 #
 # What is done instead, and it is the half this file can stand behind: **every refusal the receipt
-# adds is named by a break, and each dies on its own check.** The three composites are not — they
-# only delegate, so a break on one is killed by whichever child fixture runs first, which is the
-# fault 050 and 051 both named rather than a cure for it.
+# adds is named by a break.** Whether each dies on a check of its own was a claim nobody could check
+# until `say_when_two_breaks_share_a_check` printed the answer — and the answer is that several do
+# not. The list is at the foot of this file, and it is a finding rather than a claim now.
 #
 ends_on "$root/tests/run.sh"     'exit $failed'      || bad "tests/run.sh declares breaks below its exit, and nothing runs them"
 ends_on "$root/tests/transport.sh" '[ "$failed" -eq 0 ] || exit 1' || bad "tests/transport.sh runs cases below its exit, and nothing counts them"
@@ -367,6 +367,24 @@ queued=0
 reported=0
 
 #
+# Where the suite writes the name of the check that failed. **A break names a file. Nothing else
+# keeps one.**
+#
+# An exit code was once the whole of what a break could learn, which is why one could die at a check
+# it was not written for and still read as proof of another. `lib.sh` writes the name here now.
+#
+# `local checks=` in the break is what points it at a file: bash lends a local to everything the
+# declaring function calls, so `suite_caught` and `model_caught` take no new argument and each still
+# answers one question. This file is already bash on purpose — its first check is that the shell it
+# is under counts a background job.
+#
+# **The runners below still discard the suite's own output, and that is not the hole it looks like.**
+# Reading a name back out of printed prose was the first shape here, and it cut two scripts down to
+# one check. Nothing needs stdout once the library names the check itself.
+#
+checks=/dev/null
+
+#
 # Run a command with a deadline, and answer **2 when the deadline passed** — never the command's own
 # status, because a command that never answered did not answer badly.
 #
@@ -426,6 +444,19 @@ a_deadline_is_not_an_answer() {
 }
 
 #
+# The same three from `polled`, which nothing here would otherwise run.
+#
+# `bounded` prefers `timed` wherever `timeout` exists, and it exists on every machine this gate runs
+# on. **macOS is the platform `polled` is for**, and it had never been asked a question — a deadline
+# nobody has run is a deadline nobody has, and the two runners sit one edit apart.
+#
+a_deadline_without_timeout_answers_the_same() {
+  polled 5 true;     answered 0 "a polled command that passes"
+  polled 5 false;    answered 1 "a polled command that fails"
+  polled 2 sleep 30; answered 2 "a polled command that never answers"
+}
+
+#
 # Does a suite fail against a broken copy of the plugin?
 #
 #   0  caught · 1  it passed against a broken one · 2  the mutant never answered
@@ -437,15 +468,113 @@ a_deadline_is_not_an_answer() {
 #
 # `env`, because `bounded` runs its arguments and an inline assignment would not reach them.
 #
+# **`FOUNDRY_FAIL_FAST`, and it was missing here.** Only `model_caught` set it, so the install and
+# host suites ran to the end and named every check that went red rather than the one that stopped
+# them. `nofile` reddened five and was recorded against the first — which is not the one it was
+# written for. That is the fault this file exists to catch, made by the fix for it.
+#
 suite_caught() {
   local said
-  bounded "$deadline" env PLUGIN_ROOT="$1" bash "$2"
+  bounded "$deadline" env PLUGIN_ROOT="$1" FOUNDRY_FAIL_FAST=1 FOUNDRY_CHECK="$checks" bash "$2"
   said=$?
 
   [ "$said" -eq 2 ] && return 2
   [ "$said" -eq 0 ] && return 1
 
   return 0
+}
+
+#
+# Which check killed the mutant, by name.
+#
+# **`lib.sh` writes the name. Nothing here parses one out of a message.** An earlier shape cut the
+# printed line at its em dash, and `install.sh` names checks that carry em dashes of their own — so
+# the cut dropped the script each one names, and read two scripts as a single check.
+#
+# One line, because `FOUNDRY_FAIL_FAST` stops a suite at its first failure. **Three answers that are
+# not a rule the break broke**, and `refuse_a_record_the_audit_cannot_use` refuses all three:
+#
+#   nothing  a red no check answered for — a `skip` at the tally, or a suite that died first
+#   several  fail-fast not reaching the suite, so the first of many is recorded as the one
+#   setup    `broke` — a fixture that would not build, which is red and is not a rule
+#
+# **`setup` is `lib.sh`'s sentence, written down twice.** The self-test calls the real `broke` and
+# compares what comes back with this, so the two cannot drift apart in silence.
+#
+# Sentences rather than a blank field, because a blank reads as something nobody filled in.
+#
+unnamed='nothing named a check'
+several='more than one check answered'
+setup='a setup that would not build'
+
+# `grep -m1 .`, not `head -n 1`: the count is of lines holding something, so the name has to be read
+# the same way. A blank first line made the two disagree and returned nothing at all.
+killed_by() {
+  local said
+  said=$(grep -c . "$1" 2>/dev/null) || said=0
+
+  [ "$said" -eq 0 ] && { printf '%s' "$unnamed"; return; }
+  [ "$said" -eq 1 ] || { printf '%s' "$several"; return; }
+
+  printf '%s' "$(grep -m1 . "$1")"
+}
+
+#
+# What killed each break: the suite, the check, the break. One row each, tab separated.
+#
+# **The parent writes every row.** A break runs in its own subshell and leaves its killer beside its
+# verdict, the way it leaves the verdict — sixteen workers appending to one file is a row torn in
+# half, and a torn row is a killer nothing can be grouped by.
+#
+killed="$tmp/killed"
+: > "$killed"
+
+remember_the_killer() { printf '%s\t%s\t%s\n' "$1" "$2" "$3" >> "$killed"; }
+
+#
+# Breaks that share a killing check, grouped, and nothing when none do.
+#
+# **Two breaks and one check is one break's worth of proof.** Fail-fast stops at the first failure,
+# so a break that also violates something checked later never reaches it — and both breaks are
+# recorded caught while one rule was ever watched. That is the fault verdicts 050 to 054 kept
+# naming, and it was invisible because an exit code cannot carry a name.
+#
+# Sorted first, because `for (k in n)` is unordered in awk and the same audit has to read the same
+# way twice. The tab sorts below every character a name may hold, so a whole-line sort groups them.
+#
+breaks_sharing_a_check() {
+  LC_ALL=C sort "$1" | awk -F'\t' '
+    { key = $1 "\t" $2
+      if (key != held) { show(); held = key; killer = $2; names = ""; n = 0 }
+      names = names sprintf("      %s\n", $3); n++
+    }
+    END { show() }
+
+    function show() { if (n > 1) printf "    [%s]\n%s", killer, names }
+  '
+}
+
+#
+# Breaks whose record cannot say which rule they broke.
+#
+# **The right red for the wrong reason**, three ways. A break is meant to violate a rule some check
+# holds. One that breaks a fixture reddens the suite through `skip` or `broke`; one read without
+# fail-fast names several, and the first is recorded as though it were the one. Every audit before
+# this read all three as *caught*.
+#
+# **`broke` names its own sentence, so it needs its own row here.** Leaving it out made the refusal
+# below miss the case it was written for: two breaks resting on a fixture that would not build, and
+# `ALL GREEN` printed over them. Measured, not argued.
+#
+breaks_with_an_unusable_record() {
+  awk -F'\t' -v a="$unnamed" -v b="$several" -v c="$setup" \
+      '$2 == a || $2 == b || $2 == c { printf "      %s — %s\n", $3, $2 }' "$1"
+}
+
+# One value against the one wanted, for the readers this file grades rather than the plugin.
+same() {
+  [ "$2" = "$3" ] && { printf '  ok    %s\n' "$1"; return; }
+  bad "$1 — want [$3], got [$2]"
 }
 
 #
@@ -474,6 +603,99 @@ sleep 30
   deadline=$held
 }
 
+#
+# The killer comes out of `lib.sh`, so `lib.sh` is what it is read from.
+#
+# **The name carrying an em dash is the case that was wrong.** An earlier shape cut the printed line
+# at the first ` — `, and `install.sh` names two checks `declares its shell — <script>` and `fires on
+# SessionStart — <script>`. The cut dropped the script and read two scripts as one check. So the
+# name here carries one on purpose.
+#
+a_killer_is_named_by_the_check_that_wrote_it() {
+  local checks="$tmp/checks"
+
+  ask_lib_sh is "declares its shell — announce.sh" bash ''
+  same "the name is kept whole, em dash and all" \
+       "$(killed_by "$checks")" "declares its shell — announce.sh"
+
+  ask_lib_sh bad "not executable — run.sh"
+  same "a bad with no name is named by its message" \
+       "$(killed_by "$checks")" "not executable — run.sh"
+
+  # `broke`'s sentence is `lib.sh`'s, and `$setup` is this file's copy of it. Read the real one back
+  # and compare, or the two drift and the refusal below stops recognising what it refuses.
+  ask_lib_sh broke "could not make a repository to test against"
+  same "a setup that would not build is lib.sh's own words" "$(killed_by "$checks")" "$setup"
+
+  : > "$checks"
+  same "a suite no check answered for says so" "$(killed_by "$checks")" "$unnamed"
+
+  printf 'one\ntwo\n' > "$checks"
+  same "a suite read without fail-fast says so" "$(killed_by "$checks")" "$several"
+
+  # The count reads lines holding something and the name has to read the same way. `head -n 1` did
+  # not: a blank first line counted as one check and came back as nothing at all.
+  printf '\na check under a blank line\n' > "$checks"
+  same "a blank first line does not swallow the name" \
+       "$(killed_by "$checks")" "a check under a blank line"
+}
+
+# One assertion from the real library, into the file the audit reads. Its own shell, because `bad`
+# leaves under fail-fast and its counters must not follow it out.
+ask_lib_sh() {
+  : > "$checks"
+  ( . "$root/tests/lib.sh"; suite=model; FOUNDRY_FAIL_FAST=1; FOUNDRY_CHECK="$checks"; "$@" ) \
+    >/dev/null 2>&1
+}
+
+#
+# **Both readers hand their suite fail-fast**, and every record rests on it.
+#
+# `suite_caught` did not. The install and host suites ran to the end, so `nofile` reddened five
+# checks and was recorded against the first — a check it was not written for. A stand-in suite,
+# because what is under test is what reaches the suite's environment.
+#
+# `model_caught` names `model.sh` and takes no stand-in, so nothing here can ask it the same way. The
+# 202 breaks it reads answer for it, and that was measured rather than assumed: with its fail-fast
+# taken away, `collide`, `worktree` and `nohome` each answered *more than one check answered* and the
+# refusal below went red. **They pass because fail-fast arrives, and stop the moment it does not.**
+#
+a_suite_is_read_under_fail_fast() {
+  local checks="$tmp/asked.check"
+
+  printf '#!/bin/sh\nprintf "%%s\\n" "${FOUNDRY_FAIL_FAST:-off}" > "$FOUNDRY_CHECK"\nexit 1\n' \
+    > "$tmp/asks.sh"
+
+  suite_caught x "$tmp/asks.sh"
+  same "suite_caught hands its suite fail-fast" "$(cat "$checks")" "1"
+}
+
+#
+# Grouping, and the two things it must not confuse.
+#
+# The suite is half the key: `host.sh` and `model.sh` are different files, and one sentence written
+# in both is two checks. The other half is that a break with a check of its own says nothing at all.
+#
+a_shared_killer_is_reported_with_the_breaks_that_share_it() {
+  printf 'model\tone check\ta break\nmodel\tone check\tanother break\nmodel\tits own\ta third\n' \
+    > "$tmp/rows"
+  same "two breaks under one check are grouped" \
+       "$(breaks_sharing_a_check "$tmp/rows")" \
+       "$(printf '    [one check]\n      a break\n      another break')"
+
+  printf 'model\tits own\ta break\nhost\tits own\tanother break\n' > "$tmp/rows"
+  same "one check each, in two suites, is not sharing" "$(breaks_sharing_a_check "$tmp/rows")" ""
+
+  # All three, because the one that was missing is the one that let two breaks rest on a fixture
+  # that would not build while the audit printed ALL GREEN.
+  printf 'model\t%s\ta silent break\nmodel\t%s\ta noisy break\nmodel\t%s\ta break on sand\nmodel\tits own\ta break\n' \
+         "$unnamed" "$several" "$setup" > "$tmp/rows"
+  same "a record that cannot say which rule broke is picked out" \
+       "$(breaks_with_an_unusable_record "$tmp/rows")" \
+       "$(printf '      a silent break — %s\n      a noisy break — %s\n      a break on sand — %s' \
+                 "$unnamed" "$several" "$setup")"
+}
+
 # `$?` from the line above. Called immediately after `bounded`, because anything between them is the
 # status this would read instead.
 answered() {
@@ -495,8 +717,12 @@ a_run_of_silence_stops_the_audit() {
   ( silence 9; kept x; silence 9 ) >/dev/null 2>&1; answered 0 "a run one answer broke"
 }
 a_deadline_is_not_an_answer
+a_deadline_without_timeout_answers_the_same
 a_suite_that_never_answered_caught_nothing
 a_run_of_silence_stops_the_audit
+a_killer_is_named_by_the_check_that_wrote_it
+a_suite_is_read_under_fail_fast
+a_shared_killer_is_reported_with_the_breaks_that_share_it
 
 #
 # Does the model suite fail against a broken runner?
@@ -505,24 +731,13 @@ a_run_of_silence_stops_the_audit
 #
 # `env`, because `bounded` runs its arguments and an inline assignment would not reach them.
 #
-# **It answers whether the suite went red, never which check did it.** `FOUNDRY_FAIL_FAST` stops at
-# the first failure, so the killing check is knowable — `bounded` throws the output away instead.
-#
-# That costs something real: a break written to protect one check can die at another and still read
-# as proof of the first. It happened to `needsfresh`, whose first shape required `context` and died
-# three checks above the one it was for.
-#
-# **Recording each break's killing assertion is the fix, and a clean audit is not what stops it.**
-# `bin/gates.sh` runs this file, and floor exiting 0 means every break answered: a red suite exits 1,
-# a deadline too short exits 3, and a single MOOT sets `failed` to 3.
-#
-# What stops it is `timed` and `polled`. Both hard-redirect to `/dev/null`, and both serve
-# `suite_caught` and this file's own self-tests, so the plumbing moves with them. And a first
-# snapshot blesses whatever is true the day it is taken.
+# **The check file is the caller's.** Whoever wants to know which check killed the mutant declares a
+# `checks` and reads it afterwards; this answers the exit code either way.
 #
 model_caught() {
   local said
-  bounded "$deadline" env RUNNER="$1/bin/run.sh" FOUNDRY_FAIL_FAST=1 bash "$root/tests/model.sh"
+  bounded "$deadline" env RUNNER="$1/bin/run.sh" FOUNDRY_FAIL_FAST=1 FOUNDRY_CHECK="$checks" \
+          bash "$root/tests/model.sh"
   said=$?
 
   [ "$said" -eq 2 ] && return 2
@@ -543,9 +758,12 @@ model_caught() {
 # The last argument names the file, because an adapter carries rules of its own and a rule only the
 # caller can break is one the adapter is free to drop.
 #
+# The killer is written beside the verdict and before it, so a worker killed mid-break leaves the
+# `MOOT` that was there first and no killer to be grouped by. A verdict on disk always has one.
+#
 break_verdict() {
   local slot="$1" name="$2" tag="$3" mutation="$4" file="${5:-bin/run.sh}"
-  local mutant="$tmp/$slot-$tag"
+  local mutant="$tmp/$slot-$tag" checks="$tmp/$slot-$tag.check"
 
   rm -rf "${mutant:?}" && cp -R "$root" "$mutant" || { moot "$name — could not copy the plugin"; return; }
   sed "$mutation" "$root/$file" > "$mutant/$file" || { moot "$name — sed failed, so this proves nothing"; return; }
@@ -555,6 +773,7 @@ break_verdict() {
   [ "$answer" -eq 2 ] && { out_of_clock "$name"; return; }
   [ "$answer" -eq 0 ] || { bad "$name — the suite passed against a broken runner"; return; }
 
+  killed_by "$checks" > "$tmp/verdict/$slot.killer"
   printf '  ok    %s\n' "$name"
 }
 
@@ -565,17 +784,23 @@ break_verdict() {
 # of many, and a status read from the wrong break is a verdict invented for it. Anything but the two
 # words a break can print counts as a rule broken, so a format changed here goes red and loud.
 #
+# **The killer is joined on here rather than written into the verdict.** The break's own line keeps
+# the shape the `case` below reads, and the name a break is remembered by stays the name it declared
+# — a line composed once and taken apart again is two chances to disagree.
+#
 report_verdict() {
-  local verdict
+  local verdict killer=''
   verdict=$(cat "$tmp/verdict/$1")
 
-  printf '%s\n' "$verdict"
   case "$verdict" in
-      '  ok    '*) return ;;
-      '  MOOT  '*) [ "$failed" -eq 0 ] && failed=3; return ;;
+      '  ok    '*) killer=$(cat "$tmp/verdict/$1.killer")
+                   remember_the_killer model "$killer" "${verdict#  ok    }"
+                   verdict="$verdict — killed by [$killer]" ;;
+      '  MOOT  '*) [ "$failed" -eq 0 ] && failed=3 ;;
+      *)           failed=1 ;;
   esac
 
-  failed=1
+  printf '%s\n' "$verdict"
 }
 
 # Hold the pool to its size. `wait -n` would say the moment a worker came free and is bash 4.3 —
@@ -1823,6 +2048,7 @@ caught() { suite_caught "$tmp/$1" "$root/tests/install.sh"; }
 # Break one thing about the install and require the suite to notice.
 wreck() {
   local name="$1" tag="$2" break_it="$3"
+  local checks="$tmp/$tag.check" killer
 
   copy "$tag"             || { bad "$name — could not copy the plugin, so this proves nothing"; return; }
   "$break_it" "$tmp/$tag" || { bad "$name — the break did not apply, so this proves nothing"; return; }
@@ -1834,7 +2060,9 @@ wreck() {
   [ "$answer" -eq 2 ] && { out_of_clock "$name"; return; }
   [ "$answer" -eq 0 ] || { bad "$name — the suite passed against a broken install"; return; }
 
-  kept "$name"
+  killer=$(killed_by "$checks")
+  remember_the_killer install "$killer" "$name"
+  kept "$name — killed by [$killer]"
 }
 
 # Determine if this filesystem records an executable bit. Windows does not, and removing a bit that
@@ -1944,6 +2172,7 @@ hosted() { suite_caught "$tmp/$1" "$root/tests/host.sh"; }
 
 wreck_join() {
   local name="$1" tag="$2" mutation="$3"
+  local checks="$tmp/$tag.check" killer
 
   copy "$tag" || { bad "$name — could not copy the plugin, so this proves nothing"; return; }
   sed "$mutation" "$root/bin/join.sh" | rewrite "$tmp/$tag/bin/join.sh"
@@ -1953,7 +2182,9 @@ wreck_join() {
   [ "$answer" -eq 2 ] && { out_of_clock "$name"; return; }
   [ "$answer" -eq 0 ] || { bad "$name — the suite passed against a broken join"; return; }
 
-  kept "$name"
+  killer=$(killed_by "$checks")
+  remember_the_killer host "$killer" "$name"
+  kept "$name — killed by [$killer]"
 }
 
 # Each of the three that used to be silent, made silent again one at a time.
@@ -1986,6 +2217,64 @@ wreck_join "a plugin that is off reported as reachable is caught" \
 # install something they already have.
 wreck_join "a settings file it cannot read called a missing plugin is caught" \
   blindsettings 's#^    \[ -r "\$settings" \] || { printf .  — cannot tell, no %s. "\$settings"; return; }$#    [ -r "$settings" ] || return#'
+
+#
+# Two breaks, one check.
+#
+# **The finding no exit code could carry**, and five adversary rounds asked for it — verdicts 050 to
+# 054. A break proves a rule only when a check goes red *for that rule*. Fail-fast stops the suite at
+# its first failure, so a break that also trips something checked earlier never reaches the one it
+# was written for, and the audit recorded it caught either way. `needsfresh` did exactly that: its
+# first shape required `context` and died three checks above its own.
+#
+# Two breaks under one check is that, made visible. One of them proves nothing the other had not
+# already proved, and the rule it was aimed at is unwatched.
+#
+# **No exit code turns on this, and that was measured rather than conceded.** `reclone` blinds
+# `attached` and `localorigin` blinds `remote set-url`. Both break the workspace itself, so both die
+# at the first check that touches one — and no anchoring of a `sed` moves that. **A break that breaks
+# something fundamental cannot be given a check of its own while the suite runs in one order from
+# the top.**
+#
+# **What separates them is a checkpoint per break and a declared assertion** — PR #434's seam, open
+# and undecided. This list is the cost side and the benefit side of that decision, and neither
+# existed before it printed.
+#
+# **A baseline would be a snapshot**, blessing whatever was true the day it was taken. So the list is
+# printed whole, every run, and nothing here calls any of it acceptable.
+#
+say_when_two_breaks_share_a_check() {
+  local shared
+  shared=$(breaks_sharing_a_check "$killed")
+
+  [ -n "$shared" ] || { printf '  ok    every break has a killing check of its own\n'; return; }
+
+  printf 'audit — breaks that share a killing check. One of each group proves nothing new:\n'
+  printf '%s\n' "$shared"
+  printf 'audit — a check of its own needs a checkpoint per break. That is #434, and it is open.\n'
+}
+
+#
+# The other half, and **this one is a failure**: a record that cannot say which rule was broken.
+#
+# No exemptions, and the bar is zero. It is the part of the finding above that an exit code can hold,
+# and it is what proves the premise every row above rests on — one check answered, and it is the one
+# named. **The audit measures that over every break, every run.** Nothing else has to be believed.
+#
+# It rests on `lib.sh` telling a setup failure from a check, and on `setup` above matching what
+# `broke` writes. A suite calling `bad` for a fixture that would not build still reads as a rule.
+#
+refuse_a_record_the_audit_cannot_use() {
+  local wrong
+  wrong=$(breaks_with_an_unusable_record "$killed")
+
+  [ -n "$wrong" ] || { printf '  ok    every break rests on one check, and it is the one that stopped the suite\n'; return; }
+
+  printf '  FAIL  breaks whose record cannot say which rule they broke\n%s\n' "$wrong"
+  failed=1
+}
+refuse_a_record_the_audit_cannot_use
+say_when_two_breaks_share_a_check
 
 #
 # Say when the clock took them.

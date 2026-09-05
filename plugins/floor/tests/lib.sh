@@ -15,6 +15,24 @@ unanswerable=0
 ok() { passed=$((passed + 1)); printf '  ok    %s\n' "$1"; }
 
 #
+# The name of the check that failed, for the audit that groups breaks by it.
+#
+# **A name is not a message.** The helpers below append what they wanted and what they got, and that
+# tail holds a tmp path with a pid in it. An audit reading the printed line would have to cut the
+# name back out at the em dash — and names here carry em dashes of their own, so the cut dropped the
+# script each one exists to name and read two scripts as a single check.
+#
+# So the name is handed over rather than parsed back. A `bad` called with no name records its whole
+# message, which is that check's identity when there is no other.
+#
+# Off unless a caller names a file, so every suite prints exactly what it printed before.
+#
+name_the_check() {
+  [ -n "${FOUNDRY_CHECK:-}" ] || return 0
+  printf '%s\n' "$1" >> "$FOUNDRY_CHECK"
+}
+
+#
 # Record a failing check.
 #
 # `FOUNDRY_FAIL_FAST` leaves at the first one. The audit runs this suite once per break and reads
@@ -24,12 +42,24 @@ ok() { passed=$((passed + 1)); printf '  ok    %s\n' "$1"; }
 #
 bad() {
   failed=$((failed + 1))
+  name_the_check "${2:-$1}"
   printf '  FAIL  %s\n' "$1"
 
   [ -n "${FOUNDRY_FAIL_FAST:-}" ] || return 0
   printf '%s — stopped at the first failure\n' "${suite:-suite}"
   exit 1
 }
+
+#
+# A setup that would not build. **Red, like any other, and not a check.**
+#
+# The suite has to go red — a check that could not run proved nothing. But the audit asks which
+# check killed a break, and a fixture that would not build is not one. Recorded under `bad` it would
+# read as a rule the break broke, and the break would pass on a red it never earned.
+#
+# The reader sees the same line either way. Only the name changes.
+#
+broke() { bad "$1" 'a setup that would not build'; }
 
 #
 # Note a check that did not run because its setup failed. **Red.**
@@ -57,33 +87,33 @@ cannot() { unanswerable=$((unanswerable + 1)); printf '  n/a   %s\n' "$1"; }
 # Assert two values match.
 is() {
   [ "$2" = "$3" ] && { ok "$1"; return; }
-  bad "$1 — want [$3], got [$2]"
+  bad "$1 — want [$3], got [$2]" "$1"
 }
 
 # Assert a string contains the given text.
 has() {
   case "$2" in
     *"$3"*) ok "$1" ;;
-    *)      bad "$1 — [$3] missing from [$2]" ;;
+    *)      bad "$1 — [$3] missing from [$2]" "$1" ;;
   esac
 }
 
 # Assert two values differ.
 differs() {
   [ "$2" != "$3" ] && { ok "$1"; return; }
-  bad "$1 — both are [$2]"
+  bad "$1 — both are [$2]" "$1"
 }
 
 # Assert a string matches an extended regular expression.
 matches() {
   printf '%s' "$2" | grep -Eq -- "$3" && { ok "$1"; return; }
-  bad "$1 — [$2] does not match /$3/"
+  bad "$1 — [$2] does not match /$3/" "$1"
 }
 
 # Assert a string does not contain the given text.
 lacks() {
   case "$2" in
-    *"$3"*) bad "$1 — [$3] should not be in [$2]" ;;
+    *"$3"*) bad "$1 — [$3] should not be in [$2]" "$1" ;;
     *)      ok "$1" ;;
   esac
 }
@@ -91,12 +121,12 @@ lacks() {
 # Assert a path exists.
 exists() {
   [ -e "$2" ] && { ok "$1"; return; }
-  bad "$1 — $2 is not there"
+  bad "$1 — $2 is not there" "$1"
 }
 
 # Assert a path does not exist.
 absent() {
-  [ -e "$2" ] && { bad "$1 — $2 should not be there"; return; }
+  [ -e "$2" ] && { bad "$1 — $2 should not be there" "$1"; return; }
   ok "$1"
 }
 
