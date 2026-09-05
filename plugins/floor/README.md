@@ -827,8 +827,9 @@ clear.** No script judges prose, and none claims to.
 file is the whole contract: **any harness able to write these lines answers the same clause.** Floor
 writes none and names none.
 
-**Everything from here to *What the receipt cannot do* is what a producer is handed.** So no run's
-own answers belong inside it — a judge given them has been given its reply.
+**Everything from here through *What the receipt cannot do* is what a producer is handed.** So no
+run's own answers belong inside it — a judge given them has been given its reply. The block ends
+where *Monotonicity* begins, and a generator cutting it stops on that heading.
 
 One key per line, the value is the rest of the line, `#` comments and blanks ignored.
 
@@ -913,9 +914,9 @@ because the first it hears of either is the name on the file. Refusing that need
 the harness as an identity before the answer comes back, and `how` is prose for a person. #332
 leaves it open.
 
-**One producer is not two.** One harness outside this repository has written a receipt floor took,
-and the four breaks were driven through that file by hand, once. Every refusal the suite checks is
-still driven by fixtures the suite writes.
+**Every refusal the suite checks is driven by fixtures the suite writes.** A fixture is written by
+whatever is being tested. So these prove the reading holds, never that a producer elsewhere would
+write one floor could read.
 
 ---
 ### Monotonicity
@@ -1024,6 +1025,9 @@ checked them.
 **`requested_model` and `requested_effort` came out of this run's own ledger.** The brief named
 neither. The handoff had recorded the command that invoked the judge, and the judge read it back.
 That is what `requested_` means, and the only place the answer existed.
+
+**One producer is not two.** One harness, one call, one outcome. The four breaks were driven through
+that file by hand, once. Every refusal the suite checks is still a fixture's.
 
 ---
 

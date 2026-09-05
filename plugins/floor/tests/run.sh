@@ -510,8 +510,15 @@ a_run_of_silence_stops_the_audit
 #
 # That costs something real: a break written to protect one check can die at another and still read
 # as proof of the first. It happened to `needsfresh`, whose first shape required `context` and died
-# three checks above the one it was for. **Recording each break's killing assertion is the fix, and
-# the first snapshot needs an audit that finished clean** — which no run on this machine has.
+# three checks above the one it was for.
+#
+# **Recording each break's killing assertion is the fix, and a clean audit is not what stops it.**
+# `bin/gates.sh` runs this file, and floor exiting 0 means every break answered: a red suite exits 1,
+# a deadline too short exits 3, and a single MOOT sets `failed` to 3.
+#
+# What stops it is `timed` and `polled`. Both hard-redirect to `/dev/null`, and both serve
+# `suite_caught` and this file's own self-tests, so the plumbing moves with them. And a first
+# snapshot blesses whatever is true the day it is taken.
 #
 model_caught() {
   local said
