@@ -1,6 +1,6 @@
 # Contributing
 
-Twelve gates. Run them before you open a pull request:
+Thirteen gates. Run them before you open a pull request:
 
 ```bash
 sh bin/gates.sh                 # all twelve, here
@@ -148,7 +148,7 @@ no such bit.
 
 **What they do not check:** that `laravel-ddd`, `laravel-playbook`, `pest` or `product` still load,
 or that their skills say anything true. Those four ship no code, so there is nothing to run — but
-nothing here reads them either. Green means twelve gates passed. For those four plugins it does not
+nothing here reads them either. Green means thirteen gates passed. For those four plugins it does not
 mean the change works.
 
 **Whether their guidance has aged is answered, not gated.** Each README that teaches a version names
