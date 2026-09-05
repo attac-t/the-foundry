@@ -74,6 +74,11 @@ jobs:
       - name: The judge this repository authorises is the one it ships
         run: sh bin/judged.sh
 
+      # A byte nobody meant. This workflow's own runner held one for a day — a Windows em dash
+      # written raw — and every gate read past it. `audit` proves the detector, then scans.
+      - name: A byte no decoder can read
+        run: sh bin/bytes.sh audit
+
   # The gates above read files. This one runs the plugins that ship code, on each operating system a
   # user installs them on, because that is where both of them broke last: signal's hook was not
   # executable, so it died before reading a word, and kernel's nine hooks named a bare path with no
