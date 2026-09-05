@@ -4090,9 +4090,13 @@ a_receipt_is_read_and_not_believed() {
   # **A producer with no thread handle to name**, which is the case `context` was made optional for.
   #
   # The first receipt written here by something outside this repository left both keys out: the
-  # harness could see the reply it had produced and not the thread that carried it. Every other
-  # receipt in this suite names one, so `RECEIPT_REQUIRED` could grow `context` and every check
-  # above would stay green. **An optionality nothing breaks on is not a decision.**
+  # harness could see the reply it had produced and not the thread that carried it. **An optionality
+  # nothing breaks on is not a decision**, and this is the only check that breaks on it — every other
+  # receipt here names a thread.
+  #
+  # `needsfresh` is its mutant, and it breaks `fresh` rather than `context` on purpose. Requiring
+  # `context` changes what `rcpt.nocontext` is refused *for*, so it dies at that message three checks
+  # up and never arrives here.
   grep -v -e '^context ' -e '^fresh ' "$base" > "$tmp/rcpt.nothread"
 
   is    "a receipt naming no thread at all is still taken" \

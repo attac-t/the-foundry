@@ -505,6 +505,14 @@ a_run_of_silence_stops_the_audit
 #
 # `env`, because `bounded` runs its arguments and an inline assignment would not reach them.
 #
+# **It answers whether the suite went red, never which check did it.** `FOUNDRY_FAIL_FAST` stops at
+# the first failure, so the killing check is knowable — `bounded` throws the output away instead.
+#
+# That costs something real: a break written to protect one check can die at another and still read
+# as proof of the first. It happened to `needsfresh`, whose first shape required `context` and died
+# three checks above the one it was for. **Recording each break's killing assertion is the fix, and
+# the first snapshot needs an audit that finished clean** — which no run on this machine has.
+#
 model_caught() {
   local said
   bounded "$deadline" env RUNNER="$1/bin/run.sh" FOUNDRY_FAIL_FAST=1 bash "$root/tests/model.sh"
@@ -1693,10 +1701,15 @@ wreck_runner "a freshness answering neither yes nor no is caught" \
 # The other side of those two. Not a claim let through, but a field made compulsory.
 #
 # **A producer that cannot see its own thread handle writes neither key**, and the one harness
-# outside this repository that has written a receipt is exactly that producer. Requiring `context`
-# would refuse it. Every receipt this suite writes names a thread, so nothing above would notice.
-wreck_runner "a thread handle made compulsory is caught" \
-  needsthread "s#^RECEIPT_REQUIRED='run #RECEIPT_REQUIRED='context run #"
+# outside this repository that has written a receipt is exactly that producer. Requiring either key
+# refuses it.
+#
+# **`context` is the obvious break and it is the wrong one.** It changes what the receipt naming no
+# context is refused *for*, so it dies at that check's message three above and never reaches the one
+# it was written for. `fresh` leaves every other fixture alone: `maybefresh` and `stale` rewrite the
+# value and keep the key, and only the receipt naming neither key lacks it.
+wreck_runner "a thread claim made compulsory is caught" \
+  needsfresh "s#^RECEIPT_REQUIRED='run #RECEIPT_REQUIRED='fresh run #"
 
 wreck_runner "a round nobody can count is caught" \
   anyround 's#^refuse_a_round_that_is_not_a_count() {#refuse_a_round_that_is_not_a_count() { return 0;#'
