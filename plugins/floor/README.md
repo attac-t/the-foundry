@@ -672,8 +672,12 @@ What must be true for this run to be good. One file, in the run.
 ```
 clause  <id>  Gate|Judged|Decided  <text>
 pin     <id>  <target>  <ref>  <source>  <sha>
-gate    <id>  <command>
+gate    <id>  <command...>
+judge   <id>  <who>
 ```
+
+A command is the last field, so spaces and quotes need no parser. One `judge` line per member — a
+clause naming one mind is not a panel.
 
 | Kind | Truth | Checked by |
 |---|---|---|
