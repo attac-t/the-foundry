@@ -1856,7 +1856,7 @@ wreck_runner "a declared judgement nothing derives is caught" \
   nojudged 's#^    detect_judged | while_reading_judged#    false | while_reading_judged#'
 
 wreck_runner "a judged clause naming no judge is caught" \
-  nojudge 's#^        print_judges "\$id" "\$judge" >> "\$draft" || return 1$#        : >> "$draft" || return 1#'
+  nojudge 's#^        print_judges "\$id" "\$judge" "\$reaches" >> "\$draft" || return 1$#        : >> "$draft" || return 1#'
 
 wreck_runner "a judgement derived as a gate is caught" \
   judgedasgate 's#print_clause "\$id" Judged "\$text"#print_clause "$id" Gate "$text"#'
@@ -2031,6 +2031,55 @@ wreck_runner "a head adopted as the base it never was is caught" \
 # The producer signing off its own bar.
 wreck_runner "a worker accounting for its own ancestry is caught" \
   selfaccept 's#^refuse_self_accounting() {#refuse_self_accounting() { return 0;#'
+
+#
+# The runner asking the judge — #332's last box, and every refusal it added.
+#
+# **The command comes from the charter, and `callercmd` is the break that says so.** `set --` throws
+# the caller's arguments away before the guard reads them, so the verb accepts one and runs the
+# charter's anyway — a refusal turned into silence, which is how a caller starts naming judges.
+wreck_runner "a caller naming the judge's command is caught" \
+  callercmd 's#^judged() {#judged() { set --;#'
+
+# A charter with nothing to ask, and one whose judge nobody said how to reach. Each leaves the runner
+# with no command, and each used to have nowhere to say so.
+wreck_runner "a charter naming no judge, asked anyway, is caught" \
+  nobench 's#^    \[ -n "\$bench" \] ||.*#    :#'
+
+wreck_runner "a judge nobody said how to reach, run anyway, is caught" \
+  noreach 's#^    \[ -n "\$command" \] || { note "the charter says.*#    :#'
+
+# A judge whose command is not on this host. Stamping it as an answer poisons the ref for good, which
+# is the fault `stamp_command` names and this verb has its own copy of.
+wreck_runner "a judge that never ran, read as one that did, is caught" \
+  ranjudge 's#^    never_ran "\$answered".*#    :#'
+
+# The run rewriting the file its own judge runs, and grading itself with it.
+wreck_runner "a judge this run rewrote is caught" \
+  ownjudge 's#^refuse_a_judge_this_run_rewrote() {#refuse_a_judge_this_run_rewrote() { return 0;#'
+
+# A reach the declaration moved after the charter pinned it. Drift, exactly as a gate's command is,
+# and unreported it means the judge that answered is not the judge that was agreed.
+wreck_runner "a reach that moved since the charter is caught" \
+  reachdrift 's#^        moved_reaches "\$file"$#        :#'
+
+#
+# **The runner writes the binding half, and this is the break that proves it.**
+#
+# Blind it and the receipt holds only what the adapter wrote — so nothing binds the run, the clause
+# or the candidate, and the one refusal that stops a substitution is a key nobody said twice.
+wreck_runner "a runner that writes none of the receipt is caught" \
+  noncontext 's#^write_receipt_context() {#write_receipt_context() { return 0;#'
+
+# The first round of all, counted against a ledger that is not there yet. `awk` never reaches its
+# `END` on a missing file, so the count comes back empty and the brief says `round` and nothing more.
+wreck_runner "a first round counted against no ledger is caught" \
+  firstround 's#^    \[ -f "\$(evidence_file "\$1")" \] ||.*#    :#'
+
+# A verdict read off whether the receipt was recorded rather than what it said. Recording an
+# `unavailable` succeeds, and the clause it answers is still unmet.
+wreck_runner "a judged clause met by any receipt at all is caught" \
+  anyjudged 's#^    satisfied "\$dir" "\$text" "\$ref" judged "\$who"$#    true#'
 
 report_breaks
 

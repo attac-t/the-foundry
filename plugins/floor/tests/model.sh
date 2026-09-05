@@ -4235,6 +4235,239 @@ a_judgement_that_never_happened_is_recorded() {
 a_judgement_that_never_happened_is_recorded
 
 #
+# A judge, written as a repository would ship one.
+#
+# It never reaches a harness. What it stands for is the half floor does not write: the adapter's
+# name, what came back, and when. Every field the runner already wrote is left alone, because a key
+# said twice is refused — which is the check below that a substitution cannot pass.
+a_judge_that_approves() {
+  printf '#!/bin/sh
+printf "the fixture judge read [%%s]\\n" "$FOUNDRY_BRIEF" > "${FOUNDRY_RECEIPT%%.receipt}.report"
+printf "adapter a-fixture\\nrequested_model a-model\\ncontext a-thread\\nfresh yes\\n" >> "$FOUNDRY_RECEIPT"
+printf "report %%s\\ntime 2026-09-05T00:00:00Z\\nverdict %s\\n" \\
+  "$(cksum < "${FOUNDRY_RECEIPT%%.receipt}.report" | awk "{ print \\$1 }")" >> "$FOUNDRY_RECEIPT"
+%s' "${1:-approve}" "${2:-}"
+}
+
+# A repository declaring one judge, how it is reached, and a gate beside it.
+#
+# The directories are made after `make_repo`, never before: it refuses a name that already exists, so
+# a fixture that laid its own tree first would inherit whichever test made that name earlier.
+a_judged_repo() {
+  make_repo "$1" main && set_origin "$1" "https://gitlab.com/acme/$2.git" \
+    && mkdir -p "$1/.foundry" "$1/bin" \
+    && commit_file "$1" .foundry/gates 'tests  true
+' && commit_file "$1" bin/fake-judge.sh "$3" \
+    && commit_file "$1" .foundry/judged "$4"
+}
+
+#
+# The runner asks the judge — #332's last box.
+#
+# **The command comes from the charter.** `evidence receipt` reads a file somebody made; this runs
+# what the repository declared and reads the file that came out, so a caller can name neither the
+# judge nor how it is reached.
+#
+# Every field binding the work is written by the runner before the judge is asked, and the receipt
+# grammar's *said twice* is what stops an adapter restating one.
+#
+the_runner_asks_the_judge() {
+  a_judged_repo "$tmp/asked" asked "$(a_judge_that_approves)" 'reach  a-reviewer  sh bin/fake-judge.sh
+a-reviewer  a stranger can read it
+' || { skip "the runner asks — git could not make a repo here"; return; }
+
+  askrun=$(floor_new_as "$tmp/asked" ada@example.com "Asked")
+  floor "$tmp/asked" charter derive >/dev/null 2>&1
+
+  has "a declared reach derives into the judge's own record" \
+      "$(floor "$tmp/asked" charter)" "a-reviewer sh bin/fake-judge.sh"
+
+  floor "$tmp/asked" policy authorize 'https://gitlab.com/acme/asked.git' >/dev/null 2>&1
+  floor "$tmp/asked" targets add 'https://gitlab.com/acme/asked.git' main >/dev/null 2>&1
+  floor "$tmp/asked" open >/dev/null 2>&1
+  floor "$tmp/asked" gates >/dev/null 2>&1
+
+  is "a caller may not name the command" "$(code_of floor "$tmp/asked" judged 'sh -c true')" "2"
+  is "and green gates leave the clause unmet" "$(code_of floor "$tmp/asked" complete)" "15"
+
+  is "the runner asks, and the judge answers" "$(code_of floor "$tmp/asked" judged)" "0"
+  is "and with that the run may deliver"      "$(code_of floor "$tmp/asked" complete)" "0"
+
+  held=$(floor "$tmp/asked" evidence)
+  has "the record keeps what the adapter vouched for" "$held" "adapter=a-fixture"
+  has "and the round the runner counted"              "$held" "round=1"
+  has "and the commit the judge was pointed at"       "$held" "$(reviewed_at "$tmp/asked")"
+
+  #
+  # **The brief is the runner's, and the receipt says the judge answered that one.**
+  #
+  # Floor digested the file it wrote and recorded the digest at the handoff, so the two cannot differ
+  # by a caller's word. What the judge appends is checked against it.
+  wrote=$(cat "$(floor "$tmp/asked" path)"/judged/*.brief)
+  has   "the brief names the candidate"            "$wrote" "candidate $(reviewed_at "$tmp/asked")"
+  has   "and the base it is judged against"        "$wrote" "base $(reviewed_at "$tmp/asked")"
+  has   "and carries the bar it is judged against" "$wrote" "Judged a stranger can read it"
+  lacks "and hands the judge none of this run's own answers" "$wrote" "machine"
+
+  answer=$(cat "$(floor "$tmp/asked" path)"/judged/*.receipt)
+  has "the runner wrote the run into the receipt"    "$answer" "run $(basename "$askrun")"
+  has "and the candidate, before anything was asked" "$answer" "candidate $(reviewed_at "$tmp/asked")"
+  has "and the judge appended what it saw"           "$answer" "verdict approve"
+
+  #
+  # Round two, and the work has moved. **A refused judgement is answered by new work**, so a second
+  # round is a second invocation at a second commit and never a second pass inside one.
+  #
+  # It is also the only shape where the base and the candidate differ. A run that has committed
+  # nothing has no range between them, and a judge asked what changed reads the tree instead.
+  commit_file "$(only_slot "$(floor "$tmp/asked" path)/units/01/workspace")" LATER.md 'a later thought
+' >/dev/null 2>&1
+
+  is "a second invocation asks again, at the commit the work moved to" \
+     "$(code_of floor "$tmp/asked" judged)" "0"
+
+  again=$(cat "$(floor "$tmp/asked" path)"/judged/*.brief)
+  has     "the brief names the commit the work moved to" "$again" "candidate $(reviewed_at "$tmp/asked")"
+  lacks   "and a base that is no longer the same commit" "$again" "base $(reviewed_at "$tmp/asked")"
+  has     "and counts this as the second round"          "$again" "round 2"
+
+  carried=$(cat "$(floor "$tmp/asked" path)"/judged/*.receipt)
+  has "the receipt carries the round the runner counted" "$carried" "round 2"
+  has "and the verdict that came before it"              "$carried" "prior a-reviewer: approve"
+  has "and the ledger keeps both"                        "$(floor "$tmp/asked" evidence)" "round=2"
+}
+the_runner_asks_the_judge
+
+#
+# What the runner refuses rather than records.
+#
+# Each of these leaves the clause unmet, and none of them writes a `judged` row saying otherwise. A
+# runner that carried on would be the one thing #332 forbids: an answer nobody gave.
+#
+the_runner_refuses_before_it_records() {
+  a_judged_repo "$tmp/norun" norun "$(a_judge_that_approves)" 'reach  a-reviewer  no-such-command-here
+a-reviewer  a stranger can read it
+' || { skip "a judge that cannot run — git could not make a repo here"; return; }
+
+  ready_run "$tmp/norun" 'https://gitlab.com/acme/norun.git'
+
+  is "a judge whose command is not on this host answers nothing" \
+     "$(code_of floor "$tmp/norun" judged)" "21"
+
+  #
+  # **Read after the first invocation and no later.** Nothing had written a ledger when that brief
+  # went out, and the handoff it recorded makes one — so a second `judged` counts against a file the
+  # first did not have, and rewrites the brief with the answer this is asking for.
+  #
+  # `awk` handed a file that is not there never reaches its `END`, so the count came back empty and
+  # the first brief a judge was ever handed said `round` and nothing after it.
+  first=$(cat "$(floor "$tmp/norun" path)"/judged/*.brief)
+  has "and the brief it wrote counted this as round one" "$first" "round 1"
+
+  has   "the runner says it could not run, rather than recording a refusal" \
+        "$(floor_says "$tmp/norun" judged)" "could not run on this host"
+  has   "the handoff still says the bar went over" "$(floor "$tmp/norun" evidence)" "handed"
+  lacks "and nothing at all was recorded as judged" "$(floor "$tmp/norun" evidence)" "judged"
+
+  # A judge nobody said how to reach. The clause derives, and only a person can answer it.
+  a_judged_repo "$tmp/unreached" unreached "$(a_judge_that_approves)" 'a-reviewer  a stranger can read it
+' || { skip "a judge with no reach — git could not make a repo here"; return; }
+
+  ready_run "$tmp/unreached" 'https://gitlab.com/acme/unreached.git'
+
+  is  "a judge nobody said how to reach is refused" \
+      "$(code_of floor "$tmp/unreached" judged)" "7"
+  has "and it names the judge and the clause" \
+      "$(floor_says "$tmp/unreached" judged)" "how [a-reviewer] is reached"
+
+  # A charter with a gate and no judge at all. Nothing to ask, and it says which.
+  make_repo "$tmp/nopanel" main && set_origin "$tmp/nopanel" 'https://gitlab.com/acme/nopanel.git' \
+    && mkdir -p "$tmp/nopanel/.foundry" \
+    && commit_file "$tmp/nopanel" .foundry/gates 'tests  true
+' || { skip "a charter with no judge — git could not make a repo here"; return; }
+
+  ready_run "$tmp/nopanel" 'https://gitlab.com/acme/nopanel.git'
+
+  is  "a charter naming no judge has nothing to ask" "$(code_of floor "$tmp/nopanel" judged)" "8"
+  has "and says so rather than passing"              "$(floor_says "$tmp/nopanel" judged)" "names no judge"
+}
+the_runner_refuses_before_it_records
+
+#
+# What the runner records rather than believes.
+#
+# **A receipt the runner caused is read by the verb a person types.** Same keys, same refusals — so
+# an adapter cannot reach a satisfaction a hand-written receipt could not, and the field the runner
+# bound is the field a substitution is refused for.
+#
+the_runner_believes_no_more_than_a_person() {
+  a_judged_repo "$tmp/subst" subst \
+    '#!/bin/sh
+printf "ok\n" > "${FOUNDRY_RECEIPT%.receipt}.report"
+printf "candidate deadbeef\nadapter a-fixture\nreport 1\ntime 2026-09-05T00:00:00Z\nverdict approve\n" >> "$FOUNDRY_RECEIPT"
+' 'reach  a-reviewer  sh bin/fake-judge.sh
+a-reviewer  a stranger can read it
+' || { skip "an adapter that restates — git could not make a repo here"; return; }
+
+  ready_run "$tmp/subst" 'https://gitlab.com/acme/subst.git'
+
+  is    "an adapter restating what the runner bound is refused" \
+        "$(code_of floor "$tmp/subst" judged)" "37"
+  has   "and the refusal names the field it answered twice" \
+        "$(floor_says "$tmp/subst" judged)" "[candidate] is said twice"
+  lacks "and no judgement is recorded from it" "$(floor "$tmp/subst" evidence)" "judged"
+
+  #
+  # A harness the adapter could not reach. **Recorded, and it is not a verdict.**
+  a_judged_repo "$tmp/unreach" unreach "$(a_judge_that_approves unavailable 'exit 1')" \
+    'reach  a-reviewer  sh bin/fake-judge.sh
+a-reviewer  a stranger can read it
+' || { skip "an unreachable harness — git could not make a repo here"; return; }
+
+  ready_run "$tmp/unreach" 'https://gitlab.com/acme/unreach.git'
+  floor "$tmp/unreach" gates >/dev/null 2>&1
+
+  is  "a harness nobody reached leaves the clause unmet" \
+      "$(code_of floor "$tmp/unreach" judged)" "39"
+  has "and the ledger says which judge, and what happened" \
+      "$(floor "$tmp/unreach" evidence)" "a-reviewer: unavailable"
+  is  "and green gates do not answer in its place" "$(code_of floor "$tmp/unreach" complete)" "15"
+  has "and completion says nothing judged it" \
+      "$(floor "$tmp/unreach" complete 2>&1)" "never judged it"
+
+  #
+  # A run that rewrote the file its own judge runs.
+  #
+  # `gates` plants the base's copy and grades against that. A judge writes a receipt rather than
+  # exiting a code, so a substituted one leaves nobody able to say which copy answered — refused.
+  a_judged_repo "$tmp/rewrote" rewrote "$(a_judge_that_approves)" 'reach  a-reviewer  sh bin/fake-judge.sh
+a-reviewer  a stranger can read it
+' || { skip "a rewritten judge — git could not make a repo here"; return; }
+
+  ready_run "$tmp/rewrote" 'https://gitlab.com/acme/rewrote.git'
+  printf '#!/bin/sh\nexit 0\n' > "$(only_slot "$(floor "$tmp/rewrote" path)/units/01/workspace")/bin/fake-judge.sh"
+
+  is  "a judge this run rewrote is refused" "$(code_of floor "$tmp/rewrote" judged)" "7"
+  has "and the refusal names the file"      "$(floor_says "$tmp/rewrote" judged)" "bin/fake-judge.sh"
+
+  #
+  # A reach that moved after the charter pinned it. Drift, exactly as a gate's command is.
+  a_judged_repo "$tmp/reachdrift" reachdrift "$(a_judge_that_approves)" 'reach  a-reviewer  sh bin/fake-judge.sh
+a-reviewer  a stranger can read it
+' || { skip "a moved reach — git could not make a repo here"; return; }
+
+  ready_run "$tmp/reachdrift" 'https://gitlab.com/acme/reachdrift.git'
+  printf 'reach  a-reviewer  sh bin/other.sh\na-reviewer  a stranger can read it\n' \
+    > "$tmp/reachdrift/.foundry/judged"
+
+  has "a reach that moved since the charter is drift" \
+      "$(floor_says "$tmp/reachdrift" charter check)" "reaches elsewhere: a-reviewer"
+  is  "and the charter cannot be run against"  "$(code_of floor "$tmp/reachdrift" charter check)" "7"
+  is  "so the runner refuses before it asks"   "$(code_of floor "$tmp/reachdrift" judged)" "7"
+}
+the_runner_believes_no_more_than_a_person
+
+#
 # An artefact a repository says must be read cold before it ships.
 #
 # **It needs no new declaration.** A cold read is a judgement — somebody who did not write the file

@@ -1,7 +1,15 @@
 # What no command here can answer, and the panel that answers it.
 #
-# `judges  source  text`, comma separated, and each judge is one word. `.foundry/gates` holds the
-# half a command can settle. This holds the half it cannot.
+# `judges  text`, comma separated, and each judge is one word. `.foundry/gates` holds the half a
+# command can settle. This holds the half it cannot.
+#
+# **A `reach` line says how the runner asks one of them.** `reach  judges  command...`, and the
+# command is last so spaces and quotes need no parser. Without one a clause still derives and only a
+# person can answer it; with one, `run.sh judged` runs the command and reads what came back.
+#
+# **`reach` is a reserved first word**, so no judge may be called it. Two record kinds in one file
+# need a word telling them apart, and only the first field can carry one — the text is already the
+# line's tail, and a line holds one tail.
 #
 # **A member is a model at a bench**, written `<model>:<role>`. The role is the part played, and
 # Panel ships the parts. The model is who stands there.
@@ -17,5 +25,7 @@
 # this repository's choice and not a rule it ships.
 #
 # One member today, so this is a panel of one. A second model is the next piece of work.
+
+reach  codex:adversary  sh bin/judge.sh
 
 codex:adversary  a change to what a run may claim is judged by something that did not write it

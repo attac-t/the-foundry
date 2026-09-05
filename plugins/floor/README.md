@@ -133,6 +133,7 @@ sh bin/run.sh evidence handed "the interface is understandable" "A Reviewer" "a 
 sh bin/run.sh evidence verdict "the interface is understandable" "A Reviewer" approve "read in two minutes" 4e1f9c
 sh bin/run.sh evidence receipt ./judgement-receipt
 sh bin/run.sh gates
+sh bin/run.sh judged
 sh bin/run.sh source read 7
 sh bin/run.sh claim 7
 sh bin/run.sh release 7
@@ -170,6 +171,7 @@ ${FOUNDRY_HOME:-$HOME/.foundry}/runs/<date>-<slug>-<short id>/
 ├── delivery           the branch this run pushed, the commit it pushed, and where it landed
 ├── brief              the body a source carried — absent when `deliver` was handed none
 ├── substitutions      files graded as the base wrote them — absent when the run changed no gate
+├── judged/            what `judged` asked each judge, and what came back — one pair per clause
 ├── observations       what happened, one line each, and nothing granted by any of it
 ├── asides             what this run could not act on — written by `aside`, read by nothing
 ├── id                 this run's name, so a copied directory still knows it
@@ -673,11 +675,15 @@ What must be true for this run to be good. One file, in the run.
 clause  <id>  Gate|Judged|Decided  <text>
 pin     <id>  <target>  <ref>  <source>  <sha>
 gate    <id>  <command...>
-judge   <id>  <who>
+judge   <id>  <who>  <command...>
 ```
 
 A command is the last field, so spaces and quotes need no parser. One `judge` line per member — a
 clause naming one mind is not a panel.
+
+**A judge's command may be absent and a gate's may not.** A gate with no command grades nothing, so
+one is refused. A judge with no command is a clause only a person can answer, which is every judged
+clause floor had before a runner could ask one.
 
 | Kind | Truth | Checked by |
 |---|---|---|
@@ -784,7 +790,7 @@ that no command can answer it.
 | Kind | Answered by | Written by |
 |---|---|---|
 | `Gate` | `machine` | `gates`, and `evidence record` for a name no pin holds |
-| `Judged` | `judged` | `evidence verdict`, or `evidence receipt` |
+| `Judged` | `judged` | `judged`, or `evidence verdict` and `evidence receipt` by hand |
 | `Decided` | `human` | an answer where the item is |
 
 **A green gate does not satisfy a `Judged` clause**, whatever name it is recorded under. That is
@@ -802,6 +808,10 @@ in §2.6 marked.
 
 **And a `Judged` clause is derived from a declaration, never guessed.** `.foundry/judged` declares
 one — `judge  text` — and this file is the source, so every clause here pins to it.
+
+**A `reach  judge  command...` line beside it says how the runner asks that judge.** `reach` is a
+reserved first word, so no judge may be called one. Two record kinds in one file need a word to tell
+them apart, and only the first field can carry it — the clause text is already the line's tail.
 
 **A cold read reuses that and adds nothing.** Somebody who did not write a file says whether they
 understood it. That is a judgement, so one line carries it:
@@ -881,6 +891,72 @@ none would be made to write `context unknown`, which reads exactly like a handle
 the failure the missing `model` key exists to prevent. So the shape is gated and the truth is not.
 `fresh` needs a context to be about, and it says `yes` or `no`. **Floor cannot verify a handle it
 did not issue.**
+
+### The runner asks, and writes half the receipt
+
+`run.sh judged` runs the command the charter pins for each judge, and records what came back. **The
+command comes from the charter and never from the caller** — `judged` takes no argument at all, which
+is the same shape `gates` has and for the same reason.
+
+Four steps, and floor does three of them:
+
+| | |
+|---|---|
+| floor writes the brief | the run, the clause, the candidate, the base, the round, and the charter — into `judged/<id>.brief` |
+| floor records the handoff | with that file's digest, so the bar going over is written down first |
+| floor writes the binding half of the receipt | into `judged/<id>.receipt`, before anything is asked |
+| the judge appends what it saw | `adapter`, `verdict`, `report`, `time`, and whatever else it can vouch for |
+
+The command is handed two variables and nothing else:
+
+```
+FOUNDRY_BRIEF     the file to read. Floor digested this one, and the receipt answers that digest
+FOUNDRY_RECEIPT   the file to append to. Floor has already written the fields it knows
+```
+
+**A key floor wrote is a key the judge may not restate.** `run`, `clause`, `candidate`, `role`,
+`brief`, `round` and `prior` are the runner's. The grammar already calls a key said twice two
+answers, so an adapter writing its own `candidate` is refused rather than believed. **That refusal is
+the whole mechanism**, and there is no second one.
+
+**The receipt is read by the verb a person types.** Same keys, same refusals: a runner cannot reach a
+satisfaction a hand-written receipt could not.
+
+| | Exit |
+|---|---|
+| the charter names no judge | 8 |
+| a judge nobody said how to reach, or a run that rewrote the file its judge runs | 7 |
+| the command is not on this host, or a signal killed it | 21 |
+| a judge answered and did not approve, or could not answer at all | 39 |
+
+**The base is named beside the candidate**, because a judge asked what changed needs both ends. A
+run whose base is its own head has no range between them, and what such a judge reads is the tree.
+
+**The receipt decides, not the command's exit code.** A judge that exits non-zero has its words put
+on stderr and its receipt read anyway, because a harness that failed and said `unavailable` in the
+file has told floor more than its exit code did. Only 126, 127 and a signal are read as *nothing
+ran*, which is what `evidence record` already does.
+
+**The handoff is written before the judge is asked**, so a judge that never ran still leaves a row
+saying the bar went over. That is the point of `handed`: whoever handed it over said so first. What
+is absent is the verdict, and absence is what refuses.
+
+**Nothing bounds how long a judge may take.** `gates` bounds none either. A judge that hangs hangs
+the run, and the remedy is the caller's.
+
+**One judge with no reach stops the verb, and that is deliberate.** A charter mixing a reachable
+judge with one only a person can answer cannot be run through `judged` at all. Skipping the second
+would leave its clause unmet and look exactly like a judge that refused, so the runner names the
+cause instead.
+
+**Rounds are counted, never bounded.** The round is every verdict that judge already gave on that
+clause, plus one — so round two is a second invocation at a second candidate, because a refused
+judgement is answered by new work. **Nothing stops at a limit**, and #332 still owns that box.
+
+**A judge the run rewrote is refused, and a judge the run added is not.** `gates` plants the base's
+copy and grades against it. A judge writes a receipt rather than exiting a code, so a substituted one
+leaves nobody able to say which copy answered. The refusal reads what the base holds, so a script
+this run introduced has nothing to compare against. #341 owns the rest of that seam.
 
 ### What a receipt is refused for
 
