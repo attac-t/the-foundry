@@ -66,7 +66,7 @@ carries `reach`, and `@adapter <id> <digest>` resolves only under the plugin. Ne
 meet. A shipped adapter this host lacks refuses at 21, and content the pin does not name refuses
 at 40.
 
-A twelfth gate, `judged`, holds this repository's own declaration to that rule. It goes red on a
+A gate named `judged` holds this repository's own declaration to that rule. It goes red on a
 drifted pin. Red too on an adapter this tree does not ship, and on a declaration naming none.
 
 **What this still does not give a consumer.** A repository onboarded before the adapter existed has
