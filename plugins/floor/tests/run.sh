@@ -1469,6 +1469,16 @@ wreck_runner "a gate whose output becomes a record is caught" \
 # still nothing to deliver from.
 wreck_runner "a gate that could not run recorded as one that failed is caught" \
   ranfail 's#never_ran "$result" *&& #false \&\& #'
+
+# The same rule, one arm at a time. `ranfail` takes the whole guard away, and the 127 check catches
+# it — so it says nothing about 126. Every check this suite held before the 126 one passed against
+# this mutant.
+#
+# Anchored on the definition, like `killedgate`. A mutation naming the words around a rule dies the
+# day somebody rewrites them, and five here did.
+wreck_runner "a gate the host could not execute recorded as one that failed is caught" \
+  nonexec 's#^never_ran() .*#never_ran() { [ "$1" -eq 127 ]; }#'
+
 # nobody introduced, which is #66's test failing — and the check that used to hold this ground read
 # `charter check`, a verb with no question in it.
 wreck_runner "a run asking when nothing blocks is caught" \

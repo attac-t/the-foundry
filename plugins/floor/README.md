@@ -96,8 +96,9 @@ Two need a host. `source read` needs a work source that can answer — otherwise
 says so. `deliver` needs credentials to push, and says so at exit 19.
 
 A machine with `sh`, `awk` and `git` runs every verb here. **What a gate command needs is the
-charter's, not floor's** — a gate may reach for anything, and on a host without it `gates` refuses at
-21 naming the command rather than recording a failure that poisons the ref.
+charter's, not floor's** — a gate may reach for anything. A host without it refuses at 21, and so
+does one that has it and cannot run it. `gates` names the command rather than recording a failure
+that poisons the ref.
 
 ---
 
