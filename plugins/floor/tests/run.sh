@@ -494,7 +494,7 @@ suite_caught() {
 # One line, because `FOUNDRY_FAIL_FAST` stops a suite at its first failure. **Three answers that are
 # not a rule the break broke**, and `refuse_a_record_the_audit_cannot_use` refuses all three:
 #
-#   nothing  a red no check answered for — a `skip` at the tally, or a suite that died first
+#   unnamed  a red no check answered for — a `skip` at the tally, or a suite that died first
 #   several  fail-fast not reaching the suite, so the first of many is recorded as the one
 #   setup    `broke` — a fixture that would not build, which is red and is not a rule
 #
@@ -2323,6 +2323,25 @@ refuse_a_record_the_audit_cannot_use() {
   failed=1
 }
 refuse_a_record_the_audit_cannot_use
+
+#
+# A file with no rows answers `ok` to everything above, so the row above proves nothing on it.
+#
+# `remember_the_killer` appends one line per break the parent took a verdict for. A break that went
+# MOOT or died at `bad` writes none, and both of those are red on their own — so an empty file means
+# no break was recorded at all, which is a harness that ran nothing rather than a tree that passed.
+#
+refuse_a_record_with_no_rows() {
+  [ -s "$killed" ] || {
+    printf '  FAIL  no break recorded a killing check, so every reading above is of an empty file
+'
+    failed=1
+    return
+  }
+  printf '  ok    the record holds a row, so the readings above are of something
+'
+}
+refuse_a_record_with_no_rows
 say_when_two_breaks_share_a_check
 
 #
