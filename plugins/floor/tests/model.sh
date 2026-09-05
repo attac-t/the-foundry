@@ -2527,6 +2527,19 @@ a_gate_the_host_cannot_execute() {
 
   ready_run "$tmp/nx" 'https://github.com/acme/nx.git'
 
+  #
+  # The number, before anything reads a refusal. 21 and *could not run on this host* are what the
+  # 127 sibling gets too. Neither one can say which arm ran.
+  #
+  # Measured: rename the directory and this fixture answers 127. Both checks below stayed green,
+  # and the suite reported 825 passed. A check named for 126, certifying nothing about it.
+  #
+  # In the workspace, never in `$tmp/nx`. A clone that did not materialise the directory is one way
+  # this degenerates. The source repository would still hold it and answer 126.
+  work=$(only_slot "$(floor "$tmp/nx" path)/units/01/workspace")
+  is "the tree the gate graded answers 126, not 127" \
+     "$( cd "$work" 2>/dev/null && code_of sh -c './tools/check' )" "126"
+
   is  "a gate the shell found and could not execute refuses on its own code" \
       "$(code_of floor "$tmp/nx" gates)" "21"
 
@@ -2534,6 +2547,10 @@ a_gate_the_host_cannot_execute() {
   # directory*. A check reading `why` would split two hosts that agree.
   has "and says it never ran, rather than that it failed" \
       "$(floor_says "$tmp/nx" gates)" "could not run on this host"
+
+  # The harm the guard exists to stop, and `a_gate_the_host_cannot_run` asks it too. A `machine` row
+  # at this ref is one `satisfied` can never take back.
+  is "and stamps nothing at that ref" "$(floor "$tmp/nx" evidence)" ""
 }
 a_gate_the_host_cannot_execute
 
