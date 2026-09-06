@@ -27,12 +27,16 @@ can succeed while the commit is attributed wrongly. It did.
 **Only one of the two is loud when it breaks.** A push refused is obvious; an address nobody owns
 looks exactly like a commit that worked.
 
-**So read `gh auth status` before the first write of a session, and after any refusal.** It names
-the active account in one line. Nothing else will.
+**So find out which account your writes will carry, before the first one.** Nothing announces it,
+and the quiet half is the one that lasts.
 
-**An issue filed under the wrong account cannot be moved.** GitHub offers no way to change an
-author, so the only repair is to delete the thread and lose it. That makes this the cheapest check
-in the file and the most expensive one to skip.
+Today that is `gh auth status`, and it answers in a line. **The command belongs to the adapter; the
+discipline does not** — another forge answers the same question its own way, and the rule outlives
+the swap.
+
+**An issue filed under the wrong account cannot be moved.** No forge here offers a way to change
+an author, so the only repair is to delete the thread and lose it. That makes this the cheapest
+check in the file and the most expensive one to skip.
 
 Eighty-one commits and four issues here carry the read-only account. **Two of those four were filed
 by a session that never looked**, and one of them the same day this line was written.
