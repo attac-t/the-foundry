@@ -8,6 +8,8 @@
 #               written raw. Every editor shows it as a question mark and no tool here objected
 #   U+FFFD      a character that decodes cleanly and already means *something was lost here*.
 #               Eleven reached a branch in one commit, five of them inside messages a person reads
+#   a return     a carriage return, which decodes fine and stops a shipped script running. `bash`
+#               reads it as part of the last word, so a hook dies mid-parse and exits 2
 #
 # **Neither is ever wanted, so the bar is zero and no threshold has to be argued.**
 #
@@ -35,6 +37,7 @@ LOST=$(printf '\357\277\275')
 text=
 unreadable=
 lost=
+returned=
 
 main() {
     ensure_the_tree_reads
@@ -46,6 +49,7 @@ main() {
 
     unreadable=$(files_no_decoder_can_read)
     lost=$(lines_that_lost_a_character)
+    returned=$(files_holding_a_carriage_return)
     verdict
 }
 
@@ -103,19 +107,38 @@ files_no_decoder_can_read() {
     done
 }
 
+#
+# `.gitattributes` pins `eol=lf` in the working tree and cannot speak for what was committed. This
+# reads what was committed.
+#
+# **No pattern.** `tr` deletes the byte and `cmp` says whether anything went, so nothing here
+# holds an escape a shell could eat — which is exactly how one got into a shipped script.
+#
+# **It costs two processes a file.** On this tree that is 23 seconds to 88 on Git Bash, and about
+# a second under WSL, where the gate runs. A single `awk` would do it in one process and would
+# need the escape back.
+#
+files_holding_a_carriage_return() {
+    printf '%s\n' "$text" | while read -r file; do
+        [ -n "$file" ] || continue
+        tr -d '\r' < "$file" | cmp -s - "$file" || printf '%s\n' "$file"
+    done
+}
+
 lines_that_lost_a_character() {
     git grep -n -I -e "$LOST" -- . 2>/dev/null
 }
 
 verdict() {
-    [ -z "$unreadable" ] && [ -z "$lost" ] && {
-        printf 'PASS — %d tracked text files decode, and none says a character was lost.\n' \
+    [ -z "$unreadable" ] && [ -z "$lost" ] && [ -z "$returned" ] && {
+        printf 'PASS — %d tracked text files decode, hold no carriage return, and say no character was lost.\n' \
             "$(printf '%s\n' "$text" | wc -l)"
         return 0
     }
 
     report_files_no_decoder_can_read
     report_lines_that_lost_a_character
+    report_files_holding_a_carriage_return
     return 1
 }
 
@@ -126,6 +149,16 @@ report_files_no_decoder_can_read() {
         printf '  FAIL  %s is not UTF-8\n' "$file"
     done
     printf '        Find the byte with: iconv -f UTF-8 -t UTF-8 < FILE > /dev/null\n'
+}
+
+report_files_holding_a_carriage_return() {
+    [ -n "$returned" ] || return 0
+
+    printf '%s\n' "$returned" | while read -r file; do
+        printf '  FAIL  %s holds a carriage return\n' "$file"
+    done
+    printf '        A shipped script does not run with one: bash reads it as part of the last\n'
+    printf '        word, and a hook that dies mid-parse exits 2. See .gitattributes.\n'
 }
 
 report_lines_that_lost_a_character() {

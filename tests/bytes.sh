@@ -126,6 +126,20 @@ a_binary_file_that_is_not_utf8_is_left_alone() {
     lacks 'and the file is not named' "$out" 'logo.png'
 }
 
+# `.gitattributes` pins the working tree and says nothing about what was committed. A shipped
+# script with one of these does not run at all.
+a_carriage_return_fails() {
+    d=$(a_repo_holding_the_gate cr)
+    printf 'a line\r\n' >> "$d/README.md"
+    git -C "$d" add -A
+    git -C "$d" commit -qm cr
+
+    out=$(cd "$d" && sh bin/bytes.sh 2>&1); rc=$?
+
+    is 'a carriage return exits 1' "$rc" 1
+    has 'and names the file' "$out" 'README.md holds a carriage return'
+}
+
 a_tree_that_is_no_checkout_exits_3() {
     d=$tmp/bare
     mkdir -p "$d/bin"
@@ -142,6 +156,7 @@ main() {
     a_lost_character_fails
     a_binary_file_is_left_alone
     a_file_no_decoder_can_read_fails
+    a_carriage_return_fails
     a_binary_file_that_is_not_utf8_is_left_alone
     an_untracked_file_is_not_graded
     an_uncommitted_edit_is_graded
