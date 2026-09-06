@@ -19,13 +19,18 @@ Floor's suite does it. Nothing outside `tests/` may.
 A checkout with no identity is caught earlier: `floor`'s `join.sh` refuses and says what to run. It
 is not commit time's job.
 
-## `gh` and git are two identities
+## The forge and git are two identities
 
-More than one account can be signed in. `gh auth switch` moves `gh` and does not move git, so a push
-can succeed while the commit is attributed wrongly. It did.
+More than one account can be signed in. Switching the forge leaves git where it was, so a push can
+succeed while the commit is attributed wrongly. It did.
 
-**Only one of the two is loud when it breaks.** A push refused is obvious; an address nobody owns
-looks exactly like a commit that worked.
+**Only one of the two is loud when it breaks.** A push refused is obvious. An address nobody owns
+looks like a commit that worked.
+
+**So ask each of the two, apart, before the first write.** Neither answers unasked.
+
+**A wrong author cannot be fixed.** No forge in use can change one, so the only repair is to delete
+the thread. Eighty-one commits and four issues here carry the wrong account.
 
 ## Never in an issue
 
