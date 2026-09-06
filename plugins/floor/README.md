@@ -871,7 +871,7 @@ one — `judge  text` — and this file is the source, so every clause here pins
 **A `reach  judge  command...` line beside it says how the runner asks that judge.** A
 `rounds  judge  n` line says how often it may be asked. `reach` and `rounds` are reserved first
 words, so no judge may be called either. Three record kinds in one file need a word to tell them
-apart, and only the first field can carry it — the clause text is already the line's tail.
+apart, and only the first field can carry it. The clause text is already the line's tail.
 
 ### A repository owns the choice of judge, not the code that reaches one
 
@@ -1116,7 +1116,7 @@ would leave its clause unmet and look exactly like a judge that refused, so the 
 cause instead.
 
 **Rounds are counted, and a charter may bound them.** The round is every verdict that judge already
-gave on that clause, plus one — so round two is a second invocation at a second candidate, because a
+gave on that clause, plus one. Round two is a second invocation at a second candidate, because a
 refused judgement is answered by new work.
 
 **`rounds  judge  n` in `.foundry/judged` is the ceiling.** It derives into a record of its own,
@@ -1130,17 +1130,17 @@ deadlock and does not ask: no brief is written, no handoff, and nothing runs.
 | a limit edited into the run's own charter | drift. `check` says `bounded elsewhere` and `judged` refuses at 7 before it asks anybody |
 
 **The ceiling is the charter's, exactly as a gate's command is.** `judged` takes no argument, so no
-caller sets one; and `judged` runs `check` before it asks, so no worker buys itself a round by
-editing the charter it is graded against. Raising it is a commit to `.foundry/judged`.
+caller sets one. It runs `check` before it asks, so no worker raises its own by editing the charter
+it is graded against. Raising it is a commit to `.foundry/judged`.
 
-**A deadlock is recorded as one, and the reader that tells it from silence was already there.** The
-row carries code 3 — the code a receipt saying `deadlock` maps to — so `complete` says *never judged
-it* rather than *no approval from* or *refused here*. **Three facts, three remedies**, and this one
-is answered by whoever owns the budget.
+**A deadlock is recorded as one, and the reader that tells it apart was already there.** The row
+carries code 3 — what a receipt saying `deadlock` maps to. So `complete` says *never judged it*, not
+*no approval from* and not *refused here*. **Three facts, three remedies**, and this one is answered
+by whoever owns the budget.
 
-**It is recorded at the commit the run stands on**, so a run that commits again and does not re-ask
-reads as silent until it does. That is how every other verdict in this ledger behaves, and the
-remedy is the same: run the verb.
+**It is recorded at the commit the run stands on.** A run that commits again and does not re-ask
+reads as silent until it does. Every other verdict in this ledger behaves that way, and the remedy
+is the same: run the verb.
 
 **A judge the run rewrote is refused, and a judge the run added is not.** `gates` plants the base's
 copy and grades against it. A judge writes a receipt rather than exiting a code, so a substituted one
