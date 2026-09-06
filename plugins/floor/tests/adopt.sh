@@ -260,6 +260,7 @@ has "and it says there was no pin to move"              "$(adopt_at "$tmp/clause
 # --- names a record cannot hold ---
 
 is "the reserved first word is not a judge" "$(code_of adopt_at "$tmp/plain" adopt reach a-shipped)" "2"
+is "nor is the second one"                  "$(code_of adopt_at "$tmp/plain" adopt rounds a-shipped)" "2"
 is "nor is a name holding a space"          "$(code_of adopt_at "$tmp/plain" adopt 'two words' a-shipped)" "2"
 is "nor is an adapter name with a path in it" \
    "$(code_of adopt_at "$tmp/plain" adopt ok:one ../../bin/run)" "2"
@@ -295,5 +296,15 @@ adopt_at "$tmp/ended" adopt ok:one a-shipped >/dev/null 2>&1
 
 is "a declaration that did end gains no blank line" \
    "$(awk 'END { print NR }' "$tmp/ended/.foundry/judged")" "2"
+
+# --- the repository that ships the adapter ---
+#
+# Floor's README said to change into the plugin directory and run it there. Followed word for word,
+# a judge was declared in the plugin and the command exited 0.
+
+is "adopting from inside the shipping repository is refused"    "$(cd "$root" && sh bin/adopt.sh adopt ok:one a-shipped >/dev/null 2>&1; printf '%s' "$?")" "1"
+has "and it names the tree it would have written to"     "$(cd "$root" && sh bin/adopt.sh adopt ok:one a-shipped 2>&1)" "shipping the adapter"
+has "and it gives the command that works"     "$(cd "$root" && sh bin/adopt.sh adopt ok:one a-shipped 2>&1)" "by its full path"
+lacks "and it writes nothing"       "$(cd "$root" && git status --porcelain -- .foundry 2>/dev/null)" "judged"
 
 summary "adopt"

@@ -7,9 +7,13 @@
 # command is last so spaces and quotes need no parser. Without one a clause still derives and only a
 # person can answer it; with one, `run.sh judged` runs the command and reads what came back.
 #
-# **`reach` is a reserved first word**, so no judge may be called it. Two record kinds in one file
-# need a word telling them apart, and only the first field can carry one — the text is already the
-# line's tail, and a line holds one tail.
+# **A `rounds  judge  n` line says how often that judge may be asked**, on each clause it sits on.
+# There is none below, so every judge here is asked for ever. Writing one is how a repository says
+# when a disagreement has stopped moving, and raising it later is another commit to this file.
+#
+# **`reach` and `rounds` are reserved first words**, so no judge may be called either. Three record
+# kinds in one file need a word telling them apart, and only the first field can carry one — the
+# text is already the line's tail, and a line holds one tail.
 #
 # **A member is a model at a bench**, written `<model>:<role>`. The role is the part played, and
 # Panel ships the parts. The model is who stands there.
@@ -35,3 +39,4 @@
 reach  codex:adversary  @adapter codex a758b76d7ec5383720966deb4189541f0628ac88
 
 codex:adversary  a change to what a run may claim is judged by something that did not write it
+reach  a-model:adversary  @adapter codex a758b76d7ec5383720966deb4189541f0628ac88

@@ -4335,8 +4335,136 @@ a-reviewer  a stranger can read it
   has "the receipt carries the round the runner counted" "$carried" "round 2"
   has "and the verdict that came before it"              "$carried" "prior a-reviewer: approve"
   has "and the ledger keeps both"                        "$(floor "$tmp/asked" evidence)" "round=2"
+
+  # Two rounds and no ceiling, which is what every charter derived before #526 held. The record for
+  # one is written only when a repository asks for one, so absence here is the unbounded answer.
+  lacks "a charter bounding nothing holds no limit at all" "$(floor "$tmp/asked" charter)" "rounds "
 }
 the_runner_asks_the_judge
+
+#
+# A round limit the charter pins — #526, and #332's last open box.
+#
+# **The count was already there and the ceiling was not.** `next_round` counts every verdict a judge
+# gave on a clause, and nothing read that number against anything — so a judge answering `revise`
+# could be asked for ever, and the record said only that the work was still moving.
+#
+# The judge here always says `revise`. Nothing but the limit can stop it, which is what makes every
+# check below break on the limit rather than on the judge.
+#
+a_round_limit_the_charter_pins() {
+  a_judged_repo "$tmp/bounded" bounded "$(a_judge_that_approves revise)" \
+    'reach  a-reviewer  sh bin/fake-judge.sh
+rounds  a-reviewer  2
+a-reviewer  a stranger can read it
+' || { skip "a round limit — git could not make a repo here"; return; }
+
+  ready_run "$tmp/bounded" 'https://gitlab.com/acme/bounded.git'
+  floor "$tmp/bounded" gates >/dev/null 2>&1
+
+  bid=$(clause_of 'a stranger can read it')
+  bar=$(floor "$tmp/bounded" charter)
+  has "a declared limit derives into a record of its own" "$bar" "rounds $bid a-reviewer 2"
+  has "and the judge's record is untouched beside it"     "$bar" "judge $bid a-reviewer sh bin/fake-judge.sh"
+
+  is "a caller may not raise it" "$(code_of floor "$tmp/bounded" judged 9)" "2"
+
+  #
+  # Two rounds, each at its own commit. A refused judgement is answered by new work, so the second
+  # round is a second invocation at a second candidate — the shape the limit has to count.
+  is "the first round is asked, and the judge asks for another" \
+     "$(code_of floor "$tmp/bounded" judged)" "39"
+
+  commit_file "$(only_slot "$(floor "$tmp/bounded" path)/units/01/workspace")" ONE.md 'a first fix
+' >/dev/null 2>&1
+
+  is  "the second round is asked too"  "$(code_of floor "$tmp/bounded" judged)" "39"
+  has "and the brief counted it"       "$(cat "$(floor "$tmp/bounded" path)"/judged/*.brief)" "round 2"
+
+  commit_file "$(only_slot "$(floor "$tmp/bounded" path)/units/01/workspace")" TWO.md 'a second fix
+' >/dev/null 2>&1
+
+  #
+  # The third. **The judge is never run**, so the brief it would have been handed is never written
+  # and no handoff is recorded — the two things a rerun of the judge could not leave behind.
+  is  "a run at the limit stops rather than asking again" \
+      "$(code_of floor "$tmp/bounded" judged)" "39"
+  has "and says the charter is what stopped it" \
+      "$(floor_says "$tmp/bounded" judged)" "the 2 rounds this charter allows"
+  has "and the brief still names the round the judge last read" \
+      "$(cat "$(floor "$tmp/bounded" path)"/judged/*.brief)" "round 2"
+  is  "and nothing says the bar went over a third time" \
+      "$(floor "$tmp/bounded" evidence | awk -F'\t' '$2 == "handed"' | wc -l | tr -d ' ')" "2"
+
+  held=$(floor "$tmp/bounded" evidence)
+  has "the ledger records a deadlock, in words" "$held" "a-reviewer: deadlock"
+  has "and what the charter allowed"            "$held" "the charter allows 2 rounds"
+
+  #
+  # Stuck, approved and refused are three facts with three remedies, and completion tells them apart
+  # at the commit it would deliver. Nothing new stores that: `stopped` already reads code 3.
+  said=$(floor "$tmp/bounded" complete 2>&1)
+  is    "and the run may not deliver"                  "$(code_of floor "$tmp/bounded" complete)" "15"
+  has   "completion says the judgement never happened" "$said" "never judged it"
+  lacks "not that the judge is yet to answer"          "$said" "no approval from"
+  lacks "and not that the judge said no"               "$said" "refused here"
+
+  #
+  # The ceiling raised where nothing derived it. **This is what makes the limit the charter's.**
+  # `judged` checks before it asks anybody, so a record edited in the run's own charter buys no
+  # round — exactly as a gate's command is held to the file that yielded it.
+  raised=$(charter_of "$(floor "$tmp/bounded" path)")
+  sed "s|^rounds $bid a-reviewer 2\$|rounds $bid a-reviewer 9|" "$raised" > "$tmp/bounded.raised" \
+    && cp "$tmp/bounded.raised" "$raised"
+
+  has "a ceiling raised in the charter is drift" \
+      "$(floor_says "$tmp/bounded" charter check)" "bounded elsewhere: a-reviewer"
+  is  "and the charter cannot be run against"    "$(code_of floor "$tmp/bounded" charter check)" "7"
+  is  "so nobody buys a round by editing it"     "$(code_of floor "$tmp/bounded" judged)" "7"
+
+  # Deleted outright, which leaves nothing of its own to read. The finding is driven from the judge's
+  # record for that reason, and a reader driven from the limits would see nothing at all here.
+  grep -v '^rounds ' "$raised" > "$tmp/bounded.gone" && cp "$tmp/bounded.gone" "$raised"
+  has "a ceiling deleted from the charter is drift too" \
+      "$(floor_says "$tmp/bounded" charter check)" "bounded elsewhere: a-reviewer"
+}
+a_round_limit_the_charter_pins
+
+#
+# A ceiling no charter may hold, refused before one holds it.
+#
+# **A limit that is not a count is wrong everywhere**, the way a pin that is not a digest is. It says
+# something about the declaration and nothing about this machine, so no person is ever asked to
+# approve a bar that could not be reached from anywhere.
+#
+a_round_limit_that_is_not_a_count_never_reaches_a_charter() {
+  a_judged_repo "$tmp/uncounted" uncounted "$(a_judge_that_approves)" \
+    'reach  a-reviewer  sh bin/fake-judge.sh
+rounds  a-reviewer  none
+a-reviewer  a stranger can read it
+' || { skip "a limit that is not a count — git could not make a repo here"; return; }
+
+  floor_new_as "$tmp/uncounted" ada@example.com "Uncounted" >/dev/null
+  is  "a word where a count belongs never reaches a charter" \
+      "$(code_of floor "$tmp/uncounted" charter derive)" "6"
+  has "and the refusal names the judge and what it said" \
+      "$(floor_says "$tmp/uncounted" charter derive)" "a-reviewer is allowed [none] rounds"
+  is  "and nothing was written"  "$(floor "$tmp/uncounted" charter)" ""
+
+  # Zero with the rest. A judge nobody may ask once is a clause nothing can satisfy, and a repository
+  # wanting that says so by deleting the judge. A second run, because its base is the new commit.
+  commit_file "$tmp/uncounted" .foundry/judged 'reach  a-reviewer  sh bin/fake-judge.sh
+rounds  a-reviewer  0
+a-reviewer  a stranger can read it
+' >/dev/null 2>&1
+  floor_new_as "$tmp/uncounted" ada@example.com "Uncounted Again" >/dev/null
+
+  is  "a limit of zero never reaches one either" \
+      "$(code_of floor "$tmp/uncounted" charter derive)" "6"
+  has "and it is refused as the count it is not" \
+      "$(floor_says "$tmp/uncounted" charter derive)" "a-reviewer is allowed [0] rounds"
+}
+a_round_limit_that_is_not_a_count_never_reaches_a_charter
 
 #
 # What the runner refuses rather than records.
