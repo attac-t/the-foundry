@@ -765,6 +765,31 @@ a_deadline_is_not_an_answer
 a_deadline_without_timeout_answers_the_same
 a_suite_that_never_answered_caught_nothing
 a_run_of_silence_stops_the_audit
+
+#
+# A backgrounded break counts nowhere else. `moot` raises `never_ran` inside the break's own
+# subshell and it dies there, so `report_verdict` reading the file afterwards is the only place
+# left. This proves that reading counts, which the closing line cannot prove about itself.
+#
+# It restores both globals: a self-test that leaves `failed` at 3 would end the run it is checking.
+#
+a_moot_read_from_a_file_is_counted() {
+  local was=$never_ran keep_failed=$failed
+
+  mkdir -p "$tmp/verdict"
+  printf '  MOOT  a break that reported nothing\n' > "$tmp/verdict/selftest"
+  report_verdict selftest >/dev/null
+
+  [ "$never_ran" -eq $((was + 1)) ] \
+    && printf '  ok    a MOOT read from a verdict file is counted\n' \
+    || bad "a MOOT read from a verdict file was not counted"
+
+  rm -f "$tmp/verdict/selftest"
+  never_ran=$was
+  failed=$keep_failed
+}
+a_moot_read_from_a_file_is_counted
+
 a_killer_is_named_by_the_check_that_wrote_it
 a_suite_is_read_under_fail_fast
 a_shared_killer_is_reported_with_the_breaks_that_share_it
@@ -833,6 +858,11 @@ break_verdict() {
 # the shape the `case` below reads, and the name a break is remembered by stays the name it declared
 # — a line composed once and taken apart again is two chances to disagree.
 #
+# **`never_ran` is raised here, and it reads like a double count.** `moot` raises it too. It is
+# not: `queued` rises only in `wreck_runner`, so only a backgrounded break has a verdict file to
+# be read here — and `moot`'s raise died in that break's own subshell. A serial break writes no
+# file and never reaches this line. **Each mutant is counted once, and never in both places.**
+#
 report_verdict() {
   local verdict killer=''
   verdict=$(cat "$tmp/verdict/$1")
@@ -841,7 +871,8 @@ report_verdict() {
       '  ok    '*) killer=$(cat "$tmp/verdict/$1.killer")
                    remember_the_killer model "$killer" "${verdict#  ok    }"
                    verdict="$verdict — killed by [$killer]" ;;
-      '  MOOT  '*) [ "$failed" -eq 0 ] && failed=3 ;;
+      '  MOOT  '*) [ "$failed" -eq 0 ] && failed=3
+                   never_ran=$((never_ran + 1)) ;;
       *)           failed=1 ;;
   esac
 
@@ -2602,5 +2633,6 @@ say_when_the_clock_took_them
 
 [ "$failed" -eq 0 ] && echo "ALL GREEN"
 [ "$failed" -eq 1 ] && echo "FAILURES ABOVE"
-[ "$failed" -eq 3 ] && printf 'PROVED NOTHING — %s experiments never ran\n' "$never_ran"
+[ "$never_ran" -gt 0 ] && printf 'audit — %s experiments never ran.\n' "$never_ran"
+[ "$failed" -eq 3 ] && printf 'PROVED NOTHING\n'
 exit $failed
