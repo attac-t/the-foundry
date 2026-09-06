@@ -2232,6 +2232,10 @@ over_the_limit() {
 # So completion names an exhausted budget rather than silence or a refusal, and the reader that tells
 # the three apart is the one that was already there. Nothing new is stored.
 #
+# **Asked before the reach is resolved**, because a judge floor will not run needs no way to be
+# reached. A member at its limit whose adapter drifted is a deadlock here and not a 40 — and the
+# adapter still never runs, which is the whole of what 40 protects.
+#
 record_the_deadlock() {
     dir=$1; text=$2; ref=$3; who=$4; limit=$5
 
