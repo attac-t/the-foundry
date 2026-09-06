@@ -63,8 +63,13 @@ Exit 1 is something the host must supply. Exit 3 is not a repository this can jo
 line by hand means taking a digest by hand, and a mistyped pin fails as a refusal nobody can read.
 
 ```bash
-sh bin/adopt.sh adopt codex:adversary codex
+cd /path/to/the-repository-adopting-a-judge
+sh /path/to/floor/bin/adopt.sh adopt codex:adversary codex
 ```
+
+**Run it from the repository that is adopting**, by the plugin's full path. It writes to whatever
+repository the working directory is in, so running it from inside this plugin declares a judge
+here. It refuses that now and says so, but the full path is what a reader needs either way.
 
 One line lands in `.foundry/judged`:
 

@@ -39,3 +39,4 @@
 reach  codex:adversary  @adapter codex a758b76d7ec5383720966deb4189541f0628ac88
 
 codex:adversary  a change to what a run may claim is judged by something that did not write it
+reach  a-model:adversary  @adapter codex a758b76d7ec5383720966deb4189541f0628ac88
