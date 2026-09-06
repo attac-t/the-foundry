@@ -60,8 +60,27 @@ has "and names the variable"          "$(joined "$tmp/one")" "FOUNDRY_WHO"
 # the work.
 has "and says what a run made there would record" "$(joined "$tmp/one")" "record nobody"
 
+#
+# The promise in its header, and now a check.
+#
+# `join.sh` says nothing is written to the repository, and a reader relies on that. `adopt.sh` is the
+# one command floor ships that does write to a checkout, and this line is what tells the two apart —
+# a promise nothing measured is a promise the next edit can drop in silence.
+#
+# **The baseline is taken before the first join that succeeds.** A join that wrote a file would leave
+# it there for every later call, so a before-and-after taken after one has already run compares two
+# states that both hold it, and passes.
+#
+untouched=$(git -C "$tmp/one" status --porcelain 2>/dev/null)
+history=$(git -C "$tmp/one" rev-list --count --all 2>/dev/null)
+
 is "with both, it joins"              "$(code_of "$tmp/one" FOUNDRY_WHO=a@b)" "0"
 has "and says so once"                "$(joined "$tmp/one" FOUNDRY_WHO=a@b)" "joined."
+
+is "and it writes nothing to the repository" \
+   "$(git -C "$tmp/one" status --porcelain 2>/dev/null)" "$untouched"
+is "and it adds no commit" \
+   "$(git -C "$tmp/one" rev-list --count --all 2>/dev/null)" "$history"
 
 # --- what it reports, once it joins ---
 
