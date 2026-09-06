@@ -77,9 +77,9 @@
 #      own commits is the producer signing off its own bar
 #  22  the repository declares a bar in a file that is there and cannot be read. Not 8: that is a
 #      charter holding no clause, and this is one nobody could derive. The remedy is the file
-#  39  a judged clause the runner asked about is not met — the judge refused, asked for another
-#      round, or could not answer at all. An answer about the work, never a fault in the run. Not
-#      14: that is a command answering, and no command answers this
+#  39  a judged clause the runner took up is not met — the judge refused, asked for another round,
+#      could not answer at all, or had already given every round the charter allows. An answer about
+#      the work, never a fault in the run. Not 14: that is a command answering, and none answers this
 #  40  the adapter that would judge this run is not the one the repository authorised — the pin is
 #      not a digest, or it names content that is not what is there. Not 21: that is an adapter
 #      nobody could find, and the remedy is an install. This one is here and it is the wrong one
@@ -1478,20 +1478,25 @@ is_usable_ref() {
 #
 # What must be true for this run to be good.
 #
-# Four records, sharing an id:
+# Five records, sharing an id:
 #
 #     clause  <id>  Gate|Judged|Decided  <text>
 #     pin     <id>  <target>  <ref>  <source>  <sha>
 #     gate    <id>  <command...>
 #     judge   <id>  <who>  <command...>
+#     rounds  <id>  <who>  <n>
 #
-# `print_clause`, `print_pin`, `print_gate` and `print_judges` write them, and each is the only
-# writer of its kind. This header said two for long enough that a reader built a design question on
-# the missing pair.
+# `print_clause`, `print_pin`, `print_gate`, `print_judge` and `print_rounds` write them, and each is
+# the only writer of its kind. This header said two for long enough that a reader built a design
+# question on the missing pair.
 #
 # A command is the last field on purpose. `pinned_command` strips two and prints the rest, so spaces,
 # quotes and `&&` need no parser and get none. `judge_command` strips three and does the same, which
 # is the whole of how a judged clause grew a way to be reached.
+#
+# **`rounds` is a record and not a field on `judge`, and that is what the command being last costs.**
+# A limit after the command could not be told from it, and one before it moves a field three readers
+# strip by position. So the ceiling gets a kind, and a judge with none is asked for ever.
 #
 # **A judge's command may be absent, and a gate's may not.** A gate with no command grades nothing,
 # so `gate_held` refuses one. A judge with no command is a clause only a person can answer, which is
@@ -2107,7 +2112,11 @@ gate_held() {
 #
 # **It does not loop.** A refused judgement is answered by new work, and new work is a new commit —
 # so round two is a second invocation at a second candidate, never a second pass here. The round is
-# counted from the ledger. Nothing bounds how many, and #332 still owns that.
+# counted from the ledger.
+#
+# **A charter may bound how many.** `rounds <id> <who> <n>` says how often one member may be asked
+# about one clause, and at the limit the runner records a deadlock instead of asking. A charter
+# pinning none asks for ever, which is what every run before this did.
 #
 judged() {
     dir=$(active_run) || exit 1
@@ -2167,6 +2176,10 @@ judge_answered() {
     text=$(clause_text "$(charter_file "$dir")" "$id")
     [ -n "$text" ] || { note "the charter names a judge under [$id] and no clause for it"; exit 7; }
 
+    limit=$(round_limit "$(charter_file "$dir")" "$id" "$who")
+    over_the_limit "$limit" "$(next_round "$dir" "$text" "$who")" \
+        && { record_the_deadlock "$dir" "$text" "$ref" "$who" "$limit"; return 1; }
+
     resolve_reach "$command"
     [ -n "$REACH_COMMAND$REACH_FILE" ] \
         || { note "the charter says nothing about how [$who] is reached for [$text]"; exit 7; }
@@ -2190,6 +2203,45 @@ judge_answered() {
 
     satisfied "$dir" "$text" "$ref" judged "$who"
     met=$?; emit "$dir" judge.finished judge="$who" result="$met" runtime="$(runtime)"; return "$met"
+}
+
+#
+# Whether this judge has already given every round the charter allows on this clause.
+#
+# **A charter pinning no limit never answers yes**, and neither does a count nothing can compare.
+# `[ 1 -gt abc ]` is not a comparison: it complains to stderr and returns non-zero, so a guard
+# reading that status would call a judge over a ceiling nobody set.
+#
+# Both fail open, which is the safe way round. The cost is a round nobody bounded; the other way, a
+# typo stops a run at a bar the repository never wrote.
+over_the_limit() {
+    is_a_count "$1" || return 1
+    is_a_count "$2" || return 1
+
+    [ "$2" -gt "$1" ]
+}
+
+#
+# Floor declining to ask, written down where a verdict would be.
+#
+# **Nothing is handed over first, because nothing goes over.** `handed` says a judge was given the
+# bar, and a row saying so about a judge that was never asked is the one thing this file refuses
+# everywhere else.
+#
+# Code 3 — the one a receipt saying `deadlock` already maps to, and the one `stopped` already reads.
+# So completion names an exhausted budget rather than silence or a refusal, and the reader that tells
+# the three apart is the one that was already there. Nothing new is stored.
+#
+# **Asked before the reach is resolved**, because a judge floor will not run needs no way to be
+# reached. A member at its limit whose adapter drifted is a deadlock here and not a 40 — and the
+# adapter still never runs, which is the whole of what 40 protects.
+#
+record_the_deadlock() {
+    dir=$1; text=$2; ref=$3; who=$4; limit=$5
+
+    note "[$who] has had the $limit rounds this charter allows on [$text], so it was not asked again"
+    stamp_verdict "$dir" "$text" 3 "$ref" \
+        "$who: deadlock, the charter allows $limit rounds and $limit were given" "$who"
 }
 
 # Where the bar goes over, and where the answer comes back. Beside the charter and named for the
@@ -4772,16 +4824,19 @@ while_reading_gates() {
 # blocking with no judge named tells a reader nothing about who to ask.
 #
 # The reach table is read once and handed down, never asked for per member. It is the same answer
-# every time, and a resolver run per judge is a process per judge for it.
+# every time, and a resolver run per judge is a process per judge for it. The limits table is read
+# the same way and for the same reason.
 while_reading_judged() {
     held=$1; draft=$2; target=$3; ref=$4
     reaches=$(declared_reaches)
+    limits=$(declared_limits)
 
     refuse_a_reach_no_charter_may_hold "$reaches" || return 1
+    refuse_a_limit_no_charter_may_hold "$limits"  || return 1
 
     while read -r judge source text; do
         [ -n "$judge" ] || continue
-        [ "$judge" = reach ] && continue
+        declares_no_clause "$judge" && continue
         [ -n "$text" ] || { note "a judged clause names who answers it and what it says"; return 1; }
 
         id=$(clause_id "$text")
@@ -4794,9 +4849,18 @@ while_reading_judged() {
 
         print_clause "$id" Judged "$text" >> "$draft" || return 1
         print_pin    "$id" "$target" "$ref" "$source" "$sha" >> "$draft" || return 1
-        print_judges "$id" "$judge" "$reaches" >> "$draft" || return 1
+        print_judges "$id" "$judge" "$reaches" "$limits" >> "$draft" || return 1
     done
     return 0
+}
+
+# The first words that are not a judge. Each says something about one member rather than naming a
+# clause, so a line beginning with one derives none.
+declares_no_clause() {
+    case "$1" in
+        reach|rounds) return 0 ;;
+    esac
+    return 1
 }
 
 #
@@ -4832,6 +4896,33 @@ unusable_reaches() {
     done
 }
 
+#
+# A ceiling no charter may hold, refused before one holds it.
+#
+# **A limit that is not a count is wrong everywhere**, exactly as a pin that is not a digest is. It
+# is a fact about the declaration and not about this machine, so no charter records it and no person
+# is asked to approve a bar that could never be reached.
+#
+# Zero is refused with the rest. A judge nobody may ask once is a clause nothing can satisfy, and a
+# repository wanting that says so by deleting the judge.
+refuse_a_limit_no_charter_may_hold() {
+    unusable=$(unusable_limits "$1")
+    [ -z "$unusable" ] && return 0
+
+    note "a round limit no charter may hold:"
+    printf '%s\n' "$unusable" | sed 's/^/floor:   /' >&2
+    return 1
+}
+
+# Every declared limit that is not a count, one line each. A pipe for `unusable_reaches`' reason: a
+# flag raised in a subshell dies with it.
+unusable_limits() {
+    printf '%s\n' "$1" | while read -r who limit; do
+        [ -n "$who" ] || continue
+        is_a_count "$limit" || printf '%s is allowed [%s] rounds, which is not a count\n' "$who" "$limit"
+    done
+}
+
 # One reach, and the reason it could not be honoured anywhere. Nothing for a reach that is fine, and
 # nothing for a command of the repository's own — which is every reach written before `@` existed.
 say_why_unusable() {
@@ -4862,7 +4953,8 @@ say_why_the_adapter_reach_is_unusable() {
 print_judges() {
     printf '%s\n' "$2" | tr ',' '\n' | while IFS= read -r who; do
         [ -n "$who" ] || continue
-        print_judge "$1" "$who" "$(reach_of "$3" "$who")"
+        print_judge  "$1" "$who" "$(reach_of "$3" "$who")"
+        print_rounds "$1" "$who" "$(limit_of "$4" "$who")"
     done
 }
 
@@ -4874,13 +4966,40 @@ print_judge() {
     printf 'judge %s %s %s\n' "$1" "$2" "$3"
 }
 
+#
+# How often one member may be asked about one clause. Nothing at all when the repository bounds none.
+#
+# **Absence is the unbounded answer, and a number floor chose would not be.** Every declaration
+# written before this one names no limit, and a default here would put a ceiling on all of them that
+# nobody agreed to. So the record is written when there is one, and read as no ceiling when there is
+# not — the same shape `reach` takes, for the same reason.
+print_rounds() {
+    [ -n "$3" ] || return 0
+
+    printf 'rounds %s %s %s\n' "$1" "$2" "$3"
+}
+
 # Every reach the repository declares now, as `who command...`.
 declared_reaches() { detect_judged | awk '$1 == "reach" { $1 = ""; sub(/^ +/, ""); print }'; }
+
+# Every round limit the repository declares now, as `who n`.
+declared_limits() { detect_judged | awk '$1 == "rounds" { $1 = ""; sub(/^ +/, ""); print }'; }
 
 # How one judge is reached, from that table. `""` on both sides: a judge named `01` and one named
 # `1` are two judges, and an `-v` assignment compares as a number.
 reach_of() {
     printf '%s\n' "$1" | awk -v who="$2" '$1 "" == who "" { $1 = ""; sub(/^ +/, ""); print; exit }'
+}
+
+# How often one judge may be asked, from that table. One reading, because the two tables are one
+# shape — a judge, then the one thing the repository said about it.
+limit_of() { reach_of "$1" "$2"; }
+
+# The rounds the charter allows one member on one clause, or nothing when it bounds none. `""` on
+# both sides for `reach_of`'s reason: an `-v` assignment compares as a number.
+round_limit() {
+    awk -v id="$2" -v who="$3" \
+        '$1 == "rounds" && $2 "" == id "" && $3 "" == who "" { print $4; exit }' "$1" 2>/dev/null
 }
 
 # Every member, one per line, in the order the repository declared them.
@@ -5024,6 +5143,7 @@ check_charter() {
         moved_sources "$file"
         moved_resolutions "$file"
         moved_reaches "$file"
+        moved_limits "$file"
     )
 
     [ -n "$findings" ] || return 0
@@ -5135,12 +5255,13 @@ underived_gates() {
 # the way `gate` is a gate's, so a clause with no judge rests on nothing.
 #
 # A reach line is not a clause and answers none of the three. Read as one it would name a judge
-# nobody declared, and `check` would report a Judged clause deleted that never existed.
+# nobody declared, and `check` would report a Judged clause deleted that never existed. A rounds line
+# is the same, and its number would become the clause.
 underived_judged() {
     here=$(this_repository)
 
     detect_judged | while read -r who _ text; do
-        [ "$who" = reach ] && continue
+        declares_no_clause "$who" && continue
         [ -n "$text" ] || continue
         id=$(clause_id "$text")
 
@@ -5234,6 +5355,28 @@ moved_reaches() {
         was=$(reach_of "$now" "$who")
         [ "$was" = "$command" ] && continue
         printf 'reaches elsewhere: %s was [%s] now [%s]\n' "$who" "$command" "$was"
+    done | sort -u
+}
+
+#
+# A judge the charter bounds one way, and the declaration bounds another.
+#
+# **This is what stops a worker raising its own ceiling.** `judged` runs `check` before it asks
+# anybody, so a `rounds` record edited in the run's own charter refuses at 7 rather than buying a
+# round nobody granted. A gate's command is held to the declaration the same way.
+#
+# Driven from the `judge` records, because those are the pairs a limit may exist for. A limit deleted
+# leaves nothing of its own to read and a limit invented has nothing behind it, so reading from
+# either side alone would miss one of them. Absence on either side is a reading, never a skip.
+moved_limits() {
+    now=$(declared_limits)
+
+    every_judge_record "$1" | while read -r id who command; do
+        [ -n "$who" ] || continue
+        held=$(round_limit "$1" "$id" "$who")
+        wants=$(limit_of "$now" "$who")
+        [ "$held" = "$wants" ] && continue
+        printf 'bounded elsewhere: %s was [%s] now [%s]\n' "$who" "$held" "$wants"
     done | sort -u
 }
 
