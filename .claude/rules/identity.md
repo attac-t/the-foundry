@@ -19,10 +19,10 @@ Floor's suite does it. Nothing outside `tests/` may.
 A checkout with no identity is caught earlier: `floor`'s `join.sh` refuses and says what to run. It
 is not commit time's job.
 
-## `gh` and git are two identities
+## The forge and git are two identities
 
-More than one account can be signed in. `gh auth switch` moves `gh` and does not move git, so a push
-can succeed while the commit is attributed wrongly. It did.
+More than one account can be signed in. Switching the forge client moves the forge and leaves git
+where it was, so a push can succeed while the commit is attributed wrongly. It did.
 
 **Only one of the two is loud when it breaks.** A push refused is obvious; an address nobody owns
 looks exactly like a commit that worked.
@@ -30,9 +30,8 @@ looks exactly like a commit that worked.
 **So find out which account your writes will carry, before the first one.** Nothing announces it,
 and the quiet half is the one that lasts.
 
-Today that is `gh auth status`, and it answers in a line. **The command belongs to the adapter; the
-discipline does not** — another forge answers the same question its own way, and the rule outlives
-the swap.
+**Ask each of the two, and ask them apart.** A forge client will say which identity it holds, and
+so will git. Neither says it unasked, and one answer is never the other's.
 
 **An issue filed under the wrong account cannot be moved.** No forge here offers a way to change
 an author, so the only repair is to delete the thread and lose it. That makes this the cheapest
