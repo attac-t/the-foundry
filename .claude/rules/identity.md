@@ -21,24 +21,16 @@ is not commit time's job.
 
 ## The forge and git are two identities
 
-More than one account can be signed in. Switching the forge client moves the forge and leaves git
-where it was, so a push can succeed while the commit is attributed wrongly. It did.
+More than one account can be signed in. Switching the forge leaves git where it was, so a push can
+succeed while the commit is attributed wrongly. It did.
 
-**Only one of the two is loud when it breaks.** A push refused is obvious; an address nobody owns
-looks exactly like a commit that worked.
+**Only one of the two is loud when it breaks.** A push refused is obvious. An address nobody owns
+looks like a commit that worked.
 
-**So find out which account your writes will carry, before the first one.** Nothing announces it,
-and the quiet half is the one that lasts.
+**So ask each of the two, apart, before the first write.** Neither answers unasked.
 
-**Ask each of the two, and ask them apart.** A forge client will say which identity it holds, and
-so will git. Neither says it unasked, and one answer is never the other's.
-
-**An issue filed under the wrong account cannot be moved.** No forge here offers a way to change
-an author, so the only repair is to delete the thread and lose it. That makes this the cheapest
-check in the file and the most expensive one to skip.
-
-Eighty-one commits and four issues here carry the read-only account. **Two of those four were filed
-by a session that never looked**, and one of them the same day this line was written.
+**A wrong author cannot be fixed.** No forge in use can change one, so the only repair is to delete
+the thread. Eighty-one commits and four issues here carry the wrong account.
 
 ## Never in an issue
 
