@@ -27,6 +27,16 @@ can succeed while the commit is attributed wrongly. It did.
 **Only one of the two is loud when it breaks.** A push refused is obvious; an address nobody owns
 looks exactly like a commit that worked.
 
+**So read `gh auth status` before the first write of a session, and after any refusal.** It names
+the active account in one line. Nothing else will.
+
+**An issue filed under the wrong account cannot be moved.** GitHub offers no way to change an
+author, so the only repair is to delete the thread and lose it. That makes this the cheapest check
+in the file and the most expensive one to skip.
+
+Eighty-one commits and four issues here carry the read-only account. **Two of those four were filed
+by a session that never looked**, and one of them the same day this line was written.
+
 ## Never in an issue
 
 No addresses, no account names. An issue is public the moment the button is pressed, and an edit does
