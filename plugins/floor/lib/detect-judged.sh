@@ -6,10 +6,11 @@
 # work. Neither is a scale over the other — RFC-001 says the kinds are not ranked, and a judgement
 # raised to a gate wants a command that cannot exist.
 #
-# Two kinds of line, whitespace separated:
+# Three kinds of line, whitespace separated:
 #
-#     judge          text...
-#     reach  judge   command...
+#     judge           text...
+#     reach   judge   command...
+#     rounds  judge   n
 #
 # `judge` is who may answer, and it is **one word** — `panel:adversary`, `a-reviewer`. A name holding
 # a space would need quoting, and quoting needs a parser this declares none of. A gate's name is one
@@ -19,9 +20,13 @@
 # person can answer it. With one, `run.sh judged` runs the command and reads what came back — so the
 # command is the repository's, pinned in the charter, and never the caller's.
 #
-# **`reach` is a reserved first word**, and a judge may not be called it. Two record kinds in one
-# file need a word to tell them apart, and only the first field can carry it. A clause whose judge is
-# named `reach` is read as a reach line, and its command is that clause's own prose.
+# **A rounds line says how often that judge may be asked**, on each clause it sits on. Without one it
+# is asked for ever, which is what every declaration written before this said. With one, the runner
+# records a deadlock at the limit rather than asking again.
+#
+# **`reach` and `rounds` are reserved first words**, and no judge may be called either. Three record
+# kinds in one file need a word to tell them apart, and only the first field can carry it. A clause
+# whose judge is named `reach` is read as a reach line, and its command is that clause's own prose.
 #
 # The command is last for the reason a gate's is: `awk` blanks the leading fields and prints the
 # rest, so spaces, quotes and `&&` need no parser and get none. That is also why the clause text
@@ -46,15 +51,15 @@ dir=${1:-.}
 
 # `#` comments and blanks ignored, like `.foundry/gates`. A file naming nothing yields nothing.
 #
-# A reach goes out as it was written. A clause gets its source inserted, because this file is where
-# every clause here came from and the charter pins it there.
+# A reach and a rounds line go out as they were written. A clause gets its source inserted, because
+# this file is where every clause here came from and the charter pins it there.
 declared() {
     [ -f "$dir/.foundry/judged" ] || return 1
     [ -r "$dir/.foundry/judged" ] || return 22
 
     awk '!/^[ \t]*#/ && NF {
              found = 1
-             if ($1 == "reach") { print; next }
+             if ($1 == "reach" || $1 == "rounds") { print; next }
              printf "%s .foundry/judged", $1; $1 = ""; print }
          END { exit !found }' "$dir/.foundry/judged"
 }

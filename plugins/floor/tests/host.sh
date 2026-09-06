@@ -169,6 +169,14 @@ is "a repository carrying neither file joins anyway" "$(code_of "$tmp/one" FOUND
 has "and says it carries no grants"   "$said" "grants  none"
 has "and says it carries no gates"    "$said" "gates   none"
 
+#
+# The third declaration, and the only one a reader could not find. A repository with none is told
+# the command that declares one, by its full path — the path being the thing nobody could locate.
+#
+has "and says it declares no judge"   "$said" "judges  none"
+has "and names the command that declares one" "$said" "adopt.sh adopt <judge> <adapter>"
+has "and gives it by a full path"     "$said" "/adopt.sh"
+
 mkdir -p "$tmp/one/.foundry"
 printf '# a comment\n\ngrade    https://github.com/acme/thing.git\ndeliver  https://github.com/acme/thing.git\n' \
     > "$tmp/one/.foundry/practice"
@@ -180,6 +188,14 @@ carried=$(joined "$tmp/one" FOUNDRY_WHO=a@b)
 # more than a human wrote.
 has "grants are counted"              "$carried" "grants  2"
 has "gates are counted"               "$carried" "gates   1"
+
+# A repository that has one is not told how to get one.
+printf 'a-person  is this ready
+' > "$tmp/one/.foundry/judged"
+declared=$(joined "$tmp/one" FOUNDRY_WHO=a@b)
+has  "judges are counted"             "$declared" "judges  1"
+lacks "and a repository with one is not told how" "$declared" "no judge is declared"
+rm -f "$tmp/one/.foundry/judged"
 
 git -C "$tmp/one" remote add origin https://github.com/acme/thing.git
 remote=$(joined "$tmp/one" FOUNDRY_WHO=a@b)

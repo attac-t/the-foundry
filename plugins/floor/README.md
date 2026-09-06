@@ -735,10 +735,15 @@ clause  <id>  Gate|Judged|Decided  <text>
 pin     <id>  <target>  <ref>  <source>  <sha>
 gate    <id>  <command...>
 judge   <id>  <who>  <command...>
+rounds  <id>  <who>  <n>
 ```
 
 A command is the last field, so spaces and quotes need no parser. One `judge` line per member — a
 clause naming one mind is not a panel.
+
+**`rounds` is a record and not a field on `judge`, and the command being last is why.** A limit after
+the command could not be told from it, and one before it moves a field three readers strip by
+position. A member with no `rounds` record is asked for ever.
 
 **A judge's command may be absent and a gate's may not.** A gate with no command grades nothing, so
 one is refused. A judge with no command is a clause only a person can answer, which is every judged
@@ -868,9 +873,10 @@ in §2.6 marked.
 **And a `Judged` clause is derived from a declaration, never guessed.** `.foundry/judged` declares
 one — `judge  text` — and this file is the source, so every clause here pins to it.
 
-**A `reach  judge  command...` line beside it says how the runner asks that judge.** `reach` is a
-reserved first word, so no judge may be called one. Two record kinds in one file need a word to tell
-them apart, and only the first field can carry it — the clause text is already the line's tail.
+**A `reach  judge  command...` line beside it says how the runner asks that judge.** A
+`rounds  judge  n` line says how often it may be asked. `reach` and `rounds` are reserved first
+words, so no judge may be called either. Three record kinds in one file need a word to tell them
+apart, and only the first field can carry it. The clause text is already the line's tail.
 
 ### A repository owns the choice of judge, not the code that reaches one
 
@@ -1092,7 +1098,7 @@ satisfaction a hand-written receipt could not.
 | a judge nobody said how to reach, a run that rewrote the file its judge runs, or a transport nothing reads | 7 |
 | the command is not on this host, or a signal killed it. An adapter this plugin does not ship | 21 |
 | the adapter that would judge is not the one the repository authorised | 40 |
-| a judge answered and did not approve, or could not answer at all | 39 |
+| a judge answered and did not approve, could not answer at all, or had already given every round the charter allows | 39 |
 
 **The base is named beside the candidate**, because a judge asked what changed needs both ends. A
 run whose base is its own head has no range between them, and what such a judge reads is the tree.
@@ -1114,9 +1120,32 @@ judge with one only a person can answer cannot be run through `judged` at all. S
 would leave its clause unmet and look exactly like a judge that refused, so the runner names the
 cause instead.
 
-**Rounds are counted, never bounded.** The round is every verdict that judge already gave on that
-clause, plus one — so round two is a second invocation at a second candidate, because a refused
-judgement is answered by new work. **Nothing stops at a limit**, and #332 still owns that box.
+**Rounds are counted, and a charter may bound them.** The round is every verdict that judge already
+gave on that clause, plus one. Round two is a second invocation at a second candidate, because a
+refused judgement is answered by new work.
+
+**`rounds  judge  n` in `.foundry/judged` is the ceiling.** It derives into a record of its own,
+`rounds <id> <who> <n>`, one per clause that judge sits on. At the limit the runner records a
+deadlock and does not ask: no brief is written, no handoff, and nothing runs.
+
+| | |
+|---|---|
+| no `rounds` line | asked for ever, which is what every charter written before this held |
+| a limit that is not counted from one | refused at `derive` — 6, and `0` is refused with the rest |
+| a limit edited into the run's own charter | drift. `check` says `bounded elsewhere` and `judged` refuses at 7 before it asks anybody |
+
+**The ceiling is the charter's, exactly as a gate's command is.** `judged` takes no argument, so no
+caller sets one. It runs `check` before it asks, so no worker raises its own by editing the charter
+it is graded against. Raising it is a commit to `.foundry/judged`.
+
+**A deadlock is recorded as one, and the reader that tells it apart was already there.** The row
+carries code 3 — what a receipt saying `deadlock` maps to. So `complete` says *never judged it*, not
+*no approval from* and not *refused here*. **Three facts, three remedies**, and this one is answered
+by whoever owns the budget.
+
+**It is recorded at the commit the run stands on.** A run that commits again and does not re-ask
+reads as silent until it does. Every other verdict in this ledger behaves that way, and the remedy
+is the same: run the verb.
 
 **A judge the run rewrote is refused, and a judge the run added is not.** `gates` plants the base's
 copy and grades against it. A judge writes a receipt rather than exiting a code, so a substituted one

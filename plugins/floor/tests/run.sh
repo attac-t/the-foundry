@@ -1901,7 +1901,7 @@ wreck_runner "a declared judgement nothing derives is caught" \
   nojudged 's#^    detect_judged | while_reading_judged#    false | while_reading_judged#'
 
 wreck_runner "a judged clause naming no judge is caught" \
-  nojudge 's#^        print_judges "\$id" "\$judge" "\$reaches" >> "\$draft" || return 1$#        : >> "$draft" || return 1#'
+  nojudge 's#^        print_judges "\$id" "\$judge" "\$reaches" "\$limits" >> "\$draft" || return 1$#        : >> "$draft" || return 1#'
 
 wreck_runner "a judgement derived as a gate is caught" \
   judgedasgate 's#print_clause "\$id" Judged "\$text"#print_clause "$id" Gate "$text"#'
@@ -2107,6 +2107,41 @@ wreck_runner "a judge this run rewrote is caught" \
 # and unreported it means the judge that answered is not the judge that was agreed.
 wreck_runner "a reach that moved since the charter is caught" \
   reachdrift 's#^        moved_reaches "\$file"$#        :#'
+
+#
+# The ceiling a charter pins on one judge — #526. Five breaks, one per part of it.
+#
+# **Without any of them a run asks for ever**, which is the state the count was in before: every
+# round recorded faithfully, and nothing marking the work as no longer moving.
+#
+# `noceiling` blinds the reader, `noceilingrecord` the writer, and the two are not one break — a
+# charter can hold a limit nothing reads, and read a limit no charter holds.
+wreck_runner "a run that asks past the limit its charter pins is caught" \
+  noceiling 's#^over_the_limit() {#over_the_limit() { return 1;#'
+
+wreck_runner "a limit a charter records nothing for is caught" \
+  noceilingrecord 's#^print_rounds() {#print_rounds() { return 0;#'
+
+# One round early. `-ge` stops the last round the charter allows, which is a bar nobody wrote and
+# reads in the record exactly like the one they did.
+wreck_runner "a limit that spends the last round it allows is caught" \
+  offbyone 's#^    \[ "\$2" -gt "\$1" \]$#    [ "$2" -ge "$1" ]#'
+
+#
+# A charter that may hold a ceiling nothing could reach, and one a worker moved after it was pinned.
+#
+# **Two breaks, and the second is what makes the limit the charter's.** `judged` checks before it
+# asks, so a `rounds` record edited in the run's own charter buys no round — unreported, a worker
+# raises its own ceiling and every other reader agrees with it.
+#
+# **`over_the_limit`'s two `is_a_count` guards go without a break, and they are not missing.** Both
+# fail open, so blinding either leaves a run that asks — which is what the mutants above already
+# prove is caught. They are defence with no break, named here rather than left for a reader to find.
+wreck_runner "a charter that may hold a limit nothing could reach is caught" \
+  anylimit 's#^    refuse_a_limit_no_charter_may_hold .*#    :#'
+
+wreck_runner "a ceiling that moved since the charter is caught" \
+  limitdrift 's#^        moved_limits "\$file"$#        :#'
 
 #
 # **The runner writes the binding half, and this is the break that proves it.**
