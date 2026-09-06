@@ -28,7 +28,8 @@ cd plugins/floor        # or wherever this plugin is installed
 sh bin/join.sh
 ```
 
-It reports and exits. Nothing is installed and nothing is written to the repository.
+It reports and exits. Nothing is installed and nothing is written to the repository. `adopt.sh`,
+below, is the one command here that does write to one.
 
 Six things stood between a clean machine and a working system, and three were silent when wrong: no
 `gh` picks a different work source, no git identity fails later at commit, and no `FOUNDRY_WHO`
@@ -55,6 +56,59 @@ A rule that names a skill is the declaration — there is no second list. `shell
 nothing and says nothing. Now it says.
 
 Exit 1 is something the host must supply. Exit 3 is not a repository this can join.
+
+## Adopting a judge
+
+`.foundry/judged` says who answers what no command can, and how the runner reaches them. Writing that
+line by hand means taking a digest by hand, and a mistyped pin fails as a refusal nobody can read.
+
+```bash
+sh bin/adopt.sh adopt codex:adversary codex
+```
+
+One line lands in `.foundry/judged`:
+
+```
+reach  codex:adversary  @adapter codex a758b76d7ec5383720966deb4189541f0628ac88
+```
+
+The last field is `git hash-object --no-filters` of the adapter this plugin ships. **Nothing is
+staged, committed or pushed.** The pin is the repository's trust decision, so a person reads the
+change and commits it.
+
+**It writes the reach and not the clause.** A reach says how a judge is asked. A clause says what
+must be judged, and no command can guess a repository into wanting one — so this prints the line only
+a person can mean and leaves it to them.
+
+Install a new plugin and every repository pinned to the old adapter refuses at 40 until it commits
+the new digest. One command carries it across:
+
+```bash
+sh bin/adopt.sh upgrade
+```
+
+```
+  moved  codex:adversary
+         was a758b76d7ec5383720966deb4189541f0628ac88
+         now 3c0d9f1b6a2e47d85f19c0b3e7a4d61c82f5039e
+moved 1 pin(s) in /repo/.foundry/judged. Nothing is staged and nothing is committed.
+```
+
+| | |
+|---|---|
+| moves | every `@adapter` reach whose adapter this plugin ships |
+| leaves | `@custom` and bare-command reaches, byte for byte |
+| leaves | a reach naming an adapter this plugin does not ship — and goes red |
+| writes | a digest, and never a tag, a version or a range |
+
+**A third script, and the subject is the reason.** `join.sh` joins a host and writes nothing here.
+`run.sh` runs one attempt at one item. Neither subject is the repository itself, and this one's is.
+
+**A run may not do either.** The declaration is pinned to the base like every other source a bar
+comes from, so a run that edited it is refused at 7 before any judge is asked.
+
+Exit 1 is something the repository must settle. Exit 2 is a verb or a name this does not take. Exit 3
+is no repository, or a declaration it cannot read.
 
 ## From a clone to a delivery
 
@@ -863,7 +917,8 @@ declaration. A repository may authorise an adapter before it installs one, exact
 a gate whose command is not here yet.
 
 **Upgrading is a line somebody edited.** Foundry ships the fix. The repository commits the new
-digest, in a commit its own history keeps.
+digest, in a commit its own history keeps. `sh bin/adopt.sh upgrade` writes that line and says both
+digests, and it commits nothing.
 
 **A run may not edit that line.** The declaration is pinned to the base, like every other source a
 bar comes from. So the charter and the tree disagree, and `judged` refuses at 7 before it asks
