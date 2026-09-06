@@ -59,6 +59,7 @@ trap 'rm -rf "$WORK"' EXIT
 main() {
     refuse_without_a_repository
     name_the_declaration
+    refuse_the_repository_that_ships_the_adapter "$@"
     refuse_a_declaration_holding_carriage_returns
 
     case "${1:-}" in
@@ -90,8 +91,35 @@ refuse_without_a_repository() {
 # Taken once, from the working tree's own root. A command run three directories down writes the same
 # file as one run at the top.
 name_the_declaration() {
-    DECLARED_DIR=$(git rev-parse --show-toplevel)/.foundry
+    TOP=$(git rev-parse --show-toplevel)
+    DECLARED_DIR=$TOP/.foundry
     DECLARED=$DECLARED_DIR/judged
+}
+
+#
+# The repository written to is the working directory's, and nothing in the command says which one
+# that is. Floor's own README said to change into the plugin directory first, so a reader who
+# followed it word for word declared a judge **in the plugin** and got exit 0. The path inside the
+# success line was the only sign.
+#
+# **A plugin does not adopt through itself.** Refusing where the adapter ships is the whole of the
+# fix, because that is the one repository this can never mean.
+#
+# **Both tops come from `git`, never from `pwd`.** The first cut compared `PLUGIN_ROOT` against the
+# top as strings, and on Git Bash one is `C:/Users/…` while the other is `/c/Users/…`. It matched
+# nothing and the trap stayed open. Asking git twice gives one form on every platform.
+#
+# An installed plugin that is no repository makes the first call fail, and that is a pass — it
+# cannot be the tree being written to.
+#
+refuse_the_repository_that_ships_the_adapter() {
+    ships=$(git -C "$PLUGIN_ROOT" rev-parse --show-toplevel 2>/dev/null) || return 0
+    [ "$ships" = "$TOP" ] || return 0
+
+    note "this would write into $TOP, which is the repository shipping the adapter"
+    note "  run it from the repository that is adopting a judge, by its full path:"
+    note "    sh $SELF_DIR/adopt.sh $*"
+    exit 1
 }
 
 # --- adopt ---
