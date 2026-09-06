@@ -260,6 +260,7 @@ has "and it says there was no pin to move"              "$(adopt_at "$tmp/clause
 # --- names a record cannot hold ---
 
 is "the reserved first word is not a judge" "$(code_of adopt_at "$tmp/plain" adopt reach a-shipped)" "2"
+is "nor is the second one"                  "$(code_of adopt_at "$tmp/plain" adopt rounds a-shipped)" "2"
 is "nor is a name holding a space"          "$(code_of adopt_at "$tmp/plain" adopt 'two words' a-shipped)" "2"
 is "nor is an adapter name with a path in it" \
    "$(code_of adopt_at "$tmp/plain" adopt ok:one ../../bin/run)" "2"

@@ -121,22 +121,22 @@ adopt() {
 }
 
 #
-# A judge is one word, and never `reach`.
+# A judge is one word, and never `reach` or `rounds`.
 #
-# `reach` is the reserved first word that tells the two record kinds apart, so a judge called it is
-# read as a reach line whose command is that clause's own prose. The rest of the set is what
-# `is_an_adapter_name` refuses for: a name is a word, never a path and never a sentence.
+# Those are the reserved first words that tell the record kinds apart, so a judge called one is read
+# as a directive about a judge and its clause's own prose becomes the tail. The rest of the set is
+# what `is_an_adapter_name` refuses for: a name is a word, never a path and never a sentence.
 #
 refuse_a_judge_name_no_record_can_hold() {
     is_a_judge_name "$1" && return 0
 
-    note "[$1] is not a judge name — letters, digits and : @ . _ - , and never [reach]"
+    note "[$1] is not a judge name — letters, digits and : @ . _ - , and never [reach] or [rounds]"
     exit 2
 }
 
 is_a_judge_name() {
     case $1 in
-        ''|reach|*[!a-zA-Z0-9:@._-]*) return 1 ;;
+        ''|reach|rounds|*[!a-zA-Z0-9:@._-]*) return 1 ;;
     esac
     return 0
 }
