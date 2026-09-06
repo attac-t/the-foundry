@@ -2413,7 +2413,7 @@ echo
 echo "audit — break the adopt, the adopt suite must notice"
 
 # The same shape again, reading the suite that grades the one command floor ships that writes to a
-# repository. Synchronous, like the join audit: eight mutants, and each runs a suite of 48 checks.
+# repository. Synchronous, like the join audit: nine mutants, and each runs the whole adopt suite.
 adopted() { suite_caught "$tmp/$1" "$root/tests/adopt.sh"; }
 
 wreck_adopt() {
