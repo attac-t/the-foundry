@@ -766,29 +766,6 @@ a_deadline_without_timeout_answers_the_same
 a_suite_that_never_answered_caught_nothing
 a_run_of_silence_stops_the_audit
 
-#
-# A backgrounded break counts nowhere else. `moot` raises `never_ran` inside the break's own
-# subshell and it dies there, so `report_verdict` reading the file afterwards is the only place
-# left. This proves that reading counts, which the closing line cannot prove about itself.
-#
-# It restores both globals: a self-test that leaves `failed` at 3 would end the run it is checking.
-#
-a_moot_read_from_a_file_is_counted() {
-  local was=$never_ran keep_failed=$failed
-
-  mkdir -p "$tmp/verdict"
-  printf '  MOOT  a break that reported nothing\n' > "$tmp/verdict/selftest"
-  report_verdict selftest >/dev/null
-
-  [ "$never_ran" -eq $((was + 1)) ] \
-    && printf '  ok    a MOOT read from a verdict file is counted\n' \
-    || bad "a MOOT read from a verdict file was not counted"
-
-  rm -f "$tmp/verdict/selftest"
-  never_ran=$was
-  failed=$keep_failed
-}
-a_moot_read_from_a_file_is_counted
 
 a_killer_is_named_by_the_check_that_wrote_it
 a_suite_is_read_under_fail_fast
@@ -878,6 +855,30 @@ report_verdict() {
 
   printf '%s\n' "$verdict"
 }
+
+#
+# A backgrounded break counts nowhere else. `moot` raises `never_ran` inside the break's own
+# subshell and it dies there, so `report_verdict` reading the file afterwards is the only place
+# left. This proves that reading counts, which the closing line cannot prove about itself.
+#
+# It restores both globals: a self-test that leaves `failed` at 3 would end the run it is checking.
+#
+a_moot_read_from_a_file_is_counted() {
+  local was=$never_ran keep_failed=$failed
+
+  mkdir -p "$tmp/verdict"
+  printf '  MOOT  a break that reported nothing\n' > "$tmp/verdict/selftest"
+  report_verdict selftest >/dev/null
+
+  [ "$never_ran" -eq $((was + 1)) ] \
+    && printf '  ok    a MOOT read from a verdict file is counted\n' \
+    || bad "a MOOT read from a verdict file was not counted"
+
+  rm -f "$tmp/verdict/selftest"
+  never_ran=$was
+  failed=$keep_failed
+}
+a_moot_read_from_a_file_is_counted
 
 # Hold the pool to its size. `wait -n` would say the moment a worker came free and is bash 4.3 —
 # macOS ships 3.2 — so the running count is polled. Waiting in batches instead would idle the whole
