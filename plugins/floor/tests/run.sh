@@ -172,6 +172,7 @@ ends_on "$root/tests/model.sh"   'summary "model"'   || bad "tests/model.sh runs
 ends_on "$root/tests/install.sh" 'summary "install"' || bad "tests/install.sh runs cases below its tally, and nothing counts them"
 ends_on "$root/tests/host.sh"    'summary "host"'    || bad "tests/host.sh runs cases below its tally, and nothing counts them"
 ends_on "$root/tests/say.sh"     'summary "say"'     || bad "tests/say.sh runs cases below its tally, and nothing counts them"
+ends_on "$root/tests/adopt.sh"   'summary "adopt"'   || bad "tests/adopt.sh runs cases below its tally, and nothing counts them"
 
 # An adapter answers for itself, so its suite is read for the same fault. Driven off the directory
 # rather than named, because floor may ship one adapter or several and neither is this file's to know.
@@ -224,7 +225,7 @@ core_names_no_vendor
 # exceeded it there and, inverted, read as caught. A mutant is either caught early by `FOUNDRY_FAIL_FAST`
 # or runs about as long as a clean pass. Anything far past that is stuck on any machine.
 #
-for suite in transport model install host say; do
+for suite in transport model install host adopt say; do
   began=$(date +%s)
   bash "$root/tests/$suite.sh" || failed=1
   [ "$suite" = model ] && clean=$(( $(date +%s) - began ))
@@ -2397,6 +2398,76 @@ wreck_join "a plugin that is off reported as reachable is caught" \
 wreck_join "a settings file it cannot read called a missing plugin is caught" \
   blindsettings 's#^    \[ -r "\$settings" \] || { printf .  — cannot tell, no %s. "\$settings"; return; }$#    [ -r "$settings" ] || return#'
 
+#
+# The promise in its header, and the only break that can audit one.
+#
+# `join.sh` says nothing is written to the repository, and every other break here blinds a refusal.
+# This one makes it write, because a promise about writing nothing cannot be broken by taking
+# something away.
+wreck_join "a join that writes into the repository is caught" \
+  scribble 's#^    report_home$#    : > joined; report_home#'
+
+# --- break the adopt, the adopt suite must notice ---
+
+echo
+echo "audit — break the adopt, the adopt suite must notice"
+
+# The same shape again, reading the suite that grades the one command floor ships that writes to a
+# repository. Synchronous, like the join audit: nine mutants, and each runs the whole adopt suite.
+adopted() { suite_caught "$tmp/$1" "$root/tests/adopt.sh"; }
+
+wreck_adopt() {
+  local name="$1" tag="$2" mutation="$3"
+  local checks="$tmp/$tag.check" killer
+
+  copy "$tag" || { bad "$name — could not copy the plugin, so this proves nothing"; return; }
+  sed "$mutation" "$root/bin/adopt.sh" | rewrite "$tmp/$tag/bin/adopt.sh"
+  cmp -s "$tmp/$tag/bin/adopt.sh" "$root/bin/adopt.sh" \
+    && { moot "$name — the break did not apply, so this proves nothing"; return; }
+  adopted "$tag"; local answer=$?
+  [ "$answer" -eq 2 ] && { out_of_clock "$name"; return; }
+  [ "$answer" -eq 0 ] || { bad "$name — the suite passed against a broken adopt"; return; }
+
+  killer=$(killed_by "$checks")
+  remember_the_killer adopt "$killer" "$name"
+  kept "$name — killed by [$killer]"
+}
+
+# The whole point of the command. A person who has to take a digest by hand is a person who can
+# paste it wrongly, and a mistyped pin fails as a refusal nobody can read.
+wreck_adopt "a pin that is not the adapter's digest is caught" \
+  notdigest 's#^    digest=$(digest_on_disk "$(adapter_file "$2")")$#    digest=$(printf "%040d" 0)#'
+
+# Overwriting a reach moves a trust decision somebody already made, without saying so.
+wreck_adopt "a reach quietly overwritten is caught" \
+  overwrite 's#^refuse_a_judge_already_reached() {#refuse_a_judge_already_reached() { return 0;#'
+
+# Two digests are what make an upgrade reviewable. One of them is what the repository is leaving.
+wreck_adopt "a pin moved without saying what it was is caught" \
+  silentmove 's#^    say "         was $5"$#    :#'
+
+wreck_adopt "an upgrade that reports a move and writes none is caught" \
+  nomove 's#^move_what_moved() {#move_what_moved() { return 0;#'
+
+# A reach the repository owns is not this command's to move, and the rewrite is keyed on the lines a
+# pin actually moved for. Reaching any other line is how a writer becomes a reformatter.
+wreck_adopt "a rewrite reaching a line no pin moved is caught" \
+  everyline 's#FNR in now && match#match#'
+
+wreck_adopt "an adapter this plugin does not ship waved through is caught" \
+  blindship 's#^refuse_an_adapter_this_plugin_does_not_ship() {#refuse_an_adapter_this_plugin_does_not_ship() { return 0;#'
+
+# Silence reads as success, and a second upgrade is what a person runs when they are unsure.
+wreck_adopt "an upgrade that says nothing about what it did is caught" \
+  noverdict 's#^verdict() {#verdict() { return 0;#'
+
+# A declaration still not naming what this plugin ships is not a repository that upgraded.
+wreck_adopt "a reach left behind that does not turn the command red is caught" \
+  nocount 's#^    LEFT=$((LEFT + 1))$#    :#'
+# The file a person wrote by hand is the one that arrives unterminated, and appending to it glued
+# the reach onto the clause above. The command said it had written a reach nothing could read.
+wreck_adopt "a declaration whose last line never ended is caught" \
+  noeol 's#^    ensure_the_last_line_ended$#    :#'
 #
 # Two breaks, one check.
 #
