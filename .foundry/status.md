@@ -69,8 +69,13 @@ at 40.
 A gate named `judged` holds this repository's own declaration to that rule. It goes red on a
 drifted pin. Red too on an adapter this tree does not ship, and on a declaration naming none.
 
-**What this still does not give a consumer.** A repository onboarded before the adapter existed has
-no route to it - #517.
+**A repository onboarded before the adapter has a route now.** `adopt.sh` writes the reach and
+pins the digest; `adopt.sh upgrade` moves the pin when floor ships new content and prints both. It
+writes a working tree change and nothing else — a person still reads the diff and commits.
+
+**Nothing on the onboarding path points at it.** `join.sh` reports a repository's grants and gates
+and says nothing about judges, so a stranger meets the command only in floor's README. No issue
+owns that.
 
 And nothing says what a capability expects a repository to own - #519. So nothing can stop work that
 crosses that line - #520. And nothing reports the gap without naming where it was found - #521.
