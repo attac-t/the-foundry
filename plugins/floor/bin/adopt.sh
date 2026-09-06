@@ -48,7 +48,10 @@ PENDING=
 MOVED=0
 LEFT=0
 
-# Outside the repository, so a killed run leaves no half declaration and no file nobody asked for.
+# Outside the repository, so a killed run leaves no file nobody asked for. **It does not make the
+# write atomic.** The copy back truncates the declaration and fills it, and a run killed inside that
+# window leaves a short file. Naming the window beats promising what the mechanism does not give.
+#
 # `mktemp` is not POSIX and floor declares `sh`, `git` and `awk` — the same reason `run.sh` gives.
 WORK=${TMPDIR:-/tmp}/floor-adopt-$$
 trap 'rm -rf "$WORK"' EXIT
@@ -56,6 +59,7 @@ trap 'rm -rf "$WORK"' EXIT
 main() {
     refuse_without_a_repository
     name_the_declaration
+    refuse_a_declaration_holding_carriage_returns
 
     case "${1:-}" in
         adopt)   shift; adopt "$@" ;;
@@ -282,6 +286,23 @@ upgrade() {
 # the line between them. One is a repository that has not adopted yet; the other is one whose
 # declaration is there and unreadable, where carrying on would move a pin nobody could see.
 #
+#
+# A carriage return is no separator awk knows, so it rides along on the last field. Every pin would
+# read as changed, `upgrade` would report a move that moved nothing, and the rewrite would drop the
+# return from that one line and leave the file mixed.
+#
+# **Refused, never handled.** Floor reads this file with `awk` on every path, and a declaration it
+# cannot read the same way twice is not one to edit on somebody's behalf.
+#
+refuse_a_declaration_holding_carriage_returns() {
+    [ -r "$DECLARED" ] || return 0
+    tr -d '\r' < "$DECLARED" | cmp -s - "$DECLARED" && return 0
+
+    note "$DECLARED holds carriage returns, and floor reads it with awk everywhere"
+    note "  give it line feeds, then run this again"
+    exit 1
+}
+
 refuse_a_declaration_this_cannot_upgrade() {
     [ -r "$DECLARED" ] && return 0
     [ -e "$DECLARED" ] && { note "$DECLARED is there and cannot be read"; exit 3; }
