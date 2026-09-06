@@ -180,7 +180,16 @@ refuse_a_judge_already_reached() {
     exit 1
 }
 
+#
+# **A file that cannot be read is not a file with no reach in it.** Reading the failure as *not
+# reached* would append a second reach into a declaration nobody can see, which is the thing the
+# refusal above exists to stop. `upgrade` already says this about itself.
+#
 already_reached() {
+    [ -e "$DECLARED" ] && [ ! -r "$DECLARED" ] && {
+        note "$DECLARED is there and cannot be read, so nothing here may add to it"
+        exit 3
+    }
     [ -r "$DECLARED" ] || return 1
 
     awk -v who="$1" '!/^[ \t]*#/ && $1 == "reach" && $2 "" == who "" { found = 1 }
