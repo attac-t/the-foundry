@@ -38,6 +38,16 @@ pressed.**
 So: give numbers rather than asking for them, and say how each was taken. A figure taken while
 another suite was running is noise — mark it, or take it again.
 
+## Say what would kill it
+
+**Name the strongest case against the work, and ask the judge to answer that first.**
+
+Three judgements ran in one day here. Each brief named the attack. **Each ended in one round** — a
+fail, a revise and a reject. Every one carried its evidence, and none went hunting for defects.
+
+**A judge given no attack looks for one.** That is how a review reaches round ten. Each defect is
+real, and none of them is the thing that decides it.
+
 ## What the answer owes
 
 **A recommendation, then the strongest case against it.** A round with nothing rejected is a round
