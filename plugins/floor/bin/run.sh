@@ -4705,6 +4705,7 @@ derive_charter() {
     dir=$1
     boot=$(bootstrap_identity "$dir") || {
         note "this run has no bootstrap target, so there is nothing to derive from"
+        note "  one is written from an origin remote and a first commit. Add whichever is missing"
         exit 1
     }
     refuse_wrong_repository "$dir"
