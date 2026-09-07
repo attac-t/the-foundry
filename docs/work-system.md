@@ -169,3 +169,6 @@ waives nothing.
 - A cloud wake fires hourly at most, and cannot grade Floor. It reports; it does not work.
 - Hosted checks are unpaid. A red check on a pull request means nothing.
 - The board is a view. Losing it costs visibility, never execution or authority.
+- **The board fills by a rule on the host, never from this tree.** Nothing here can check it fired.
+  A miss is silent: the issue exists, and the front door does not show it. **So look after you
+  file.** The one that goes missing may be the one a person must answer.
