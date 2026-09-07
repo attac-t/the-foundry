@@ -24,5 +24,10 @@ description: How to verify the Cognitive OS is functioning correctly.
 *   **Action**: Run `/design "A simple cache capability"`.
 *   **Expectation**: The Architect should *Plan* before *Doing*. It should use the `design` style.
 
+### D. The Identity Test (Version)
+*   **Action**: Ask the host which version of this plugin it loaded. Read the version in the plugin's own manifest.
+*   **Expectation**: They match. **Report both numbers, never a verdict alone** — a session that answers "current" without saying against what has proved nothing.
+*   **Why**: A, B and C all pass on an old copy. They test the plugin that is running, and never whether it is the plugin that was shipped.
+
 ## 3. Execution
 Use the `/evaluate` command to run this suite interactively.
