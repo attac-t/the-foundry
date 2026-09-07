@@ -20,6 +20,7 @@ the rule — open the file.
 - `.claude/rules/guidance.md` — Anything an agent should know, before you decide where to put it
 - `.claude/rules/identity.md` — Who the record says did the work
 - `.claude/rules/plugins.md` — What a plugin owes when it changes
+- `.claude/rules/running.md` — A run holds the work. Take one before you touch anything
 - `.claude/rules/shell.md` — Reading `craft-sh` before a shipped script is edited
 - `.claude/rules/writing.md` — Anything written down, not just replies — a reader came to understand, to act or to decide
 <!-- /rules -->
