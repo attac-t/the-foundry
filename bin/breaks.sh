@@ -73,9 +73,13 @@ every_break() {
 
     # Three comment lines that do not step down by three. The gate graded evenness once, and a block
     # dropping eighteen twice went through for weeks.
+    #
+    # **`taper.sh`, never `shell.sh`.** `shell.sh:22` says it left comment shape here, so this
+    # break drove a gate that cannot see it and read MISSED. A blind gate and a break aimed
+    # elsewhere look the same, which is why this script prints both words.
     drive shell-taper plugins/floor/lib/source.sh \
         'a_wedge >> plugins/floor/lib/source.sh' \
-        'bash bin/shell.sh'
+        'bash bin/taper.sh'
 
     # The generated rules list, never a rule's body. A new rule file changes the list, and no harness
     # file names it — which is the drift this gate exists for.
