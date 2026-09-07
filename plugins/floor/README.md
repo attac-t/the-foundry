@@ -1756,9 +1756,9 @@ Both are one step at the far end. Neither reads-then-writes, which is the shape 
 `policy` is still empty after one. It answers *who started*, and every question about *who may* is
 still answered where it was before.
 
-**Not proved by a race here.** The property is `mkdir` being one step, which POSIX gives. Two process
-races in one suite starve this machine, so the suite drives the sequence — take, refuse, release,
-refuse — and says this rather than reporting a race that never ran.
+**Not proved by a race.** The property is `mkdir` being one step, which POSIX gives. Racing two
+processes inside a suite is expensive and flaky, so the suite drives the sequence instead — take,
+refuse, release, refuse — and says so rather than reporting a race that never ran.
 
 **A dead host loses its claim without anyone acting.** A claim carries the moment it was stamped, and
 one older than `FOUNDRY_CLAIM_TTL` — an hour by default — is taken by the next host, which says whose
@@ -1947,8 +1947,9 @@ bash tests/run.sh
 ```
 
 **On Windows, grade it under WSL from the Linux disk.** Starting a process costs about 80 ms under
-Git Bash and about 1 ms under Linux, and this suite starts a great many. `model.sh` measured
-**4,611 s** on Git Bash against **49 s** under WSL on ext4 — 2 September, one laptop, one commit.
+Git Bash and about 1 ms under Linux, and this suite starts a great many. **The gap is two orders
+of magnitude** — the same suite runs in under a minute on ext4 and takes over an hour on a Windows
+path. Measure your own host before you trust either figure.
 
 ```bash
 mkdir -p ~/wsl-tmp && export TMPDIR=~/wsl-tmp
