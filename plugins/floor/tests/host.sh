@@ -27,9 +27,9 @@ trap 'chmod -R u+rwX "$tmp" 2>/dev/null; rm -rf "$tmp"' EXIT
 # `join.sh`'s own advice and ran `git config --global user.name` answered the check about having no
 # author, and floor's suite went red for following floor's instructions. `/dev/null` is an empty
 # config file, and the author each check wants is added back per repository.
-blind="GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_SYSTEM=/dev/null"
-joined()  { ( cd "$1" && shift && env -u FOUNDRY_HOME -u FOUNDRY_WHO $blind "$@" sh "$join" 2>&1 ); }
-code_of() { ( cd "$1" && shift && env -u FOUNDRY_HOME -u FOUNDRY_WHO $blind "$@" sh "$join" >/dev/null 2>&1; echo $?; ); }
+blind=(HOME="$tmp/home" GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_SYSTEM=/dev/null)
+joined()  { ( cd "$1" && shift && env -u FOUNDRY_HOME -u FOUNDRY_WHO "${blind[@]}" "$@" sh "$join" 2>&1 ); }
+code_of() { ( cd "$1" && shift && env -u FOUNDRY_HOME -u FOUNDRY_WHO "${blind[@]}" "$@" sh "$join" >/dev/null 2>&1; echo $?; ); }
 
 # A repository with nothing a host supplies. Each check below adds one piece back.
 bare() {
@@ -106,7 +106,7 @@ lacks "and is not called derived"        "$named" "derived from HOME"
 # contains-check passes on the exact pair it exists to catch — which
 # it did, silently, on the first draft of this very line.
 run=$(dirname "$join")/run.sh
-mine=$( cd "$tmp/one" && env -u FOUNDRY_HOME FOUNDRY_WHO=a@b sh "$run" home 2>&1 )
+mine=$( cd "$tmp/one" && env -u FOUNDRY_HOME "${blind[@]}" FOUNDRY_WHO=a@b sh "$run" home 2>&1 )
 theirs=$(printf '%s\n' "$said" | awk '$1 == "home" { print $2 }')
 is "the home it reports is the home a run would use" "$theirs" "$mine"
 
