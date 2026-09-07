@@ -116,7 +116,7 @@ Edit a rule, then run it — a row typed by hand into one file is the drift noth
 | `taper` | a three-line comment paragraph does not narrow by three, and nothing names it |
 | `comments` | a public comment carrying the seam's marker breaks a rule the seam applies |
 | `judged` | `.foundry/judged` pins an adapter this tree does not ship at that content |
-| `bytes` | a tracked text file holds a byte no decoder can read, or a character already lost |
+| `bytes` | a tracked text file holds a byte no decoder can read, a character already lost, or a carriage return |
 | `codex` | the adapter reaching a judge takes a verdict that was not the reply's last word, or claims a thread the harness never opened |
 | `kernel` | the plugin does not run — checked on Linux, macOS and Windows |
 | `signal` | the plugin does not run — checked on Linux, macOS and Windows |
