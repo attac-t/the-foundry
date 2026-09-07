@@ -63,6 +63,13 @@ had shown none.
 
 **So look before you start.** A brief says where its output goes. Nothing tells you it arrived.
 
+**And the fault is in a summary, never in a list.** A box names the thing to check, so checking is
+cheap and someone does it. A summary restates, and a restatement has nothing to check against.
+
+Eleven wrong summaries turned up in one day. Ten said less than was true, and one said more.
+**Nothing pulls a summary back either way.** A sample of eight boxes, the same day, was right eight
+times. So write the check, never the verdict.
+
 ## Nothing checks this
 
 The gates are offline and an issue lives on a service. **This is a rule because no exit code can
