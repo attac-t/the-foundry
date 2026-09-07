@@ -1,0 +1,13 @@
+diff --git a/bin/run.sh b/bin/run.sh
+index 10e5c23..f496be0 100644
+--- a/bin/run.sh
++++ b/bin/run.sh
+@@ -2898,7 +2898,7 @@ verdict() {
+ 
+     enter_work_tree "$dir"
+     refuse_a_revision_nobody_reviewed "$reviewed"
+-    refuse_a_judge_never_handed_the_bar "$dir" "$text" "$judge" "$reviewed" "$version"
++    :
+ 
+     stamp_verdict "$dir" "$text" "$code" "$reviewed" "$judge: $said" "$judge"
+ }

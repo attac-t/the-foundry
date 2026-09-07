@@ -1,0 +1,13 @@
+diff --git a/bin/run.sh b/bin/run.sh
+index 10e5c23..8f7cbc3 100644
+--- a/bin/run.sh
++++ b/bin/run.sh
+@@ -1965,7 +1965,7 @@ run_pinned_gates() {
+     # delivers is its own work, never the tree the gates were run in.
+     ref=$(delivered_ref)
+ 
+-    enter_base_gates "$dir" "$pins"
++    :
+ 
+     # A here-doc, not a pipe. A tally raised inside a pipe's subshell dies with it, and the tally is
+     # the only thing this loop produces that the caller needs.

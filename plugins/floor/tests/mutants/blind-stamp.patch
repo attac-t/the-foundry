@@ -1,0 +1,13 @@
+diff --git a/lib/source-github.sh b/lib/source-github.sh
+index 2874721..45669a9 100644
+--- a/lib/source-github.sh
++++ b/lib/source-github.sh
+@@ -240,7 +240,7 @@ said_after() {
+             }
+ 
+             function stamped(   i) {
+-                for (i = 1; i <= n; i++) if (held[i] ~ /^floor-[a-z]+: /) return 1
++                for (i = 1; i <= n; i++) if (held[i] ~ /^never-matches-this: /) return 1
+                 return 0
+             }
+ 

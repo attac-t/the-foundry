@@ -1,0 +1,13 @@
+diff --git a/bin/run.sh b/bin/run.sh
+index 10e5c23..355d1c9 100644
+--- a/bin/run.sh
++++ b/bin/run.sh
+@@ -1409,7 +1409,7 @@ add_target() {
+     }
+ 
+     is_usable_ref "$ref" || { note "not a usable ref: [$ref]"; exit 4; }
+-    refuse_second_ref "$dir" "$identity" "$ref"
++    :
+     refuse_selected_twice "$file" "$identity"
+ 
+     # Every guard runs before the append, so a refusal leaves the file byte-identical. This is where
