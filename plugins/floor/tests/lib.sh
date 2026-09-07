@@ -63,6 +63,7 @@ name_the_check() {
 #
 bad() {
   failed=$((failed + 1))
+  record FAIL "$1"
   name_the_check "${2:-$1}"
   printf '  FAIL  %s\n' "$1"
 
