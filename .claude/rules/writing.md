@@ -79,7 +79,7 @@ The bar above covers the rest.
 | | |
 |---|---|
 | a pull request, an issue, a comment, a question, a closing note | five shapes, named below. `floor:brief` teaches them with examples, and the shapes hold whether or not Floor is installed |
-| a `## Done when` list | **Written `- [ ]`, never `- `.** A bullet nobody can tick records nothing at close, and 47 of the first 83 lists were that shape |
+| a `## Done when` list | **Two states. `- [ ]` and `- [x]`, never `- ` and never `- [~]`.** A bullet nobody can tick records nothing at close, and 47 of the first 83 lists were that shape. **A tilde is worse: it renders as an open box and no count totals it.** A partial is an open box saying what holds |
 | `Closes` and `Refs` | `Closes #N` for the issue this finishes, `Refs #N` for the rest. **Never `@see`** — github.com/see is a real person GitHub notifies |
 | commit | [Commitizen](https://commitizen-tools.github.io/commitizen/) `type(scope): description`. The subject says what changed; the body says why it was wrong before |
 | comment | carries a discovery, never narration. `# the fatal goes to stderr, the argument to stdout` earns its line. `# loop over the files` does not |
