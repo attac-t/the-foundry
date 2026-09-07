@@ -221,4 +221,64 @@ the_preflight_earns_its_place() {
 }
 the_preflight_earns_its_place
 
+#
+# The receipt's vocabulary is in three places, and it drifts invisibly in one diff.
+#
+# `RECEIPT_KEYS` is what floor reads. `RECEIPT_REQUIRED` is the half without which a receipt is not
+# one. The README's table is what a producer builds against. **A closed set is only closed while all
+# three name it**, and no diff shows two of them at once.
+#
+# Promoted out of verdict 050. A judgement that would recur in the same words is an oracle, and this
+# one costs an exit code.
+#
+# **Here rather than `bin/`.** It guards one plugin's own contract, so it belongs beside it — a gate
+# in `bin/` would also want a name in the README's gate list and in `bin/agree.sh`, for a check that
+# says nothing about the other seven plugins.
+#
+# **Two claims, and a third was written and cut.** A required key outside the vocabulary makes the
+# verb unusable — the grammar refuses the key, then every receipt is refused for want of it — so a
+# guard for it looked obvious. It is implied: the README's required column is part of its table, so
+# `needs == marked` and `named == reads` already force `needs` inside `reads`. **No mutation could
+# reach it**, and a guard no break can kill is one nothing proves.
+
+# The value of a single-quoted shell assignment, however many lines it spans.
+declared_in_runner() {
+  awk -v want="$1" -v q="'" '
+    !holding && index($0, want "=" q) == 1 { holding = 1; $0 = substr($0, length(want) + 3) }
+    holding {
+      at = index($0, q)
+      if (at) { print substr($0, 1, at - 1); exit }
+      print
+    }' "$root/bin/run.sh"
+}
+
+# The keys the README's own table names. Column 1 is the required half; 0 is the whole table.
+said_in_readme() {
+  awk -F'|' -v col="$1" '
+    /^\| Required \| Vouched for, or absent \|/ { inside = 1; next }
+    inside && !/^\|/ { exit }
+    inside && /^\|-/ { next }
+    inside { print (col ? $(col + 1) : $0) }' "$root/README.md"
+}
+
+# Whitespace and punctuation out, sorted, one line. Two lists in different orders are one set.
+key_set() { tr -cs 'a-z_' '\n' | grep -v '^$' | sort -u | tr '\n' ' '; }
+
+the_receipt_vocabulary_agrees_everywhere() {
+  reads=$(declared_in_runner RECEIPT_KEYS     | key_set)
+  needs=$(declared_in_runner RECEIPT_REQUIRED | key_set)
+  named=$(said_in_readme 0 | key_set)
+  marked=$(said_in_readme 1 | key_set)
+
+  # Two empty sets compare equal, and a gate that passes on nothing certifies nothing.
+  [ -n "$reads" ] && [ -n "$needs" ] && [ -n "$named" ] || {
+    bad "the receipt vocabulary could not be read out of both bin/run.sh and README.md"
+    return
+  }
+
+  is "the README names every key the runner reads" "$named" "$reads"
+  is "and the two agree on which are required"     "$marked" "$needs"
+}
+the_receipt_vocabulary_agrees_everywhere
+
 summary "install"

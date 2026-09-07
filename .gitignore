@@ -11,6 +11,11 @@
 # Self-development symlink (created during plugin development)
 .claude/plugins/
 
+# Run artefacts. These belong under `~/.foundry-runs`, and this line is for the one case that
+# cannot reach it: `bin/gates.sh` keeps a failing gate's output beside the checkout when the
+# environment has no `$HOME`. Losing the output is worse than an ignored directory.
+.foundry-runs/
+
 # IDE and editor files
 .vscode/
 .idea/

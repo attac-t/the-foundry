@@ -20,7 +20,8 @@
 #      would derive from an artifact it changed — including a run that recorded no base
 #   7  the charter cannot be run against as it stands — something drifted, went missing, holds
 #      together with nothing, or is pinned to a repository this is not
-#   8  the charter grades nothing mechanically — it holds no clause, or none that pins a gate
+#   8  the charter gives this stage nothing to run — it holds no clause, none that pins a gate, or
+#      none that names a judge
 #   9  a clause grades no selected target, so it is no bar
 #  10  the selection moved after it was authorised — that is a new run, not this one
 #  11  a clause is introduced and nothing can ask a human to authorise it
@@ -39,8 +40,8 @@
 #      nothing
 #  20  the work source could not be asked — a tool that is not there, a credential it refused, a
 #      network. Not 1: that is the source answering, and answering that nothing is there
-#  21  a gate never answered — its command is not on this host, or a signal killed it before it
-#      could. Nothing was graded and nothing is recorded. Not 14:
+#  21  a gate or a judge never answered — its command is not on this host, or a signal killed it
+#      before it could. Nothing was graded and nothing is recorded. Not 14:
 #      that is a gate answering, and its answer stands at that ref for good
 #  23  nobody said this run may merge into that repository. `policy deliver-to` grants proposing,
 #      and landing work in the trunk is a third act a human takes
@@ -67,10 +68,21 @@
 #      another, and the size of the change between them is not the point
 #  36  nothing records this judge being handed the bar. A verdict given without the charter is
 #      worth what it was given, and `evidence handed` is what says it was given
+#  37  the receipt cannot be read as evidence — it is not there, it is there and holds nothing, it
+#      carries a line this has no reading for, or it claims a thing it did not check. One remedy for
+#      all four: a receipt saying what the contract names, and nothing beyond it
+#  38  the receipt is about other work. It answers for another run, or for a bar that has changed
+#      since it went over. The judgement is real and it is not about this
 #  34  the worker may not account for ancestry. It named itself, so a record it writes about its
 #      own commits is the producer signing off its own bar
 #  22  the repository declares a bar in a file that is there and cannot be read. Not 8: that is a
 #      charter holding no clause, and this is one nobody could derive. The remedy is the file
+#  39  a judged clause the runner took up is not met — the judge refused, asked for another round,
+#      could not answer at all, or had already given every round the charter allows. An answer about
+#      the work, never a fault in the run. Not 14: that is a command answering, and none answers this
+#  40  the adapter that would judge this run is not the one the repository authorised — the pin is
+#      not a digest, or it names content that is not what is there. Not 21: that is an adapter
+#      nobody could find, and the remedy is an install. This one is here and it is the wrong one
 #
 # Eight through twelve are one stage and five remedies: write a requirement down, select a target it
 # governs, or start again. Collapsing them would make the exit code say *authorisation refused* and
@@ -84,6 +96,33 @@ case $0 in
     */*) SELF_DIR=${0%/*} ;;
     *)   SELF_DIR=. ;;
 esac
+
+#
+# The plugin this runner ships in. **The one directory floor trusts.**
+#
+# A shipped adapter is reached under it and nowhere else — never `$PATH`, never a repository file,
+# never a search for the newest of anything. That last one is a package manager written in shell,
+# and a judging path is where it would be worst.
+#
+# Absolute and read once. `enter_work_tree` leaves this directory for good, so a relative answer
+# read afterwards would name whatever the run had changed into. An unresolvable root yields a path
+# no file is at, and the adapter refuses for not being there — which is the safe way round.
+#
+PLUGIN_ROOT=$(cd "$SELF_DIR/.." 2>/dev/null && pwd)
+
+# What a reach resolved to. Set by `resolve_reach` — four answers, and `sh` returns one.
+#
+# **`REACH_COMMAND` is interpreted and `REACH_FILE` is run, and exactly one of them is set.** A
+# repository's own command is a string it wrote, which is what `sh -c` is for. An adapter is one file
+# this runner built the path to, and putting that path inside a string would split a plugin installed
+# under a directory holding a space.
+#
+# `REACH_PIN` and `REACH_DIGEST` are empty for a repository's own command, because there is nothing
+# pinning one. A key floor invented would read in a record exactly like one somebody checked.
+REACH_COMMAND=
+REACH_FILE=
+REACH_PIN=
+REACH_DIGEST=
 
 main() {
     action=${1:-}
@@ -105,6 +144,7 @@ main() {
         charter)   charter "$@" ;;
         evidence)  evidence "$@" ;;
         gates)     gates "$@" ;;
+        judged)    judged "$@" ;;
         open)      open_workspace "$@" ;;
         commit)    commit_work "$@" ;;
         complete)  complete "$@" ;;
@@ -151,6 +191,7 @@ floor — where work happens.
   run.sh charter introduce <kind> <text>
                                   add a clause nothing derived — it stays introduced
   run.sh gates                    run every pinned gate and record each — exit 14 if one did not pass
+  run.sh judged                   ask every judge the charter names — exit 39 if one did not approve
   run.sh open                     check out every selected target in isolation, and print where
   run.sh commit <message>         commit what is staged, and record that this run made it
   run.sh complete                 may this run deliver? exit 15 names what is missing
@@ -176,8 +217,10 @@ usage_evidence() {
     cat <<'EOF'
   run.sh evidence                 print what this run has proved
   run.sh evidence record <name> <command...>   run it, and stamp what happened
-  run.sh evidence handed <clause> <judge> <how> say this judge was given the bar, and how it ran
+  run.sh evidence handed <clause> <judge> <how> [brief]
+                                  say this judge was given the bar, how it ran, and which brief
   run.sh evidence verdict <clause> <judge> <approve|reject|revise> <text> <sha>
+  run.sh evidence receipt <file>  read a judgement receipt, and stamp what it attests
 EOF
 }
 
@@ -1435,10 +1478,30 @@ is_usable_ref() {
 #
 # What must be true for this run to be good.
 #
-# Two records, sharing an id:
+# Five records, sharing an id:
 #
 #     clause  <id>  Gate|Judged|Decided  <text>
 #     pin     <id>  <target>  <ref>  <source>  <sha>
+#     gate    <id>  <command...>
+#     judge   <id>  <who>  <command...>
+#     rounds  <id>  <who>  <n>
+#
+# `print_clause`, `print_pin`, `print_gate`, `print_judge` and `print_rounds` write them, and each is
+# the only writer of its kind. This header said two for long enough that a reader built a design
+# question on the missing pair.
+#
+# A command is the last field on purpose. `pinned_command` strips two and prints the rest, so spaces,
+# quotes and `&&` need no parser and get none. `judge_command` strips three and does the same, which
+# is the whole of how a judged clause grew a way to be reached.
+#
+# **`rounds` is a record and not a field on `judge`, and that is what the command being last costs.**
+# A limit after the command could not be told from it, and one before it moves a field three readers
+# strip by position. So the ceiling gets a kind, and a judge with none is asked for ever.
+#
+# **A judge's command may be absent, and a gate's may not.** A gate with no command grades nothing,
+# so `gate_held` refuses one. A judge with no command is a clause only a person can answer, which is
+# every judged clause floor had before the runner could ask one — so it derives, and `judged`
+# refuses it rather than the charter doing so.
 #
 # One clause, many pins — a clause whose meaning comes from two repositories names both. They are
 # separate records because inline pins make dropping a target and deleting a clause the same edit,
@@ -1486,6 +1549,7 @@ evidence() {
         record) shift; refuse_wrong_repository "$dir"; record_gate "$dir" "$@" ;;
         verdict) shift; refuse_wrong_repository "$dir"; verdict "$dir" "$@" ;;
         handed) shift; refuse_wrong_repository "$dir"; handed "$dir" "$@" ;;
+        receipt) shift; refuse_wrong_repository "$dir"; receipt "$dir" "${1:-}" ;;
         *)      usage; exit 2 ;;
     esac
 }
@@ -1618,11 +1682,27 @@ stamp_verdict() {
         >> "$(evidence_file "$1")" 2>/dev/null || die_unwritable "$(evidence_file "$1")"
 }
 
+#
+# A receipt's row. `stamp_verdict`'s eight and one more, holding what the receipt vouched for.
+#
+# Its own stamper rather than an optional field on that one. A verdict typed by hand attests nothing
+# beyond its five arguments, and an empty ninth column on it would say it attested nothing — when
+# nobody ever asked it to.
+stamp_receipt() {
+    printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
+        "$(date -u +%Y-%m-%dT%H:%M:%SZ)" judged 01 "$2" "$3" "$4" "$(one_line "$5")" "$(one_line "$6")" "$(one_line "$7")" \
+        >> "$(evidence_file "$1")" 2>/dev/null || die_unwritable "$(evidence_file "$1")"
+}
+
 # The handoff's own row. Same eight columns, so one reader serves both, and a kind of its own so
 # `satisfied` never mistakes a handoff for an answer.
+#
+# Ten now. The last is the digest of the brief that went over, and a receipt answering a different
+# one is answering a bar this run did not set. A handoff that recorded none leaves it empty, and an
+# empty baseline satisfies nothing — `refuse_a_brief_nothing_recorded` says so.
 stamp_handoff() {
-    printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
-        "$(date -u +%Y-%m-%dT%H:%M:%SZ)" handed 01 "$2" 0 "$3" "$4" "$(one_line "$5")" "$(one_line "$6")" \
+    printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
+        "$(date -u +%Y-%m-%dT%H:%M:%SZ)" handed 01 "$2" 0 "$3" "$4" "$(one_line "$5")" "$(one_line "$6")" "$(one_line "$7")" \
         >> "$(evidence_file "$1")" 2>/dev/null || die_unwritable "$(evidence_file "$1")"
 }
 
@@ -2021,6 +2101,495 @@ gate_held() {
 }
 
 #
+# Ask every judge the charter names, and record what came back — #332.
+#
+# **The command comes from the charter, never from the caller.** That is the whole difference between
+# this and `evidence receipt`: that verb reads a file somebody else made, and this one runs what the
+# repository declared and reads the file that came out. A caller passing anything is refused.
+#
+# The same guards `gates` carries, for the reason `gates` carries them: the ledger is append-only, so
+# a recorder reading a run it should have refused writes a row nothing takes back.
+#
+# **It does not loop.** A refused judgement is answered by new work, and new work is a new commit —
+# so round two is a second invocation at a second candidate, never a second pass here. The round is
+# counted from the ledger.
+#
+# **A charter may bound how many.** `rounds <id> <who> <n>` says how often one member may be asked
+# about one clause, and at the limit the runner records a deadlock instead of asking. A charter
+# pinning none asks for ever, which is what every run before this did.
+#
+judged() {
+    dir=$(active_run) || exit 1
+    [ "$#" -eq 0 ] || { usage; exit 2; }
+
+    refuse_renamed_run "$dir"
+    refuse_moved_selection "$dir" "$(unit_targets_file "$dir")" || exit 10
+
+    check_charter "$dir"
+    ask_pinned_judges "$dir"
+}
+
+#
+# Every judge, and how many of them left their clause unmet.
+#
+ask_pinned_judges() {
+    dir=$1
+    unmet=0
+
+    # `bench`, never `panel`: `refuse_a_judge_nobody_asked` takes the members into a variable of that
+    # name, sh has no locals, and the loop below runs through it. `.foundry/judged` already calls the
+    # place a member stands a bench, so the second name was there to be used.
+    bench=$(every_judge_record "$(charter_file "$dir")")
+    [ -n "$bench" ] || { note "this charter names no judge, so there is nothing here to judge"; exit 8; }
+
+    enter_work_tree "$dir"
+    refuse_a_judge_this_run_rewrote "$dir" "$bench"
+    ref=$(delivered_ref)
+
+    # A here-doc, not a pipe. A tally raised inside a pipe's subshell dies with it, and the tally is
+    # the only thing this loop produces that the caller needs.
+    while read -r id who command; do
+        [ -n "$who" ] || continue
+        judge_answered "$dir" "$ref" "$id" "$who" "$command" || unmet=$((unmet + 1))
+    done <<EOF
+$bench
+EOF
+
+    [ "$unmet" -eq 0 ] && return 0
+    note "judged clauses no judge approved: $unmet"
+    return 39
+}
+
+#
+# One judge, on one clause: hand the bar over, ask, and read the answer.
+#
+# The receipt goes through `receipt`, which is the verb a person types. Same keys, same refusals, and
+# **a run cannot reach a satisfaction a hand-written receipt could not.**
+#
+# `satisfied` decides the answer rather than `receipt`'s exit code. A receipt saying `reject` or
+# `unavailable` is a receipt floor took and recorded, so recording it succeeded and the clause is
+# still unmet — two different questions, and only the second is this one.
+#
+judge_answered() {
+    dir=$1; ref=$2; id=$3; who=$4; command=$5
+
+    text=$(clause_text "$(charter_file "$dir")" "$id")
+    [ -n "$text" ] || { note "the charter names a judge under [$id] and no clause for it"; exit 7; }
+
+    limit=$(round_limit "$(charter_file "$dir")" "$id" "$who")
+    over_the_limit "$limit" "$(next_round "$dir" "$text" "$who")" \
+        && { record_the_deadlock "$dir" "$text" "$ref" "$who" "$limit"; return 1; }
+
+    resolve_reach "$command"
+    [ -n "$REACH_COMMAND$REACH_FILE" ] \
+        || { note "the charter says nothing about how [$who] is reached for [$text]"; exit 7; }
+
+    mkdir -p "$dir/judged" 2>/dev/null || die_unwritable "$dir/judged"
+    bar=$(brief_for "$dir" "$id")
+    answer=$(receipt_for "$dir" "$id")
+
+    # `bar` and `digest`, never `brief`: `handed` takes the digest into a variable of that name, sh
+    # has no locals, and reading it back after the call digested a checksum. That is `craft-sh` rule
+    # 10 — one name, one meaning — and it cost a debugging pass here before the rule was applied.
+    write_brief "$dir" "$text" "$ref" "$who" > "$bar" || die_unwritable "$bar"
+    digest=$(digest_of "$bar")
+
+    handed "$dir" "$text" "$who" "$command" "$digest"
+    write_receipt_context "$dir" "$text" "$ref" "$who" "$digest" > "$answer" \
+        || die_unwritable "$answer"
+
+    ask_the_judge "$bar" "$answer"
+    receipt "$dir" "$answer"
+
+    satisfied "$dir" "$text" "$ref" judged "$who"
+    met=$?; emit "$dir" judge.finished judge="$who" result="$met" runtime="$(runtime)"; return "$met"
+}
+
+#
+# Whether this judge has already given every round the charter allows on this clause.
+#
+# **A charter pinning no limit never answers yes**, and neither does a count nothing can compare.
+# `[ 1 -gt abc ]` is not a comparison: it complains to stderr and returns non-zero, so a guard
+# reading that status would call a judge over a ceiling nobody set.
+#
+# Both fail open, which is the safe way round. The cost is a round nobody bounded; the other way, a
+# typo stops a run at a bar the repository never wrote.
+over_the_limit() {
+    is_a_count "$1" || return 1
+    is_a_count "$2" || return 1
+
+    [ "$2" -gt "$1" ]
+}
+
+#
+# Floor declining to ask, written down where a verdict would be.
+#
+# **Nothing is handed over first, because nothing goes over.** `handed` says a judge was given the
+# bar, and a row saying so about a judge that was never asked is the one thing this file refuses
+# everywhere else.
+#
+# Code 3 — the one a receipt saying `deadlock` already maps to, and the one `stopped` already reads.
+# So completion names an exhausted budget rather than silence or a refusal, and the reader that tells
+# the three apart is the one that was already there. Nothing new is stored.
+#
+# **Asked before the reach is resolved**, because a judge floor will not run needs no way to be
+# reached. A member at its limit whose adapter drifted is a deadlock here and not a 40 — and the
+# adapter still never runs, which is the whole of what 40 protects.
+#
+record_the_deadlock() {
+    dir=$1; text=$2; ref=$3; who=$4; limit=$5
+
+    note "[$who] has had the $limit rounds this charter allows on [$text], so it was not asked again"
+    stamp_verdict "$dir" "$text" 3 "$ref" \
+        "$who: deadlock, the charter allows $limit rounds and $limit were given" "$who"
+}
+
+# Where the bar goes over, and where the answer comes back. Beside the charter and named for the
+# clause, so a person told a run's path can open either and read what was asked and what was said.
+brief_for()   { printf '%s/judged/%s.brief' "$1" "$2"; }
+receipt_for() { printf '%s/judged/%s.receipt' "$1" "$2"; }
+
+#
+# Run the judge, and tell a host that could not from a judge that answered badly.
+#
+# `stamp_command`'s two refusals without its stamp. A `machine` row under a judged clause's name is a
+# command answering the question no command can answer, so nothing here writes one — what the judge
+# says is in the receipt, and the receipt is what gets recorded.
+#
+# `</dev/null` for `stamp_command`'s reason: a judge that reads the caller's terminal is evidence of
+# something nobody can repeat. Its own words go to stderr, because a judge that failed and wrote no
+# receipt refuses two lines later with a sentence about a file, and this is the sentence about why.
+#
+ask_the_judge() {
+    said=$(ask_however_it_is_reached "$1" "$2" 2>&1); answered=$?
+
+    never_ran "$answered"  && { note "the judge could not run on this host: $said"; exit 21; }
+    was_killed "$answered" && { note "the judge was killed by signal $((answered - 128))"; exit 21; }
+    [ "$answered" -eq 0 ] || note "the judge exited $answered: $(one_line "$said")"
+
+    return 0
+}
+
+#
+# A file is run. A string is interpreted.
+#
+# **The difference is quoting, and it is not cosmetic.** A plugin installed under a directory holding
+# a space splits into two words inside `sh -c`, and no escaping of a path this runner built is as
+# total as never putting it in a string at all.
+#
+ask_however_it_is_reached() {
+    [ -z "$REACH_FILE" ] \
+        || { FOUNDRY_BRIEF="$1" FOUNDRY_RECEIPT="$2" sh "$REACH_FILE" </dev/null; return; }
+
+    FOUNDRY_BRIEF="$1" FOUNDRY_RECEIPT="$2" sh -c "$REACH_COMMAND" </dev/null
+}
+
+#
+# What a reach asks for, and what will actually run.
+#
+# Three forms, told apart by the first word:
+#
+#     @adapter <id> <digest>   an adapter this plugin ships, at exactly that content
+#     @custom  <command...>    the repository's own, and the line says the choice was deliberate
+#     <command...>             the repository's own. Every declaration written before `@` existed
+#
+# The two custom forms are one behaviour and two records. A bare command works and always will; a
+# repository writes `@custom` when a reader six months on should be able to tell a deliberate script
+# from a copy nobody migrated.
+#
+# **A first word beginning with `@` is a transport and never a command.** A mistyped one is named
+# here rather than handed to a shell, which would answer *command not found* about a fault that is
+# in the declaration.
+#
+resolve_reach() {
+    REACH_COMMAND=$1
+    REACH_FILE=
+    REACH_PIN=
+    REACH_DIGEST=
+
+    case ${1%% *} in
+        @adapter) reach_the_shipped_adapter "${1#@adapter}" ;;
+        @custom)  REACH_COMMAND=${1#@custom} ;;
+        @*)       refuse_an_unknown_transport "${1%% *}" ;;
+    esac
+}
+
+#
+# The adapter this plugin ships, at exactly the content the repository authorised.
+#
+# **The path is built and never searched.** One directory under the trusted plugin root, one file,
+# and no second candidate anywhere. A `$PATH` lookup would let an install elsewhere answer for this
+# one, and *the newest installed* would make an upgrade a thing that happens to a repository rather
+# than a change it can see.
+#
+# **The pin is the repository's trust decision, and the digest is what is there.** Both go into the
+# receipt, and this refuses the gap before the adapter runs — so an adapter nobody authorised never
+# reads the work at all, which a receipt written afterwards could only report.
+#
+# The pin is taken as everything after the id, so a reach carrying a fourth word fails the digest
+# shape rather than having it quietly dropped.
+#
+# `rest`, `adapter` and `at` — never `said`, `id` or `file`. Those three mean something else in the
+# chain that calls this, `sh` has no locals, and the first draft clobbered the clause id: every
+# receipt landed under the adapter's name instead of the clause's. `craft-sh` rule 10, and this file
+# had already paid for it twice.
+reach_the_shipped_adapter() {
+    rest=${1# }
+    adapter=${rest%% *}
+    pin=${rest#"$adapter"}; pin=${pin# }
+
+    refuse_an_adapter_name_this_cannot_resolve "$adapter"
+    refuse_a_pin_that_is_not_a_digest "$adapter" "$pin"
+
+    at=$(adapter_file "$adapter")
+    refuse_an_adapter_this_plugin_does_not_ship "$adapter" "$at"
+
+    REACH_DIGEST=$(digest_on_disk "$at")
+    refuse_an_adapter_nobody_authorised "$adapter" "$pin" "$REACH_DIGEST" "$at"
+
+    REACH_COMMAND=
+    REACH_FILE=$at
+    REACH_PIN=$pin
+}
+
+# The one place a shipped adapter is ever looked for.
+adapter_file() { printf '%s/adapters/%s/run.sh' "$PLUGIN_ROOT" "$1"; }
+
+#
+# What the file on disk actually is, as git names content.
+#
+# **Not `digest_of`.** That one is `cksum`, and it answers whether a brief moved under a judge — a
+# change detector, where a collision costs a re-read. This decides whether the code about to judge
+# the work is the code the repository authorised, and 32 bits is not a thing to rest that on.
+#
+# `--no-filters`, so the answer is the bytes rather than what a repository's line-ending rules would
+# make of them. A pin taken on one platform has to mean the same file on the next.
+#
+# **That also settles where this may be called from.** Attributes are what a repository would bring
+# to the answer, and filters are off, so the digest is the same inside the workspace, inside the
+# checkout, or outside any repository at all. It is asked after `enter_work_tree` and does not
+# depend on it.
+#
+digest_on_disk() { git hash-object --no-filters -- "$1" 2>/dev/null; }
+
+#
+# A name, and a name is one directory. Letters, digits and hyphens, so nothing here walks upward out
+# of the adapters directory or reaches a second one sideways.
+#
+refuse_an_adapter_name_this_cannot_resolve() {
+    is_an_adapter_name "$1" && return 0
+
+    note "[$1] is not an adapter name — lowercase letters, digits and hyphens, and no path in it"
+    exit 40
+}
+
+is_an_adapter_name() {
+    case $1 in
+        ''|*[!a-z0-9-]*) return 1 ;;
+    esac
+    return 0
+}
+
+#
+# A pin that can move is not a pin.
+#
+# A tag, a version and a range each read as an authorisation while the thing they name changes
+# underneath. A digest names one content and nothing else, so an upgrade is a line the repository
+# had to edit.
+#
+refuse_a_pin_that_is_not_a_digest() {
+    is_a_digest "$2" && return 0
+
+    note "[$1] is pinned to [$2], and a pin is the digest of the adapter it authorises"
+    note "  a tag, a version or a range moves while the repository says nothing changed"
+    exit 40
+}
+
+# A git blob digest, and nothing that merely reads like one. Forty hex for the object format git
+# uses by default, sixty-four for a repository built on sha256.
+is_a_digest() {
+    case $1 in
+        *[!0-9a-f]*) return 1 ;;
+    esac
+    [ "${#1}" -eq 40 ] || [ "${#1}" -eq 64 ]
+}
+
+#
+# An adapter this plugin does not ship. **Nothing else is asked.**
+#
+# No `$PATH`, no neighbouring version, no repository file. Naming a second candidate is the fallback
+# this whole path exists to refuse — and the remedy is an install, which is a different act from
+# changing the work.
+#
+refuse_an_adapter_this_plugin_does_not_ship() {
+    [ -f "$2" ] && [ -r "$2" ] && return 0
+
+    note "[$1] is not an adapter this plugin ships, and nothing else answers for it"
+    note "  looked at [$2] and nowhere else — update the plugin, or declare a custom command"
+    exit 21
+}
+
+#
+# The adapter is here and it is not the one the repository authorised. Something rewrote the file,
+# or the plugin was upgraded and nobody said so in the repository.
+#
+# **The upgrade is the ordinary case, so the remedy goes in the message.** This is where a consumer
+# lands the first time their plugin moves under a pin, and two digests with nothing to do about
+# them is a dead end. The README says the same thing eight hundred lines in, where nobody is.
+#
+refuse_an_adapter_nobody_authorised() {
+    [ "$2" = "$3" ] && return 0
+
+    note "[$1] is authorised at [$2] and what is here digests to [${3:-nothing}]"
+    note "  the adapter about to judge this run is not the adapter this repository committed"
+    note "  read the new one, then commit its digest in .foundry/judged:"
+    note "    git hash-object --no-filters -- $4"
+    note "  or declare a command of your own with \`@custom\`"
+    exit 40
+}
+
+# A transport nobody wrote. `@` opens a reserved word, so this is named rather than shelled out.
+refuse_an_unknown_transport() {
+    note "[$1] is not a transport — @adapter ships one, @custom is the repository's own command"
+    exit 7
+}
+
+#
+# What went over, written by the runner and digested before the judge is asked.
+#
+# **Floor writes this one and reads no other.** `handed` takes a digest from whoever handed the bar
+# over, and everywhere else that is a caller's word. Here the runner is the caller, so the file it
+# digested is the file the judge was pointed at, and the two cannot differ.
+#
+# The charter travels with it because the charter is the bar. The ledger does not: a judge handed
+# this run's own answers has been handed its reply, which is the rule the README states about a
+# receipt and is no less true of a brief.
+#
+# The base is named beside the candidate, because a judge asked what changed needs both ends. They
+# are the same commit on a run that has done no work yet, and that is an answer too.
+write_brief() {
+    printf 'run %s\nclause %s\ncandidate %s\nbase %s\njudge %s\nround %s\n\n' \
+        "$(recorded_id "$1")" "$2" "$3" "$(bootstrap_base "$1")" "$4" "$(next_round "$1" "$2" "$4")"
+    printf -- '--- the charter this work is graded against ---\n'
+    cat "$(charter_file "$1")"
+}
+
+#
+# The half of the receipt only the runner knows, written before the judge is asked.
+#
+# **Every key here is one the judge may not restate.** `refuse_a_line_that_is_not_a_receipt_line`
+# calls a key said twice two answers and refuses the file, so an adapter writing its own candidate is
+# refused rather than believed. That refusal is what makes these fields the runner's.
+#
+# What the judge appends is what only it saw: `adapter`, `verdict`, `report`, `time`, and whatever
+# else it can vouch for. Nothing here writes one of those, because floor did not watch it happen.
+#
+write_receipt_context() {
+    printf '# written by the runner, before the judge was asked. The judge appends what it saw.\n'
+    printf 'run %s\nclause %s\ncandidate %s\nrole %s\nbrief %s\nround %s\n' \
+        "$(recorded_id "$1")" "$2" "$3" "$4" "$5" "$(next_round "$1" "$2" "$4")"
+    print_prior "$1" "$2" "$4"
+    say_the_adapter_binding
+}
+
+#
+# The adapter the repository authorised, and the one that answered. **Two facts, never one.**
+#
+# A pin alone says which adapter may judge and nothing about which did. A digest alone says what ran
+# with nothing standing behind it. Only the pair binds, and `receipt` refuses each half on its own.
+#
+# **Core writes these, and the adapter may not.** They are what says the vendor code had authority,
+# so vendor code writing them would be vouching for itself. The grammar's *said twice* is what makes
+# that a refusal rather than a convention.
+#
+# Nothing at all for a repository's own command: there is no pin to say, and a key floor invented
+# would read in a record exactly like one somebody checked.
+#
+# `REACH_PIN` and `REACH_DIGEST` come from `resolve_reach`, which ran before the brief was written.
+#
+say_the_adapter_binding() {
+    [ -n "$REACH_PIN" ] || return 0
+
+    printf 'adapter_pin %s\nadapter_digest %s\n' "$REACH_PIN" "$REACH_DIGEST"
+}
+
+# The verdict before this one, and nothing when this is the first. A `prior` naming nothing is what
+# `refuse_a_round_with_no_prior` refuses, so an absent one has to stay absent rather than be filled.
+print_prior() {
+    said=$(prior_verdict "$1" "$2" "$3")
+    [ -n "$said" ] || return 0
+
+    printf 'prior %s\n' "$said"
+}
+
+#
+# Which round this is: every verdict this judge already gave on this clause, plus one.
+#
+# Counted from the ledger and never from the receipt, because the ledger is the run's and the receipt
+# is the producer's. A round the producer names is a record; this is the count floor can make.
+#
+# **A run with no ledger yet is round one, and this is what says so.** `awk` handed a file that is
+# not there never reaches its `END`, so the count came back empty — and the first brief a judge was
+# ever handed said `round` and nothing after it. Found by running it, not by reading it.
+next_round() {
+    [ -f "$(evidence_file "$1")" ] || { printf 1; return 0; }
+
+    awk -F'\t' -v name="$2" -v judge="$3" '
+        $2 != "judged"    { next }
+        $4 "" != name ""  { next }
+        $8 "" != judge "" { next }
+        { rounds++ }
+        END { print rounds + 1 }' "$(evidence_file "$1")" 2>/dev/null
+}
+
+# What that judge last said about that clause, as the ledger kept it.
+prior_verdict() {
+    awk -F'\t' -v name="$2" -v judge="$3" '
+        $2 != "judged"    { next }
+        $4 "" != name ""  { next }
+        $8 "" != judge "" { next }
+        { said = $7 }
+        END { print said }' "$(evidence_file "$1")" 2>/dev/null
+}
+
+#
+# A run that rewrote the file its own judge runs is grading itself.
+#
+# `gates` plants the base's copy and grades against that. This refuses instead, and the difference is
+# what the two produce: a gate answers with an exit code, so a substituted one still answers, while a
+# judge writes a receipt and a substitution would leave nobody able to say which copy wrote it.
+#
+# **A file the base does not hold is not a rewrite**, so the judge a run adds is not caught here —
+# `moved_gate_scripts` yields only what the base can restore. Landing a bar change is a person's act,
+# and #341 owns the rest of that seam.
+#
+refuse_a_judge_this_run_rewrote() {
+    rewrote=$(moved_gate_scripts "$1" "$(judge_commands "$2")")
+    [ -z "$rewrote" ] || {
+        note "this run changed a file its own judge runs:"
+        printf '%s\n' "$rewrote" | cut -f2 | sed 's/^/floor:   /' >&2
+        note "a judge the work can rewrite grades the work that rewrote it"
+        exit 7
+    }
+}
+
+#
+# The panel's records as `id command...`, which is the shape `moved_gate_scripts` reads. A member
+# nobody said how to reach has no command and no file, so it is dropped rather than read as one.
+#
+# **A shipped adapter is dropped too, and that is not a saving.** `moved_gate_scripts` asks which
+# repository files a command names, so an `@adapter` record has its id and its digest read as
+# filenames — a no-op only while no repository holds a file named for an adapter. One that did, and
+# changed it, would be told it had rewritten its own judge.
+#
+# The adapter is not a repository file, so no run can rewrite it. What guards it is the digest.
+#
+judge_commands() {
+    printf '%s\n' "$1" | awk '$3 == "@adapter" { next }
+                              NF > 2 { id = $1; $1 = ""; $2 = ""; sub(/^ +/, ""); print id, $0 }'
+}
+
+#
 # May this run deliver? — RFC-001 §2.5's completion invariant.
 #
 # Every conjunct answers from state something else already wrote: `new` stamped the selection, the
@@ -2067,7 +2636,21 @@ unmet_for_delivery() {
     empty_bar "$1"
     empty_selection "$1"
     ungradable_targets "$1"
+    underived_clauses "$1"
     unmet_clauses "$1"
+}
+#
+# A clause the charter no longer derives.
+#
+# `check_charter` reads this at `charter check` and inside `gates`. **Neither runs again on the way
+# out.** So a `Judged` clause deleted from the charter after the gates passed reached `complete` and
+# `deliver` with nothing looking, and completion answered that the charter was fully satisfied.
+#
+# `authorise` reads the gate half — `underived_gates`, filtered to `deleted:`. It never reaches the
+# judged half, and the judged half is the one a person cannot re-run.
+#
+underived_clauses() {
+    underived_judged "$(charter_file "$1")"
 }
 
 #
@@ -2142,7 +2725,7 @@ land_what_was_graded() {
     [ "$asked" -eq 1 ] && { note "this run has delivered nothing, so there is nothing to merge"; exit 24; }
     [ "$asked" -eq 0 ] || exit 25
 
-    read -r head state mergeable checks <<EOF
+    read -r head state mergeable target <<EOF
 $said
 EOF
 
@@ -2153,9 +2736,12 @@ EOF
     refuse_a_delivery_not_open   "$state"
     refuse_a_moved_head          "$head" "$2"
     refuse_a_source_that_will_not "$mergeable"
-    refuse_a_check_that_did_not_pass "$checks"
+    refuse_a_required_check_that_did_not_pass "$target" "$(what_the_target_requires "$said")"
 
-    source_says land "${1##*/}" || exit 25
+    source_says land "${1##*/}" || {
+        note "the source would not land it — a bar floor cannot read may be what refused"
+        exit 25
+    }
     note "merged."
 }
 
@@ -2184,17 +2770,42 @@ refuse_a_source_that_will_not() {
 }
 
 #
-# Every check, or none. **A check that did not answer is not a check that passed** — the whole reason
-# this is spelled out is that a pending rollup reads as an empty failure list.
+# **Only what the target requires, and every one of those.** The rollup holds checks nobody made a
+# condition of landing, and refusing on those was floor holding a bar the source never set. A target
+# requiring nothing could not be merged into at all.
 #
-refuse_a_check_that_did_not_pass() {
-    [ "$1" = NONE ] && return 0
+# A check that has not answered is still refused. **A check that did not answer is not a check that
+# passed**, and a required check still pending reads as an empty failure list to anybody who looks
+# only for a `FAILURE`.
+#
+# **Only `SUCCESS` passes, which is stricter than the source may be.** GitHub may hold `SKIPPED` and
+# `NEUTRAL` to have met a required check. Nothing here has measured that, and no branch this runs
+# against requires a check to measure it against — so both refuse, which is the safe side of a
+# question nobody has answered. It is the one place this is tighter than the bar, not looser.
+#
+# **The cost, said plainly: the bar is now the source's bar.** A target requiring nothing is a
+# target checking nothing, and deferring to it inherits exactly that — weaker than refusing on
+# everything, and true. What a repository must pass is not floor's to decide.
+#
+refuse_a_required_check_that_did_not_pass() {
+    failed=$(printf '%s\n' "$2" | awk 'NF && $1 != "SUCCESS"')
+    [ -n "$failed" ] || return 0
 
-    printf '%s\n' "$1" | tr ',' '\n' | grep -qvx SUCCESS || return 0
-
-    note "a check the source requires did not pass: $1"
+    printf '%s\n' "$failed" | while read -r conclusion check; do
+        note "[$check] is required to land on [$1], and $(what_became_of "$conclusion")"
+    done
     exit 24
 }
+
+# A check that never ran is not a check that failed. The source lands neither, and only one of the
+# two is a failure somebody can go and read.
+what_became_of() {
+    [ "$1" = MISSING ] && { printf 'it never ran'; return 0; }
+    printf 'it answered [%s]' "$1"
+}
+
+# The check lines of what the source said, which is everything after the header.
+what_the_target_requires() { printf '%s\n' "$1" | sed 1d; }
 
 
 #
@@ -2788,12 +3399,98 @@ what_it_lacks() {
     printf 'unmet: [%s] at %s@%s\n' "$text" "$4" "$5"
 }
 
-# Every member said yes, or the ones who have not are named.
+#
+# A judge that answered, and said no.
+#
+# `satisfied` returns non-zero for a refusal and for silence alike, because both mean *not yes*. The
+# two want opposite things next. A silent judge is asked again. **A refusal is answered by changing
+# the work** — one dissent stops that ref for good, so asking the same judge again cannot help.
+#
+# Told apart by field 5, which the recorder already writes. Nothing new is stored.
+#
+#
+# One and two, not merely non-zero. `reject` and `revise` are a judge answering; three and four are
+# a judgement that never happened, and `stopped` holds those — reporting one as a refusal would send
+# a reader to commit their way out of a harness that was never reached.
+refused() {
+    awk -F'\t' -v name="$2" -v ref="$3" -v judge="$4" '
+        $4 "" != name "" || $6 "" != ref "" { next }
+        $8 "" != judge ""                   { next }
+        $5 == "1" || $5 == "2"              { found = 1 }
+        END { exit !found }' "$(evidence_file "$1")" 2>/dev/null
+}
+
+#
+# A judgement that never happened, recorded rather than left silent.
+#
+# An exhausted review budget or a harness nobody could reach. **Neither is a refusal and neither is
+# silence.** A silent judge is asked again, a refusal is answered by new work, and this is answered
+# by whoever owns the budget or the harness — three facts, three remedies.
+#
+# Told apart by the code the receipt's outcome mapped to, which the recorder already writes. Nothing
+# new is stored.
+stopped() {
+    awk -F'\t' -v name="$2" -v ref="$3" -v judge="$4" '
+        $4 "" != name "" || $6 "" != ref "" { next }
+        $8 "" != judge ""                   { next }
+        $5 == "3" || $5 == "4"              { found = 1 }
+        END { exit !found }' "$(evidence_file "$1")" 2>/dev/null
+}
+
+# The members who answered no.
+members_who_refused() {
+    printf '%s
+' "$4" | while IFS= read -r who; do
+        [ -n "$who" ] || continue
+        refused "$1" "$2" "$3" "$who" && printf '%s ' "$who"
+    done
+}
+
+# The members a judgement was never reached for.
+members_who_stopped() {
+    printf '%s
+' "$4" | while IFS= read -r who; do
+        [ -n "$who" ] || continue
+        stopped "$1" "$2" "$3" "$who" && printf '%s ' "$who"
+    done
+}
+
+# The members who have not answered at all. Three ways one has spoken, and anything else is silence.
+members_never_asked() {
+    printf '%s
+' "$4" | while IFS= read -r who; do
+        [ -n "$who" ] || continue
+        satisfied "$1" "$2" "$3" judged "$who" && continue
+        refused    "$1" "$2" "$3" "$who"       && continue
+        stopped    "$1" "$2" "$3" "$who"       && continue
+        printf '%s ' "$who"
+    done
+}
+
+# Every member said yes, or the ones who have not are named — and a refusal is named as one.
+#
+# It said `no approval from` for both, and the two want opposite things. A reader told that goes and
+# asks. On a refusal that is a wasted trip: the dissent holds at this ref for good, and only a new
+# commit moves it.
+# A judgement that never happened gets its own line, for the same reason a refusal did. Which of the
+# two it was — an exhausted budget or an unreachable harness — is in the record, in words.
 what_the_panel_lacks() {
     judged_by_all "$1" "$2" "$4" "$5" && return
 
-    printf 'unmet: [%s] at %s@%s — no approval from [%s]\n' \
-        "$2" "$3" "$4" "$(spaced "$(unheard_members "$1" "$2" "$4" "$5")")"
+    said_no=$(spaced "$(members_who_refused "$1" "$2" "$4" "$5")")
+    halted=$(spaced "$(members_who_stopped "$1" "$2" "$4" "$5")")
+    silent=$(spaced "$(members_never_asked "$1" "$2" "$4" "$5")")
+
+    [ -n "$silent" ] && printf 'unmet: [%s] at %s@%s — no approval from [%s]\n' \
+        "$2" "$3" "$4" "$silent"
+
+    [ -n "$said_no" ] && printf 'unmet: [%s] at %s@%s — [%s] refused here, and only a new ref moves it\n' \
+        "$2" "$3" "$4" "$said_no"
+
+    [ -n "$halted" ] && printf 'unmet: [%s] at %s@%s — [%s] never judged it. The record says why, and a new ref does not change it\n' \
+        "$2" "$3" "$4" "$halted"
+
+    return 0
 }
 
 #
@@ -2817,16 +3514,6 @@ judged_by_all() {
 # the separator the loop wrote, which read as an empty member.
 spaced() { printf '%s' "$1" | awk '{ $1 = $1; print }' | tr '
 ' ' ' | sed 's/ *$//'; }
-
-# Which members have not approved. Named, because a reader would otherwise
-# guess which of several is holding the work up.
-unheard_members() {
-    printf '%s
-' "$4" | while IFS= read -r who; do
-        [ -n "$who" ] || continue
-        satisfied "$1" "$2" "$3" judged "$who" || printf '%s ' "$who"
-    done
-}
 
 #
 # A record answering *was this clause met* with yes, at the ref delivered.
@@ -2908,8 +3595,11 @@ verdict() {
 #
 # The recorder cannot read a transcript, so it can never know what reached anyone. What it can hold
 # is this: whoever handed the bar over said so first, at a named charter and a named commit.
+# `brief` is the digest of what was actually sent, and it is the caller's to supply — floor never
+# reads a brief and has no idea where one lives. Absent, the handoff still records; what it costs is
+# that a receipt has nothing to be checked against.
 handed() {
-    dir=$1; text=${2:-}; judge=${3:-}; how=${4:-}
+    dir=$1; text=${2:-}; judge=${3:-}; how=${4:-}; brief=${5:-}
 
     [ -n "$text" ] && [ -n "$judge" ] && [ -n "$how" ] \
         || { note "a handoff names the clause, the judge, and how that judge was run"; exit 2; }
@@ -2920,12 +3610,22 @@ handed() {
     refuse_a_judge_nobody_asked "$dir" "$text" "$judge"
 
     enter_work_tree "$dir"
-    stamp_handoff "$dir" "$text" "$(delivered_ref)" "$version" "$judge" "$how"
+    stamp_handoff "$dir" "$text" "$(delivered_ref)" "$version" "$judge" "$how" "$brief"
 }
 
 # The charter's own sum. A bar rewritten after the handoff is a different bar, and a verdict
 # answering the old one answers nothing here.
-charter_version() { cksum < "$(charter_file "$1")" 2>/dev/null | awk '{ print $1 }'; }
+charter_version() { digest_of "$(charter_file "$1")"; }
+
+#
+# A file's sum, which is what a `brief` field holds.
+#
+# `cksum` because floor declares `sh`, `awk` and `git`, and nothing else. `sha1sum` is GNU, `shasum`
+# is not everywhere, and a digest a host cannot compute is a field a producer has to invent.
+#
+# **Thirty-two bits, and it is a digest of what went over rather than a guard against a hand.** Two
+# briefs can collide, and anyone who can edit a brief can edit the receipt naming it — §2.5 again.
+digest_of() { cksum < "$1" 2>/dev/null | awk '{ print $1 }'; }
 
 # The producer moved on and the review did not. Stamping it anyway credits an old
 # answer to a commit that nobody ever read.
@@ -3015,6 +3715,468 @@ refuse_a_judge_that_is_the_worker() {
     note "[$1] produced the work, so its verdict on that work says nothing"
     note "a verdict comes from something that did not write what it grades"
     exit 2
+}
+
+#
+# Every key a receipt may carry. **Closed on purpose.** A key this has no reading for is a claim
+# nobody checked wearing the look of one that was, so it is refused rather than kept.
+#
+# **`model`, `provider` and `effort` are not keys, and that is measured rather than careful.** One
+# adapter was driven here in its json mode: its stream carries a thread handle, the reply and the
+# usage, and names none of the three. Asked outright which model it was, it answered with a
+# different name from the one requested.
+#
+# So the doubt sits in the key and never in a footnote beside it. `requested_` says what was asked
+# for, which proves intent and nothing more — an alias, a routing rule or a fallback changes what
+# ran. `self_reported_` says what the thing claimed about itself. **A bare `model` reads as fact to
+# every reader and every script, and the caveat beside it is the part that gets skipped.**
+#
+# What a receipt proves outright is narrower and real: one thread returned review text, and whether
+# that thread was new. Two runs gave two handles, so `context` and `fresh` are attestable.
+#
+# Core names the fields and never their values. What an adapter or a model is called is whatever
+# wrote the receipt, exactly as `worker` takes a word and reads nothing into it.
+#
+# **So `adapter` is a label, and a substitution nobody records is invisible here.** Harness A is
+# asked, writes nothing at all, and harness B writes a receipt naming itself — floor takes B's,
+# because the first thing it ever learns about either is the name on the file in front of it.
+# Refusing that needs `handed` to record the harness as an identity before the answer comes back,
+# and `how` is prose for a person. **#332 leaves this open, and the README says so.**
+#
+# `context` and `fresh` stay optional for the reason `model` is not a key at all: **requiring a
+# field is how a producer is made to invent one.** A runner with no thread to name would write
+# `context unknown`, which reads in a record exactly like a handle somebody checked. What is gated
+# is the shape — `fresh` needs a context to be about, and it says yes or no — never that the thread
+# was new. Floor cannot verify a handle it did not issue.
+#
+# **`adapter_pin` and `adapter_digest` are the runner's, and they are why `adapter` stayed a label.**
+# A shipped adapter is reached at a content the repository committed, so those two say which code
+# had authority and which code ran. A repository's own command has neither, and absence there is the
+# honest answer rather than a default.
+RECEIPT_KEYS='run clause candidate role adapter brief verdict report round prior time
+              adapter_pin adapter_digest
+              context fresh
+              requested_model    self_reported_model
+              requested_provider self_reported_provider
+              requested_effort   self_reported_effort'
+
+# The three a receipt may not say plainly, and what to say instead. Outside the vocabulary already,
+# so this only replaces the sentence — the one key an author reaches for first deserves the reason.
+RECEIPT_UNPROVABLE='model provider effort'
+
+#
+# The ones without which it is not a receipt at all.
+#
+# **The rest are vouched for or absent, and absence is the honest answer.** An adapter that cannot
+# say which model answered leaves `model` out; nothing here writes a default, and nothing writes
+# `unknown`. A missing field says nobody checked, which is true. A filled-in one would be a claim.
+RECEIPT_REQUIRED='run clause candidate role adapter brief verdict report round time'
+
+#
+# A judgement receipt — what a runner writes down when something judged this work.
+#
+# **This reads one. It produces none, and knows nothing about what did.** The file is the whole
+# contract: any harness able to write these lines satisfies a `Judged` clause here, and none of them
+# is named in this repository. That is the difference between consuming evidence and depending on a
+# producer.
+#
+# `verdict` above takes a judgement typed by hand — five things, and five refusals. This takes one a
+# runner made, makes every refusal that one makes, and adds what the extra fields let it ask. It
+# extends that verb rather than replacing it.
+#
+# **A receipt is a record and never a credential.** Every field in it was written by whatever wrote
+# the file, and none of them proves who answered — #156 owns making the actor real. What this adds
+# is that a receipt cannot claim what it did not check.
+#
+receipt() {
+    dir=$1; file=${2:-}
+
+    refuse_a_malformed_receipt "$file"
+    refuse_a_claim_nobody_checked "$file"
+    refuse_an_adapter_nothing_binds "$file"
+
+    # Every field read before `enter_work_tree`, because that leaves this directory for good and a
+    # caller may have named the receipt relative to the one it started in.
+    clause=$(said_in "$file" clause)
+    judge=$(said_in "$file" role)
+    candidate=$(said_in "$file" candidate)
+    outcome=$(said_in "$file" verdict)
+    brief=$(said_in "$file" brief)
+    report=$(said_in "$file" report)
+    vouched=$(attested "$file")
+
+    # Read here with the rest, and not where it is used. `refuse_a_kind_that_is_not_judged` takes the
+    # charter into `file`, `sh` has no locals, and a guard reading the receipt after that reads the
+    # charter instead — which answers *no pin at all* about a receipt that carries one. Found by
+    # running it, on the third turn of `craft-sh` rule 10 in this change alone.
+    claimed=$(said_in "$file" adapter_pin)
+
+    code=$(code_for_judgement "$outcome") || exit 2
+    version=$(charter_version "$dir")
+
+    refuse_a_receipt_from_another_run "$dir" "$(said_in "$file" run)"
+    refuse_a_kind_that_is_not_judged "$dir" "$clause"
+    refuse_a_judge_that_is_the_worker "$judge"
+    refuse_a_judge_nobody_asked "$dir" "$clause" "$judge"
+    refuse_a_pin_the_charter_did_not_give "$dir" "$clause" "$judge" "$claimed"
+
+    enter_work_tree "$dir"
+    refuse_a_revision_nobody_reviewed "$candidate"
+    refuse_a_judge_never_handed_the_bar "$dir" "$clause" "$judge" "$candidate" "$version"
+    refuse_a_brief_that_changed "$dir" "$clause" "$judge" "$candidate" "$version" "$brief"
+
+    stamp_receipt "$dir" "$clause" "$code" "$candidate" \
+        "$judge: $outcome, report $report" "$judge" "$vouched"
+}
+
+# Whether the file is a receipt at all, before anything asks what it says.
+refuse_a_malformed_receipt() {
+    refuse_an_unreadable_receipt "$1"
+    refuse_a_line_that_is_not_a_receipt_line "$1"
+    refuse_a_field_that_is_not_there "$1"
+}
+
+#
+# Three ways there is nothing to read, and each one is its own guard.
+#
+# They were one function, and a break on the middle one still exited 37 through the third — so the
+# only thing that could tell them apart was the sentence. **A refusal a mutant cannot reach alone is
+# a refusal resting on its neighbour**, which is the shape `craft-sh` splits.
+refuse_an_unreadable_receipt() {
+    refuse_a_receipt_nobody_named "$1"
+    refuse_a_receipt_that_is_not_there "$1"
+    refuse_a_receipt_holding_nothing "$1"
+}
+
+# The caller named no file. Ahead of the two below, because every reader here is handed `$1` as a
+# filename, and awk given an empty one answers about a file nobody asked for.
+refuse_a_receipt_nobody_named() {
+    [ -n "$1" ] && return 0
+
+    note "receipt needs the file to read"
+    exit 2
+}
+
+#
+# The refusal the whole contract rests on. **Green gates do not reach here** — a `Judged` clause is
+# answered by a judge's record and by nothing else, so a run with every gate passing and no receipt
+# is a run nothing has judged.
+#
+# **No mutation makes a missing receipt satisfy anything**, and that is worth writing down rather
+# than mistaking for an untested path. Blind this and the next guard answers 37; blind that too and
+# the required-field reader answers 37; blind that and the outcome is empty, which is not one of the
+# five. It fails closed four deep, so what a break here changes is which sentence a reader gets.
+refuse_a_receipt_that_is_not_there() {
+    [ -f "$1" ] && return 0
+
+    note "no receipt at [$1], and a Judged clause is answered by one"
+    exit 37
+}
+
+refuse_a_receipt_holding_nothing() {
+    [ -r "$1" ] && [ -s "$1" ] && return 0
+
+    note "[$1] is there and holds nothing this can read as a receipt"
+    exit 37
+}
+
+#
+# The grammar, in one pass, and the first bad line is named.
+#
+# Four ways a line is not a receipt line — a key that would claim what nobody checked, a key with no
+# reading at all, a key said twice, and a key claiming nothing. One reader for all four, because the
+# remedy for each is that same line.
+#
+# **Two answers is not one.** A key said twice leaves whoever reads it choosing which was meant, and
+# §2.2's rule for ambiguity is that it escalates rather than resolves itself.
+refuse_a_line_that_is_not_a_receipt_line() {
+    said=$(awk -v known="$RECEIPT_KEYS" -v unprovable="$RECEIPT_UNPROVABLE" '
+        BEGIN { n = split(known, key);      for (i = 1; i <= n; i++) reads[key[i]] = 1
+                n = split(unprovable, said); for (i = 1; i <= n; i++) claims[said[i]] = 1 }
+
+        /^[ \t]*#/ || !NF { next }
+
+        $1 in claims { print "[" $1 "] would state what ran, and nothing checked it" \
+                             " — say requested_" $1 " or self_reported_" $1; exit }
+        !($1 in reads) { print "[" $1 "] is a key floor has no reading for"; exit }
+        $1 in seen     { print "[" $1 "] is said twice, and two answers is not one"; exit }
+        NF < 2         { print "[" $1 "] claims nothing, so nothing is what it says"; exit }
+
+        { seen[$1] = 1 }' "$1" 2>/dev/null)
+
+    [ -n "$said" ] || return 0
+
+    note "$1: $said"
+    exit 37
+}
+
+# A required key absent, named one at a time so a reader fixes one line and asks again.
+refuse_a_field_that_is_not_there() {
+    said=$(awk -v want="$RECEIPT_REQUIRED" '
+        !/^[ \t]*#/ && NF { seen[$1] = 1 }
+        END { n = split(want, keys, " ")
+              for (i = 1; i <= n; i++) if (!(keys[i] in seen)) { print keys[i]; exit } }' "$1" 2>/dev/null)
+
+    [ -n "$said" ] || return 0
+
+    note "$1 carries no [$said], and a receipt without one is evidence of nothing"
+    exit 37
+}
+
+#
+# The pin the receipt claims, against the pin the charter actually gives.
+#
+# **Without this the pair is consistency and never authority.** The three guards below ask only
+# whether a receipt agrees with itself, so a hand-written pair agreeing on a digest nobody
+# authorised passes — and the ledger then carries it under a name that says the repository agreed
+# to it. This is what makes `adapter_pin` mean what the README says it means.
+#
+# Driven from the charter, which is where the reach was pinned when a person authorised the bar.
+# A judge the charter reaches by a command of the repository's own has no pin, and a receipt
+# claiming one for it is claiming an authority nothing gave.
+#
+refuse_a_pin_the_charter_did_not_give() {
+    given=$(pin_in_reach "$(judge_command "$(charter_file "$1")" "$(clause_id "$2")" "$3")")
+
+    [ "$4" = "$given" ] && return 0
+
+    note "[$3] is reached at [${given:-no pin at all}] and this receipt answers for [${4:-none}]"
+    exit 40
+}
+
+# The digest an `@adapter` reach names, and nothing for any other reach. `rest` is the tail after a
+# transport word here and in `reach_the_shipped_adapter`, which is one name for one meaning.
+pin_in_reach() {
+    [ "${1%% *}" = "@adapter" ] || return 0
+
+    rest=${1#@adapter}; rest=${rest# }
+    rest=${rest#"${rest%% *}"}
+    printf '%s' "${rest# }"
+}
+
+#
+# The adapter the repository authorised, against the one that answered.
+#
+# `judged` already refused each of these before the adapter ran. **This is the same bar for a receipt
+# somebody hands over**, because a run may reach no satisfaction a hand-written receipt could not,
+# and a hand-written one may reach none a run could not.
+#
+# Three, and each owns one case. Blind any one and a receipt gets through that no other catches —
+# which is what makes each a refusal rather than a sentence resting on its neighbour.
+#
+refuse_an_adapter_nothing_binds() {
+    refuse_a_pin_nobody_checked "$1"
+    refuse_a_digest_nobody_authorised "$1"
+    refuse_an_adapter_that_moved "$1"
+}
+
+# A pin, and nothing that looked. The repository said which adapter may judge and the receipt does
+# not say which one did.
+#
+# `pin` and `ran`, never `said`: the grammar reader above takes its finding into a variable of that
+# name, `sh` has no locals, and one name meaning two things here is what cost this file a clobbered
+# clause id in the resolver.
+refuse_a_pin_nobody_checked() {
+    pin=$(said_in "$1" adapter_pin)
+
+    [ -n "$pin" ] || return 0
+    [ -n "$(said_in "$1" adapter_digest)" ] && return 0
+
+    note "$1 authorises adapter [$pin] and says nothing about what ran"
+    exit 40
+}
+
+# What ran, and nothing that authorised it. A digest no pin stands behind is an adapter judging on
+# its own say-so, written down as though somebody had agreed to it.
+refuse_a_digest_nobody_authorised() {
+    ran=$(said_in "$1" adapter_digest)
+
+    [ -n "$ran" ] || return 0
+    [ -n "$(said_in "$1" adapter_pin)" ] && return 0
+
+    note "$1 says adapter [$ran] answered and names nothing that authorised it"
+    exit 40
+}
+
+# Both, and they differ. The judging happened, and the repository authorised something else.
+refuse_an_adapter_that_moved() {
+    pin=$(said_in "$1" adapter_pin)
+    ran=$(said_in "$1" adapter_digest)
+
+    [ -n "$pin" ] && [ -n "$ran" ] || return 0
+    [ "$pin" = "$ran" ] && return 0
+
+    note "$1 authorises adapter [$pin] and [$ran] is what answered"
+    exit 40
+}
+
+# A field standing on one that is not there. Each of these reads as checked and rests on nothing.
+refuse_a_claim_nobody_checked() {
+    refuse_a_freshness_about_nothing "$1"
+    refuse_a_freshness_that_answers_neither "$1"
+    refuse_a_round_that_is_not_a_count "$1"
+    refuse_a_round_with_no_prior "$1"
+}
+
+# Fresh about what? A context nobody named can be neither new nor used, so the claim has no subject.
+refuse_a_freshness_about_nothing() {
+    fresh=$(said_in "$1" fresh)
+
+    [ -n "$fresh" ] || return 0
+    [ -n "$(said_in "$1" context)" ] && return 0
+
+    note "$1 says the context was [$fresh] and names none, so the claim is about nothing"
+    exit 37
+}
+
+#
+# Yes or no, and nothing else. A thread was new or it was carried on, and there is no third answer.
+#
+# **This gates the shape and never the truth.** Floor did not issue the handle and cannot go and
+# look, so `fresh yes` is the producer's word — a record, like every other field. What it stops is
+# free text in the one column the charter calls attestable, where `probably` or `n/a` would read as
+# an answer to a question nobody put.
+refuse_a_freshness_that_answers_neither() {
+    case "$(said_in "$1" fresh)" in
+        ''|yes|no) return 0 ;;
+    esac
+
+    note "$1 says fresh [$(said_in "$1" fresh)], and a thread was new or it was not"
+    exit 37
+}
+
+# `[ abc -gt 1 ]` is not a comparison. The shell complains to stderr and returns non-zero, so the
+# guard below would read as having passed — a round nobody can count is refused before one counts it.
+refuse_a_round_that_is_not_a_count() {
+    round=$(said_in "$1" round)
+    is_a_count "$round" && return 0
+
+    note "$1 says round [$round], and a round is counted from one"
+    exit 37
+}
+
+is_a_count() {
+    case "$1" in
+        ''|*[!0-9]*|0) return 1 ;;
+    esac
+    return 0
+}
+
+# Round two answers round one. A later round naming no prior verdict is a first round wearing a
+# number, and the chain it says it is in is one nobody can follow.
+refuse_a_round_with_no_prior() {
+    round=$(said_in "$1" round)
+
+    [ "$round" -gt 1 ] || return 0
+    [ -n "$(said_in "$1" prior)" ] && return 0
+
+    note "$1 says round [$round] and names no prior verdict, so the round before it is missing"
+    exit 37
+}
+
+#
+# A receipt is about one run's work.
+#
+# One from another run is a judgement that really happened, about something else. Replaying it here
+# credits this work with a reading nobody gave it — which is why `run` is a field at all.
+#
+# A run whose id will not read matches nothing, so it refuses. That is the safe way round: the
+# alternative accepts every receipt on a run that cannot say its own name.
+refuse_a_receipt_from_another_run() {
+    [ "$2" = "$(recorded_id "$1")" ] && return 0
+
+    note "this receipt answers for run [$2], and this run is [$(recorded_id "$1")]"
+    exit 38
+}
+
+#
+# The bar as it went over, against the bar the receipt answers.
+#
+# **Floor holds neither.** It compares two digests it was handed — one at the handoff, one on the
+# receipt — and reads no brief, because what a brief is and where it lives belongs to whatever
+# writes them. A brief edited between the handoff and the answer makes the two differ, and that is
+# the whole of what this can see.
+#
+# **It proves consistency and never authorship.** One adapter writes both, so matching digests say
+# the bar did not move under the judge. They do not say the digest is of the brief it claims.
+refuse_a_brief_that_changed() {
+    was=$(handed_brief "$1" "$2" "$3" "$4" "$5")
+
+    refuse_a_brief_nothing_recorded "$was" "$2" "$3"
+    [ "$was" = "$6" ] && return 0
+
+    note "[$3] was handed brief [$was] and this receipt answers [$6]"
+    exit 38
+}
+
+# Nothing to compare against is not a match. A handoff that recorded no brief leaves the receipt
+# answering a bar nobody wrote down — unverifiable, rather than wrong.
+refuse_a_brief_nothing_recorded() {
+    [ -n "$1" ] && return 0
+
+    note "nothing records which brief [$3] was handed for [$2], so this answers an unknown bar"
+    note "  run.sh evidence handed <clause> <judge> <how> <brief> is what records it"
+    exit 37
+}
+
+# The brief digest recorded when the bar went over. `was_handed` has already found this row, so an
+# empty answer means the handoff carried no brief — never that there was no handoff.
+handed_brief() {
+    awk -F'\t' -v name="$2" -v judge="$3" -v ref="$4" -v version="$5" '
+        $2 != "handed"      { next }
+        $4 "" != name ""    { next }
+        $8 "" != judge ""   { next }
+        $6 "" != ref ""     { next }
+        $7 "" != version "" { next }
+        { said = $10 }
+        END { print said }' "$(evidence_file "$1")" 2>/dev/null
+}
+
+#
+# What the receipt says came back, as a code the ledger compares.
+#
+# The judge's three, and two the judge never gave. **A deadlock and an unavailable harness are not
+# verdicts** — they are the runner recording that no judgement happened, which is a different fact
+# from silence and takes a different remedy. Both are non-zero, so neither satisfies anything, and
+# both stop the delivery where they stand.
+#
+code_for_judgement() {
+    case "$1" in
+        deadlock)    printf 3; return 0 ;;
+        unavailable) printf 4; return 0 ;;
+    esac
+
+    # The judge's own three, with its sentence suppressed: it names three, a receipt may say five,
+    # and a reader told the wrong list goes looking for a word that is there.
+    code_for_outcome "$1" 2>/dev/null && return 0
+
+    note "[$1] is not what a receipt may say — approve, reject, revise, deadlock or unavailable"
+    return 1
+}
+
+#
+# One key's value, and nothing when the receipt does not carry it.
+#
+# The value is the rest of the line, taken verbatim: a clause holding two spaces has to match the
+# charter's text exactly, and awk rebuilding `$0` would collapse them.
+said_in() {
+    awk -v want="$2" '!/^[ \t]*#/ && NF && $1 "" == want "" {
+                          sub(/^[ \t]*[^ \t]+[ \t]+/, ""); print; exit }' "$1" 2>/dev/null
+}
+
+#
+# What the receipt vouched for, carried into the record so the run keeps it once the file is gone.
+#
+# Every key but the six the row already holds as columns. Written `k=v` for a person to read and
+# never for a parser — a value may hold a space, and the receipt itself is the artefact anything
+# parsing should read.
+#
+# **Only what is there.** A field the adapter left out is left out here too, so a record with no
+# `model=` says nobody checked which model answered.
+attested() {
+    awk '!/^[ \t]*#/ && NF && $1 !~ /^(run|clause|candidate|role|verdict|report)$/ {
+             key = $1; sub(/^[ \t]*[^ \t]+[ \t]+/, "")
+             printf "%s%s=%s", sep, key, $0; sep = " " }' "$1" 2>/dev/null
 }
 
 #
@@ -3660,11 +4822,21 @@ while_reading_gates() {
 #
 # `judge` records who may answer. Floor does not check that the name is real — §2.5 — but a clause
 # blocking with no judge named tells a reader nothing about who to ask.
+#
+# The reach table is read once and handed down, never asked for per member. It is the same answer
+# every time, and a resolver run per judge is a process per judge for it. The limits table is read
+# the same way and for the same reason.
 while_reading_judged() {
     held=$1; draft=$2; target=$3; ref=$4
+    reaches=$(declared_reaches)
+    limits=$(declared_limits)
+
+    refuse_a_reach_no_charter_may_hold "$reaches" || return 1
+    refuse_a_limit_no_charter_may_hold "$limits"  || return 1
 
     while read -r judge source text; do
         [ -n "$judge" ] || continue
+        declares_no_clause "$judge" && continue
         [ -n "$text" ] || { note "a judged clause names who answers it and what it says"; return 1; }
 
         id=$(clause_id "$text")
@@ -3677,12 +4849,102 @@ while_reading_judged() {
 
         print_clause "$id" Judged "$text" >> "$draft" || return 1
         print_pin    "$id" "$target" "$ref" "$source" "$sha" >> "$draft" || return 1
-        print_judges "$id" "$judge" >> "$draft" || return 1
+        print_judges "$id" "$judge" "$reaches" "$limits" >> "$draft" || return 1
     done
     return 0
 }
 
-# Who may answer this clause, as the repository named them.
+# The first words that are not a judge. Each says something about one member rather than naming a
+# clause, so a line beginning with one derives none.
+declares_no_clause() {
+    case "$1" in
+        reach|rounds) return 0 ;;
+    esac
+    return 1
+}
+
+#
+# A reach no charter may hold, refused before one holds it.
+#
+# **A pin that is not a digest is wrong everywhere.** That is a fact about the declaration, not about
+# this machine — which is what separates it from a command that is simply not installed here. That
+# one derives, and `judged` answers 21 on the host that lacks it.
+#
+# So a charter never records an unhonourable reach as authorised, and a person is never asked to
+# approve a bar nothing could meet. **The run-time readers stay** and are unreachable through any
+# supported path afterwards — `check` refuses a charter the declaration disagrees with, so a bad
+# pin can only arrive by hand. They are defence with no break, and the audit says why.
+#
+# Shape only. Whether the adapter is installed is a question about a machine, and a repository may
+# authorise one before it installs it.
+#
+refuse_a_reach_no_charter_may_hold() {
+    unusable=$(unusable_reaches "$1")
+    [ -z "$unusable" ] && return 0
+
+    note "a reach no charter may hold:"
+    printf '%s\n' "$unusable" | sed 's/^/floor:   /' >&2
+    return 1
+}
+
+# Every declared reach whose shape could never be honoured, one line each. A pipe, so the finding
+# comes back as output — a flag raised in a subshell dies with it.
+unusable_reaches() {
+    printf '%s\n' "$1" | while read -r who command; do
+        [ -n "$who" ] || continue
+        say_why_unusable "$who" "$command"
+    done
+}
+
+#
+# A ceiling no charter may hold, refused before one holds it.
+#
+# **A limit that is not a count is wrong everywhere**, exactly as a pin that is not a digest is. It
+# is a fact about the declaration and not about this machine, so no charter records it and no person
+# is asked to approve a bar that could never be reached.
+#
+# Zero is refused with the rest. A judge nobody may ask once is a clause nothing can satisfy, and a
+# repository wanting that says so by deleting the judge.
+refuse_a_limit_no_charter_may_hold() {
+    unusable=$(unusable_limits "$1")
+    [ -z "$unusable" ] && return 0
+
+    note "a round limit no charter may hold:"
+    printf '%s\n' "$unusable" | sed 's/^/floor:   /' >&2
+    return 1
+}
+
+# Every declared limit that is not a count, one line each. A pipe for `unusable_reaches`' reason: a
+# flag raised in a subshell dies with it.
+unusable_limits() {
+    printf '%s\n' "$1" | while read -r who limit; do
+        [ -n "$who" ] || continue
+        is_a_count "$limit" || printf '%s is allowed [%s] rounds, which is not a count\n' "$who" "$limit"
+    done
+}
+
+# One reach, and the reason it could not be honoured anywhere. Nothing for a reach that is fine, and
+# nothing for a command of the repository's own — which is every reach written before `@` existed.
+say_why_unusable() {
+    case ${2%% *} in
+        @adapter) say_why_the_adapter_reach_is_unusable "$1" "${2#@adapter}" ;;
+        @custom)  [ -n "${2#@custom}" ] || printf '%s says @custom and no command\n' "$1" ;;
+        @*)       printf '%s reaches by [%s], which is no transport\n' "$1" "${2%% *}" ;;
+    esac
+}
+
+# `rest`, `adapter` and `pin` mean here what they mean in `reach_the_shipped_adapter`, which is one
+# grammar read by two stages rather than two readings of it.
+say_why_the_adapter_reach_is_unusable() {
+    rest=${2# }
+    adapter=${rest%% *}
+    pin=${rest#"$adapter"}; pin=${pin# }
+
+    is_an_adapter_name "$adapter" || { printf '%s names no adapter\n' "$1"; return 0; }
+    is_a_digest "$pin" || printf '%s pins [%s], which is not a digest\n' "$1" "$pin"
+}
+
+# Who may answer this clause, as the repository named them, and how each is reached.
 #
 # One record per member of the panel.
 #
@@ -3691,12 +4953,66 @@ while_reading_judged() {
 print_judges() {
     printf '%s\n' "$2" | tr ',' '\n' | while IFS= read -r who; do
         [ -n "$who" ] || continue
-        printf 'judge %s %s\n' "$1" "$who"
+        print_judge  "$1" "$who" "$(reach_of "$3" "$who")"
+        print_rounds "$1" "$who" "$(limit_of "$4" "$who")"
     done
+}
+
+# One member's record. Two shapes, because a blank third field leaves a trailing space and
+# `judge_command` would read it as a command of one space — the defect `pinned_command` paid for.
+print_judge() {
+    [ -n "$3" ] || { printf 'judge %s %s\n' "$1" "$2"; return 0; }
+
+    printf 'judge %s %s %s\n' "$1" "$2" "$3"
+}
+
+#
+# How often one member may be asked about one clause. Nothing at all when the repository bounds none.
+#
+# **Absence is the unbounded answer, and a number floor chose would not be.** Every declaration
+# written before this one names no limit, and a default here would put a ceiling on all of them that
+# nobody agreed to. So the record is written when there is one, and read as no ceiling when there is
+# not — the same shape `reach` takes, for the same reason.
+print_rounds() {
+    [ -n "$3" ] || return 0
+
+    printf 'rounds %s %s %s\n' "$1" "$2" "$3"
+}
+
+# Every reach the repository declares now, as `who command...`.
+declared_reaches() { detect_judged | awk '$1 == "reach" { $1 = ""; sub(/^ +/, ""); print }'; }
+
+# Every round limit the repository declares now, as `who n`.
+declared_limits() { detect_judged | awk '$1 == "rounds" { $1 = ""; sub(/^ +/, ""); print }'; }
+
+# How one judge is reached, from that table. `""` on both sides: a judge named `01` and one named
+# `1` are two judges, and an `-v` assignment compares as a number.
+reach_of() {
+    printf '%s\n' "$1" | awk -v who="$2" '$1 "" == who "" { $1 = ""; sub(/^ +/, ""); print; exit }'
+}
+
+# How often one judge may be asked, from that table. One reading, because the two tables are one
+# shape — a judge, then the one thing the repository said about it.
+limit_of() { reach_of "$1" "$2"; }
+
+# The rounds the charter allows one member on one clause, or nothing when it bounds none. `""` on
+# both sides for `reach_of`'s reason: an `-v` assignment compares as a number.
+round_limit() {
+    awk -v id="$2" -v who="$3" \
+        '$1 == "rounds" && $2 "" == id "" && $3 "" == who "" { print $4; exit }' "$1" 2>/dev/null
 }
 
 # Every member, one per line, in the order the repository declared them.
 named_judges() { awk -v want="$2" '$1 == "judge" && $2 == want { print $3 }' "$1" 2>/dev/null; }
+
+# The command the charter pins for one member of one clause's panel, or nothing.
+#
+# Three fields blanked, and `+` rather than a count: blanking three of a three-field record — a judge
+# nobody said how to reach — leaves two spaces where a four-field one leaves three.
+judge_command() {
+    awk -v id="$2" -v who="$3" '$1 == "judge" && $2 "" == id "" && $3 "" == who "" {
+             $1 = ""; $2 = ""; $3 = ""; sub(/^ +/, ""); print; exit }' "$1" 2>/dev/null
+}
 
 #
 # Clauses nothing derived survive a re-derivation, unless this run has just derived them.
@@ -3826,6 +5142,8 @@ check_charter() {
         underived_judged "$file"
         moved_sources "$file"
         moved_resolutions "$file"
+        moved_reaches "$file"
+        moved_limits "$file"
     )
 
     [ -n "$findings" ] || return 0
@@ -3935,10 +5253,15 @@ underived_gates() {
 
 # The same three questions about a declared judgement. `judge` is its resolution,
 # the way `gate` is a gate's, so a clause with no judge rests on nothing.
+#
+# A reach line is not a clause and answers none of the three. Read as one it would name a judge
+# nobody declared, and `check` would report a Judged clause deleted that never existed. A rounds line
+# is the same, and its number would become the clause.
 underived_judged() {
     here=$(this_repository)
 
-    detect_judged | while read -r _ _ text; do
+    detect_judged | while read -r who _ text; do
+        declares_no_clause "$who" && continue
         [ -n "$text" ] || continue
         id=$(clause_id "$text")
 
@@ -4011,6 +5334,56 @@ moved_resolutions() {
         [ -n "$was" ] || continue
         [ "$was" = "$command" ] || printf 'resolves elsewhere: %s was [%s] now [%s]\n' "$name" "$was" "$command"
     done
+}
+
+#
+# A judge the charter reaches one way, and the declaration now reaches another.
+#
+# Driven from the charter's own records rather than from the detector, because three edits are the
+# same finding: the reach changed, the reach went, and a reach appeared for a judge derived without
+# one. A reader driven by the declaration would see only the first two.
+#
+# **An empty command on either side is a reading, never a skip.** `moved_resolutions` skips a gate the
+# charter pinned no command for, because a gate always has one and an empty pin is its own defect.
+# A judge may honestly have none, so *had none, has one now* is drift and says so.
+#
+moved_reaches() {
+    now=$(declared_reaches)
+
+    every_judge_record "$1" | while read -r id who command; do
+        [ -n "$who" ] || continue
+        was=$(reach_of "$now" "$who")
+        [ "$was" = "$command" ] && continue
+        printf 'reaches elsewhere: %s was [%s] now [%s]\n' "$who" "$command" "$was"
+    done | sort -u
+}
+
+#
+# A judge the charter bounds one way, and the declaration bounds another.
+#
+# **This is what stops a worker raising its own ceiling.** `judged` runs `check` before it asks
+# anybody, so a `rounds` record edited in the run's own charter refuses at 7 rather than buying a
+# round nobody granted. A gate's command is held to the declaration the same way.
+#
+# Driven from the `judge` records, because those are the pairs a limit may exist for. A limit deleted
+# leaves nothing of its own to read and a limit invented has nothing behind it, so reading from
+# either side alone would miss one of them. Absence on either side is a reading, never a skip.
+moved_limits() {
+    now=$(declared_limits)
+
+    every_judge_record "$1" | while read -r id who command; do
+        [ -n "$who" ] || continue
+        held=$(round_limit "$1" "$id" "$who")
+        wants=$(limit_of "$now" "$who")
+        [ "$held" = "$wants" ] && continue
+        printf 'bounded elsewhere: %s was [%s] now [%s]\n' "$who" "$held" "$wants"
+    done | sort -u
+}
+
+# Every judge the charter names, as `id who command...`. One line per member, so a panel of two
+# reaching two harnesses is two records and two findings.
+every_judge_record() {
+    awk '$1 == "judge" { $1 = ""; sub(/^ +/, ""); print }' "$1" 2>/dev/null
 }
 
 

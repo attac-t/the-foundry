@@ -134,6 +134,24 @@ report_what_the_repository_carries() {
 
     say "grants  $(count_lines "$root/.foundry/practice") in .foundry/practice"
     say "gates   $(count_lines "$root/.foundry/gates") in .foundry/gates"
+    say "judges  $(count_lines "$root/.foundry/judged") in .foundry/judged"
+
+    point_at_the_command_that_declares_one "$root"
+}
+
+#
+# A third declaration, and the only one a reader could not find. `.foundry/practice` and
+# `.foundry/gates` are written by hand; this one has a command, and nothing on this path said so.
+#
+# **A line, never a mechanism.** This reports and points. It writes nothing, as the rest of this
+# file writes nothing.
+#
+point_at_the_command_that_declares_one() {
+    [ "$(count_lines "$1/.foundry/judged")" = "none" ] || return 0
+
+    say ""
+    say "  no judge is declared here. One is declared by, from this repository:"
+    say "    sh $(cd "$(dirname "$0")" && pwd)/adopt.sh adopt <judge> <adapter>"
 }
 
 # Comment and blank lines are not entries, and a file that is not there holds none.

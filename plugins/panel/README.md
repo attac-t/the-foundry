@@ -43,6 +43,21 @@ review round. Once promoted to a forbidden-import check, it costs an exit code �
 
 ---
 
+## Who may look outside the tree
+
+| Role | Outside | Why |
+|---|---|---|
+| adversary | **yes**, for prior art | a judge that reads only this repo can say the work is consistent. It cannot say the world already knows it is wrong |
+| newcomer | **no** | the cold read is the instrument. Looking a thing up mends the confusion this role exists to record |
+| author | yes, **inherited** | it declares no `tools:` line, so it holds them all. `kernel:ground-discovery` already tells it to read the official source first |
+
+**Prior art shapes a design. It never grades a commit.** A fetched page has no `file:line` here, so
+it cannot carry a Critical alone, and a judge marks what it took with `prior art: <source>`.
+
+**Nobody is required to search.** A round with nothing to look up should not pretend otherwise.
+
+---
+
 ## The Loop
 
 ```
@@ -53,10 +68,11 @@ charter ──▶ [ APPROVED BY A HUMAN ]
                   │
                   │ commit
                   ▼
-           /verdict ──── runs the gates; the harness reads exit codes
+           /verdict ──── runs the gates and the chain; the harness reads
+                  │        exit codes, and hands the judge both answers
                   │
                   ▼
-             adversary ──── tools: Read, Glob, Grep. Nothing else.
+             adversary ──── reads, searches, fetches. Writes nothing, runs nothing.
                   │
           ┌───────┼───────────┐
           ▼       ▼           ▼
@@ -77,18 +93,34 @@ charter gate sees none of them, the author sees them first, the judge sees them 
 ## Enforcement
 
 ```
-Structural     tools: Read, Glob, Grep on judges.
-               No escape found under adversarial probing.
+Structural     no judge holds a tool that writes or runs a command.
+               Probed adversarially when that was the whole list. The adversary
+               gained WebSearch and WebFetch in 0.17.0, unprobed since.
 
 Mechanical     bin/verdicts.sh refuses a round claiming a prior verdict
-               that no file records. Fail closed, exit 1.
+               that no file stamps for that review. Fail closed, exit 1.
+               Run by bin/brief.sh off-host, by /verdict in session.
+               By no judge: none of them holds a tool that runs a command.
 
 Architectural  /verdict runs oracles in the parent session.
                Exit codes are harness-observed, never model-reported.
 
 Not shipped    The parent's own write scope is unconstrained.
                Author restraint from verdicts/ is convention, not enforcement.
+               Nothing checks the review name a convener passes, so a new
+               name opens a chain owing no prior round. That leaves a stamp
+               saying so; a fresh --verdicts leaves no trace at all.
+               Nothing makes a convener run the chain. brief.sh cannot
+               print a brief without it; /verdict can forget. The judge
+               refuses an empty handoff and cannot refuse a false one:
+               "round one, nothing stamped" is handed something, so a
+               convener that forgot reads like one that ran it.
 ```
+
+**A chain is a directory and a review, not a directory.** Reviews share `verdicts/` and neither feeds
+the other: a record's filename is a slot, a sequence over the directory, and the round it answers for
+lives in its `Judged:` stamp. So one review's round one can sit in slot 017, and did — reading the
+slot as the round refused every round of every chain written here.
 
 ---
 
@@ -141,7 +173,8 @@ Then:
 /verdict
 ```
 
-Runs the gates, hands the output to the adversary, records a verdict under `verdicts/`.
+Runs the gates and the chain, hands both answers to the adversary, records a verdict under
+`verdicts/`. Hand the adversary neither and it refuses — `craft-verdict` says what it is owed.
 
 ---
 
@@ -188,12 +221,16 @@ run. **If ten runs show no catches that self-review would have missed, delete th
 `craft-oracle`.** That part has unconditional value.
 
 **Nothing can be instrumented yet, and this said the opposite.** It claimed verdicts were committed
-data. `.gitignore` holds `.claude/panel/` — thirty-seven verdicts have been written here and one is
-tracked, by accident. So a verdict dies with the branch, no run can count them, and nothing outside
-the session that produced one can read it.
+data. `.gitignore` holds `.claude/panel/` — **56 verdicts have been written here and none is
+tracked**, counted 5 September. So a verdict dies with the branch, no run can count them, and
+nothing outside the session that produced one can read it. #500 owns deciding whether that is right.
 
-**That is why a `Judged:` clause has never been satisfied.** #332 owns producing a verdict floor can
-read, and four closed issues — #67, #70, #75 and #77 — each carry a `Judged:` box waiting on it.
+**A `Judged:` clause has now been satisfied, and not by a verdict file.** The owner's #332 decision
+separated the two. Floor consumes a receipt. The verdict stays Panel's human-readable artefact.
+The slice ran on 5 September — a clause went unmet to met, and floor refused twice without one.
+
+So the untracked verdict no longer blocks a clause. **What it blocks is a chain.** `verdicts.sh prior`
+refuses a review claiming a round nothing stamps. Across sessions, nothing ever stamps one. Four closed issues — #67, #70, #75 and #77 — each carry a `Judged:` box from before this.
 
 ---
 

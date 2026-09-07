@@ -71,9 +71,22 @@ carries_the_marker() {
     #
     # The quote goes first, turned into a space, so no pattern below has to contain one.
     said=$(printf '%s' "$1" | tr '"' ' ')
+
+    # `-F` is `--body-file`, and `carries_no_body` above already counts it. Reading only the long
+    # form here denied a correctly rendered comment posted the short way — the guard refusing the
+    # thing it exists to permit.
+    said=$(printf '%s' "$said" | sed 's/ -F / --body-file /')
+
     named=${said#*--body-file}
     named=${named#=}
-    named=${named# }
+
+    # Every leading space, never one. The quote above became a space, so `--body-file "path"` leaves
+    # two and a single strip left an empty first field — the guard then denied a comment it had just
+    # resolved the path for.
+    while :; do
+        case $named in ' '*) named=${named# } ;; *) break ;; esac
+    done
+
     named=${named%% *}
 
     [ "$named" != "$said" ] || return 1

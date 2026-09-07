@@ -1,5 +1,5 @@
 ---
-description: Run the gates, then record a disposition. Oracles execute here, not in a judge.
+description: Run the gates and the chain, then record a disposition. Oracles execute here, not in a judge.
 argument-hint: [branch or commit under review]
 ---
 

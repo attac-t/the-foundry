@@ -65,6 +65,12 @@ Have work judged by something that did not write it:
 /plugin install panel@the-foundry
 ```
 
+Keep what the repository believes in contact with what is true:
+
+```
+/plugin install product@the-foundry
+```
+
 Enable the opinionated voice:
 
 ```
@@ -104,7 +110,7 @@ contracts bind, its revision log is history, and what runs now is each plugin's 
 
 ## Contributing
 
-Read [CONTRIBUTING.md](CONTRIBUTING.md). Ten gates, and they run before a pull request, not after.
+Read [CONTRIBUTING.md](CONTRIBUTING.md). Thirteen gates, and they run before a pull request, not after.
 
 Found a security problem? [SECURITY.md](SECURITY.md) — report it privately, never as an issue.
 

@@ -5,8 +5,8 @@ began.
 
 Done when:
 
-- A change is refused for missing the bar, and the refusal names which part it missed.
-- The producer cannot write the bar it is judged by.
+- [ ] A change is refused for missing the bar, and the refusal names which part it missed.
+- [ ] The producer cannot write the bar it is judged by.
 
 State: partly. A charter is pinned at the base. A run changing a file its own gates reach is
 refused. Whether that holds against a determined hand is

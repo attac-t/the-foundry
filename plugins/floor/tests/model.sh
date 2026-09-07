@@ -2665,6 +2665,54 @@ a_gate_the_host_cannot_run() {
 a_gate_the_host_cannot_run
 
 #
+# The other arm of the same predicate, and neither arm proves the other. Narrow `never_ran` to 127
+# alone and every check in this suite still passed — measured, before this one existed.
+#
+# POSIX gives 126 for a command the shell found and could not run. Two ways to reach it: a lost
+# executable bit, or a `.foundry/gates` line naming a directory. Only the second holds everywhere.
+#
+# `chmod 000` was measured and dropped. A Windows checkout leaves the file `r-xr-xr-x` and runs it,
+# so that gate says 0 on Git Bash and 126 under WSL. Green where this is written, red where it is
+# graded. A directory says 126 on both, and under `dash`.
+#
+a_gate_the_host_cannot_execute() {
+  make_repo "$tmp/nx" main && set_origin "$tmp/nx" 'https://github.com/acme/nx.git' \
+    && mkdir -p "$tmp/nx/.foundry" "$tmp/nx/tools/check" \
+    && commit_file "$tmp/nx" tools/check/README 'the gate names the directory this sits in
+' \
+    && commit_file "$tmp/nx" .foundry/gates 'tests  ./tools/check
+' || { skip "a gate the host cannot execute — git could not make a repo here"; return; }
+
+  ready_run "$tmp/nx" 'https://github.com/acme/nx.git'
+
+  #
+  # The number, before anything reads a refusal. 21 and *could not run on this host* are what the
+  # 127 sibling gets too. Neither one can say which arm ran.
+  #
+  # Measured: rename the directory and this fixture answers 127. Both checks below stayed green,
+  # and the suite reported 825 passed. A check named for 126, certifying nothing about it.
+  #
+  # In the workspace, never in `$tmp/nx`. A clone that did not materialise the directory is one way
+  # this degenerates. The source repository would still hold it and answer 126.
+  work=$(only_slot "$(floor "$tmp/nx" path)/units/01/workspace")
+  is "the tree the gate graded answers 126, not 127" \
+     "$( cd "$work" 2>/dev/null && code_of sh -c './tools/check' )" "126"
+
+  is  "a gate the shell found and could not execute refuses on its own code" \
+      "$(code_of floor "$tmp/nx" gates)" "21"
+
+  # Floor's own words, never the shell's. `dash` says *Permission denied* here. `bash` says *Is a
+  # directory*. A check reading `why` would split two hosts that agree.
+  has "and says it never ran, rather than that it failed" \
+      "$(floor_says "$tmp/nx" gates)" "could not run on this host"
+
+  # The harm the guard exists to stop, and `a_gate_the_host_cannot_run` asks it too. A `machine` row
+  # at this ref is one `satisfied` can never take back.
+  is "and stamps nothing at that ref" "$(floor "$tmp/nx" evidence)" ""
+}
+a_gate_the_host_cannot_execute
+
+#
 # A gate's output lands in `why`, and `why` is the last field of a tab-separated row.
 #
 # **Unflattened, a gate that prints a newline and six tabs writes a second record.** For a `Gate:`
@@ -3781,7 +3829,7 @@ a_declared_judgement_is_answered_by_a_verdict() {
 ' && commit_file "$tmp/dj" .foundry/judged 'a-reviewer  a stranger can read it
 ' || { skip "a declared judgement — git could not make a repo here"; return; }
 
-  floor_new_as "$tmp/dj" ada@example.com "Declared" >/dev/null
+  djrun=$(floor_new_as "$tmp/dj" ada@example.com "Declared")
   floor "$tmp/dj" charter derive >/dev/null 2>&1
   floor "$tmp/dj" policy authorize 'https://gitlab.com/acme/dj.git' >/dev/null 2>&1
   floor "$tmp/dj" targets add 'https://gitlab.com/acme/dj.git' main >/dev/null 2>&1
@@ -3793,6 +3841,26 @@ a_declared_judgement_is_answered_by_a_verdict() {
   # The heart of it. Introduced, this said `introduced` and no verdict could ever help.
   lacks "an unanswered one is not introduced"         "$(floor "$tmp/dj" complete 2>&1)" "introduced: [a stranger can read it]"
   has   "it is unmet, and names who was never asked"         "$(floor "$tmp/dj" complete 2>&1)" "no approval from [a-reviewer]"
+  #
+  # Deleting the clause is how a run would make this pass, and for a while it worked.
+  #
+  # `check_charter` catches a charter that has drifted from its pin. It runs at `charter check` and
+  # inside `gates`, and neither runs again on the way out. So a clause removed after the gates
+  # passed reached `complete` with nothing looking, and completion answered that the charter held.
+  #
+  # `authorise` reads the gate half of the same question. It never reached the judged half, which is
+  # the half no person can re-run.
+  #
+  kept=$(charter_of "$djrun")
+  [ -n "$kept" ] && [ -f "$kept" ] && {
+    cp "$kept" "$kept.keep"
+    grep -v 'a stranger can read it' "$kept" > "$kept.cut" && mv "$kept.cut" "$kept"
+
+    is  "a clause deleted from the charter does not deliver"  "$(code_of floor "$tmp/dj" complete)" "15"
+    has "and completion names it as deleted"  "$(floor "$tmp/dj" complete 2>&1)" "deleted: Judged"
+
+    mv "$kept.keep" "$kept"
+  }
 
   floor "$tmp/dj" gates >/dev/null 2>&1
   is "a verdict from something else is recorded"      "$(code_of judged "$tmp/dj" 'a stranger can read it' 'a-reviewer' approve 'read in two minutes')" "0"
@@ -3850,6 +3918,17 @@ a_rejection_stops_the_work() {
   is  "a rejection alone leaves the run unable to deliver" "$(code_of floor "$tmp/rj" complete)" "15"
   has "and the clause is named unmet"               "$(floor "$tmp/rj" complete 2>&1)" "a stranger can read it"
   has "and the rejection is in the record"          "$(floor "$tmp/rj" evidence)" "it is not understandable"
+  #
+  # A refusal and a silence are not the same fact, and the remedies are opposite.
+  #
+  # Both used to print `no approval from`, because `satisfied` returns non-zero for either. A reader
+  # told that goes and asks. **On a refusal that is a wasted trip** — the dissent holds at this ref
+  # for good, and only a new commit moves it.
+  #
+  has "a refusal says so, and says a new ref is the way out" \
+      "$(floor "$tmp/rj" complete 2>&1)" "refused here, and only a new ref moves it"
+  lacks "and it is not reported as nobody having answered" \
+        "$(floor "$tmp/rj" complete 2>&1)" "no approval from [a-reviewer]"
 
   # `complete` is the question. `deliver` is the act, and a refusal that answers only the
   # question stops nothing — the same clause has to hold the push back.
@@ -3922,6 +4001,1105 @@ a_verdict_is_bound_to_what_was_read() {
      "$(code_of floor "$tmp/bd" evidence verdict 'a stranger can read it' 'a-reviewer' approve 'still fine' "$moved")" "36"
 }
 a_verdict_is_bound_to_what_was_read
+
+#
+# A whole receipt, as an adapter would write one.
+#
+# Every check below changes exactly one line of it, so the line a check edits is what the check is
+# about. Sixteen lines written out per check would bury that in the noise.
+#
+# **No `model` line, and that is the point.** One adapter was driven in its json mode: its stream
+# carries a thread handle, the reply and the usage, and names no model, provider or effort. So what
+# it can write down is what it asked for and what the thing said about itself, each said as such.
+a_receipt() {
+  printf 'run %s
+clause %s
+candidate %s
+role a-reviewer
+adapter a-test-harness
+requested_model a-model
+self_reported_model another-model
+requested_provider a-provider
+requested_effort max
+context a-thread-handle
+fresh yes
+brief %s
+verdict approve
+report a-report-digest
+round 1
+time 2026-09-04T00:00:00Z
+' "$1" "$2" "$3" "$4"
+}
+
+#
+# A judgement receipt: what floor takes from one, and what it will not.
+#
+# #332. `verdict` records five things typed at a prompt. The decision on that issue names a runner
+# that is neither the author nor the convener, and sixteen fields it writes down — so floor reads a
+# file, and any harness able to write these lines answers the same clause.
+#
+# **Floor's half only.** These receipts are written by this suite. A second producer writing one is
+# the other half of the slice, and it stays unproven.
+#
+a_receipt_is_read_and_not_believed() {
+  make_repo "$tmp/rcpt" main && set_origin "$tmp/rcpt" 'https://gitlab.com/acme/rcpt.git' \
+    && mkdir -p "$tmp/rcpt/.foundry" \
+    && commit_file "$tmp/rcpt" .foundry/gates 'tests  true
+' && commit_file "$tmp/rcpt" .foundry/judged 'a-reviewer  a stranger can read it
+' || { skip "a receipt — git could not make a repo here"; return; }
+
+  rcrun=$(floor_new_as "$tmp/rcpt" ada@example.com "Receipt")
+  floor "$tmp/rcpt" charter derive >/dev/null 2>&1
+  floor "$tmp/rcpt" policy authorize 'https://gitlab.com/acme/rcpt.git' >/dev/null 2>&1
+  floor "$tmp/rcpt" targets add 'https://gitlab.com/acme/rcpt.git' main >/dev/null 2>&1
+  floor "$tmp/rcpt" open >/dev/null 2>&1
+  floor "$tmp/rcpt" gates >/dev/null 2>&1
+
+  base="$tmp/rcpt.receipt"
+  a_receipt "$(basename "$rcrun")" 'a stranger can read it' "$(reviewed_at "$tmp/rcpt")" 'a-brief-digest' > "$base"
+
+  # Nothing to read at all. This is the refusal the whole contract rests on.
+  is  "a receipt nobody wrote is refused" \
+      "$(code_of floor "$tmp/rcpt" evidence receipt "$tmp/rcpt.none")" "37"
+  has "and it says none is there" \
+      "$(floor_says "$tmp/rcpt" evidence receipt "$tmp/rcpt.none")" "no receipt at"
+  is  "and the verb with no file named is refused" \
+      "$(code_of floor "$tmp/rcpt" evidence receipt)" "2"
+
+  #
+  # There and empty, which is not the same as absent — and the sentence is what tells them apart.
+  #
+  # **Every guard here answers 37**, so the exit code cannot say which refused. Without the message
+  # asserted, blinding this one lets the required-field reader answer for it and the suite stays
+  # green. Verdict 051 found exactly that: the split covered two of three guards.
+  : > "$tmp/rcpt.empty"
+  is  "a receipt holding nothing is refused" \
+      "$(code_of floor "$tmp/rcpt" evidence receipt "$tmp/rcpt.empty")" "37"
+  has "and it says so, rather than naming the first field it wanted" \
+      "$(floor_says "$tmp/rcpt" evidence receipt "$tmp/rcpt.empty")" "holds nothing"
+
+  #
+  # The other half of the same guard: there, not empty, and not readable.
+  #
+  # **Amber where the filesystem has no such bit.** NTFS keeps none, so `chmod 000` changes nothing
+  # and the check would assert against a file it can still read. That is a platform that cannot
+  # answer, never a defect — the probe is asked rather than the platform guessed at.
+  cp "$base" "$tmp/rcpt.unreadable" && chmod 000 "$tmp/rcpt.unreadable" 2>/dev/null
+  if [ -r "$tmp/rcpt.unreadable" ]; then
+    cannot "a receipt that will not read — this filesystem ignores chmod"
+  else
+    is  "a receipt floor may not read is refused" \
+        "$(code_of floor "$tmp/rcpt" evidence receipt "$tmp/rcpt.unreadable")" "37"
+    has "and it is told apart from one that is not there" \
+        "$(floor_says "$tmp/rcpt" evidence receipt "$tmp/rcpt.unreadable")" "holds nothing"
+  fi
+  chmod u+rw "$tmp/rcpt.unreadable" 2>/dev/null
+
+  #
+  # The vocabulary is closed. A key floor has no reading for is a claim nobody checked, wearing the
+  # look of one that was — and a reader cannot tell those apart from the file.
+  { cat "$base"; printf 'confidence high
+'; } > "$tmp/rcpt.unknown"
+  is  "a key floor does not read is refused" \
+      "$(code_of floor "$tmp/rcpt" evidence receipt "$tmp/rcpt.unknown")" "37"
+  has "and it names the key" \
+      "$(floor_says "$tmp/rcpt" evidence receipt "$tmp/rcpt.unknown")" "[confidence] is a key floor has no reading for"
+
+  { cat "$base"; printf 'round 2
+'; } > "$tmp/rcpt.twice"
+  is  "a key said twice is refused" \
+      "$(code_of floor "$tmp/rcpt" evidence receipt "$tmp/rcpt.twice")" "37"
+  has "and it says two answers is not one" \
+      "$(floor_says "$tmp/rcpt" evidence receipt "$tmp/rcpt.twice")" "said twice"
+
+  sed 's/^requested_effort .*/requested_effort/' "$base" > "$tmp/rcpt.novalue"
+  is  "a key claiming nothing is refused" \
+      "$(code_of floor "$tmp/rcpt" evidence receipt "$tmp/rcpt.novalue")" "37"
+  has "and it says what it recorded" \
+      "$(floor_says "$tmp/rcpt" evidence receipt "$tmp/rcpt.novalue")" "claims nothing"
+
+  #
+  # The one key an author reaches for first, and the one the adapter cannot vouch for.
+  #
+  # Measured: driven in its json mode, the adapter's stream carries a thread handle, the reply and
+  # the usage, and names no model. Asked outright, it gave a different name from the one requested.
+  # So a bare `model` is a claim nobody checked, and a caveat written beside it is the part every
+  # reader and every script skips.
+  sed 's/^requested_model /model /' "$base" > "$tmp/rcpt.claimsmodel"
+  is  "a bare model field is refused" \
+      "$(code_of floor "$tmp/rcpt" evidence receipt "$tmp/rcpt.claimsmodel")" "37"
+  has "and it says nothing checked it" \
+      "$(floor_says "$tmp/rcpt" evidence receipt "$tmp/rcpt.claimsmodel")" "would state what ran, and nothing checked it"
+  has "and it names the two that may be said instead" \
+      "$(floor_says "$tmp/rcpt" evidence receipt "$tmp/rcpt.claimsmodel")" "say requested_model or self_reported_model"
+
+  sed 's/^requested_provider /provider /' "$base" > "$tmp/rcpt.claimsprovider"
+  is "a bare provider field is refused too" \
+     "$(code_of floor "$tmp/rcpt" evidence receipt "$tmp/rcpt.claimsprovider")" "37"
+
+  sed 's/^requested_effort /effort /' "$base" > "$tmp/rcpt.claimseffort"
+  is "and so is a bare effort" \
+     "$(code_of floor "$tmp/rcpt" evidence receipt "$tmp/rcpt.claimseffort")" "37"
+
+  grep -v '^brief ' "$base" > "$tmp/rcpt.nobrief"
+  is  "a required field absent is refused" \
+      "$(code_of floor "$tmp/rcpt" evidence receipt "$tmp/rcpt.nobrief")" "37"
+  has "and it names the field" \
+      "$(floor_says "$tmp/rcpt" evidence receipt "$tmp/rcpt.nobrief")" "carries no [brief]"
+
+  #
+  # A field standing on one that is not there. Each of these reads as checked and rests on nothing.
+  grep -v '^context ' "$base" > "$tmp/rcpt.nocontext"
+  is  "freshness about a context nobody named is refused" \
+      "$(code_of floor "$tmp/rcpt" evidence receipt "$tmp/rcpt.nocontext")" "37"
+  has "and it says the claim has no subject" \
+      "$(floor_says "$tmp/rcpt" evidence receipt "$tmp/rcpt.nocontext")" "names none"
+
+  #
+  # The one column the charter calls attestable, and the shape of it is what floor can gate.
+  #
+  # A thread was new or it was carried on. `probably` reads as an answer to a question nobody put,
+  # and floor did not issue the handle, so the truth of a `yes` stays the producer's word.
+  sed 's/^fresh .*/fresh probably/' "$base" > "$tmp/rcpt.maybefresh"
+  is  "a freshness answering neither yes nor no is refused" \
+      "$(code_of floor "$tmp/rcpt" evidence receipt "$tmp/rcpt.maybefresh")" "37"
+  has "and it says there are two answers" \
+      "$(floor_says "$tmp/rcpt" evidence receipt "$tmp/rcpt.maybefresh")" "a thread was new or it was not"
+
+  sed 's/^fresh .*/fresh no/' "$base" > "$tmp/rcpt.stale"
+  lacks "a thread carried on is a receipt floor still reads" \
+        "$(floor_says "$tmp/rcpt" evidence receipt "$tmp/rcpt.stale")" "a thread was new or it was not"
+
+  sed 's/^round .*/round none/' "$base" > "$tmp/rcpt.noround"
+  is  "a round nobody can count is refused" \
+      "$(code_of floor "$tmp/rcpt" evidence receipt "$tmp/rcpt.noround")" "37"
+  has "and it says a round is counted" \
+      "$(floor_says "$tmp/rcpt" evidence receipt "$tmp/rcpt.noround")" "counted from one"
+
+  sed 's/^round .*/round 2/' "$base" > "$tmp/rcpt.round2"
+  is  "a later round naming no prior verdict is refused" \
+      "$(code_of floor "$tmp/rcpt" evidence receipt "$tmp/rcpt.round2")" "37"
+  has "and it says which is missing" \
+      "$(floor_says "$tmp/rcpt" evidence receipt "$tmp/rcpt.round2")" "names no prior verdict"
+
+  # A judgement that really happened, about something else. Replayed here it credits this work with
+  # a reading nobody gave it.
+  sed 's/^run .*/run 2026-01-01-another-run-01/' "$base" > "$tmp/rcpt.otherrun"
+  is  "a receipt answering for another run is refused" \
+      "$(code_of floor "$tmp/rcpt" evidence receipt "$tmp/rcpt.otherrun")" "38"
+  has "and it names both runs" \
+      "$(floor_says "$tmp/rcpt" evidence receipt "$tmp/rcpt.otherrun")" "2026-01-01-another-run-01"
+
+  # Every refusal `verdict` makes, made here too.
+  sed 's/^role .*/role someone-else/' "$base" > "$tmp/rcpt.stranger"
+  is  "a role nobody asked is refused" \
+      "$(code_of floor "$tmp/rcpt" evidence receipt "$tmp/rcpt.stranger")" "2"
+  has "and it names who was asked" \
+      "$(floor_says "$tmp/rcpt" evidence receipt "$tmp/rcpt.stranger")" "answered by [a-reviewer]"
+
+  sed 's/^clause .*/clause tests/' "$base" > "$tmp/rcpt.gate"
+  is  "a receipt against a Gate clause answers nothing" \
+      "$(code_of floor "$tmp/rcpt" evidence receipt "$tmp/rcpt.gate")" "2"
+
+  is "a worker may not receipt its own work" \
+     "$(code_of floor_worked "$tmp/rcpt" 'a-reviewer' evidence receipt "$base")" "2"
+
+  # No bar went over, so nothing here can answer for one.
+  is "a receipt from a judge nobody handed the bar is refused" \
+     "$(code_of floor "$tmp/rcpt" evidence receipt "$base")" "36"
+
+  #
+  # A handoff, and still nothing to check the receipt's brief against. Unverifiable rather than
+  # wrong: floor holds no brief and never reads one, so with no baseline it has nothing to compare.
+  floor "$tmp/rcpt" evidence handed 'a stranger can read it' 'a-reviewer' 'a test harness' >/dev/null 2>&1
+  is  "a receipt whose handoff recorded no brief is refused" \
+      "$(code_of floor "$tmp/rcpt" evidence receipt "$base")" "37"
+  has "and it says the bar is unknown" \
+      "$(floor_says "$tmp/rcpt" evidence receipt "$base")" "unknown bar"
+
+  floor "$tmp/rcpt" evidence handed 'a stranger can read it' 'a-reviewer' 'a test harness' 'a-brief-digest' >/dev/null 2>&1
+
+  sed 's/^brief .*/brief another-brief-digest/' "$base" > "$tmp/rcpt.moved"
+  is  "a receipt answering a brief that changed is refused" \
+      "$(code_of floor "$tmp/rcpt" evidence receipt "$tmp/rcpt.moved")" "38"
+  has "and it names the brief that went over" \
+      "$(floor_says "$tmp/rcpt" evidence receipt "$tmp/rcpt.moved")" "was handed brief [a-brief-digest]"
+
+  #
+  # **The charter and the brief are two artefacts, and only one of them is floor's.**
+  #
+  # `was_handed` matches on the charter's own sum, so a bar rewritten after the handoff refuses at
+  # 36 — any edit moves the sum, and this appends one line to show it. That is the run's bar.
+  #
+  # The brief is what actually went to the judge, and floor never sees it. A charter left alone
+  # while the brief was rewritten is the case above, and the charter's sum cannot see it. Two
+  # facts, two columns, and neither stands in for the other.
+  kept=$(charter_of "$rcrun")
+  [ -n "$kept" ] && [ -f "$kept" ] && {
+    cp "$kept" "$kept.keep"
+    printf '# a bar rewritten after the handoff
+' >> "$kept"
+
+    is "a receipt under a charter rewritten since the handoff is refused" \
+       "$(code_of floor "$tmp/rcpt" evidence receipt "$base")" "36"
+
+    mv "$kept.keep" "$kept"
+  }
+
+  #
+  # **Green gates do not satisfy a Judged clause.** The charter's own bar for #332.
+  #
+  # `gates` is green above. This records a machine pass under the judged clause's own name, which is
+  # the closest a command can come to answering a question no command can answer.
+  floor "$tmp/rcpt" evidence record 'a stranger can read it' true >/dev/null 2>&1
+
+  has "a green gate under the clause's own name does not satisfy it" \
+      "$(floor "$tmp/rcpt" complete 2>&1)" "no approval from [a-reviewer]"
+  is  "and the run still may not deliver" "$(code_of floor "$tmp/rcpt" complete)" "15"
+
+  # And then it is taken.
+  is "a receipt carrying the contract is recorded" \
+     "$(code_of floor "$tmp/rcpt" evidence receipt "$base")" "0"
+  is "and with it the run may deliver" "$(code_of floor "$tmp/rcpt" complete)" "0"
+
+  held=$(floor "$tmp/rcpt" evidence)
+
+  has "the record keeps the adapter"             "$held" "adapter=a-test-harness"
+  has "and the model that was asked for"         "$held" "requested_model=a-model"
+  has "and the different one it claimed to be"   "$held" "self_reported_model=another-model"
+  has "and the provider that was asked for"      "$held" "requested_provider=a-provider"
+  has "and the effort that was asked for"        "$held" "requested_effort=max"
+  has "the thread, and that it was fresh"        "$held" "context=a-thread-handle fresh=yes"
+  has "and the brief digest"                     "$held" "brief=a-brief-digest"
+  has "and the round"                            "$held" "round=1"
+  has "and when the judgement was made"          "$held" "time=2026-09-04T00:00:00Z"
+  has "and the report digest, as what came back" "$held" "a-reviewer: approve, report a-report-digest"
+  has "and the commit that was read"             "$held" "$(reviewed_at "$tmp/rcpt")"
+
+  # Nothing here says which model answered, because nothing here knows.
+  lacks "and the record states no model that ran" "$held" " model="
+
+  #
+  # A property no adapter could attest, absent rather than claimed.
+  #
+  # The line the charter says cannot be fixed and must be said: **every field is written by whatever
+  # wrote the receipt.** What floor adds is that a field left out stays out. `self_reported_model=unknown`
+  # would be a claim nobody checked, and in a record it reads exactly like one that was.
+  grep -v '^self_reported_model ' "$base" > "$tmp/rcpt.nomodel"
+
+  is    "a receipt vouching for no self-reported model is still taken" \
+        "$(code_of floor "$tmp/rcpt" evidence receipt "$tmp/rcpt.nomodel")" "0"
+  lacks "and nothing is written in its place" \
+        "$(floor "$tmp/rcpt" evidence | tail -1)" "self_reported_model="
+
+  #
+  # **A producer with no thread handle to name**, which is the case `context` was made optional for.
+  #
+  # The first receipt written here by something outside this repository left both keys out: the
+  # harness could see the reply it had produced and not the thread that carried it. **An optionality
+  # nothing breaks on is not a decision**, and this is the only check that breaks on it — every other
+  # receipt here names a thread.
+  #
+  # `needsfresh` is its mutant, and it breaks `fresh` rather than `context` on purpose. Requiring
+  # `context` changes what `rcpt.nocontext` is refused *for*, so it dies at that message three checks
+  # up and never arrives here.
+  grep -v -e '^context ' -e '^fresh ' "$base" > "$tmp/rcpt.nothread"
+
+  is    "a receipt naming no thread at all is still taken" \
+        "$(code_of floor "$tmp/rcpt" evidence receipt "$tmp/rcpt.nothread")" "0"
+  lacks "and the record names no thread" \
+        "$(floor "$tmp/rcpt" evidence | tail -1)" "context="
+  lacks "and says nothing about its freshness" \
+        "$(floor "$tmp/rcpt" evidence | tail -1)" "fresh="
+}
+a_receipt_is_read_and_not_believed
+
+#
+# An exhausted review budget, and a harness nobody could reach.
+#
+# **Neither is a verdict and neither is silence.** A silent judge is asked again. A refusal is
+# answered by new work. These are answered by whoever owns the budget or the harness — three facts
+# and three remedies, and reported as a refusal a reader commits their way out of a harness that was
+# never reached.
+#
+a_judgement_that_never_happened_is_recorded() {
+  make_repo "$tmp/stopped" main && set_origin "$tmp/stopped" 'https://gitlab.com/acme/stopped.git' \
+    && mkdir -p "$tmp/stopped/.foundry" \
+    && commit_file "$tmp/stopped" .foundry/gates 'tests  true
+' && commit_file "$tmp/stopped" .foundry/judged 'a-reviewer  a stranger can read it
+' || { skip "a deadlock — git could not make a repo here"; return; }
+
+  dlrun=$(floor_new_as "$tmp/stopped" ada@example.com "Deadlock")
+  floor "$tmp/stopped" charter derive >/dev/null 2>&1
+  floor "$tmp/stopped" policy authorize 'https://gitlab.com/acme/stopped.git' >/dev/null 2>&1
+  floor "$tmp/stopped" policy deliver-to 'https://gitlab.com/acme/stopped.git' >/dev/null 2>&1
+  floor "$tmp/stopped" targets add 'https://gitlab.com/acme/stopped.git' main >/dev/null 2>&1
+  work=$(only_slot "$(floor "$tmp/stopped" open)")
+  floor "$tmp/stopped" gates >/dev/null 2>&1
+
+  at=$(reviewed_at "$tmp/stopped")
+  floor "$tmp/stopped" evidence handed 'a stranger can read it' 'a-reviewer' 'a test harness' 'a-brief-digest' >/dev/null 2>&1
+
+  a_receipt "$(basename "$dlrun")" 'a stranger can read it' "$at" 'a-brief-digest' \
+    | sed 's/^verdict .*/verdict deadlock/' > "$tmp/stopped.deadlock"
+
+  is    "an exhausted budget is recorded, never refused" \
+        "$(code_of floor "$tmp/stopped" evidence receipt "$tmp/stopped.deadlock")" "0"
+  has   "and the record says which, in words" \
+        "$(floor "$tmp/stopped" evidence)" "a-reviewer: deadlock"
+  is    "and the run may not deliver"  "$(code_of floor "$tmp/stopped" complete)" "15"
+  has   "and completion says nothing judged it" \
+        "$(floor "$tmp/stopped" complete 2>&1)" "never judged it"
+  lacks "not that the judge was never asked" \
+        "$(floor "$tmp/stopped" complete 2>&1)" "no approval from [a-reviewer]"
+  lacks "and not that the judge said no" \
+        "$(floor "$tmp/stopped" complete 2>&1)" "refused here"
+  is    "and the delivery itself is refused, not only the question" \
+        "$(code_of floor "$tmp/stopped" deliver 'a change')" "15"
+
+  # A gate cannot stand in for a judgement that never happened, whatever it exits.
+  floor "$tmp/stopped" evidence record 'a stranger can read it' true >/dev/null 2>&1
+  is "a green gate does not answer for a deadlock either" "$(code_of floor "$tmp/stopped" complete)" "15"
+
+  #
+  # A deadlock holds its ref for good, so the harness half needs a ref of its own. That is the
+  # append-only ledger working, not a limitation of the fixture.
+  commit_file "$work" LATER.md 'a later thought
+' >/dev/null 2>&1
+  moved=$(reviewed_at "$tmp/stopped")
+
+  is "a receipt naming the commit that was read is refused once the work moved" \
+     "$(code_of floor "$tmp/stopped" evidence receipt "$tmp/stopped.deadlock")" "35"
+
+  floor "$tmp/stopped" evidence handed 'a stranger can read it' 'a-reviewer' 'a test harness' 'a-brief-digest' >/dev/null 2>&1
+
+  a_receipt "$(basename "$dlrun")" 'a stranger can read it' "$moved" 'a-brief-digest' \
+    | sed 's/^verdict .*/verdict unavailable/' > "$tmp/stopped.unavailable"
+
+  is  "a harness nobody could reach is recorded too" \
+      "$(code_of floor "$tmp/stopped" evidence receipt "$tmp/stopped.unavailable")" "0"
+  has "and the record names it" "$(floor "$tmp/stopped" evidence)" "a-reviewer: unavailable"
+  is  "and nothing falls back to answer in its place" "$(code_of floor "$tmp/stopped" complete)" "15"
+
+  a_receipt "$(basename "$dlrun")" 'a stranger can read it' "$moved" 'a-brief-digest' \
+    | sed 's/^verdict .*/verdict looksfine/' > "$tmp/stopped.wibble"
+
+  is  "an outcome the contract does not name is refused" \
+      "$(code_of floor "$tmp/stopped" evidence receipt "$tmp/stopped.wibble")" "2"
+  has "and it names all five that are" \
+      "$(floor_says "$tmp/stopped" evidence receipt "$tmp/stopped.wibble")" \
+      "approve, reject, revise, deadlock or unavailable"
+}
+a_judgement_that_never_happened_is_recorded
+
+#
+# A judge, written as a repository would ship one.
+#
+# It never reaches a harness. What it stands for is the half floor does not write: the adapter's
+# name, what came back, and when. Every field the runner already wrote is left alone, because a key
+# said twice is refused — which is the check below that a substitution cannot pass.
+a_judge_that_approves() {
+  printf '#!/bin/sh
+printf "the fixture judge read [%%s]\\n" "$FOUNDRY_BRIEF" > "${FOUNDRY_RECEIPT%%.receipt}.report"
+printf "adapter a-fixture\\nrequested_model a-model\\ncontext a-thread\\nfresh yes\\n" >> "$FOUNDRY_RECEIPT"
+printf "report %%s\\ntime 2026-09-05T00:00:00Z\\nverdict %s\\n" \\
+  "$(cksum < "${FOUNDRY_RECEIPT%%.receipt}.report" | awk "{ print \\$1 }")" >> "$FOUNDRY_RECEIPT"
+%s' "${1:-approve}" "${2:-}"
+}
+
+# A repository declaring one judge, how it is reached, and a gate beside it.
+#
+# The directories are made after `make_repo`, never before: it refuses a name that already exists, so
+# a fixture that laid its own tree first would inherit whichever test made that name earlier.
+a_judged_repo() {
+  make_repo "$1" main && set_origin "$1" "https://gitlab.com/acme/$2.git" \
+    && mkdir -p "$1/.foundry" "$1/bin" \
+    && commit_file "$1" .foundry/gates 'tests  true
+' && commit_file "$1" bin/fake-judge.sh "$3" \
+    && commit_file "$1" .foundry/judged "$4"
+}
+
+#
+# The runner asks the judge — #332's last box.
+#
+# **The command comes from the charter.** `evidence receipt` reads a file somebody made; this runs
+# what the repository declared and reads the file that came out, so a caller can name neither the
+# judge nor how it is reached.
+#
+# Every field binding the work is written by the runner before the judge is asked, and the receipt
+# grammar's *said twice* is what stops an adapter restating one.
+#
+the_runner_asks_the_judge() {
+  a_judged_repo "$tmp/asked" asked "$(a_judge_that_approves)" 'reach  a-reviewer  sh bin/fake-judge.sh
+a-reviewer  a stranger can read it
+' || { skip "the runner asks — git could not make a repo here"; return; }
+
+  askrun=$(floor_new_as "$tmp/asked" ada@example.com "Asked")
+  floor "$tmp/asked" charter derive >/dev/null 2>&1
+
+  has "a declared reach derives into the judge's own record" \
+      "$(floor "$tmp/asked" charter)" "a-reviewer sh bin/fake-judge.sh"
+
+  floor "$tmp/asked" policy authorize 'https://gitlab.com/acme/asked.git' >/dev/null 2>&1
+  floor "$tmp/asked" targets add 'https://gitlab.com/acme/asked.git' main >/dev/null 2>&1
+  floor "$tmp/asked" open >/dev/null 2>&1
+  floor "$tmp/asked" gates >/dev/null 2>&1
+
+  is "a caller may not name the command" "$(code_of floor "$tmp/asked" judged 'sh -c true')" "2"
+  is "and green gates leave the clause unmet" "$(code_of floor "$tmp/asked" complete)" "15"
+
+  is "the runner asks, and the judge answers" "$(code_of floor "$tmp/asked" judged)" "0"
+  is "and with that the run may deliver"      "$(code_of floor "$tmp/asked" complete)" "0"
+
+  held=$(floor "$tmp/asked" evidence)
+  has "the record keeps what the adapter vouched for" "$held" "adapter=a-fixture"
+  has "and the round the runner counted"              "$held" "round=1"
+  has "and the commit the judge was pointed at"       "$held" "$(reviewed_at "$tmp/asked")"
+
+  #
+  # **The brief is the runner's, and the receipt says the judge answered that one.**
+  #
+  # Floor digested the file it wrote and recorded the digest at the handoff, so the two cannot differ
+  # by a caller's word. What the judge appends is checked against it.
+  wrote=$(cat "$(floor "$tmp/asked" path)"/judged/*.brief)
+  has   "the brief names the candidate"            "$wrote" "candidate $(reviewed_at "$tmp/asked")"
+  has   "and the base it is judged against"        "$wrote" "base $(reviewed_at "$tmp/asked")"
+  has   "and carries the bar it is judged against" "$wrote" "Judged a stranger can read it"
+  lacks "and hands the judge none of this run's own answers" "$wrote" "machine"
+
+  answer=$(cat "$(floor "$tmp/asked" path)"/judged/*.receipt)
+  has "the runner wrote the run into the receipt"    "$answer" "run $(basename "$askrun")"
+  has "and the candidate, before anything was asked" "$answer" "candidate $(reviewed_at "$tmp/asked")"
+  has "and the judge appended what it saw"           "$answer" "verdict approve"
+
+  #
+  # Round two, and the work has moved. **A refused judgement is answered by new work**, so a second
+  # round is a second invocation at a second commit and never a second pass inside one.
+  #
+  # It is also the only shape where the base and the candidate differ. A run that has committed
+  # nothing has no range between them, and a judge asked what changed reads the tree instead.
+  commit_file "$(only_slot "$(floor "$tmp/asked" path)/units/01/workspace")" LATER.md 'a later thought
+' >/dev/null 2>&1
+
+  is "a second invocation asks again, at the commit the work moved to" \
+     "$(code_of floor "$tmp/asked" judged)" "0"
+
+  again=$(cat "$(floor "$tmp/asked" path)"/judged/*.brief)
+  has     "the brief names the commit the work moved to" "$again" "candidate $(reviewed_at "$tmp/asked")"
+  lacks   "and a base that is no longer the same commit" "$again" "base $(reviewed_at "$tmp/asked")"
+  has     "and counts this as the second round"          "$again" "round 2"
+
+  carried=$(cat "$(floor "$tmp/asked" path)"/judged/*.receipt)
+  has "the receipt carries the round the runner counted" "$carried" "round 2"
+  has "and the verdict that came before it"              "$carried" "prior a-reviewer: approve"
+  has "and the ledger keeps both"                        "$(floor "$tmp/asked" evidence)" "round=2"
+
+  # Two rounds and no ceiling, which is what every charter derived before #526 held. The record for
+  # one is written only when a repository asks for one, so absence here is the unbounded answer.
+  lacks "a charter bounding nothing holds no limit at all" "$(floor "$tmp/asked" charter)" "rounds "
+}
+the_runner_asks_the_judge
+
+#
+# A round limit the charter pins — #526, and #332's last open box.
+#
+# **The count was already there and the ceiling was not.** `next_round` counts every verdict a judge
+# gave on a clause, and nothing read that number against anything — so a judge answering `revise`
+# could be asked for ever, and the record said only that the work was still moving.
+#
+# The judge here always says `revise`. Nothing but the limit can stop it, which is what makes every
+# check below break on the limit rather than on the judge.
+#
+a_round_limit_the_charter_pins() {
+  a_judged_repo "$tmp/bounded" bounded "$(a_judge_that_approves revise)" \
+    'reach  a-reviewer  sh bin/fake-judge.sh
+rounds  a-reviewer  2
+a-reviewer  a stranger can read it
+' || { skip "a round limit — git could not make a repo here"; return; }
+
+  ready_run "$tmp/bounded" 'https://gitlab.com/acme/bounded.git'
+  floor "$tmp/bounded" gates >/dev/null 2>&1
+
+  bid=$(clause_of 'a stranger can read it')
+  bar=$(floor "$tmp/bounded" charter)
+  has "a declared limit derives into a record of its own" "$bar" "rounds $bid a-reviewer 2"
+  has "and the judge's record is untouched beside it"     "$bar" "judge $bid a-reviewer sh bin/fake-judge.sh"
+
+  is "a caller may not raise it" "$(code_of floor "$tmp/bounded" judged 9)" "2"
+
+  #
+  # Two rounds, each at its own commit. A refused judgement is answered by new work, so the second
+  # round is a second invocation at a second candidate — the shape the limit has to count.
+  is "the first round is asked, and the judge asks for another" \
+     "$(code_of floor "$tmp/bounded" judged)" "39"
+
+  commit_file "$(only_slot "$(floor "$tmp/bounded" path)/units/01/workspace")" ONE.md 'a first fix
+' >/dev/null 2>&1
+
+  is  "the second round is asked too"  "$(code_of floor "$tmp/bounded" judged)" "39"
+  has "and the brief counted it"       "$(cat "$(floor "$tmp/bounded" path)"/judged/*.brief)" "round 2"
+
+  commit_file "$(only_slot "$(floor "$tmp/bounded" path)/units/01/workspace")" TWO.md 'a second fix
+' >/dev/null 2>&1
+
+  #
+  # The third. **The judge is never run**, so the brief it would have been handed is never written
+  # and no handoff is recorded — the two things a rerun of the judge could not leave behind.
+  is  "a run at the limit stops rather than asking again" \
+      "$(code_of floor "$tmp/bounded" judged)" "39"
+  has "and says the charter is what stopped it" \
+      "$(floor_says "$tmp/bounded" judged)" "the 2 rounds this charter allows"
+  has "and the brief still names the round the judge last read" \
+      "$(cat "$(floor "$tmp/bounded" path)"/judged/*.brief)" "round 2"
+  is  "and nothing says the bar went over a third time" \
+      "$(floor "$tmp/bounded" evidence | awk -F'\t' '$2 == "handed"' | wc -l | tr -d ' ')" "2"
+
+  held=$(floor "$tmp/bounded" evidence)
+  has "the ledger records a deadlock, in words" "$held" "a-reviewer: deadlock"
+  has "and what the charter allowed"            "$held" "the charter allows 2 rounds"
+
+  #
+  # Stuck, approved and refused are three facts with three remedies, and completion tells them apart
+  # at the commit it would deliver. Nothing new stores that: `stopped` already reads code 3.
+  said=$(floor "$tmp/bounded" complete 2>&1)
+  is    "and the run may not deliver"                  "$(code_of floor "$tmp/bounded" complete)" "15"
+  has   "completion says the judgement never happened" "$said" "never judged it"
+  lacks "not that the judge is yet to answer"          "$said" "no approval from"
+  lacks "and not that the judge said no"               "$said" "refused here"
+
+  #
+  # The ceiling raised where nothing derived it. **This is what makes the limit the charter's.**
+  # `judged` checks before it asks anybody, so a record edited in the run's own charter buys no
+  # round — exactly as a gate's command is held to the file that yielded it.
+  raised=$(charter_of "$(floor "$tmp/bounded" path)")
+  sed "s|^rounds $bid a-reviewer 2\$|rounds $bid a-reviewer 9|" "$raised" > "$tmp/bounded.raised" \
+    && cp "$tmp/bounded.raised" "$raised"
+
+  has "a ceiling raised in the charter is drift" \
+      "$(floor_says "$tmp/bounded" charter check)" "bounded elsewhere: a-reviewer"
+  is  "and the charter cannot be run against"    "$(code_of floor "$tmp/bounded" charter check)" "7"
+  is  "so nobody buys a round by editing it"     "$(code_of floor "$tmp/bounded" judged)" "7"
+
+  # Deleted outright, which leaves nothing of its own to read. The finding is driven from the judge's
+  # record for that reason, and a reader driven from the limits would see nothing at all here.
+  grep -v '^rounds ' "$raised" > "$tmp/bounded.gone" && cp "$tmp/bounded.gone" "$raised"
+  has "a ceiling deleted from the charter is drift too" \
+      "$(floor_says "$tmp/bounded" charter check)" "bounded elsewhere: a-reviewer"
+}
+a_round_limit_the_charter_pins
+
+#
+# A ceiling no charter may hold, refused before one holds it.
+#
+# **A limit that is not a count is wrong everywhere**, the way a pin that is not a digest is. It says
+# something about the declaration and nothing about this machine, so no person is ever asked to
+# approve a bar that could not be reached from anywhere.
+#
+a_round_limit_that_is_not_a_count_never_reaches_a_charter() {
+  a_judged_repo "$tmp/uncounted" uncounted "$(a_judge_that_approves)" \
+    'reach  a-reviewer  sh bin/fake-judge.sh
+rounds  a-reviewer  none
+a-reviewer  a stranger can read it
+' || { skip "a limit that is not a count — git could not make a repo here"; return; }
+
+  floor_new_as "$tmp/uncounted" ada@example.com "Uncounted" >/dev/null
+  is  "a word where a count belongs never reaches a charter" \
+      "$(code_of floor "$tmp/uncounted" charter derive)" "6"
+  has "and the refusal names the judge and what it said" \
+      "$(floor_says "$tmp/uncounted" charter derive)" "a-reviewer is allowed [none] rounds"
+  is  "and nothing was written"  "$(floor "$tmp/uncounted" charter)" ""
+
+  # Zero with the rest. A judge nobody may ask once is a clause nothing can satisfy, and a repository
+  # wanting that says so by deleting the judge. A second run, because its base is the new commit.
+  commit_file "$tmp/uncounted" .foundry/judged 'reach  a-reviewer  sh bin/fake-judge.sh
+rounds  a-reviewer  0
+a-reviewer  a stranger can read it
+' >/dev/null 2>&1
+  floor_new_as "$tmp/uncounted" ada@example.com "Uncounted Again" >/dev/null
+
+  is  "a limit of zero never reaches one either" \
+      "$(code_of floor "$tmp/uncounted" charter derive)" "6"
+  has "and it is refused as the count it is not" \
+      "$(floor_says "$tmp/uncounted" charter derive)" "a-reviewer is allowed [0] rounds"
+}
+a_round_limit_that_is_not_a_count_never_reaches_a_charter
+
+#
+# What the runner refuses rather than records.
+#
+# Each of these leaves the clause unmet, and none of them writes a `judged` row saying otherwise. A
+# runner that carried on would be the one thing #332 forbids: an answer nobody gave.
+#
+the_runner_refuses_before_it_records() {
+  a_judged_repo "$tmp/norun" norun "$(a_judge_that_approves)" 'reach  a-reviewer  no-such-command-here
+a-reviewer  a stranger can read it
+' || { skip "a judge that cannot run — git could not make a repo here"; return; }
+
+  ready_run "$tmp/norun" 'https://gitlab.com/acme/norun.git'
+
+  is "a judge whose command is not on this host answers nothing" \
+     "$(code_of floor "$tmp/norun" judged)" "21"
+
+  #
+  # **Read after the first invocation and no later.** Nothing had written a ledger when that brief
+  # went out, and the handoff it recorded makes one — so a second `judged` counts against a file the
+  # first did not have, and rewrites the brief with the answer this is asking for.
+  #
+  # `awk` handed a file that is not there never reaches its `END`, so the count came back empty and
+  # the first brief a judge was ever handed said `round` and nothing after it.
+  first=$(cat "$(floor "$tmp/norun" path)"/judged/*.brief)
+  has "and the brief it wrote counted this as round one" "$first" "round 1"
+
+  has   "the runner says it could not run, rather than recording a refusal" \
+        "$(floor_says "$tmp/norun" judged)" "could not run on this host"
+  has   "the handoff still says the bar went over" "$(floor "$tmp/norun" evidence)" "handed"
+  lacks "and nothing at all was recorded as judged" "$(floor "$tmp/norun" evidence)" "judged"
+
+  # A judge nobody said how to reach. The clause derives, and only a person can answer it.
+  a_judged_repo "$tmp/unreached" unreached "$(a_judge_that_approves)" 'a-reviewer  a stranger can read it
+' || { skip "a judge with no reach — git could not make a repo here"; return; }
+
+  ready_run "$tmp/unreached" 'https://gitlab.com/acme/unreached.git'
+
+  is  "a judge nobody said how to reach is refused" \
+      "$(code_of floor "$tmp/unreached" judged)" "7"
+  has "and it names the judge and the clause" \
+      "$(floor_says "$tmp/unreached" judged)" "how [a-reviewer] is reached"
+
+  # A charter with a gate and no judge at all. Nothing to ask, and it says which.
+  make_repo "$tmp/nopanel" main && set_origin "$tmp/nopanel" 'https://gitlab.com/acme/nopanel.git' \
+    && mkdir -p "$tmp/nopanel/.foundry" \
+    && commit_file "$tmp/nopanel" .foundry/gates 'tests  true
+' || { skip "a charter with no judge — git could not make a repo here"; return; }
+
+  ready_run "$tmp/nopanel" 'https://gitlab.com/acme/nopanel.git'
+
+  is  "a charter naming no judge has nothing to ask" "$(code_of floor "$tmp/nopanel" judged)" "8"
+  has "and says so rather than passing"              "$(floor_says "$tmp/nopanel" judged)" "names no judge"
+}
+the_runner_refuses_before_it_records
+
+#
+# What the runner records rather than believes.
+#
+# **A receipt the runner caused is read by the verb a person types.** Same keys, same refusals — so
+# an adapter cannot reach a satisfaction a hand-written receipt could not, and the field the runner
+# bound is the field a substitution is refused for.
+#
+the_runner_believes_no_more_than_a_person() {
+  a_judged_repo "$tmp/subst" subst \
+    '#!/bin/sh
+printf "ok\n" > "${FOUNDRY_RECEIPT%.receipt}.report"
+printf "candidate deadbeef\nadapter a-fixture\nreport 1\ntime 2026-09-05T00:00:00Z\nverdict approve\n" >> "$FOUNDRY_RECEIPT"
+' 'reach  a-reviewer  sh bin/fake-judge.sh
+a-reviewer  a stranger can read it
+' || { skip "an adapter that restates — git could not make a repo here"; return; }
+
+  ready_run "$tmp/subst" 'https://gitlab.com/acme/subst.git'
+
+  is    "an adapter restating what the runner bound is refused" \
+        "$(code_of floor "$tmp/subst" judged)" "37"
+  has   "and the refusal names the field it answered twice" \
+        "$(floor_says "$tmp/subst" judged)" "[candidate] is said twice"
+  lacks "and no judgement is recorded from it" "$(floor "$tmp/subst" evidence)" "judged"
+
+  #
+  # A harness the adapter could not reach. **Recorded, and it is not a verdict.**
+  a_judged_repo "$tmp/unreach" unreach "$(a_judge_that_approves unavailable 'exit 1')" \
+    'reach  a-reviewer  sh bin/fake-judge.sh
+a-reviewer  a stranger can read it
+' || { skip "an unreachable harness — git could not make a repo here"; return; }
+
+  ready_run "$tmp/unreach" 'https://gitlab.com/acme/unreach.git'
+  floor "$tmp/unreach" gates >/dev/null 2>&1
+
+  is  "a harness nobody reached leaves the clause unmet" \
+      "$(code_of floor "$tmp/unreach" judged)" "39"
+  has "and the ledger says which judge, and what happened" \
+      "$(floor "$tmp/unreach" evidence)" "a-reviewer: unavailable"
+  is  "and green gates do not answer in its place" "$(code_of floor "$tmp/unreach" complete)" "15"
+  has "and completion says nothing judged it" \
+      "$(floor "$tmp/unreach" complete 2>&1)" "never judged it"
+
+  #
+  # A run that rewrote the file its own judge runs.
+  #
+  # `gates` plants the base's copy and grades against that. A judge writes a receipt rather than
+  # exiting a code, so a substituted one leaves nobody able to say which copy answered — refused.
+  a_judged_repo "$tmp/rewrote" rewrote "$(a_judge_that_approves)" 'reach  a-reviewer  sh bin/fake-judge.sh
+a-reviewer  a stranger can read it
+' || { skip "a rewritten judge — git could not make a repo here"; return; }
+
+  ready_run "$tmp/rewrote" 'https://gitlab.com/acme/rewrote.git'
+  printf '#!/bin/sh\nexit 0\n' > "$(only_slot "$(floor "$tmp/rewrote" path)/units/01/workspace")/bin/fake-judge.sh"
+
+  is  "a judge this run rewrote is refused" "$(code_of floor "$tmp/rewrote" judged)" "7"
+  has "and the refusal names the file"      "$(floor_says "$tmp/rewrote" judged)" "bin/fake-judge.sh"
+
+  #
+  # A reach that moved after the charter pinned it. Drift, exactly as a gate's command is.
+  a_judged_repo "$tmp/reachdrift" reachdrift "$(a_judge_that_approves)" 'reach  a-reviewer  sh bin/fake-judge.sh
+a-reviewer  a stranger can read it
+' || { skip "a moved reach — git could not make a repo here"; return; }
+
+  ready_run "$tmp/reachdrift" 'https://gitlab.com/acme/reachdrift.git'
+  printf 'reach  a-reviewer  sh bin/other.sh\na-reviewer  a stranger can read it\n' \
+    > "$tmp/reachdrift/.foundry/judged"
+
+  has "a reach that moved since the charter is drift" \
+      "$(floor_says "$tmp/reachdrift" charter check)" "reaches elsewhere: a-reviewer"
+  is  "and the charter cannot be run against"  "$(code_of floor "$tmp/reachdrift" charter check)" "7"
+  is  "so the runner refuses before it asks"   "$(code_of floor "$tmp/reachdrift" judged)" "7"
+}
+the_runner_believes_no_more_than_a_person
+
+#
+# A plugin tree shipping an adapter, built from the runner under test.
+#
+# **From the runner, never from this file's own plugin.** `wreck_runner` breaks a copy of the plugin
+# and points `RUNNER` at it, so a fixture built from the original would hand every mutant an unbroken
+# runner — and every break below would survive.
+#
+# `bin` and `lib` only. The suites are most of the plugin's bytes and nothing here runs them.
+#
+# Adds rather than resets, so two checks can ship two adapters and one of them can be rewritten
+# under its own pin.
+#
+# **The space in the name is deliberate.** A plugin installs under a user's home, and a home holding
+# a space is ordinary on Windows. Put the adapter's path inside a `sh -c` string and it splits into
+# two words there and nowhere else, so a fixture without one would leave that untested on every
+# machine anybody develops on.
+a_plugin_shipping() {
+  [ -d "$tmp/a plugin/bin" ] || {
+    mkdir -p "$tmp/a plugin" \
+      && cp -R "$(dirname "$runner")" "$tmp/a plugin/bin" \
+      && cp -R "$(dirname "$runner")/../lib" "$tmp/a plugin/lib" || return 1
+  }
+
+  mkdir -p "$tmp/a plugin/adapters/$1" && printf '%s' "$2" > "$tmp/a plugin/adapters/$1/run.sh"
+}
+
+# What a shipped adapter is pinned to: the content, as git names it.
+pin_of() { git hash-object --no-filters -- "$tmp/a plugin/adapters/$1/run.sh" 2>/dev/null; }
+
+# `floor`, through the plugin tree above. An adapter resolves under the runner's own plugin root, so
+# a check about one needs a root it can put an adapter in.
+floor_at() {
+  dir=$1; shift
+  ( cd "$dir" 2>/dev/null || exit 9
+    FOUNDRY_HOME="$home" FOUNDRY_RUN="" FOUNDRY_WHO="" FOUNDRY_SOURCE="$dir_source" \
+      sh "$tmp/a plugin/bin/run.sh" "$@" 2>/dev/null )
+}
+
+# The same, keeping what it said while refusing.
+floor_at_says() {
+  dir=$1; shift
+  ( cd "$dir" 2>/dev/null || exit 9
+    FOUNDRY_HOME="$home" FOUNDRY_RUN="" FOUNDRY_WHO="" FOUNDRY_SOURCE="$dir_source" \
+      sh "$tmp/a plugin/bin/run.sh" "$@" 2>&1 )
+}
+
+# A repository that declares a judge and owns no code for it. **The point of the transport is what
+# is missing here**: no script to copy, to drift, or to fix.
+a_repo_that_owns_no_judge() {
+  make_repo "$1" main && set_origin "$1" "https://gitlab.com/acme/$2.git" \
+    && mkdir -p "$1/.foundry" \
+    && commit_file "$1" .foundry/gates 'tests  true
+' && commit_file "$1" .foundry/judged "$3"
+}
+
+#
+# An adapter the plugin ships, reached at the content the repository authorised — #512.
+#
+# **The repository commits a digest and no code.** So a fix to the adapter reaches every repository
+# that authorises the new digest, and an upgrade is a line somebody edited rather than something
+# that happened to a machine.
+#
+# The pin and the digest agree on a healthy run, and that is the whole check: one is what the
+# repository committed, the other is what the file on disk actually is.
+#
+a_shipped_adapter_is_reached_at_the_content_authorised() {
+  a_plugin_shipping a-shipped "$(a_judge_that_approves)" \
+    || { skip "a shipped adapter — the plugin could not be copied"; return; }
+
+  pin=$(pin_of a-shipped)
+  a_repo_that_owns_no_judge "$tmp/shipped" shipped "reach  a-reviewer  @adapter a-shipped $pin
+a-reviewer  a stranger can read it
+" || { skip "a shipped adapter — git could not make a repo here"; return; }
+
+  ready_run "$tmp/shipped" 'https://gitlab.com/acme/shipped.git'
+  floor "$tmp/shipped" gates >/dev/null 2>&1
+
+  absent "the repository holds no judge code of its own" "$tmp/shipped/bin"
+  has    "and the charter pins the adapter by digest" \
+         "$(floor "$tmp/shipped" charter)" "a-reviewer @adapter a-shipped $pin"
+
+  is "the runner reaches the adapter the plugin ships" "$(code_of floor_at "$tmp/shipped" judged)" "0"
+  is "and with that the run may deliver"               "$(code_of floor "$tmp/shipped" complete)" "0"
+
+  answer=$(cat "$(floor "$tmp/shipped" path)"/judged/*.receipt)
+  has "the receipt carries the pin the repository authorised" "$answer" "adapter_pin $pin"
+  has "and the digest of what actually resolved and ran"      "$answer" "adapter_digest $pin"
+  has "and the ledger keeps the binding once the file is gone" \
+      "$(floor "$tmp/shipped" evidence)" "adapter_pin=$pin"
+
+  #
+  # **The receipt is named for the clause, and this is why the check exists.**
+  #
+  # The resolver's first draft read the adapter id into `id`, which is the clause id two lines
+  # further up its own caller. Every receipt landed under the adapter's name — one file for however
+  # many clauses that adapter answers — and the run passed. 903 checks did not notice.
+  #
+  # Driven from the charter's own record, because a test that recomputed the id would agree with a
+  # wrong answer.
+  named=$(floor "$tmp/shipped" charter | awk '$1 == "judge" { print $2; exit }')
+  exists "the receipt is named for the clause the charter holds" \
+         "$(floor "$tmp/shipped" path)/judged/$named.receipt"
+  absent "and never for the adapter that answered it" \
+         "$(floor "$tmp/shipped" path)/judged/a-shipped.receipt"
+}
+a_shipped_adapter_is_reached_at_the_content_authorised
+
+#
+# A reach no charter may hold, refused before one holds it.
+#
+# **A pin that is not a digest is wrong everywhere.** That is a fact about the declaration, not about
+# this machine — so it belongs where a declaration becomes an authorised bar, and a person is never
+# asked to approve a bar nothing could meet.
+#
+# The run-time readers stay and are unreachable through any supported path afterwards: `check`
+# refuses a charter the declaration disagrees with, so a bad pin can only arrive by hand. The audit
+# says which breaks went with them.
+#
+a_reach_no_charter_may_hold_never_reaches_one() {
+  a_plugin_shipping a-shipped "$(a_judge_that_approves)"     || { skip "a reach no charter may hold — the plugin could not be copied"; return; }
+
+  # A version reads as a pin and is not one. It moves while the repository says nothing changed.
+  a_repo_that_owns_no_judge "$tmp/tagged" tagged 'reach  a-reviewer  @adapter a-shipped v1.2.3
+a-reviewer  a stranger can read it
+' || { skip "a version instead of a digest — git could not make a repo here"; return; }
+
+  floor_new_as "$tmp/tagged" ada@example.com "Tagged" >/dev/null
+
+  is  "a version where a digest belongs never reaches a charter"       "$(code_of floor_at "$tmp/tagged" charter derive)" "6"
+  has "and it names the judge and what it pinned"       "$(floor_at_says "$tmp/tagged" charter derive)" "a-reviewer pins [v1.2.3], which is not a digest"
+  is  "and nothing was written for a person to authorise"       "$(floor "$tmp/tagged" charter)" ""
+
+  # A name that is a path reaches out of the adapters directory. It is not a name.
+  a_repo_that_owns_no_judge "$tmp/climb" climb 'reach  a-reviewer  @adapter ../../bin/run abc
+a-reviewer  a stranger can read it
+' || { skip "an adapter name that is a path — git could not make a repo here"; return; }
+
+  floor_new_as "$tmp/climb" ada@example.com "Climb" >/dev/null
+
+  is  "an adapter name holding a path never reaches a charter"       "$(code_of floor_at "$tmp/climb" charter derive)" "6"
+  has "and says the name is the fault, not the pin"       "$(floor_at_says "$tmp/climb" charter derive)" "a-reviewer names no adapter"
+
+  # A transport nobody wrote. `@` is reserved, so this is named rather than handed to a shell.
+  a_repo_that_owns_no_judge "$tmp/wibble" wibble 'reach  a-reviewer  @wibble a-shipped
+a-reviewer  a stranger can read it
+' || { skip "an unknown transport — git could not make a repo here"; return; }
+
+  floor_new_as "$tmp/wibble" ada@example.com "Wibble" >/dev/null
+
+  is  "a transport nobody wrote never reaches a charter"       "$(code_of floor_at "$tmp/wibble" charter derive)" "6"
+  has "and it is named rather than run"       "$(floor_at_says "$tmp/wibble" charter derive)" "which is no transport"
+
+  # `@custom` and nothing after it. A record of a choice, and no command to run.
+  a_repo_that_owns_no_judge "$tmp/nocmd" nocmd 'reach  a-reviewer  @custom
+a-reviewer  a stranger can read it
+' || { skip "a custom reach with no command — git could not make a repo here"; return; }
+
+  floor_new_as "$tmp/nocmd" ada@example.com "Nocmd" >/dev/null
+
+  is  "a custom reach naming no command never reaches a charter"       "$(code_of floor_at "$tmp/nocmd" charter derive)" "6"
+  has "and says which half is missing"       "$(floor_at_says "$tmp/nocmd" charter derive)" "says @custom and no command"
+}
+a_reach_no_charter_may_hold_never_reaches_one
+
+#
+# An adapter this host does not have. **A fact about a machine, so it derives and refuses later.**
+#
+# This is the one a repository meets legitimately: it may authorise an adapter before it installs
+# one, exactly as it may declare a gate whose command is not on this host.
+#
+# **Nothing falls back.** A second candidate anywhere — a `$PATH` lookup, a neighbouring version,
+# the repository's own copy — is the failure the pin exists to make impossible.
+#
+an_adapter_this_host_does_not_have_fails_closed() {
+  a_plugin_shipping a-shipped "$(a_judge_that_approves)"     || { skip "an adapter nobody ships — the plugin could not be copied"; return; }
+
+  pin=$(pin_of a-shipped)
+  a_repo_that_owns_no_judge "$tmp/missing" missing "reach  a-reviewer  @adapter no-such-adapter $pin
+a-reviewer  a stranger can read it
+" || { skip "an adapter nobody ships — git could not make a repo here"; return; }
+
+  ready_run "$tmp/missing" 'https://gitlab.com/acme/missing.git'
+
+  has "an adapter nobody installed still derives into a charter"       "$(floor "$tmp/missing" charter)" "@adapter no-such-adapter"
+
+  is  "and the runner fails closed when it is asked for"       "$(code_of floor_at "$tmp/missing" judged)" "21"
+  has "and names what is missing"     "$(floor_at_says "$tmp/missing" judged)" "no-such-adapter"
+  has "and says nothing else answers"       "$(floor_at_says "$tmp/missing" judged)" "nothing else answers for it"
+  lacks "and no judgement is recorded" "$(floor "$tmp/missing" evidence)" "judged"
+}
+an_adapter_this_host_does_not_have_fails_closed
+
+#
+# The adapter is here, and it is not the one the repository authorised.
+#
+# **This is what the pin buys.** A run cannot reach the plugin, but the host it runs on can — and a
+# rewritten adapter is invisible to every other check floor makes. The digest is the only thing that
+# would notice, and it refuses before the file reads a line of the work.
+#
+an_adapter_rewritten_under_its_pin_is_refused() {
+  a_plugin_shipping a-moved "$(a_judge_that_approves)" \
+    || { skip "an adapter rewritten under its pin — the plugin could not be copied"; return; }
+
+  pin=$(pin_of a-moved)
+  a_repo_that_owns_no_judge "$tmp/moved" moved "reach  a-reviewer  @adapter a-moved $pin
+a-reviewer  a stranger can read it
+" || { skip "an adapter rewritten under its pin — git could not make a repo here"; return; }
+
+  ready_run "$tmp/moved" 'https://gitlab.com/acme/moved.git'
+  printf '%s' "$(a_judge_that_approves reject)" > "$tmp/a plugin/adapters/a-moved/run.sh"
+
+  is  "an adapter rewritten under its pin is refused" "$(code_of floor_at "$tmp/moved" judged)" "40"
+  has "and it says the repository authorised another" \
+      "$(floor_at_says "$tmp/moved" judged)" "not the adapter this repository committed"
+  lacks "and the rewritten one judged nothing" "$(floor "$tmp/moved" evidence)" "judged"
+
+  #
+  # **The remedy, in the message.** This is where a consumer lands the first time a plugin upgrade
+  # moves the adapter under their pin, and two digests with nothing to do about them is a dead end.
+  # The README says the same thing eight hundred lines in, where nobody is.
+  has "and hands over the command that takes the new digest" \
+      "$(floor_at_says "$tmp/moved" judged)" "git hash-object --no-filters --"
+  has "and names the other way out"    "$(floor_at_says "$tmp/moved" judged)" "@custom"
+}
+an_adapter_rewritten_under_its_pin_is_refused
+
+#
+# A repository's own command still works, and `@custom` is how a line says so on purpose.
+#
+# Two forms and one behaviour. A bare command is what every declaration written before the transport
+# existed says, and it keeps working. `@custom` is what a repository writes when a reader six months
+# on should be able to tell a deliberate script from a copy nobody ever migrated.
+#
+a_custom_adapter_stays_the_repositorys_own() {
+  a_plugin_shipping a-shipped "$(a_judge_that_approves)" \
+    || { skip "a custom adapter — the plugin could not be copied"; return; }
+
+  a_judged_repo "$tmp/declared" declared "$(a_judge_that_approves)" 'reach  a-reviewer  @custom sh bin/fake-judge.sh
+a-reviewer  a stranger can read it
+' || { skip "a custom adapter — git could not make a repo here"; return; }
+
+  ready_run "$tmp/declared" 'https://gitlab.com/acme/declared.git'
+
+  is "a repository declaring its own command is asked it" "$(code_of floor_at "$tmp/declared" judged)" "0"
+
+  answer=$(cat "$(floor "$tmp/declared" path)"/judged/*.receipt)
+  has   "and the receipt carries what the adapter vouched for" "$answer" "adapter a-fixture"
+  lacks "and nothing pins a repository's own command"          "$answer" "adapter_pin"
+
+  # A run that rewrote its own script is still refused, whichever form declared it.
+  printf '#!/bin/sh\nexit 0\n' > "$(only_slot "$(floor "$tmp/declared" path)/units/01/workspace")/bin/fake-judge.sh"
+
+  is "a custom judge this run rewrote is refused" "$(code_of floor_at "$tmp/declared" judged)" "7"
+}
+a_custom_adapter_stays_the_repositorys_own
+
+#
+# A run may not change the adapter that judges it, nor the digest authorising one.
+#
+# The declaration is pinned to the base like every other source a bar comes from, so the charter and
+# the tree disagree the moment a run edits it. **Changing only the pin is the sharpest form**: the
+# judge, the role and the adapter all still read the same, and one field decides which code runs.
+#
+a_run_may_not_move_its_own_pin() {
+  a_plugin_shipping a-shipped "$(a_judge_that_approves)" \
+    || { skip "a run moving its own pin — the plugin could not be copied"; return; }
+
+  pin=$(pin_of a-shipped)
+  a_repo_that_owns_no_judge "$tmp/repin" repin "reach  a-reviewer  @adapter a-shipped $pin
+a-reviewer  a stranger can read it
+" || { skip "a run moving its own pin — git could not make a repo here"; return; }
+
+  ready_run "$tmp/repin" 'https://gitlab.com/acme/repin.git'
+
+  printf 'reach  a-reviewer  @adapter a-shipped %s\na-reviewer  a stranger can read it\n' \
+    "$(printf '%040d' 0)" > "$tmp/repin/.foundry/judged"
+
+  has "a pin the run moved is drift the charter names" \
+      "$(floor_at_says "$tmp/repin" charter check)" "reaches elsewhere: a-reviewer"
+  is  "and the runner refuses before it asks anyone" "$(code_of floor_at "$tmp/repin" judged)" "7"
+}
+a_run_may_not_move_its_own_pin
+
+#
+# The receipt binds two facts, and a gap between them is a refusal.
+#
+# `judged` refused each of these before the adapter ran. These are the same three against a receipt
+# somebody hands over, because **a run may reach no satisfaction a hand-written receipt could not**,
+# and a hand-written one may reach none a run could not.
+#
+a_receipt_binds_the_adapter_that_answered() {
+  [ -d "$tmp/shipped" ] || { skip "a receipt binding an adapter — the shipped run is not there"; return; }
+
+  # Read again rather than inherited. `pin` is a global here, and a check resting on whichever
+  # function last set it is a check about the order of this file.
+  pin=$(pin_of a-shipped)
+  base=$tmp/shipped.receipt
+  cp "$(floor "$tmp/shipped" path)"/judged/*.receipt "$base" 2>/dev/null \
+    || { skip "a receipt binding an adapter — nothing was written to copy"; return; }
+
+  sed '/^adapter_digest /d' "$base" > "$tmp/shipped.nodigest"
+  is  "a pin with nothing that looked is refused" \
+      "$(code_of floor "$tmp/shipped" evidence receipt "$tmp/shipped.nodigest")" "40"
+  has "and it says nothing recorded what ran" \
+      "$(floor_says "$tmp/shipped" evidence receipt "$tmp/shipped.nodigest")" "says nothing about what ran"
+
+  sed '/^adapter_pin /d' "$base" > "$tmp/shipped.nopin"
+  is  "a digest nothing authorised is refused" \
+      "$(code_of floor "$tmp/shipped" evidence receipt "$tmp/shipped.nopin")" "40"
+  has "and it says nothing stands behind it" \
+      "$(floor_says "$tmp/shipped" evidence receipt "$tmp/shipped.nopin")" "names nothing that authorised it"
+
+  sed "s/^adapter_digest .*/adapter_digest $(printf '%040d' 0)/" "$base" > "$tmp/shipped.gap"
+  is  "a receipt whose pin and digest disagree is refused" \
+      "$(code_of floor "$tmp/shipped" evidence receipt "$tmp/shipped.gap")" "40"
+  has "and it names both" \
+      "$(floor_says "$tmp/shipped" evidence receipt "$tmp/shipped.gap")" "is what answered"
+
+  #
+  # **A pair that agrees with itself and with nothing else.**
+  #
+  # The three guards above ask only whether a receipt is consistent, so a hand-written pin and
+  # digest agreeing on a digest nobody authorised passed all of them — and the ledger carried it
+  # under a key the README calls the content the repository authorised. The charter is what gave
+  # the pin, so the charter is what it answers to.
+  sed "s/^adapter_pin .*/adapter_pin $(printf '%040d' 0)/; s/^adapter_digest .*/adapter_digest $(printf '%040d' 0)/" \
+      "$base" > "$tmp/shipped.selfpin"
+  is  "a pin the charter never gave is refused, however consistent" \
+      "$(code_of floor "$tmp/shipped" evidence receipt "$tmp/shipped.selfpin")" "40"
+  has "and it names the pin the charter does give" \
+      "$(floor_says "$tmp/shipped" evidence receipt "$tmp/shipped.selfpin")" "is reached at [$pin]"
+  lacks "and the ledger records no such authority" \
+      "$(floor "$tmp/shipped" evidence)" "adapter_pin=$(printf '%040d' 0)"
+
+  # A receipt claiming a pin for a judge the charter reaches by a command of the repository's own.
+  [ -d "$tmp/declared" ] && {
+    own=$(ls "$(floor "$tmp/declared" path)"/judged/*.receipt 2>/dev/null)
+    [ -n "$own" ] && {
+      { cat "$own"; printf 'adapter_pin %s\nadapter_digest %s\n' "$pin" "$pin"; } > "$tmp/declared.claims"
+      is  "a pin claimed for a repository's own command is refused" \
+          "$(code_of floor "$tmp/declared" evidence receipt "$tmp/declared.claims")" "40"
+      has "and says nothing pinned that judge at all" \
+          "$(floor_says "$tmp/declared" evidence receipt "$tmp/declared.claims")" "no pin at all"
+    }
+  }
+}
+a_receipt_binds_the_adapter_that_answered
 
 #
 # An artefact a repository says must be read cold before it ships.
@@ -4537,6 +5715,151 @@ a_missing_source_is_not_silence() {
 }
 a_missing_source_is_not_silence
 
+#
+# The second adapter, driven by a `gh` that is not GitHub. It answers from files, so the adapter's
+# own conventions run for real — the marker line, the digest, the search for this run's delivery.
+#
+# **What it cannot say is whether the service behaves that way.** Nothing here has spoken to it, and
+# a suite that needs a network and a token is a suite nobody runs.
+#
+fake_gh() {
+  mkdir -p "$1" || return 1
+  cat > "$1/gh" <<'STUB'
+#!/bin/sh
+# Not GitHub. It answers from $GH_STORE so the adapter's conventions can be exercised offline.
+set -u
+store=${GH_STORE:?}
+mkdir -p "$store"
+
+# What `gh` says on stderr when the call worked — a new release, a deprecation, a rate-limit hint.
+# A reader folding stderr into stdout turns one of those into data, and here data is a check the
+# target is said to require. Off unless a test asks for it.
+chatter() {
+  [ -f "$store/gh-chatter" ] && echo "gh: A new release of gh is available: 2.94.0 -> 2.95.0" >&2
+  return 0
+}
+
+case "$*" in
+  # The comments, as `gh` returns them: a list of bodies. **`gh` evaluates `--jq` itself**, so this
+  # honours the one expression the adapter sends — a chosen line before each body — and emits bodies
+  # alone if it stops asking for one. A fixture that printed the boundary regardless would be
+  # agreeing with the adapter instead of the service.
+  # Labels a repository already had sit beside the ones Foundry owns. The adapter takes only its
+  # own, and the fixture carries both so it can be caught taking more.
+  "issue view"*"--json labels"*)   [ -f "$store/reads-fail" ] && { echo "HTTP 401: Bad credentials" >&2; exit 1; }
+                            cat "$store/labels" 2>/dev/null ;;
+  "issue view"*"--json comments"*) [ -f "$store/reads-fail" ] && { echo "could not resolve host: api.github.com" >&2; exit 1; }
+                            case "$*" in *floor-comment*) mark='floor-comment:' ;; *) mark='' ;; esac
+                            for body in "$store/comments"/*; do
+                                [ -f "$body" ] || continue
+                                slot=${body##*/}
+                                who=$(cat "$store/authors/$slot" 2>/dev/null || printf 'foundry-run')
+                                [ -n "$mark" ] && printf '%s %s\n' "$mark" "$who"
+                                cat "$body"
+                            done ;;
+  # An item nobody filed and a source nobody could ask both fail here, and only the probe below tells
+  # them apart. GitHub answers 1 for each.
+  "issue view"*)            [ -f "$store/reads-fail" ] && { echo "HTTP 401: Bad credentials" >&2; exit 1; }
+                            cat "$store/item" 2>/dev/null ;;
+  # The probe. A repository cannot be absent, so failing here is the host and never the item.
+  # The stub answers a repository view with a url only when asked for
+  # one. Real gh applies the jq itself, so a fixture printing the
+  # same field regardless would be agreeing with the adapter.
+  "repo view"*"--json url"*)  [ -f "$store/reads-fail" ] && { echo "HTTP 401: Bad credentials" >&2; exit 1; }
+                            sed -e 's/\.git$//' "$store/repo" 2>/dev/null ;;
+  "repo view"*)             [ -f "$store/reads-fail" ] && { echo "HTTP 401: Bad credentials" >&2; exit 1; }
+                            printf '{"name":"gh"}\n' ;;
+  # One comment, one body, in order. GitHub keeps a list and the adapter asks for the field, so the
+  # fixture keeps a list too — a single file with separators in it would be a rendering nobody serves.
+  #
+  # A body written here belongs to whoever `api user` names, because that is who is
+  # running. A test drops another person's words by writing both files
+  # itself, which is the only way two authors exist offline.
+  "issue comment"*)         mkdir -p "$store/comments" "$store/authors"
+                            slot=$(printf '%03d' "$(find "$store/comments" -type f | grep -c .)")
+                            printf '%s\n' "$5" > "$store/comments/$slot"
+                            cat "$store/me" 2>/dev/null > "$store/authors/$slot" \
+                                || printf 'foundry-run\n' > "$store/authors/$slot" ;;
+  # What the target requires, as the rules that apply to it answer. A branch nobody set a rule on
+  # answers with an empty list and never an error, which is the whole
+  # reason the adapter asks here.
+  #
+  # `rules-fail` is its own switch. A source that could not say what it requires
+  # must never read as one that requires nothing, and `reads-fail`
+  # stops the delivery read first.
+  #
+  # **The `--jq` never runs here, and nothing on this host can make it.** Real `gh` evaluates the
+  # expression itself; this answers pre-shaped, so a wrong field path stays green — the same hole the
+  # `pr view` arm has always had. There is no `jq` here or under WSL, and floor may not add one:
+  # `plugins.md` allows no parser and no runtime in shipped code, and a suite that needs one is a
+  # suite nobody runs. **Ungateable**, in the third sense `closing.md` names — the outcome is
+  # reachable and no exit code holds it.
+  #
+  # Measured instead, and this is what stands in for the gate. Both expressions were run live:
+  # `github/docs` (34 required contexts), `vercel/next.js` and `home-assistant/core` for the rules
+  # one, and pull request 467 of this repository for the delivery one. One source, and it is named.
+  "api repos/"*"/rules/branches/"*)
+                            [ -f "$store/rules-fail" ] && { echo "HTTP 502: Bad gateway" >&2; exit 1; }
+                            chatter
+                            cat "$store/required" 2>/dev/null ;;
+  # Who this run comments as. `posting_as` fails closed on an empty answer, so a
+  # store with no `me` still names somebody — the absent case is its
+  # own fixture, set by emptying the file rather than deleting it.
+  "api user"*)              [ -f "$store/reads-fail" ] && { echo "HTTP 401: Bad credentials" >&2; exit 1; }
+                            cat "$store/me" 2>/dev/null || printf 'foundry-run\n' ;;
+  # A read that cannot answer. GitHub fails this way for a network, a token or a rate limit, and none
+  # of them mean "nothing is there yet" — which is what both readers below used to conclude.
+  # `gh` matches words in a body, so a run made the same day as another comes back on shared tokens.
+  # The stub answers the same way, and evaluates the `--jq` the adapter sends rather than
+  # filtering for it — a fixture that pre-filtered would grade its own assumption.
+  "pr list"*)               [ -f "$store/reads-fail" ] && { echo "could not resolve host: api.github.com" >&2; exit 1; }
+                            want=${6%% *}
+                            case "$*" in *"floor-run: $want"*) exact=1 ;; *) exact=0 ;; esac
+                            awk -v run="$want" -v exact="$exact" '
+                              exact && $3 == run                      { print $1, $2; next }
+                              !exact && index($3, substr(run, 1, 10)) { print $1, $2 }
+                            ' "$store/prs" 2>/dev/null || true ;;
+  # `gh` joins the four fields itself, so the fixture holds the answer already joined — the same
+  # shape the adapter's `--jq` produces, and one a test can move a head in.
+  "pr view"*)               [ -f "$store/reads-fail" ] && { echo "HTTP 502: Bad gateway" >&2; exit 1; }
+                            chatter
+                            cat "$store/state" 2>/dev/null ;;
+  "pr merge"*)              [ -f "$store/reads-fail" ] && { echo "could not resolve host" >&2; exit 1; }
+                            printf '%s
+' "$3" >> "$store/merged" ;;
+  "pr create"*)             [ -f "$store/writes-fail" ] && { echo "GraphQL: Head sha can't be blank (createPullRequest)" >&2; exit 1; }
+                            url="https://example.invalid/pr/$(cat "$store/prs" 2>/dev/null | grep -c .)"
+                            run=$(printf '%s' "$8" | awk '$1 == "floor-run:" { print $2 }')
+                            printf '%s' "$8" | head -1 >> "$store/words"
+                            printf '%s' "$8" > "$store/lastbody"
+                            printf '%s %s %s\n' "$4" "$url" "$run" >> "$store/prs"
+                            printf '%s\n' "$url" ;;
+  *) exit 2 ;;
+esac
+STUB
+  chmod +x "$1/gh"
+}
+
+# A person comments, and order is what makes an answer come *after* a question. Numbered the way the
+# stub numbers them, because a name that sorts differently is a transcript nobody wrote.
+#
+# The author is a person, never the run. #373 is what the two being one costs: the run's own
+# note, holding a clause number so a person could copy it, was read back as
+# that person saying yes. A second author is what tells them apart.
+gh_says() { said_by a-person "$1"; }
+
+# The run's own words, in the same place a person's would land. Only a test that means to
+# check the refusal calls this — every other comment in this suite is a
+# person's, and reads that way.
+run_says() { said_by foundry-run "$1"; }
+
+said_by() {
+  mkdir -p "$GH_STORE/comments" "$GH_STORE/authors"
+  slot=$(printf '%03d' "$(find "$GH_STORE/comments" -type f | grep -c .)")
+  printf '%s\n' "$2" > "$GH_STORE/comments/$slot"
+  printf '%s\n' "$1" > "$GH_STORE/authors/$slot"
+}
+
 the_other_adapter() {
   make_repo "$tmp/gh" main && set_origin "$tmp/gh" 'https://github.com/acme/gh.git' \
     && commit_file "$tmp/gh" Makefile 'test:
@@ -4891,6 +6214,8 @@ And only what was graded.
 
   mg() { ( cd "$tmp/mg" && PATH="$tmp/mgbin:$PATH" GH_STORE="$store" FOUNDRY_HOME="$home" \
            FOUNDRY_RUN="$mgrun" FOUNDRY_WHO=a@b sh "$runner" "$@" 2>/dev/null ); }
+  mg_said() { ( cd "$tmp/mg" && PATH="$tmp/mgbin:$PATH" GH_STORE="$store" FOUNDRY_HOME="$home" \
+                FOUNDRY_RUN="$mgrun" FOUNDRY_WHO=a@b sh "$runner" "$@" 2>&1 ); }
   mgrun=$( cd "$tmp/mg" && PATH="$tmp/mgbin:$PATH" GH_STORE="$store" FOUNDRY_HOME="$home" \
            FOUNDRY_RUN="" FOUNDRY_WHO=a@b sh "$runner" new "Merge" 2>/dev/null )
 
@@ -4910,34 +6235,84 @@ And only what was graded.
   mg source publish work/mg 'The work' >/dev/null 2>&1
   graded=$(git -C "$work" rev-parse HEAD)
 
+  # A target that requires nothing, which is what an unprotected branch is.
+  : > "$store/required"
+
   # The first falsifier. Grade one commit, move the delivery to another, merge.
-  printf '0000000000000000000000000000000000000000 OPEN MERGEABLE NONE\n' > "$store/state"
+  printf '0000000000000000000000000000000000000000 OPEN MERGEABLE main\n' > "$store/state"
   is "a delivery whose head moved is refused" "$(code_of mg merge)" "24"
   is "and nothing was landed"                 "$(cat "$store/merged" 2>/dev/null)" ""
 
-  printf '%s OPEN MERGEABLE FAILURE\n' "$graded" > "$store/state"
-  is "a check that did not pass is refused"   "$(code_of mg merge)" "24"
+  printf '%s OPEN CONFLICTING main\n' "$graded" > "$store/state"
+  is "a source that will not take it is refused" "$(code_of mg merge)" "24"
+
+  printf '%s CLOSED MERGEABLE main\n' "$graded" > "$store/state"
+  is "and a delivery nobody left open is not merged" "$(code_of mg merge)" "24"
+
+  #
+  # What the target requires, and nothing else. The rollup carries a check that failed and a check
+  # that has not answered, and the target asked for neither — so neither is a bar on landing, and
+  # refusing on them was floor holding a bar the source never set.
+  #
+  # This is the case the plugin could not do at all. Every merge into an unprotected branch failed
+  # here, which is every merge in the repository floor is written in.
+  #
+  printf '%s OPEN MERGEABLE main\nFAILURE build\nPENDING lint\n' "$graded" > "$store/state"
+  is "a target requiring nothing does not block on checks it never asked for" \
+     "$(code_of mg merge)" "0"
+  matches "and the source was told to land it" "$(cat "$store/merged" 2>/dev/null)" "^https://"
+
+  # A required check that failed. The bar the source set, enforced.
+  printf 'tests\n' > "$store/required"
+  printf '%s OPEN MERGEABLE main\nFAILURE tests\n' "$graded" > "$store/state"
+  is "a required check that failed is refused"  "$(code_of mg merge)" "24"
+  has "and the refusal names it"                "$(mg_said merge)" "[tests] is required to land on [main]"
+  has "and says what it answered"               "$(mg_said merge)" "it answered [FAILURE]"
+
+  # A required check nobody ran. GitHub reports the checks that reported, so a required context that
+  # never started is absent from the rollup rather than failing in it.
+  printf '%s OPEN MERGEABLE main\nSUCCESS build\n' "$graded" > "$store/state"
+  is "a required check that never ran is refused" "$(code_of mg merge)" "24"
+  has "and it is told apart from one that failed" "$(mg_said merge)" "[tests] is required to land on [main], and it never ran"
 
   # A pending rollup carries no failure, so a reader looking for one finds an empty list and calls it
   # clean. Named separately because that is the shape it fails in.
-  printf '%s OPEN MERGEABLE PENDING\n' "$graded" > "$store/state"
+  printf '%s OPEN MERGEABLE main\nPENDING tests\n' "$graded" > "$store/state"
   is "and one that has not answered is not one that passed" "$(code_of mg merge)" "24"
 
-  printf '%s OPEN CONFLICTING NONE\n' "$graded" > "$store/state"
-  is "a source that will not take it is refused" "$(code_of mg merge)" "24"
+  # The refusal names the check the source needs, never the rollup around it. Both halves, because
+  # a refusal naming nothing at all passes the second one on its own.
+  printf '%s OPEN MERGEABLE main\nFAILURE tests\nFAILURE docs\n' "$graded" > "$store/state"
+  has   "the refusal names the check the target asked for" "$(mg_said merge)" "[tests] is required"
+  lacks "and leaves out the one nobody required"           "$(mg_said merge)" "docs"
 
-  printf '%s CLOSED MERGEABLE NONE\n' "$graded" > "$store/state"
-  is "and a delivery nobody left open is not merged" "$(code_of mg merge)" "24"
+  # A source that could not say what it requires is not a source that requires nothing. This is the
+  # one silent weakening the change could have shipped, so it is the one written down.
+  : > "$store/rules-fail"
+  printf '%s OPEN MERGEABLE main\nSUCCESS tests\n' "$graded" > "$store/state"
+  is "a target that could not be asked never reads as one requiring nothing" \
+     "$(code_of mg merge)" "25"
+  rm -f "$store/rules-fail"
 
-  printf '%s OPEN MERGEABLE SUCCESS,SUCCESS\n' "$graded" > "$store/state"
-  is "the thing that was graded is merged" "$(code_of mg merge)" "0"
-  matches "and the source was told to land it" "$(cat "$store/merged" 2>/dev/null)" "^https://"
+  printf '%s OPEN MERGEABLE main\nSUCCESS tests\nFAILURE docs\n' "$graded" > "$store/state"
+  is "a required check that passed lands, beside one nobody required" "$(code_of mg merge)" "0"
+
+  # `gh` talks on stderr about calls that worked. Folded into the answer, one of those notices is a
+  # line the caller reads as a check the target requires and nothing ran — refusing a merge over a
+  # release announcement. The delivery read has the same shape and the same fix.
+  : > "$store/gh-chatter"
+  printf '%s OPEN MERGEABLE main\nSUCCESS tests\n' "$graded" > "$store/state"
+  is "a notice on stderr is not a check the target requires" "$(code_of mg merge)" "0"
+  rm -f "$store/gh-chatter"
+
+  # What has landed so far, so the retry below is measured against it rather than a number.
+  landed=$(grep -c . "$store/merged" 2>/dev/null)
 
   # A retry after a merge that landed. Refusing would read as a merge that never happened, and
   # merging again is not something a source forgives twice.
-  printf '%s MERGED MERGEABLE SUCCESS\n' "$graded" > "$store/state"
+  printf '%s MERGED MERGEABLE main\nSUCCESS tests\n' "$graded" > "$store/state"
   is "a retry settles rather than landing twice" "$(code_of mg merge)" "0"
-  is "and the source was asked once"  "$(grep -c . "$store/merged" 2>/dev/null)" "1"
+  is "and the source was not asked again"  "$(grep -c . "$store/merged" 2>/dev/null)" "$landed"
 
   # Fail-safe, and the one that has to be said out loud: nobody answering is not the source saying
   # yes.
@@ -4967,8 +6342,8 @@ And only what was graded.
 
   is "a run that delivered nothing may not land what another did" \
      "$(code_of theirs merge)" "24"
-  is "and the source was still asked once" \
-     "$(grep -c . "$store/merged" 2>/dev/null)" "1"
+  is "and the source was still not asked again" \
+     "$(grep -c . "$store/merged" 2>/dev/null)" "$landed"
 }
 a_merge_lands_only_what_was_graded
 

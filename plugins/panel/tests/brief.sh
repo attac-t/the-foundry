@@ -113,12 +113,36 @@ the_round_before_comes_from_the_chain() {
   # The reset anybody could take by leaving a flag out. The chain answers which round this is.
   is "a brief naming no chain is refused, never called round one" \
      "$(code_of brief adversary 'a clause')" "2"
-  is "a round whose predecessor names another review is refused" \
-     "$(code_of brief adversary 'a clause' --verdicts "$chain" --review R9)" "5"
+
+  # A chain nobody made cannot say which round this is, and a brief that cannot ask stops. The
+  # sentence is checked as well as the code: the two refusals after it also answer 5, so an exit code
+  # alone cannot say which of the three fired.
+  is "a chain nobody made stops the brief" \
+     "$(code_of brief adversary 'a clause' --verdicts "$tmp/no-such-chain" --review R1)" "5"
+  has "and says the chain could not say which round" \
+      "$(brief_says adversary 'a clause' --verdicts "$tmp/no-such-chain" --review R1)" "could not say which round"
+
+  # The chain's own reason, not this file's guess at it. `2>/dev/null` on the `round` call hid
+  # `drop the [R2]` and printed `could not say which round` over the top of it.
+  is "a review carrying a round stops the brief" \
+     "$(code_of brief adversary 'a clause' --verdicts "$chain" --review 'R9 R2')" "5"
+  has "and the chain's own reason reaches the caller" \
+      "$(brief_says adversary 'a clause' --verdicts "$chain" --review 'R9 R2')" "the round is written here"
 
   #
-  # `next` pads to three digits. `$(( ))` reads a leading zero as octal, so round 010 arrived as 8
-  # and rounds 008 and 009 were arithmetic errors.
+  # A review with no record in a directory is on round one, whatever else the directory holds. That
+  # is what two reviews in one directory means, and R9 has never been judged here.
+  #
+  # It is not a way to escape a prior. The escape was always the `--verdicts` flag, and `say_the_prior`
+  # says so out loud: nothing here can know this is the chain for your review.
+  is "a review new to a chain is round one, not a refusal" \
+     "$(code_of brief adversary 'a clause' --verdicts "$chain" --review R9)" "0"
+  has "and the brief says which review holds no round" \
+      "$(brief adversary 'a clause' --verdicts "$chain" --review R9)" "holds no round for [R9]"
+
+  #
+  # Nine rounds deep, where `next` would have padded to `010` and `$(( ))` read the leading zero as
+  # octal — round 010 arrived as 8, and 008 and 009 were arithmetic errors. `round` answers plainly.
   #
   deep="$tmp/deep"
   mkdir -p "$deep"

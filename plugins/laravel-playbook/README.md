@@ -2,6 +2,11 @@
 
 The package author's playbook. Ecosystem-wide patterns for crafting, shipping, and sustaining pinnacle Laravel packages.
 
+**Written against Laravel 11–12, PHP 8.2 and Pest 3–4. Checked 4 September 2026, when Laravel was at
+v13.30.1 and Pest at v5.1.3.** Those are the releases someone looked up that day, and nothing below
+has been read against either since. [Look
+again](../../CONTRIBUTING.md#is-a-stack-plugin-still-current) rather than trusting the stamp.
+
 This plugin knows **how to build packages** — from skeleton to release pipeline. The kernel knows how to think. `laravel-ddd` knows how to code Laravel. This knows how to ship Laravel packages that developers love.
 
 ---

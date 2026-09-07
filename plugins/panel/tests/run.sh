@@ -125,10 +125,16 @@ wreck_brief "a directory passing for a charter is caught" \
   dirbar 's#^    \[ -f "\$2" \] || fail 4 "the \$1 at \[\$2\] is not a file"$#    :#'
 
 #
-  noprior 's#fail 5 #true #g'
-# nothing pass for one that does, which is the fail-closed rule inverted.
+# A chain that cannot say which round this is, carrying on anyway. That is the fail-closed rule
+# inverted, and `a chain nobody made stops the brief` is what kills it.
+#
+# By pattern, not by line number. It named lines 169 and 172, and 172 had long since stopped being a
+# refusal — a mutant aimed at the wrong line proves whatever that line happens to do.
+#
+# The two refusals after this one have no mutant. `round` and `prior` read the same stamps, so a
+# chain that answered the first cannot fail the second, and nothing a test can build reaches them.
 wreck_brief "a chain that records nothing answered as a prior round is caught" \
-  noprior '169s#.*#        || true#; 172s#.*#        || true#'
+  noprior 's#^        || fail 5 "the chain at .*$#        || true#'
 
 wreck_brief "a role's declared skills quietly dropped is caught" \
   noskills 's#^    declared_skills "\$file" | while IFS= read -r skill; do#    false | while IFS= read -r skill; do#'
@@ -166,12 +172,22 @@ wreck() {
 
 # The whole point. A claimed prior round with no record must refuse, not answer.
 wreck "a chain that answers without a prior verdict is caught" \
-  openchain 's|^        note "round $round claims.*$|        return 0|'
+  openchain 's|^        note "round $round of .*$|        return 0|'
 
 # A verdict from another review is another chain's history. Accepting it lets a stale record from an
-# older charter satisfy a round it never saw.
+# older charter, or the review sharing the directory, satisfy a round it never saw.
 wreck "a chain that accepts any review's verdict is caught" \
-  anyreview 's|names_the_review "$file" "$review"|true|'
+  anyreview 's,\[ "${stamp#\* }" = "$2" \] || continue,true,'
+
+# The other half, and it fails the other way. Counting another review's rounds as this review's puts
+# a chain ahead of itself, so its next round asks for a predecessor nobody wrote.
+wreck "a chain that counts any review's rounds is caught" \
+  countsany 's,\[ "${stamp#\* }" = "$2" \] \&\& printf,true \&\& printf,'
+
+# A record is the prior of exactly one round. Any record of this review satisfying any round is a
+# chain with no order in it — round 9 handed round 1, and a gap in the middle handed anything.
+wreck "a chain that accepts a record from any round is caught" \
+  anyprior 's,\[ "${stamp%% \*}" = "$3" \] || continue,true,'
 
 # A round that is not a round reached the exemption round 1 has. Exit 2 is *asked for something this
 # does not do*; 1 is *a prior was claimed and nothing records it*. Different remedies.
@@ -182,23 +198,58 @@ wreck "a round that is not a round answered as round one is caught" \
 wreck "a chain where no round ever looks back is caught" \
   neverlook 's#^    \[ "$want" -ge 1 \] .*$#    return 0#'
 
-# Numbering is how a round knows which record is its prior.
-wreck "a chain that always reports round 1 is caught" \
+# The slot is how two records keep out of each other's filename. Stuck, every record is the first.
+wreck "a chain that always reports slot 001 is caught" \
   stuckone 's|^    printf .%03d\\n. "$(( .*$|    printf "001\\n"|'
 
-# A new chain and a mistyped path are the same directory to `next`, and `001` is the round `prior`
-# exempts. It cannot tell them apart; staying quiet about which it chose is what let it matter.
+# A new chain and a mistyped path are the same directory to `next`, and an empty chain is the one
+# case `prior` exempts. It cannot tell them apart; staying quiet about which it chose is what let it
+# matter.
 wreck "a new chain that says nothing is caught" \
-  quietstart 's|note "no rounds at |: "|'
+  quietstart 's|note "no records at |: "|'
+
+# The same silence, one level down. A review nobody has judged and a review whose name was mistyped
+# both answer round one, and only the sentence tells a convener which they have.
+wreck "a review starting a chain in silence is caught" \
+  quietround 's|note "no round for |: "|'
 
 # The stamp is the whole reason `prior` can tell one chain from another. A recorder that omits it
 # writes verdicts that fail the next honest round.
 wreck "a recorder that does not stamp the review is caught" \
-  nostamp 's|^        printf .Judged: %s\\n\\n. "$review"$|        :|'
+  nostamp 's|^        printf .Judged: %s R%s.*$|        :|'
 
-# Two rounds writing the same file is one round overwritten.
-wreck "a recorder that always writes round 1 is caught" \
-  sameslot 's|^    round=$(next_round "$dir")$|    round=001|'
+# The other half of the stamp. Without the round, a record says which review it judged and nothing
+# about where it sits, so the next round finds no predecessor.
+wreck "a recorder that stamps no round is caught" \
+  noround 's|^        printf .Judged: %s R%s.*$|        printf "Judged: %s\\n\\n" "$review"|'
+
+# Two records writing the same file is one record overwritten.
+wreck "a recorder that always writes slot 001 is caught" \
+  sameslot 's|^    slot=$(next_slot "$dir").*$|    slot=001|'
+
+#
+# The defect this file was rewritten for, put back. The slot counts every review in the directory
+# and the round counts one, so a review opening in a shared directory is stamped at the slot — and
+# its round one, which nothing wrote, is what its round two then asks for.
+wreck "a recorder taking the round from the slot is caught" \
+  slotisround 's|^    round=$(next_round "$dir" "$review").*$|    round=$(next_slot "$dir")|'
+
+# A caller appending its own round makes the review `<review> R1`, so the name changes every round
+# and every round is round one — the reset, back through the door left open to patch around it.
+wreck "a recorder taking a review that carries a round is caught" \
+  anyname 's,^    is_a_round "${word#R}" || return 0$,    return 0,'
+
+# The guard's reach. It watched `record` alone, and `round` and `prior` answered for a name it would
+# have refused. A name is read far more often than it is written.
+wreck "a guard that watches the recorder only is caught" \
+  readpaths '/^prior_round() {/,/^}/ s|^    refuse_unless_a_review "$review"$|    :|
+             /^next_round() {/,/^}/ s|^    refuse_unless_a_review "$2"$|    :|'
+
+# The two characters the stamp owns, not the name. A comma opens the recorder's note, and a line
+# break ends the stamp — putting the round on line four, where the judge's body starts.
+wreck "a review holding the stamp's own punctuation is caught" \
+  anypunct 's|^        \*,\*)|        ZZCOMMA)|
+            s|^        \*"$newline"\*)|        ZZBREAK)|'
 
 
 # The tally every check reports through. A break that empties a

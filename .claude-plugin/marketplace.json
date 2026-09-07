@@ -32,7 +32,7 @@
     {
       "name": "pest",
       "source": "./plugins/pest",
-      "description": "Pest v3 testing syntax and patterns. Standalone; pairs well with kernel."
+      "description": "Testing syntax and patterns, written against Pest 3. Standalone; pairs well with kernel."
     },
     {
       "name": "signal",

@@ -28,7 +28,8 @@ cd plugins/floor        # or wherever this plugin is installed
 sh bin/join.sh
 ```
 
-It reports and exits. Nothing is installed and nothing is written to the repository.
+It reports and exits. Nothing is installed and nothing is written to the repository. `adopt.sh`,
+below, is the one command here that does write to one.
 
 Six things stood between a clean machine and a working system, and three were silent when wrong: no
 `gh` picks a different work source, no git identity fails later at commit, and no `FOUNDRY_WHO`
@@ -55,6 +56,64 @@ A rule that names a skill is the declaration — there is no second list. `shell
 nothing and says nothing. Now it says.
 
 Exit 1 is something the host must supply. Exit 3 is not a repository this can join.
+
+## Adopting a judge
+
+`.foundry/judged` says who answers what no command can, and how the runner reaches them. Writing that
+line by hand means taking a digest by hand, and a mistyped pin fails as a refusal nobody can read.
+
+```bash
+cd /path/to/the-repository-adopting-a-judge
+sh /path/to/floor/bin/adopt.sh adopt codex:adversary codex
+```
+
+**Run it from the repository that is adopting**, by the plugin's full path. It writes to whatever
+repository the working directory is in, so running it from inside this plugin declares a judge
+here. It refuses that now and says so, but the full path is what a reader needs either way.
+
+One line lands in `.foundry/judged`:
+
+```
+reach  codex:adversary  @adapter codex a758b76d7ec5383720966deb4189541f0628ac88
+```
+
+The last field is `git hash-object --no-filters` of the adapter this plugin ships. **Nothing is
+staged, committed or pushed.** The pin is the repository's trust decision, so a person reads the
+change and commits it.
+
+**It writes the reach and not the clause.** A reach says how a judge is asked. A clause says what
+must be judged, and no command can guess a repository into wanting one — so this prints the line only
+a person can mean and leaves it to them.
+
+Install a new plugin and every repository pinned to the old adapter refuses at 40 until it commits
+the new digest. One command carries it across:
+
+```bash
+sh bin/adopt.sh upgrade
+```
+
+```
+  moved  codex:adversary
+         was a758b76d7ec5383720966deb4189541f0628ac88
+         now 3c0d9f1b6a2e47d85f19c0b3e7a4d61c82f5039e
+moved 1 pin(s) in /repo/.foundry/judged. Nothing is staged and nothing is committed.
+```
+
+| | |
+|---|---|
+| moves | every `@adapter` reach whose adapter this plugin ships |
+| leaves | `@custom` and bare-command reaches, byte for byte |
+| leaves | a reach naming an adapter this plugin does not ship — and goes red |
+| writes | a digest, and never a tag, a version or a range |
+
+**A third script, and the subject is the reason.** `join.sh` joins a host and writes nothing here.
+`run.sh` runs one attempt at one item. Neither subject is the repository itself, and this one's is.
+
+**A run may not do either.** The declaration is pinned to the base like every other source a bar
+comes from, so a run that edited it is refused at 7 before any judge is asked.
+
+Exit 1 is something the repository must settle. Exit 2 is a verb or a name this does not take. Exit 3
+is no repository, or a declaration it cannot read.
 
 ## From a clone to a delivery
 
@@ -96,8 +155,9 @@ Two need a host. `source read` needs a work source that can answer — otherwise
 says so. `deliver` needs credentials to push, and says so at exit 19.
 
 A machine with `sh`, `awk` and `git` runs every verb here. **What a gate command needs is the
-charter's, not floor's** — a gate may reach for anything, and on a host without it `gates` refuses at
-21 naming the command rather than recording a failure that poisons the ref.
+charter's, not floor's** — a gate may reach for anything. A host without it refuses at 21, and so
+does one that has it and cannot run it. `gates` names the command rather than recording a failure
+that poisons the ref.
 
 ---
 
@@ -128,8 +188,11 @@ sh bin/run.sh charter derive
 sh bin/run.sh charter check
 sh bin/run.sh evidence
 sh bin/run.sh evidence record tests ./check
-sh bin/run.sh evidence verdict "the interface is understandable" "A Reviewer" "read in two minutes"
+sh bin/run.sh evidence handed "the interface is understandable" "A Reviewer" "a harness" 4e1f9c
+sh bin/run.sh evidence verdict "the interface is understandable" "A Reviewer" approve "read in two minutes" 4e1f9c
+sh bin/run.sh evidence receipt ./judgement-receipt
 sh bin/run.sh gates
+sh bin/run.sh judged
 sh bin/run.sh source read 7
 sh bin/run.sh claim 7
 sh bin/run.sh release 7
@@ -167,6 +230,7 @@ ${FOUNDRY_HOME:-$HOME/.foundry}/runs/<date>-<slug>-<short id>/
 ├── delivery           the branch this run pushed, the commit it pushed, and where it landed
 ├── brief              the body a source carried — absent when `deliver` was handed none
 ├── substitutions      files graded as the base wrote them — absent when the run changed no gate
+├── judged/            what `judged` asked each judge, and what came back — one pair per clause
 ├── observations       what happened, one line each, and nothing granted by any of it
 ├── asides             what this run could not act on — written by `aside`, read by nothing
 ├── id                 this run's name, so a copied directory still knows it
@@ -557,9 +621,15 @@ grant of its own and absent by default.
 
 `merge` refuses unless the run is authorised, complete, and the delivery's head is the commit its
 evidence names. That last one is the contract: a head that moved after grading is a tree nothing
-answered for. It also refuses a source that will not take the delivery, a required check that did not
-pass, and a check that has not answered — **a pending rollup carries no failure, and a reader looking
-for one calls it clean.**
+answered for. It also refuses a source that will not take the delivery.
+
+**Then the checks the target branch requires, asked rather than assumed.** The branch's own rules
+name them; every other check in the rollup belongs to the repository and bars nothing. Each one that
+did not pass is named, and one that never started is named apart from one that came back red.
+
+**So the bar is the source's bar.** A branch requiring nothing is a branch checking nothing, and
+floor inherits that instead of holding a line nobody drew. Weaker than refusing on the whole rollup,
+and honest.
 
 A retry after a merge that already landed says so and merges nothing twice.
 
@@ -663,8 +733,21 @@ What must be true for this run to be good. One file, in the run.
 ```
 clause  <id>  Gate|Judged|Decided  <text>
 pin     <id>  <target>  <ref>  <source>  <sha>
-gate    <id>  <command>
+gate    <id>  <command...>
+judge   <id>  <who>  <command...>
+rounds  <id>  <who>  <n>
 ```
+
+A command is the last field, so spaces and quotes need no parser. One `judge` line per member — a
+clause naming one mind is not a panel.
+
+**`rounds` is a record and not a field on `judge`, and the command being last is why.** A limit after
+the command could not be told from it, and one before it moves a field three readers strip by
+position. A member with no `rounds` record is asked for ever.
+
+**A judge's command may be absent and a gate's may not.** A gate with no command grades nothing, so
+one is refused. A judge with no command is a clause only a person can answer, which is every judged
+clause floor had before a runner could ask one.
 
 | Kind | Truth | Checked by |
 |---|---|---|
@@ -771,8 +854,11 @@ that no command can answer it.
 | Kind | Answered by | Written by |
 |---|---|---|
 | `Gate` | `machine` | `gates`, and `evidence record` for a name no pin holds |
-| `Judged` | `judged` | `evidence verdict` |
+| `Judged` | `judged` | `judged`, or `evidence verdict` and `evidence receipt` by hand |
 | `Decided` | `human` | an answer where the item is |
+
+**A green gate does not satisfy a `Judged` clause**, whatever name it is recorded under. That is
+what the kinds are for.
 
 **A verdict comes from something that did not produce the work.** That is the whole of what `judged`
 means, so floor refuses one naming the run's own worker.
@@ -780,11 +866,108 @@ means, so floor refuses one naming the run's own worker.
 **It cannot prove who typed it.** The file is writable by the same user, and §2.5 says so. Refusing
 the one name floor already knows is what an honest record can do — no more.
 
-**No second producer, so the contract is unproven.** One judge is a judge-shaped costume, by the same
-rule that keeps every seam in §2.6 marked.
+**A second producer has now written one.** *A second harness wrote one*, below, records what it
+attested and what it left out. One judge is still one judge, by the same rule that keeps every seam
+in §2.6 marked.
 
 **And a `Judged` clause is derived from a declaration, never guessed.** `.foundry/judged` declares
 one — `judge  text` — and this file is the source, so every clause here pins to it.
+
+**A `reach  judge  command...` line beside it says how the runner asks that judge.** A
+`rounds  judge  n` line says how often it may be asked. `reach` and `rounds` are reserved first
+words, so no judge may be called either. Three record kinds in one file need a word to tell them
+apart, and only the first field can carry it. The clause text is already the line's tail.
+
+### A repository owns the choice of judge, not the code that reaches one
+
+Reaching a standard judge used to cost a repository 227 lines it kept, copied and never fixed.
+
+Three forms of reach, told apart by the first word:
+
+| Written | Runs |
+|---|---|
+| `@adapter <id> <digest>` | an adapter this plugin ships, at exactly that content |
+| `@custom  <command...>` | the repository's own command, and the line says so on purpose |
+| `<command...>` | the repository's own command. Every declaration written before `@` existed |
+
+**A first word beginning with `@` is a transport and never a command.** A mistyped one is named
+here. Handed to a shell it would answer *command not found* about a fault in the declaration.
+
+The two custom forms are one behaviour and two records. A bare command works and always will.
+`@custom` says the choice was deliberate — so a reader six months on can tell a script somebody
+meant from a copy nobody migrated.
+
+**The path is built, never searched.** One directory under the plugin root this runner ships in, one
+file, and no second candidate anywhere:
+
+```
+<plugin>/adapters/<id>/run.sh
+```
+
+**No `$PATH`.** An install elsewhere would answer for this one. **No newest-installed.** That is a
+package manager written in shell, on the one path where being wrong is worst. **No file in the
+repository.** That is the copy this exists to end.
+
+**The pin is a digest and nothing else.** A tag, a version and a range all read as a yes while the
+thing they name moves underneath. `git hash-object --no-filters` takes one, and floor reads the same
+way — the bytes, never what a repository's line-ending rules make of them.
+
+**A shape nothing could honour is refused at `charter derive`, before a person is asked.** A pin that
+is not a digest, a name that is a path, a transport nobody wrote. None works on any machine. None
+reaches the file somebody authorises.
+
+| | When | Exit |
+|---|---|---|
+| the pin is not a digest, or the id is not a name | derive | 6 |
+| the first word is a transport nothing reads | derive | 6 |
+| the adapter is not one this plugin ships | judged | 21 |
+| the adapter is here and is not what the pin says | judged | 40 |
+
+**An adapter this host lacks still derives.** That is a fact about a machine, not about the
+declaration. A repository may authorise an adapter before it installs one, exactly as it may declare
+a gate whose command is not here yet.
+
+**Upgrading is a line somebody edited.** Foundry ships the fix. The repository commits the new
+digest, in a commit its own history keeps. `sh bin/adopt.sh upgrade` writes that line and says both
+digests, and it commits nothing.
+
+**A run may not edit that line.** The declaration is pinned to the base, like every other source a
+bar comes from. So the charter and the tree disagree, and `judged` refuses at 7 before it asks
+anyone.
+
+**One bad release does not break every repository at once**, and that is the objection this answers.
+Each repository judges at the digest it committed. A bad adapter shipped tomorrow is a digest nobody
+has said yes to, so nothing changes for anyone. It reaches only a repository that upgrades to it —
+which is a commit, reviewed like any other.
+
+**What it costs is the other half of that.** Install a new plugin and every repository pinned to the
+old adapter refuses at 40 until it commits the new digest. That is the design working, and it is
+still work — the refusal prints both digests, so the fix is one line.
+
+#### What the pin proves, and what it does not
+
+| | |
+|---|---|
+| proves | the file about to judge is the file the repository named |
+| proves | a run that rewrote the adapter is refused. Nothing else here sees that |
+| does not | that the plugin is what Foundry shipped |
+| does not | anything about the harness the adapter calls. #332, still open |
+| does not | that a receipt's own two keys were checked |
+
+**The binding refusal happens before the adapter runs**, and that is the one that counts. An adapter
+handed the receipt can rewrite the whole file, matching keys included — and it can rewrite them to
+the charter's own pin, because it can read the charter. Floor read the digest first.
+
+**A repository is answerable for its own pin, and that is a check somebody can run.** Nothing in
+floor compares the digest a repository commits to the adapter its tree holds. Here, `bin/judged.sh`
+does — one gate, `git hash-object --no-filters`, red on a drifted pin. A repository installing floor
+inherits none of that and would write its own.
+
+Whoever can rewrite the adapter can rewrite the core that digests it. The digest is git's, so it is
+SHA-1 — a strong accident detector, a weak defence against a prepared collision.
+
+**A repository on a non-default git object format pins what that format produces.** Floor compares
+what it computes against what was committed. A mismatch refuses, which is the safe way round.
 
 **A cold read reuses that and adds nothing.** Somebody who did not write a file says whether they
 understood it. That is a judgement, so one line carries it:
@@ -808,6 +991,214 @@ read. A bar over the whole tree is a bar nobody meets.
 
 **A check here proves presence, completeness, binding and an outcome. It never proves the words are
 clear.** No script judges prose, and none claims to.
+
+### A receipt is what a runner writes down
+
+`evidence verdict` takes five things typed at a prompt. `evidence receipt` reads a file, and the
+file is the whole contract: **any harness able to write these lines answers the same clause.** Floor
+writes none and names none.
+
+**Everything from here through *What the receipt cannot do* is what a producer is handed.** So no
+run's own answers belong inside it — a judge given them has been given its reply. The block ends
+where *Monotonicity* begins, and a generator cutting it stops on that heading.
+
+One key per line, the value is the rest of the line, `#` comments and blanks ignored.
+
+**The vocabulary is closed.** A key floor has no reading for is refused. In a record it looks
+exactly like a key that was checked.
+
+```
+run        2026-09-04-a-receipt-01
+clause     a stranger can read it
+candidate  4e1f9c07b1d0a2f3e5c8b9a7d6e4f2c1a0b3d5e7
+role       a-reviewer
+adapter    some-harness
+brief      2f8a1c
+verdict    approve
+report     9d3e7b
+round      1
+time       2026-09-04T11:02:00Z
+```
+
+| Required | Vouched for, or absent |
+|---|---|
+| `run` `clause` `candidate` `role` `adapter` | `context` `fresh` `prior` |
+| `brief` `verdict` `report` `round` `time` | `adapter_pin` `adapter_digest` |
+| | `requested_model` `self_reported_model` |
+| | `requested_provider` `self_reported_provider` |
+| | `requested_effort` `self_reported_effort` |
+
+**`adapter_pin` and `adapter_digest` are the runner's, and they come in pairs.** The first is the
+content the repository authorised; the second is what the file on disk actually was. A repository's
+own command has neither, because nothing pins one and an invented key reads exactly like a checked
+one. **A gap between them is a refusal**, whether a run caused the receipt or a person wrote it.
+
+**And the pin answers to the charter, not only to its own receipt.** A pair agreeing with each other
+and with nothing else would be consistency wearing the look of authority — so `adapter_pin` must be
+the digest the charter's reach gives, and a receipt claiming one for a judge reached by a command of
+the repository's own is refused. That is what makes the key mean what this page says it means.
+
+**There is no `model` key, and that is measured rather than careful.** An adapter was driven here in
+its json mode. Its stream carries a thread handle, the reply and the usage. It names no model, no
+provider and no effort. Asked outright which model it was, it gave a different name from the one
+requested.
+
+So the doubt sits in the key. `requested_` proves intent and no more — an alias or a fallback
+changes what ran. `self_reported_` is what the thing said about itself. **A bare `model` reads as
+fact to every reader and every script, and the caveat beside it gets skipped.**
+
+**What a receipt proves outright is narrower and real:** one thread returned review text, and
+whether that thread was new.
+
+**A missing field is the honest answer.** Nothing is defaulted and nothing is written `unknown`.
+
+**`context` and `fresh` are optional, and that is a decision.** A fresh thread hands back a new
+handle and a resumed one hands back the same. So a producer with threads can attest both. One with
+none would be made to write `context unknown`, which reads exactly like a handle somebody checked —
+the failure the missing `model` key exists to prevent. So the shape is gated and the truth is not.
+`fresh` needs a context to be about, and it says `yes` or `no`. **Floor cannot verify a handle it
+did not issue.**
+
+### The runner asks, and writes half the receipt
+
+`run.sh judged` runs the command the charter pins for each judge, and records what came back. **The
+command comes from the charter and never from the caller** — `judged` takes no argument at all, which
+is the same shape `gates` has and for the same reason.
+
+Four steps, and floor does three of them:
+
+| | |
+|---|---|
+| floor writes the brief | the run, the clause, the candidate, the base, the round, and the charter — into `judged/<id>.brief` |
+| floor records the handoff | with that file's digest, so the bar going over is written down first |
+| floor writes the binding half of the receipt | into `judged/<id>.receipt`, before anything is asked |
+| the judge appends what it saw | `adapter`, `verdict`, `report`, `time`, and whatever else it can vouch for |
+
+The command is handed two variables and nothing else:
+
+```
+FOUNDRY_BRIEF     the file to read. Floor digested this one, and the receipt answers that digest
+FOUNDRY_RECEIPT   the file to append to. Floor has already written the fields it knows
+```
+
+**A key floor wrote is a key the judge may not restate.** `run`, `clause`, `candidate`, `role`,
+`brief`, `round`, `prior`, `adapter_pin` and `adapter_digest` are the runner's. The grammar already
+calls a key said twice two answers, so an adapter writing its own `candidate` is refused rather than
+believed. **That refusal is the whole mechanism**, and there is no second one.
+
+**The binding keys are core's for a reason of their own.** They say the vendor code had authority,
+so vendor code writing them would be vouching for itself.
+
+**The receipt is read by the verb a person types.** Same keys, same refusals: a runner cannot reach a
+satisfaction a hand-written receipt could not.
+
+| | Exit |
+|---|---|
+| the charter names no judge | 8 |
+| a judge nobody said how to reach, a run that rewrote the file its judge runs, or a transport nothing reads | 7 |
+| the command is not on this host, or a signal killed it. An adapter this plugin does not ship | 21 |
+| the adapter that would judge is not the one the repository authorised | 40 |
+| a judge answered and did not approve, could not answer at all, or had already given every round the charter allows | 39 |
+
+**The base is named beside the candidate**, because a judge asked what changed needs both ends. A
+run whose base is its own head has no range between them, and what such a judge reads is the tree.
+
+**The receipt decides, not the command's exit code.** A judge that exits non-zero has its words put
+on stderr and its receipt read anyway, because a harness that failed and said `unavailable` in the
+file has told floor more than its exit code did. Only 126, 127 and a signal are read as *nothing
+ran*, which is what `evidence record` already does.
+
+**The handoff is written before the judge is asked**, so a judge that never ran still leaves a row
+saying the bar went over. That is the point of `handed`: whoever handed it over said so first. What
+is absent is the verdict, and absence is what refuses.
+
+**Nothing bounds how long a judge may take.** `gates` bounds none either. A judge that hangs hangs
+the run, and the remedy is the caller's.
+
+**One judge with no reach stops the verb, and that is deliberate.** A charter mixing a reachable
+judge with one only a person can answer cannot be run through `judged` at all. Skipping the second
+would leave its clause unmet and look exactly like a judge that refused, so the runner names the
+cause instead.
+
+**Rounds are counted, and a charter may bound them.** The round is every verdict that judge already
+gave on that clause, plus one. Round two is a second invocation at a second candidate, because a
+refused judgement is answered by new work.
+
+**`rounds  judge  n` in `.foundry/judged` is the ceiling.** It derives into a record of its own,
+`rounds <id> <who> <n>`, one per clause that judge sits on. At the limit the runner records a
+deadlock and does not ask: no brief is written, no handoff, and nothing runs.
+
+| | |
+|---|---|
+| no `rounds` line | asked for ever, which is what every charter written before this held |
+| a limit that is not counted from one | refused at `derive` — 6, and `0` is refused with the rest |
+| a limit edited into the run's own charter | drift. `check` says `bounded elsewhere` and `judged` refuses at 7 before it asks anybody |
+
+**The ceiling is the charter's, exactly as a gate's command is.** `judged` takes no argument, so no
+caller sets one. It runs `check` before it asks, so no worker raises its own by editing the charter
+it is graded against. Raising it is a commit to `.foundry/judged`.
+
+**A deadlock is recorded as one, and the reader that tells it apart was already there.** The row
+carries code 3 — what a receipt saying `deadlock` maps to. So `complete` says *never judged it*, not
+*no approval from* and not *refused here*. **Three facts, three remedies**, and this one is answered
+by whoever owns the budget.
+
+**It is recorded at the commit the run stands on.** A run that commits again and does not re-ask
+reads as silent until it does. Every other verdict in this ledger behaves that way, and the remedy
+is the same: run the verb.
+
+**A judge the run rewrote is refused, and a judge the run added is not.** `gates` plants the base's
+copy and grades against it. A judge writes a receipt rather than exiting a code, so a substituted one
+leaves nobody able to say which copy answered. The refusal reads what the base holds, so a script
+this run introduced has nothing to compare against. #341 owns the rest of that seam.
+
+### What a receipt is refused for
+
+| | Exit |
+|---|---|
+| there is none, or it holds nothing | 37 |
+| a key with no reading, said twice, or claiming nothing | 37 |
+| a required field absent | 37 |
+| `fresh` naming no context, or answering neither `yes` nor `no` | 37 |
+| a round that is not a count, or a later round naming no prior | 37 |
+| a bare `model`, `provider` or `effort` | 37 |
+| the handoff recorded no brief, so there is nothing to compare | 37 |
+| it authorises an adapter and names none that ran, names one nothing authorised, or the two differ | 40 |
+| its pin is not the one the charter's reach gives | 40 |
+| it answers for another run, or for a brief that changed | 38 |
+| the candidate is not where the work is | 35 |
+| nothing handed that judge the bar | 36 |
+| the role is this run's own worker, is nobody the charter asked, or the clause is not `Judged` | 2 |
+
+**`verdict` may also say `deadlock` or `unavailable`.** Neither is a judgement. They record an
+exhausted review budget, or a harness nobody could reach. Both stop the delivery, and **completion
+keeps them apart from a refusal.** A refusal is answered by new work. Neither of these is.
+
+
+### What the receipt cannot do
+
+**Every field is written by whatever wrote the receipt.** A fuller record is still a record, and
+none of it is a credential — #156 owns making the actor real.
+
+**The brief check proves consistency, never authorship.** Floor compares two digests it was handed,
+one at the handoff and one on the receipt, and reads no brief. One adapter writes both, so matching
+digests say the bar did not move under the judge. They do not say the digest is of the brief it
+claims.
+
+**A substitution nobody records is invisible, and half of that is now closed.** `adapter` is still a
+label floor reads nothing into. What is no longer a label is which code had authority: a shipped
+adapter is reached at a content the repository committed, and `adapter_pin` beside `adapter_digest`
+says both. **What that does not cover is the harness the adapter then calls.** Ask harness A, get
+nothing, let harness B answer — floor sees one adapter running, exactly as pinned, and cannot see
+past it. #332 leaves that half open, and `how` is prose for a person.
+
+**A repository's own command has none of this.** `@custom` and a bare command are unpinned by
+design, because a repository that wrote the script already owns it. The pin answers a different
+question: whether the code Foundry shipped is the code Foundry shipped.
+
+**Every refusal the suite checks is driven by fixtures the suite writes.** A fixture is written by
+whatever is being tested. So these prove the reading holds, never that a producer elsewhere would
+write one floor could read.
 
 ---
 ### Monotonicity
@@ -872,6 +1263,57 @@ Containment is the workspace boundary's, and `open` holds it.
 declared and never cloned, so there is nothing on disk to read for any other target until the
 workspace seam lands. Deriving clauses for a repository nobody checked out would be introduction
 wearing provenance.
+
+### A second harness wrote one
+
+**This sits outside the block above on purpose.** That block is what a producer is handed, and this
+one holds a producer's answers. Put it back among them and the next judge is given its reply.
+
+**Every receipt before this was written by a person or by the suite.** `codex-cli 0.150.1` wrote
+one, and floor took it.
+
+It was handed the clause its repository pins, the reviewer it answers as, and the run that asked. The
+path to the code, and this format verbatim from here. **Nothing else about the work, and no model
+named anywhere.** It read the code, ran the tests, wrote its report and hashed it. Then it wrote the
+receipt, in the one directory it could write to. **Nobody edited it.** Its last act was to print the
+file back. The stream's copy of that is byte for byte what floor read.
+
+The clause went unmet to met. Then the four breaks refused against that same file. A missing `time`
+and a bare `model` at 37, a changed brief at 38, a moved candidate at 35.
+
+```
+run        2026-09-05-r2-0000
+clause     every refusal names the field that was missing
+candidate  24b640d6b904a953426b324d8da8e850138e9332
+role       a-reviewer
+adapter    codex-exec
+brief      bec729d7f932df65812ce15ceb6ea5e62b6eebb4
+verdict    approve
+report     837782a2962482ac32db95453cd9a69be11420a4
+round      1
+time       2026-09-04T23:21:57Z
+requested_model  gpt-5.6-sol
+requested_effort max
+```
+
+**The receipt says `codex-exec`, and floor reads nothing into that.** `codex-cli 0.150.1` is the
+version the caller ran, not a fact the record checked.
+
+**That adapter is called `codex` now, and this record is not edited to match.** Nobody edited it is
+the sentence above, and a quoted record rewritten to agree with today makes that false. A name
+floor reads nothing into is a name that may move.
+
+**What it left out is the finding.** It could see the reply it had produced, and not the thread that
+carried it. So it wrote no `context` and no `fresh`. Nobody asked it what model it was, so it wrote
+no `self_reported_model`. Five of the seven optional keys are absent, and the record says nobody
+checked them.
+
+**`requested_model` and `requested_effort` came out of this run's own ledger.** The brief named
+neither. The handoff had recorded the command that invoked the judge, and the judge read it back.
+That is what `requested_` means, and the only place the answer existed.
+
+**One producer is not two.** One harness, one call, one outcome. The four breaks were driven through
+that file by hand, once. Every refusal the suite checks is still a fixture's.
 
 ---
 
@@ -1504,8 +1946,43 @@ exception. The pointer holds a run id, not a path, and the home is an environmen
 bash tests/run.sh
 ```
 
+**On Windows, grade it under WSL from the Linux disk.** Starting a process costs about 80 ms under
+Git Bash and about 1 ms under Linux, and this suite starts a great many. `model.sh` measured
+**4,611 s** on Git Bash against **49 s** under WSL on ext4 — 2 September, one laptop, one commit.
+
+```bash
+mkdir -p ~/wsl-tmp && export TMPDIR=~/wsl-tmp
+git clone /mnt/c/path/to/the-foundry ~/floor
+bash ~/floor/plugins/floor/tests/run.sh
+```
+
+Clone to ext4 first. Grading over `/mnt/c` hands most of the win straight back.
+
+**Home, not `/tmp`.** That directory is emptied on every boot, and the audit puts its trees under
+`${TMPDIR:-/tmp}` — so both the clone and `TMPDIR` have to move, or a reboot takes the run.
+
+**The pass count is not the same on every platform, and that is not a fault.** A check the
+filesystem cannot answer stands down and prints `n/a`; so does one needing a tool the box has not
+got. Read `failed` and `skipped`, which mean the same thing everywhere.
+
 Every suite, then a deliberate break for every rule that matters. Each one must turn a suite red, and
 the run says so if a break failed to apply — a mutation that changed nothing proves nothing.
+
+**Each break names the check that killed it.** Every suite runs under fail-fast, so one check answers,
+and `lib.sh` hands over its name rather than the audit cutting one out of a message:
+
+```
+  ok    a runner that ignores FOUNDRY_HOME is caught — killed by [home follows FOUNDRY_HOME]
+```
+
+**A break whose record cannot say which rule it broke fails the audit.** Three ways it cannot.
+Nothing answered, so the red came from a `skip` at the tally, or a suite that died first. A setup would not build, which a suite
+reports with `broke`. Or several answered, which means fail-fast is not reaching that suite and the
+first of them is being recorded as the one. Every audit before this read all three as a catch.
+
+**Breaks that share a killing check are listed at the end, and nothing fails on them.** One of each
+group proves nothing the other did not. A break that breaks something fundamental dies at the first
+check that touches it. No aiming of its `sed` changes that. A checkpoint per break would.
 
 `model.sh` calls the runner. `install.sh` reads the command out of `hooks/hooks.json` and hands it
 to a shell — because a suite that calls the scripts itself proves only that the scripts work, never

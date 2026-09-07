@@ -26,6 +26,29 @@ wait
 }
 
 set -u
+
+# A suite must never reach the network, and the reason is not purity.
+#
+# Two fixtures set an origin on `github.com/acme`, a host that does not answer. A check that pushes
+# there makes git ask for a password and wait. Measured once at forty-three minutes on a single
+# check, with the gate printing nothing the whole time.
+#
+# **A hang is not a failure, and no exit code tells them apart.** A red suite is read and fixed. A
+# hung one looks exactly like a slow machine, and grades have been abandoned on that reading.
+# **Two of the three are not enough, and this was measured.** A push to that host with only the
+# first two set still waited past a twelve-second cap. With the helper cleared as well it failed in
+# under one, saying authentication failed — which is a red suite, and readable.
+#
+# The helper here is `manager`, a window `GIT_TERMINAL_PROMPT` cannot reach. `GIT_CONFIG_*` clears
+# it for this suite alone, so nobody's own checkout is touched. An empty value resets the list,
+# which is the whole point: any inherited helper is gone for every git call below.
+GIT_TERMINAL_PROMPT=0
+GIT_ASKPASS=/bin/echo
+GIT_CONFIG_COUNT=1
+GIT_CONFIG_KEY_0=credential.helper
+GIT_CONFIG_VALUE_0=
+export GIT_TERMINAL_PROMPT GIT_ASKPASS GIT_CONFIG_COUNT GIT_CONFIG_KEY_0 GIT_CONFIG_VALUE_0
+
 root="$(cd "$(dirname "$0")/.." && pwd)"
 tmp="${TMPDIR:-/tmp}/floor-audit-$$"
 mkdir -p "$tmp/verdict"
@@ -126,12 +149,74 @@ audit_says_which() {
 }
 audit_says_which
 
+#
+# **There is no check that every `refuse_*` has a break, and that is a decision.**
+#
+# Verdict 051 asked for one. Measured on main: 44 refusals, 18 named by some mutation, 26 not. The
+# 26 are mostly not holes — a `sed` that rewrites a refusal's body proves it perfectly well and
+# never types its name. So the check would go red on 26 lines the day it landed, and **26 exemptions
+# is not a gate but a list nobody maintains** — `craft-oracle`'s green gate over an exemption list.
+#
+# A version that held would need each break to declare the refusal it targets. Nothing records that:
+# a `wreck_runner` line carries a claim in prose and a `sed` in shell, and neither names a function.
+# **Adding that field is sixteen call sites and its own charter**, not a rider on a receipt.
+#
+# What is done instead, and it is the half this file can stand behind: **every refusal the receipt
+# adds is named by a break.** Whether each dies on a check of its own was a claim nobody could check
+# until `say_when_two_breaks_share_a_check` printed the answer — and the answer is that several do
+# not. The list is at the foot of this file, and it is a finding rather than a claim now.
+#
 ends_on "$root/tests/run.sh"     'exit $failed'      || bad "tests/run.sh declares breaks below its exit, and nothing runs them"
 ends_on "$root/tests/transport.sh" '[ "$failed" -eq 0 ] || exit 1' || bad "tests/transport.sh runs cases below its exit, and nothing counts them"
 ends_on "$root/tests/model.sh"   'summary "model"'   || bad "tests/model.sh runs cases below its tally, and nothing counts them"
 ends_on "$root/tests/install.sh" 'summary "install"' || bad "tests/install.sh runs cases below its tally, and nothing counts them"
 ends_on "$root/tests/host.sh"    'summary "host"'    || bad "tests/host.sh runs cases below its tally, and nothing counts them"
 ends_on "$root/tests/say.sh"     'summary "say"'     || bad "tests/say.sh runs cases below its tally, and nothing counts them"
+ends_on "$root/tests/adopt.sh"   'summary "adopt"'   || bad "tests/adopt.sh runs cases below its tally, and nothing counts them"
+
+# An adapter answers for itself, so its suite is read for the same fault. Driven off the directory
+# rather than named, because floor may ship one adapter or several and neither is this file's to know.
+for suite in "$root"/adapters/*/tests/*.sh; do
+  [ -f "$suite" ] || continue
+  ends_on "$suite" '[ "$failed" -eq 0 ]' \
+    || bad "${suite#"$root/"} runs checks below its exit, and nothing counts them"
+done
+
+#
+# Floor core names no vendor, and the adapters directory is where every vendor is — #512.
+#
+# **The set is closed by what the plugin ships.** Each adapter directory yields two words: its own
+# name, and the vendor it is named for, which is the part before the first hyphen. An adapter is
+# named `<vendor>-<how>`, and that convention is what makes this a gate rather than a list somebody
+# has to maintain.
+#
+# **Word-bound, always.** `sol` sits inside `resolver` and `panel` is an ordinary noun, so a
+# substring match would go red on core prose naming no vendor at all.
+#
+# The count is printed for the reason `host.sh` prints its own: a check that looked at nothing and a
+# check that found nothing read the same in a log.
+#
+core_names_no_vendor() {
+  local word found
+
+  for word in $(vendor_words); do
+    found=$(grep -rlw -- "$word" "$root/bin" "$root/lib" 2>/dev/null | tr '\n' ' ')
+    [ -z "$found" ] || bad "floor core names [$word]: $found"
+  done
+
+  printf '  ok    floor core names none of the %s words its adapters yield\n' \
+         "$(vendor_words | wc -w | tr -d ' ')"
+}
+
+vendor_words() {
+  local held name
+  for held in "$root"/adapters/*/; do
+    [ -d "$held" ] || continue
+    name=${held%/}; name=${name##*/}
+    printf '%s\n%s\n' "$name" "${name%%-*}"
+  done | sort -u
+}
+core_names_no_vendor
 
 #
 # Run a command with a deadline, and answer **2 when the deadline passed** — never the command's own
@@ -543,7 +628,7 @@ case "${1:-}" in --case-smoke) shift; case_smoke "$@"; exit "$failed" ;; esac
 # exceeded it there and, inverted, read as caught. A mutant is either caught early by `FOUNDRY_FAIL_FAST`
 # or runs about as long as a clean pass. Anything far past that is stuck on any machine.
 #
-for suite in transport model install host say; do
+for suite in transport model install host adopt say; do
   began=$(date +%s)
   bash "$root/tests/$suite.sh" || failed=1
   [ "$suite" = model ] && clean=$(( $(date +%s) - began ))
@@ -751,6 +836,73 @@ queued=0
 reported=0
 
 #
+# Where the suite writes the name of the check that failed. **A break names a file. Nothing else
+# keeps one.**
+#
+# An exit code was once the whole of what a break could learn, which is why one could die at a check
+# it was not written for and still read as proof of another. `lib.sh` writes the name here now.
+#
+# `local checks=` in the break is what points it at a file: bash lends a local to everything the
+# declaring function calls, so `suite_caught` and `model_caught` take no new argument and each still
+# answers one question. This file is already bash on purpose — its first check is that the shell it
+# is under counts a background job.
+#
+# **The runners below still discard the suite's own output, and that is not the hole it looks like.**
+# Reading a name back out of printed prose was the first shape here, and it cut two scripts down to
+# one check. Nothing needs stdout once the library names the check itself.
+#
+checks=/dev/null
+
+#
+# Run a command with a deadline, and answer **2 when the deadline passed** — never the command's own
+# status, because a command that never answered did not answer badly.
+#
+# `timeout` exits 124 when it kills one. `!` used to invert that to 0, which is this file's word for
+# *the suite noticed the break*, so **a mutant that hung was recorded `ok`** — a false green in the
+# thing that grades every other gate.
+#
+bounded() {
+  local seconds="$1"
+  shift
+
+  command -v timeout >/dev/null 2>&1 && { timed "$seconds" "$@"; return; }
+
+  polled "$seconds" "$@"
+}
+
+timed() {
+  local seconds="$1" said
+  shift
+
+  timeout "$seconds" "$@" >/dev/null 2>&1
+  said=$?
+
+  [ "$said" -eq 124 ] && return 2
+  return "$said"
+}
+
+# The same deadline without `timeout`. **macOS is the platform that needs this** — it ships no
+# `timeout` unless someone installed GNU coreutils, and without one there is no bound at all.
+#
+# Polled the way `await_a_free_worker` polls: `wait -n` with a deadline is bash 4.3, and macOS ships
+# 3.2. The same platform, twice, for the same reason.
+polled() {
+  local seconds="$1" job waited=0
+  shift
+
+  "$@" >/dev/null 2>&1 &
+  job=$!
+
+  while kill -0 "$job" 2>/dev/null; do
+    [ "$waited" -ge "$seconds" ] && { kill -9 "$job" 2>/dev/null; wait "$job" 2>/dev/null; return 2; }
+    sleep 1
+    waited=$((waited + 1))
+  done
+
+  wait "$job"
+}
+
+#
 # What a deadline answers, and it is not what an answer answers. Three seconds, and the only check
 # here that grades this file rather than the plugin.
 #
@@ -758,6 +910,19 @@ a_deadline_is_not_an_answer() {
   bounded 5 true;     answered 0 "a command that passes"
   bounded 5 false;    answered 1 "a command that fails"
   bounded 2 sleep 30; answered 2 "a command that never answers"
+}
+
+#
+# The same three from `polled`, which nothing here would otherwise run.
+#
+# `bounded` prefers `timed` wherever `timeout` exists, and it exists on every machine this gate runs
+# on. **macOS is the platform `polled` is for**, and it had never been asked a question — a deadline
+# nobody has run is a deadline nobody has, and the two runners sit one edit apart.
+#
+a_deadline_without_timeout_answers_the_same() {
+  polled 5 true;     answered 0 "a polled command that passes"
+  polled 5 false;    answered 1 "a polled command that fails"
+  polled 2 sleep 30; answered 2 "a polled command that never answers"
 }
 
 #
@@ -772,15 +937,113 @@ a_deadline_is_not_an_answer() {
 #
 # `env`, because `bounded` runs its arguments and an inline assignment would not reach them.
 #
+# **`FOUNDRY_FAIL_FAST`, and it was missing here.** Only `model_caught` set it, so the install and
+# host suites ran to the end and named every check that went red rather than the one that stopped
+# them. `nofile` reddened five and was recorded against the first — which is not the one it was
+# written for. That is the fault this file exists to catch, made by the fix for it.
+#
 suite_caught() {
   local said
-  bounded "$deadline" env PLUGIN_ROOT="$1" bash "$2"
+  bounded "$deadline" env PLUGIN_ROOT="$1" FOUNDRY_FAIL_FAST=1 FOUNDRY_CHECK="$checks" bash "$2"
   said=$?
 
   [ "$said" -eq 2 ] && return 2
   [ "$said" -eq 0 ] && return 1
 
   return 0
+}
+
+#
+# Which check killed the mutant, by name.
+#
+# **`lib.sh` writes the name. Nothing here parses one out of a message.** An earlier shape cut the
+# printed line at its em dash, and `install.sh` names checks that carry em dashes of their own — so
+# the cut dropped the script each one names, and read two scripts as a single check.
+#
+# One line, because `FOUNDRY_FAIL_FAST` stops a suite at its first failure. **Three answers that are
+# not a rule the break broke**, and `refuse_a_record_the_audit_cannot_use` refuses all three:
+#
+#   unnamed  a red no check answered for — a `skip` at the tally, or a suite that died first
+#   several  fail-fast not reaching the suite, so the first of many is recorded as the one
+#   setup    `broke` — a fixture that would not build, which is red and is not a rule
+#
+# **`setup` is `lib.sh`'s sentence, written down twice.** The self-test calls the real `broke` and
+# compares what comes back with this, so the two cannot drift apart in silence.
+#
+# Sentences rather than a blank field, because a blank reads as something nobody filled in.
+#
+unnamed='nothing named a check'
+several='more than one check answered'
+setup='a setup that would not build'
+
+# `grep -m1 .`, not `head -n 1`: the count is of lines holding something, so the name has to be read
+# the same way. A blank first line made the two disagree and returned nothing at all.
+killed_by() {
+  local said
+  said=$(grep -c . "$1" 2>/dev/null) || said=0
+
+  [ "$said" -eq 0 ] && { printf '%s' "$unnamed"; return; }
+  [ "$said" -eq 1 ] || { printf '%s' "$several"; return; }
+
+  printf '%s' "$(grep -m1 . "$1")"
+}
+
+#
+# What killed each break: the suite, the check, the break. One row each, tab separated.
+#
+# **The parent writes every row.** A break runs in its own subshell and leaves its killer beside its
+# verdict, the way it leaves the verdict — sixteen workers appending to one file is a row torn in
+# half, and a torn row is a killer nothing can be grouped by.
+#
+killed="$tmp/killed"
+: > "$killed"
+
+remember_the_killer() { printf '%s\t%s\t%s\n' "$1" "$2" "$3" >> "$killed"; }
+
+#
+# Breaks that share a killing check, grouped, and nothing when none do.
+#
+# **Two breaks and one check is one break's worth of proof.** Fail-fast stops at the first failure,
+# so a break that also violates something checked later never reaches it — and both breaks are
+# recorded caught while one rule was ever watched. That is the fault verdicts 050 to 054 kept
+# naming, and it was invisible because an exit code cannot carry a name.
+#
+# Sorted first, because `for (k in n)` is unordered in awk and the same audit has to read the same
+# way twice. The tab sorts below every character a name may hold, so a whole-line sort groups them.
+#
+breaks_sharing_a_check() {
+  LC_ALL=C sort "$1" | awk -F'\t' '
+    { key = $1 "\t" $2
+      if (key != held) { show(); held = key; killer = $2; names = ""; n = 0 }
+      names = names sprintf("      %s\n", $3); n++
+    }
+    END { show() }
+
+    function show() { if (n > 1) printf "    [%s]\n%s", killer, names }
+  '
+}
+
+#
+# Breaks whose record cannot say which rule they broke.
+#
+# **The right red for the wrong reason**, three ways. A break is meant to violate a rule some check
+# holds. One that breaks a fixture reddens the suite through `skip` or `broke`; one read without
+# fail-fast names several, and the first is recorded as though it were the one. Every audit before
+# this read all three as *caught*.
+#
+# **`broke` names its own sentence, so it needs its own row here.** Leaving it out made the refusal
+# below miss the case it was written for: two breaks resting on a fixture that would not build, and
+# `ALL GREEN` printed over them. Measured, not argued.
+#
+breaks_with_an_unusable_record() {
+  awk -F'\t' -v a="$unnamed" -v b="$several" -v c="$setup" \
+      '$2 == a || $2 == b || $2 == c { printf "      %s — %s\n", $3, $2 }' "$1"
+}
+
+# One value against the one wanted, for the readers this file grades rather than the plugin.
+same() {
+  [ "$2" = "$3" ] && { printf '  ok    %s\n' "$1"; return; }
+  bad "$1 — want [$3], got [$2]"
 }
 
 #
@@ -809,6 +1072,99 @@ sleep 30
   deadline=$held
 }
 
+#
+# The killer comes out of `lib.sh`, so `lib.sh` is what it is read from.
+#
+# **The name carrying an em dash is the case that was wrong.** An earlier shape cut the printed line
+# at the first ` — `, and `install.sh` names two checks `declares its shell — <script>` and `fires on
+# SessionStart — <script>`. The cut dropped the script and read two scripts as one check. So the
+# name here carries one on purpose.
+#
+a_killer_is_named_by_the_check_that_wrote_it() {
+  local checks="$tmp/checks"
+
+  ask_lib_sh is "declares its shell — announce.sh" bash ''
+  same "the name is kept whole, em dash and all" \
+       "$(killed_by "$checks")" "declares its shell — announce.sh"
+
+  ask_lib_sh bad "not executable — run.sh"
+  same "a bad with no name is named by its message" \
+       "$(killed_by "$checks")" "not executable — run.sh"
+
+  # `broke`'s sentence is `lib.sh`'s, and `$setup` is this file's copy of it. Read the real one back
+  # and compare, or the two drift and the refusal below stops recognising what it refuses.
+  ask_lib_sh broke "could not make a repository to test against"
+  same "a setup that would not build is lib.sh's own words" "$(killed_by "$checks")" "$setup"
+
+  : > "$checks"
+  same "a suite no check answered for says so" "$(killed_by "$checks")" "$unnamed"
+
+  printf 'one\ntwo\n' > "$checks"
+  same "a suite read without fail-fast says so" "$(killed_by "$checks")" "$several"
+
+  # The count reads lines holding something and the name has to read the same way. `head -n 1` did
+  # not: a blank first line counted as one check and came back as nothing at all.
+  printf '\na check under a blank line\n' > "$checks"
+  same "a blank first line does not swallow the name" \
+       "$(killed_by "$checks")" "a check under a blank line"
+}
+
+# One assertion from the real library, into the file the audit reads. Its own shell, because `bad`
+# leaves under fail-fast and its counters must not follow it out.
+ask_lib_sh() {
+  : > "$checks"
+  ( . "$root/tests/lib.sh"; suite=model; FOUNDRY_FAIL_FAST=1; FOUNDRY_CHECK="$checks"; "$@" ) \
+    >/dev/null 2>&1
+}
+
+#
+# **Both readers hand their suite fail-fast**, and every record rests on it.
+#
+# `suite_caught` did not. The install and host suites ran to the end, so `nofile` reddened five
+# checks and was recorded against the first — a check it was not written for. A stand-in suite,
+# because what is under test is what reaches the suite's environment.
+#
+# `model_caught` names `model.sh` and takes no stand-in, so nothing here can ask it the same way. The
+# 202 breaks it reads answer for it, and that was measured rather than assumed: with its fail-fast
+# taken away, `collide`, `worktree` and `nohome` each answered *more than one check answered* and the
+# refusal below went red. **They pass because fail-fast arrives, and stop the moment it does not.**
+#
+a_suite_is_read_under_fail_fast() {
+  local checks="$tmp/asked.check"
+
+  printf '#!/bin/sh\nprintf "%%s\\n" "${FOUNDRY_FAIL_FAST:-off}" > "$FOUNDRY_CHECK"\nexit 1\n' \
+    > "$tmp/asks.sh"
+
+  suite_caught x "$tmp/asks.sh"
+  same "suite_caught hands its suite fail-fast" "$(cat "$checks")" "1"
+}
+
+#
+# Grouping, and the two things it must not confuse.
+#
+# The suite is half the key: `host.sh` and `model.sh` are different files, and one sentence written
+# in both is two checks. The other half is that a break with a check of its own says nothing at all.
+#
+a_shared_killer_is_reported_with_the_breaks_that_share_it() {
+  printf 'model\tone check\ta break\nmodel\tone check\tanother break\nmodel\tits own\ta third\n' \
+    > "$tmp/rows"
+  same "two breaks under one check are grouped" \
+       "$(breaks_sharing_a_check "$tmp/rows")" \
+       "$(printf '    [one check]\n      a break\n      another break')"
+
+  printf 'model\tits own\ta break\nhost\tits own\tanother break\n' > "$tmp/rows"
+  same "one check each, in two suites, is not sharing" "$(breaks_sharing_a_check "$tmp/rows")" ""
+
+  # All three, because the one that was missing is the one that let two breaks rest on a fixture
+  # that would not build while the audit printed ALL GREEN.
+  printf 'model\t%s\ta silent break\nmodel\t%s\ta noisy break\nmodel\t%s\ta break on sand\nmodel\tits own\ta break\n' \
+         "$unnamed" "$several" "$setup" > "$tmp/rows"
+  same "a record that cannot say which rule broke is picked out" \
+       "$(breaks_with_an_unusable_record "$tmp/rows")" \
+       "$(printf '      a silent break — %s\n      a noisy break — %s\n      a break on sand — %s' \
+                 "$unnamed" "$several" "$setup")"
+}
+
 # `$?` from the line above. Called immediately after `bounded`, because anything between them is the
 # status this would read instead.
 answered() {
@@ -830,8 +1186,14 @@ a_run_of_silence_stops_the_audit() {
   ( silence 9; kept x; silence 9 ) >/dev/null 2>&1; answered 0 "a run one answer broke"
 }
 a_deadline_is_not_an_answer
+a_deadline_without_timeout_answers_the_same
 a_suite_that_never_answered_caught_nothing
 a_run_of_silence_stops_the_audit
+
+
+a_killer_is_named_by_the_check_that_wrote_it
+a_suite_is_read_under_fail_fast
+a_shared_killer_is_reported_with_the_breaks_that_share_it
 
 #
 # Does the model suite fail against a broken runner?
@@ -840,9 +1202,13 @@ a_run_of_silence_stops_the_audit
 #
 # `env`, because `bounded` runs its arguments and an inline assignment would not reach them.
 #
+# **The check file is the caller's.** Whoever wants to know which check killed the mutant declares a
+# `checks` and reads it afterwards; this answers the exit code either way.
+#
 model_caught() {
   local said
-  bounded "$deadline" env RUNNER="$1/bin/run.sh" FOUNDRY_FAIL_FAST=1 bash "$root/tests/model.sh"
+  bounded "$deadline" env RUNNER="$1/bin/run.sh" FOUNDRY_FAIL_FAST=1 FOUNDRY_CHECK="$checks" \
+          bash "$root/tests/model.sh"
   said=$?
 
   [ "$said" -eq 2 ] && return 2
@@ -863,9 +1229,12 @@ model_caught() {
 # The last argument names the file, because an adapter carries rules of its own and a rule only the
 # caller can break is one the adapter is free to drop.
 #
+# The killer is written beside the verdict and before it, so a worker killed mid-break leaves the
+# `MOOT` that was there first and no killer to be grouped by. A verdict on disk always has one.
+#
 break_verdict() {
   local slot="$1" name="$2" tag="$3" mutation="$4" file="${5:-bin/run.sh}"
-  local mutant="$tmp/$slot-$tag"
+  local mutant="$tmp/$slot-$tag" checks="$tmp/$slot-$tag.check"
 
   rm -rf "${mutant:?}" && cp -R "$root" "$mutant" || { moot "$name — could not copy the plugin"; return; }
   sed "$mutation" "$root/$file" > "$mutant/$file" || { moot "$name — sed failed, so this proves nothing"; return; }
@@ -875,6 +1244,7 @@ break_verdict() {
   [ "$answer" -eq 2 ] && { out_of_clock "$name"; return; }
   [ "$answer" -eq 0 ] || { bad "$name — the suite passed against a broken runner"; return; }
 
+  killed_by "$checks" > "$tmp/verdict/$slot.killer"
   printf '  ok    %s\n' "$name"
 }
 
@@ -885,18 +1255,54 @@ break_verdict() {
 # of many, and a status read from the wrong break is a verdict invented for it. Anything but the two
 # words a break can print counts as a rule broken, so a format changed here goes red and loud.
 #
+# **The killer is joined on here rather than written into the verdict.** The break's own line keeps
+# the shape the `case` below reads, and the name a break is remembered by stays the name it declared
+# — a line composed once and taken apart again is two chances to disagree.
+#
+# **`never_ran` is raised here, and it reads like a double count.** `moot` raises it too. It is
+# not: `queued` rises only in `wreck_runner`, so only a backgrounded break has a verdict file to
+# be read here — and `moot`'s raise died in that break's own subshell. A serial break writes no
+# file and never reaches this line. **Each mutant is counted once, and never in both places.**
+#
 report_verdict() {
-  local verdict
+  local verdict killer=''
   verdict=$(cat "$tmp/verdict/$1")
 
-  printf '%s\n' "$verdict"
   case "$verdict" in
-      '  ok    '*) return ;;
-      '  MOOT  '*) [ "$failed" -eq 0 ] && failed=3; return ;;
+      '  ok    '*) killer=$(cat "$tmp/verdict/$1.killer")
+                   remember_the_killer model "$killer" "${verdict#  ok    }"
+                   verdict="$verdict — killed by [$killer]" ;;
+      '  MOOT  '*) [ "$failed" -eq 0 ] && failed=3
+                   never_ran=$((never_ran + 1)) ;;
+      *)           failed=1 ;;
   esac
 
-  failed=1
+  printf '%s\n' "$verdict"
 }
+
+#
+# A backgrounded break counts nowhere else. `moot` raises `never_ran` inside the break's own
+# subshell and it dies there, so `report_verdict` reading the file afterwards is the only place
+# left. This proves that reading counts, which the closing line cannot prove about itself.
+#
+# It restores both globals: a self-test that leaves `failed` at 3 would end the run it is checking.
+#
+a_moot_read_from_a_file_is_counted() {
+  local was=$never_ran keep_failed=$failed
+
+  mkdir -p "$tmp/verdict"
+  printf '  MOOT  a break that reported nothing\n' > "$tmp/verdict/selftest"
+  report_verdict selftest >/dev/null
+
+  [ "$never_ran" -eq $((was + 1)) ] \
+    && printf '  ok    a MOOT read from a verdict file is counted\n' \
+    || bad "a MOOT read from a verdict file was not counted"
+
+  rm -f "$tmp/verdict/selftest"
+  never_ran=$was
+  failed=$keep_failed
+}
+a_moot_read_from_a_file_is_counted
 
 # Hold the pool to its size. `wait -n` would say the moment a worker came free and is bash 4.3 —
 # macOS ships 3.2 — so the running count is polled. Waiting in batches instead would idle the whole
@@ -1176,6 +1582,16 @@ wreck_runner "authorising before deriving, reported as a lost clause, is caught"
 
 wreck_runner "a run that authorises after a derived clause was removed is caught" \
   lowered 's#^    gates_with_no_clause=.*#    gates_with_no_clause=#'
+# A refusal reported as a silence sends a reader to ask a judge that already answered no. The
+# dissent holds at that ref, so the trip cannot help.
+wreck_runner "a refusal reported as nobody answering is caught" \
+  saidno 's#^    said_no=.*#    said_no=#'
+# The half nobody read. `check_charter` catches a drifted charter at `charter check` and inside
+# `gates`, and neither runs again on the way out — so a clause deleted after the gates passed reached
+# `complete` with nothing looking. `authorise` reads the gate half of the same question and stops
+# there.
+wreck_runner "a clause deleted after the gates, delivered anyway, is caught" \
+  latedelete 's#^    underived_clauses "$1"$##'
 
 # One allowlist for every run is one run's grant handed to all of them.
 #
@@ -1779,6 +2195,16 @@ wreck_runner "a gate whose output becomes a record is caught" \
 # still nothing to deliver from.
 wreck_runner "a gate that could not run recorded as one that failed is caught" \
   ranfail 's#never_ran "$result" *&& #false \&\& #'
+
+# The same rule, one arm at a time. `ranfail` takes the whole guard away, and the 127 check catches
+# it — so it says nothing about 126. Every check this suite held before the 126 one passed against
+# this mutant.
+#
+# Anchored on the definition, like `killedgate`. A mutation naming the words around a rule dies the
+# day somebody rewrites them, and five here did.
+wreck_runner "a gate the host could not execute recorded as one that failed is caught" \
+  nonexec 's#^never_ran() .*#never_ran() { [ "$1" -eq 127 ]; }#'
+
 # nobody introduced, which is #66's test failing — and the check that used to hold this ground read
 # `charter check`, a verb with no question in it.
 wreck_runner "a run asking when nothing blocks is caught" \
@@ -1931,7 +2357,7 @@ wreck_runner "a declared judgement nothing derives is caught" \
   nojudged 's#^    detect_judged | while_reading_judged#    false | while_reading_judged#'
 
 wreck_runner "a judged clause naming no judge is caught" \
-  nojudge 's#^        print_judges "\$id" "\$judge" >> "\$draft" || return 1$#        : >> "$draft" || return 1#'
+  nojudge 's#^        print_judges "\$id" "\$judge" "\$reaches" "\$limits" >> "\$draft" || return 1$#        : >> "$draft" || return 1#'
 
 wreck_runner "a judgement derived as a gate is caught" \
   judgedasgate 's#print_clause "\$id" Judged "\$text"#print_clause "$id" Gate "$text"#'
@@ -1958,6 +2384,131 @@ wreck_runner "a verdict credited to a commit nobody read is caught" \
 wreck_runner "a verdict from a judge nobody handed the bar is caught" \
   nohandoff 's#^    refuse_a_judge_never_handed_the_bar "\$dir" "\$text" "\$judge" "\$reviewed" "\$version"$#    :#'
 
+#
+# The receipt — #332. Floor reads one, and every refusal it makes is broken here.
+#
+# **No mutation makes a missing receipt satisfy anything, and the guard is named for what it does.**
+#
+# It fails closed four deep — the existence test, then the emptiness test, then the required-field
+# reader, then an outcome that is not one of the five. So a break on any one of them changes which
+# sentence a reader gets, never whether the run is refused. **This mutant proves the sentence**, and
+# it says so rather than claiming a refusal it cannot reach.
+#
+# Verdict 050 asked for the guard to be split so the existence test could be broken alone. It is,
+# and the split is right on its own terms — one function was doing three jobs — but the second half
+# of the finding stands: the exit code cannot tell these apart, and only a `has` can.
+wreck_runner "a missing receipt reported as an empty one is caught" \
+  noreceipt 's#^refuse_a_receipt_that_is_not_there() {#refuse_a_receipt_that_is_not_there() { return 0;#'
+
+# The half the split made reachable. Blind it and the empty argument reaches the existence test,
+# which answers 37 about a file nobody named rather than 2 about a caller who named none.
+wreck_runner "a receipt verb given no file at all is caught" \
+  nonamed 's#^refuse_a_receipt_nobody_named() {#refuse_a_receipt_nobody_named() { return 0;#'
+
+#
+# The third of the split, which the split itself left uncovered.
+#
+# Verdict 051: blind this and the required-field reader answers 37 in its place, so the exit code
+# says nothing and the suite stayed green. **The split fixed the shape and left one guard behind** —
+# the same fault 050 named, made by the fix for it.
+#
+# Killed by a `has` on *holds nothing*, and it has to be: all four guards here answer 37, so no
+# comparison of exit codes can tell one from another. The message is the only observable there is.
+wreck_runner "a receipt that will not read, waved through, is caught" \
+  noholding 's#^refuse_a_receipt_holding_nothing() {#refuse_a_receipt_holding_nothing() { return 0;#'
+
+#
+# The vocabulary is closed, and this opens it. A key floor has no reading for reads exactly like one
+# it checked — which is the whole reason the list is a list and not a suggestion.
+wreck_runner "a key floor has no reading for is caught" \
+  anykey 's#^refuse_a_line_that_is_not_a_receipt_line() {#refuse_a_line_that_is_not_a_receipt_line() { return 0;#'
+
+wreck_runner "a receipt missing a field it must carry is caught" \
+  nofield 's#^refuse_a_field_that_is_not_there() {#refuse_a_field_that_is_not_there() { return 0;#'
+
+#
+# Three fields that stand on one which is not there. Each break lets a claim through that reads as
+# checked and rests on nothing.
+#
+# `anyround` is the one that bites quietly: `[ abc -gt 1 ]` returns non-zero and complains to
+# stderr, so the guard after it reads as having passed.
+wreck_runner "a freshness claim about no context is caught" \
+  freshnothing 's#^refuse_a_freshness_about_nothing() {#refuse_a_freshness_about_nothing() { return 0;#'
+
+# The one column the charter calls attestable. Blind this and `fresh probably` is recorded as an
+# answer to a question that has two.
+wreck_runner "a freshness answering neither yes nor no is caught" \
+  anyfresh 's#^refuse_a_freshness_that_answers_neither() {#refuse_a_freshness_that_answers_neither() { return 0;#'
+
+#
+# The other side of those two. Not a claim let through, but a field made compulsory.
+#
+# **A producer that cannot see its own thread handle writes neither key**, and the one harness
+# outside this repository that has written a receipt is exactly that producer. Requiring either key
+# refuses it.
+#
+# **`context` is the obvious break and it is the wrong one.** It changes what the receipt naming no
+# context is refused *for*, so it dies at that check's message three above and never reaches the one
+# it was written for. `fresh` leaves every other fixture alone: `maybefresh` and `stale` rewrite the
+# value and keep the key, and only the receipt naming neither key lacks it.
+wreck_runner "a thread claim made compulsory is caught" \
+  needsfresh "s#^RECEIPT_REQUIRED='run #RECEIPT_REQUIRED='fresh run #"
+
+wreck_runner "a round nobody can count is caught" \
+  anyround 's#^refuse_a_round_that_is_not_a_count() {#refuse_a_round_that_is_not_a_count() { return 0;#'
+
+wreck_runner "a later round with no prior verdict is caught" \
+  noprior 's#^refuse_a_round_with_no_prior() {#refuse_a_round_with_no_prior() { return 0;#'
+
+# A judgement that really happened, about something else. Replayed here it credits this work with a
+# reading nobody gave it.
+wreck_runner "a receipt from another run replayed here is caught" \
+  otherrun 's#^refuse_a_receipt_from_another_run() {#refuse_a_receipt_from_another_run() { return 0;#'
+
+#
+# The bar the receipt answers, and the bar that went over. Three breaks, because the claim has three
+# halves: the baseline is recorded, an absent baseline is not a match, and a moved one is refused.
+wreck_runner "a handoff that records no brief is caught" \
+  nohandedbrief 's#stamp_handoff "\$dir" "\$text" "\$(delivered_ref)" "\$version" "\$judge" "\$how" "\$brief"#stamp_handoff "$dir" "$text" "$(delivered_ref)" "$version" "$judge" "$how"#'
+
+wreck_runner "an unknown bar taken as a match is caught" \
+  unknownbar 's#^refuse_a_brief_nothing_recorded() {#refuse_a_brief_nothing_recorded() { return 0;#'
+
+# The comparison alone, not the whole guard. Blinding the function takes the baseline check with it,
+# and the mutant is then killed by the earlier claim rather than by this one.
+#
+# Addressed to the function it is about, the way `namedgate` is. A body-only `sed` proves the
+# refusal perfectly well and never types its name, so nothing reading these lines could say which
+# refusal it targets — and that is the whole reason a coverage gate over them is not cheap.
+wreck_runner "a receipt answering a brief that changed is caught" \
+  briefmoved '/^refuse_a_brief_that_changed()/,/^}/ s#\[ "\$was" = "\$6" \] && return 0#[ 1 = 1 ] \&\& return 0#'
+
+#
+# What came back, and whether it was an answer at all.
+#
+# `anyoutcome` stamps every receipt as an approval, which is the defect `code_for_outcome` was
+# written for arriving through the newer verb. `nostopped` leaves a deadlock and an unreachable
+# harness reported as a judge nobody asked — a reader then goes and asks, which cannot help.
+wreck_runner "a receipt outcome stamped as an approval whatever it said is caught" \
+  anyoutcome 's#^code_for_judgement() {#code_for_judgement() { printf 0; return 0;#'
+
+wreck_runner "a judgement that never happened, read as silence, is caught" \
+  nostopped 's#^stopped() {#stopped() { return 1;#'
+
+# The receipt is read and nothing of it is kept, so the run holds no record of what it took.
+wreck_runner "a receipt read and not recorded is caught" \
+  noattested 's#^attested() {#attested() { return 0;#'
+
+#
+# **Green gates do not satisfy a Judged clause**, and this is the break that proves it.
+#
+# Both filters at once, because either alone still holds. Drop the trust and a machine row is still
+# skipped for naming no judge; drop the judge and it is still skipped for not being `judged`. The
+# claim is that a judgement is answered by a judge's record and by nothing else, so the break has to
+# be the whole of it.
+wreck_runner "a gate answering for a judge is caught" \
+  gatejudges 's#satisfied "\$1" "\$2" "\$3" judged "\$who" || exit 1#satisfied "$1" "$2" "$3" "" "" || exit 1#'
+
 # The reader half. The writer half cannot be observed today: the only comment
 # floor writes is a question, and `floor-question:` already bounds one.
 wreck_runner "a reader blind to the stamp is caught" \
@@ -1982,6 +2533,176 @@ wreck_runner "a head adopted as the base it never was is caught" \
 wreck_runner "a worker accounting for its own ancestry is caught" \
   selfaccept 's#^refuse_self_accounting() {#refuse_self_accounting() { return 0;#'
 
+#
+# The runner asking the judge — #332's last box, and every refusal it added.
+#
+# **The command comes from the charter, and `callercmd` is the break that says so.** `set --` throws
+# the caller's arguments away before the guard reads them, so the verb accepts one and runs the
+# charter's anyway — a refusal turned into silence, which is how a caller starts naming judges.
+wreck_runner "a caller naming the judge's command is caught" \
+  callercmd 's#^judged() {#judged() { set --;#'
+
+# A charter with nothing to ask, and one whose judge nobody said how to reach. Each leaves the runner
+# with no command, and each used to have nowhere to say so.
+wreck_runner "a charter naming no judge, asked anyway, is caught" \
+  nobench 's#^    \[ -n "\$bench" \] ||.*#    :#'
+
+wreck_runner "a judge nobody said how to reach, run anyway, is caught" \
+  noreach 's#^    \[ -n "\$REACH_COMMAND\$REACH_FILE" \]#    [ -n "always" ]#'
+
+# A judge whose command is not on this host. Stamping it as an answer poisons the ref for good, which
+# is the fault `stamp_command` names and this verb has its own copy of.
+wreck_runner "a judge that never ran, read as one that did, is caught" \
+  ranjudge 's#^    never_ran "\$answered".*#    :#'
+
+# The run rewriting the file its own judge runs, and grading itself with it.
+wreck_runner "a judge this run rewrote is caught" \
+  ownjudge 's#^refuse_a_judge_this_run_rewrote() {#refuse_a_judge_this_run_rewrote() { return 0;#'
+
+# A reach the declaration moved after the charter pinned it. Drift, exactly as a gate's command is,
+# and unreported it means the judge that answered is not the judge that was agreed.
+wreck_runner "a reach that moved since the charter is caught" \
+  reachdrift 's#^        moved_reaches "\$file"$#        :#'
+
+#
+# The ceiling a charter pins on one judge — #526. Five breaks, one per part of it.
+#
+# **Without any of them a run asks for ever**, which is the state the count was in before: every
+# round recorded faithfully, and nothing marking the work as no longer moving.
+#
+# `noceiling` blinds the reader, `noceilingrecord` the writer, and the two are not one break — a
+# charter can hold a limit nothing reads, and read a limit no charter holds.
+wreck_runner "a run that asks past the limit its charter pins is caught" \
+  noceiling 's#^over_the_limit() {#over_the_limit() { return 1;#'
+
+wreck_runner "a limit a charter records nothing for is caught" \
+  noceilingrecord 's#^print_rounds() {#print_rounds() { return 0;#'
+
+# One round early. `-ge` stops the last round the charter allows, which is a bar nobody wrote and
+# reads in the record exactly like the one they did.
+wreck_runner "a limit that spends the last round it allows is caught" \
+  offbyone 's#^    \[ "\$2" -gt "\$1" \]$#    [ "$2" -ge "$1" ]#'
+
+#
+# A charter that may hold a ceiling nothing could reach, and one a worker moved after it was pinned.
+#
+# **Two breaks, and the second is what makes the limit the charter's.** `judged` checks before it
+# asks, so a `rounds` record edited in the run's own charter buys no round — unreported, a worker
+# raises its own ceiling and every other reader agrees with it.
+#
+# **`over_the_limit`'s two `is_a_count` guards go without a break, and they are not missing.** Both
+# fail open, so blinding either leaves a run that asks — which is what the mutants above already
+# prove is caught. They are defence with no break, named here rather than left for a reader to find.
+wreck_runner "a charter that may hold a limit nothing could reach is caught" \
+  anylimit 's#^    refuse_a_limit_no_charter_may_hold .*#    :#'
+
+wreck_runner "a ceiling that moved since the charter is caught" \
+  limitdrift 's#^        moved_limits "\$file"$#        :#'
+
+#
+# **The runner writes the binding half, and this is the break that proves it.**
+#
+# Blind it and the receipt holds only what the adapter wrote — so nothing binds the run, the clause
+# or the candidate, and the one refusal that stops a substitution is a key nobody said twice.
+wreck_runner "a runner that writes none of the receipt is caught" \
+  noncontext 's#^write_receipt_context() {#write_receipt_context() { return 0;#'
+
+# The first round of all, counted against a ledger that is not there yet. `awk` never reaches its
+# `END` on a missing file, so the count comes back empty and the brief says `round` and nothing more.
+wreck_runner "a first round counted against no ledger is caught" \
+  firstround 's#^    \[ -f "\$(evidence_file "\$1")" \] ||.*#    :#'
+
+# A verdict read off whether the receipt was recorded rather than what it said. Recording an
+# `unavailable` succeeds, and the clause it answers is still unmet.
+wreck_runner "a judged clause met by any receipt at all is caught" \
+  anyjudged 's#^    satisfied "\$dir" "\$text" "\$ref" judged "\$who"$#    true#'
+
+#
+# The adapter a repository authorises, and the ways a run could reach another one — #512.
+#
+# **Every one of these ends with something other than the pinned adapter judging the work**, and each
+# break is a different hand: a transport that never resolved, a pin nobody read, a lookup that took
+# what it found, and a receipt recording a binding it never checked.
+#
+
+# The transport read as a command. `sh -c "@adapter ..."` is *command not found*, which reads as a
+# host missing a tool rather than a runner that stopped resolving.
+wreck_runner "a transport handed to a shell instead of resolved is caught" \
+  noresolve 's#^        @adapter) reach_the_shipped_adapter.*#        @adapter) : ;;#'
+
+#
+# A charter that may hold a reach nothing could honour.
+#
+# **The shape is a fact about the declaration, so it is refused where a declaration becomes a bar.**
+# A pin that is not a digest, a name that is a path, a transport nobody wrote: none of them could
+# work on any machine, and none may reach the file a person authorises.
+#
+# **Three breaks went with this one, and they are not missing.** `refuse_a_pin_that_is_not_a_digest`,
+# `refuse_an_adapter_name_this_cannot_resolve` and `refuse_an_unknown_transport` still stand at run
+# time, and `check` refuses a charter the declaration disagrees with — so nothing supported can put
+# a bad reach in front of them, and a break on any of the three would survive. They are defence with
+# no break, named here rather than left for a reader to find.
+wreck_runner "a charter that may hold a reach nothing could honour is caught" \
+  anyreach 's#^    refuse_a_reach_no_charter_may_hold "\$reaches" || return 1$#    :#'
+
+# An adapter nobody ships, run anyway. The whole of *fails closed, and never falls back*.
+wreck_runner "an adapter this plugin does not ship, run anyway, is caught" \
+  anyadapter 's#^refuse_an_adapter_this_plugin_does_not_ship() {#refuse_an_adapter_this_plugin_does_not_ship() { return 0;#'
+
+# **The break that answers what the pin is for.** Blind it and a rewritten adapter judges the work,
+# with a receipt naming the digest the repository authorised and nothing having checked it.
+wreck_runner "an adapter that is not the one authorised is caught" \
+  anycontent 's#^refuse_an_adapter_nobody_authorised() {#refuse_an_adapter_nobody_authorised() { return 0;#'
+
+#
+# The clause id, clobbered by the resolver. **This is the defect, not a hypothetical.**
+#
+# The first draft read the adapter id into `id`, which is the clause id in its own caller. Every
+# receipt then landed under the adapter's name — one file for however many clauses that adapter
+# answers — and the run passed. It survived 903 checks and was found by reading.
+wreck_runner "a resolver that clobbers the clause id is caught" \
+  clobberid 's#^    adapter=\${rest%% \*}$#    adapter=${rest%% *}; id=$adapter#'
+
+# The adapter's path built into a command string. A plugin installed under a directory holding a
+# space then splits into two words, and the judge is a file nobody can name.
+wreck_runner "an adapter path interpreted rather than run is caught" \
+  quotedpath 's#^        || { FOUNDRY_BRIEF="\$1" FOUNDRY_RECEIPT="\$2" sh "\$REACH_FILE" </dev/null; return; }#        || { FOUNDRY_BRIEF="$1" FOUNDRY_RECEIPT="$2" sh -c "sh $REACH_FILE" </dev/null; return; }#'
+
+# The binding left out of the receipt. The adapter still ran, and nothing records which one had
+# authority — so the record says an adapter judged and never which the repository agreed to.
+wreck_runner "a receipt carrying no adapter binding is caught" \
+  nobinding 's#^say_the_adapter_binding() {#say_the_adapter_binding() { return 0;#'
+
+# The three halves of that binding, read back. Each owns one case, and blinding any one lets a
+# receipt through that no other guard sees.
+wreck_runner "a receipt authorising an adapter and naming none is caught" \
+  nolooked 's#^refuse_a_pin_nobody_checked() {#refuse_a_pin_nobody_checked() { return 0;#'
+
+wreck_runner "a receipt naming an adapter nothing authorised is caught" \
+  nopin 's#^refuse_a_digest_nobody_authorised() {#refuse_a_digest_nobody_authorised() { return 0;#'
+
+wreck_runner "a receipt whose pin and digest disagree is caught" \
+  pingap 's#^refuse_an_adapter_that_moved() {#refuse_an_adapter_that_moved() { return 0;#'
+
+#
+# **The pin against the charter, which is the one that makes it authority.**
+#
+# The three above ask only whether a receipt agrees with itself. Blind this and a hand-written pair
+# agreeing on a digest nobody authorised is taken, and the ledger carries it under a key that says
+# the repository agreed to it.
+wreck_runner "a receipt claiming a pin the charter never gave is caught" \
+  ownpin 's#^refuse_a_pin_the_charter_did_not_give() {#refuse_a_pin_the_charter_did_not_give() { return 0;#'
+
+#
+# The remedy in the message a consumer meets. A plugin upgrade lands here, and two digests with
+# nothing to do about them is a dead end.
+#
+# **The command, not the sentence above it.** The first version of this break blanked the framing
+# line and the suite stayed green, because the check reads the command — a break aimed beside the
+# thing under test, which is the shape that reports a rule as held when nothing holds it.
+wreck_runner "an upgrade refusal that names no remedy is caught" \
+  deadend 's#^    note "    git hash-object --no-filters -- \$4"$#    :#'
+
 report_breaks
 
 # --- break the install ---
@@ -1998,6 +2719,7 @@ caught() { suite_caught "$tmp/$1" "$root/tests/install.sh"; }
 # Break one thing about the install and require the suite to notice.
 wreck() {
   local name="$1" tag="$2" break_it="$3"
+  local checks="$tmp/$tag.check" killer
 
   copy "$tag"             || { bad "$name — could not copy the plugin, so this proves nothing"; return; }
   "$break_it" "$tmp/$tag" || { bad "$name — the break did not apply, so this proves nothing"; return; }
@@ -2009,7 +2731,9 @@ wreck() {
   [ "$answer" -eq 2 ] && { out_of_clock "$name"; return; }
   [ "$answer" -eq 0 ] || { bad "$name — the suite passed against a broken install"; return; }
 
-  kept "$name"
+  killer=$(killed_by "$checks")
+  remember_the_killer install "$killer" "$name"
+  kept "$name — killed by [$killer]"
 }
 
 # Determine if this filesystem records an executable bit. Windows does not, and removing a bit that
@@ -2045,6 +2769,33 @@ wreck "hooks.json pointing at nothing is caught"       nofile rewire
 wreck "a hook that ships but is never wired is caught" nowire unwire
 wreck "an announce hook that says nothing is caught"   quiet  mute
 wreck "a hook moved to an event that cannot inject is caught" event misfire
+
+#
+# The vocabulary gate, audited the way `craft-oracle` says to audit one: break the thing it guards
+# and require it to go red. **A gate that stays green was never a gate.**
+#
+# Four breaks, because it makes three claims and can fail a fourth way. The last is the one that
+# matters most — two empty sets compare equal, so an extraction that finds nothing would pass and
+# certify nothing.
+#
+# **`rewrite` alone made three of these red for the wrong reason.** It writes a new file, a new file
+# carries no executable bit, and the suite's own `not executable — run.sh` fired before the check
+# under test ever ran. That is the bad break `bin/breaks.sh` warns about, and it looks exactly like a
+# gate that works. Measured, then fixed here.
+rewrite_script() { rewrite "$1" && chmod +x "$1"; }
+
+dropkey()  { sed "s/^RECEIPT_KEYS='run clause/RECEIPT_KEYS='clause/" "$1/bin/run.sh" | rewrite_script "$1/bin/run.sh"; }
+movekey()  { sed 's/^| `brief` `verdict` `report` `round` `time` |/| `brief` `verdict` `report` `round` | `time`/' "$1/README.md" | rewrite "$1/README.md"; }
+needsgone(){ sed "s/^RECEIPT_REQUIRED='run /RECEIPT_REQUIRED='wibble run /" "$1/bin/run.sh" | rewrite_script "$1/bin/run.sh"; }
+noreads()  { sed "s/^RECEIPT_KEYS='/RECEIPT_KEYS_RENAMED='/" "$1/bin/run.sh" | rewrite_script "$1/bin/run.sh"; }
+
+# Named for the check that kills each, not for the edit that makes it. `movekey` and `needsgone` are
+# one claim from opposite sides — a key the README requires and the runner does not, and a key the
+# runner requires and the README does not.
+wreck "a key the runner no longer reads is caught"           dropkey   dropkey
+wreck "a key the README stops requiring is caught"           movekey   movekey
+wreck "a key the runner starts requiring alone is caught"    needsgone needsgone
+wreck "a vocabulary the gate cannot read at all is caught"   noreads   noreads
 
 audit_the_executable_bit() {
   records_exec || {
@@ -2092,6 +2843,7 @@ hosted() { suite_caught "$tmp/$1" "$root/tests/host.sh"; }
 
 wreck_join() {
   local name="$1" tag="$2" mutation="$3"
+  local checks="$tmp/$tag.check" killer
 
   copy "$tag" || { bad "$name — could not copy the plugin, so this proves nothing"; return; }
   sed "$mutation" "$root/bin/join.sh" | rewrite "$tmp/$tag/bin/join.sh"
@@ -2101,7 +2853,9 @@ wreck_join() {
   [ "$answer" -eq 2 ] && { out_of_clock "$name"; return; }
   [ "$answer" -eq 0 ] || { bad "$name — the suite passed against a broken join"; return; }
 
-  kept "$name"
+  killer=$(killed_by "$checks")
+  remember_the_killer host "$killer" "$name"
+  kept "$name — killed by [$killer]"
 }
 
 # Each of the three that used to be silent, made silent again one at a time.
@@ -2136,6 +2890,153 @@ wreck_join "a settings file it cannot read called a missing plugin is caught" \
   blindsettings 's#^    \[ -r "\$settings" \] || { printf .  — cannot tell, no %s. "\$settings"; return; }$#    [ -r "$settings" ] || return#'
 
 #
+# The promise in its header, and the only break that can audit one.
+#
+# `join.sh` says nothing is written to the repository, and every other break here blinds a refusal.
+# This one makes it write, because a promise about writing nothing cannot be broken by taking
+# something away.
+wreck_join "a join that writes into the repository is caught" \
+  scribble 's#^    report_home$#    : > joined; report_home#'
+
+# --- break the adopt, the adopt suite must notice ---
+
+echo
+echo "audit — break the adopt, the adopt suite must notice"
+
+# The same shape again, reading the suite that grades the one command floor ships that writes to a
+# repository. Synchronous, like the join audit: nine mutants, and each runs the whole adopt suite.
+adopted() { suite_caught "$tmp/$1" "$root/tests/adopt.sh"; }
+
+wreck_adopt() {
+  local name="$1" tag="$2" mutation="$3"
+  local checks="$tmp/$tag.check" killer
+
+  copy "$tag" || { bad "$name — could not copy the plugin, so this proves nothing"; return; }
+  sed "$mutation" "$root/bin/adopt.sh" | rewrite "$tmp/$tag/bin/adopt.sh"
+  cmp -s "$tmp/$tag/bin/adopt.sh" "$root/bin/adopt.sh" \
+    && { moot "$name — the break did not apply, so this proves nothing"; return; }
+  adopted "$tag"; local answer=$?
+  [ "$answer" -eq 2 ] && { out_of_clock "$name"; return; }
+  [ "$answer" -eq 0 ] || { bad "$name — the suite passed against a broken adopt"; return; }
+
+  killer=$(killed_by "$checks")
+  remember_the_killer adopt "$killer" "$name"
+  kept "$name — killed by [$killer]"
+}
+
+# The whole point of the command. A person who has to take a digest by hand is a person who can
+# paste it wrongly, and a mistyped pin fails as a refusal nobody can read.
+wreck_adopt "a pin that is not the adapter's digest is caught" \
+  notdigest 's#^    digest=$(digest_on_disk "$(adapter_file "$2")")$#    digest=$(printf "%040d" 0)#'
+
+# Overwriting a reach moves a trust decision somebody already made, without saying so.
+wreck_adopt "a reach quietly overwritten is caught" \
+  overwrite 's#^refuse_a_judge_already_reached() {#refuse_a_judge_already_reached() { return 0;#'
+
+# Two digests are what make an upgrade reviewable. One of them is what the repository is leaving.
+wreck_adopt "a pin moved without saying what it was is caught" \
+  silentmove 's#^    say "         was $5"$#    :#'
+
+wreck_adopt "an upgrade that reports a move and writes none is caught" \
+  nomove 's#^move_what_moved() {#move_what_moved() { return 0;#'
+
+# A reach the repository owns is not this command's to move, and the rewrite is keyed on the lines a
+# pin actually moved for. Reaching any other line is how a writer becomes a reformatter.
+wreck_adopt "a rewrite reaching a line no pin moved is caught" \
+  everyline 's#FNR in now && match#match#'
+
+wreck_adopt "an adapter this plugin does not ship waved through is caught" \
+  blindship 's#^refuse_an_adapter_this_plugin_does_not_ship() {#refuse_an_adapter_this_plugin_does_not_ship() { return 0;#'
+
+# Silence reads as success, and a second upgrade is what a person runs when they are unsure.
+wreck_adopt "an upgrade that says nothing about what it did is caught" \
+  noverdict 's#^verdict() {#verdict() { return 0;#'
+
+# A declaration still not naming what this plugin ships is not a repository that upgraded.
+wreck_adopt "a reach left behind that does not turn the command red is caught" \
+  nocount 's#^    LEFT=$((LEFT + 1))$#    :#'
+# The file a person wrote by hand is the one that arrives unterminated, and appending to it glued
+# the reach onto the clause above. The command said it had written a reach nothing could read.
+wreck_adopt "a declaration whose last line never ended is caught" \
+  noeol 's#^    ensure_the_last_line_ended$#    :#'
+#
+# Two breaks, one check.
+#
+# **The finding no exit code could carry**, and five adversary rounds asked for it — verdicts 050 to
+# 054. A break proves a rule only when a check goes red *for that rule*. Fail-fast stops the suite at
+# its first failure, so a break that also trips something checked earlier never reaches the one it
+# was written for, and the audit recorded it caught either way. `needsfresh` did exactly that: its
+# first shape required `context` and died three checks above its own.
+#
+# Two breaks under one check is that, made visible. One of them proves nothing the other had not
+# already proved, and the rule it was aimed at is unwatched.
+#
+# **No exit code turns on this, and that was measured rather than conceded.** `reclone` blinds
+# `attached` and `localorigin` blinds `remote set-url`. Both break the workspace itself, so both die
+# at the first check that touches one — and no anchoring of a `sed` moves that. **A break that breaks
+# something fundamental cannot be given a check of its own while the suite runs in one order from
+# the top.**
+#
+# **What separates them is a checkpoint per break and a declared assertion** — PR #434's seam, open
+# and undecided. This list is the cost side and the benefit side of that decision, and neither
+# existed before it printed.
+#
+# **A baseline would be a snapshot**, blessing whatever was true the day it was taken. So the list is
+# printed whole, every run, and nothing here calls any of it acceptable.
+#
+say_when_two_breaks_share_a_check() {
+  local shared
+  shared=$(breaks_sharing_a_check "$killed")
+
+  [ -n "$shared" ] || { printf '  ok    every break has a killing check of its own\n'; return; }
+
+  printf 'audit — breaks that share a killing check. One of each group proves nothing new:\n'
+  printf '%s\n' "$shared"
+  printf 'audit — a check of its own needs a checkpoint per break. That is #434, and it is open.\n'
+}
+
+#
+# The other half, and **this one is a failure**: a record that cannot say which rule was broken.
+#
+# No exemptions, and the bar is zero. It is the part of the finding above that an exit code can hold,
+# and it is what proves the premise every row above rests on — one check answered, and it is the one
+# named. **The audit measures that over every break, every run.** Nothing else has to be believed.
+#
+# It rests on `lib.sh` telling a setup failure from a check, and on `setup` above matching what
+# `broke` writes. A suite calling `bad` for a fixture that would not build still reads as a rule.
+#
+refuse_a_record_the_audit_cannot_use() {
+  local wrong
+  wrong=$(breaks_with_an_unusable_record "$killed")
+
+  [ -n "$wrong" ] || { printf '  ok    every break rests on one check, and it is the one that stopped the suite\n'; return; }
+
+  printf '  FAIL  breaks whose record cannot say which rule they broke\n%s\n' "$wrong"
+  failed=1
+}
+refuse_a_record_the_audit_cannot_use
+
+#
+# A file with no rows answers `ok` to everything above, so the row above proves nothing on it.
+#
+# `remember_the_killer` appends one line per break the parent took a verdict for. A break that went
+# MOOT or died at `bad` writes none, and both of those are red on their own — so an empty file means
+# no break was recorded at all, which is a harness that ran nothing rather than a tree that passed.
+#
+refuse_a_record_with_no_rows() {
+  [ -s "$killed" ] || {
+    printf '  FAIL  no break recorded a killing check, so every reading above is of an empty file
+'
+    failed=1
+    return
+  }
+  printf '  ok    the record holds a row, so the readings above are of something
+'
+}
+refuse_a_record_with_no_rows
+say_when_two_breaks_share_a_check
+
+#
 # Say when the clock took them.
 #
 # **No threshold and no verdict.** Three numbers, printed together, so a reader can see whether the
@@ -2157,5 +3058,6 @@ say_when_the_clock_took_them
 
 [ "$failed" -eq 0 ] && echo "ALL GREEN"
 [ "$failed" -eq 1 ] && echo "FAILURES ABOVE"
-[ "$failed" -eq 3 ] && printf 'PROVED NOTHING — %s experiments never ran\n' "$never_ran"
+[ "$never_ran" -gt 0 ] && printf 'audit — %s experiments never ran.\n' "$never_ran"
+[ "$failed" -eq 3 ] && printf 'PROVED NOTHING\n'
 exit $failed

@@ -2,6 +2,10 @@
 
 Pest v3 testing syntax.
 
+**Written against Pest 3. Checked 4 September 2026, when Pest was at v5.1.3** — two major versions
+on. That date records a look at the package index, never a promise this is still right;
+[ask it again](../../CONTRIBUTING.md#is-a-stack-plugin-still-current) before you lean on the date.
+
 The kernel tells you **what to test**. This tells you **how to write it**.
 
 ---

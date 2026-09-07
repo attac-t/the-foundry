@@ -5,8 +5,10 @@
 # craft-sh states both rules. Nothing enforced them. `authorise` is the third judgment in its file's
 # history about a body too long to read, and each one cost a review round.
 #
-# Reads `plugins/*/bin`, `plugins/*/lib` and `plugins/*/hooks` — what a user runs. Not `tests/`: the
-# suites are bash on purpose and hold no such rule. Not `.awk` either, where `else` is idiomatic.
+# Reads `plugins/*/bin`, `lib`, `hooks` and `adapters` — what a user runs. An adapter ships inside a
+# plugin and is reached by digest, so nobody keeps a copy to fix; it holds the same bar as the core.
+# Not `tests/`, wherever they sit: the suites are bash on purpose and hold no such rule. Not `.awk`
+# either, where `else` is idiomatic.
 #
 # An awk `else` written inside a `.sh` still fails, because this reads files rather than languages.
 # An embedded program that wants a branch has outgrown a single-quoted string; move it to `lib`.
@@ -54,8 +56,8 @@ main() {
 # What a user runs. `find`, not `git ls-files` — the gate reads the same files from a checkout, a
 # worktree or a copy inside a container, and git answers for only the first.
 shipped() {
-    find plugins -type f -name '*.sh' \
-        \( -path '*/bin/*' -o -path '*/lib/*' -o -path '*/hooks/*' \) | sort
+    find plugins -type f -name '*.sh' ! -path '*/tests/*' \
+        \( -path '*/bin/*' -o -path '*/lib/*' -o -path '*/hooks/*' -o -path '*/adapters/*' \) | sort
 }
 
 # --- the branch ---

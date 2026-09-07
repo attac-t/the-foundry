@@ -1,11 +1,11 @@
 # Contributing
 
-Ten gates. Run them before you open a pull request:
+Thirteen gates. Run them before you open a pull request:
 
 ```bash
-sh bin/gates.sh                 # all ten, here
+sh bin/gates.sh                 # all thirteen, here
 sh bin/agree.sh                 # this table, the workflow, gates.sh and every harness file
-sh bin/gates.sh linux           # the same ten where `sh` is dash
+sh bin/gates.sh linux           # the same thirteen where `sh` is dash
 ```
 
 Leave `agree` out of your run and a PR can still go red on a check this file never mentioned — the
@@ -25,26 +25,42 @@ The process count is the same on both. Git Bash charges about 80 ms to start one
 charges one, so the bill is cygwin process start, not this code.
 
 ```bash
-git clone /mnt/c/path/to/the-foundry /tmp/foundry   # ext4, never /mnt/c
-cd /tmp/foundry && sh bin/gates.sh
+mkdir -p ~/wsl-tmp && export TMPDIR=~/wsl-tmp        # survives a reboot; /tmp does not
+git clone /mnt/c/path/to/the-foundry ~/foundry       # ext4, never /mnt/c
+cd ~/foundry && sh bin/gates.sh
 ```
 
 **Clone to the Linux disk.** `/mnt/c` is a network-shaped filesystem and gives most of the
 speed back.
 
+**Home, not `/tmp`.** Ubuntu ships `D /tmp` in `tmpfiles.d`, which empties that directory on every
+boot, and the WSL machine reboots when it feels like it. A clone put there vanishes mid-run and
+leaves nothing behind to read. Two runs were lost that way on 4 September 2026.
+
+**`TMPDIR` matters as much as the clone.** Floor's audit builds its own trees from
+`${TMPDIR:-/tmp}`, so moving only the clone leaves nearly two hundred mutant trees in the path that
+gets emptied.
+
 **It also runs checks Windows cannot.** NTFS records no executable bit and no read bit, keeps no
 symlink, and ignores `chmod`. A check that reads one of those reports *unrunnable* and stands down.
 
-**So the pass count is not comparable across platforms.** Measured 3 September on one laptop:
+**So the pass count is not comparable across platforms.** Measured 4 September on one laptop:
 
 | suite | Git Bash | WSL on ext4 |
 |---|---|---|
 | install | 25 passed, 1 n/a | 30 passed, 0 n/a |
 | host | 44 passed | 45 passed |
 | say | 36 passed | 36 passed |
+| transport | 11 passed | 11 passed |
 
 One `n/a` line hid five passes in install, because the check it guards sits in a loop. **`n/a`
 counts lines, never checks**, so the two columns cannot be reconciled by adding it back.
+
+**The filesystem is not the only cause, and host proves it.** Its extra pass comes from a `gh` branch:
+one check when `gh` is installed, two when it is not. This WSL has no `gh` and
+Windows has one, so the row reads as a platform difference and is not.
+
+**A count belongs to the box, never to the platform.** Install `gh` in WSL and the column moves.
 
 Read `failed` and `skipped` instead. Both must be zero on every platform, and both mean the same
 thing everywhere.
@@ -65,6 +81,11 @@ yours to run when it applies:
 | `sh bin/agree.sh audit` | five minutes | you change what `agree` reads, or how |
 | the per-plugin tool check | seconds, in the matrix | a plugin starts reaching for something new |
 | three operating systems | a matrix nobody has locally | you touch anything a suite runs |
+| `sh bin/unticked.sh` | a minute, and it reaches GitHub | before you close an issue, and after a `Closes #N` merge |
+
+**`unticked` finds, and cannot tick.** A tick is a judgement — did this box hold? — and that lives
+in the pull request and the gate output. `Closes #N` flips an issue closed and never touches its
+body, so eighteen met boxes sat blank on 4 September until somebody looked.
 
 The last one is the gap no local run closes. **A green tree here says nothing about macOS**, and has
 not since the billing lapsed.
@@ -94,6 +115,9 @@ Edit a rule, then run it — a row typed by hand into one file is the drift noth
 | `shell` | shipped shell takes an `else`, or a function body passes 40 lines |
 | `taper` | a three-line comment paragraph does not narrow by three, and nothing names it |
 | `comments` | a public comment carrying the seam's marker breaks a rule the seam applies |
+| `judged` | `.foundry/judged` pins an adapter this tree does not ship at that content |
+| `bytes` | a tracked text file holds a byte no decoder can read, or a character already lost |
+| `codex` | the adapter reaching a judge takes a verdict that was not the reply's last word, or claims a thread the harness never opened |
 | `kernel` | the plugin does not run — checked on Linux, macOS and Windows |
 | `signal` | the plugin does not run — checked on Linux, macOS and Windows |
 | `floor` | the plugin does not run — checked on Linux, macOS and Windows |
@@ -125,14 +149,47 @@ no such bit.
 
 **What they do not check:** that `laravel-ddd`, `laravel-playbook`, `pest` or `product` still load,
 or that their skills say anything true. Those four ship no code, so there is nothing to run — but
-nothing here reads them either. Green means ten gates passed. For those four plugins it does not
+nothing here reads them either. Green means thirteen gates passed. For those four plugins it does not
 mean the change works.
+
+**Whether their guidance has aged is answered, not gated.** Each README that teaches a version names
+it beside the date someone last compared it with the package index. The command is below.
 
 Bump the version in the plugin's own `plugin.json`, and there only. `marketplace.json` carries one
 `version`, and it is **the marketplace's own** — it names plugins and where they live, never what
 version each is at. A second copy made one shared line every branch edits, so plugin work collided
 for packaging reasons. Commits use [Commitizen](https://commitizen-tools.github.io/commitizen/)
 format.
+
+## Is a stack plugin still current?
+
+`pest`, `laravel-ddd` and `laravel-playbook` teach a version. `product` names no framework, language
+or package, so it has none to go stale.
+
+Ask the package index:
+
+```bash
+for pkg in pestphp/pest laravel/framework; do
+  printf '%-20s ' "$pkg"
+  curl -s "https://repo.packagist.org/p2/$pkg.json" \
+    | tr ',' '\n' | grep -m2 -E '"(version|time)":' | cut -d'"' -f4 | tr '\n' ' '
+  echo
+done
+```
+
+**It reaches the network, so it stays out of `gates.sh`** — `plugins.md` refuses a gate that goes red
+on a train. That is why the `comments` gate runs `bin/comments.sh audit`, the offline half, and
+leaves the half that reads GitHub to the delivery path.
+
+Answered 4 September 2026:
+
+| Package | Released | What the plugin teaches |
+|---|---|---|
+| `pestphp/pest` | v5.1.3, 25 August 2026 | Pest 3 — two majors back |
+| `laravel/framework` | v13.30.1, 1 September 2026 | Laravel 11–12 in `laravel-playbook`, 9–10 in `laravel-ddd` |
+
+**Then write the answer into the README it makes wrong**, beside the date you checked. A number
+recorded here and nowhere else is one nobody installing the plugin will ever read.
 
 ---
 

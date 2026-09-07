@@ -163,6 +163,23 @@ has "verify blocks on in-progress work"   "$(fire verify.sh '{"stop_hook_active"
 is "verify stands down once a stop hook is driving the turn" \
    "$(fire verify.sh '{"stop_hook_active":true}')" ""
 
+# An agent task runs `pending -> delegated -> in-review -> done`, and `deferred` is open to either.
+# Six states, and this hook read one — the self lane. Three agents could be working, or three could
+# have reported with nobody looking, and the turn ended clean either way.
+for state in in-progress delegated in-review; do
+  printf '| id | state |\n| 1 | %s |\n' "$state" > "$tmp/mem/blueprint.md"
+  has "verify holds the turn on $state" \
+      "$(fire verify.sh '{"stop_hook_active":false}')" "$state"
+done
+
+for state in pending done deferred; do
+  printf '| id | state |\n| 1 | %s |\n' "$state" > "$tmp/mem/blueprint.md"
+  is "verify lets the turn end on $state" \
+     "$(fire verify.sh '{"stop_hook_active":false}')" ""
+done
+
+printf '| id | state |\n| 1 | in-progress |\n' > "$tmp/mem/blueprint.md"
+
 # --- the ADR nudge reads the payload ---
 # The jq-shaped hole: with no reader, the path came back empty, nothing matched the skip list, and
 # the nudge fired on every write it exists to stay out of.
