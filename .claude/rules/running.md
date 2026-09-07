@@ -35,8 +35,8 @@ is that missing step.**
 
 ## Where it sits
 
-Take the item, open the run, then do the work. Not after the first commit, and not at the pull
-request — by then the thing a crash would lose has already happened.
+Take the item, open the run, then do the work. Not after the first commit. Not at the pull request.
+By then a crash loses the thing you meant to record.
 
 Filing an issue is not acting on it. **Working on one is.**
 
