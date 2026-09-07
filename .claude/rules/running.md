@@ -16,12 +16,11 @@ That is the whole instruction. Everything below says why it is a rule and not a 
 
 ## Why it is a rule
 
-**Nothing asked for a run, so nobody opened one.** 148 runs sit on the machine that built this and
-every one is from August. Eight days of merges, issues and charters followed, and the run home
-recorded none of them.
+**A mechanism nobody is told to use is a mechanism nobody uses.** The run has shipped for a while.
+The process that governs the work never named it, so the work went on beside it.
 
-The mechanism was written down and the process that governs the work never reached it. **This line
-is that missing step.**
+**A rule is where that step belongs.** The moment it applies is the moment before anyone
+thinks to look one up.
 
 ## What it buys
 
