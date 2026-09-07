@@ -32,6 +32,24 @@ while the session runs the old one.
 
 That is the same failure as a rule naming a skill nobody can invoke.
 
+## A capability owes the line that reaches it
+
+**Ship the mechanism and the process step together, or the mechanism is decoration.**
+
+Three shipped here and none was reached:
+
+| Built | Never called |
+|---|---|
+| the run, its pointer and its claim | no rule told a worker to open one |
+| a readiness answer refusing six ways, each naming a remedy | the command a person runs says `joined.` and exits 0 |
+| an exclusive claim — one host takes it, a second is refused | the scheduling scripts say `claim` zero times |
+
+**Each was built, tested and green.** A suite proves a function works. **It cannot prove anything
+calls it.**
+
+**So say who calls it, in the same change.** A rule, a command, a step in a README — whichever
+reaches a worker at the moment it applies. **If nothing does, the work is not finished.**
+
 ## Shipped code
 
 A plugin that ships code declares what it needs, and never more than POSIX plus `git`. **No parser
