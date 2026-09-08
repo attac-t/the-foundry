@@ -21,7 +21,15 @@
 #
 # Read at the top and again at the end, because a suite cannot prove it wrote nothing by looking
 # once. `ls` and `wc`, so it needs nothing this plugin does not already declare.
-live_home() { printf '%s' "${FOUNDRY_HOME:-$HOME/.foundry}/runs"; }
+#
+# **Guarded the way `run.sh:255` guards it.** `set -u` is on, so a bare `$HOME` aborts the whole
+# suite on a host that has none — a container, or a CI runner. Saying nothing there is right: no
+# home means nothing to protect, and both counts read zero.
+live_home() {
+    [ -n "${FOUNDRY_HOME:-}" ] && { printf '%s/runs' "$FOUNDRY_HOME"; return; }
+    [ -n "${HOME:-}" ]         && { printf '%s/.foundry/runs' "$HOME"; return; }
+}
+
 live_runs() { ls -1 "$(live_home)" 2>/dev/null | wc -l; }
 
 live_before=$(live_runs)
