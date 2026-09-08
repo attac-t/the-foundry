@@ -96,6 +96,13 @@ history=$(git -C "$tmp/one" rev-list --count --all 2>/dev/null)
 is "with both, the host half is satisfied" "$(code_of "$tmp/one" FOUNDRY_WHO=a@b)" "4"
 has   "and says a run here would stop"     "$(joined "$tmp/one" FOUNDRY_WHO=a@b)" "not joined."
 
+# A refusal naming no way out is worse than the report it replaced, so each absent one is named
+# with its file and what stops without it. Only the judges line carries a command; the other two
+# are written by hand, and saying which file is the whole remedy there.
+has   "and names the gates file"           "$(joined "$tmp/one" FOUNDRY_WHO=a@b)" ".foundry/gates      no gate"
+has   "and names the practice file"        "$(joined "$tmp/one" FOUNDRY_WHO=a@b)" ".foundry/practice   no grant"
+has   "and names the judged file"          "$(joined "$tmp/one" FOUNDRY_WHO=a@b)" ".foundry/judged     no judge"
+
 is "and it writes nothing to the repository" \
    "$(git -C "$tmp/one" status --porcelain 2>/dev/null)" "$untouched"
 is "and it adds no commit" \

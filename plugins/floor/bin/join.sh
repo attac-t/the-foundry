@@ -196,8 +196,21 @@ refuse_without_what_a_run_needs() {
     declares_all_three "$root" && return 0
 
     say ""
-    say "not joined. A run here would stop at the first thing it needs."
+    say "not joined. A run here would stop at the first thing it needs:"
+    name_what_is_missing "$root"
     exit 4
+}
+
+# **A refusal that names no way out is worse than the report it replaced.** Only the judges line
+# carries a command, because `.foundry/gates` and `.foundry/practice` are written by hand. So each
+# absent one is named with its file and what stops without it.
+name_what_is_missing() {
+    carries_records "$1/.foundry/gates" \
+        || say "  .foundry/gates      no gate, so \`authorise\` refuses"
+    carries_records "$1/.foundry/practice" \
+        || say "  .foundry/practice   no grant, so \`deliver\` refuses"
+    declares_no_judge "$1/.foundry/judged" \
+        && say "  .foundry/judged     no judge, so \`judged\` refuses — the line above says how"
 }
 
 # Any one of the three is enough to stop a run, so any one absent is enough to say so.
