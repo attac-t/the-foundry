@@ -15,6 +15,25 @@
 # not, and it cost several days of believing this machine could not run them.
 # Asked, not assumed. `BASH_VERSION` is an environment variable and a parent can leave one behind,
 # so the pool's own question is the one worth putting: start a job, and see whether it is counted.
+#
+# The home a person keeps, not the ones this suite makes. A fixture that reaches it has escaped, and
+# 1,570 stray runs sat there from August before anyone counted them.
+#
+# Read at the top and again at the end, because a suite cannot prove it wrote nothing by looking
+# once. `ls` and `wc`, so it needs nothing this plugin does not already declare.
+#
+# **Guarded the way `run.sh:255` guards it.** `set -u` is on, so a bare `$HOME` aborts the whole
+# suite on a host that has none — a container, or a CI runner. Saying nothing there is right: no
+# home means nothing to protect, and both counts read zero.
+live_home() {
+    [ -n "${FOUNDRY_HOME:-}" ] && { printf '%s/runs' "$FOUNDRY_HOME"; return; }
+    [ -n "${HOME:-}" ]         && { printf '%s/.foundry/runs' "$HOME"; return; }
+}
+
+live_runs() { ls -1 "$(live_home)" 2>/dev/null | wc -l; }
+
+live_before=$(live_runs)
+
 sleep 1 &
 counted=$(jobs -pr 2>/dev/null | wc -l)
 wait
@@ -114,6 +133,18 @@ moot() {
 out_of_clock() {
   killed_by_the_clock=$((killed_by_the_clock + 1))
   moot "$1 — killed at ${deadline}s, and a clean pass took ${clean}s"
+}
+
+# The raise above dies with the break that made it, and only a backgrounded break has a verdict file.
+# So the parent matches the sentence `out_of_clock` writes, which `report_verdict` already reads.
+#
+# **No `${deadline}` in the pattern.** A line written under another deadline is still a clock kill, so
+# the number cannot make the count right — and `:1078` sets `deadline` to 2 and restores it by hand,
+# which would make a mutable global a correctness key for nothing.
+the_clock_took_it() {
+  case "$1" in *" — killed at "*"s, and a clean pass took "*) return 0 ;; esac
+
+  return 1
 }
 
 #
@@ -1264,6 +1295,11 @@ break_verdict() {
 # be read here — and `moot`'s raise died in that break's own subshell. A serial break writes no
 # file and never reaches this line. **Each mutant is counted once, and never in both places.**
 #
+# **The clock is raised on the same terms, and was missing for longer.** `out_of_clock` raises it
+# beside a `moot` that dies the same way, so `killed_by_the_clock` read zero for every backgrounded
+# break — and `say_when_the_clock_took_them` returns at zero, so the whole report went unprinted.
+# A reader saw *N experiments never ran* and was never told the deadline took them.
+#
 report_verdict() {
   local verdict killer=''
   verdict=$(cat "$tmp/verdict/$1")
@@ -1273,7 +1309,9 @@ report_verdict() {
                    remember_the_killer model "$killer" "${verdict#  ok    }"
                    verdict="$verdict — killed by [$killer]" ;;
       '  MOOT  '*) [ "$failed" -eq 0 ] && failed=3
-                   never_ran=$((never_ran + 1)) ;;
+                   never_ran=$((never_ran + 1))
+                   the_clock_took_it "$verdict" \
+                     && killed_by_the_clock=$((killed_by_the_clock + 1)) ;;
       *)           failed=1 ;;
   esac
 
@@ -1290,7 +1328,6 @@ report_verdict() {
 a_moot_read_from_a_file_is_counted() {
   local was=$never_ran keep_failed=$failed
 
-  mkdir -p "$tmp/verdict"
   printf '  MOOT  a break that reported nothing\n' > "$tmp/verdict/selftest"
   report_verdict selftest >/dev/null
 
@@ -1303,6 +1340,29 @@ a_moot_read_from_a_file_is_counted() {
   failed=$keep_failed
 }
 a_moot_read_from_a_file_is_counted
+
+# The same proof for the clock, which is a different finding from a mutant that ran and missed.
+# Without it `say_when_the_clock_took_them` returns at zero and the whole report never prints.
+#
+# **The fixture comes from `out_of_clock`, never from a sentence typed here.** A third copy would
+# agree with the pattern while both disagreed with the producer, so breaking `out_of_clock` on
+# purpose would leave this green — a gate certifying its own example.
+a_clock_kill_read_from_a_file_is_counted() {
+  local was=$killed_by_the_clock keep_ran=$never_ran keep_failed=$failed
+
+  ( unanswered=0; out_of_clock "a break the clock took" ) > "$tmp/verdict/selftest"
+  report_verdict selftest >/dev/null
+
+  [ "$killed_by_the_clock" -eq $((was + 1)) ] \
+    && printf '  ok    a clock kill read from a verdict file is counted\n' \
+    || bad "a clock kill read from a verdict file was not counted"
+
+  rm -f "$tmp/verdict/selftest"
+  killed_by_the_clock=$was
+  never_ran=$keep_ran
+  failed=$keep_failed
+}
+a_clock_kill_read_from_a_file_is_counted
 
 # Hold the pool to its size. `wait -n` would say the moment a worker came free and is bash 4.3 —
 # macOS ships 3.2 — so the running count is polled. Waiting in batches instead would idle the whole
@@ -2071,7 +2131,7 @@ records_unreadable() {
 # The ladder is read downward and the first rung that holds wins. Dropping the top one makes a
 # delivered run read as a graded one — work that is finished, offered as work to resume.
 wreck_runner "a delivered run reported as still graded is caught" \
-  ladder 's#\[ -s "$(delivery_file "$1")" \] && { printf .delivered.; return; }#:#'
+  ladder 's#\[ -s "$1/delivery" \] && { printf .delivered.; return; }#:#'
 # guard matters for its own reason: with several slots only the last one's status survives a loop,
 # so the first failure has to stick.
 audit_the_unjoinable_slot() {
@@ -2868,6 +2928,20 @@ wreck_join "a host with no authority waved through is caught" \
 wreck_join "a repository that is not there waved through is caught" \
   norepo 's#^    refuse_without_a_repository$#    :#'
 
+#
+# The other two guards, and neither had a break until 8 September. `nodeps` had no test either, and
+# could not have passed one where it sat — it ran behind a guard that calls `git rev-parse`, so a
+# host with no `git` was told there is no repository here.
+#
+# `nothingdeclared` is the newer half: a repository declaring no gates, no judges and no grants is a
+# repository where a run stops at the first thing it needs, and saying `joined.` to that is the
+# silence this whole file exists to refuse.
+wreck_join "a host missing git or awk waved through is caught" \
+  nodeps 's#^    refuse_without_dependencies$#    :#'
+
+wreck_join "a repository declaring nothing a run needs waved through is caught" \
+  nothingdeclared 's#^    refuse_without_what_a_run_needs$#    :#'
+
 # The silent one this command exists for. Saying nothing about the source is what it replaced.
 wreck_join "a source that is chosen without a word is caught" \
   mutesource 's#^    report_work_source$#    say "who     $FOUNDRY_WHO"#'
@@ -3049,12 +3123,27 @@ say_when_two_breaks_share_a_check
 say_when_the_clock_took_them() {
   [ "$killed_by_the_clock" -eq 0 ] && return 0
 
-  printf 'audit — %s of %s were killed at %ss, and never answered.\n' \
-         "$killed_by_the_clock" "$queued" "$deadline"
+  # Not a share of `queued`. A serial break raises this in the parent and writes no verdict file,
+  # so the numerator counts two populations and `queued` holds only one of them.
+  printf 'audit — %s were killed at %ss, and never answered.\n' \
+         "$killed_by_the_clock" "$deadline"
   printf 'audit — that is five times a clean pass, and a clean pass took %ss.\n' "$clean"
   printf 'audit — a clean pass runs alone. A mutant runs under %s of them.\n' "$workers"
 }
 say_when_the_clock_took_them
+
+#
+# A count that grew means a fixture wrote where a person reads. **It says how many and where**, so
+# the next reader does not have to find the home themselves.
+#
+# It cannot tell a fixture's run from one a person opened in the same minute. That is the honest
+# limit, and on the gate it does not arise — the audit runs in a clone whose home nothing else uses.
+live_after=$(live_runs)
+[ "$live_after" -eq "$live_before" ] || {
+  printf 'FAIL  this suite left %s run(s) in the live home at [%s]\n' \
+         "$((live_after - live_before))" "$(live_home)"
+  failed=1
+}
 
 [ "$failed" -eq 0 ] && echo "ALL GREEN"
 [ "$failed" -eq 1 ] && echo "FAILURES ABOVE"

@@ -28,8 +28,9 @@ cd plugins/floor        # or wherever this plugin is installed
 sh bin/join.sh
 ```
 
-It reports and exits. Nothing is installed and nothing is written to the repository. `adopt.sh`,
-below, is the one command here that does write to one.
+It reports, and refuses when a run started here would stop at the first thing it needs. Nothing is
+installed and nothing is written to the repository. `adopt.sh`, below, is the one command here that
+does write to one.
 
 Six things stood between a clean machine and a working system, and three were silent when wrong: no
 `gh` picks a different work source, no git identity fails later at commit, and no `FOUNDRY_WHO`
@@ -42,6 +43,7 @@ who     you@example.com
 source  a directory, and the remote is GitHub. Install gh, or Issues stay unreachable.
 grants  2 in .foundry/practice
 gates   1 in .foundry/gates
+judges  1 in .foundry/judged
 skill   kernel:craft-sh
 style   kernel:craftsman
 skill   signal:economy  — NOT enabled on this host
@@ -55,7 +57,10 @@ A rule that names a skill is the declaration — there is no second list. `shell
 `kernel:craft-sh` before the first character*, and on a host where kernel is off that rule does
 nothing and says nothing. Now it says.
 
-Exit 1 is something the host must supply. Exit 3 is not a repository this can join.
+Exit 1 is something the host must supply. Exit 3 is not a repository this can join. **Exit 4 is a
+repository declaring none of the three a run needs** — no gates and `authorise` stops, no judges and
+`judged` stops, no grants and `deliver` stops. It says `not joined.` and names nothing else, because
+the other three absences stop nothing and stay reports.
 
 ## Adopting a judge
 

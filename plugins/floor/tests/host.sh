@@ -38,7 +38,23 @@ bare() {
   cd - >/dev/null || return 1
 }
 
+#
+# The dependency guard, which had no test and could not have passed one where it sat. It ran second,
+# and the guard above it calls `git rev-parse` — so a host with no `git` was told there is no
+# repository here, while standing in one. It runs first now, and this drives it.
+#
+# `PATH` is emptied rather than stripped of two names. A directory of symlinks is a different thing
+# on each host this suite runs on; an absent `PATH` is the same everywhere. So `sh` is resolved to a
+# full path first, because an emptied `PATH` cannot find the shell either.
+shell=$(command -v sh)
+blind_of()      { ( cd "$1" && env PATH=/nonexistent FOUNDRY_WHO=a@b "$shell" "$join" >/dev/null 2>&1; echo $?; ); }
+without_tools() { ( cd "$1" && env PATH=/nonexistent FOUNDRY_WHO=a@b "$shell" "$join" 2>&1; ); }
+
 mkdir -p "$tmp/nowhere"
+is  "with no git and no awk it refuses" "$(blind_of "$tmp/nowhere")" "1"
+has "and names both"                    "$(without_tools "$tmp/nowhere")" "missing: git awk"
+has "and says what floor declares"      "$(without_tools "$tmp/nowhere")" "sh, git and awk"
+
 is "outside a repository it refuses"  "$(code_of "$tmp/nowhere" FOUNDRY_WHO=a@b)" "3"
 has "and says a repository is what it wants" \
     "$(joined "$tmp/nowhere" FOUNDRY_WHO=a@b)" "no repository here"
@@ -74,8 +90,18 @@ has "and says what a run made there would record" "$(joined "$tmp/one")" "record
 untouched=$(git -C "$tmp/one" status --porcelain 2>/dev/null)
 history=$(git -C "$tmp/one" rev-list --count --all 2>/dev/null)
 
-is "with both, it joins"              "$(code_of "$tmp/one" FOUNDRY_WHO=a@b)" "0"
-has "and says so once"                "$(joined "$tmp/one" FOUNDRY_WHO=a@b)" "joined."
+# **Superseded 8 September, by #573.** With the host's two supplied and the repository declaring
+# nothing, this asserted `0` and `joined.` Both belong to the tree's half, which is checked further
+# down once it carries something. What is proved here is the host half, and that it writes nothing.
+is "with both, the host half is satisfied" "$(code_of "$tmp/one" FOUNDRY_WHO=a@b)" "4"
+has   "and says a run here would stop"     "$(joined "$tmp/one" FOUNDRY_WHO=a@b)" "not joined."
+
+# A refusal naming no way out is worse than the report it replaced, so each absent one is named
+# with its file and what stops without it. Only the judges line carries a command; the other two
+# are written by hand, and saying which file is the whole remedy there.
+has   "and names the gates file"           "$(joined "$tmp/one" FOUNDRY_WHO=a@b)" ".foundry/gates      no gate"
+has   "and names the practice file"        "$(joined "$tmp/one" FOUNDRY_WHO=a@b)" ".foundry/practice   no grant"
+has   "and names the judged file"          "$(joined "$tmp/one" FOUNDRY_WHO=a@b)" ".foundry/judged     no judge"
 
 is "and it writes nothing to the repository" \
    "$(git -C "$tmp/one" status --porcelain 2>/dev/null)" "$untouched"
@@ -165,7 +191,10 @@ has "and the count says it was checked"    "$current" "shipped here, checked aga
 
 # --- the repository's half ---
 
-is "a repository carrying neither file joins anyway" "$(code_of "$tmp/one" FOUNDRY_WHO=a@b)" "0"
+# **Superseded 8 September, by #573.** This asserted `0` for a repository carrying neither file, and
+# that is the contract being replaced: a script cannot branch on an answer that never changes. Three
+# of the six absences stop a run, so a tree missing one now refuses and does not say `joined.`
+is "a repository declaring none of the three is refused" "$(code_of "$tmp/one" FOUNDRY_WHO=a@b)" "4"
 has "and says it carries no grants"   "$said" "grants  none"
 has "and says it carries no gates"    "$said" "gates   none"
 
@@ -195,6 +224,11 @@ printf 'a-person  is this ready
 declared=$(joined "$tmp/one" FOUNDRY_WHO=a@b)
 has  "judges are counted"             "$declared" "judges  1"
 lacks "and a repository with one is not told how" "$declared" "no judge is declared"
+
+# The other half, and it has to be measured rather than assumed. A refusal that never lifts is a
+# refusal nobody can act on, so the tree that declares all three is the one this proves.
+is    "a repository declaring all three joins"     "$(code_of "$tmp/one" FOUNDRY_WHO=a@b)" "0"
+has   "and says so"                                "$declared" "joined."
 rm -f "$tmp/one/.foundry/judged"
 
 git -C "$tmp/one" remote add origin https://github.com/acme/thing.git

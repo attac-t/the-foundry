@@ -304,13 +304,28 @@ runs_in_flight() {
 
 # The furthest thing a run's own files say about it, read downward so the
 # first that holds wins. A position, never a verdict: waiting needs the source.
+#
+# **The paths are written out here, and only here.** Each helper is one `printf`, and a command
+# substitution costs about 19 ms on the shell Windows gives you. Five a run against 52 runs is five
+# seconds of the twelve `runs` took. Linux charges one millisecond and would not notice.
+#
+# The helpers stay, because every other caller reads better for them. This is the one place the
+# count matters, and it says so rather than leaving a reader to wonder why it differs.
+#
+# **The cost is a second copy of five paths**, and `model.sh` catches five of them. Its ladder walks
+# a real run rung by rung — `charter derive`, `targets add`, `open`, `gates` — so a helper that moved
+# would answer the wrong rung and the suite goes red.
+#
+# **`delivered` is the exception, and it is the one to watch.** That rung writes the file by hand at
+# a literal path, because nothing but a source writes a delivery. So `delivery_file` could move and
+# both this line and that test would keep agreeing with each other while every other caller broke.
 how_far() {
-    [ -s "$(delivery_file "$1")" ] && { printf 'delivered'; return; }
-    [ -s "$(evidence_file "$1")" ] && { printf 'graded';    return; }
+    [ -s "$1/delivery" ] && { printf 'delivered'; return; }
+    [ -s "$1/evidence" ] && { printf 'graded';    return; }
 
-    [ -n "$(ls "$(unit_workspace "$1")" 2>/dev/null)" ]      && { printf 'open';     return; }
-    [ -n "$(selected_targets "$(unit_targets_file "$1")")" ] && { printf 'selected'; return; }
-    [ -s "$(charter_file "$1")" ]                            && { printf 'charted';  return; }
+    [ -n "$(ls "$1/units/01/workspace" 2>/dev/null)" ]  && { printf 'open';     return; }
+    [ -n "$(selected_targets "$1/units/01/targets")" ]  && { printf 'selected'; return; }
+    [ -s "$1/charter" ]                                 && { printf 'charted';  return; }
 
     printf 'new'
 }

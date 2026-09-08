@@ -18,9 +18,17 @@
 # type is a command language, and the first person who met one answered and went unheard.
 #
 # Usage: sh source-github.sh read    <issue>
+#        sh source-github.sh kind    <issue>
+#        sh source-github.sh where
+#        sh source-github.sh open
+#        sh source-github.sh claim   <issue> <host>
+#        sh source-github.sh held    <issue>
+#        sh source-github.sh release <issue> <host>
 #        sh source-github.sh publish <issue> <run> <branch> <title> [word] [brief]
 #        sh source-github.sh ask     <issue> <question> <text>
 #        sh source-github.sh receive <issue> <question>
+#        sh source-github.sh state   <run>
+#        sh source-github.sh land    <run>
 #
 # Exit: 0 answered · 1 nothing there · 2 asked for something this does not do · 3 GitHub refused
 #       4 this run already sent something else under that name
