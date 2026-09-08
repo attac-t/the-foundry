@@ -7,13 +7,19 @@ dated, and says who. A merge never accepts a goal. It lands a file.
 
 | Goal | State | Accepted |
 |---|---|---|
+| [Foundry uses Foundry](goals/foundry-uses-foundry.md) | in force, one week | 7 September 2026, [recorded](decisions/foundry-uses-foundry-is-the-week-goal.md) |
 | [Foundry runs itself](goals/foundry-runs-itself.md) | partly | 27 August 2026, [recorded](decisions/foundry-runs-itself-is-critical.md) |
 | [A person can run it without being told how](goals/a-person-can-run-it.md) | proposed | Not yet |
 | [A repository states its bar](goals/a-repository-states-its-bar.md) | partly | Not yet |
 | [What is believed stays in touch with what is true](goals/beliefs-meet-reality.md) | proposed | Not yet |
 
-**One is accepted, and three are not.** A run may work on the first. On the others it should say
-they are unaccepted rather than pick one. That is the honest answer, not a gap to fill.
+**Two are accepted, and three are not.** A run may work on the accepted two. On the others it should
+say they are unaccepted rather than pick one. That is the honest answer, not a gap to fill.
+
+**The first is dated and runs for one week.** It is not a standing goal.
+
+It says plainly that a gap stopping Foundry from using Foundry comes first. Before the work that
+found it.
 
 ## Where an acceptance is written
 
