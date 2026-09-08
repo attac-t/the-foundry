@@ -3683,6 +3683,16 @@ exactly_one_host_takes_an_item() {
   is "and one it narrows to nothing takes it" \
      "$(FOUNDRY_CLAIM_TTL=0 code_of floor "$tmp/clm" claim 71)" "0"
 
+  # The suite asked whether the holder may let go and never whether anybody else may. The GitHub
+  # adapter took the holder and ignored it for a month behind that gap.
+  printf '%s	OtherHost	%s
+' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$(date +%s)" > "$src/claims/71/held"
+  is "a host cannot let go of a claim it never held"      "$(code_of floor "$tmp/clm" release 71)" "30"
+  has "and the claim is still there" "$(cat "$src/claims/71/held")" "OtherHost"
+
+  printf '%s	%s	%s
+' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$(uname -n)" "$(date +%s)"       > "$src/claims/71/held"
+
   is "the holder may let go"     "$(code_of floor "$tmp/clm" release 71)" "0"
   is "and nobody holds it after" "$(code_of floor "$tmp/clm" release 71)" "30"
 }

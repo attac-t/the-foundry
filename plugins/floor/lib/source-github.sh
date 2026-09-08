@@ -499,7 +499,17 @@ read_claim() {
     printf '%s\t%s\t%s\n' "${said%%	*}" "${said##*claimed by }" "$(printf '%s' "$said" | cut -f2)"
 }
 
+# Only the holder may let go. `take_claim` has always asked `holder_at`; this never did, so any
+# host could delete any claim and take the item the moment after.
+#
+# Reading the tip and then deleting it is two steps, and a renewal between them is deleted on a
+# reading that was true. `git push --delete` takes no expected value, so the window stays.
 drop_claim() {
+    at=$(claim_tip "$1")
+    [ -n "$at" ] || return 0
+
+    holder_at "$at" "$2" || return 4
+
     git push origin --delete "refs/heads/$(claim_ref "$1")" >/dev/null 2>&1 || return 4
 }
 
