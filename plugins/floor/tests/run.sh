@@ -2131,7 +2131,7 @@ records_unreadable() {
 # The ladder is read downward and the first rung that holds wins. Dropping the top one makes a
 # delivered run read as a graded one — work that is finished, offered as work to resume.
 wreck_runner "a delivered run reported as still graded is caught" \
-  ladder 's#\[ -s "$(delivery_file "$1")" \] && { printf .delivered.; return; }#:#'
+  ladder 's#\[ -s "$1/delivery" \] && { printf .delivered.; return; }#:#'
 # guard matters for its own reason: with several slots only the last one's status survives a loop,
 # so the first failure has to stick.
 audit_the_unjoinable_slot() {
