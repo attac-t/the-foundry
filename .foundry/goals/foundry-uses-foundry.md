@@ -13,7 +13,8 @@ Done when:
 - [ ] A second machine becomes a host from a Docker image, and grades what this one grades.
 - [ ] The plugins are pulled after every bump, so the session runs what the tree says.
 
-State: in force from 7 September 2026, for one week.
+State: in force from 7 September 2026, for one week. **That is 14 September, derived — the owner
+said *the next week* and named no last day.**
 
 | Condition | Where it stands |
 |---|---|

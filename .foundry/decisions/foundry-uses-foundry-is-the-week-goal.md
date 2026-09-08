@@ -53,5 +53,9 @@ enough. That is a call each time, never a rule.
 It does not say who decides that a thing is such a gap, and a run calling its own work a blocker is
 the obvious way to abuse it.
 
-**What happens on the eighth day.** One week is stated and no end is written down. Whether this
-lapses, renews or becomes standing is unsettled.
+**What happens on the eighth day.** The last day is 14 September 2026, and that is arithmetic
+rather than a decision — the owner said *the next week* and named no date.
+
+**Whether this lapses, renews or becomes standing is unsettled**, and only the owner settles it. A
+goal that quietly outlives its week is the same fault as a box nobody ticks: it stops being checked
+and nobody notices.
