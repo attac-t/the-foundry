@@ -16,6 +16,11 @@
 #     answers/<item>/<question>      what a human answered
 #
 # Usage: sh source-dir.sh read    <item>
+#        sh source-dir.sh kind    <item>
+#        sh source-dir.sh open
+#        sh source-dir.sh claim   <item> <host>
+#        sh source-dir.sh held    <item>
+#        sh source-dir.sh release <item> <host>
 #        sh source-dir.sh publish <item> <run> <branch> <title> [word] [brief]
 #        sh source-dir.sh ask     <item> <question> <text>
 #        sh source-dir.sh receive <item> <question>
