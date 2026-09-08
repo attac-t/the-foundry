@@ -116,6 +116,18 @@ out_of_clock() {
   moot "$1 — killed at ${deadline}s, and a clean pass took ${clean}s"
 }
 
+# The raise above dies with the break that made it, and only a backgrounded break has a verdict file.
+# So the parent matches the sentence `out_of_clock` writes, which `report_verdict` already reads.
+#
+# **No `${deadline}` in the pattern.** A line written under another deadline is still a clock kill, so
+# the number cannot make the count right — and `:1078` sets `deadline` to 2 and restores it by hand,
+# which would make a mutable global a correctness key for nothing.
+the_clock_took_it() {
+  case "$1" in *" — killed at "*"s, and a clean pass took "*) return 0 ;; esac
+
+  return 1
+}
+
 #
 # The line that ends a suite is its last line.
 #
@@ -1264,6 +1276,11 @@ break_verdict() {
 # be read here — and `moot`'s raise died in that break's own subshell. A serial break writes no
 # file and never reaches this line. **Each mutant is counted once, and never in both places.**
 #
+# **The clock is raised on the same terms, and was missing for longer.** `out_of_clock` raises it
+# beside a `moot` that dies the same way, so `killed_by_the_clock` read zero for every backgrounded
+# break — and `say_when_the_clock_took_them` returns at zero, so the whole report went unprinted.
+# A reader saw *N experiments never ran* and was never told the deadline took them.
+#
 report_verdict() {
   local verdict killer=''
   verdict=$(cat "$tmp/verdict/$1")
@@ -1273,7 +1290,9 @@ report_verdict() {
                    remember_the_killer model "$killer" "${verdict#  ok    }"
                    verdict="$verdict — killed by [$killer]" ;;
       '  MOOT  '*) [ "$failed" -eq 0 ] && failed=3
-                   never_ran=$((never_ran + 1)) ;;
+                   never_ran=$((never_ran + 1))
+                   the_clock_took_it "$verdict" \
+                     && killed_by_the_clock=$((killed_by_the_clock + 1)) ;;
       *)           failed=1 ;;
   esac
 
@@ -1290,7 +1309,6 @@ report_verdict() {
 a_moot_read_from_a_file_is_counted() {
   local was=$never_ran keep_failed=$failed
 
-  mkdir -p "$tmp/verdict"
   printf '  MOOT  a break that reported nothing\n' > "$tmp/verdict/selftest"
   report_verdict selftest >/dev/null
 
@@ -1303,6 +1321,29 @@ a_moot_read_from_a_file_is_counted() {
   failed=$keep_failed
 }
 a_moot_read_from_a_file_is_counted
+
+# The same proof for the clock, which is a different finding from a mutant that ran and missed.
+# Without it `say_when_the_clock_took_them` returns at zero and the whole report never prints.
+#
+# **The fixture comes from `out_of_clock`, never from a sentence typed here.** A third copy would
+# agree with the pattern while both disagreed with the producer, so breaking `out_of_clock` on
+# purpose would leave this green — a gate certifying its own example.
+a_clock_kill_read_from_a_file_is_counted() {
+  local was=$killed_by_the_clock keep_ran=$never_ran keep_failed=$failed
+
+  ( unanswered=0; out_of_clock "a break the clock took" ) > "$tmp/verdict/selftest"
+  report_verdict selftest >/dev/null
+
+  [ "$killed_by_the_clock" -eq $((was + 1)) ] \
+    && printf '  ok    a clock kill read from a verdict file is counted\n' \
+    || bad "a clock kill read from a verdict file was not counted"
+
+  rm -f "$tmp/verdict/selftest"
+  killed_by_the_clock=$was
+  never_ran=$keep_ran
+  failed=$keep_failed
+}
+a_clock_kill_read_from_a_file_is_counted
 
 # Hold the pool to its size. `wait -n` would say the moment a worker came free and is bash 4.3 —
 # macOS ships 3.2 — so the running count is polled. Waiting in batches instead would idle the whole
@@ -3049,8 +3090,10 @@ say_when_two_breaks_share_a_check
 say_when_the_clock_took_them() {
   [ "$killed_by_the_clock" -eq 0 ] && return 0
 
-  printf 'audit — %s of %s were killed at %ss, and never answered.\n' \
-         "$killed_by_the_clock" "$queued" "$deadline"
+  # Not a share of `queued`. A serial break raises this in the parent and writes no verdict file,
+  # so the numerator counts two populations and `queued` holds only one of them.
+  printf 'audit — %s were killed at %ss, and never answered.\n' \
+         "$killed_by_the_clock" "$deadline"
   printf 'audit — that is five times a clean pass, and a clean pass took %ss.\n' "$clean"
   printf 'audit — a clean pass runs alone. A mutant runs under %s of them.\n' "$workers"
 }
