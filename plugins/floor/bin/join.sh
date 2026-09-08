@@ -12,7 +12,7 @@
 # Usage: sh join.sh
 #
 # Exit: 0 joined, 1 the host must supply something, 2 asked for something this does not do,
-#       3 this is not a repository that can be joined.
+#       3 this is not a repository that can be joined, 4 the repository declares nothing a run needs.
 
 set -u
 
@@ -29,6 +29,8 @@ main() {
     report_what_the_repository_carries
     report_skills_the_rules_name
     report_plugins_this_host_loaded
+
+    refuse_without_what_a_run_needs
     say "joined."
 }
 
@@ -173,6 +175,43 @@ count_judges() {
 
     counted=$(grep -cv '^[[:space:]]*\(#\|$\|reach[[:space:]]\)' "$1" 2>/dev/null)
     printf '%s' "${counted:-0}"
+}
+
+#
+# Three of the six absences stop a run, and `run.sh` says so in its own codes: no gates and
+# `authorise` exits 8, no judges and `judged` exits 8, no grants and `deliver` exits 18.
+#
+# **The other three are reports and must stay reports.** No path in `run.sh` reads `.claude/rules`
+# or `plugins/`, and `source` names an adapter rather than an absence.
+#
+# `run.sh:4762` carries this repository's account of the same fault one stage later — *silence read
+# as success. Derive on a repository declaring no gates wrote an empty charter and said nothing.*
+# Found and fixed there, and it stood here until a script had to branch on the answer.
+refuse_without_what_a_run_needs() {
+    root=$(git rev-parse --show-toplevel)
+
+    declares_all_three "$root" && return 0
+
+    say ""
+    say "not joined. A run here would stop at the first thing it needs."
+    exit 4
+}
+
+# Any one of the three is enough to stop a run, so any one absent is enough to say so.
+declares_all_three() {
+    carries_records "$1/.foundry/gates"    || return 1
+    carries_records "$1/.foundry/practice" || return 1
+    declares_no_judge "$1/.foundry/judged" && return 1
+
+    return 0
+}
+
+# `count_lines` answers `none` for a file that is not there and `0` for one that is and names
+# nothing. Both mean the same to a run, and neither is a record.
+carries_records() {
+    case "$(count_lines "$1")" in none|0) return 1 ;; esac
+
+    return 0
 }
 
 # `count_judges` answers `none` for a file that is not there and `0` for one that is and names
