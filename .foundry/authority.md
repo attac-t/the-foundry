@@ -64,6 +64,7 @@ That is the rule. [`status.md`](status.md) says the pinned read is not yet a mec
 not claim that until an identity it can check makes the claim real.
 
 [`status.md`](status.md) names that gap and who owns it.
+
 ---
 
 Accepted: Not yet. **This file carries out a doctrine nobody has accepted**, and neither page said
