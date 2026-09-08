@@ -20,15 +20,19 @@ branches touching different plugins conflicted anyway and work was stacked for p
 **A version in `plugin.json` changes nothing in the session that wrote it.** The installed copy
 comes from the marketplace cache, and the cache does not move on its own.
 
-Two commands, and only a person can run them:
+**An agent can move it.** `-y` exists for exactly this caller — the help says it is required when
+stdin or stdout is not a TTY.
 
-```
-/plugin marketplace update the-foundry
-/reload-plugins
+```sh
+claude plugin update kernel@the-foundry -y
 ```
 
-**Ask for them after a bump.** An agent that bumps and carries on holds the new rule from memory
-while the session runs the old one.
+**What needs a person is the restart, not the pull.** The command says so: *restart required to
+apply*. A session keeps the skills it loaded, and no pull reaches them.
+
+**So ask for the restart, and say why.** An agent that bumps, pulls and carries on has the new
+version on disk and the old one in memory. That looks finished, which is what makes it worth
+saying.
 
 That is the same failure as a rule naming a skill nobody can invoke.
 
