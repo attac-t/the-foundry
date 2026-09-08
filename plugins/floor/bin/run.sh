@@ -2484,6 +2484,9 @@ write_brief() {
 # What the judge appends is what only it saw: `adapter`, `verdict`, `report`, `time`, and whatever
 # else it can vouch for. Nothing here writes one of those, because floor did not watch it happen.
 #
+# **What none of it shows is that the judge read these fields.** An adapter repeating no key of the
+# runner's can still append a verdict it formed elsewhere, and the file will agree with itself.
+#
 write_receipt_context() {
     printf '# written by the runner, before the judge was asked. The judge appends what it saw.\n'
     printf 'run %s\nclause %s\ncandidate %s\nrole %s\nbrief %s\nround %s\n' \
