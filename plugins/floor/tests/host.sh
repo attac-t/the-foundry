@@ -38,7 +38,23 @@ bare() {
   cd - >/dev/null || return 1
 }
 
+#
+# The dependency guard, which had no test and could not have passed one where it sat. It ran second,
+# and the guard above it calls `git rev-parse` — so a host with no `git` was told there is no
+# repository here, while standing in one. It runs first now, and this drives it.
+#
+# `PATH` is emptied rather than stripped of two names. A directory of symlinks is a different thing
+# on each host this suite runs on; an absent `PATH` is the same everywhere. So `sh` is resolved to a
+# full path first, because an emptied `PATH` cannot find the shell either.
+shell=$(command -v sh)
+blind_of()      { ( cd "$1" && env PATH=/nonexistent FOUNDRY_WHO=a@b "$shell" "$join" >/dev/null 2>&1; echo $?; ); }
+without_tools() { ( cd "$1" && env PATH=/nonexistent FOUNDRY_WHO=a@b "$shell" "$join" 2>&1; ); }
+
 mkdir -p "$tmp/nowhere"
+is  "with no git and no awk it refuses" "$(blind_of "$tmp/nowhere")" "1"
+has "and names both"                    "$(without_tools "$tmp/nowhere")" "missing: git awk"
+has "and says what floor declares"      "$(without_tools "$tmp/nowhere")" "sh, git and awk"
+
 is "outside a repository it refuses"  "$(code_of "$tmp/nowhere" FOUNDRY_WHO=a@b)" "3"
 has "and says a repository is what it wants" \
     "$(joined "$tmp/nowhere" FOUNDRY_WHO=a@b)" "no repository here"

@@ -19,8 +19,8 @@ set -u
 main() {
     [ "$#" -eq 0 ] || { usage; exit 2; }
 
-    refuse_without_a_repository
     refuse_without_dependencies
+    refuse_without_a_repository
     refuse_without_an_author
     refuse_without_an_authority
 
@@ -47,6 +47,9 @@ usage() {
 # host that is missing any one of them can not run floor. Said by name, because
 # *it did not work* sends a reader to the repository and not their machines.
 #
+# **First, because the guard below needs `git` to answer at all.** With `git` off the PATH,
+# `refuse_without_a_repository` used to fire instead and say there is no repository here — to a
+# reader standing in one. Measured: exit 3 for a missing `git`, where this says exit 1 and names it.
 refuse_without_dependencies() {
     missing=''
 
