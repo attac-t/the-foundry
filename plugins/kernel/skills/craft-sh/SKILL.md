@@ -50,6 +50,8 @@ Seven lines, the whole story. The test: **can a stranger describe the script aft
    true or stops. The prefix tells the reader which.
 5. **Poll the oracle, not the report.** Tools print `ERROR` and succeed. Read the port, the file, a
    separate check.
+   **And a pipe answers for its last stage.** `cmd | head` reports `head`, so `$?` is not the
+   command's. The pipe you added to shorten the output is the one that hides the answer.
 6. **Guard every flag value.** `--name` with no value leaves `shift 2` short and `$#` unchanged, so
    the loop never ends.
 7. **Decide `set -e` in writing.** It is on, or the header says why not. Silence means you never
