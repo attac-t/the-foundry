@@ -2868,6 +2868,20 @@ wreck_join "a host with no authority waved through is caught" \
 wreck_join "a repository that is not there waved through is caught" \
   norepo 's#^    refuse_without_a_repository$#    :#'
 
+#
+# The other two guards, and neither had a break until 8 September. `nodeps` had no test either, and
+# could not have passed one where it sat — it ran behind a guard that calls `git rev-parse`, so a
+# host with no `git` was told there is no repository here.
+#
+# `nothingdeclared` is the newer half: a repository declaring no gates, no judges and no grants is a
+# repository where a run stops at the first thing it needs, and saying `joined.` to that is the
+# silence this whole file exists to refuse.
+wreck_join "a host missing git or awk waved through is caught" \
+  nodeps 's#^    refuse_without_dependencies$#    :#'
+
+wreck_join "a repository declaring nothing a run needs waved through is caught" \
+  nothingdeclared 's#^    refuse_without_what_a_run_needs$#    :#'
+
 # The silent one this command exists for. Saying nothing about the source is what it replaced.
 wreck_join "a source that is chosen without a word is caught" \
   mutesource 's#^    report_work_source$#    say "who     $FOUNDRY_WHO"#'
