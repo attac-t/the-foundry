@@ -108,6 +108,9 @@ assume — so the line below installs both. Neither needs the other to load.
 /plugin install laravel-playbook@the-foundry
 ```
 
+**A worker has no slash commands.** The same two are `claude plugin marketplace add attac-t/the-foundry` and
+`claude plugin install laravel-playbook@the-foundry`.
+
 ---
 
 ## License

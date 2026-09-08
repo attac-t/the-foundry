@@ -19,17 +19,26 @@ seen.
 they were done, one of them saying DONE in its prose while its list stayed silent. A reader scans
 boxes, not paragraphs, and an unannounced finish reads as work still open.
 
-## A box that cannot be met
+## A box that cannot be met yet
 
-Say so on the issue, and say which of two things it is:
+Say so on the issue, and say which of four things it is:
 
 | | |
 |---|---|
 | unmeetable here | it wants something this stage does not have — move it to the issue that will |
 | wrong when written | the requirement itself was mistaken — strike it, and say why |
 | ungateable | the outcome is reachable and no check can hold it — say which half is which |
+| **unreached** | the check is right and nothing has happened for it to read — **leave it open** |
 
-None of the three is a tick. A box removed silently and a box ticked wrongly read the same six months later.
+None of the four is a tick. A box removed silently and a box ticked wrongly read the same six months later.
+
+**Unreached is the one that looks like the others and behaves opposite.** The first three end a box.
+This one keeps it, because the day the condition arrives the check costs nothing.
+
+*Completed and superseded goals stay discoverable* cannot be checked while no goal has completed.
+**Four goals: two partly, two proposed.** Nothing finished, nothing replaced, so a working mechanism
+and an absent one read alike. **Ticking it would claim a check nobody ran. Moving it would give away
+a box that is simply early.**
 
 **Ungateable is the one that gets miscalled.** #305 wants a markdown table readable as raw text.
 Pad the columns and it is. **No gate can prove it** — `length` counts bytes in one locale and

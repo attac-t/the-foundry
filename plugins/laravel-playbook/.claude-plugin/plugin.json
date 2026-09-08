@@ -1,6 +1,6 @@
 {
   "name": "laravel-playbook",
-  "version": "2.3.3",
+  "version": "2.3.4",
   "description": "The package author's playbook. Ecosystem-wide patterns for crafting, shipping, and sustaining pinnacle Laravel packages.",
   "author": {
     "name": "Christian Attard",

@@ -122,6 +122,10 @@ the other: a record's filename is a slot, a sequence over the directory, and the
 lives in its `Judged:` stamp. So one review's round one can sit in slot 017, and did — reading the
 slot as the round refused every round of every chain written here.
 
+**So `--verdicts` names a chain. It does not produce one.** The convener passes the same directory
+every round, and nothing but the convener knows which one that is. **Panel cannot ask** — it would
+have to know which chain belongs to a review, and only whoever owns the runs does.
+
 ---
 
 ## Looking back
@@ -144,6 +148,9 @@ Standalone.
 /plugin marketplace add attac-t/the-foundry
 /plugin install panel@the-foundry
 ```
+
+**A worker has no slash commands.** The same two are `claude plugin marketplace add attac-t/the-foundry` and
+`claude plugin install panel@the-foundry`.
 
 ---
 
