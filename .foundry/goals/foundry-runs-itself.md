@@ -15,7 +15,7 @@ State: partly, and less than it looked on 28 August 2026.
 |---|---|
 | the supported workflow, end to end | the requirement was declared, judged and the verdict consumed. **The merge was made by hand.** No run's delivery record names `f21e2b7`, so `deliver` was never the thing that landed it |
 | a rejection blocks completion and delivery | proved in a fixture, at both `complete` and `deliver`. **Never proved on a real one.** The judge asked for a revision and the producer agreed — that is a producer being reasonable, not Floor refusing |
-| a separate producer | unmet. One model has judged, and none has produced |
+| a separate producer | **half.** One produced on 7 September — [#562](https://github.com/attac-t/the-foundry/pull/562), its own worktree cut from `main`, neither checkout touching the other. **It was never judged and the thirteen gates never ran on it**, and its own body says so |
 
 Five boundaries sit outside these three, and none of them is a condition here. The graded, delivered
 and merged commit are not shown to be one lineage. The suite that ran is not shown to be the suite
