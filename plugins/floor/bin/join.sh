@@ -134,7 +134,7 @@ report_what_the_repository_carries() {
 
     say "grants  $(count_lines "$root/.foundry/practice") in .foundry/practice"
     say "gates   $(count_lines "$root/.foundry/gates") in .foundry/gates"
-    say "judges  $(count_lines "$root/.foundry/judged") in .foundry/judged"
+    say "judges  $(count_judges "$root/.foundry/judged") in .foundry/judged"
 
     point_at_the_command_that_declares_one "$root"
 }
@@ -147,7 +147,7 @@ report_what_the_repository_carries() {
 # file writes nothing.
 #
 point_at_the_command_that_declares_one() {
-    [ "$(count_lines "$1/.foundry/judged")" = "none" ] || return 0
+    declares_no_judge "$1/.foundry/judged" || return 0
 
     say ""
     say "  no judge is declared here. One is declared by, from this repository:"
@@ -155,10 +155,32 @@ point_at_the_command_that_declares_one() {
 }
 
 # Comment and blank lines are not entries, and a file that is not there holds none.
+#
+# **The count is read, never the exit code.** `grep -c` prints zero and exits 1 when nothing matches,
+# so a `||` fallback here printed a second zero and the report said `gates 0` on one line and
+# `0 in .foundry/gates` on the next. `[ -r ]` above already answers the case a fallback was for.
 count_lines() {
     [ -r "$1" ] || { printf 'none'; return; }
 
-    printf '%s' "$(grep -cv '^[[:space:]]*\(#\|$\)' "$1" 2>/dev/null || printf '0')"
+    counted=$(grep -cv '^[[:space:]]*\(#\|$\)' "$1" 2>/dev/null)
+    printf '%s' "${counted:-0}"
+}
+
+# A `reach` line says how a judge is asked, not that one exists. Counting it said two judges here
+# where one is declared, and a file holding only a reach would have said one and declared none.
+count_judges() {
+    [ -r "$1" ] || { printf 'none'; return; }
+
+    counted=$(grep -cv '^[[:space:]]*\(#\|$\|reach[[:space:]]\)' "$1" 2>/dev/null)
+    printf '%s' "${counted:-0}"
+}
+
+# `count_judges` answers `none` for a file that is not there and `0` for one that is and names
+# nobody. A reader meets the same absence twice, so the predicate reads it once for both.
+declares_no_judge() {
+    case "$(count_judges "$1")" in none|0) return 0 ;; esac
+
+    return 1
 }
 
 
