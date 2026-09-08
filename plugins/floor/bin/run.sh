@@ -270,7 +270,8 @@ list_runs() {
         # The glob ends every path with a slash. `basename` strips one and `${x##*/}` does not,
         # so reading the id without stripping it first returned nothing at all.
         held=${dir%/}
-        printf '%s\t%s\n' "$(how_far "$held")" "${held##*/}"
+        how_far "$held"
+        printf '%s\t%s\n' "$stage" "${held##*/}"
     done
 }
 
@@ -319,15 +320,17 @@ runs_in_flight() {
 # **`delivered` is the exception, and it is the one to watch.** That rung writes the file by hand at
 # a literal path, because nothing but a source writes a delivery. So `delivery_file` could move and
 # both this line and that test would keep agreeing with each other while every other caller broke.
+# Sets `stage` rather than printing it. **A caller capturing a word costs a fork**, and this runs
+# once per run — `settled` on a home of fifty paid fifty, for six string tests.
 how_far() {
-    [ -s "$1/delivery" ] && { printf 'delivered'; return; }
-    [ -s "$1/evidence" ] && { printf 'graded';    return; }
+    [ -s "$1/delivery" ] && { stage=delivered; return; }
+    [ -s "$1/evidence" ] && { stage=graded;    return; }
 
-    [ -n "$(ls "$1/units/01/workspace" 2>/dev/null)" ]  && { printf 'open';     return; }
-    [ -n "$(selected_targets "$1/units/01/targets")" ]  && { printf 'selected'; return; }
-    [ -s "$1/charter" ]                                 && { printf 'charted';  return; }
+    [ -n "$(ls "$1/units/01/workspace" 2>/dev/null)" ]  && { stage=open;     return; }
+    [ -n "$(selected_targets "$1/units/01/targets")" ]  && { stage=selected; return; }
+    [ -s "$1/charter" ]                                 && { stage=charted;  return; }
 
-    printf 'new'
+    stage=new
 }
 
 make_run() {
