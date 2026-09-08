@@ -111,7 +111,13 @@ gate() {
 
     [ "$mode" = list ] && { printf '%s\n' "$name"; return; }
 
-    said=$("$@" 2>&1) && { printf '  PASS  %s\n' "$name"; return; }
+    # A gate driven through a stand-in proves the detector and not the thing. Two of the thirteen
+    # are that, and `audit` is already the last word of the command — so the run can say it without
+    # a second list to keep in step. **A reader of the output learned it nowhere else.**
+    rehearsed=''
+    [ "${*}" != "${*%audit}" ] && rehearsed=" — its own audit, not a live read"
+
+    said=$("$@" 2>&1) && { printf '  PASS  %s%s\n' "$name" "$rehearsed"; return; }
 
     code=$?
 
