@@ -25,9 +25,16 @@ costs the run.
 
 | | |
 |---|---|
-| a brief | the operator's `briefs/` directory. The standing todo names which one an item uses |
+| the standing todo | the operator's own directory, beside `briefs/`. **It leads with the goal in force** |
+| a brief | `briefs/` in that same directory. The standing todo names which one an item uses |
 | an item | `run.sh source read <n>`, which reads it live |
 | a charter | `run.sh charter`, pinned at the run's base |
 
 **A run already re-reads its own charter.** Nothing re-reads a brief, because nothing but a person
 knows one exists.
+
+**And no command prints where they are.** `run.sh home` answers with the directory a run writes
+to: its runs, its policy, its source. **The standing todo, the briefs and the charters sit in a second directory a person keeps.**
+Nothing joins the two.
+
+So a worker told to read the brief has to be told the path as well.
