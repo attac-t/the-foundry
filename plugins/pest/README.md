@@ -35,6 +35,9 @@ Standalone.
 /plugin install pest@the-foundry
 ```
 
+**A worker has no slash commands.** The same two are `claude plugin marketplace add attac-t/the-foundry` and
+`claude plugin install pest@the-foundry`.
+
 Pairs well with `kernel` for testing philosophy (`craft-test`) — optional, not required.
 
 ```

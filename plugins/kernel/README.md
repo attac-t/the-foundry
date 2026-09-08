@@ -234,6 +234,9 @@ The Craftsman voice: direct, opinionated, elegant. No hedging.
 /plugin install kernel@the-foundry
 ```
 
+**A worker has no slash commands.** The same two are `claude plugin marketplace add attac-t/the-foundry` and
+`claude plugin install kernel@the-foundry`.
+
 The kernel is stack-agnostic. For Laravel patterns, add:
 
 ```

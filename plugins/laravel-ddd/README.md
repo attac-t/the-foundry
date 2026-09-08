@@ -84,6 +84,9 @@ Standalone.
 /plugin install laravel-ddd@the-foundry
 ```
 
+**A worker has no slash commands.** The same two are `claude plugin marketplace add attac-t/the-foundry` and
+`claude plugin install laravel-ddd@the-foundry`.
+
 Pairs well with `kernel` for cognitive patterns — optional, not required.
 
 ```

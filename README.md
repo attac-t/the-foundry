@@ -28,15 +28,20 @@ The plugins ship it, and each one is useful alone.
 
 Requires: Claude Code CLI.
 
-```bash
-git clone https://github.com/attac-t/the-foundry.git ~/claude-plugins/the-foundry
 ```
-
-In Claude Code:
-
-```
-/plugin marketplace add ~/claude-plugins/the-foundry
+/plugin marketplace add attac-t/the-foundry
 /plugin install kernel@the-foundry
+```
+
+**A worker has no slash commands.** The same two are `claude plugin marketplace add attac-t/the-foundry`
+and `claude plugin install kernel@the-foundry`.
+
+**To work on Foundry rather than use it, clone it instead.** The checkout's own
+`.claude/settings.json` names the marketplace and enables kernel, signal and floor, so neither
+command above is needed.
+
+```bash
+git clone https://github.com/attac-t/the-foundry.git
 ```
 
 Add stack plugins as needed:
