@@ -73,9 +73,16 @@ drifted pin. Red too on an adapter this tree does not ship, and on a declaration
 pins the digest; `adopt.sh upgrade` moves the pin when floor ships new content and prints both. It
 writes a working tree change and nothing else — a person still reads the diff and commits.
 
-**Nothing on the onboarding path points at it.** `join.sh` reports a repository's grants and gates
-and says nothing about judges, so a stranger meets the command only in floor's README. No issue
-owns that.
+**`join.sh` reports judges now, and refuses without one.** It counts what `.foundry/judged` names.
+A file naming no judge stops the join, and prints the remedy. It also reports the skills the rules
+name, and the plugins this host loaded.
+
+**This page said the opposite until 8 September**, and said no issue owned it.
+[#573](https://github.com/attac-t/the-foundry/issues/573) owned it the whole time.
+[#593](https://github.com/attac-t/the-foundry/pull/593) closed ten of its eleven boxes. Floor 0.75.0.
+
+**The exit code is the half still open.** #573 wants a join a script can read. Six absences once
+exited 0, and three now refuse. The rest is that issue's.
 
 And nothing says what a capability expects a repository to own - #519. So nothing can stop work that
 crosses that line - #520. And nothing reports the gap without naming where it was found - #521.
