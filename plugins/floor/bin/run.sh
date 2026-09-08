@@ -312,9 +312,13 @@ runs_in_flight() {
 # The helpers stay, because every other caller reads better for them. This is the one place the
 # count matters, and it says so rather than leaving a reader to wonder why it differs.
 #
-# **The cost is a second copy of five paths.** Move `delivery` or `charter` in its helper and this
-# reads the old place, silently, and every run answers `new`. Nothing catches that but the mutants
-# below, which is why the trade is written down rather than assumed.
+# **The cost is a second copy of five paths**, and `model.sh` catches five of them. Its ladder walks
+# a real run rung by rung — `charter derive`, `targets add`, `open`, `gates` — so a helper that moved
+# would answer the wrong rung and the suite goes red.
+#
+# **`delivered` is the exception, and it is the one to watch.** That rung writes the file by hand at
+# a literal path, because nothing but a source writes a delivery. So `delivery_file` could move and
+# both this line and that test would keep agreeing with each other while every other caller broke.
 how_far() {
     [ -s "$1/delivery" ] && { printf 'delivered'; return; }
     [ -s "$1/evidence" ] && { printf 'graded';    return; }
