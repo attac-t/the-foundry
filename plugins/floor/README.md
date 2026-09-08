@@ -117,6 +117,19 @@ is no repository, or a declaration it cannot read.
 
 ## From a clone to a delivery
 
+**Four of these are required. The rest answer questions you may not have.**
+
+```bash
+sh bin/run.sh new "Ship the gift card flow"
+sh bin/run.sh charter derive                         # without one, `open` refuses
+sh bin/run.sh targets add https://github.com/acme/api.git main
+sh bin/run.sh open                                   # prints the workspace
+```
+
+**Then `evidence record` writes to the ledger, and not before.** It wants a workspace holding the
+target, so a run that skipped `open` is refused — and the refusal names `open`, not the step above
+it that is really missing.
+
 Eleven verbs, in this order, and a standing practice answers for two of them.
 
 ```bash
