@@ -49,4 +49,9 @@ charters, and a thing the size of a runtime earns more than one RFC first.
 Which model judges what. The owner said to alternate where merited, and that Opus is often
 enough. That is a call each time, never a rule.
 
-How any of it is built. That is engineering, and it proceeds under standing authority.
+**Which gap counts as one.** The goal says a gap that stops Foundry using Foundry jumps the queue.
+It does not say who decides that a thing is such a gap, and a run calling its own work a blocker is
+the obvious way to abuse it.
+
+**What happens on the eighth day.** One week is stated and no end is written down. Whether this
+lapses, renews or becomes standing is unsettled.
