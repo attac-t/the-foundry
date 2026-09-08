@@ -15,6 +15,25 @@
 # not, and it cost several days of believing this machine could not run them.
 # Asked, not assumed. `BASH_VERSION` is an environment variable and a parent can leave one behind,
 # so the pool's own question is the one worth putting: start a job, and see whether it is counted.
+#
+# The home a person keeps, not the ones this suite makes. A fixture that reaches it has escaped, and
+# 1,570 stray runs sat there from August before anyone counted them.
+#
+# Read at the top and again at the end, because a suite cannot prove it wrote nothing by looking
+# once. `ls` and `wc`, so it needs nothing this plugin does not already declare.
+#
+# **Guarded the way `run.sh:255` guards it.** `set -u` is on, so a bare `$HOME` aborts the whole
+# suite on a host that has none — a container, or a CI runner. Saying nothing there is right: no
+# home means nothing to protect, and both counts read zero.
+live_home() {
+    [ -n "${FOUNDRY_HOME:-}" ] && { printf '%s/runs' "$FOUNDRY_HOME"; return; }
+    [ -n "${HOME:-}" ]         && { printf '%s/.foundry/runs' "$HOME"; return; }
+}
+
+live_runs() { ls -1 "$(live_home)" 2>/dev/null | wc -l; }
+
+live_before=$(live_runs)
+
 sleep 1 &
 counted=$(jobs -pr 2>/dev/null | wc -l)
 wait
@@ -3112,6 +3131,19 @@ say_when_the_clock_took_them() {
   printf 'audit — a clean pass runs alone. A mutant runs under %s of them.\n' "$workers"
 }
 say_when_the_clock_took_them
+
+#
+# A count that grew means a fixture wrote where a person reads. **It says how many and where**, so
+# the next reader does not have to find the home themselves.
+#
+# It cannot tell a fixture's run from one a person opened in the same minute. That is the honest
+# limit, and on the gate it does not arise — the audit runs in a clone whose home nothing else uses.
+live_after=$(live_runs)
+[ "$live_after" -eq "$live_before" ] || {
+  printf 'FAIL  this suite left %s run(s) in the live home at [%s]\n' \
+         "$((live_after - live_before))" "$(live_home)"
+  failed=1
+}
 
 [ "$failed" -eq 0 ] && echo "ALL GREEN"
 [ "$failed" -eq 1 ] && echo "FAILURES ABOVE"
