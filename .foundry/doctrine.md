@@ -169,3 +169,9 @@ writes them for them, and never asks a repository to copy Foundry's documents.
 **The target has the last word on what its software means.** Foundry keeps the last word on whether
 it takes part: it will not invent authority, dress doubt as success, or make evidence say more than
 it shows. Where that is the clash, it stops and asks.
+
+---
+
+Accepted: Not yet. **Merging landed this page; it accepted nothing.**
+[`status.md`](status.md) has said so since the day it merged. This line says it here, where a reader
+of the doctrine meets it.
