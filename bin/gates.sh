@@ -105,17 +105,30 @@ keep() {
 #
 # Held, not discarded. `/dev/null` threw away the only account of a failure anyone had, and the
 # reader was left re-running a gate that takes a quarter of an hour to answer again.
+
+# A gate driven through a stand-in proves the detector and not the thing. Two of the thirteen are
+# that, and a reader of the output learned it nowhere else.
+#
+# The tell is not in the command. `audit` ends three of them, and `bytes` sweeps the tracked tree for
+# real — the word labelled a live gate a rehearsal, and a green run is what showed it.
+#
+# So the two are named here. One list to keep in step is cheaper than one wrong word.
+runs_against_a_stand_in() {
+    case $1 in
+        comments|codex) return 0 ;;
+    esac
+
+    return 1
+}
+
 gate() {
     name=$1
     shift
 
     [ "$mode" = list ] && { printf '%s\n' "$name"; return; }
 
-    # A gate driven through a stand-in proves the detector and not the thing. Two of the thirteen
-    # are that, and `audit` is already the last word of the command — so the run can say it without
-    # a second list to keep in step. **A reader of the output learned it nowhere else.**
     rehearsed=''
-    [ "${*}" != "${*%audit}" ] && rehearsed=" — its own audit, not a live read"
+    runs_against_a_stand_in "$name" && rehearsed=" — its own audit, not a live read"
 
     said=$("$@" 2>&1) && { printf '  PASS  %s%s\n' "$name" "$rehearsed"; return; }
 
