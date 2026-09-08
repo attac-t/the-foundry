@@ -145,6 +145,9 @@ Standalone.
 /plugin install panel@the-foundry
 ```
 
+**A worker has no slash commands.** The same two are `claude plugin marketplace add attac-t/the-foundry` and
+`claude plugin install panel@the-foundry`.
+
 ---
 
 ## Use

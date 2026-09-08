@@ -148,6 +148,9 @@ Needs: Claude Code CLI, `sh`, `awk`. No Python, Node or `jq`.
 /plugin install signal@the-foundry
 ```
 
+**A worker has no slash commands.** The same two are `claude plugin marketplace add attac-t/the-foundry` and
+`claude plugin install signal@the-foundry`.
+
 It works on the next prompt. There is no style to switch on.
 
 If it cannot run, it says so at the top of the next session. A missing `awk` counts, and so does a

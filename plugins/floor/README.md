@@ -1934,6 +1934,9 @@ Needs: Claude Code CLI, `sh`, `awk`, `git`. No Python, no Node, no `jq`.
 /plugin install floor@the-foundry
 ```
 
+**A worker has no slash commands.** The same two are `claude plugin marketplace add attac-t/the-foundry` and
+`claude plugin install floor@the-foundry`.
+
 Standalone. Pairs with kernel, which is where the memory rung lives.
 
 If it cannot run, it says so at the top of the next session. Silence means it is working.
