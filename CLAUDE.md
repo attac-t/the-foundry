@@ -32,6 +32,7 @@ in your context, read it.
 | [plugins](.claude/rules/plugins.md) | What a plugin owes when it changes |
 | [running](.claude/rules/running.md) | A run holds the work. Take one before you touch anything |
 | [shell](.claude/rules/shell.md) | Reading `craft-sh` before a shipped script is edited |
+| [vocabulary](.claude/rules/vocabulary.md) | The words a capability is known by. Its verb, its nouns, and the sentence that explains it |
 | [writing](.claude/rules/writing.md) | Anything written down, not just replies — a reader came to understand, to act or to decide |
 <!-- /rules -->
 

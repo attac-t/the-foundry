@@ -1,11 +1,11 @@
 # Contributing
 
-Thirteen gates. Run them before you open a pull request:
+Fourteen gates. Run them before you open a pull request:
 
 ```bash
-sh bin/gates.sh                 # all thirteen, here
+sh bin/gates.sh                 # all fourteen, here
 sh bin/agree.sh                 # this table, the workflow, gates.sh and every harness file
-sh bin/gates.sh linux           # the same thirteen where `sh` is dash
+sh bin/gates.sh linux           # the same fourteen where `sh` is dash
 ```
 
 Leave `agree` out of your run and a PR can still go red on a check this file never mentioned — the
@@ -111,6 +111,7 @@ Edit a rule, then run it — a row typed by hand into one file is the drift noth
 |------|------------|
 | `frontmatter` | a skill, agent or command is missing the frontmatter that registers it |
 | `versions` | a plugin the manifest lists cannot say what version it is |
+| `bumps` | a merge landed two changes to one plugin under one version. Git catches the loud case, where the sides disagree; this catches the quiet one, where they agree |
 | `repeats` | a sentence appears verbatim in two files. It reads every `.md` bar a debt list, so a new file is graded the day it lands |
 | `shell` | shipped shell takes an `else`, or a function body passes 40 lines |
 | `taper` | a three-line comment paragraph does not narrow by three, and nothing names it |
@@ -149,7 +150,7 @@ no such bit.
 
 **What they do not check:** that `laravel-ddd`, `laravel-playbook`, `pest` or `product` still load,
 or that their skills say anything true. Those four ship no code, so there is nothing to run — but
-nothing here reads them either. Green means thirteen gates passed. For those four plugins it does not
+nothing here reads them either. Green means fourteen gates passed. For those four plugins it does not
 mean the change works.
 
 **Whether their guidance has aged is answered, not gated.** Each README that teaches a version names

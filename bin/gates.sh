@@ -152,6 +152,10 @@ gate() {
 gate frontmatter bash bin/frontmatter.sh
 gate versions    bash bin/versions.sh
 
+# `versions` asks whether a plugin can say its version. This asks whether two changes are wearing
+# one. Different questions, and the second only has an answer on a merge commit.
+gate bumps       sh   bin/bumps.sh
+
 gate repeats     bash bin/repeats.sh
 
 gate shell       bash bin/shell.sh

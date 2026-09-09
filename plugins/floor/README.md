@@ -37,7 +37,7 @@ Six things stood between a clean machine and a working system, and three were si
 records an authority nobody granted. Each now names itself.
 
 ```
-home    /home/you/.foundry-runs
+home    /home/you/.foundry
         derived from HOME. Set FOUNDRY_HOME to put it elsewhere.
 who     you@example.com
 source  a directory, and the remote is GitHub. Install gh, or Issues stay unreachable.
