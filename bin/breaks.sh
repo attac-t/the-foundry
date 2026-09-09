@@ -14,6 +14,11 @@
 # **A bad break looks exactly like a blind gate.** Three of the first six here passed, and all three
 # were the break's fault. Each one carries the reason it is right.
 #
+# **So the answer is one of four, and three of them used to read as one.** `caught` is the gate
+# refusing the break. `MISSED` is the gate passing it. `MOOT` is a break that changed no bytes, and
+# `MUTE` is a gate that answered neither 0 nor 1 — it did not judge, and counting that as a catch
+# is how a mangled break line reported success.
+#
 # Usage: bash bin/breaks.sh
 #
 # Exit: 0 always. A miss is a report, not a refusal — see #351.
@@ -25,6 +30,8 @@ cd "$(dirname "$0")/.." || exit 3
 main() {
     caught=0
     missed=0
+    moot=0
+    mute=0
 
     say "clean first"
     every_gate_is_green
@@ -33,8 +40,10 @@ main() {
     say "broken"
     every_break
 
+    # All four, always. A zero beside `mute` says the harness looked, and looking is the whole of
+    # what was missing — the state was invisible rather than absent.
     say ""
-    say "$caught caught, $missed missed"
+    say "$caught caught, $missed missed, $moot moot, $mute mute"
 
     say ""
     say "these drive themselves, and are not run here"
@@ -131,10 +140,39 @@ drive() {
     remember "$file"
     eval "$break_it"
 
-    runs "$gate" && { note MISSED "$name"; missed=$((missed + 1)); } \
-                 || { note caught "$name"; caught=$((caught + 1)); }
+    judge_it "$name" "$file" "$gate"
 
     restore "$file"
+}
+
+#
+# **Four answers, and three of them used to read as one.** Any non-zero counted as a catch, so a
+# gate that could not run reported the same word as a gate that refused the break.
+#
+# Measured 9 September: a `drive` line with a mangled continuation passed its gate argument as a
+# command that does not exist. The run printed `caught`, and the summary said nought missed.
+#
+# `bin/gates.sh` draws this line for every gate here — exit 1 is a rule broken, exit 3 is the gate
+# not answering — and this was the one reader that threw it away.
+judge_it() {
+    the_break_applied "$2" || { note MOOT "$1 — the file did not change"; moot=$((moot + 1)); return; }
+
+    $3 >/dev/null 2>&1
+    said=$?
+
+    [ "$said" -eq 0 ] && { note MISSED "$1"; missed=$((missed + 1)); return; }
+    [ "$said" -eq 1 ] && { note caught "$1"; caught=$((caught + 1)); return; }
+
+    note MUTE "$1 — the gate answered $said, so it judged nothing"
+    mute=$((mute + 1))
+}
+
+# A break that changed no bytes proves the gate nothing. `remember` keeps the file as it was, and a
+# break creating one leaves nothing to compare — that is a change, and it counts as one.
+the_break_applied() {
+    [ -e "$kept" ] || return 0
+
+    ! cmp -s "$kept" "$1"
 }
 
 remember() { [ -e "$1" ] && cp "$1" "$kept"; }

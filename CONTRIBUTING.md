@@ -99,6 +99,10 @@ not since the billing lapsed.
 breaks it and prints what was caught. It is not in `gates.sh` and never will be: it makes the tree red
 on purpose, and a gate grading the gates is a loop nothing outside it can check.
 
+**Read all four words in its summary.** `caught` is the gate refusing the break and `MISSED` is the
+gate passing it. `MOOT` says the break changed no bytes, and `MUTE` says the gate answered neither 0
+nor 1 — so it judged nothing. Only the first is a working gate.
+
 Run it when you change what a gate grades. Two checks here were vacuous for weeks, and a bad break
 looks exactly like a blind gate — #351 holds why.
 
