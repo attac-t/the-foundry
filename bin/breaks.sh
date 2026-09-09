@@ -92,6 +92,12 @@ every_break() {
         'a_host >> plugins/floor/lib/source.sh' \
         'sh bin/hosts.sh'
 
+    # A vendor's name where core decides. The rule held on discipline everywhere but one file,
+    # which is where a copy of `remote_is_github` had already landed once.
+    drive providers plugins/floor/lib/source-dir.sh \
+        'a_vendor >> plugins/floor/lib/source-dir.sh' \
+        'sh bin/providers.sh'
+
     # Three comment lines that do not step down by three. The gate graded evenness once, and a block
     # dropping eighteen twice went through for weeks.
     #
@@ -157,6 +163,10 @@ an_else() {
 # Code, never a comment. `run.sh` already carries two comments naming a container, so a break that
 # planted prose would go green against a gate working perfectly.
 a_host() { printf '\n[ -f /.dockerenv ] && inside_a_container=1\n'; }
+
+# A vendor named where core decides something, never where a comment explains the seam. The
+# resolver may carry this very line; `source-dir.sh` may not.
+a_vendor() { printf '\ncase $remote in *github.com*) : ;; esac\n'; }
 
 a_wedge() {
     printf '\n# One two three four five six seven eight nine ten eleven twelve thirteen\n'

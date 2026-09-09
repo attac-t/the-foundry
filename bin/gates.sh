@@ -164,6 +164,10 @@ gate shell       bash bin/shell.sh
 # must not. A boundary stated only in comments is one the next convenient line quietly moves.
 gate hosts       sh   bin/hosts.sh
 
+# `hosts` refuses a host word everywhere in core. This one has two exceptions — the resolver and
+# the adapter — and a gate grading two rules under one name is what `vocabulary.md` refuses.
+gate providers   sh   bin/providers.sh
+
 gate taper       sh   bin/taper.sh
 
 #
