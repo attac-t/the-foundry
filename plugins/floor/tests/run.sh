@@ -2095,6 +2095,12 @@ wreck_runner "a delivery that absorbs a second branch is caught" \
   dirbranch 's#delivered "$file" "$3" || return 4#:#' lib/source-dir.sh
 
 #
+# Exclusivity is the link refusing a name already taken. `-f` takes it anyway, so every host wins
+# every claim and the mechanism reads as working right up to the moment two of them start.
+wreck_runner "a claim that overwrites the holder's stamp is caught" \
+  dirsteal 's#ln "$draft"#ln -f "$draft"#' lib/source-dir.sh
+
+#
 # The rules that keep an absence observed.
 #
 # Three places answer *nothing there*, and each has a way to be wrong about it: the adapter's probe,
