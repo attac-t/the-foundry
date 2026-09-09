@@ -335,6 +335,16 @@ version_in() {
 # The record a harness keeps of what it installed. Read by name and never
 # by path: a cache directory name is one harness's own layout, and the
 # next one will be keeping that very same fact somewhere else, too.
+# Every version, not the first.
+#
+# A plugin's key holds a **list** of installs — one for user scope and one for every project that
+# ever registered it. Measured on this host: kernel 52, signal 48, five and six versions between
+# them, and floor's two disagreeing on the day one of them was updated.
+#
+# The `exit` here read the first and stopped, so a host running five kernels reported one and looked
+# clean. **A check that answers about a name must ask whether the name repeats.**
+#
+# The boundary is the next key at four spaces. Nothing inside an install is indented that shallowly.
 version_this_host_loaded() {
     record="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plugins/installed_plugins.json"
 
@@ -342,8 +352,9 @@ version_this_host_loaded() {
 
     awk -F'"' -v want="$1" '
         index($0, "\"" want "@") { hit = 1; next }
-        hit && /"version"/         { print $4; exit }
-    ' "$record"
+        hit && /^    "/           { hit = 0 }
+        hit && /"version"/        { print $4 }
+    ' "$record" | sort -u | paste -sd, -
 }
 
 say() { printf '%s\n' "$1"; }
