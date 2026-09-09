@@ -156,8 +156,21 @@ installed() {
 
   [ "$1" = none ] && { printf '%s\n' '{' '  "plugins": {}' '}' > "$record"; return; }
 
-  printf '%s\n' '{' '  "plugins": {' '    "floor@x": [' '      {' \
-    "        \"version\": \"$1\"" '      }' '    ]' '  }' '}' > "$record"
+  # **Every argument is another install.** The key holds a list, one entry per scope and per
+  # project that ever registered it. Fifty-two for one plugin on the machine that found this.
+  {
+    printf '%s
+' '{' '  "plugins": {' '    "floor@x": ['
+    for version in "$@"; do
+      printf '      {
+        "scope": "project",
+        "version": "%s"
+      },
+' "$version"
+    done
+    printf '%s
+' '    ]' '  }' '}'
+  } > "$record"
 }
 
 # A cache keyed by version is how a skill reaches a session, so a rule can land on `main` and change
@@ -176,6 +189,22 @@ installed 0.0.1
 behind=$( cd "$tmp/one" && CLAUDE_CONFIG_DIR="$home" FOUNDRY_WHO=a@b sh "$join" 2>&1 )
 has "a plugin behind the tree is named"  "$behind" "floor ships $ships"
 has "and it says what this host loaded"  "$behind" "and this host loaded 0.0.1"
+
+# **A key holds a list, and reading the first entry hid four of five.** `join.sh` stopped at the
+# first `"version"`, so a host running five kernels reported one and looked clean. Measured where
+# it was found: kernel 52 installs, signal 48, and floor's two disagreeing on the day one moved.
+installed 1.0.0 0.0.1 9.9.9
+several=$( cd "$tmp/one" && CLAUDE_CONFIG_DIR="$home" FOUNDRY_WHO=a@b sh "$join" 2>&1 )
+has "every version a host loaded is named" "$several" "this host loaded 0.0.1,1.0.0,9.9.9"
+
+# One of three matching the tree is not silence, because the other two still do not.
+installed 1.0.0 "$ships" 0.0.1
+mixed=$( cd "$tmp/one" && CLAUDE_CONFIG_DIR="$home" FOUNDRY_WHO=a@b sh "$join" 2>&1 )
+has "a match among several is still reported" "$mixed" "floor ships $ships"
+
+installed "$ships"
+matched=$( cd "$tmp/one" && CLAUDE_CONFIG_DIR="$home" FOUNDRY_WHO=a@b sh "$join" 2>&1 )
+lacks "one install matching the tree says nothing" "$matched" "floor ships"
 
 # Absent and behind are different remedies. One is an install and the other an update.
 installed none
