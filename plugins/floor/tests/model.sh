@@ -3642,11 +3642,22 @@ exactly_one_host_takes_an_item() {
   floor "$tmp/clm" new "Raced for it" >/dev/null 2>&1
   allowed=$(floor "$tmp/clm" policy)
 
-  # Exclusivity is `mkdir` being one step, which POSIX gives and this
+  # Exclusivity is `ln` being one step, which POSIX gives and this
   # does not show. Two process races in one suite starve this
   # machine, and a race reporting nothing proves less.
 
   is "an item nobody took is taken" "$(code_of floor "$tmp/clm" claim 71)" "0"
+
+  # **A claim that exists and says nothing.** The directory was the swap and the stamp a second
+  # step, so a host dying between them left this — and it could not be taken, broken or released,
+  # because all three read the file that was never written.
+  #
+  # The stamp is linked in whole now, so the leftover directory is just a directory.
+  rm -rf "$src/claims/71"
+  mkdir -p "$src/claims/71"
+  is  "a claim with no stamp in it is taken"  "$(code_of floor "$tmp/clm" claim 71)" "0"
+  has "and this host holds it"                "$(cat "$src/claims/71/held")" "$(uname -n)"
+  is  "and no draft is left beside it"        "$(ls "$src/claims/71")" "held"
 
   # A claim is not authority. It says a host started, never that it may.
   is "and holding it grants nothing" "$(floor "$tmp/clm" policy)" "$allowed"
