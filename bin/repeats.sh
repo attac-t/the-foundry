@@ -20,9 +20,8 @@ readonly NOISE='://|::|\[|\]|[{}$]|->|=>'
 # `.claude/` is Claude-local, and a pull request template is a form rather than prose.
 readonly SKIP='^\.claude/|PULL_REQUEST_TEMPLATE'
 
-# The trees this does not reach yet. Named here and not in a caller's
-# arguments, because that is what let a bare run and CI
-# disagree by 22 repeats nobody could act on.
+# The trees this does not reach yet. Named here and not in a caller's arguments, because that
+# is what let a bare run and CI disagree by 22 repeats nobody could act on.
 #
 # An exclusion, never an inclusion. A plugin added
 # tomorrow is graded without anyone editing the

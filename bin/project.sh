@@ -52,9 +52,8 @@ block() {
     printf '%s\n' "$SHUT"
 }
 
-# Where meaning lives, in each harness's own shape. A route and nothing
-# more: a harness file that carries a principle is a second owner
-# of it, and the doctrine is the first.
+# Where meaning lives, in each harness's own shape. A route and nothing more: a harness file
+# carrying a principle is a second owner of it, and the doctrine is the first.
 route() {
     printf '%s\n' "$ROUTE_OPEN"
     route_for "$1"
@@ -76,9 +75,8 @@ route_for() {
 # Everything outside the markers is the harness file's own. A file with no markers has nowhere to put
 # the list, and guessing where would make this a templating language.
 #
-# Takes the text rather than a path, because a file gets two blocks
-# written into it and the second must read what the first
-# produced, not what is still on disk.
+# Takes the text rather than a path, because a file gets two blocks written into it, and the
+# second must read what the first produced rather than what is still on disk.
 replace_in() {
     said=$1; open=$2; shut=$3; fresh=$4
 
