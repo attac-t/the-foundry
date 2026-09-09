@@ -299,6 +299,55 @@ has "and says what is missing about it"       "$ghost" "nothing says where it li
 
 offered "$tmp/one"
 
+# --- what this session could load ---
+
+#
+# **The narrow half, and the reason it exists is noise.** `host` reports everywhere this host ever
+# registered anything, and on the machine that found this that is two shouting lines about
+# worktrees deleted weeks ago. A hook firing at every session start has to be quiet or it is
+# ignored inside a week.
+#
+# A row reaches a session when nobody scoped it to a project, or when the project is the one the
+# session stands in. Everything else belongs to another directory and cannot arrive here.
+#
+lib=$(dirname "$join")/../lib/plugins.sh
+
+# One row per line: `<scope> <path>`. A `user` row carries no path and reaches every session.
+reachable() {
+  mkdir -p "$home/plugins"
+  {
+    printf '%s\n' '{' '  "plugins": {' '    "floor@x": ['
+    for row in "$@"; do
+      rest=${row#* }
+      printf '      {\n        "scope": "%s",\n' "${row%% *}"
+      [ "${row%% *}" = project ] && printf '        "projectPath": "%s",\n' "${rest%% *}"
+      printf '        "version": "%s"\n      },\n' "${row##* }"
+    done
+    printf '%s\n' '    ]' '  }' '}'
+  } > "$home/plugins/installed_plugins.json"
+}
+
+reachable "user - $ships" "project $tmp/elsewhere 0.0.1"
+theirs=$( CLAUDE_CONFIG_DIR="$home" sh "$lib" session "$tmp/one" 2>&1 )
+lacks "a row for another project is not reported" "$theirs" "could load"
+
+reachable "user - $ships" "project $tmp/one 0.0.1"
+ours=$( CLAUDE_CONFIG_DIR="$home" sh "$lib" session "$tmp/one" 2>&1 )
+has "a row for this repository is"     "$ours" "floor ships $ships"
+has "and both versions are named"      "$ours" "could load 0.0.1,$ships"
+
+# Windows writes a path with escaped separators and `git` hands back the same place with forward
+# slashes. Folded to one shape, they are the same repository — and the fold is why a hook on a
+# healthy host says nothing at all.
+reachable "user - $ships"
+quiet=$( CLAUDE_CONFIG_DIR="$home" sh "$lib" session "$tmp/one" 2>&1 )
+is "a session matching what it ships says nothing" "$quiet" ""
+
+is "and the verb it does not take is refused" \
+   "$( CLAUDE_CONFIG_DIR="$home" sh "$lib" nonsense >/dev/null 2>&1; echo $? )" "2"
+
+installed 0.0.1
+
 # --- the repository's half ---
 
 # **Superseded 8 September, by #573.** This asserted `0` for a repository carrying neither file, and

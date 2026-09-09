@@ -2907,13 +2907,15 @@ echo "audit — break the join, the host suite must notice"
 # The same shape as the install audit above, reading the other suite.
 hosted() { suite_caught "$tmp/$1" "$root/tests/host.sh"; }
 
+# The fourth argument names the file, because the reading this suite grades moved to `lib/plugins.sh`
+# and a wrecker tied to one path could no longer reach it.
 wreck_join() {
-  local name="$1" tag="$2" mutation="$3"
+  local name="$1" tag="$2" mutation="$3" file="${4:-bin/join.sh}"
   local checks="$tmp/$tag.check" killer
 
   copy "$tag" || { bad "$name — could not copy the plugin, so this proves nothing"; return; }
-  sed "$mutation" "$root/bin/join.sh" | rewrite "$tmp/$tag/bin/join.sh"
-  cmp -s "$tmp/$tag/bin/join.sh" "$root/bin/join.sh" \
+  sed "$mutation" "$root/$file" | rewrite "$tmp/$tag/$file"
+  cmp -s "$tmp/$tag/$file" "$root/$file" \
     && { moot "$name — the break did not apply, so this proves nothing"; return; }
   hosted "$tag"; local answer=$?
   [ "$answer" -eq 2 ] && { out_of_clock "$name"; return; }
@@ -2960,12 +2962,17 @@ wreck_join "a grant count that counts comments is caught" \
 # Where the marketplace lives is the whole of the shipped side now. Lose it and every plugin reads
 # as unknown, the count says nothing was offered, and a host three versions behind looks clean.
 wreck_join "a marketplace whose home cannot be found is caught" \
-  nomarket 's#"installLocation"#"nothingHere"#'
+  nomarket 's#"installLocation"#"nothingHere"#' lib/plugins.sh
 
 # Nothing to check is not a clean check. A host that installed nothing printed a count of zero,
 # which reads the same as nought wrong — and that is the one thing every gate here refuses to do.
 wreck_join "a host that installed nothing waved through is caught" \
-  nosilence 's#say_nothing_was_installed; return#:#'
+  nosilence 's#say_nothing_was_installed; return#:#' lib/plugins.sh
+
+# A session is told about drift it can reach, and nothing else. Lose the comparison and a row for
+# another project reads as one for this session — which is the noise the hook exists to avoid.
+wreck_join "a row for another project counted as this session's is caught" \
+  nosession 's#mine = (p == here)#mine = 0#' lib/plugins.sh
 
 # The whole point of the section: a rule naming a skill nobody can invoke used to say nothing.
 wreck_join "a skill the rules name that nobody reports is caught" \
