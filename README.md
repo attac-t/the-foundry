@@ -115,7 +115,7 @@ contracts bind, its revision log is history, and what runs now is each plugin's 
 
 ## Contributing
 
-Read [CONTRIBUTING.md](CONTRIBUTING.md). Fourteen gates, and they run before a pull request, not after.
+Read [CONTRIBUTING.md](CONTRIBUTING.md). Fifteen gates, and they run before a pull request, not after.
 
 Found a security problem? [SECURITY.md](SECURITY.md) — report it privately, never as an issue.
 
