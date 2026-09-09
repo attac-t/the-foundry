@@ -2957,6 +2957,11 @@ wreck_join "a source that is chosen without a word is caught" \
 wreck_join "a grant count that counts comments is caught" \
   loudcount 's#grep -cv#grep -c#'
 
+# Where the marketplace lives is the whole of the shipped side now. Lose it and every plugin reads
+# as unknown, the count says nothing was offered, and a host three versions behind looks clean.
+wreck_join "a marketplace whose home cannot be found is caught" \
+  nomarket 's#"installLocation"#"nothingHere"#'
+
 # The whole point of the section: a rule naming a skill nobody can invoke used to say nothing.
 wreck_join "a skill the rules name that nobody reports is caught" \
   muteskills 's#^    report_skills_the_rules_name$#    :#'
