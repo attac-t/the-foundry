@@ -87,6 +87,11 @@ yours to run when it applies:
 in the pull request and the gate output. `Closes #N` flips an issue closed and never touches its
 body, so eighteen met boxes sat blank on 4 September until somebody looked.
 
+**A line here reached nobody, so `.claude/hooks/ticks.sh` says it instead.** After `gh pr merge <n>`
+it names each issue that merge closes and how many boxes are still open, and it is silent when there
+are none. It reports; the judgement stays where it was. Fourteen more boxes went blank on 9
+September, which is what it exists for.
+
 The last one is the gap no local run closes. **A green tree here says nothing about macOS**, and has
 not since the billing lapsed.
 
