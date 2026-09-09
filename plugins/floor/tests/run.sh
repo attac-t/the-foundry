@@ -2962,6 +2962,11 @@ wreck_join "a grant count that counts comments is caught" \
 wreck_join "a marketplace whose home cannot be found is caught" \
   nomarket 's#"installLocation"#"nothingHere"#'
 
+# Nothing to check is not a clean check. A host that installed nothing printed a count of zero,
+# which reads the same as nought wrong — and that is the one thing every gate here refuses to do.
+wreck_join "a host that installed nothing waved through is caught" \
+  nosilence 's#say_nothing_was_installed; return#:#'
+
 # The whole point of the section: a rule naming a skill nobody can invoke used to say nothing.
 wreck_join "a skill the rules name that nobody reports is caught" \
   muteskills 's#^    report_skills_the_rules_name$#    :#'
