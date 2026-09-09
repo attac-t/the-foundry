@@ -85,7 +85,8 @@ sentences=$(
     paragraphs "$file" \
       | cut_up \
       | sed 's/  */ /g; s/^ //' \
-      | without_noise \n      | awk -v file="$file" '{ print $0 "\t" file }'
+      | without_noise \
+      | awk -v file="$file" '{ print $0 "\t" file }'
   done
 )
 
