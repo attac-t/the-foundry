@@ -28,7 +28,7 @@ main() {
     report_work_source
     report_what_the_repository_carries
     report_skills_the_rules_name
-    report_plugins_this_host_loaded
+    report_plugins_this_host_registered
 
     refuse_without_what_a_run_needs
     say "joined."
@@ -297,7 +297,7 @@ reachable() {
 # Silent when they agree. A line for every plugin would bury the one that
 # drifted, and drift is the only thing here that a person acts on. The
 # count is there so that any reader knows the check has run at all.
-report_plugins_this_host_loaded() {
+report_plugins_this_host_registered() {
     root=$(git rev-parse --show-toplevel)
     seen=0
 
@@ -308,7 +308,7 @@ report_plugins_this_host_loaded() {
         say_a_plugin_that_drifted "$manifest"
     done
 
-    say "plugin  $seen shipped here, checked against what this host loaded"
+    say "plugin  $seen shipped here, checked against what this host registered"
 }
 
 # Absent and behind are different remedies. One is an install, the
@@ -317,12 +317,33 @@ report_plugins_this_host_loaded() {
 say_a_plugin_that_drifted() {
     named=$(basename "$(dirname "$(dirname "$1")")")
     ships=$(version_in "$1")
-    loaded=$(version_this_host_loaded "$named")
+    every=$(every_version_registered_for "$named")
+    here=$(printf '%s\n' "$every" | sort -u | paste -sd, -)
 
-    [ "$loaded" = "$ships" ] && return
-    [ -n "$loaded" ] || { say "        $named $ships is NOT installed here"; return; }
+    [ "$here" = "$ships" ] && return
+    [ -n "$here" ] || { say "        $named $ships is NOT installed here"; return; }
 
-    say "        $named ships $ships, and this host loaded $loaded"
+    say "        $named ships $ships, and this host has $here registered$(places_if_it_repeats "$every")"
+}
+
+# **Registered, never loaded.** A row in that file records an install, and nothing there says a
+# session read it. Fifty of kernel's fifty-two named `.claude/worktrees/` directories deleted weeks
+# earlier, and calling those loaded said five copies were running when one was.
+#
+# Dropping them is what this deliberately does not do. The path is JSON-escaped, and halving `\\`
+# needs an `awk` replacement whose meaning differs between implementations — measured, one doubled
+# it. A path written by another operating system cannot be tested either, so a row this shell
+# cannot resolve would read as deleted. **Hiding a real drift is the worse failure of the two.**
+#
+# So say how many places instead, and only when it repeats. One install per version is the
+# ordinary case and the count adds nothing to it.
+places_if_it_repeats() {
+    installs=$(printf '%s\n' "$1" | grep -c .)
+    versions=$(printf '%s\n' "$1" | sort -u | grep -c .)
+
+    [ "$installs" -gt "$versions" ] || return 0
+
+    printf ' in %s places' "$installs"
 }
 
 # The value after the key, never the fourth field. A manifest with two
@@ -345,7 +366,9 @@ version_in() {
 # clean. **A check that answers about a name must ask whether the name repeats.**
 #
 # The boundary is the next key at four spaces. Nothing inside an install is indented that shallowly.
-version_this_host_loaded() {
+#
+# One line per install, undeduplicated, because the caller needs both the set and the count.
+every_version_registered_for() {
     record="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plugins/installed_plugins.json"
 
     [ -r "$record" ] || return 0
@@ -354,7 +377,7 @@ version_this_host_loaded() {
         index($0, "\"" want "@") { hit = 1; next }
         hit && /^    "/           { hit = 0 }
         hit && /"version"/        { print $4 }
-    ' "$record" | sort -u | paste -sd, -
+    ' "$record"
 }
 
 say() { printf '%s\n' "$1"; }

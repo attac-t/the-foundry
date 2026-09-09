@@ -187,15 +187,24 @@ home=$tmp/cfg
 installed 0.0.1
 
 behind=$( cd "$tmp/one" && CLAUDE_CONFIG_DIR="$home" FOUNDRY_WHO=a@b sh "$join" 2>&1 )
-has "a plugin behind the tree is named"  "$behind" "floor ships $ships"
-has "and it says what this host loaded"  "$behind" "and this host loaded 0.0.1"
+has "a plugin behind the tree is named"      "$behind" "floor ships $ships"
+has "and it says what this host registered" "$behind" "this host has 0.0.1 registered"
+lacks "one install per version counts none" "$behind" "in 1 places"
 
 # **A key holds a list, and reading the first entry hid four of five.** `join.sh` stopped at the
 # first `"version"`, so a host running five kernels reported one and looked clean. Measured where
 # it was found: kernel 52 installs, signal 48, and floor's two disagreeing on the day one moved.
 installed 1.0.0 0.0.1 9.9.9
 several=$( cd "$tmp/one" && CLAUDE_CONFIG_DIR="$home" FOUNDRY_WHO=a@b sh "$join" 2>&1 )
-has "every version a host loaded is named" "$several" "this host loaded 0.0.1,1.0.0,9.9.9"
+has "every version registered is named" "$several" "this host has 0.0.1,1.0.0,9.9.9 registered"
+
+# **Five versions reads as five running copies. Five across fifty-two reads as debris.**
+#
+# Fifty of kernel's fifty-two rows named worktrees deleted weeks before, and nothing in the sentence
+# said so. The count is the whole remedy — the rows cannot be told apart from a shell.
+installed 1.0.0 1.0.0 0.0.1 0.0.1 0.0.1
+repeated=$( cd "$tmp/one" && CLAUDE_CONFIG_DIR="$home" FOUNDRY_WHO=a@b sh "$join" 2>&1 )
+has "two versions across five installs says so" "$repeated" "0.0.1,1.0.0 registered in 5 places"
 
 # One of three matching the tree is not silence, because the other two still do not.
 installed 1.0.0 "$ships" 0.0.1
@@ -210,7 +219,7 @@ lacks "one install matching the tree says nothing" "$matched" "floor ships"
 installed none
 gone=$( cd "$tmp/one" && CLAUDE_CONFIG_DIR="$home" FOUNDRY_WHO=a@b sh "$join" 2>&1 )
 has "a plugin nobody installed says so" "$gone" "floor $ships is NOT installed here"
-lacks "and never calls that behind"      "$gone" "and this host loaded"
+lacks "and never calls that behind"      "$gone" "and this host has"
 
 # Silence is the healthy reading, and the count is how a reader knows it looked.
 installed "$ships"
