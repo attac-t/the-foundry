@@ -58,6 +58,11 @@ jobs:
       - name: Floor's core names no host
         run: sh bin/hosts.sh
 
+      # The resolver and the adapter may name a vendor. Core held that on discipline, checked in
+      # one file, because that is where a copy of `remote_is_github` once landed.
+      - name: Floor's core names no provider
+        run: sh bin/providers.sh
+
       # Every first-party comment, tests and awk included. The old check read ten blocks and
       # skipped four hundred and eighty-two, so #369 and #398 are what this closes.
       - name: Comment paragraphs narrow by three
