@@ -79,6 +79,25 @@ Eleven wrong summaries turned up in one day. Ten said less than was true, and on
 **Nothing pulls a summary back either way.** A sample of eight boxes, the same day, was right eight
 times. So write the check, never the verdict.
 
+## A box the change makes true is not a box a test holds
+
+**Ask of every tick: what would go red if this stopped being true?** If the answer is nothing, the
+box was closed on reasoning.
+
+Three went that way in one day. Each was true. The logic was sound and the code was right, and no
+check would have noticed the day either stopped.
+
+The tell is the shape of the claim. *A path from another machine is not this repository* is a fact
+about a comparison, and a comparison can be driven in one line. **It closed on the argument
+instead**, and the fixture came afterwards, as its own change.
+
+**Driving it costs a line and buys the box.** Reasoning costs nothing and buys a sentence somebody
+will believe six months from now.
+
+**And a fixture is not enough on its own.** Break the thing it guards and watch the check go red. A
+case that passes against broken code was never holding the box — `bin/breaks.sh` exists for that at
+the gate level, and a `## Done when` list deserves the same.
+
 ## Nothing checks this
 
 The gates are offline and an issue lives on a service. **This is a rule because no exit code can
