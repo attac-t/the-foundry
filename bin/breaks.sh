@@ -5,6 +5,9 @@
 # Only these five need it. `agree` drives its own six with `agree.sh audit`, and the four plugin
 # suites drive theirs — 1351 assertions between them, no mutant unanswered.
 #
+# `bumps` is the one gate no break here can reach. It grades a merge, and every break below edits a
+# file. The reason and the hand-driven proof sit beside `say_what_drives_itself`.
+#
 # **Not a gate.** It makes the tree red on purpose, and a gate grading the gates is a loop nothing
 # outside it can check. Run by hand, read the count.
 #
@@ -48,9 +51,21 @@ every_gate_is_green() {
 }
 
 # Named, never run here. Each is minutes, and a tool people skip because it is slow proves nothing.
+# `bumps` cannot be driven here. Every break above edits a file in the working tree, and this gate
+# only has an answer on a merge commit — it needs two parents that each moved one version to the
+# same place. That is a repository shape, not a file.
+#
+# Driven by hand instead, 9 September 2026, in a throwaway repository:
+#
+#   one plugin at 1.0.0, two branches, both writing 1.0.1, merged
+#   the merge is clean and exits 0. `bumps.sh` exits 1 and names the plugin and both numbers
+#
+# Three more shapes, each answered: one side bumping alone passes, a HEAD that is not a merge passes
+# and says why, and a directory with no repository above it exits 3.
 say_what_drives_itself() {
     say "  self     agree      bash bin/agree.sh audit"
     say "  self     kernel signal panel floor   bash plugins/<name>/tests/run.sh"
+    say "  by hand  bumps      needs a merge commit, so no file break reaches it — see the comment above"
 }
 
 every_break() {
