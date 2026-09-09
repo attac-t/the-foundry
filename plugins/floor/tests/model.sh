@@ -3642,9 +3642,8 @@ exactly_one_host_takes_an_item() {
   floor "$tmp/clm" new "Raced for it" >/dev/null 2>&1
   allowed=$(floor "$tmp/clm" policy)
 
-  # Exclusivity is `ln` being one step, which POSIX gives and this
-  # does not show. Two process races in one suite starve this
-  # machine, and a race reporting nothing proves less.
+  # Exclusivity is `ln` refusing a name already taken. Two process
+  # races in one suite starve this machine, so nothing here shows it.
 
   is "an item nobody took is taken" "$(code_of floor "$tmp/clm" claim 71)" "0"
 
