@@ -108,6 +108,10 @@ the next agent — so a proposal starts as an issue, and a thinking pass ends as
 **A merge lands a page. It accepts nothing.** A goal a merged page proposes stays proposed until a
 named person says yes, in writing, dated.
 
+**So read [`.foundry/status.md`](.foundry/status.md) before you rely on anything here.** The
+doctrine says which promises Foundry means to earn. That page says which ones it can keep today,
+and names the ones it cannot.
+
 The one exception stands marked: `docs/rfc/` is an accepted design still being implemented. Its
 contracts bind, its revision log is history, and what runs now is each plugin's README.
 
