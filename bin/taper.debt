@@ -51,7 +51,6 @@ plugins/floor/tests/model.sh	# How far each run got, from files other verbs alre
 plugins/floor/tests/model.sh	# Floor records the moments it already knows. Nothing is kept as a total, so
 plugins/floor/tests/model.sh	# Every run this home holds, one row each, with the run named first. Two
 plugins/floor/tests/model.sh	# Exactly one host may take an item. Two seeing the same one
-plugins/floor/tests/model.sh	  # Exclusivity is `mkdir` being one step, which POSIX gives and this
 plugins/floor/tests/model.sh	# What produced this row. A run graded under one implementation
 plugins/floor/tests/model.sh	# Recorded and not yet refused. Nothing compares two runtimes,
 plugins/floor/tests/model.sh	# Whether this host can be replaced. A run holding a workspace has a

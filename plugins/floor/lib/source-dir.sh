@@ -148,13 +148,35 @@ open_deliveries() {
 }
 
 
-# `mkdir` is the compare-and-swap, and it fails when the claim is there. The
-# holder rewriting its own stamp is the renewal, so nothing slips between.
+# A fresh claim is linked into place whole. Failing that, the holder rewriting its own stamp is
+# the renewal, and anyone else is refused.
 take_claim() {
-    mkdir -p "$root/claims" 2>/dev/null || return 3
-    mkdir "$root/claims/$1" 2>/dev/null || held_by "$1" "$2" || return 4
+    mkdir -p "$root/claims/$1" 2>/dev/null || return 3
+
+    link_a_fresh_stamp "$1" "$2" && return 0
+
+    held_by "$1" "$2" || return 4
 
     stamp_claim "$root/claims/$1/held" "$2"
+}
+
+# `ln` is the compare-and-swap: it fails when the target is there, and the stamp is complete before
+# it takes its name. **So no moment exists where a claim is there and says nothing.**
+#
+# `mkdir` used to be the swap and the stamp a second step. A host that died between them left a
+# directory that could not be taken, broken or released — all three read the file never written,
+# and the age that breaks a dead claim could not see it either.
+#
+# The draft carries the pid, so two hosts racing write different files and only one link lands.
+link_a_fresh_stamp() {
+    draft=$root/claims/$1/.held.$$
+
+    stamp_claim "$draft" "$2" || return 1
+
+    ln "$draft" "$root/claims/$1/held" 2>/dev/null && { rm -f "$draft"; return 0; }
+
+    rm -f "$draft"
+    return 1
 }
 
 # The epoch is what makes an age arithmetic. The stamp beside it is for whoever reads the file, and
