@@ -356,6 +356,10 @@ fi
 #
 # Comments stripped first. A comment naming an adapter explains a case; a code path
 # matching a hostname decides one, and only the second is core knowing a provider.
+#
+# **Kept beside `bin/providers.sh`, deliberately.** That gate reads every file in core and belongs
+# to this repository. This reads one file and ships with the plugin, so a consumer running floor's
+# own suite still has the check the day `remote_is_github` was copied here.
 code=$(grep -v '^[[:space:]]*#' "$here/bin/join.sh" | tr 'A-Z' 'a-z')
 lacks "core holds no provider name" "$code" "github"
 lacks "nor any other"               "$code" "gitlab"
