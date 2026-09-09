@@ -343,6 +343,17 @@ reachable "user - $ships"
 quiet=$( CLAUDE_CONFIG_DIR="$home" sh "$lib" session "$tmp/one" 2>&1 )
 is "a session matching what it ships says nothing" "$quiet" ""
 
+#
+# **A path written by another machine, and it is the case that made this a comparison.** `[ -d ]`
+# cannot answer for one — a Windows path is absent on Linux and a Linux path is absent on Windows,
+# so a filesystem test would call every foreign row deleted.
+#
+# A comparison needs no such answer. Another machine's path is simply not this repository, whichever
+# machine reads the record.
+reachable "user - $ships" 'project D:\\Elsewhere\\repo 0.0.1'
+foreign=$( CLAUDE_CONFIG_DIR="$home" sh "$lib" session "$tmp/one" 2>&1 )
+lacks "a path from another machine is not this repository" "$foreign" "could load"
+
 is "and the verb it does not take is refused" \
    "$( CLAUDE_CONFIG_DIR="$home" sh "$lib" nonsense >/dev/null 2>&1; echo $? )" "2"
 
