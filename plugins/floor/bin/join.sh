@@ -309,8 +309,12 @@ reachable() {
 report_plugins_this_host_registered() {
     seen=0
 
-    for market in $(marketplaces_this_host_registered_from); do
-        where=$(marketplace_location "$market") || continue
+    markets=$(marketplaces_this_host_registered_from)
+    [ -n "$markets" ] || { say_nothing_was_installed; return; }
+
+    for market in $markets; do
+        where=$(marketplace_location "$market")
+        [ -n "$where" ] || { say_a_marketplace_with_no_home "$market"; continue; }
 
         for named in $(plugins_offered_by "$where"); do
             seen=$((seen + 1))
@@ -319,6 +323,20 @@ report_plugins_this_host_registered() {
     done
 
     say "plugin  $seen offered here, checked against what this host registered"
+}
+
+# **Nothing to check is not a clean check**, and every other absence on this path names its file.
+# A count of zero read the same as a count of zero wrong, which is the fault `bin/gates.sh` refuses
+# for every gate in this repository.
+say_nothing_was_installed() {
+    say "plugin  none. Nothing was installed here through a marketplace"
+    say "        plugins/installed_plugins.json under CLAUDE_CONFIG_DIR, or ~/.claude, is where that is kept"
+}
+
+# The other half of the same silence. A key names a marketplace the harness has no home for, so the
+# plugins behind it cannot be read and skipping said so to nobody.
+say_a_marketplace_with_no_home() {
+    say "        $1 — this host registered from it, and nothing says where it lives"
 }
 
 # The marketplaces this host actually took something from, never every one it knows. A key joins

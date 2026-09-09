@@ -278,6 +278,25 @@ has "and the drift is still named"    "$vendors_none" "floor ships $ships"
 has "and so is what it registered"    "$vendors_none" "this host has 0.0.1 registered"
 has "and the count is not zero"       "$vendors_none" "1 offered here"
 
+#
+# **Nothing to check is not a clean check.** A host with no record printed `0 offered here`, which
+# reads the same as nought wrong — the fault `bin/gates.sh` refuses for every gate here.
+#
+# Two silences, and they are different absences. One host installed nothing at all; the other took
+# something from a marketplace the harness has no home for.
+nothing=$( cd "$tmp/one" && CLAUDE_CONFIG_DIR="$tmp/emptycfg" FOUNDRY_WHO=a@b sh "$join" 2>&1 )
+has  "a host that installed nothing says so"  "$nothing" "Nothing was installed here through a marketplace"
+has  "and names the file that would say"      "$nothing" "installed_plugins.json"
+lacks "and never prints a count instead"      "$nothing" "0 offered here"
+
+mkdir -p "$tmp/ghostcfg/plugins"
+printf '%s\n' '{' '  "plugins": {' '    "floor@ghost": [' '      { "version": "1.0.0" }' '    ]' '  }' '}' \
+  > "$tmp/ghostcfg/plugins/installed_plugins.json"
+
+ghost=$( cd "$tmp/one" && CLAUDE_CONFIG_DIR="$tmp/ghostcfg" FOUNDRY_WHO=a@b sh "$join" 2>&1 )
+has "a marketplace with no home is named"     "$ghost" "ghost — this host registered from it"
+has "and says what is missing about it"       "$ghost" "nothing says where it lives"
+
 offered "$tmp/one"
 
 # --- the repository's half ---
