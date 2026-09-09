@@ -154,7 +154,14 @@ installed() {
   mkdir -p "$home/plugins"
   record=$home/plugins/installed_plugins.json
 
-  [ "$1" = none ] && { printf '%s\n' '{' '  "plugins": {}' '}' > "$record"; return; }
+  # `none` means floor is not installed, and something else from the same marketplace is. A host
+  # that took nothing at all has no marketplace in scope and nothing to be behind — which is a
+  # different answer, and not the one *absent* was written to test.
+  [ "$1" = none ] && {
+    printf '%s\n' '{' '  "plugins": {' '    "kernel@x": [' '      {' \
+      '        "scope": "user",' '        "version": "1.0.0"' '      }' '    ]' '  }' '}' > "$record"
+    return
+  }
 
   # **Every argument is another install.** The key holds a list, one entry per scope and per
   # project that ever registered it. Fifty-two for one plugin on the machine that found this.
@@ -176,14 +183,33 @@ installed() {
 # A cache keyed by version is how a skill reaches a session, so a rule can land on `main` and change
 # nothing in the session that wrote it. This went unsaid until a person asked, and
 # `signal` was two versions behind the tree that had just committed it.
-# The repository ships the plugin, so the repository is what says which version. A target that
-# vendors none has none to check, and the count says zero rather than nothing at all.
+#
+# **The marketplace says what a plugin ships, not the working tree.** Reading the tree answered only
+# where the tree was Foundry, so a repository that installs it heard nothing — which is the host
+# #559 calls the harder case. The harness records where each marketplace lives, and a consumer's
+# clone holds the same manifests a maintainer's checkout does.
 ships=9.9.9
 mkdir -p "$tmp/one/plugins/floor/.claude-plugin"
 printf '{ "name": "floor", "version": "%s" }\n' "$ships" \
   > "$tmp/one/plugins/floor/.claude-plugin/plugin.json"
 
 home=$tmp/cfg
+
+# What the harness knows about the marketplace behind key `floor@x`. The manifest names where the
+# plugin lives, because a layout guessed instead breaks on the first marketplace that keeps its
+# plugins somewhere else — and one on the machine this was written on does.
+offered() {
+  mkdir -p "$home/plugins" "$1/.claude-plugin"
+
+  printf '%s\n' '{' '  "x": {' "    \"installLocation\": \"$1\"" '  }' '}' \
+    > "$home/plugins/known_marketplaces.json"
+
+  printf '%s\n' '{' '  "name": "x",' '  "plugins": [' '    {' \
+    '      "name": "floor",' '      "source": "./plugins/floor"' '    }' '  ]' '}' \
+    > "$1/.claude-plugin/marketplace.json"
+}
+
+offered "$tmp/one"
 installed 0.0.1
 
 behind=$( cd "$tmp/one" && CLAUDE_CONFIG_DIR="$home" FOUNDRY_WHO=a@b sh "$join" 2>&1 )
@@ -225,7 +251,34 @@ lacks "and never calls that behind"      "$gone" "and this host has"
 installed "$ships"
 current=$( cd "$tmp/one" && CLAUDE_CONFIG_DIR="$home" FOUNDRY_WHO=a@b sh "$join" 2>&1 )
 lacks "a plugin that matches says nothing" "$current" "floor ships"
-has "and the count says it was checked"    "$current" "shipped here, checked against"
+has "and the count says it was checked"    "$current" "offered here, checked against"
+
+#
+# **The consumer, and it is the case #559 calls the harder one.** A repository that installs Foundry
+# has no `plugins/` directory, so reading the working tree found nothing and the count said zero —
+# the host with no maintainer beside it, told the least.
+#
+# The marketplace lives elsewhere here, which is what a github source looks like. Nothing else about
+# the fixture changes, and that is the point: one read answers for both.
+bare two || broke "could not make a second repository"
+git -C "$tmp/two" config user.email a@b
+git -C "$tmp/two" config user.name a
+mkdir -p "$tmp/two/.foundry"
+cp "$tmp/one/.foundry/practice" "$tmp/one/.foundry/gates" "$tmp/two/.foundry/" 2>/dev/null
+
+mkdir -p "$tmp/market/plugins/floor/.claude-plugin"
+printf '{ "name": "floor", "version": "%s" }\n' "$ships" \
+  > "$tmp/market/plugins/floor/.claude-plugin/plugin.json"
+offered "$tmp/market"
+installed 0.0.1
+
+vendors_none=$( cd "$tmp/two" && CLAUDE_CONFIG_DIR="$home" FOUNDRY_WHO=a@b sh "$join" 2>&1 )
+lacks "the second repository vendors no plugins" "$(ls "$tmp/two")" "plugins"
+has "and the drift is still named"    "$vendors_none" "floor ships $ships"
+has "and so is what it registered"    "$vendors_none" "this host has 0.0.1 registered"
+has "and the count is not zero"       "$vendors_none" "1 offered here"
+
+offered "$tmp/one"
 
 # --- the repository's half ---
 
