@@ -53,6 +53,11 @@ jobs:
       - name: Shipped shell reads down, not sideways
         run: bash bin/shell.sh
 
+      # `run.sh` stated the boundary twice in its own comments and nothing read either sentence.
+      # #299 stands a machine up from Docker, and the convenient line to write lands in core.
+      - name: Floor's core names no host
+        run: sh bin/hosts.sh
+
       # Every first-party comment, tests and awk included. The old check read ten blocks and
       # skipped four hundred and eighty-two, so #369 and #398 are what this closes.
       - name: Comment paragraphs narrow by three

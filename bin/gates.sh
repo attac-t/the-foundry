@@ -160,6 +160,10 @@ gate repeats     bash bin/repeats.sh
 
 gate shell       bash bin/shell.sh
 
+# `shell` asks whether the shipped code is written well. This asks whether it knows something it
+# must not. A boundary stated only in comments is one the next convenient line quietly moves.
+gate hosts       sh   bin/hosts.sh
+
 gate taper       sh   bin/taper.sh
 
 #

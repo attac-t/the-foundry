@@ -86,6 +86,12 @@ every_break() {
         'an_else >> plugins/floor/lib/source.sh' \
         'bash bin/shell.sh'
 
+    # The boundary `run.sh` states twice and nothing read. #299 stands a machine up from Docker, and
+    # this is the line that would land in core on the way.
+    drive hosts plugins/floor/lib/source.sh \
+        'a_host >> plugins/floor/lib/source.sh' \
+        'sh bin/hosts.sh'
+
     # Three comment lines that do not step down by three. The gate graded evenness once, and a block
     # dropping eighteen twice went through for weeks.
     #
@@ -147,6 +153,10 @@ a_real_sentence() {
 an_else() {
     printf '\nnoop_for_a_break() {\n    if true; then\n        :\n    else\n        :\n    fi\n}\n'
 }
+
+# Code, never a comment. `run.sh` already carries two comments naming a container, so a break that
+# planted prose would go green against a gate working perfectly.
+a_host() { printf '\n[ -f /.dockerenv ] && inside_a_container=1\n'; }
 
 a_wedge() {
     printf '\n# One two three four five six seven eight nine ten eleven twelve thirteen\n'
