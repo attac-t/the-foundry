@@ -22,6 +22,7 @@ the rule — open the file.
 - `.claude/rules/plugins.md` — What a plugin owes when it changes
 - `.claude/rules/running.md` — A run holds the work. Take one before you touch anything
 - `.claude/rules/shell.md` — Reading `craft-sh` before a shipped script is edited
+- `.claude/rules/vocabulary.md` — The words a capability is known by. Its verb, its nouns, and the sentence that explains it
 - `.claude/rules/writing.md` — Anything written down, not just replies — a reader came to understand, to act or to decide
 <!-- /rules -->
 
