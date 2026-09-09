@@ -297,26 +297,88 @@ reachable() {
 # Silent when they agree. A line for every plugin would bury the one that
 # drifted, and drift is the only thing here that a person acts on. The
 # count is there so that any reader knows the check has run at all.
+# **The marketplace says what a plugin ships, never the working tree.**
+#
+# This read the checkout, so it answered only where the checkout was Foundry. A repository that
+# installs Foundry has no `plugins/` directory, the loop found nothing, and the count said zero —
+# which is the host #559 calls the harder case, told the least.
+#
+# The harness records where each marketplace lives. A directory source points at the checkout
+# itself; a github source points at its own clone. **Both hold the plugin manifests**, so one read
+# answers for a maintainer and a consumer alike.
 report_plugins_this_host_registered() {
-    root=$(git rev-parse --show-toplevel)
     seen=0
 
-    for manifest in "$root"/plugins/*/.claude-plugin/plugin.json; do
-        [ -f "$manifest" ] || continue
+    for market in $(marketplaces_this_host_registered_from); do
+        where=$(marketplace_location "$market") || continue
 
-        seen=$((seen + 1))
-        say_a_plugin_that_drifted "$manifest"
+        for named in $(plugins_offered_by "$where"); do
+            seen=$((seen + 1))
+            say_a_plugin_that_drifted "$where" "$named"
+        done
     done
 
-    say "plugin  $seen shipped here, checked against what this host registered"
+    say "plugin  $seen offered here, checked against what this host registered"
+}
+
+# The marketplaces this host actually took something from, never every one it knows. A key joins
+# the two names and is the only place they are joined.
+marketplaces_this_host_registered_from() {
+    record=$(host_record) || return 0
+
+    awk -F'"' '/^    "/ && index($2, "@") { print substr($2, index($2, "@") + 1) }' "$record" \
+        | sort -u
+}
+
+# Where the harness put it. **The path is JSON-escaped, and the two positions do not count escapes
+# alike** — eight in the pattern match two backslashes, and two in the replacement write one.
+#
+# Measured 9 September: four other pairings either doubled the path or left it whole, and a path
+# left whole resolves nowhere. A directory read from it would then look absent.
+marketplace_location() {
+    known="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plugins/known_marketplaces.json"
+
+    [ -r "$known" ] || return 1
+
+    awk -F'"' -v want="$1" '
+        /^  "/ && $2 == want       { hit = 1; next }
+        hit && /^  "/              { hit = 0 }
+        hit && /"installLocation"/ { p = $4; gsub(/\\\\\\\\/, "\\", p); print p; exit }
+    ' "$known"
+}
+
+# What that marketplace offers, from its own manifest. A layout guessed instead breaks on the first
+# marketplace keeping its plugins elsewhere, and one on the host this was written on has no
+# `plugins/` directory at all.
+plugins_offered_by() {
+    manifest="$1/.claude-plugin/marketplace.json"
+
+    [ -r "$manifest" ] || return 0
+
+    awk -F'"' '/^      "name"/ { print $4 }' "$manifest"
+}
+
+# Where one plugin sits inside it, relative to the marketplace's own root.
+source_of_plugin() {
+    manifest="$1/.claude-plugin/marketplace.json"
+
+    awk -F'"' -v want="$2" '
+        /^      "name"/            { mine = ($4 == want) }
+        mine && /^      "source"/  { print $4; exit }
+    ' "$manifest"
 }
 
 # Absent and behind are different remedies. One is an install, the
 # the other one is an update, and a host that is told only that
 # something is wrong goes off looking for the wrong command.
 say_a_plugin_that_drifted() {
-    named=$(basename "$(dirname "$(dirname "$1")")")
-    ships=$(version_in "$1")
+    where=$1
+    named=$2
+
+    at=$(source_of_plugin "$where" "$named")
+    [ -n "$at" ] || return 0
+
+    ships=$(version_in "$where/$at/.claude-plugin/plugin.json")
     every=$(every_version_registered_for "$named")
     here=$(printf '%s\n' "$every" | sort -u | paste -sd, -)
 
@@ -330,10 +392,12 @@ say_a_plugin_that_drifted() {
 # session read it. Fifty of kernel's fifty-two named `.claude/worktrees/` directories deleted weeks
 # earlier, and calling those loaded said five copies were running when one was.
 #
-# Dropping them is what this deliberately does not do. The path is JSON-escaped, and halving `\\`
-# needs an `awk` replacement whose meaning differs between implementations — measured, one doubled
-# it. A path written by another operating system cannot be tested either, so a row this shell
-# cannot resolve would read as deleted. **Hiding a real drift is the worse failure of the two.**
+# Dropping them is what this deliberately does not do, and the reason has narrowed to one.
+#
+# **The escaping was never the obstacle.** `marketplace_location` halves the same path, and its
+# comment carries the counts. What stands is that a path written by another operating system cannot
+# be tested here at all, so a row this shell cannot resolve reads as deleted — and dropping it would
+# hide a real drift, which is the worse failure of the two.
 #
 # So say how many places instead, and only when it repeats. One install per version is the
 # ordinary case and the count adds nothing to it.
@@ -369,15 +433,23 @@ version_in() {
 #
 # One line per install, undeduplicated, because the caller needs both the set and the count.
 every_version_registered_for() {
-    record="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plugins/installed_plugins.json"
-
-    [ -r "$record" ] || return 0
+    record=$(host_record) || return 0
 
     awk -F'"' -v want="$1" '
         index($0, "\"" want "@") { hit = 1; next }
         hit && /^    "/           { hit = 0 }
         hit && /"version"/        { print $4 }
     ' "$record"
+}
+
+# What the harness wrote down about its own installs. Named once, because two readers used to build
+# the same path and only one of them would have moved.
+host_record() {
+    said="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plugins/installed_plugins.json"
+
+    [ -r "$said" ] || return 1
+
+    printf '%s' "$said"
 }
 
 say() { printf '%s\n' "$1"; }
