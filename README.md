@@ -31,29 +31,23 @@ The plugins ship it, and each one is useful alone.
 
 Requires: Claude Code CLI.
 
-Installing kernel buys one thing: **Claude pushes back instead of agreeing.** Three ways in, and
-which is yours depends only on who is typing.
+**Two questions decide what you type. What are you doing, and how do you type it.**
 
-**You, in Claude Code:**
+### Using Foundry on a repository you already have
+
+Installing kernel buys one thing: **Claude pushes back instead of agreeing.**
 
 ```
 /plugin marketplace add attac-t/the-foundry
 /plugin install kernel@the-foundry
 ```
 
-**An agent, which has no slash commands.** The same two, spelled out:
+**Every `/plugin` line on this page has a `claude plugin` twin**, for an agent that has no slash
+commands. These two are:
 
 ```bash
 claude plugin marketplace add attac-t/the-foundry
 claude plugin install kernel@the-foundry
-```
-
-**Anyone working on Foundry itself rather than using it.** Clone it, and neither pair above is
-needed — the checkout's own `.claude/settings.json` names the marketplace and enables kernel, signal
-and floor.
-
-```bash
-git clone https://github.com/attac-t/the-foundry.git
 ```
 
 Add stack plugins as needed:
@@ -97,9 +91,20 @@ Enable the opinionated voice:
 Check kernel is live: `/evaluate`. It tests kernel's hooks, memory and agents — **never that
 the other plugins installed.**
 
-**If it did not work** — an install that fails, a plugin that will not load —
-[open one](https://github.com/attac-t/the-foundry/issues/new/choose). The first form is for exactly
-that, and it is the only route a stranger needs.
+### Working on Foundry itself
+
+Clone it, and nothing above is needed — the checkout's own `.claude/settings.json` names the
+marketplace and enables kernel, signal and floor.
+
+```bash
+git clone https://github.com/attac-t/the-foundry.git
+```
+
+### When something breaks
+
+An install that fails, a plugin that will not load, anything that does not do what this page says:
+[open an issue](https://github.com/attac-t/the-foundry/issues/new/choose). The first form is for
+exactly that, and it is the only route a stranger needs.
 
 ## Where the work is
 
