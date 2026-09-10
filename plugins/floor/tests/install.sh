@@ -140,10 +140,22 @@ for script in $(wired); do
   is "declares its shell — $script" "$(shell_for "$script")" "bash"
 done
 
-# Only SessionStart, UserPromptSubmit and Setup inject stdout. Move either hook to Stop and it still
+#
+# Only SessionStart, UserPromptSubmit and Setup inject stdout. Move a hook to Stop and it still
 # runs, still exits 0, and reaches nobody.
+#
+# **A tool event has the other channel, and it has to use it.** `additionalContext` reaches the
+# session where stdout does not, so a hook wired to one and printing plainly is the same silence
+# wearing a different event. The first draft of `pulled.sh` did exactly that, and this caught it.
+reaches_the_session() {
+  [ "$(event_for "$1")" = SessionStart ] && return 0
+
+  grep -q additionalContext "$root/hooks/$1"
+}
+
 for script in $(wired); do
-  is "fires on SessionStart — $script" "$(event_for "$script")" "SessionStart"
+  reaches_the_session "$script" && ok "reaches the session — $script" \
+    || bad "$script fires on $(event_for "$script") and prints where nobody reads"
 done
 
 placeholders=$(grep -cF '${CLAUDE_PLUGIN_ROOT}' "$hooks")

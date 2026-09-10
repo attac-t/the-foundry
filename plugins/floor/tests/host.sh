@@ -357,6 +357,28 @@ lacks "a path from another machine is not this repository" "$foreign" "could loa
 is "and the verb it does not take is refused" \
    "$( CLAUDE_CONFIG_DIR="$home" sh "$lib" nonsense >/dev/null 2>&1; echo $? )" "2"
 
+#
+# **The same reader, at the moment the number changes.** A version in `plugin.json` changes nothing
+# in the session that wrote it, and `plugins.md` has said so for weeks while it kept happening —
+# eight bumps in one day, each leaving the session on the skill it had already loaded.
+#
+# A rule read at session start is not read again when it applies. This is read then.
+pulled=$(dirname "$join")/../hooks/pulled.sh
+asked_pulled() { ( cd "$1" && printf '%s' "$2" | CLAUDE_CONFIG_DIR="$home" sh "$pulled" 2>&1 ); }
+
+manifest='{"tool_name":"Edit","tool_input":{"file_path":"plugins/floor/.claude-plugin/plugin.json"}}'
+other='{"tool_name":"Edit","tool_input":{"file_path":"README.md"}}'
+
+reachable "user - 0.0.1"
+has  "a bump the session has not pulled is named" "$(asked_pulled "$tmp/one" "$manifest")" "ships $ships"
+has  "and it names the command"                   "$(asked_pulled "$tmp/one" "$manifest")" "claude plugin update"
+has  "and says the restart is separate"           "$(asked_pulled "$tmp/one" "$manifest")" "restart"
+
+reachable "user - $ships"
+is    "a session already on it says nothing"      "$(asked_pulled "$tmp/one" "$manifest")" ""
+is    "and a file that is not a manifest says nothing" "$(asked_pulled "$tmp/one" "$other")" ""
+is    "and outside a repository it says nothing"  "$(asked_pulled "$tmp/nowhere" "$manifest")" ""
+
 installed 0.0.1
 
 # --- the repository's half ---
