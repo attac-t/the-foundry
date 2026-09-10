@@ -2994,6 +2994,15 @@ wreck_join "a session told nothing by a broken read is caught" \
 wreck_join "an escaped path that never folds is caught" \
   nofold 's#, "/", p)#, "|", p)#' lib/plugins.sh
 
+#
+# **One character, and the hook gives an update to a host that installed nothing.** `session` speaks
+# on a broken read as well as on drift, so reading only whether it said anything cannot tell them
+# apart. This hook did, for one day.
+#
+# Absent and behind are different remedies, and `say_a_plugin_that_drifted` said so first.
+wreck_join "a remedy handed to the wrong absence is caught" \
+  noexitcode 's#session "$root") && exit#session "$root") || exit#' hooks/pulled.sh
+
 # The whole point of the section: a rule naming a skill nobody can invoke used to say nothing.
 wreck_join "a skill the rules name that nobody reports is caught" \
   muteskills 's#^    report_skills_the_rules_name$#    :#'

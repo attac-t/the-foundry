@@ -391,7 +391,10 @@ is "and the verb it does not take is refused" \
 #
 # A rule read at session start is not read again when it applies. This is read then.
 pulled=$(dirname "$join")/../hooks/pulled.sh
-asked_pulled() { ( cd "$1" && printf '%s' "$2" | CLAUDE_CONFIG_DIR="$home" sh "$pulled" 2>&1 ); }
+# The third argument is the host's config, and it defaults to the healthy one every case below uses.
+# Two cases need a broken one, and a second helper differing by one value would be two names for one
+# question.
+asked_pulled() { ( cd "$1" && printf '%s' "$2" | CLAUDE_CONFIG_DIR="${3:-$home}" sh "$pulled" 2>&1 ); }
 
 manifest='{"tool_name":"Edit","tool_input":{"file_path":"plugins/floor/.claude-plugin/plugin.json"}}'
 other='{"tool_name":"Edit","tool_input":{"file_path":"README.md"}}'
@@ -405,6 +408,28 @@ reachable "user - $ships"
 is    "a session already on it says nothing"      "$(asked_pulled "$tmp/one" "$manifest")" ""
 is    "and a file that is not a manifest says nothing" "$(asked_pulled "$tmp/one" "$other")" ""
 is    "and outside a repository it says nothing"  "$(asked_pulled "$tmp/nowhere" "$manifest")" ""
+
+#
+# **Absent and behind are different remedies**, and for one day this hook gave the update to both.
+# Making `session` speak on a broken read made its output non-empty, and this read only that.
+#
+# So a host that had installed nothing was told to pull. An adversary found it in round 2.
+is "a bump on a host with no record says nothing" \
+   "$(asked_pulled "$tmp/one" "$manifest" "$tmp/emptycfg")" ""
+is "and one whose marketplace has no home says nothing" \
+   "$(asked_pulled "$tmp/one" "$manifest" "$tmp/ghostcfg")" ""
+
+# The exit code is the whole contract, because both absences speak and drift speaks. A caller
+# reading only whether anything was said cannot tell them apart, and one shipped hook did exactly
+# that.
+session_at() { CLAUDE_CONFIG_DIR="$1" sh "$lib" session "$tmp/one" >/dev/null 2>&1; echo $?; }
+
+reachable "user - 0.0.1"
+is "drift exits 1"                        "$(session_at "$home")"          "1"
+reachable "user - $ships"
+is "and a healthy session exits 0"        "$(session_at "$home")"          "0"
+is "a read that found no record exits 0"  "$(session_at "$tmp/emptycfg")"  "0"
+is "and one with no marketplace home too" "$(session_at "$tmp/ghostcfg")"  "0"
 
 installed 0.0.1
 
