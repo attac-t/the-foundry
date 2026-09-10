@@ -107,6 +107,12 @@ every_break() {
         'a_vendor >> plugins/floor/lib/source-dir.sh' \
         'sh bin/providers.sh'
 
+    # A value baked into a layer. Deleting it later leaves it in the layer that added it, which is
+    # the one mistake a recipe cannot be edited out of.
+    drive secrets bin/gates.Dockerfile \
+        'a_baked_secret >> bin/gates.Dockerfile' \
+        'sh bin/secrets.sh'
+
     # Three comment lines that do not step down by three. The gate graded evenness once, and a block
     # dropping eighteen twice went through for weeks.
     #
@@ -205,6 +211,10 @@ a_host() { printf '\n[ -f /.dockerenv ] && inside_a_container=1\n'; }
 # A vendor named where core decides something, never where a comment explains the seam. The
 # resolver may carry this very line; `source-dir.sh` may not.
 a_vendor() { printf '\ncase $remote in *github.com*) : ;; esac\n'; }
+
+# A directive, never a comment. The header of `secrets.sh` names a secret four times over, and a
+# break planting prose would go green against a gate working perfectly.
+a_baked_secret() { printf '\nENV GH_TOKEN=abc123\n'; }
 
 a_wedge() {
     printf '\n# One two three four five six seven eight nine ten eleven twelve thirteen\n'

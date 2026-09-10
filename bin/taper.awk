@@ -109,9 +109,8 @@ function mark_heredocs(   i, word, k) {
 #
 # The word a heredoc ends on, or nothing.
 #
-# `<<-` and either quote are the three spellings. A here-string `<<<` is not one,
-# and neither is a comment that happens to mention one — that shut every block
-# below it, which is the fault the first line here exists for.
+# `<<-` and either quote are the three spellings. A here-string `<<<` is not one, and neither
+# is a comment mentioning one — that shut every block below it, and is why the first line exists.
 #
 # A `<<` inside a quoted string still opens one falsely. Telling those apart
 # needs a shell parser, and this file declares none.

@@ -63,6 +63,11 @@ jobs:
       - name: Floor's core names no provider
         run: sh bin/providers.sh
 
+      # A layer is permanent, so a secret baked into one cannot be edited out. This reads the
+      # recipe and says plainly that it never reads the built image.
+      - name: No build recipe names a secret
+        run: sh bin/secrets.sh
+
       # Every first-party comment, tests and awk included. The old check read ten blocks and
       # skipped four hundred and eighty-two, so #369 and #398 are what this closes.
       - name: Comment paragraphs narrow by three

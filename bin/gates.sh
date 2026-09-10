@@ -168,6 +168,10 @@ gate hosts       sh   bin/hosts.sh
 # the adapter — and a gate grading two rules under one name is what `vocabulary.md` refuses.
 gate providers   sh   bin/providers.sh
 
+# The two above ask what shipped code may name. This asks what a build recipe may bake, and a
+# layer is the one place a mistake cannot be edited out afterwards.
+gate secrets     sh   bin/secrets.sh
+
 gate taper       sh   bin/taper.sh
 
 #
