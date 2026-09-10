@@ -3027,10 +3027,15 @@ wreck_join "a remedy handed to the wrong absence is caught" \
 wreck_join "a session hook that fails while reporting is caught" \
   nodriftexit 's#^exit 0$##' hooks/drift.sh
 
-# A `Write` carries the file's content, so matching the whole call fired this hook on a rules page
+#
+# A `Write` carries the file's content, so reading the whole call fired this hook on a rules page
 # that named `plugin.json` in its prose. A hook that speaks about nothing is one nobody reads.
+#
+# **The first version of this break relaxed the pattern instead, and the audit called it `MISSED`.**
+# Two guards for one fault leave neither breakable — the pattern is loose again, and the read is the
+# guard.
 wreck_join "a bump hook fired by prose is caught" \
-  wholecall 's#*/plugin.json|plugin.json)#*plugin.json*)#' hooks/pulled.sh
+  wholecall 's#^wrote=$(sed.*#wrote=$(cat)#' hooks/pulled.sh
 
 # A remedy the reader has to fill in is one they get wrong or skip, and both halves sit on the line
 # above it. `plugins.sh` names the command because `plugins.sh` holds the key.

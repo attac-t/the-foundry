@@ -30,11 +30,15 @@ set -u
 # nobody had caused.
 #
 # A hook that speaks about nothing is one nobody reads, which is what the header above exists for.
+#
+# **The pattern stays loose on purpose.** Anchoring it to `*/plugin.json` would have made reading
+# the payload harmless too, and two guards for one fault leave neither breakable — the audit called
+# that `MISSED` and it was right. One guard, one break.
 wrote=$(sed -n 's/.*"file_path"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p')
 
 case $wrote in
-    */plugin.json|plugin.json) ;;
-    *)                         exit 0 ;;
+    *plugin.json*) ;;
+    *)             exit 0 ;;
 esac
 
 root=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0
