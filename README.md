@@ -31,7 +31,9 @@ The plugins ship it, and each one is useful alone.
 
 Requires: Claude Code CLI.
 
-**Two questions decide what you type. What are you doing, and how do you type it.**
+**Every `/plugin` line below has a `claude plugin` twin**, for an agent that has no slash commands.
+**`/output-style` and `/evaluate` have none** — both are a person's, and an agent cannot reach
+either.
 
 ### Using Foundry on a repository you already have
 
@@ -42,9 +44,7 @@ Installing kernel buys one thing: **Claude pushes back instead of agreeing.**
 /plugin install kernel@the-foundry
 ```
 
-**Every `/plugin` line on this page has a `claude plugin` twin**, for an agent that has no slash
-commands. **`/output-style` and `/evaluate` have none** — both are a person's, and an agent cannot
-reach either. These two are:
+Those two, spelled out:
 
 ```bash
 claude plugin marketplace add attac-t/the-foundry
@@ -109,6 +109,9 @@ git clone https://github.com/attac-t/the-foundry.git
 An install that fails, a plugin that will not load, anything that does not do what this page says:
 [open an issue](https://github.com/attac-t/the-foundry/issues/new/choose). The first form is for
 exactly that, and it is the only route a stranger needs.
+
+**One exception, and it matters:** a security problem goes to
+[SECURITY.md](SECURITY.md), privately, never as an issue.
 
 ## Where the work is
 
