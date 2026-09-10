@@ -2863,6 +2863,21 @@ wreck "a key the README stops requiring is caught"           movekey   movekey
 wreck "a key the runner starts requiring alone is caught"    needsgone needsgone
 wreck "a vocabulary the gate cannot read at all is caught"   noreads   noreads
 
+#
+# **A compaction is where a session loses what it was told at start.** It is the one source a
+# SessionStart matcher can leave out while still looking right, because every other source still
+# fires and the hook still works.
+#
+# `drift.sh` fired on three of four for a day. It returns 1 rather than trusting `sed`, because a
+# mutation that changed nothing is a break that proves nothing.
+nocompact() {
+  sed -i 's/|compact//' "$1/hooks/hooks.json"
+
+  ! grep -q compact "$1/hooks/hooks.json"
+}
+
+wreck "a matcher that misses a compaction is caught" nocompact nocompact
+
 audit_the_executable_bit() {
   records_exec || {
     printf '  skip  a hook that lost its executable bit — this filesystem records no such bit\n'
@@ -3011,6 +3026,16 @@ wreck_join "a remedy handed to the wrong absence is caught" \
 # this hook until the round that found it.
 wreck_join "a session hook that fails while reporting is caught" \
   nodriftexit 's#^exit 0$##' hooks/drift.sh
+
+# A `Write` carries the file's content, so matching the whole call fired this hook on a rules page
+# that named `plugin.json` in its prose. A hook that speaks about nothing is one nobody reads.
+wreck_join "a bump hook fired by prose is caught" \
+  wholecall 's#*/plugin.json|plugin.json)#*plugin.json*)#' hooks/pulled.sh
+
+# A remedy the reader has to fill in is one they get wrong or skip, and both halves sit on the line
+# above it. `plugins.sh` names the command because `plugins.sh` holds the key.
+wreck_join "a remedy printed as a placeholder is caught" \
+  placeholder 's#claude plugin update $2@$4#claude plugin update NAME@MARKET#' lib/plugins.sh
 
 # The whole point of the section: a rule naming a skill nobody can invoke used to say nothing.
 wreck_join "a skill the rules name that nobody reports is caught" \

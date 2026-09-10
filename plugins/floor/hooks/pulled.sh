@@ -24,9 +24,17 @@
 
 set -u
 
-case $(cat) in
-    *plugin.json*) ;;
-    *)             exit 0 ;;
+#
+# **The path the tool wrote, never the whole call.** A `Write` carries the file's content as well,
+# so writing a rules page that named `plugin.json` in its prose fired this hook and reported drift
+# nobody had caused.
+#
+# A hook that speaks about nothing is one nobody reads, which is what the header above exists for.
+wrote=$(sed -n 's/.*"file_path"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p')
+
+case $wrote in
+    */plugin.json|plugin.json) ;;
+    *)                         exit 0 ;;
 esac
 
 root=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0
@@ -43,6 +51,12 @@ said=$(sh "$(dirname "$0")/../lib/plugins.sh" session "$root") && exit 0
 
 one_line=$(printf '%s' "$said" | tr '\n' ';' | tr -d '"\\')
 
+#
+# **The message carries its own command now.** This printed `<name>@<marketplace>` for a day, asking
+# a reader to fill in a key the line above already held.
+#
+# `plugins.sh` names the remedy because `plugins.sh` knows the key. Reading it back out of the
+# message would be polling the report, and the report is not the oracle.
 printf '{"hookSpecificOutput":{"hookEventName":"PostToolUse","additionalContext":'
-printf '"%s — pull it before the skill is asked for: claude plugin update <name>@<marketplace> -y, ' "$one_line"
-printf 'and --scope project for this checkout. The restart is the half no pull reaches."}}\n'
+printf '"%s — pull it before the skill is asked for. ' "$one_line"
+printf 'The restart is the half no pull reaches."}}\n'

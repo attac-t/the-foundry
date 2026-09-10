@@ -36,11 +36,14 @@ wiring() {
       script = pending
       sub(/.*\//, "", script)
       sub(/"[ \t]*$/, "", script)
-      print pevent "\t" script "\t" (shell == "" ? "-" : shell) "\t" pending
+      print pevent "\t" script "\t" (shell == "" ? "-" : shell) "\t" pending "\t" pmatch
       pending = ""; shell = ""
     }
     /^[ \t]*"[A-Z][A-Za-z]*"[ \t]*:[ \t]*\[/ {
       event = $0; sub(/^[ \t]*"/, "", event); sub(/".*/, "", event)
+    }
+    /"matcher"[ \t]*:/ {
+      m = $0; sub(/^[^:]*:[ \t]*"/, "", m); sub(/".*/, "", m); matcher = m
     }
     /"command"[ \t]*:/ {
       flush()
@@ -48,7 +51,7 @@ wiring() {
       sub(/^[^:]*:[ \t]*"/, "", cmd)
       sub(/",?[ \t]*$/, "", cmd)
       gsub(/\\"/, "\"", cmd)
-      pending = cmd; pevent = event
+      pending = cmd; pevent = event; pmatch = matcher
     }
     /"shell"[ \t]*:/ {
       s = $0; sub(/^[^:]*:[ \t]*"/, "", s); sub(/".*/, "", s); shell = s
@@ -65,6 +68,9 @@ shell_for() { wiring | awk -F'\t' -v want="$1" '$2 == want { print $3; exit }'; 
 
 # Get the event a script is wired to.
 event_for() { wiring | awk -F'\t' -v want="$1" '$2 == want { print $1; exit }'; }
+
+# Get the matcher a script is wired behind.
+matcher_for() { wiring | awk -F'\t' -v want="$1" '$2 == want { print $5; exit }'; }
 
 # List every script hooks.json wires.
 wired() { wiring | cut -f2 | sort -u; }
@@ -157,6 +163,17 @@ for script in $(wired); do
   reaches_the_session "$script" && ok "reaches the session — $script" \
     || bad "$script fires on $(event_for "$script") and prints where nobody reads"
 done
+
+#
+# **A compaction is where a session loses what it was told at start**, and it is the one source a
+# SessionStart matcher can leave out without ever looking wrong.
+#
+# `drift.sh` fired on three of four for a day, so a long session heard about a stale plugin once and
+# never again. `.claude/rules/context.md` names compaction as exactly where an instruction goes.
+case $(matcher_for drift.sh) in
+  *compact*) ok  "the drift report survives a compaction" ;;
+  *)         bad "the drift report survives a compaction — it fires on $(matcher_for drift.sh)" ;;
+esac
 
 placeholders=$(grep -cF '${CLAUDE_PLUGIN_ROOT}' "$hooks")
 quoted=$(grep -cF '\"${CLAUDE_PLUGIN_ROOT}' "$hooks")
