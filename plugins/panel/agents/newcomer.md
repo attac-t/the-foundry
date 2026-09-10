@@ -66,7 +66,7 @@ You are not making the change — you are judging whether the suite would tell y
 # The Verdict
 
 Return it in `craft-verdict`'s format, with times recorded. You do not write it to disk —
-`/verdict` records it to `verdicts/NNN-newcomer-verdict.md`.
+`/verdict` records it to `.claude/panel/verdicts/NNN-newcomer-verdict.md`.
 
 Severity, for this gate specifically:
 
@@ -85,7 +85,7 @@ and it should survive the next refactor.
 **Your times are the slop metric.** One reading is noise. A series is a trend, and the trend is the
 only thing that sees six months of gradual decay — every individual change looked fine.
 
-`/verdict` appends your four numbers to `verdicts/cold-read-log.md`:
+`/verdict` appends your four numbers to `.claude/panel/verdicts/cold-read-log.md`:
 
 ```
 | date       | commit  | locate | understand | predict | change |
@@ -104,8 +104,13 @@ read — and no care afterwards undoes that.
 The fourth reader here met a log of fifty-one lines, thirty-four of them prose, and reported that
 *numbers only* was not available to it. **That report is worth more than the calibration it lost.**
 
-In session you open it yourself. Handed a brief on another host you will not have it — say so and
-carry on. A missing log costs you calibration, not the read.
+In session you open it yourself, **at that path and not a shorter one.** A reader here searched
+`verdicts/` from wherever it stood, found nothing, and called its own timings a baseline — while
+three rows sat one directory up.
+
+Handed a brief on another host you will not have it. **Say which of the two it was**: absent, or
+not where you looked. A missing log costs you calibration, and a log you failed to find costs the
+next reader the same thing twice.
 
 ## Say what you could not un-know
 
