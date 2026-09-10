@@ -11,8 +11,14 @@
 # **The same reader as `drift.sh`, at a different moment.** That one asks at session start; this
 # asks the second the number changes, which is when a person can act on the answer.
 #
-# Silent unless something is behind. On a directory-sourced marketplace the checkout *is* the
-# marketplace, so a bump is drift the moment it lands and the answer is immediate.
+# **Through `additionalContext`, never stdout.** Only SessionStart, UserPromptSubmit and Setup
+# inject what a hook prints; a tool event's stdout reaches the transcript and nobody reads it back.
+# `tests/install.sh` refused the first draft of this file for exactly that, under WSL, where Git
+# Bash saw nothing wrong.
+#
+# So the message is one line with no quote and no backslash in it. Building JSON in `sh` is a
+# parser this plugin does not ship, and a line that needs escaping is a line that will be escaped
+# wrongly.
 #
 # Reads a `PostToolUse` tool call as JSON on stdin.
 
@@ -28,6 +34,8 @@ root=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0
 said=$(sh "$(dirname "$0")/../lib/plugins.sh" session "$root") || exit 0
 [ -n "$said" ] || exit 0
 
-printf '%s\n' "$said"
-printf 'pulled  not yet. `claude plugin update <name>@<marketplace> -y`, and `--scope project` for this checkout.\n'
-printf '        The restart is the half no pull reaches.\n'
+one_line=$(printf '%s' "$said" | tr '\n' ';' | tr -d '"\\')
+
+printf '{"hookSpecificOutput":{"hookEventName":"PostToolUse","additionalContext":'
+printf '"%s — pull it before the skill is asked for: claude plugin update <name>@<marketplace> -y, ' "$one_line"
+printf 'and --scope project for this checkout. The restart is the half no pull reaches."}}\n'
