@@ -47,7 +47,10 @@ report_plugins_this_host_registered() {
         where=$(marketplace_location "$market")
         [ -n "$where" ] || { say_a_marketplace_with_no_home "$market"; continue; }
 
-        for named in $(plugins_offered_by "$where"); do
+        offered=$(plugins_offered_by "$where") \
+            || { say_a_marketplace_with_no_manifest "$market" "$where"; continue; }
+
+        for named in $offered; do
             seen=$((seen + 1))
             say_a_plugin_that_drifted "$where" "$named"
         done
@@ -68,6 +71,13 @@ say_nothing_was_installed() {
 # plugins behind it cannot be read and skipping said so to nobody.
 say_a_marketplace_with_no_home() {
     say "        $1 — this host registered from it, and nothing says where it lives"
+}
+
+# The third of the same silence, and the one both verbs shared. A home that resolves and a manifest
+# that does not read leave the marketplace offering nothing, so a host three versions behind looked
+# clean in `host` and heard nothing in `session`.
+say_a_marketplace_with_no_manifest() {
+    say "        $1 — its home is $2, and no marketplace.json can be read there"
 }
 
 # The marketplaces this host actually took something from, never every one it knows. A key joins
@@ -103,10 +113,16 @@ marketplace_location() {
 # What that marketplace offers, from its own manifest. A layout guessed instead breaks on the first
 # marketplace keeping its plugins elsewhere, and one on the host this was written on has no
 # `plugins/` directory at all.
+#
+# **Returns 1 when the manifest cannot be read**, because a caller reading only the list cannot tell
+# an empty marketplace from an unreadable one. It returned 0 with no output for both, and both verbs
+# then said nothing at all — the *nothing to check is not a clean check* this file refuses above.
+#
+# The status has to be read on its own line. Inside `$( )` a `for` loop discards it.
 plugins_offered_by() {
     manifest="$1/.claude-plugin/marketplace.json"
 
-    [ -r "$manifest" ] || return 0
+    [ -r "$manifest" ] || return 1
 
     awk -F'"' '/^      "name"/ { print $4 }' "$manifest"
 }
@@ -233,7 +249,10 @@ report_what_this_session_could_load() {
         where=$(marketplace_location "$market")
         [ -n "$where" ] || { say_a_marketplace_with_no_home "$market"; continue; }
 
-        for named in $(plugins_offered_by "$where"); do
+        offered=$(plugins_offered_by "$where") \
+            || { say_a_marketplace_with_no_manifest "$market" "$where"; continue; }
+
+        for named in $offered; do
             say_a_plugin_this_session_could_load "$where" "$named" "$1" "$market"
         done
     done
