@@ -354,6 +354,33 @@ reachable "user - $ships" 'project D:\\Elsewhere\\repo 0.0.1'
 foreign=$( CLAUDE_CONFIG_DIR="$home" sh "$lib" session "$tmp/one" 2>&1 )
 lacks "a path from another machine is not this repository" "$foreign" "could load"
 
+#
+# **The fold needs one case where it has to match.** Every assertion above reads an absence, and a
+# fold matching nothing produces that same absence — which is how an eight-backslash `gsub` ran
+# green for a day here before a comparison caught it.
+#
+# This row is this repository, written the way Windows writes it.
+windows=$(printf '%s' "$tmp/one" | sed 's|/|\\\\|g')
+reachable "user - $ships" "project $windows 0.0.1"
+folded=$( CLAUDE_CONFIG_DIR="$home" sh "$lib" session "$tmp/one" 2>&1 )
+has "an escaped path folds to this repository" "$folded" "could load 0.0.1,$ships"
+
+#
+# **The same two absences, asked of the verb the hook runs.** `host` named both from the day it
+# shipped and `session` named neither, so an unreadable record and a healthy host gave one output.
+#
+# An adversary found it, #650 owns it, and the fixtures are `host`'s own.
+norecord=$( CLAUDE_CONFIG_DIR="$tmp/emptycfg" sh "$lib" session "$tmp/one" 2>&1 )
+has "a session with no record says so"      "$norecord" "Nothing was installed here through a marketplace"
+has "and names the file that would say"     "$norecord" "installed_plugins.json"
+
+unplaced=$( CLAUDE_CONFIG_DIR="$tmp/ghostcfg" sh "$lib" session "$tmp/one" 2>&1 )
+has "a marketplace with no home is named to a session" "$unplaced" "ghost — this host registered from it"
+
+# A plugin offered and never installed is a third silence and stays one. It is an answer — this
+# session could load none of it — where the two above are a read that failed. `theirs` above holds
+# it, and `host` says it to the person who asked.
+
 is "and the verb it does not take is refused" \
    "$( CLAUDE_CONFIG_DIR="$home" sh "$lib" nonsense >/dev/null 2>&1; echo $? )" "2"
 
