@@ -122,14 +122,13 @@ report() {
 }
 
 #
-# Both halves, and the second was missing.
+# The rendering, and only the rendering.
 #
-# The hook is the only wall a caller meets before the write, and forty-three checks shipped without
-# one driving it. Its own suite cannot type a tool call on a command line — the live hook would read
-# it — so every case there is a file.
+# This used to drive the seam hook as well, because the hook was the second half of one rule and
+# nothing else ran it. **A second hook arrived and made that two subjects under one name** — so
+# `bin/hooks.sh` drives every hook now, and this grades what a comment is made of.
 audit_both() {
-    bash "$root/tests/comments.sh" || return 1
-    bash "$root/tests/seam.sh"
+    bash "$root/tests/comments.sh"
 }
 
 main "$@"
