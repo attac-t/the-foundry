@@ -25,6 +25,11 @@
 #
 # Exit: 0 answered, 2 asked for something this does not do
 #
+# **`session` exits 1 when it found drift**, because both its absences speak too and a caller that
+# reads only whether anything was said cannot tell them apart. One shipped hook appended *pull it*
+# to *nothing was installed here* on the strength of that. Absent and behind are different remedies,
+# and `say_a_plugin_that_drifted` has said so since before either hook existed.
+#
 set -u
 
 # Everything this host registered, everywhere. Silent per plugin when the versions agree, because a
@@ -216,8 +221,10 @@ host_record() {
 # Eight of those a session is the noise this design refuses, and `host` already says it to the
 # person who asked.
 report_what_this_session_could_load() {
+    drifted=no
+
     markets=$(marketplaces_this_host_registered_from)
-    [ -n "$markets" ] || { say_nothing_was_installed; return; }
+    [ -n "$markets" ] || { say_nothing_was_installed; return 0; }
 
     for market in $markets; do
         where=$(marketplace_location "$market")
@@ -227,10 +234,18 @@ report_what_this_session_could_load() {
             say_a_plugin_this_session_could_load "$where" "$named" "$1"
         done
     done
+
+    [ "$drifted" = yes ] && return 1
+
+    return 0
 }
 
 # Silent when the reachable versions are the one the marketplace ships. A hook that speaks on a
 # healthy host is a hook nobody reads by the end of the week.
+#
+# **Sets `drifted`, because saying it is not the same as finding it.** Both absences above also
+# speak, and a caller reading only whether anything was said cannot tell a plugin behind the tree
+# from a check that could not run. One of those wants an update and the other does not.
 say_a_plugin_this_session_could_load() {
     at=$(source_of_plugin "$1" "$2")
     [ -n "$at" ] || return 0
@@ -241,6 +256,7 @@ say_a_plugin_this_session_could_load() {
     [ -z "$here" ] && return 0
     [ "$here" = "$ships" ] && return 0
 
+    drifted=yes
     say "plugin  $2 ships $ships, and this session could load $here"
 }
 

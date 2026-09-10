@@ -31,7 +31,14 @@ esac
 
 root=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0
 
-said=$(sh "$(dirname "$0")/../lib/plugins.sh" session "$root") || exit 0
+#
+# **Exit 1 is the answer this wants, and 0 is not.** `session` speaks on a broken read as well as on
+# drift, and this once appended *pull it before the skill is asked for* to *nothing was installed
+# here through a marketplace*.
+#
+# An install and an update are different remedies. A host told only that something is wrong goes off
+# and runs the wrong one.
+said=$(sh "$(dirname "$0")/../lib/plugins.sh" session "$root") && exit 0
 [ -n "$said" ] || exit 0
 
 one_line=$(printf '%s' "$said" | tr '\n' ';' | tr -d '"\\')
