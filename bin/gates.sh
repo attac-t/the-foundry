@@ -41,10 +41,19 @@ on_linux() {
     # repository of its own — `repeats` reads `git ls-files` and must list the copy.
     #
     # Two lanes patched around this by hand before anyone wrote it down.
+    #
+    # **The two lines `join.sh` prints to a fresh host.** A container is a host nobody has joined,
+    # and floor refuses to commit on one — correctly, and `identity.md` says so.
+    #
+    # Seventeen gates passed here and floor went red twelve times with `Author identity unknown`,
+    # the first time this lane ever ran. **Not in the image**: a host supplies its own identity, and
+    # `#636` asks that nothing a host supplies is baked in.
     docker run --rm -v "$root:/src:ro" -e FOUNDRY_EPHEMERAL=1 foundry-gates sh -c '
         cp -r /src ~/repo && cd ~/repo
         [ -f .git ] && { rm -f .git; git init -q .; git add -A; }
         git config --global --add safe.directory ~/repo
+        git config --global user.email forge@example.invalid
+        git config --global user.name forge
         sh bin/gates.sh
     '
 }
