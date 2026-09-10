@@ -31,22 +31,23 @@ The plugins ship it, and each one is useful alone.
 
 Requires: Claude Code CLI.
 
-Have Claude push back instead of agreeing:
+**Two questions decide what you type. What are you doing, and how do you type it.**
+
+### Using Foundry on a repository you already have
+
+Installing kernel buys one thing: **Claude pushes back instead of agreeing.**
 
 ```
 /plugin marketplace add attac-t/the-foundry
 /plugin install kernel@the-foundry
 ```
 
-**A worker has no slash commands.** The same two are `claude plugin marketplace add attac-t/the-foundry`
-and `claude plugin install kernel@the-foundry`.
-
-**To work on Foundry rather than use it, clone it instead.** The checkout's own
-`.claude/settings.json` names the marketplace and enables kernel, signal and floor, so neither
-command above is needed.
+**Every `/plugin` line on this page has a `claude plugin` twin**, for an agent that has no slash
+commands. These two are:
 
 ```bash
-git clone https://github.com/attac-t/the-foundry.git
+claude plugin marketplace add attac-t/the-foundry
+claude plugin install kernel@the-foundry
 ```
 
 Add stack plugins as needed:
@@ -90,6 +91,21 @@ Enable the opinionated voice:
 Check kernel is live: `/evaluate`. It tests kernel's hooks, memory and agents — **never that
 the other plugins installed.**
 
+### Working on Foundry itself
+
+Clone it, and nothing above is needed — the checkout's own `.claude/settings.json` names the
+marketplace and enables kernel, signal and floor.
+
+```bash
+git clone https://github.com/attac-t/the-foundry.git
+```
+
+### When something breaks
+
+An install that fails, a plugin that will not load, anything that does not do what this page says:
+[open an issue](https://github.com/attac-t/the-foundry/issues/new/choose). The first form is for
+exactly that, and it is the only route a stranger needs.
+
 ## Where the work is
 
 **One board, and it is the front door:** https://github.com/users/attac-t/projects/1
@@ -98,9 +114,11 @@ the other plugins installed.**
 from are public, and they are where a stranger starts:
 [github.com/attac-t/the-foundry/issues](https://github.com/attac-t/the-foundry/issues).
 
-It shows what needs eyes, what is next, what is under review, what only a person can answer, and
-what is done. [`docs/work-system.md`](docs/work-system.md) says where each fact lives and what the
-board cannot do.
+Its columns are what needs eyes, what is next, what is under review, what only a person can answer,
+and what is done.
+
+[`docs/work-system.md`](docs/work-system.md) says where each fact lives, and what the board cannot
+do.
 
 ---
 
@@ -108,8 +126,9 @@ board cannot do.
 
 This tree answers what is true now; GitHub answers how it got here. Goals live only in
 [`.foundry/goals.md`](.foundry/goals.md). Issues hold the changes wanted and the open questions, pull
-requests hold the reasoning, history keeps every deleted page. A merged page is read as operative by
-the next agent — so a proposal starts as an issue, and a thinking pass ends as a PR, not in the tree.
+requests hold the reasoning, history keeps every deleted page. **A merged page is read as operative
+by the next agent.** So a proposal starts as an issue, and a thinking pass ends as a PR, never in
+the tree.
 
 **A merge lands a page. It accepts nothing.** A goal a merged page proposes stays proposed until a
 named person says yes, in writing, dated.
@@ -128,10 +147,6 @@ contracts bind, its revision log is history, and what runs now is each plugin's 
 Read [CONTRIBUTING.md](CONTRIBUTING.md). Eighteen gates, and they run before a pull request, not after.
 
 Found a security problem? [SECURITY.md](SECURITY.md) — report it privately, never as an issue.
-
-**Anything else broken — an install that fails, a plugin that will not load —
-[open one](https://github.com/attac-t/the-foundry/issues/new/choose).** The first form is for
-exactly that, and it is the only route a stranger needs.
 
 ---
 

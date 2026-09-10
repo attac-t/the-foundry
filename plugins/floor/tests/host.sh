@@ -297,6 +297,23 @@ ghost=$( cd "$tmp/one" && CLAUDE_CONFIG_DIR="$tmp/ghostcfg" FOUNDRY_WHO=a@b sh "
 has "a marketplace with no home is named"     "$ghost" "ghost — this host registered from it"
 has "and says what is missing about it"       "$ghost" "nothing says where it lives"
 
+#
+# **The third of the same silence, and the one both verbs shared.** A home that resolves and a
+# manifest that does not read left the marketplace offering nothing, so `host` printed a count of
+# zero and `session` said nothing at all.
+#
+# An adversary raised it in round 2 of #559 and would not file it — the ratchet on that review bars
+# a new Warning. It asked for it on its own, and #662 is that.
+mkdir -p "$tmp/nomanifest/plugins" "$tmp/emptymarket"
+printf '%s\n' '{' '  "plugins": {' '    "floor@hollow": [' '      { "version": "1.0.0" }' '    ]' '  }' '}' \
+  > "$tmp/nomanifest/plugins/installed_plugins.json"
+printf '%s\n' '{' '  "hollow": {' "    \"installLocation\": \"$tmp/emptymarket\"" '  }' '}' \
+  > "$tmp/nomanifest/plugins/known_marketplaces.json"
+
+hollow=$( cd "$tmp/one" && CLAUDE_CONFIG_DIR="$tmp/nomanifest" FOUNDRY_WHO=a@b sh "$join" 2>&1 )
+has "a marketplace with no manifest is named" "$hollow" "hollow — its home is"
+has "and says which file it wanted"           "$hollow" "no marketplace.json can be read there"
+
 offered "$tmp/one"
 
 # --- what this session could load ---
@@ -380,6 +397,11 @@ has "and names the file that would say"     "$norecord" "installed_plugins.json"
 
 unplaced=$( CLAUDE_CONFIG_DIR="$tmp/ghostcfg" sh "$lib" session "$tmp/one" 2>&1 )
 has "a marketplace with no home is named to a session" "$unplaced" "ghost — this host registered from it"
+
+# The third absence, asked of the verb the hook runs. Both verbs were silent on this one, which is
+# why round 2 of the review could not reach it — its reasoning rested on the two disagreeing.
+unread=$( CLAUDE_CONFIG_DIR="$tmp/nomanifest" sh "$lib" session "$tmp/one" 2>&1 )
+has "a manifest nobody can read is named too" "$unread" "no marketplace.json can be read there"
 
 # A plugin offered and never installed is a third silence and stays one. It is an answer — this
 # session could load none of it — where the two above are a read that failed. `theirs` above holds
