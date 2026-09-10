@@ -31,6 +31,8 @@ The plugins ship it, and each one is useful alone.
 
 Requires: Claude Code CLI.
 
+Have Claude push back instead of agreeing:
+
 ```
 /plugin marketplace add attac-t/the-foundry
 /plugin install kernel@the-foundry
