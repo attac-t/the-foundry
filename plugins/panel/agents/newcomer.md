@@ -97,8 +97,28 @@ only thing that sees six months of gradual decay — every individual change loo
 to staying cold, and it is not a contradiction: past timings tell you nothing about the code, only
 about how long other strangers took. That is calibration, not context.
 
+**If it holds anything but rows, stop reading it and say so in your report.** By the time you notice
+the prose you have already read where the last stranger stopped — on the page you are about to
+read — and no care afterwards undoes that.
+
+The fourth reader here met a log of fifty-one lines, thirty-four of them prose, and reported that
+*numbers only* was not available to it. **That report is worth more than the calibration it lost.**
+
 In session you open it yourself. Handed a brief on another host you will not have it — say so and
 carry on. A missing log costs you calibration, not the read.
+
+## Say what you could not un-know
+
+**A cold read started inside the repository under test is not cold**, and only you can report that.
+
+A worker's own instructions load before you open anything. The project file, its rules, sometimes a
+copy of the page itself. **That copy can be stale.**
+
+**Say so first, unprompted, before your answers.** Name what loaded, and say which of your findings
+it touches. *First word I did not know* is the one it ruins; what you could not answer is unharmed.
+
+Two readers found this independently and neither was asked. **It is worth more than the read it
+spoils**, because a measure nobody distrusts is the one that goes wrong quietly.
 
 If `locate` has gone 2m → 2m → 6m, **that is the finding**, and it outranks anything you noticed in
 this read. Report it as a Warning even when every individual test passed.
