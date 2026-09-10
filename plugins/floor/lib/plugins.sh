@@ -234,7 +234,7 @@ report_what_this_session_could_load() {
         [ -n "$where" ] || { say_a_marketplace_with_no_home "$market"; continue; }
 
         for named in $(plugins_offered_by "$where"); do
-            say_a_plugin_this_session_could_load "$where" "$named" "$1"
+            say_a_plugin_this_session_could_load "$where" "$named" "$1" "$market"
         done
     done
 
@@ -249,6 +249,10 @@ report_what_this_session_could_load() {
 # **Sets `drifted`, because saying it is not the same as finding it.** Both absences above also
 # speak, and a caller reading only whether anything was said cannot tell a plugin behind the tree
 # from a check that could not run. One of those wants an update and the other does not.
+#
+# **It names its own remedy, as every other absence on this path does.** A hook printed
+# `<name>@<marketplace>` for a day, asking the reader to fill in a key the line above already held.
+# Naming it here keeps one place that knows it, and spares a caller from parsing a message.
 say_a_plugin_this_session_could_load() {
     at=$(source_of_plugin "$1" "$2")
     [ -n "$at" ] || return 0
@@ -260,7 +264,8 @@ say_a_plugin_this_session_could_load() {
     [ "$here" = "$ships" ] && return 0
 
     drifted=yes
-    say "plugin  $2 ships $ships, and this session could load $here"
+    say "plugin  $2@$4 ships $ships, and this session could load $here"
+    say "        claude plugin update $2@$4 -y, and --scope project for this checkout"
 }
 
 # The versions on rows a session can reach. `scope` is read before `version` in every record the

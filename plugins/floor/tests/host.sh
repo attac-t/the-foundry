@@ -333,8 +333,12 @@ lacks "a row for another project is not reported" "$theirs" "could load"
 
 reachable "user - $ships" "project $tmp/one 0.0.1"
 ours=$( CLAUDE_CONFIG_DIR="$home" sh "$lib" session "$tmp/one" 2>&1 )
-has "a row for this repository is"     "$ours" "floor ships $ships"
+has "a row for this repository is"     "$ours" "floor@x ships $ships"
 has "and both versions are named"      "$ours" "could load 0.0.1,$ships"
+
+# The key, not the plugin's bare name, because the remedy needs both halves and a hook printed
+# `<name>@<marketplace>` for a day rather than hold them.
+has "and the line names its own remedy" "$ours" "claude plugin update floor@x -y"
 
 # Windows writes a path with escaped separators and `git` hands back the same place with forward
 # slashes. Folded to one shape, they are the same repository — and the fold is why a hook on a
@@ -408,6 +412,22 @@ reachable "user - $ships"
 is    "a session already on it says nothing"      "$(asked_pulled "$tmp/one" "$manifest")" ""
 is    "and a file that is not a manifest says nothing" "$(asked_pulled "$tmp/one" "$other")" ""
 is    "and outside a repository it says nothing"  "$(asked_pulled "$tmp/nowhere" "$manifest")" ""
+
+#
+# **The path the tool wrote, never the whole call.** A `Write` carries the file's content, so a
+# rules page naming `plugin.json` in its prose fired this hook and reported drift nobody caused.
+#
+# The fixture is that page, near enough: a `.md` whose content holds the word.
+prose='{"tool_name":"Write","tool_input":{"file_path":"rules/plugins.md","content":"a version in plugin.json changes nothing"}}'
+
+reachable "user - 0.0.1"
+is  "a page that merely names a manifest says nothing" "$(asked_pulled "$tmp/one" "$prose")" ""
+
+# A remedy the reader has to fill in is one they get wrong or skip, and both halves were on the line
+# above it. `plugins.sh` names the command because `plugins.sh` holds the key.
+lacks "and a real bump leaves no placeholder"  "$(asked_pulled "$tmp/one" "$manifest")" "<name>"
+lacks "nor the other half"                    "$(asked_pulled "$tmp/one" "$manifest")" "<marketplace>"
+has   "it prints the command it means"        "$(asked_pulled "$tmp/one" "$manifest")" "claude plugin update floor@x -y"
 
 #
 # **Absent and behind are different remedies**, and for one day this hook gave the update to both.
