@@ -243,6 +243,42 @@ folded=$( CLAUDE_CONFIG_DIR="$home" sh "$lib" session "$tmp/one" 2>&1 )
 has  "the session verb reads it too" "$folded" "could load 0.0.1"
 lacks "and not the scope"            "$folded" "could load user"
 
+#
+# **A record it cannot read is not a record saying nothing.** The one shape it takes is a key at
+# four spaces holding an `@`. Written compact, or at another depth, it yields no key — and this said
+# *nothing was installed* over a file that listed a plugin.
+#
+# Confidently wrong beats silent for a reader, and loses to *I could not read it*.
+shaped() {
+  mkdir -p "$tmp/$1/plugins"
+  cp "$home/plugins/known_marketplaces.json" "$tmp/$1/plugins/" 2>/dev/null
+  cat > "$tmp/$1/plugins/installed_plugins.json"
+}
+
+shaped compact <<'JSON'
+{"version":2,"plugins":{"floor@x":[{"scope":"user","version":"0.0.1"}]}}
+JSON
+
+shaped deeper <<'JSON'
+{
+  "plugins": {
+  "floor@x": [
+    { "scope": "user", "version": "0.0.1" }
+  ]
+  }
+}
+JSON
+
+for shape in compact deeper; do
+  said=$( cd "$tmp/one" && CLAUDE_CONFIG_DIR="$tmp/$shape" FOUNDRY_WHO=a@b sh "$join" 2>&1 )
+  has   "a $shape record says it could not be read" "$said" "no marketplace could be read from it"
+  lacks "and never that nothing was installed"      "$said" "Nothing was installed here"
+done
+
+# The other half, and the one that must not move: a host with no record at all still says so.
+absent=$( cd "$tmp/one" && CLAUDE_CONFIG_DIR="$tmp/emptycfg" FOUNDRY_WHO=a@b sh "$join" 2>&1 )
+has "a host with no record still says nothing was installed" "$absent" "Nothing was installed here"
+
 # **Five versions reads as five running copies. Five across fifty-two reads as debris.**
 #
 # Fifty of kernel's fifty-two rows named worktrees deleted weeks before, and nothing in the sentence

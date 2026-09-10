@@ -62,9 +62,21 @@ report_plugins_this_host_registered() {
 # **Nothing to check is not a clean check**, and every other absence on this path names its file.
 # A count of zero read the same as a count of zero wrong, which is the fault `bin/gates.sh` refuses
 # for every gate in this repository.
+#
+# **A record it cannot read is not a record saying nothing.** The one shape it takes is a key at
+# four spaces holding an `@`. A record written compact, or at another depth, yields no key — and
+# this said *nothing was installed* over a file that listed eight plugins.
+#
+# Confidently wrong beats silent for a reader, and loses to *I could not read it*.
 say_nothing_was_installed() {
-    say "plugin  none. Nothing was installed here through a marketplace"
-    say "        plugins/installed_plugins.json under CLAUDE_CONFIG_DIR, or ~/.claude, is where that is kept"
+    record=$(host_record) || {
+        say "plugin  none. Nothing was installed here through a marketplace"
+        say "        plugins/installed_plugins.json under CLAUDE_CONFIG_DIR, or ~/.claude, is where that is kept"
+        return
+    }
+
+    say "plugin  none read. The record is there and no marketplace could be read from it"
+    say "        $record — a key at four spaces holding an @ is the shape this takes"
 }
 
 # The other half of the same silence. A key names a marketplace the harness has no home for, so the
