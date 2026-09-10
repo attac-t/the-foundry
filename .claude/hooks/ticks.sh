@@ -52,20 +52,40 @@ issues_closed_by() {
 }
 
 report_each_issue_it_closes() {
+    said=''
+
     for issue in $(issues_closed_by "$1"); do
-        say_what_is_open "$issue"
+        said="$said$(what_is_open "$issue")"
     done
+
+    [ -n "$said" ] || exit 0
+
+    inject "$said"
 }
 
 # Silence when every box is ticked, because that is the ordinary case and a hook that speaks every
 # time is one a reader stops seeing.
-say_what_is_open() {
+what_is_open() {
     open=$(gh issue view "$1" --json body --jq .body 2>/dev/null | grep -c '^- \[ \]')
 
     [ "${open:-0}" -gt 0 ] 2>/dev/null || return 0
 
-    printf 'ticks: #%s closed by this merge. Boxes still open: %s\n' "$1" "$open"
-    printf '       Read each against the tree, then tick it, strike it, or move it.\n'
+    printf '#%s closed by this merge with %s open; ' "$1" "$open"
+}
+
+#
+# **Through `additionalContext`, never stdout.** Only SessionStart, UserPromptSubmit and Setup
+# inject what a hook prints; on a tool event it reaches the transcript and nobody reads it back.
+#
+# This shipped printing plainly and nothing ever saw it speak. Floor's own suite carried the
+# reasoning and caught the same mistake in a plugin hook a day later — a repository-level hook had
+# no such suite until now.
+#
+# One line, no quote and no backslash. Building JSON in `sh` is a parser this does not have.
+inject() {
+    printf '{"hookSpecificOutput":{"hookEventName":"PostToolUse","additionalContext":'
+    printf '"%sread each box against the tree, then tick it, strike it, or move it."}}\n' \
+        "$(printf '%s' "$1" | tr -d '"\\')"
 }
 
 main "$@"

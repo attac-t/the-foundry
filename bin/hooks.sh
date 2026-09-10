@@ -20,7 +20,7 @@ set -u
 
 cd "$(dirname "$0")/.." || exit 3
 
-SUITES='identity seam'
+SUITES='identity seam ticks'
 
 say()  { printf '%s\n' "$1"; }
 fail() { printf 'hooks: %s\n' "$1" >&2; exit 3; }

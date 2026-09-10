@@ -2979,6 +2979,21 @@ wreck_join "a row for another project counted as this session's is caught" \
 wreck_join "a bump that says nothing about the running copy is caught" \
   nopulled 's#plugin.json#neverthis#' hooks/pulled.sh
 
+#
+# **The same guard, on the verb the hook runs.** `nosilence` above breaks both verbs at once because
+# they share the message. This one reaches only `session`, from its own function to end of file, so
+# removing its guard alone cannot pass.
+#
+# It shipped without one and an adversary found it on 10 September. #650.
+wreck_join "a session told nothing by a broken read is caught" \
+  noquietsession '/report_what_this_session_could_load/,$ s#say_nothing_was_installed; return#:#' lib/plugins.sh
+
+# **A fold that matches nothing looks exactly like a path from another machine.** That is how eight
+# backslashes ran green for a day here. Every other assertion on this path reads an absence, and an
+# absence is what a dead fold produces.
+wreck_join "an escaped path that never folds is caught" \
+  nofold 's#, "/", p)#, "|", p)#' lib/plugins.sh
+
 # The whole point of the section: a rule naming a skill nobody can invoke used to say nothing.
 wreck_join "a skill the rules name that nobody reports is caught" \
   muteskills 's#^    report_skills_the_rules_name$#    :#'
