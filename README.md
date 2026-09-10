@@ -1,9 +1,12 @@
 # The Foundry
 
+**Foundry is a protocol, not a tool.** It installs on a repository you already have, and today it
+runs on the Claude Code CLI.
+
 Foundry helps software keep improving while people decide what good means.
 
-**Start with [`.foundry/doctrine.md`](.foundry/doctrine.md).** It says what Foundry is, why it
-exists, who it serves and where it is going. Everything below carries it out.
+**[`.foundry/doctrine.md`](.foundry/doctrine.md) holds the full definition** — why Foundry exists,
+who it serves and where it is going. Everything below carries it out.
 
 The plugins ship it, and each one is useful alone.
 
@@ -90,7 +93,8 @@ the other plugins installed.**
 **One board, and it is the front door:** https://github.com/users/attac-t/projects/1
 
 **It is private today, so that link opens for the owner and nobody else.** The issues it draws
-from are public, and they are where a stranger starts.
+from are public, and they are where a stranger starts:
+[github.com/attac-t/the-foundry/issues](https://github.com/attac-t/the-foundry/issues).
 
 It shows what needs eyes, what is next, what is under review, what only a person can answer, and
 what is done. [`docs/work-system.md`](docs/work-system.md) says where each fact lives and what the
@@ -122,6 +126,10 @@ contracts bind, its revision log is history, and what runs now is each plugin's 
 Read [CONTRIBUTING.md](CONTRIBUTING.md). Eighteen gates, and they run before a pull request, not after.
 
 Found a security problem? [SECURITY.md](SECURITY.md) — report it privately, never as an issue.
+
+**Anything else broken — an install that fails, a plugin that will not load —
+[open one](https://github.com/attac-t/the-foundry/issues/new/choose).** The first form is for
+exactly that, and it is the only route a stranger needs.
 
 ---
 
