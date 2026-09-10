@@ -58,7 +58,11 @@ Seven lines, the whole story. The test: **can a stranger describe the script aft
    decided.
 8. **Comments are their own skill.** See `kernel:craft-comment` — what earns a line, the taper,
    and the space that means no comment was needed.
-9. **`shellcheck` passes.** Not optional.
+9. **`shellcheck` passes on the machine you write on.** Not optional there, and **nothing checks it
+   here** — a gate reaching for it would stop working on a host that has POSIX and `git` and nothing
+   else, which is the case every other rule about shipped code is written for.
+   So it binds where the tool is, and the tree grades what an exit code can hold: `bin/shell.sh`
+   takes rules 2 and 1's length half, and `taper` takes rule 8.
 10. **One name, one meaning.** Every variable is global unless you say otherwise, so a name that
     means two things is a bug waiting for a refactor.
 11. **A name says what it returns.** `unit_targets_file`, not `unit_targets` — the call-site should
