@@ -2974,6 +2974,11 @@ wreck_join "a host that installed nothing waved through is caught" \
 wreck_join "a row for another project counted as this session's is caught" \
   nosession 's#mine = (p == here)#mine = 0#' lib/plugins.sh
 
+# A bump that says nothing. The rule has said this for weeks and it kept happening, which is why it
+# is a hook and not another paragraph.
+wreck_join "a bump that says nothing about the running copy is caught" \
+  nopulled 's#plugin.json#neverthis#' hooks/pulled.sh
+
 # The whole point of the section: a rule naming a skill nobody can invoke used to say nothing.
 wreck_join "a skill the rules name that nobody reports is caught" \
   muteskills 's#^    report_skills_the_rules_name$#    :#'
