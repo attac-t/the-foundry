@@ -154,5 +154,34 @@ case $(asked) in
   *)               ok  "and no token is put on a command line" ;;
 esac
 
+#
+# --- the other lane, which must stay the other lane ---
+#
+# **One image, two lanes, and the difference is the whole point.** The grading lane keeps nothing on
+# purpose; this one keeps everything on the host. A change that made them agree would look like a
+# tidy-up and would lose a person's work.
+#
+# Read from the file rather than run, because running the grading lane takes forty minutes and
+# proves the same three strings.
+
+grep -q 'FOUNDRY_EPHEMERAL=1' "$root/bin/gates.sh" \
+  && ok  "the grading lane still tells its run to keep nothing" \
+  || bad "the grading lane still tells its run to keep nothing — it does not"
+
+grep -q 'docker run --rm' "$root/bin/gates.sh" \
+  && ok  "and still removes the container it graded in" \
+  || bad "and still removes the container it graded in — it does not"
+
+#
+# **The sharp one.** A run made through `host.sh` must never be told to keep nothing, or the mount
+# would hold a directory the run then refuses to write.
+#
+# **Code, not prose.** The first draft of this read the whole file and went red on the header, which
+# explains the difference between the two lanes. A check that reads what a file says about itself is
+# a check that grades the comment.
+grep -v '^[[:space:]]*#' "$root/bin/host.sh" | grep -q 'FOUNDRY_EPHEMERAL' \
+  && bad "and this lane never says it — it does" \
+  || ok  "and this lane never says it"
+
 printf '\nhost — %d passed, %d failed\n' "$passed" "$failed"
 [ "$failed" -eq 0 ]
