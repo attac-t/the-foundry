@@ -97,13 +97,12 @@ only thing that sees six months of gradual decay — every individual change loo
 to staying cold, and it is not a contradiction: past timings tell you nothing about the code, only
 about how long other strangers took. That is calibration, not context.
 
-**The log is the table and nothing else.** A reader told *numbers only* and handed a file of prose
-has no way to obey — it has already read where the last stranger stopped, on the page it is about
-to read.
+**If it holds anything but rows, stop reading it and say so in your report.** By the time you notice
+the prose you have already read where the last stranger stopped — on the page you are about to
+read — and no care afterwards undoes that.
 
-That happened. A log grew to fifty-one lines, thirty-four of them prose about earlier readings, and
-the fourth reader reported that *numbers only is not available*. **Findings go beside it, in
-`cold-read-findings.md`, which a reader never opens.**
+The fourth reader here met a log of fifty-one lines, thirty-four of them prose, and reported that
+*numbers only* was not available to it. **That report is worth more than the calibration it lost.**
 
 In session you open it yourself. Handed a brief on another host you will not have it — say so and
 carry on. A missing log costs you calibration, not the read.
