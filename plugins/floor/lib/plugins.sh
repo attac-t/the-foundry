@@ -179,9 +179,16 @@ places_if_it_repeats() {
     printf ' in %s places' "$installs"
 }
 
-# The value after the key, never the fourth field. A manifest with two
-# keys on one line is legal, and counting the fields reads back the
-# very first value it meets, and that was the plugin's own name.
+#
+# **The value after the key, never the fourth field.** A record with two keys on one line is legal,
+# and counting fields reads back the first value on the line whichever key matched.
+#
+# This one was fixed when it shipped. **Two readers below kept counting for another day** — they
+# matched `/"version"/` and then took `$4`, so `{ "scope": "user", "version": "1.0.0" }` gave them
+# the scope. An adversary named it and #651 owns it.
+#
+# Each awk carries its own `value_of`, because a shell cannot share a function between two programs
+# and `-f` for four lines is a file nobody would find.
 version_in() {
     awk -F'"' '{ for (i = 1; i < NF; i++) if ($i == "version") { print $(i + 2); exit } }' "$1"
 }
@@ -205,9 +212,14 @@ every_version_registered_for() {
     record=$(host_record) || return 0
 
     awk -F'"' -v want="$1" '
+        function value_of(key,   i) {
+            for (i = 1; i < NF; i++) if ($i == key) return $(i + 2)
+            return ""
+        }
+
         index($0, "\"" want "@") { hit = 1; next }
         hit && /^    "/           { hit = 0 }
-        hit && /"version"/        { print $4 }
+        hit && /"version"/        { print value_of("version") }
     ' "$record"
 }
 
@@ -293,13 +305,18 @@ versions_reachable_from() {
     record=$(host_record) || return 0
     here=$(printf '%s' "$2" | tr 'A-Z\\' 'a-z/')
     awk -F'"' -v want="$1" -v here="$here" '
+        function value_of(key,   i) {
+            for (i = 1; i < NF; i++) if ($i == key) return $(i + 2)
+            return ""
+        }
+
         index($0, "\"" want "@") { hit = 1; next }
         hit && /^    "/          { hit = 0 }
         !hit                     { next }
 
-        /"scope"/       { mine = ($4 != "project") }
-        /"projectPath"/ { p = tolower($4); gsub(/\\\\/, "/", p); mine = (p == here) }
-        /"version"/     { if (mine) print $4 }
+        /"scope"/       { mine = (value_of("scope") != "project") }
+        /"projectPath"/ { p = tolower(value_of("projectPath")); gsub(/\\\\/, "/", p); mine = (p == here) }
+        /"version"/     { if (mine) print value_of("version") }
     ' "$record" | sort -u | paste -sd, -
 }
 
