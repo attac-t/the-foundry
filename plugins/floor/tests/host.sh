@@ -12,6 +12,7 @@ root="${PLUGIN_ROOT:-$here}"
 . "$here/tests/lib.sh"
 
 join="$root/bin/join.sh"
+lib="$root/lib/plugins.sh"
 tmp="${TMPDIR:-/tmp}/floor-host-$$"
 mkdir -p "$tmp"
 # `chmod -R u+rwX` first, because two fixtures make a directory read-only to prove the runner
@@ -224,6 +225,60 @@ installed 1.0.0 0.0.1 9.9.9
 several=$( cd "$tmp/one" && CLAUDE_CONFIG_DIR="$home" FOUNDRY_WHO=a@b sh "$join" 2>&1 )
 has "every version registered is named" "$several" "this host has 0.0.1,1.0.0,9.9.9 registered"
 
+#
+# **Two keys on one line is legal, and counting fields reads the first value on it.** `version_in`
+# was fixed for this when it shipped. Two readers below kept counting for another day — they matched
+# `/"version"/` and then took `$4`, so this record made both print `user` where a version belongs.
+#
+# One record, both verbs, because they read it separately and only one of them was ever checked.
+printf '%s\n' '{' '  "plugins": {' '    "floor@x": [' \
+  '      { "scope": "user", "version": "0.0.1" }' '    ]' '  }' '}' \
+  > "$home/plugins/installed_plugins.json"
+
+oneline=$( cd "$tmp/one" && CLAUDE_CONFIG_DIR="$home" FOUNDRY_WHO=a@b sh "$join" 2>&1 )
+has  "two keys on one line still name the version" "$oneline" "this host has 0.0.1 registered"
+lacks "and never the value beside it"              "$oneline" "has user registered"
+
+folded=$( CLAUDE_CONFIG_DIR="$home" sh "$lib" session "$tmp/one" 2>&1 )
+has  "the session verb reads it too" "$folded" "could load 0.0.1"
+lacks "and not the scope"            "$folded" "could load user"
+
+#
+# **A record it cannot read is not a record saying nothing.** The one shape it takes is a key at
+# four spaces holding an `@`. Written compact, or at another depth, it yields no key — and this said
+# *nothing was installed* over a file that listed a plugin.
+#
+# Confidently wrong beats silent for a reader, and loses to *I could not read it*.
+shaped() {
+  mkdir -p "$tmp/$1/plugins"
+  cp "$home/plugins/known_marketplaces.json" "$tmp/$1/plugins/" 2>/dev/null
+  cat > "$tmp/$1/plugins/installed_plugins.json"
+}
+
+shaped compact <<'JSON'
+{"version":2,"plugins":{"floor@x":[{"scope":"user","version":"0.0.1"}]}}
+JSON
+
+shaped deeper <<'JSON'
+{
+  "plugins": {
+  "floor@x": [
+    { "scope": "user", "version": "0.0.1" }
+  ]
+  }
+}
+JSON
+
+for shape in compact deeper; do
+  said=$( cd "$tmp/one" && CLAUDE_CONFIG_DIR="$tmp/$shape" FOUNDRY_WHO=a@b sh "$join" 2>&1 )
+  has   "a $shape record says it could not be read" "$said" "no marketplace could be read from it"
+  lacks "and never that nothing was installed"      "$said" "Nothing was installed here"
+done
+
+# The other half, and the one that must not move: a host with no record at all still says so.
+absent=$( cd "$tmp/one" && CLAUDE_CONFIG_DIR="$tmp/emptycfg" FOUNDRY_WHO=a@b sh "$join" 2>&1 )
+has "a host with no record still says nothing was installed" "$absent" "Nothing was installed here"
+
 # **Five versions reads as five running copies. Five across fifty-two reads as debris.**
 #
 # Fifty of kernel's fifty-two rows named worktrees deleted weeks before, and nothing in the sentence
@@ -327,8 +382,6 @@ offered "$tmp/one"
 # A row reaches a session when nobody scoped it to a project, or when the project is the one the
 # session stands in. Everything else belongs to another directory and cannot arrive here.
 #
-lib=$(dirname "$join")/../lib/plugins.sh
-
 # One row per line: `<scope> <path>`. A `user` row carries no path and reaches every session.
 reachable() {
   mkdir -p "$home/plugins"

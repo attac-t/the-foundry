@@ -2990,6 +2990,18 @@ wreck_join "a host that installed nothing waved through is caught" \
 wreck_join "a manifest nobody can read waved through is caught" \
   nomanifest 's#\[ -r "$manifest" \] || return 1#[ -r "$manifest" ] || return 0#' lib/plugins.sh
 
+# Two keys on one line is legal, and counting fields reads the first value on it whichever key
+# matched. Both readers printed the scope where a version belongs, for a day, on a shape the
+# project had already ruled legal and already fixed once.
+wreck_join "a version read by counting fields is caught" \
+  countfields 's#print value_of("version")#print $4#' lib/plugins.sh
+
+# A record it cannot read is not a record saying nothing. Written compact, or at another depth, it
+# yields no key — and this said *nothing was installed* over a file that listed a plugin.
+# Confidently wrong beats silent for a reader, and loses to *I could not read it*.
+wreck_join "a host with no record told nothing at all is caught" \
+  norecordsaid 's#record=$(host_record) || {#record=$(host_record) || return; {#' lib/plugins.sh
+
 # A session is told about drift it can reach, and nothing else. Lose the comparison and a row for
 # another project reads as one for this session — which is the noise the hook exists to avoid.
 wreck_join "a row for another project counted as this session's is caught" \
