@@ -431,6 +431,32 @@ is "and a healthy session exits 0"        "$(session_at "$home")"          "0"
 is "a read that found no record exits 0"  "$(session_at "$tmp/emptycfg")"  "0"
 is "and one with no marketplace home too" "$(session_at "$tmp/ghostcfg")"  "0"
 
+#
+# **The other hook, and nothing ran it until now.** `session` gained an exit code and `drift.sh`
+# passed it straight through, so the SessionStart hook failed exactly when it had drift to report.
+#
+# A hook exiting non-zero is a non-blocking error and what it printed may never arrive. Three rounds
+# of one shape: a caller of this library that no check executes.
+drift=$(dirname "$join")/../hooks/drift.sh
+drifted()    { ( cd "$tmp/one" && CLAUDE_CONFIG_DIR="${1:-$home}" sh "$drift" 2>&1 ); }
+drift_code() { ( cd "$tmp/one" && CLAUDE_CONFIG_DIR="${1:-$home}" sh "$drift" >/dev/null 2>&1; echo $?; ); }
+
+reachable "user - 0.0.1"
+has "the session hook names the drift"        "$(drifted)"     "ships $ships"
+is  "and exits 0 while it does"               "$(drift_code)"  "0"
+
+reachable "user - $ships"
+is  "a healthy session hears nothing"         "$(drifted)"     ""
+is  "and that exits 0 too"                    "$(drift_code)"  "0"
+
+# Unlike the bump hook, this one is read by a person at session start, so an absence is worth saying.
+has "a host with no record is told"           "$(drifted "$tmp/emptycfg")" "Nothing was installed here"
+is  "and exits 0"                             "$(drift_code "$tmp/emptycfg")" "0"
+has "so is one whose marketplace has no home" "$(drifted "$tmp/ghostcfg")" "nothing says where it lives"
+is  "and exits 0"                             "$(drift_code "$tmp/ghostcfg")" "0"
+
+is  "outside a repository it says nothing"    "$( cd "$tmp/nowhere" && sh "$drift" 2>&1 )" ""
+
 installed 0.0.1
 
 # --- the repository's half ---

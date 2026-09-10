@@ -23,7 +23,10 @@
 # Usage: sh plugins.sh host
 #        sh plugins.sh session <repository>
 #
-# Exit: 0 answered, 2 asked for something this does not do
+# Exit: 0 answered, 1 session found drift, 2 asked for something this does not do
+#
+# **The `1` was added below and left out of that line for a day.** A reader of the enumeration got a
+# contract missing a third of itself, which is how a hook came to pass the status straight through.
 #
 # **`session` exits 1 when it found drift**, because both its absences speak too and a caller that
 # reads only whether anything was said cannot tell them apart. One shipped hook appended *pull it*

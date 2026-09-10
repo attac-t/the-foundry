@@ -3003,6 +3003,15 @@ wreck_join "an escaped path that never folds is caught" \
 wreck_join "a remedy handed to the wrong absence is caught" \
   noexitcode 's#session "$root") && exit#session "$root") || exit#' hooks/pulled.sh
 
+#
+# **A hook that fails exactly when it has something to say.** `session` answers 1 on drift, and this
+# one passed that status on — so the SessionStart hook exited non-zero whenever it was working.
+#
+# Non-zero is a non-blocking error, and what it printed may never reach the session. Nothing ran
+# this hook until the round that found it.
+wreck_join "a session hook that fails while reporting is caught" \
+  nodriftexit 's#^exit 0$##' hooks/drift.sh
+
 # The whole point of the section: a rule naming a skill nobody can invoke used to say nothing.
 wreck_join "a skill the rules name that nobody reports is caught" \
   muteskills 's#^    report_skills_the_rules_name$#    :#'
