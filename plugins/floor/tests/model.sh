@@ -165,10 +165,20 @@ code_of() { "$@" >/dev/null 2>&1; printf '%s' "$?"; }
 #
 # `mkdir` without `-p` refuses instead. The collision is now a failure at the line that caused it.
 #
+#
+# **The identity is the fixture's own, and `identity.md` names this as the one place it may be.** A
+# repository a suite makes and deletes has no checkout behind it and no account in front of it, so
+# `git` refuses to commit until it is told who.
+#
+# Without it these fixtures took the host's global identity, and every case that commits passed only
+# on a host that already had one. Under a container with none, twelve went red with *Author identity
+# unknown* — and that container is the whole reason this was ever seen.
 make_repo() {
   mkdir "$1" 2>/dev/null || { echo "  FIXTURE  $1 is already taken" >&2; return 1; }
   git init -q "$1" >/dev/null 2>&1 || return 1
   [ -d "$1/.git" ] || return 1
+  git -C "$1" config user.email fixture@example.invalid >/dev/null 2>&1
+  git -C "$1" config user.name fixture >/dev/null 2>&1
   git -C "$1" symbolic-ref HEAD "refs/heads/$2" >/dev/null 2>&1
 }
 
