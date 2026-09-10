@@ -113,6 +113,17 @@ every_break() {
         'a_baked_secret >> bin/gates.Dockerfile' \
         'sh bin/secrets.sh'
 
+    # A hook that judges nothing. Every suite under `tests/` writes its calls to disk, so this
+    # break reaches the hook rather than the harness reading it.
+    # A guard that refuses nothing, which looks exactly like a guard that is working.
+    #
+    # **Edited, never appended.** The first version of this break added a second `main` below the
+    # call to the first, so the hook ran unchanged and the harness read MISSED — correctly, and
+    # only because it tells a bad break from a blind gate.
+    drive hooks .claude/hooks/identity.sh \
+        "sed -i 's/^    deny /    allow #/' .claude/hooks/identity.sh" \
+        'sh bin/hooks.sh'
+
     # Three comment lines that do not step down by three. The gate graded evenness once, and a block
     # dropping eighteen twice went through for weeks.
     #

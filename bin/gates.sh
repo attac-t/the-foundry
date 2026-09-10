@@ -172,6 +172,10 @@ gate providers   sh   bin/providers.sh
 # layer is the one place a mistake cannot be edited out afterwards.
 gate secrets     sh   bin/secrets.sh
 
+# A hook is the only wall a caller meets before the write, and nothing drove the first one for
+# forty-three checks. This drives every hook this repository ships.
+gate hooks       sh   bin/hooks.sh
+
 gate taper       sh   bin/taper.sh
 
 #
