@@ -31,3 +31,10 @@ RUN apt-get update -qq \
 RUN useradd --create-home --uid 1000 forge
 USER forge
 WORKDIR /home/forge
+
+# **An empty mount point, never a home.** Docker gives a fresh named volume the ownership of whatever
+# the image has at that path, and creates it owned by root when the image has nothing. `forge` then
+# cannot write, and floor says so: `could not write /home/forge/.foundry/runs`.
+#
+# It holds nothing. What a run records arrives from the host, at run time.
+RUN mkdir -p /home/forge/.foundry
