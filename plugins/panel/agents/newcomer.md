@@ -97,8 +97,29 @@ only thing that sees six months of gradual decay — every individual change loo
 to staying cold, and it is not a contradiction: past timings tell you nothing about the code, only
 about how long other strangers took. That is calibration, not context.
 
+**The log is the table and nothing else.** A reader told *numbers only* and handed a file of prose
+has no way to obey — it has already read where the last stranger stopped, on the page it is about
+to read.
+
+That happened. A log grew to fifty-one lines, thirty-four of them prose about earlier readings, and
+the fourth reader reported that *numbers only is not available*. **Findings go beside it, in
+`cold-read-findings.md`, which a reader never opens.**
+
 In session you open it yourself. Handed a brief on another host you will not have it — say so and
 carry on. A missing log costs you calibration, not the read.
+
+## Say what you could not un-know
+
+**A cold read started inside the repository under test is not cold**, and only you can report that.
+
+A worker's own instructions load before you open anything. The project file, its rules, sometimes a
+copy of the page itself. **That copy can be stale.**
+
+**Say so first, unprompted, before your answers.** Name what loaded, and say which of your findings
+it touches. *First word I did not know* is the one it ruins; what you could not answer is unharmed.
+
+Two readers found this independently and neither was asked. **It is worth more than the read it
+spoils**, because a measure nobody distrusts is the one that goes wrong quietly.
 
 If `locate` has gone 2m → 2m → 6m, **that is the finding**, and it outranks anything you noticed in
 this read. Report it as a Warning even when every individual test passed.

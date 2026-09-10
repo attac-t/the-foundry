@@ -204,6 +204,9 @@ residual.
 Gate 2's timings append to `verdicts/cold-read-log.md`. **Slop is invisible in any single diff and
 obvious across forty** — that column is the only instrument that sees it.
 
+**That file is the table and nothing else**, because a newcomer is told to read it and must stay
+cold. What each reader found goes in `verdicts/cold-read-findings.md`, which a newcomer never opens.
+
 ---
 
 ## When Not To Use It
