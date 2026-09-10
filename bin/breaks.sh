@@ -56,7 +56,7 @@ every_gate_is_green() {
         runs "bash bin/$gate.sh" && note green "$gate" || note RED "$gate"
     done
 
-    runs 'bash bin/project.sh check' && note green project || note RED project
+    runs 'bash bin/harness.sh check' && note green harness || note RED harness
 }
 
 # Named, never run here. Each is minutes, and a tool people skip because it is slow proves nothing.
@@ -125,9 +125,9 @@ every_break() {
 
     # The generated rules list, never a rule's body. A new rule file changes the list, and no harness
     # file names it — which is the drift this gate exists for.
-    drive project .claude/rules/zzz-probe.md \
+    drive harness .claude/rules/zzz-probe.md \
         'a_new_rule > .claude/rules/zzz-probe.md' \
-        'bash bin/project.sh check'
+        'bash bin/harness.sh check'
 
     # Frontmatter is a skill's contract with the loader, and a skill missing its description is one
     # nothing can decide to invoke.

@@ -113,7 +113,7 @@ The second is not a convenience. On macOS and under Git Bash `sh` **is** bash an
 ten and is not one of them. `panel` was advertised here and absent from CI for days.
 
 It holds one more thing: **every harness file names the same rules.** Claude reads `CLAUDE.md` and
-Codex reads `AGENTS.md`, so `bin/project.sh` writes the table into both from `.claude/rules` itself.
+Codex reads `AGENTS.md`, so `bin/harness.sh` writes the table into both from `.claude/rules` itself.
 Edit a rule, then run it — a row typed by hand into one file is the drift nothing else would see.
 
 | Gate | Fails when |

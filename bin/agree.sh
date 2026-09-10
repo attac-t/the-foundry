@@ -145,10 +145,10 @@ counts_agree() {
 #
 # One source, so no harness owns the table and none of them can drift alone.
 projections_agree() {
-    bash bin/project.sh check >/dev/null 2>&1 && { printf '  PASS  %s
+    bash bin/harness.sh check >/dev/null 2>&1 && { printf '  PASS  %s
 ' "harness files"; return; }
 
-    printf '  FAIL  a harness file drifted from .claude/rules — run bin/project.sh
+    printf '  FAIL  a harness file drifted from .claude/rules — run bin/harness.sh
 '
     disagreed=$((disagreed + 1))
 }
