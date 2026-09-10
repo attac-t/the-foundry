@@ -43,7 +43,8 @@ Installing kernel buys one thing: **Claude pushes back instead of agreeing.**
 ```
 
 **Every `/plugin` line on this page has a `claude plugin` twin**, for an agent that has no slash
-commands. These two are:
+commands. **`/output-style` and `/evaluate` have none** — both are a person's, and an agent cannot
+reach either. These two are:
 
 ```bash
 claude plugin marketplace add attac-t/the-foundry
@@ -93,14 +94,17 @@ the other plugins installed.**
 
 ### Working on Foundry itself
 
-Clone it, and nothing above is needed — the checkout's own `.claude/settings.json` names the
-marketplace and enables kernel, signal and floor.
+Clone it. The checkout's own `.claude/settings.json` names the marketplace and enables **kernel,
+signal and floor** — those three need no install. **Panel, product and the stack plugins still do**,
+by either form above.
 
 ```bash
 git clone https://github.com/attac-t/the-foundry.git
 ```
 
-### When something breaks
+---
+
+## When something breaks
 
 An install that fails, a plugin that will not load, anything that does not do what this page says:
 [open an issue](https://github.com/attac-t/the-foundry/issues/new/choose). The first form is for
