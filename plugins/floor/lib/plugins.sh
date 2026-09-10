@@ -208,10 +208,20 @@ host_record() {
 #
 # A string, never a filesystem test. `[ -d ]` cannot answer for a path written by another operating
 # system, and such a path is simply not this repository — which is the whole question here.
+# **The two absences speak, in `host`'s own words.** A session that hears nothing has to know the
+# check ran, and until 10 September an unreadable record and a healthy host gave the same empty
+# output. An adversary found it. The header above had said so for a week.
+#
+# **A plugin offered and never installed is not one of them.** That is an answer, not a failed read.
+# Eight of those a session is the noise this design refuses, and `host` already says it to the
+# person who asked.
 report_what_this_session_could_load() {
-    for market in $(marketplaces_this_host_registered_from); do
-        where=$(marketplace_location "$market") || continue
-        [ -n "$where" ] || continue
+    markets=$(marketplaces_this_host_registered_from)
+    [ -n "$markets" ] || { say_nothing_was_installed; return; }
+
+    for market in $markets; do
+        where=$(marketplace_location "$market")
+        [ -n "$where" ] || { say_a_marketplace_with_no_home "$market"; continue; }
 
         for named in $(plugins_offered_by "$where"); do
             say_a_plugin_this_session_could_load "$where" "$named" "$1"
