@@ -195,6 +195,14 @@ gate taper       sh   bin/taper.sh
 gate comments    sh   bin/comments.sh audit
 
 #
+# The command line, not a container. `bin/host.sh` starts one, and Docker is absent on most machines
+# that grade this repository — so its suite writes a `docker` and reads what it was asked for.
+#
+# **Two faults in it were found by driving it and neither by reading it**: a terminal asked for where
+# there was none, and a flag that reached `docker run` because a function shifted its own copy.
+gate host        sh   bin/host.sh audit
+
+#
 # The adapter, not the harness. It reaches a vendor and turns what came back into a receipt, and its
 # suite drives it through a `codex` the suite writes. **Nothing here reaches a network.** Four faults
 # in its readers were found by a judge rather than a check, which is why this line exists.

@@ -1,11 +1,11 @@
 # Contributing
 
-Eighteen gates. Run them before you open a pull request:
+Nineteen gates. Run them before you open a pull request:
 
 ```bash
-sh bin/gates.sh                 # all eighteen, here
+sh bin/gates.sh                 # all nineteen, here
 sh bin/agree.sh                 # this table, the workflow, gates.sh and every harness file
-sh bin/gates.sh linux           # the same eighteen where `sh` is dash
+sh bin/gates.sh linux           # the same nineteen where `sh` is dash
 ```
 
 Leave `agree` out of your run and a PR can still go red on a check this file never mentioned — the
@@ -163,7 +163,7 @@ no such bit.
 
 **What they do not check:** that `laravel-ddd`, `laravel-playbook`, `pest` or `product` still load,
 or that their skills say anything true. Those four ship no code, so there is nothing to run — but
-nothing here reads them either. Green means eighteen gates passed. For those four plugins it does not
+nothing here reads them either. Green means nineteen gates passed. For those four plugins it does not
 mean the change works.
 
 **Whether their guidance has aged is answered, not gated.** Each README that teaches a version names

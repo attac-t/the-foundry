@@ -87,6 +87,12 @@ jobs:
       - name: A comment through the seam still obeys it
         run: sh bin/comments.sh audit
 
+      # The one command that makes a host, driven through a `docker` its suite writes. Docker is
+      # absent here as on most machines that grade this, so what is read is the command line — the
+      # mounts, the flags, and the two exit codes a person meets when their machine is not ready.
+      - name: The host command asks for what it should
+        run: sh bin/host.sh audit
+
       # The adapter that reaches a judge, driven through a `codex` its suite writes. Four faults in
       # its readers were found by a judge rather than a check, so this line exists. No network.
       - name: The adapter answers for itself
