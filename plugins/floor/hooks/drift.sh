@@ -14,6 +14,15 @@
 #
 # Silent outside a repository, because there is no *here* to ask about.
 
+#
+# **Exit 0 on every path, and the `exit` is the whole reason this is two lines.** `session` answers
+# 1 when it found drift, which is exactly when this has something to say — so passing its status on
+# made the hook fail whenever it was working.
+#
+# A hook exiting non-zero is a non-blocking error, and what it printed may never reach the session.
+# Every other hook floor ships ends the same way.
 root=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0
 
 sh "$(dirname "$0")/../lib/plugins.sh" session "$root"
+
+exit 0
