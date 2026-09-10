@@ -15,8 +15,15 @@ FROM debian:stable-slim
 # carry python so nothing ever said so out loud. **The four plugin suites pass without it**, which is
 # this image's other use: it holds the `sh`, `awk`, `git` contract to its word, and would go red if a
 # plugin ever reached past it.
+#
+# `gh` — **no gate needs it and delivery cannot happen without it.** Floor's GitHub adapter answers
+# only where `gh` is, so an image with none grades and stops. It is here from Debian's own archive,
+# which is why this takes no key, no `curl` and no third-party source.
+#
+# **It is a binary, never a sign-in.** A token belongs to the host and arrives when the container
+# starts, and nothing here reaches a network at run time.
 RUN apt-get update -qq \
- && apt-get install -y -qq --no-install-recommends git python3 ca-certificates \
+ && apt-get install -y -qq --no-install-recommends git python3 gh ca-certificates \
  && rm -rf /var/lib/apt/lists/*
 
 # Not root. Root ignores permission bits, so a gate that must refuse an unwritable directory would
