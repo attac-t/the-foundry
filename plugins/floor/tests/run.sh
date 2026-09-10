@@ -2984,6 +2984,12 @@ wreck_join "a marketplace whose home cannot be found is caught" \
 wreck_join "a host that installed nothing waved through is caught" \
   nosilence 's#say_nothing_was_installed; return#:#' lib/plugins.sh
 
+# The third of the same silence, and the only one both verbs shared. A home that resolves and a
+# manifest that does not read left the marketplace offering nothing — `host` printed zero and
+# `session` said nothing, so neither verb could answer for the other.
+wreck_join "a manifest nobody can read waved through is caught" \
+  nomanifest 's#\[ -r "$manifest" \] || return 1#[ -r "$manifest" ] || return 0#' lib/plugins.sh
+
 # A session is told about drift it can reach, and nothing else. Lose the comparison and a row for
 # another project reads as one for this session — which is the noise the hook exists to avoid.
 wreck_join "a row for another project counted as this session's is caught" \
