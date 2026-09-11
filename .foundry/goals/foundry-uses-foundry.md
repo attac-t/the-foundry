@@ -7,8 +7,8 @@ a charter, the issues it implies, a panel, the gates and a merge.
 
 Done when:
 
-- [x] Every brief on disk has been read, and its kind named — **46 of 46, 8 September.**
-- [ ] Each brief that asks for work has produced the issues it implies.
+- [x] Every brief on disk has been read, and its kind named — **47 of 47, 11 September.** `sh list.sh briefs` names every brief the list never mentions and exits 1 if it finds one. It finds none. It was 46 of 46 on 8 September, and the count moves as briefs arrive — so the check is the record, not the number.
+- [ ] Each brief that asks for work has produced the issues it implies — **refused with a number, 11 September.** `sh list.sh opened` reads every brief on disk against the items that own one: **28 owned, 19 cited, 47 in all.** A cited brief is a row in a reading table and nothing more. #602 owns the third state, and it cannot come from that list — an item that owns a brief cites an issue 23 times out of 23, so *opened* and *answered* still read alike.
 - [x] A gap found in the process was fixed before the work that found it carried on.
 - [x] Two hosts take work from one source, and each item is paid for once — **11 September.** This machine and a container, two `uname -n` values, one directory both can see. `Lenovo` took the item; the container asked and was refused, exit 4, and the stamp still named `Lenovo`. Exclusivity under contention is `plugins/floor/tests/race.sh`: a thousand rounds, a thousand single winners, and a swap replaced by `cp` goes red.
 - [ ] A second machine becomes a host from a Docker image.
