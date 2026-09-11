@@ -6,10 +6,35 @@ Nineteen gates. Run them before you open a pull request:
 sh bin/gates.sh                 # all nineteen, here
 sh bin/agree.sh                 # this table, the workflow, gates.sh and every harness file
 sh bin/gates.sh linux           # the same nineteen where `sh` is dash
+sh bin/host.sh <the recipe>     # the same nineteen from a clone — see below
 ```
 
 Leave `agree` out of your run and a PR can still go red on a check this file never mentioned — the
 drift this file exists to prevent, one level up.
+
+## The third lane grades a clone, and it found something the others could not
+
+`bin/gates.sh linux` copies the source into a container and grades the copy. **`bin/host.sh` can
+grade a clone**, which is the shape a stranger actually has.
+
+```sh
+sh bin/host.sh sh -c 'git config --global --add safe.directory "*"
+  git clone -q /src /home/forge/repo && cd /home/forge/repo
+  bash plugins/floor/tests/run.sh > /home/forge/.foundry/floor-in-host.log 2>&1'
+```
+
+**Two traps, and both cost a run to find.**
+
+`git clone /src` is refused twice for dubious ownership. The mount belongs to the host, and the
+container runs as `forge`. The `safe.directory` line answers both.
+
+**Write the log into `/home/forge/.foundry`.** That is the host's own directory. The file then
+outlives `--rm`, a killed client, and a machine short of memory. The runner keeps its own record under
+`/home/forge/.foundry-runs`, which is **not** mounted, and `--rm` takes it.
+
+**What it bought, 11 September 2026.** Floor's suites are green in every lane — 1,218 assertions. Its
+audit had never finished on this machine: four attempts under WSL, each stopped for low memory. **It
+finished in the container**, because a killed `docker run` leaves the container working.
 
 ## On Windows, run them in WSL from the Linux disk
 
