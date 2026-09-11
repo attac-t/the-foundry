@@ -129,6 +129,7 @@ Edit a rule, then run it — a row typed by hand into one file is the drift noth
 | `hooks` | a hook this repository ships stops answering. It drives each one against the calls it has to judge |
 | `taper` | a three-line comment paragraph does not narrow by three, and nothing names it |
 | `comments` | a public comment carrying the seam's marker breaks a rule the seam applies |
+| `host` | the one command that makes a host mounts the wrong home, keeps nothing, or asks for a terminal that is not there |
 | `judged` | `.foundry/judged` pins an adapter this tree does not ship at that content |
 | `bytes` | a tracked text file holds a byte no decoder can read, a character already lost, or a carriage return |
 | `codex` | the adapter reaching a judge takes a verdict that was not the reply's last word, or claims a thread the harness never opened |

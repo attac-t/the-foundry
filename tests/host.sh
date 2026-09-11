@@ -23,6 +23,11 @@ tmp="${TMPDIR:-/tmp}/host-suite-$$"
 mkdir -p "$tmp/bin" "$tmp/home"
 trap 'rm -rf "$tmp"' EXIT
 
+# Docker on Windows cannot read a `/tmp/...` path, so `host.sh` hands it the rewritten one. A suite
+# asserting the path before that rewrite asserts a mount the platform would refuse.
+kept=$tmp/home
+command -v cygpath >/dev/null 2>&1 && kept=$(cygpath -m "$tmp/home")
+
 #
 # It records every argument and answers `info` and `build` the way a working Docker does. `run` is
 # recorded and never performed, which is the whole reason this stands in.
@@ -58,7 +63,7 @@ stub_docker
 hosted true
 
 case $(asked) in
-  *"$tmp/home:/home/forge/.foundry"*) ok "the home is mounted where a run will look" ;;
+  *"$kept:/home/forge/.foundry"*)     ok "the home is mounted where a run will look" ;;
   *)                                  bad "the home is mounted where a run will look — it was not" ;;
 esac
 
@@ -95,8 +100,8 @@ case $(asked) in
 esac
 
 case $(asked) in
-  *"$tmp/home"*) bad "and the host's home is left alone — it was mounted too" ;;
-  *)             ok  "and the host's home is left alone" ;;
+  *"$kept"*) bad "and the host's home is left alone — it was mounted too" ;;
+  *)          ok  "and the host's home is left alone" ;;
 esac
 
 #
