@@ -31,7 +31,7 @@ cd "$(dirname "$0")/.." || exit 3
 # core reads the harness's own directories — `.claude-plugin/plugin.json` is where every plugin here
 # keeps its manifest. Nine such lines exist and every one is legitimate.
 #
-# **So this gate holds the judge seam and not the harness seam.** They are two rules, and #700 owns
+# **So this gate holds the judge seam and not the harness seam.** They are two rules, and #711 owns
 # the second. A gate grading both under one name is what `vocabulary.md` refuses.
 JUDGES='codex|openai|anthropic|gemini'
 

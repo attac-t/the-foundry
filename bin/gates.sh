@@ -183,7 +183,7 @@ gate providers   sh   bin/providers.sh
 # a gate grading two rules under one name is what `vocabulary.md` refuses.
 #
 # **The harness word is deliberately outside it.** Floor's core reads `.claude-plugin/plugin.json`
-# nine times over, and every one is its own manifest. #700 owns that second seam.
+# nine times over, and every one is its own manifest. #711 owns that second seam.
 gate judges      sh   bin/judges.sh
 
 # The two above ask what shipped code may name. This asks what a build recipe may bake, and a
