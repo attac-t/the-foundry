@@ -659,6 +659,9 @@ case "${1:-}" in --case-smoke) shift; case_smoke "$@"; exit "$failed" ;; esac
 # exceeded it there and, inverted, read as caught. A mutant is either caught early by `FOUNDRY_FAIL_FAST`
 # or runs about as long as a clean pass. Anything far past that is stuck on any machine.
 #
+# **`race.sh` is not in that list and is not meant to be.** It forks twice a round, so a thousand
+# rounds would cost more than the audit holding them. Driven by hand — #303 reads the count.
+
 for suite in transport model install host adopt say; do
   began=$(date +%s)
   bash "$root/tests/$suite.sh" || failed=1
