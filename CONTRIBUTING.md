@@ -20,10 +20,10 @@ grade a clone**, which is the shape a stranger actually has.
 ```sh
 sh bin/host.sh sh -c 'git config --global --add safe.directory "*"
   git clone -q /src /home/forge/repo && cd /home/forge/repo
-  bash plugins/floor/tests/run.sh > /home/forge/.foundry/floor-in-host.log 2>&1'
+  FOUNDRY_HOME=/tmp/gradehome bash plugins/floor/tests/run.sh     > /home/forge/.foundry/floor-in-host.log 2>&1'
 ```
 
-**Two traps, and both cost a run to find.**
+**Three traps, and each cost a run to find.**
 
 `git clone /src` is refused twice for dubious ownership. The mount belongs to the host, and the
 container runs as `forge`. The `safe.directory` line answers both.
@@ -31,6 +31,11 @@ container runs as `forge`. The `safe.directory` line answers both.
 **Write the log into `/home/forge/.foundry`.** That is the host's own directory. The file then
 outlives `--rm`, a killed client, and a machine short of memory. The runner keeps its own record under
 `/home/forge/.foundry-runs`, which is **not** mounted, and `--rm` takes it.
+
+**Point `FOUNDRY_HOME` somewhere the mount is not.** `bin/host.sh` mounts the host's own home on
+purpose, and floor's suite refuses to leave a run in the live home. Inside this lane the live home is
+the person's. **Two runs went red on that check**, and a run opened on the host during the grade
+looks the same to it as a run the suite leaked.
 
 **What it bought, 11 September 2026.** Floor's suites are green in every lane — 1,218 assertions. Its
 audit had never finished on this machine: four attempts under WSL, each stopped for low memory. **It
