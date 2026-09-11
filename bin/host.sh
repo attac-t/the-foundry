@@ -16,6 +16,18 @@
 # **Nothing here is baked into the image.** The identity, the home and the sign-in are the host's,
 # and they arrive when the container starts. `bin/gates.Dockerfile` carries only binaries.
 #
+# **Two sign-ins, and this asks for both every run.**
+#
+#     the forge     `gh auth login`, or delivery cannot open a request
+#     the harness   whatever runs the worker, or nothing works at all
+#
+# **Neither store is mounted, so neither survives.** `gh` keeps its token under
+# `~/.config/gh` and the harness keeps its own beside it; only `.foundry` comes across.
+#
+# **That is a choice, not an oversight.** Mounting a token store into a container hands every process
+# in it a credential, and `bin/secrets.sh` exists because this repository refuses that in a build
+# recipe. #682 owns whether it should be refused here too.
+#
 # **This is not the grading lane.** `bin/gates.sh linux` keeps `--rm` and `FOUNDRY_EPHEMERAL`, so
 # the run inside it keeps nothing on purpose. That is right for grading and wrong for working.
 #
