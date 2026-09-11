@@ -4071,6 +4071,45 @@ time 2026-09-04T00:00:00Z
 # **Floor's half only.** These receipts are written by this suite. A second producer writing one is
 # the other half of the slice, and it stays unproven.
 #
+#
+# **The one document a judge is handed, and nothing read it.** The adapter suite writes its own
+# fixture and floor's never reached this path, so a dropped field would have stayed green.
+#
+# A reach that is a plain command is enough. The brief is written before the judge is asked, so it
+# is on disk whatever the judge then does.
+#
+the_brief_a_judge_is_handed() {
+  make_repo "$tmp/brf" main && set_origin "$tmp/brf" 'https://gitlab.com/acme/brf.git' \
+    && mkdir -p "$tmp/brf/.foundry" \
+    && commit_file "$tmp/brf" .foundry/gates 'tests  true
+' && commit_file "$tmp/brf" .foundry/judged 'reach  a-reviewer  true
+a-reviewer  a stranger can read it
+' || { skip "the brief — git could not make a repo here"; return; }
+
+  brun=$(floor_new_as "$tmp/brf" ada@example.com "Quenchless")
+  floor "$tmp/brf" charter derive >/dev/null 2>&1
+  floor "$tmp/brf" targets add 'https://gitlab.com/acme/brf.git' main >/dev/null 2>&1
+  floor "$tmp/brf" open >/dev/null 2>&1
+  floor "$tmp/brf" judged >/dev/null 2>&1
+
+  said=$(cat "$brun"/judged/*.brief 2>/dev/null)
+
+  has "the brief names the run"        "$said" 'run '
+  has "and the clause it grades"       "$said" 'clause '
+  has "and both ends of the change"    "$said" 'candidate '
+  has "and the judge it went to"       "$said" 'judge '
+  has "and which round this is"        "$said" 'round '
+  has "and the bar itself"             "$said" 'the charter this work is graded against'
+
+  # A judge that cannot see the edge infers one. The first real verdict here did exactly that.
+  has "and where it stops"             "$said" 'does not carry'
+
+  # The run writes this, so carrying it would let a run set its own bar.
+  # The title is in the run id, which the brief does carry. So the word checked is one only
+  # the item file holds, and the id is lowercased anyway.
+  lacks "and it carries nothing the run wrote" "$said" 'Quenchless'
+}
+
 a_receipt_is_read_and_not_believed() {
   make_repo "$tmp/rcpt" main && set_origin "$tmp/rcpt" 'https://gitlab.com/acme/rcpt.git' \
     && mkdir -p "$tmp/rcpt/.foundry" \
@@ -4342,6 +4381,7 @@ a_receipt_is_read_and_not_believed() {
   lacks "and says nothing about its freshness" \
         "$(floor "$tmp/rcpt" evidence | tail -1)" "fresh="
 }
+the_brief_a_judge_is_handed
 a_receipt_is_read_and_not_believed
 
 #
