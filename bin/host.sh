@@ -111,26 +111,6 @@ where_runs_are_kept() {
     printf '%s' "$home"
 }
 
-#
-# **Three things the host has and the image must not.** `FOUNDRY_WHO` is what a run records as its
-# authority. The other two are git's, and without them a commit made in there is refused —
-# `Author identity unknown`, which is how floor's own suite failed twelve times in this image before
-# anything set them.
-#
-# **This is carrying an identity, never overriding one.** `identity.md` forbids the override because
-# it wrote an address the account does not own. A fresh container owns no address at all, and a
-# person joining one would run the two `git config` lines `join.sh` prints. This is those lines.
-#
-# Empty is honest. A host with no identity passes nothing, and git refuses inside exactly as it
-# refuses outside.
-carried_from_the_host() {
-    printf '%s' "-e FOUNDRY_WHO=${FOUNDRY_WHO:-$(git config user.email 2>/dev/null)}"
-    printf ' -e GIT_AUTHOR_NAME=%s'     "$(git config user.name  2>/dev/null)"
-    printf ' -e GIT_AUTHOR_EMAIL=%s'    "$(git config user.email 2>/dev/null)"
-    printf ' -e GIT_COMMITTER_NAME=%s'  "$(git config user.name  2>/dev/null)"
-    printf ' -e GIT_COMMITTER_EMAIL=%s' "$(git config user.email 2>/dev/null)"
-}
-
 stdin_is_a_terminal() { [ -t 0 ]; }
 
 # **`-t` only where there is a terminal.** Docker refuses to attach one otherwise, and a script
@@ -147,16 +127,31 @@ how_to_attach() {
 #
 # No command means a shell, which is what a person wants the first time. A command means one thing
 # and out, which is what a script wants every time after.
+#
+# **Three things the host has and the image must not.** `FOUNDRY_WHO` is what a run records as its
+# authority. The other two are git's, and without them a commit made in there is refused —
+# `Author identity unknown`, which is how floor's own suite failed twelve times in this image before
+# anything set them.
+#
+# **Carried, never overridden** — `identity.md` forbids the override, and a fresh container owns no
+# address. Empty is honest: a host with none passes nothing, and git refuses inside as it does out.
+#
+# **Each one is quoted, and a function cannot hand them over.** They were built into one string and
+# split on every space, so a host whose git name is two words started no container at all — Docker
+# read the second word as the image name. A shell has one list of arguments, and this is it.
 run_in_the_container() {
     kept=$(where_runs_are_kept) || return $?
 
     [ $# -eq 0 ] && set -- sh
 
-    # shellcheck disable=SC2046
-    docker run --rm $(how_to_attach) \
+    docker run --rm "$(how_to_attach)" \
         -v "$root:/src:ro" \
         -v "$kept:/home/forge/.foundry" \
-        $(carried_from_the_host) \
+        -e "FOUNDRY_WHO=${FOUNDRY_WHO:-$(git config user.email 2>/dev/null)}" \
+        -e "GIT_AUTHOR_NAME=$(git config user.name  2>/dev/null)" \
+        -e "GIT_AUTHOR_EMAIL=$(git config user.email 2>/dev/null)" \
+        -e "GIT_COMMITTER_NAME=$(git config user.name  2>/dev/null)" \
+        -e "GIT_COMMITTER_EMAIL=$(git config user.email 2>/dev/null)" \
         foundry-host "$@"
 }
 
