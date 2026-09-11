@@ -6,6 +6,13 @@
 # **Pinned by digest, so two machines build the same image.** `stable-slim` moves, and a host that
 # grades a week after another would grade against a different `dash`, `mawk` and `git`.
 #
+# **It is a manifest list, and that matters.** A digest can name one platform's image instead, which
+# would pin the host to one chip and say nothing about it. Driven 11 September 2026: the same digest
+# builds under `--platform linux/arm64` and comes out identical — Debian 13.6, dash, mawk 1.3.4, git
+# 2.47.3, gh 2.46.0, Python 3.13.5, user forge. Thirteen gates run green there from a clone.
+#
+# **So keep it a list.** Replacing it with a platform digest would break every machine but one.
+#
 # To move it on purpose: `docker pull debian:stable-slim`, then
 # `docker image inspect debian:stable-slim --format '{{index .RepoDigests 0}}'`, and paste it here.
 #
