@@ -23,7 +23,17 @@
 # **Nothing here is baked into the image.** The identity, the home and the sign-in are the host's,
 # and they arrive when the container starts. `bin/gates.Dockerfile` carries only binaries.
 #
-# **Two sign-ins, and this asks for both every run.**
+# **`FOUNDRY_KEYS` names a Docker volume that keeps the sign-ins.** Absent, nothing mounts and both
+# are asked every run. Named, three of its directories are mounted where each tool keeps its own —
+# the forge's, the harness's and the judge's — and a login inside survives the container.
+#
+# **The owner authorised that for this installation on 11 September 2026, in writing.** It is off
+# everywhere else, and it is a volume rather than a path so nothing of a host's crosses.
+#
+# **Every process in the container can read all three.** They run as one user, so a suite, a plugin
+# and a judge share the reach. That is what the grant costs.
+#
+# **Two sign-ins, and without that volume this asks for both every run.**
 #
 #     the forge     `gh auth login`, or delivery cannot open a request
 #     the harness   whatever runs the worker, or nothing works at all
@@ -44,6 +54,7 @@
 #   2   Docker is not answering
 #   3   the image would not build
 #   4   this machine has no home to keep runs in
+#   5   FOUNDRY_KEYS names a volume that could not be prepared
 
 set -u
 
@@ -62,6 +73,7 @@ main() {
 
     ensure_docker_answers
     ensure_the_image_is_built
+    ensure_the_keys_are_there
 
     run_in_the_container "$@"
 }
@@ -124,6 +136,27 @@ build_it() {
 }
 
 #
+# **A fresh named volume takes the ownership the image has at that path, and root's where it has
+# nothing.** `forge` then cannot write, and a login that cannot write its own token fails in a way
+# nobody reads as permissions. So the directories are made and given away before anything signs in.
+#
+# `docker volume create` is idempotent, so this costs one container on a machine that already has
+# the volume and nothing after that.
+ensure_the_keys_are_there() {
+    [ -n "${FOUNDRY_KEYS:-}" ] || return 0
+
+    docker volume create "$FOUNDRY_KEYS" >/dev/null 2>&1
+
+    dirs=
+    for pair in $KEYS; do dirs="$dirs /keys/${pair%%:*}"; done
+
+    docker run --rm -u 0 -v "$FOUNDRY_KEYS:/keys" "$image" \
+        sh -c "mkdir -p $dirs && chown -R 1000:1000 $dirs" >/dev/null 2>&1 && return 0
+
+    fail "the volume named by FOUNDRY_KEYS could not be prepared." 5
+}
+
+#
 # Where the runs go, and the whole of the choice. `run.sh home` answers it — `FOUNDRY_HOME`, else
 # `$HOME/.foundry`, else it refuses — so **nothing new decides where a run lives.**
 #
@@ -173,6 +206,17 @@ run_in_the_container() {
 
     [ $# -eq 0 ] && set -- sh
 
+    set -- "$image" "$@"
+    #
+    # **Prepended, so the image and the command stay last**, and inline because a function shifts
+    # its own copy. That is the fault #689 fixed in this file, and I wrote it again here first.
+    #
+    # **Every process in there runs as `forge` and can read all three.** A suite, a plugin and a
+    # judge share the reach. That is the cost of the grant, said here rather than found later.
+    for pair in ${FOUNDRY_KEYS:+$KEYS}; do
+        set -- --mount "type=volume,source=$FOUNDRY_KEYS,target=/home/forge/${pair#*:},volume-subpath=${pair%%:*}" "$@"
+    done
+
     docker run --rm "$(how_to_attach)" \
         -v "$root:/src:ro" \
         -v "$kept:/home/forge/.foundry" \
@@ -181,8 +225,18 @@ run_in_the_container() {
         -e "GIT_AUTHOR_EMAIL=$(git config user.email 2>/dev/null)" \
         -e "GIT_COMMITTER_NAME=$(git config user.name  2>/dev/null)" \
         -e "GIT_COMMITTER_EMAIL=$(git config user.email 2>/dev/null)" \
-        "$image" "$@"
+        "$@"
 }
+
+#
+# **Each pair is a subpath in one volume and the directory it belongs at.** A fourth tool is a row
+# here, never a change to any code below it — which is what keeps this free of provider names in
+# anything but data.
+#
+# The owner authorised this on 11 September 2026, for this installation, in writing. Absent the
+# variable nothing mounts, which is what every machine but theirs gets.
+KEYS='gh:.config/gh claude:.claude codex:.codex'
+
 
 say()  { printf '%s\n' "$1"; }
 fail() { say "host: $1" >&2; exit "$2"; }

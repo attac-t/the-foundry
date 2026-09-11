@@ -144,6 +144,40 @@ case $(asked) in
   *)                               ok  "and it mounts no credential store" ;;
 esac
 
+# --- the sign-ins, when a volume is named ---
+#
+# **One volume, three exact places.** The owner authorised persistence for this installation and
+# asked that only the credential locations be mounted. A subpath per tool is what that means.
+
+stub_docker
+( PATH="$tmp/bin:$PATH" FOUNDRY_HOME="$tmp/home" FOUNDRY_KEYS=akeyvolume \
+    sh "$root/bin/host.sh" true >/dev/null 2>&1 )
+
+for want in .config/gh .claude .codex; do
+  case $(asked) in
+    *"target=/home/forge/$want"*) ok  "the volume is mounted at $want" ;;
+    *)                                    bad "the volume is mounted at $want — it was not" ;;
+  esac
+done
+
+case $(asked) in
+  *'source=akeyvolume'*) ok  "and it is the volume the variable names" ;;
+  *)                     bad "and it is the volume the variable names — it was not" ;;
+esac
+
+# A whole home would carry more than a sign-in. The grant was for the credential places only.
+case $(asked) in
+  *"target=/home/forge "*|*"target=/home/forge,"*) bad "and the whole home is not mounted — it was" ;;
+  *)                                                 ok  "and the whole home is not mounted" ;;
+esac
+
+# **The directories are made before anything signs in.** A fresh volume is root's, and a login that
+# cannot write its own token fails in a way nobody reads as permissions.
+case $(asked) in
+  *'chown -R 1000:1000'*) ok  "and the places are given to forge first" ;;
+  *)                      bad "and the places are given to forge first — they were not" ;;
+esac
+
 # --- and the ordinary path stays light ---
 
 stub_docker
