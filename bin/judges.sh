@@ -10,9 +10,6 @@
 # header says why `hosts` is separate: a gate grading two rules under one name is what
 # `vocabulary.md` refuses. This rule has a different exception and a different reason.
 #
-# **An adapter needs no exemption here.** It lives under `adapters/`, which is not core, so the file
-# that must name a judge is already outside what this reads.
-#
 # **Nothing is exempt, and nothing needs to be.** The file that must name a judge is the adapter, and
 # an adapter lives under `adapters/` — which is not core, so this never reads it.
 #
@@ -44,8 +41,6 @@ ALLOWED=''
 
 say()  { printf '%s\n' "$1"; }
 fail() { printf 'judges: %s\n' "$1" >&2; exit 3; }
-fail() { printf 'judges: %s' "$1" >&2; printf '
-' >&2; exit 3; }
 
 main() {
     [ "$#" -eq 0 ] || fail 'takes no arguments'

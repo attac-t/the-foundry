@@ -16,10 +16,8 @@ adapter="$(cd "$(dirname "$0")/.." && pwd)/run.sh"
 passed=0
 failed=0
 
-ok()  { passed=$((passed + 1)); printf '  ok    %s' "$1"; printf '
-'; }
-bad() { failed=$((failed + 1)); printf '  FAIL  %s' "$1"; printf '
-'; }
+ok()  { passed=$((passed + 1)); printf '  ok    %s' "$1"; printf '\n'; }
+bad() { failed=$((failed + 1)); printf '  FAIL  %s' "$1"; printf '\n'; }
 
 is()    { [ "$2" = "$3" ] && ok "$1" || bad "$1 — want [$3], got [$2]"; }
 has()   { case "$2" in *"$3"*) ok "$1" ;; *) bad "$1 — [$3] missing from [$2]" ;; esac; }
@@ -51,10 +49,8 @@ a_claude_that_says() {
 # A run floor would have handed over: a brief to read, and a receipt already half filled.
 handed() {
   mkdir -p "$tmp/$1"
-  printf 'judge this' > "$tmp/$1/brief"; printf '
-' >> "$tmp/$1/brief"
-  printf 'run  x' > "$tmp/$1/r.receipt"; printf '
-' >> "$tmp/$1/r.receipt"
+  printf 'judge this' > "$tmp/$1/brief"; printf '\n' >> "$tmp/$1/brief"
+  printf 'run  x' > "$tmp/$1/r.receipt"; printf '\n' >> "$tmp/$1/r.receipt"
   printf '%s' "$tmp/$1"
 }
 
