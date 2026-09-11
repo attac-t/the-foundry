@@ -31,6 +31,29 @@ worker's read to a blob. So a worker cannot tell an accepted doctrine from a mer
 | autonomous work | Floor is the first adapter. **It is not the product** |
 | the harness | Claude Code is today's wrapper. **It is not the mission** |
 | a second harness | unproved. No core path has run through one |
+| a machine | **Docker, through `bin/host.sh`.** One command, and the nineteenth gate drives it |
+
+### The host runs work and cannot do the work
+
+**Driven 11 September 2026**, inside the container `bin/host.sh` starts:
+
+| | |
+|---|---|
+| nineteen gates, from a clone | green, on dash and mawk. Not a copy — `.git` is a directory |
+| a commit | the host's author and committer, as a person who exists |
+| a claim against a shared source | taken, and a second host refused |
+| runs | on the machine, readable with Docker stopped |
+
+**And neither provider is in it.** `claude` and `codex` both answer *not found* — the image carries
+`git`, `python3`, `gh` and certificates. So the host grades and judges nothing.
+[#696](https://github.com/attac-t/the-foundry/issues/696) owns that.
+
+**Both sign-ins are asked every run**, because no credential store is mounted.
+[#682](https://github.com/attac-t/the-foundry/issues/682) holds whether that changes, and it wants a
+person.
+
+**It has never run on a second machine.** The two hosts proved so far are this one and a container on
+its own kernel. [#299](https://github.com/attac-t/the-foundry/issues/299) owns the rest.
 
 ## What holds today
 
