@@ -178,6 +178,26 @@ case $(asked) in
   *)                      bad "and the places are given to forge first — they were not" ;;
 esac
 
+# **A second mechanism, chosen by the value's own shape.** A bare name is a volume; anything with a
+# slash is a directory here. Two shapes, one setting, and no word for what a reader can see.
+
+stub_docker
+( PATH="$tmp/bin:$PATH" FOUNDRY_HOME="$tmp/home" FOUNDRY_KEYS="$tmp/keys" \
+    sh "$root/bin/host.sh" true >/dev/null 2>&1 )
+
+case $(asked) in
+  *'type=bind'*) ok  "a path is kept as a directory here" ;;
+  *)             bad "a path is kept as a directory here — it asked for a volume" ;;
+esac
+
+case $(asked) in
+  *'volume create'*) bad "and no volume is made for a path — one was" ;;
+  *)                 ok  "and no volume is made for a path" ;;
+esac
+
+[ -d "$tmp/keys/gh" ] && ok  "and the places are made on this machine" \
+                     || bad "and the places are made on this machine — they were not"
+
 # --- and the ordinary path stays light ---
 
 stub_docker

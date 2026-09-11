@@ -136,6 +136,24 @@ build_it() {
 }
 
 #
+# **Three concerns, and only one of them is Foundry's.** Whether a sign-in persists is the owner's
+# policy. Where it is kept is an implementation. How long the container lives is neither, and stays
+# `--rm`.
+#
+# **So the value decides the mechanism, by its own shape.** A bare name is a Docker volume; anything
+# holding a slash is a directory on this machine. No second variable, and no word for a thing a
+# reader already knows by looking at it.
+#
+# **The contract is the pair list above**, and it is what a different mechanism would have to satisfy:
+# a place a tool keeps its own sign-in, and where that place belongs inside.
+how_that_place_is_kept() {
+    case $FOUNDRY_KEYS in
+        */*) printf 'type=bind,source=%s/%s,target=/home/forge/%s' "$FOUNDRY_KEYS" "$1" "$2" ;;
+        *)   printf 'type=volume,source=%s,target=/home/forge/%s,volume-subpath=%s' "$FOUNDRY_KEYS" "$2" "$1" ;;
+    esac
+}
+
+#
 # **A fresh named volume takes the ownership the image has at that path, and root's where it has
 # nothing.** `forge` then cannot write, and a login that cannot write its own token fails in a way
 # nobody reads as permissions. So the directories are made and given away before anything signs in.
@@ -144,6 +162,8 @@ build_it() {
 # the volume and nothing after that.
 ensure_the_keys_are_there() {
     [ -n "${FOUNDRY_KEYS:-}" ] || return 0
+
+    case $FOUNDRY_KEYS in */*) make_them_here; return $? ;; esac
 
     docker volume create "$FOUNDRY_KEYS" >/dev/null 2>&1
 
@@ -154,6 +174,15 @@ ensure_the_keys_are_there() {
         sh -c "mkdir -p $dirs && chown -R 1000:1000 $dirs" >/dev/null 2>&1 && return 0
 
     fail "the volume named by FOUNDRY_KEYS could not be prepared." 5
+}
+
+# A directory on this machine belongs to whoever runs this, so nothing is given away. The container
+# writes as `forge`, and a host that refuses that is telling the truth about its own permissions.
+make_them_here() {
+    for pair in $KEYS; do
+        mkdir -p "$FOUNDRY_KEYS/${pair%%:*}" 2>/dev/null || \
+            fail "the directory named by FOUNDRY_KEYS could not be made." 5
+    done
 }
 
 #
@@ -214,7 +243,7 @@ run_in_the_container() {
     # **Every process in there runs as `forge` and can read all three.** A suite, a plugin and a
     # judge share the reach. That is the cost of the grant, said here rather than found later.
     for pair in ${FOUNDRY_KEYS:+$KEYS}; do
-        set -- --mount "type=volume,source=$FOUNDRY_KEYS,target=/home/forge/${pair#*:},volume-subpath=${pair%%:*}" "$@"
+        set -- --mount "$(how_that_place_is_kept "${pair%%:*}" "${pair#*:}")" "$@"
     done
 
     docker run --rm "$(how_to_attach)" \
