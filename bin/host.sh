@@ -99,10 +99,24 @@ where_runs_are_kept() {
     printf '%s' "$home"
 }
 
-# The identity and the sign-in, passed rather than baked. `FOUNDRY_WHO` is what a run records as its
-# authority; git's own author is read from the checkout the same way it is on any host.
+#
+# **Three things the host has and the image must not.** `FOUNDRY_WHO` is what a run records as its
+# authority. The other two are git's, and without them a commit made in there is refused —
+# `Author identity unknown`, which is how floor's own suite failed twelve times in this image before
+# anything set them.
+#
+# **This is carrying an identity, never overriding one.** `identity.md` forbids the override because
+# it wrote an address the account does not own. A fresh container owns no address at all, and a
+# person joining one would run the two `git config` lines `join.sh` prints. This is those lines.
+#
+# Empty is honest. A host with no identity passes nothing, and git refuses inside exactly as it
+# refuses outside.
 carried_from_the_host() {
     printf '%s' "-e FOUNDRY_WHO=${FOUNDRY_WHO:-$(git config user.email 2>/dev/null)}"
+    printf ' -e GIT_AUTHOR_NAME=%s'     "$(git config user.name  2>/dev/null)"
+    printf ' -e GIT_AUTHOR_EMAIL=%s'    "$(git config user.email 2>/dev/null)"
+    printf ' -e GIT_COMMITTER_NAME=%s'  "$(git config user.name  2>/dev/null)"
+    printf ' -e GIT_COMMITTER_EMAIL=%s' "$(git config user.email 2>/dev/null)"
 }
 
 stdin_is_a_terminal() { [ -t 0 ]; }

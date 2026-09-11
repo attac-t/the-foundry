@@ -147,6 +147,18 @@ case $(asked) in
   *)                                       bad "the authority is the host's, carried in — it was not" ;;
 esac
 
+#
+# **A commit needs an author and a committer, and a fresh container has neither.** Floor's own suite
+# failed twelve times in this image with `Author identity unknown` before anything set them.
+#
+# Four names, because git wants all four and three would refuse just as loudly as none.
+for want in GIT_AUTHOR_NAME GIT_AUTHOR_EMAIL GIT_COMMITTER_NAME GIT_COMMITTER_EMAIL; do
+  case $(asked) in
+    *"$want"*) ok  "git's $want is carried in" ;;
+    *)         bad "git's $want is carried in — it was not" ;;
+  esac
+done
+
 # The image holds binaries and nothing a host supplies. A token passed here would be one baked into
 # a command line that `ps` shows to every other user on the machine.
 case $(asked) in
