@@ -52,6 +52,29 @@ worker's read to a blob. So a worker cannot tell an accepted doctrine from a mer
 [#682](https://github.com/attac-t/the-foundry/issues/682) holds whether that changes, and it wants a
 person.
 
+### The whole path, from a machine that has only Docker
+
+**Driven 11 September**, in a container that never saw this checkout:
+
+```sh
+git clone https://github.com/attac-t/the-foundry.git
+sh bin/host.sh
+  run.sh new <title>
+  run.sh targets add https://github.com/attac-t/the-foundry.git main
+  run.sh charter derive
+  run.sh open
+  run.sh gates
+```
+
+It ends `gates_exit=0`, the run reads `graded`, and its evidence carries two stamped rows — the gates
+ALL GREEN and the documents AGREED, each naming the commit, the shell and the awk.
+
+**Three refusals on the way, and each named its own cure.** A clone of the mount is not a portable
+identity. A clause grading no selected target is no bar. And `HEAD` is not a ref it takes.
+
+**Delivery is the step this cannot reach**, because the sign-in it needs does not survive the
+container.
+
 ### What survives replacing it
 
 **Driven 11 September.** One container opened a run and exited; `--rm` removed it. A second
