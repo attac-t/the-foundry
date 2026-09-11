@@ -37,7 +37,7 @@
 # Take a new one with `git hash-object --no-filters -- plugins/floor/adapters/codex/run.sh`.
 
 reach  codex:adversary  @adapter codex a758b76d7ec5383720966deb4189541f0628ac88
-reach  claude:adversary  @adapter claude db90b68070ef25ab9531edfebddb44b01552d2b8
+reach  anthropic:adversary  @adapter anthropic cab1584806f5a1c64632dd92f7c4cb6779ca97ec
 
 codex:adversary  a change to what a run may claim is judged by something that did not write it
-claude:adversary  a change to what a run may claim is judged by something that did not write it
+anthropic:adversary  a change to what a run may claim is judged by something that did not write it

@@ -25,7 +25,7 @@ is()    { [ "$2" = "$3" ] && ok "$1" || bad "$1 — want [$3], got [$2]"; }
 has()   { case "$2" in *"$3"*) ok "$1" ;; *) bad "$1 — [$3] missing from [$2]" ;; esac; }
 hasnt() { case "$2" in *"$3"*) bad "$1 — [$3] is in [$2]" ;; *) ok "$1" ;; esac; }
 
-echo "claude"
+echo "anthropic"
 
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
@@ -92,7 +92,7 @@ VERDICT: approve'
 d=$(handed clean); judged "$d"
 
 has "a verdict on the last line is read"    "$(cat "$d/r.receipt")" "verdict approve"
-has "and the adapter names itself"          "$(cat "$d/r.receipt")" "adapter claude"
+has "and the adapter names itself"          "$(cat "$d/r.receipt")" "adapter anthropic"
 has "and what was asked for, as asked for"  "$(cat "$d/r.receipt")" "requested_model opus"
 
 # **This harness has no effort control.** Writing `max` would be a claim about a thing that does not
@@ -133,6 +133,6 @@ d=$(handed quiet); judged "$d"
 has "a harness that said nothing is unavailable" "$(cat "$d/r.receipt")" "verdict unavailable"
 
 printf '
-claude — %d passed, %d failed
+anthropic — %d passed, %d failed
 ' "$passed" "$failed"
 [ "$failed" -eq 0 ]

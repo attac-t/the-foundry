@@ -222,7 +222,7 @@ gate codex       sh   plugins/floor/adapters/codex/run.sh audit
 #
 # The second adapter, and the reason there is one. A rule with a single instance is a description
 # of that instance, so every refusal the first one makes was both the rule and its only example.
-gate claude      sh   plugins/floor/adapters/claude/run.sh audit
+gate anthropic   sh   plugins/floor/adapters/anthropic/run.sh audit
 
 #
 # The pin, against the adapter this tree ships. Floor fails closed at 40 when the two drift, so the

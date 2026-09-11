@@ -105,7 +105,7 @@ jobs:
 
       # The second adapter, so the seam has two instances and not one.
       - name: The second judge adapter reads a reply the way the first does
-        run: sh plugins/floor/adapters/claude/run.sh audit
+        run: sh plugins/floor/adapters/anthropic/run.sh audit
 
       # The digest `.foundry/judged` commits, against the adapter this tree ships. Nothing else
       # compares them until a run tries to judge, and that is late.

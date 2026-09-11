@@ -18,6 +18,13 @@
 # **The binding keys are the runner's, and that is the point.** An adapter writing its own
 # `adapter_pin` would be vendor code vouching for its own authority.
 #
+# **Named for the vendor, never the command.** Floor's suite makes every adapter directory's name a
+# forbidden word in core, and core reads `.claude` directories in four files — so an adapter called
+# `claude` would make floor illegal under floor's own rule.
+#
+# **The rule is right and the name was wrong.** The vendor is Anthropic; `claude` is the command this
+# reaches, and an adapter may name a command.
+#
 # So what this appends is only what it saw happen:
 #
 #     adapter  requested_model  requested_effort  context  fresh  report  time  verdict
@@ -51,7 +58,7 @@ set -u
 
 readonly MODEL=opus
 readonly EFFORT=unset
-readonly ADAPTER=claude
+readonly ADAPTER=anthropic
 
 here=$(cd "$(dirname "$0")" && pwd)
 

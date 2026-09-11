@@ -169,7 +169,7 @@ Edit a rule, then run it — a row typed by hand into one file is the drift noth
 | `judged` | `.foundry/judged` pins an adapter this tree does not ship at that content |
 | `bytes` | a tracked text file holds a byte no decoder can read, a character already lost, or a carriage return |
 | `codex` | the adapter reaching a judge takes a verdict that was not the reply's last word, or claims a thread the harness never opened |
-| `claude` | the second adapter takes a verdict that was not the reply's last word, or claims a handle this harness never opened |
+| `anthropic` | the second adapter takes a verdict that was not the reply's last word, or claims a handle this harness never opened |
 | `kernel` | the plugin does not run — checked on Linux, macOS and Windows |
 | `signal` | the plugin does not run — checked on Linux, macOS and Windows |
 | `floor` | the plugin does not run — checked on Linux, macOS and Windows |
