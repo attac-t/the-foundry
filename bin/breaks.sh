@@ -2,12 +2,11 @@
 #
 # Drives every gate against a tree that breaks it, and reports what was caught.
 #
-# Ten gates are driven here. Nine drive themselves — four through their own `audit`, which the gate
-# line passes, and the four plugin suites through their runners, 1351 assertions between them.
-# `bumps` grades a merge commit, so no file break reaches it, and it is driven by hand.
+# A gate reaches this file three ways: broken here, broken by its own `audit`, or broken by a plugin
+# suite. `bumps` grades a merge commit, so no file break reaches it and it is driven by hand.
 #
-# **Nineteen in all, and nothing may sit outside those three places.** Five did until #684, and one
-# of them had no driver at all — `judged` had only ever been green.
+# **Nothing may sit outside those places, and the report counts them rather than this sentence.**
+# Five gates did until #684, and one had no driver at all — `judged` had only ever been green.
 #
 # `bumps` is the one gate no break here can reach. It grades a merge, and every break below edits a
 # file. The reason and the hand-driven proof sit beside `say_what_drives_itself`.
@@ -80,6 +79,7 @@ say_what_drives_itself() {
     say "  self     bytes comments codex host      their own audit, which the gate line passes"
     say "  self     kernel signal panel floor      bash plugins/<name>/tests/run.sh"
     say "  by hand  bumps      needs a merge commit, so no file break reaches it — see the comment above"
+    say "  not a gate  harness  the board script. Driven here because nothing else drives it"
 }
 
 #
@@ -97,13 +97,15 @@ bumps"
 say_what_nothing_accounts_for() {
     held=" $(printf %s "$ACCOUNTED" | tr "\n" " ") "
     loose=
+    held_count=$(printf %s "$held" | wc -w)
+    live_count=$(sh bin/gates.sh list | wc -l)
 
     for gate in $(sh bin/gates.sh list); do
         case $held in *" $gate "*) continue ;; esac
         loose="$loose $gate"
     done
 
-    [ -n "$loose" ] || { say "  every gate is driven here, named above, or driven by hand"; return 0; }
+    [ -n "$loose" ] || { say "  $held_count of $live_count gates accounted for, and none left over"; return 0; }
 
     say "  UNACCOUNTED:$loose — no break here, and nothing says they drive themselves"
 }
