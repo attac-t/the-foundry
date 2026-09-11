@@ -220,6 +220,11 @@ gate host        sh   bin/host.sh audit
 gate codex       sh   plugins/floor/adapters/codex/run.sh audit
 
 #
+# The second adapter, and the reason there is one. A rule with a single instance is a description
+# of that instance, so every refusal the first one makes was both the rule and its only example.
+gate claude      sh   plugins/floor/adapters/claude/run.sh audit
+
+#
 # The pin, against the adapter this tree ships. Floor fails closed at 40 when the two drift, so the
 # fault is already caught — by whoever next runs a judge, on a run that then stops. This catches it
 # at the commit that caused it, and editing the adapter and forgetting the digest is always one

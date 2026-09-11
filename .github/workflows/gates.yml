@@ -103,6 +103,10 @@ jobs:
       - name: The adapter answers for itself
         run: sh plugins/floor/adapters/codex/run.sh audit
 
+      # The second adapter, so the seam has two instances and not one.
+      - name: The second judge adapter reads a reply the way the first does
+        run: sh plugins/floor/adapters/claude/run.sh audit
+
       # The digest `.foundry/judged` commits, against the adapter this tree ships. Nothing else
       # compares them until a run tries to judge, and that is late.
       - name: The judge this repository authorises is the one it ships
