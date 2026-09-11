@@ -115,16 +115,17 @@ keep() {
 # Held, not discarded. `/dev/null` threw away the only account of a failure anyone had, and the
 # reader was left re-running a gate that takes a quarter of an hour to answer again.
 
-# A gate driven through a stand-in proves the detector and not the thing. Two of the thirteen are
-# that, and a reader of the output learned it nowhere else.
+# A gate driven through a stand-in proves the detector and not the thing, and a reader of the
+# output learned that nowhere else.
 #
-# The tell is not in the command. `audit` ends three of them, and `bytes` sweeps the tracked tree for
-# real — the word labelled a live gate a rehearsal, and a green run is what showed it.
+# The tell is not in the command. `audit` ends several of them, and `bytes` sweeps the tracked tree
+# for real — the word labelled a live gate a rehearsal, and a green run is what showed it.
 #
-# So the two are named here. One list to keep in step is cheaper than one wrong word.
+# **A count here would go stale the day a gate lands.** One said thirteen while the list returned
+# twenty-one, and the second adapter arrived without joining the case below.
 runs_against_a_stand_in() {
     case $1 in
-        comments|codex) return 0 ;;
+        comments|codex|anthropic) return 0 ;;
     esac
 
     return 1
