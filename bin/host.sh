@@ -243,7 +243,11 @@ run_in_the_container() {
     # **Every process in there runs as `forge` and can read all three.** A suite, a plugin and a
     # judge share the reach. That is the cost of the grant, said here rather than found later.
     for pair in ${FOUNDRY_KEYS:+$KEYS}; do
-        set -- --mount "$(how_that_place_is_kept "${pair%%:*}" "${pair#*:}")" "$@"
+        where=${pair#*:}; sends=${where#*:}; where=${where%%:*}
+
+        [ "$sends" = - ] || set -- -e "$sends=/home/forge/$where" "$@"
+
+        set -- --mount "$(how_that_place_is_kept "${pair%%:*}" "$where")" "$@"
     done
 
     docker run --rm "$(how_to_attach)" \
@@ -258,13 +262,17 @@ run_in_the_container() {
 }
 
 #
-# **Each pair is a subpath in one volume and the directory it belongs at.** A fourth tool is a row
-# here, never a change to any code below it — which is what keeps this free of provider names in
-# anything but data.
+# **Three fields: where a tool keeps its sign-in, where that belongs inside, and the variable that
+# sends it there.** A dash means the tool already looks in the right place.
 #
-# The owner authorised this on 11 September 2026, for this installation, in writing. Absent the
-# variable nothing mounts, which is what every machine but theirs gets.
-KEYS='gh:.config/gh claude:.claude codex:.codex'
+# **One of them does not.** Claude keeps a config file beside its directory, at `$HOME/.claude.json`,
+# and a login that wrote it there lost it with the container. `CLAUDE_CONFIG_DIR` moves both.
+#
+# **Found by calling it.** The token persisted and the config did not, so the first real call in a
+# fresh container said the configuration file was not found.
+#
+# A fourth tool is a row here, and the variable field is why that stays true.
+KEYS='gh:.config/gh:- claude:.claude:CLAUDE_CONFIG_DIR codex:.codex:-'
 
 
 say()  { printf '%s\n' "$1"; }

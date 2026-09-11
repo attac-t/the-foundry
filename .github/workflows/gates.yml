@@ -63,6 +63,11 @@ jobs:
       - name: Floor's core names no provider
         run: sh bin/providers.sh
 
+      # The judge seam, and a separate rule. The harness word is outside it, because core reads the
+      # harness's own manifest directories nine times over and every one is legitimate.
+      - name: Floor's core names no judge
+        run: sh bin/judges.sh
+
       # A layer is permanent, so a secret baked into one cannot be edited out. This reads the
       # recipe and says plainly that it never reads the built image.
       - name: No build recipe names a secret

@@ -177,6 +177,14 @@ gate hosts       sh   bin/hosts.sh
 # the adapter — and a gate grading two rules under one name is what `vocabulary.md` refuses.
 gate providers   sh   bin/providers.sh
 
+#
+# The judge seam, and it is not `providers`. That gate grades one rule with one exception list, and
+# a gate grading two rules under one name is what `vocabulary.md` refuses.
+#
+# **The harness word is deliberately outside it.** Floor's core reads `.claude-plugin/plugin.json`
+# nine times over, and every one is its own manifest. #700 owns that second seam.
+gate judges      sh   bin/judges.sh
+
 # The two above ask what shipped code may name. This asks what a build recipe may bake, and a
 # layer is the one place a mistake cannot be edited out afterwards.
 gate secrets     sh   bin/secrets.sh
