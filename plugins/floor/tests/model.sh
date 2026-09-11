@@ -4571,6 +4571,85 @@ a-reviewer  a stranger can read it
 the_runner_asks_the_judge
 
 #
+# **Two judges on one clause, and every fixture before this had one.** A rule with a single instance
+# is a description of that instance: every refusal floor made was both the rule and its only example.
+#
+# The bar this proves is the owner's. Both members are asked, each is asked separately, and a refusal
+# from either stops the work — a majority would let the member who looked hardest be outvoted.
+#
+# Two clause texts, not one. Same text under two members derives one clause with two judge records,
+# and that shape is worth its own case rather than a second reading of this one.
+two_judges_are_both_asked() {
+  d=$tmp/bench
+
+  a_judged_repo "$d" bench "$(a_judge_that_approves)" 'reach  first:adversary  sh bin/fake-judge.sh
+reach  second:adversary  sh bin/other-judge.sh
+first:adversary  a stranger can read it
+second:adversary  a stranger can read it
+' || { skip "two judges — git could not make a repo here"; return; }
+
+  commit_file "$d" bin/other-judge.sh "$(a_judge_that_approves)" >/dev/null 2>&1
+
+  floor_new_as "$d" ada@example.com "Bench" >/dev/null 2>&1
+  floor "$d" charter derive >/dev/null 2>&1
+
+  held=$(floor "$d" charter)
+  has "the first member derives into its own record"  "$held" "first:adversary sh bin/fake-judge.sh"
+  has "and the second into a record beside it"        "$held" "second:adversary sh bin/other-judge.sh"
+
+  floor "$d" policy authorize 'https://gitlab.com/acme/bench.git' >/dev/null 2>&1
+  floor "$d" targets add 'https://gitlab.com/acme/bench.git' main >/dev/null 2>&1
+  floor "$d" open  >/dev/null 2>&1
+  floor "$d" gates >/dev/null 2>&1
+
+  is "both approve, so the clause is met" "$(code_of floor "$d" judged)" "0"
+  is "and the run may deliver"            "$(code_of floor "$d" complete)" "0"
+
+  # Two briefs and two receipts, never one of each. A runner that asked once and counted twice
+  # would pass every check above.
+  is "each member was handed its own brief"   "$(ls "$(floor "$d" path)"/judged/*.brief   | wc -l)" "2"
+  is "and answered in its own receipt"        "$(ls "$(floor "$d" path)"/judged/*.receipt | wc -l)" "2"
+
+  both=$(cat "$(floor "$d" path)"/judged/*.receipt)
+  has "the record names the first member"  "$both" "first:adversary"
+  has "and the second, apart from it"      "$both" "second:adversary"
+}
+two_judges_are_both_asked
+
+#
+# **One dissent stops the work**, which is the half a majority would lose.
+#
+# The first member approves and the second refuses. So a run reaching `complete` here has counted a
+# refusal as an answer, and the exit code is the only thing that can tell the two apart.
+one_refusal_blocks_the_rest() {
+  d=$tmp/dissent
+
+  a_judged_repo "$d" dissent "$(a_judge_that_approves)" 'reach  first:adversary  sh bin/fake-judge.sh
+reach  second:adversary  sh bin/other-judge.sh
+first:adversary  a stranger can read it
+second:adversary  a stranger can read it
+' || { skip "one dissent — git could not make a repo here"; return; }
+
+  commit_file "$d" bin/other-judge.sh "$(a_judge_that_approves reject)" >/dev/null 2>&1
+
+  floor_new_as "$d" ada@example.com "Dissent" >/dev/null 2>&1
+  floor "$d" charter derive >/dev/null 2>&1
+  floor "$d" policy authorize 'https://gitlab.com/acme/dissent.git' >/dev/null 2>&1
+  floor "$d" targets add 'https://gitlab.com/acme/dissent.git' main >/dev/null 2>&1
+  floor "$d" open  >/dev/null 2>&1
+  floor "$d" gates >/dev/null 2>&1
+
+  is "one refusal leaves the clause unmet" "$(code_of floor "$d" judged)"   "39"
+  is "and the run may not deliver"         "$(code_of floor "$d" complete)" "15"
+
+  # The approval is real and recorded. What it does not do is carry the clause on its own.
+  both=$(cat "$(floor "$d" path)"/judged/*.receipt)
+  has "the member that approved is on the record"  "$both" "verdict approve"
+  has "and so is the one that refused"             "$both" "verdict reject"
+}
+one_refusal_blocks_the_rest
+
+#
 # A round limit the charter pins — #526, and #332's last open box.
 #
 # **The count was already there and the ceiling was not.** `next_round` counts every verdict a judge
