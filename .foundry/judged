@@ -28,13 +28,14 @@
 # Foundry takes the stricter bar for itself, because what it judges here is its own runtime. That is
 # this repository's choice and not a rule it ships.
 #
-# One member today, so this is a panel of one. A second model is the next piece of work.
+# Two members now, and they are two models. A role cannot buy a second mind. A second model
+# can, and that is the whole of what the second one is for.
 #
 # **The reach below names an adapter floor ships, and this repository owns no line of it.** The
 # digest is what says which content may judge here. Upgrading is editing that word, in a commit this
 # history keeps — never something that happens to a machine.
 #
-# Take a new one with `git hash-object --no-filters -- plugins/floor/adapters/codex/run.sh`.
+# Take a new one with `git hash-object --no-filters -- plugins/floor/adapters/<name>/run.sh`.
 
 reach  codex:adversary  @adapter codex a758b76d7ec5383720966deb4189541f0628ac88
 reach  anthropic:adversary  @adapter anthropic cab1584806f5a1c64632dd92f7c4cb6779ca97ec
