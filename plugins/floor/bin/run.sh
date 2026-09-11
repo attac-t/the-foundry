@@ -2490,6 +2490,16 @@ write_brief() {
         "$(recorded_id "$1")" "$2" "$3" "$(bootstrap_base "$1")" "$4" "$(next_round "$1" "$2" "$4")"
     printf -- '--- the charter this work is graded against ---\n'
     cat "$(charter_file "$1")"
+
+    #
+    # **A judge that cannot see the edge infers one.** The first real verdict here read the charter,
+    # found no outcome in it, and said a verdict could certify the tree without knowing the intent.
+    # It was right, and it had to work that out.
+    #
+    # Naming the edge is not carrying more. What travels is still the bar and nothing the run wrote.
+    printf "\n-- and what this brief does not carry --\n"
+    printf "the item this run was opened for, and its ledger.\n"
+    printf "The bar travels; what the run wrote does not.\n"
 }
 
 #
