@@ -114,6 +114,46 @@ case $(asked) in
   *)                  ok  "and the flag never reaches docker" ;;
 esac
 
+# --- the worker ---
+#
+# **Two images, one base.** The grading lane keeps the light one, because adding both providers to
+# it would make every grade carry 1.3 GB it never calls. The worker is built `FROM` the host, so the
+# two cannot disagree about what is installed.
+
+stub_docker
+hosted --worker true
+
+case $(asked) in
+  *'-t foundry-worker'*) ok  "--worker builds the worker image" ;;
+  *)                     bad "--worker builds the worker image — it did not" ;;
+esac
+
+case $(asked) in
+  *'-t foundry-host'*) ok  "and the host is built first, because the worker is built on it" ;;
+  *)                   bad "and the host is built first — it was not" ;;
+esac
+
+grep -qx foundry-worker "$tmp/argv" \
+  && ok  "and the container runs the worker image" \
+  || bad "and the container runs the worker image — it ran something else"
+
+# A worker carries no credential either. The sign-ins are the host's and #682 owns whether that
+# changes; a second image must not answer that question by accident.
+case $(asked) in
+  *'.config'*|*'.claude'*|*TOKEN*) bad "and it mounts no credential store — one was" ;;
+  *)                               ok  "and it mounts no credential store" ;;
+esac
+
+# --- and the ordinary path stays light ---
+
+stub_docker
+hosted true
+
+case $(asked) in
+  *worker*) bad "no flag builds nothing extra — it reached for the worker" ;;
+  *)        ok  "no flag builds nothing extra" ;;
+esac
+
 # --- what it does with no command ---
 
 stub_docker
