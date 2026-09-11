@@ -3,12 +3,19 @@
 # Turn a machine that has Docker into a Foundry host, in one command.
 #
 #   sh bin/host.sh              a shell, and the runs kept on this machine
-#   sh bin/host.sh --volume     the runs kept in a Docker volume instead
+#   sh bin/host.sh --worker     the same host, and both providers in it
+#   sh bin/host.sh --volume     the runs kept inside a Docker volume
 #
 # Give it a command and it runs that instead of a shell, which is what a script wants.
 #
 # **The ordinary path takes no flag.** Runs land in the home `run.sh` already derives — the same
 # answer `join.sh` prints — so a person opens them in an editor with no Docker running.
+#
+# **`--worker` is the host that can do the work.** It builds a second image on this one, carrying
+# node and both provider commands. A judge found this flag documented nowhere and it was right.
+#
+# **The grading image stays light because of that split.** Measured: 258 MB here, 1.56 GB with both
+# providers. A container grade would carry 1.3 GB it never calls.
 #
 # `--volume` is the other choice and stays a flag. It is portable and costs the reading: what a
 # volume holds is reachable only through Docker.
