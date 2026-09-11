@@ -79,6 +79,36 @@ identity. A clause grading no selected target is no bar. And `HEAD` is not a ref
 **Delivery is the step this cannot reach**, because the sign-in it needs does not survive the
 container.
 
+### Sign-ins, and the three things people conflate
+
+**Whether a sign-in persists is the owner's policy. Where it is kept is an implementation. How long
+the container lives is neither.** Foundry keeps them apart.
+
+`FOUNDRY_KEYS` is the setting. **Absent, nothing is mounted and both sign-ins are asked every run** —
+that is the default everywhere.
+
+**Its value picks the mechanism, by its own shape.** A bare name is a Docker volume. Anything with a
+slash is a directory on this machine. No second setting, and no new word.
+
+**The contract is a list of pairs** — a place a tool keeps its own sign-in, and where that place
+belongs inside. A different mechanism has to satisfy that and nothing else.
+
+| Kept | Mounted at |
+|---|---|
+| the forge's | `~/.config/gh` |
+| the harness's | `~/.claude` |
+| the judge's | `~/.codex` |
+
+**Nothing wider.** A check refuses the whole home, because a home carries settings and a grant was
+for credentials.
+
+**Every process in the container can read all three.** They run as one user, so a suite, a plugin and
+a judge share the reach. That is what this costs, and it is said here rather than found later.
+
+**Driven 11 September**, with nothing signed in: a file written in one container was read by the next
+after `--rm` destroyed the first. **The sign-ins themselves are a person's**, because every login is
+interactive.
+
 ### What survives replacing it
 
 **Driven 11 September.** One container opened a run and exited; `--rm` removed it. A second
