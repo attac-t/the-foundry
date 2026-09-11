@@ -172,6 +172,23 @@ case $(asked) in
 esac
 
 #
+# **Two sign-ins, and neither store is mounted.** The forge keeps its token under `~/.config/gh` and
+# the harness keeps its own beside it. Only `.foundry` comes across, so both are asked every run.
+#
+# **This holds that choice rather than the convenience.** Mounting a token store hands every process
+# in the container a credential, which is what `bin/secrets.sh` refuses in a build recipe. #682 owns
+# whether the same refusal belongs here.
+case $(asked) in
+  *".config"*|*".gitconfig"*|*".claude"*) bad "no credential store is mounted — one was" ;;
+  *)                                      ok  "no credential store is mounted" ;;
+esac
+
+# Named where a person meets the command, because a sign-in asked twice is one nobody expected.
+grep -q 'gh auth login' "$root/bin/host.sh" \
+  && ok  "and the header names the sign-in a person must give" \
+  || bad "and the header names the sign-in a person must give — it does not"
+
+#
 # --- the other lane, which must stay the other lane ---
 #
 # **One image, two lanes, and the difference is the whole point.** The grading lane keeps nothing on
