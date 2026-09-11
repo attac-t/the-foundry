@@ -44,7 +44,11 @@ worker's read to a blob. So a worker cannot tell an accepted doctrine from a mer
 | a claim against a shared source | taken, and a second host refused |
 | runs | on the machine, readable with Docker stopped |
 
-**And neither provider is in it.** `claude` and `codex` both answer *not found* — the image carries
+**`sh bin/host.sh --worker` puts both providers in it**, pinned, on a second image built from the
+first. `claude --version` and `codex --version` answer there as `forge`. **That is not a provider
+call**, and no call has been made — neither store is mounted.
+
+**The plain host carries neither.** `claude` and `codex` both answer *not found* — the image carries
 `git`, `python3`, `gh` and certificates. So the host grades and judges nothing.
 [#696](https://github.com/attac-t/the-foundry/issues/696) owns that.
 
@@ -84,11 +88,16 @@ container, started after, read the same run back.
 |---|---|
 | runs, and what they record | this machine's own directory, mounted in |
 | a grade's log and a red gate's reason | the same, when the recipe puts them there |
-| the image | rebuilt from a pinned digest, so two builds agree |
+| the image | rebuilt from a pinned base. **Its packages float**, so two builds can differ |
 | **a sign-in** | **no.** Neither store is mounted, so both are asked again |
 
-**A rollback is one edit.** The base and both providers are pinned by number, and changing one back
-and rebuilding loses nothing — the record was never in the container.
+**A rollback changes one number and loses no record**, because the record was never in the container.
+**It does not rebuild the same image.** The base and both providers are pinned; `apt-get` is not, and
+`bin/gates.Dockerfile` says so where it pins the base. Debian drops old versions within weeks, so a
+pinned version is a build that breaks rather than one that repeats.
+
+**So a rollback returns the versions somebody chose, not the bytes they had.** A judge called the
+stronger claim a critical, and it was.
 
 **The thing that does not survive is the only thing a person must re-supply.**
 

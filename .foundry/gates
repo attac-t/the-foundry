@@ -1,7 +1,11 @@
 # What this repository is checked with. `README.md` states the same bar in prose; this is the
 # machine-readable half, and `bin/agree.sh` exists because the two drifted once.
 #
-# `gates` is the nine. `agree` grades the nine and is not one of them.
+# `gates` runs them all and `agree` grades that list, so `agree` is not one of them.
+#
+# **No number here.** It said nine while `sh bin/gates.sh list` returned nineteen, and a judge
+# reading this file was told the wrong bar. A count in a comment beside a list a command
+# produces is the drift `agree` exists for, and `agree` does not read this file.
 #
 # A command answers each. What no command can answer is declared beside this, in `.foundry/judged`.
 
