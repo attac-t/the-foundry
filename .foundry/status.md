@@ -44,7 +44,11 @@ worker's read to a blob. So a worker cannot tell an accepted doctrine from a mer
 | a claim against a shared source | taken, and a second host refused |
 | runs | on the machine, readable with Docker stopped |
 
-**And neither provider is in it.** `claude` and `codex` both answer *not found* — the image carries
+**`sh bin/host.sh --worker` puts both providers in it**, pinned, on a second image built from the
+first. `claude --version` and `codex --version` answer there as `forge`. **That is not a provider
+call**, and no call has been made — neither store is mounted.
+
+**The plain host carries neither.** `claude` and `codex` both answer *not found* — the image carries
 `git`, `python3`, `gh` and certificates. So the host grades and judges nothing.
 [#696](https://github.com/attac-t/the-foundry/issues/696) owns that.
 
