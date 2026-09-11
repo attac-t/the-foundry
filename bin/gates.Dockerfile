@@ -3,7 +3,16 @@
 #
 # Built by `bin/gates.sh linux`.
 
-FROM debian:stable-slim
+# **Pinned by digest, so two machines build the same image.** `stable-slim` moves, and a host that
+# grades a week after another would grade against a different `dash`, `mawk` and `git`.
+#
+# To move it on purpose: `docker pull debian:stable-slim`, then
+# `docker image inspect debian:stable-slim --format '{{index .RepoDigests 0}}'`, and paste it here.
+#
+# **The packages below are not pinned and cannot be.** Debian's archive drops old versions within
+# weeks, so a pinned version is a build that breaks rather than a build that repeats. The digest
+# holds the base; `apt-get` still floats, and that is the limit.
+FROM debian:stable-slim@sha256:1710bde34461551a19a47c787885ec9ad7058d9a5bead2affb8d088fa2f8502b
 
 # The base already has dash, bash, mawk, sed and grep. Two things are missing, and they are missing
 # for different reasons.
