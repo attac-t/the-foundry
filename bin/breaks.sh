@@ -2,8 +2,12 @@
 #
 # Drives every gate against a tree that breaks it, and reports what was caught.
 #
-# Only these five need it. `agree` drives its own six with `agree.sh audit`, and the four plugin
-# suites drive theirs — 1351 assertions between them, no mutant unanswered.
+# Ten gates are driven here. Nine drive themselves — four through their own `audit`, which the gate
+# line passes, and the four plugin suites through their runners, 1351 assertions between them.
+# `bumps` grades a merge commit, so no file break reaches it, and it is driven by hand.
+#
+# **Nineteen in all, and nothing may sit outside those three places.** Five did until #684, and one
+# of them had no driver at all — `judged` had only ever been green.
 #
 # `bumps` is the one gate no break here can reach. It grades a merge, and every break below edits a
 # file. The reason and the hand-driven proof sit beside `say_what_drives_itself`.
@@ -48,6 +52,7 @@ main() {
     say ""
     say "these drive themselves, and are not run here"
     say_what_drives_itself
+    say_what_nothing_accounts_for
 }
 
 # A gate already red grades nothing below it, and a break against a red tree reports the old fault.
@@ -72,9 +77,35 @@ every_gate_is_green() {
 # Three more shapes, each answered: one side bumping alone passes, a HEAD that is not a merge passes
 # and says why, and a directory with no repository above it exits 3.
 say_what_drives_itself() {
-    say "  self     agree      bash bin/agree.sh audit"
-    say "  self     kernel signal panel floor   bash plugins/<name>/tests/run.sh"
+    say "  self     bytes comments codex host      their own audit, which the gate line passes"
+    say "  self     kernel signal panel floor      bash plugins/<name>/tests/run.sh"
     say "  by hand  bumps      needs a merge commit, so no file break reaches it — see the comment above"
+}
+
+#
+# **One list, checked against the live one.** A gate reaches this file three ways and a name in none
+# of them is a gate nobody has proved can fail. That state was invisible: the header said five, the
+# file drove nine, and a reader subtracting one from the other got four gates wrong.
+#
+# Typed, because a `drive` line carries a break name and `shell` has two of them. A derived list
+# would have to guess which gate `shell-taper` belongs to, and guessing is what this refuses.
+ACCOUNTED="frontmatter versions repeats shell taper hosts providers secrets hooks judged
+bytes comments codex host
+kernel signal panel floor
+bumps"
+
+say_what_nothing_accounts_for() {
+    held=" $(printf %s "$ACCOUNTED" | tr "\n" " ") "
+    loose=
+
+    for gate in $(sh bin/gates.sh list); do
+        case $held in *" $gate "*) continue ;; esac
+        loose="$loose $gate"
+    done
+
+    [ -n "$loose" ] || { say "  every gate is driven here, named above, or driven by hand"; return 0; }
+
+    say "  UNACCOUNTED:$loose — no break here, and nothing says they drive themselves"
 }
 
 every_break() {
@@ -112,6 +143,12 @@ every_break() {
     drive secrets bin/gates.Dockerfile \
         'a_baked_secret >> bin/gates.Dockerfile' \
         'sh bin/secrets.sh'
+
+    # The pin is this repository's trust decision, and the gate had only ever been green. Editing
+    # the adapter moves its digest; the declaration beside it does not move on its own.
+    drive judged plugins/floor/adapters/codex/run.sh \
+        'a_drifted_adapter >> plugins/floor/adapters/codex/run.sh' \
+        'sh bin/judged.sh'
 
     # A hook that judges nothing. Every suite under `tests/` writes its calls to disk, so this
     # break reaches the hook rather than the harness reading it.
@@ -226,6 +263,10 @@ a_vendor() { printf '\ncase $remote in *github.com*) : ;; esac\n'; }
 # A directive, never a comment. The header of `secrets.sh` names a secret four times over, and a
 # break planting prose would go green against a gate working perfectly.
 a_baked_secret() { printf '\nENV GH_TOKEN=abc123\n'; }
+
+# A line added to a shipped adapter, with the digest beside it left where it was. That is one
+# commit away at all times, and it is the whole of what this gate exists to catch.
+a_drifted_adapter() { printf '\n# one more line, and nobody moved the pin\n'; }
 
 a_wedge() {
     printf '\n# One two three four five six seven eight nine ten eleven twelve thirteen\n'
