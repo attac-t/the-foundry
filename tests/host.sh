@@ -23,6 +23,11 @@ tmp="${TMPDIR:-/tmp}/host-suite-$$"
 mkdir -p "$tmp/bin" "$tmp/home"
 trap 'rm -rf "$tmp"' EXIT
 
+# Docker on Windows cannot read a `/tmp/...` path, so `host.sh` hands it the rewritten one. A suite
+# asserting the path before that rewrite asserts a mount the platform would refuse.
+kept=$tmp/home
+command -v cygpath >/dev/null 2>&1 && kept=$(cygpath -m "$tmp/home")
+
 #
 # It records every argument and answers `info` and `build` the way a working Docker does. `run` is
 # recorded and never performed, which is the whole reason this stands in.
@@ -33,6 +38,7 @@ stub_docker() {
   {
     printf '#!/bin/sh\n'
     printf 'printf "%%s\\n" "$*" >> "%s/asked"\n' "$tmp"
+    printf 'printf "%%s\\n" "$@" >> "%s/argv"\n' "$tmp"
     printf 'case "$1" in\n'
     printf '  info)  exit %s ;;\n' "${1:-0}"
     printf '  build) exit %s ;;\n' "${2:-0}"
@@ -41,6 +47,7 @@ stub_docker() {
   } > "$tmp/bin/docker"
   chmod +x "$tmp/bin/docker"
   : > "$tmp/asked"
+  : > "$tmp/argv"
 }
 
 asked() { cat "$tmp/asked" 2>/dev/null; }
@@ -58,7 +65,7 @@ stub_docker
 hosted true
 
 case $(asked) in
-  *"$tmp/home:/home/forge/.foundry"*) ok "the home is mounted where a run will look" ;;
+  *"$kept:/home/forge/.foundry"*)     ok "the home is mounted where a run will look" ;;
   *)                                  bad "the home is mounted where a run will look — it was not" ;;
 esac
 
@@ -95,8 +102,8 @@ case $(asked) in
 esac
 
 case $(asked) in
-  *"$tmp/home"*) bad "and the host's home is left alone — it was mounted too" ;;
-  *)             ok  "and the host's home is left alone" ;;
+  *"$kept"*) bad "and the host's home is left alone — it was mounted too" ;;
+  *)          ok  "and the host's home is left alone" ;;
 esac
 
 #
@@ -158,6 +165,18 @@ for want in GIT_AUTHOR_NAME GIT_AUTHOR_EMAIL GIT_COMMITTER_NAME GIT_COMMITTER_EM
     *)         bad "git's $want is carried in — it was not" ;;
   esac
 done
+
+#
+# **A value with a space is one argument or it is none.** These were built into a single string and
+# split on every space, so a host whose git name is two words started no container — Docker read the
+# second word as the image name, and the suite could not see it because it read a flattened line.
+stub_docker
+( PATH="$tmp/bin:$PATH" FOUNDRY_HOME="$tmp/home" FOUNDRY_WHO="two words" \
+    sh "$root/bin/host.sh" true >/dev/null 2>&1 )
+
+grep -qx "FOUNDRY_WHO=two words" "$tmp/argv" \
+  && ok  "a value with a space reaches docker whole" \
+  || bad "a value with a space reaches docker whole — it was split"
 
 # The image holds binaries and nothing a host supplies. A token passed here would be one baked into
 # a command line that `ps` shows to every other user on the machine.

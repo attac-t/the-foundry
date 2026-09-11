@@ -10,7 +10,7 @@ Done when:
 - [x] Every brief on disk has been read, and its kind named — **46 of 46, 8 September.**
 - [ ] Each brief that asks for work has produced the issues it implies.
 - [x] A gap found in the process was fixed before the work that found it carried on.
-- [ ] Two hosts take work from one source, and each item is paid for once.
+- [x] Two hosts take work from one source, and each item is paid for once — **11 September.** This machine and a container, two `uname -n` values, one directory both can see. `Lenovo` took the item; the container asked and was refused, exit 4, and the stamp still named `Lenovo`. Exclusivity under contention is `plugins/floor/tests/race.sh`: a thousand rounds, a thousand single winners, and a swap replaced by `cp` goes red.
 - [ ] A second machine becomes a host from a Docker image.
 - [ ] That machine grades what this one grades, and the two agree.
 - [ ] The plugins are pulled after every bump, so the session runs what the tree says.
