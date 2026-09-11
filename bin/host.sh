@@ -49,12 +49,26 @@ main() {
     [ "${1:-}" = audit ] && { prove_it_can_go_red; return $?; }
 
     keep=home
-    case ${1:-} in --volume) keep=volume; shift ;; esac
+    image=foundry-host
+
+    while read_one_flag "${1:-}"; do shift; done
 
     ensure_docker_answers
     ensure_the_image_is_built
 
     run_in_the_container "$@"
+}
+
+#
+# **Each flag takes no value, so nothing here can leave a `shift` short.** The caller does the
+# shifting, because a function shifts its own copy and the caller keeps all of them — which is how
+# `--volume` once reached `docker run` and Docker printed its usage.
+read_one_flag() {
+    case $1 in
+        --volume) keep=volume  ;;
+        --worker) image=foundry-worker ;;
+        *)        return 1 ;;
+    esac
 }
 
 #
@@ -89,9 +103,17 @@ ensure_docker_answers() {
 ensure_the_image_is_built() {
     command -v cygpath >/dev/null 2>&1 && { root=$(cygpath -m "$root"); export MSYS_NO_PATHCONV=1; }
 
-    docker build -q -t foundry-host -f "$root/bin/gates.Dockerfile" "$root" >/dev/null && return 0
+    build_it foundry-host gates || fail "the image would not build. Run the same build without -q to see why." 3
 
-    fail "the image would not build. Run the same build without -q to see why." 3
+    [ "$image" = foundry-worker ] || return 0
+
+    build_it foundry-worker worker || fail "the worker image would not build. Run the same build without -q to see why." 3
+}
+
+# The worker is built on the host, so the host is built first and always. One base, so the two can
+# never disagree about what is installed.
+build_it() {
+    docker build -q -t "$1" -f "$root/bin/$2.Dockerfile" "$root" >/dev/null
 }
 
 #
@@ -152,7 +174,7 @@ run_in_the_container() {
         -e "GIT_AUTHOR_EMAIL=$(git config user.email 2>/dev/null)" \
         -e "GIT_COMMITTER_NAME=$(git config user.name  2>/dev/null)" \
         -e "GIT_COMMITTER_EMAIL=$(git config user.email 2>/dev/null)" \
-        foundry-host "$@"
+        "$image" "$@"
 }
 
 say()  { printf '%s\n' "$1"; }
