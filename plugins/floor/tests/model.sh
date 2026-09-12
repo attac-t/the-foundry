@@ -4695,6 +4695,29 @@ second:adversary  nmykqkvvpxkzekxeynew
 a_collision_inside_one_derivation_is_refused
 
 #
+# **A gate and a judged clause can carry the same words.** `a_judged_repo` declares a gate named
+# `tests`, and a gate's id is the checksum of its name — so a judged clause reading `tests` lands on
+# the same id. The gates loop writes into this draft first.
+#
+# Matching the text alone, the judged clause would be dropped in silence and its judge would stand
+# on a gate. A judge found this one.
+a_clause_taking_a_gate_id_is_refused() {
+  d=$tmp/kinds
+
+  a_judged_repo "$d" kinds "$(a_judge_that_approves)" 'reach  first:adversary  sh bin/fake-judge.sh
+first:adversary  tests
+' || { skip "a kind clash — git could not make a repo here"; return; }
+
+  floor_new_as "$d" ada@example.com "Kinds" >/dev/null 2>&1
+
+  said=$(floor_says "$d" charter derive)
+  has "a judged clause landing on a gate's id is refused" "$said" "already means"
+  has "and the refusal names the kind it found"          "$said" "Gate tests"
+  has "and the kind it was asked for"                    "$said" "Judged tests"
+}
+a_clause_taking_a_gate_id_is_refused
+
+#
 # A round limit the charter pins — #526, and #332's last open box.
 #
 # **The count was already there and the ceiling was not.** `next_round` counts every verdict a judge

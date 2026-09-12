@@ -4907,13 +4907,20 @@ while_reading_judged() {
 # can share a 32-bit checksum. Keyed on the id alone, the second meaning would vanish and its judge
 # would stand on the first.
 write_the_clause_once() {
-    meant=$(clause_text "$draft" "$1")
+    meant=$(clause_kind_and_text "$draft" "$1")
 
-    [ -z "$meant" ]     && { print_clause "$1" Judged "$2" >> "$draft"; return $?; }
-    [ "$meant" = "$2" ] && return 0
+    [ -z "$meant" ]            && { print_clause "$1" Judged "$2" >> "$draft"; return $?; }
+    [ "$meant" = "Judged $2" ] && return 0
 
-    note "id $1 already means [$meant] — refusing to reuse it for [$2]"
+    note "id $1 already means [$meant] — refusing to reuse it for [Judged $2]"
     return 1
+}
+
+# The kind and the text, which together are what an id stands for. A gate and a judged clause can
+# carry the same words, and the gates loop writes into this same draft first — so matching the text
+# alone would drop the judged clause and leave its judges standing on a gate.
+clause_kind_and_text() {
+    awk -v id="$2" '$1 == "clause" && ($2 "") == (id "") { $1 = ""; $2 = ""; sub(/^ +/, ""); print; exit }' "$1" 2>/dev/null
 }
 
 #
@@ -4921,13 +4928,10 @@ write_the_clause_once() {
 # `moved_sources` reads every one of them. So a pin is skipped only when this draft already holds
 # that clause pinned at that source, never because the clause has been seen.
 write_the_pin_once() {
-    already_pinned "$1" "$2" && return 0
+    pin=$(print_pin "$1" "$target" "$ref" "$2" "$3")
 
-    print_pin "$1" "$target" "$ref" "$2" "$3" >> "$draft"
-}
-
-already_pinned() {
-    awk -v id="$1" -v src="$2"         '$1 == "pin" && $2 == id && $5 == src { held = 1; exit } END { exit !held }' "$draft"
+    grep -qxF "$pin" "$draft" && return 0
+    printf '%s\n' "$pin" >> "$draft"
 }
 
 # The first words that are not a judge. Each says something about one member rather than naming a
