@@ -4745,6 +4745,26 @@ second:adversary  a stranger can read it
   said=$(floor "$d" charter check)
   has "the member that went missing is named" "$said" "second:adversary"
   has "and the clause it stood on"            "$said" "unresolved: Judged a stranger can read it"
+
+  # **A panel is declared on one line, comma separated**, and that is the shape that broke first.
+  # Reading the field whole compared `one,two` against a record holding `one`, and called a charter
+  # nobody had touched unresolved.
+  c=$tmp/commas
+
+  a_judged_repo "$c" commas "$(a_judge_that_approves)" 'reach  one  sh bin/fake-judge.sh
+reach  two  sh bin/fake-judge.sh
+one,two  a stranger can read it
+' || { skip "a comma-separated panel — git could not make a repo here"; return; }
+
+  floor_new_as "$c" ada@example.com "Commas" >/dev/null 2>&1
+  floor "$c" charter derive >/dev/null 2>&1
+
+  is "a panel named on one line drifts in no way" "$(floor "$c" charter check | wc -l | tr -d ' ')" "0"
+
+  held=$(floor "$c" path)/charter
+  grep -v '^judge .* two' "$held" > "$held.cut" && mv "$held.cut" "$held"
+
+  has "and losing one of them names that one" "$(floor "$c" charter check)" "[two]"
 }
 a_member_deleted_from_the_charter_is_named
 

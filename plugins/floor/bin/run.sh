@@ -5304,11 +5304,26 @@ forged_ids() {
 has_record() { awk -v kind="$2" -v id="$3" '$1 == kind && $2 == id { seen = 1 } END { exit !seen }' "$1"; }
 
 #
-# **The member, not merely a judge.** A whole panel stands on one clause and every member derives
-# the same id, so `has_record` answers yes for all of them while one record survives. Deleting the
-# second `judge` line would pass `charter check`, and the run would be asked of one member and
-# completed on one approval.
-has_this_judge() {
+# **Every member, not merely a judge.** A whole panel stands on one clause and each member derives
+# the same id, so `has_record` answers yes for all of them while one record survives. Deleting a
+# `judge` line would pass `charter check`, and the run would be asked of the rest and completed on
+# their approval.
+#
+# **The declaration names the panel on one line, comma separated**, and `print_judges` splits it.
+# So this splits it the same way. Reading the field whole compared `one,two` against a record
+# holding `one`, and called a charter that was never touched unresolved.
+every_member_has_a_record() {
+    missing=
+
+    for member in $(printf '%s' "$3" | tr ',' ' '); do
+        holds_the_member "$1" "$2" "$member" && continue
+
+        missing=$member
+        return 1
+    done
+}
+
+holds_the_member() {
     awk -v id="$2" -v who="$3" \
         '$1 == "judge" && ($2 "") == (id "") && $3 == who { seen = 1 } END { exit !seen }' "$1"
 }
@@ -5361,7 +5376,7 @@ underived_judged() {
 
         [ "$(clause_kind "$1" "$id")" = Judged ] || { printf 'deleted: Judged %s\n' "$text"; continue; }
         has_local_pin "$1" "$id" "$here" || printf 'unpinned: Judged %s\n' "$text"
-        has_this_judge "$1" "$id" "$who" || printf 'unresolved: Judged %s [%s]\n' "$text" "$who"
+        every_member_has_a_record "$1" "$id" "$who" || printf 'unresolved: Judged %s [%s]\n' "$text" "$missing"
     done
 }
 
