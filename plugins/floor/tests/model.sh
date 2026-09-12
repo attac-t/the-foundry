@@ -4769,6 +4769,26 @@ one,two  a stranger can read it
 a_member_deleted_from_the_charter_is_named
 
 #
+# **A member is one word a repository chose, and `*` is one word.**
+#
+# Splitting the list left it to expand, so it became this repository's filenames and matched no
+# record — a whole panel read as missing, and the refusal named a directory. A judge found it.
+a_member_named_like_a_pattern_stays_itself() {
+  d=$tmp/pattern
+
+  a_judged_repo "$d" pattern "$(a_judge_that_approves)" 'reach  *  sh bin/fake-judge.sh
+*  a stranger can read it
+' || { skip "a pattern member — git could not make a repo here"; return; }
+
+  floor_new_as "$d" ada@example.com "Pattern" >/dev/null 2>&1
+  floor "$d" charter derive >/dev/null 2>&1
+
+  has "the member derives as itself"      "$(floor "$d" charter)" "judge"
+  is  "and the charter drifts in no way"  "$(floor "$d" charter check | wc -l | tr -d ' ')" "0"
+}
+a_member_named_like_a_pattern_stays_itself
+
+#
 # A round limit the charter pins — #526, and #332's last open box.
 #
 # **The count was already there and the ceiling was not.** `next_round` counts every verdict a judge
