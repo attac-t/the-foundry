@@ -4597,6 +4597,15 @@ second:adversary  a stranger can read it
   has "the first member derives into its own record"  "$held" "first:adversary sh bin/fake-judge.sh"
   has "and the second into a record beside it"        "$held" "second:adversary sh bin/other-judge.sh"
 
+  # One clause, two judges. A record per member read as two clauses to anything counting
+  # lines, and `complete` named the same unmet clause once for each of them.
+  is "the clause itself is written once" \
+     "$(printf %s "$held" | awk '$1 == "clause"' | wc -l | tr -d " ")" "1"
+  is "and so is the pin under it" \
+     "$(printf %s "$held" | awk '$1 == "pin"' | wc -l | tr -d " ")" "1"
+  is "while both judges stand on it" \
+     "$(printf %s "$held" | awk '$1 == "judge"' | wc -l | tr -d " ")" "2"
+
   floor "$d" policy authorize 'https://gitlab.com/acme/bench.git' >/dev/null 2>&1
   floor "$d" targets add 'https://gitlab.com/acme/bench.git' main >/dev/null 2>&1
   floor "$d" open  >/dev/null 2>&1
