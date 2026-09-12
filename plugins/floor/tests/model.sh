@@ -4607,8 +4607,8 @@ second:adversary  a stranger can read it
 
   # Two briefs and two receipts, never one of each. A runner that asked once and counted twice
   # would pass every check above.
-  is "each member was handed its own brief"   "$(ls "$(floor "$d" path)"/judged/*.brief   | wc -l)" "2"
-  is "and answered in its own receipt"        "$(ls "$(floor "$d" path)"/judged/*.receipt | wc -l)" "2"
+  is "each member was handed its own brief"   "$(ls "$(floor "$d" path)"/judged/*.brief   | wc -l | tr -d " ")" "2"
+  is "and answered in its own receipt"        "$(ls "$(floor "$d" path)"/judged/*.receipt | wc -l | tr -d " ")" "2"
 
   both=$(cat "$(floor "$d" path)"/judged/*.receipt)
   has "the record names the first member"  "$both" "first:adversary"
@@ -5003,7 +5003,7 @@ a-reviewer  a stranger can read it
   # wrong answer. The member's half of the name is matched rather than rebuilt, for the same reason.
   named=$(floor "$tmp/shipped" charter | awk '$1 == "judge" { print $2; exit }')
   is "the receipt is named for the clause the charter holds" \
-     "$(ls "$(floor "$tmp/shipped" path)"/judged/"$named"-*.receipt 2>/dev/null | wc -l)" "1"
+     "$(ls "$(floor "$tmp/shipped" path)"/judged/"$named"-*.receipt 2>/dev/null | wc -l | tr -d " ")" "1"
   absent "and never for the adapter that answered it" \
          "$(floor "$tmp/shipped" path)/judged/a-shipped.receipt"
 }
