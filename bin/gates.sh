@@ -115,16 +115,17 @@ keep() {
 # Held, not discarded. `/dev/null` threw away the only account of a failure anyone had, and the
 # reader was left re-running a gate that takes a quarter of an hour to answer again.
 
-# A gate driven through a stand-in proves the detector and not the thing. Two of the thirteen are
-# that, and a reader of the output learned it nowhere else.
+# A gate driven through a stand-in proves the detector and not the thing, and a reader of the
+# output learned that nowhere else.
 #
-# The tell is not in the command. `audit` ends three of them, and `bytes` sweeps the tracked tree for
-# real — the word labelled a live gate a rehearsal, and a green run is what showed it.
+# The tell is not in the command. `audit` ends several of them, and `bytes` sweeps the tracked tree
+# for real — the word labelled a live gate a rehearsal, and a green run is what showed it.
 #
-# So the two are named here. One list to keep in step is cheaper than one wrong word.
+# **A count here would go stale the day a gate lands.** One said thirteen while the list returned
+# twenty-one, and the second adapter arrived without joining the case below.
 runs_against_a_stand_in() {
     case $1 in
-        comments|codex) return 0 ;;
+        comments|codex|anthropic) return 0 ;;
     esac
 
     return 1
@@ -177,6 +178,14 @@ gate hosts       sh   bin/hosts.sh
 # the adapter — and a gate grading two rules under one name is what `vocabulary.md` refuses.
 gate providers   sh   bin/providers.sh
 
+#
+# The judge seam, and it is not `providers`. That gate grades one rule with one exception list, and
+# a gate grading two rules under one name is what `vocabulary.md` refuses.
+#
+# **The harness word is deliberately outside it.** Floor's core reads `.claude-plugin/plugin.json`
+# nine times over, and every one is its own manifest. #711 owns that second seam.
+gate judges      sh   bin/judges.sh
+
 # The two above ask what shipped code may name. This asks what a build recipe may bake, and a
 # layer is the one place a mistake cannot be edited out afterwards.
 gate secrets     sh   bin/secrets.sh
@@ -210,6 +219,11 @@ gate host        sh   bin/host.sh audit
 # It ships inside floor now, outside floor core, and a repository authorises it by digest. So this
 # gate reads a file no consumer owns a copy of — a fix here reaches all of them.
 gate codex       sh   plugins/floor/adapters/codex/run.sh audit
+
+#
+# The second adapter, and the reason there is one. A rule with a single instance is a description
+# of that instance, so every refusal the first one makes was both the rule and its only example.
+gate anthropic   sh   plugins/floor/adapters/anthropic/run.sh audit
 
 #
 # The pin, against the adapter this tree ships. Floor fails closed at 40 when the two drift, so the

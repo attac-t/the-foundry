@@ -76,7 +76,8 @@ every_gate_is_green() {
 # Three more shapes, each answered: one side bumping alone passes, a HEAD that is not a merge passes
 # and says why, and a directory with no repository above it exits 3.
 say_what_drives_itself() {
-    say "  self     bytes comments codex host      their own audit, which the gate line passes"
+    say "  self     bytes comments host           their own audit, which the gate line passes"
+    say "  self     codex anthropic              the same, one per shipped adapter"
     say "  self     kernel signal panel floor      bash plugins/<name>/tests/run.sh"
     say "  by hand  bumps      needs a merge commit, so no file break reaches it — see the comment above"
     say "  not a gate  harness  the board script. Driven here because nothing else drives it"
@@ -90,7 +91,7 @@ say_what_drives_itself() {
 # Typed, because a `drive` line carries a break name and `shell` has two of them. A derived list
 # would have to guess which gate `shell-taper` belongs to, and guessing is what this refuses.
 ACCOUNTED="frontmatter versions repeats shell taper hosts providers secrets hooks judged
-bytes comments codex host
+bytes comments codex host judges anthropic
 kernel signal panel floor
 bumps"
 
@@ -139,6 +140,12 @@ every_break() {
     drive providers plugins/floor/lib/source-dir.sh \
         'a_vendor >> plugins/floor/lib/source-dir.sh' \
         'sh bin/providers.sh'
+
+    # A judge's name where core decides. The seam was held on discipline alone until a gate gave
+    # it an exit code, and the file that decides about judges is the one it would land in.
+    drive judges plugins/floor/lib/detect-judged.sh \
+        'a_judge_name >> plugins/floor/lib/detect-judged.sh' \
+        'sh bin/judges.sh'
 
     # A value baked into a layer. Deleting it later leaves it in the layer that added it, which is
     # the one mistake a recipe cannot be edited out of.
@@ -261,6 +268,8 @@ a_host() { printf '\n[ -f /.dockerenv ] && inside_a_container=1\n'; }
 # A vendor named where core decides something, never where a comment explains the seam. The
 # resolver may carry this very line; `source-dir.sh` may not.
 a_vendor() { printf '\ncase $remote in *github.com*) : ;; esac\n'; }
+
+a_judge_name() { printf '\ncase $reach in anthropic) : ;; esac\n'; }
 
 # A directive, never a comment. The header of `secrets.sh` names a secret four times over, and a
 # break planting prose would go green against a gate working perfectly.

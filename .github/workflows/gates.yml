@@ -63,6 +63,11 @@ jobs:
       - name: Floor's core names no provider
         run: sh bin/providers.sh
 
+      # The judge seam, and a separate rule. The harness word is outside it, because core reads the
+      # harness's own manifest directories nine times over and every one is legitimate.
+      - name: Floor's core names no judge
+        run: sh bin/judges.sh
+
       # A layer is permanent, so a secret baked into one cannot be edited out. This reads the
       # recipe and says plainly that it never reads the built image.
       - name: No build recipe names a secret
@@ -97,6 +102,10 @@ jobs:
       # its readers were found by a judge rather than a check, so this line exists. No network.
       - name: The adapter answers for itself
         run: sh plugins/floor/adapters/codex/run.sh audit
+
+      # The second adapter, so the seam has two instances and not one.
+      - name: The second judge adapter reads a reply the way the first does
+        run: sh plugins/floor/adapters/anthropic/run.sh audit
 
       # The digest `.foundry/judged` commits, against the adapter this tree ships. Nothing else
       # compares them until a run tries to judge, and that is late.

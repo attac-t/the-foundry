@@ -158,6 +158,21 @@ Proved unattended, end to end. **The judge said *revise*, so floor refused rathe
 **Two things this does not say.** Nothing counts rounds, so an exhausted budget is recordable and
 still undetectable. And one harness, once, is not two: RFC-001 wants a second and this is the first.
 
+**The second one ships now, and a panel of two has run.** On 12 September a single clause carried
+`codex:adversary` and `anthropic:adversary`, on one candidate. Codex answered `revise` and
+anthropic answered `reject`, each in its own receipt, from its own brief. `complete` and `deliver`
+both returned 15, naming both members.
+
+**So a refusal from either blocks delivery, and that is now driven rather than argued.** Two cases
+in floor's suite hold it: a panel of two that agrees, and a panel of two where one refuses.
+
+**What is still one is the harness Foundry runs on.** Two judges are two vendors; the thing that
+runs the work is not. Floor's core reads one harness in thirteen places, and #711 owns that.
+
+**A panel of two also broke something.** A brief and a receipt were named for their clause alone, so
+the second member's landed on the first's. The member names the file now, and the ledger's digest
+points at a file that is still there.
+
 **The adapter is shipped and tested now.** It was run by no test when the line above was written.
 #511 gave it one, and #516 moved it under `plugins/floor/adapters/`, where Foundry owns it. Eleven
 checks drive the real script, and thirteen mutants each die on a different one. Floor 0.71.0.

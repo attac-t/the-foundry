@@ -2203,8 +2203,8 @@ judge_answered() {
         || { note "the charter says nothing about how [$who] is reached for [$text]"; exit 7; }
 
     mkdir -p "$dir/judged" 2>/dev/null || die_unwritable "$dir/judged"
-    bar=$(brief_for "$dir" "$id")
-    answer=$(receipt_for "$dir" "$id")
+    bar=$(brief_for "$dir" "$id" "$who")
+    answer=$(receipt_for "$dir" "$id" "$who")
 
     # `bar` and `digest`, never `brief`: `handed` takes the digest into a variable of that name, sh
     # has no locals, and reading it back after the call digested a checksum. That is `craft-sh` rule
@@ -2262,10 +2262,20 @@ record_the_deadlock() {
         "$who: deadlock, the charter allows $limit rounds and $limit were given" "$who"
 }
 
-# Where the bar goes over, and where the answer comes back. Beside the charter and named for the
-# clause, so a person told a run's path can open either and read what was asked and what was said.
-brief_for()   { printf '%s/judged/%s.brief' "$1" "$2"; }
-receipt_for() { printf '%s/judged/%s.receipt' "$1" "$2"; }
+# Where the bar goes over, and where the answer comes back. Beside the charter, so a person told a
+# run's path can open either and read what was asked and what was said.
+#
+# **Named for the clause and the member, never the clause alone.** One clause may carry a whole
+# panel, and a name holding only the clause let the second member's brief land on the first's — so
+# the ledger kept a digest of a file that no longer existed, and one receipt survived a panel of two.
+brief_for()   { printf '%s/judged/%s-%s.brief' "$1" "$2" "$(path_safe "$3")"; }
+receipt_for() { printf '%s/judged/%s-%s.receipt' "$1" "$2" "$(path_safe "$3")"; }
+
+# A member's name reaches a path and a repository writes it. Every member carries a colon, which
+# Windows refuses in a filename and Git Bash rewrites in `rev:path`, and nothing stops a declaration
+# writing a slash. So a checksum stands in the path and the name itself sits in the receipt, on the
+# `role` line the runner writes before anything is asked.
+path_safe() { printf '%s' "$1" | cksum | awk '{ print $1 }'; }
 
 #
 # Run the judge, and tell a host that could not from a judge that answered badly.
