@@ -5304,6 +5304,16 @@ forged_ids() {
 has_record() { awk -v kind="$2" -v id="$3" '$1 == kind && $2 == id { seen = 1 } END { exit !seen }' "$1"; }
 
 #
+# **The member, not merely a judge.** A whole panel stands on one clause and every member derives
+# the same id, so `has_record` answers yes for all of them while one record survives. Deleting the
+# second `judge` line would pass `charter check`, and the run would be asked of one member and
+# completed on one approval.
+has_this_judge() {
+    awk -v id="$2" -v who="$3" \
+        '$1 == "judge" && ($2 "") == (id "") && $3 == who { seen = 1 } END { exit !seen }' "$1"
+}
+
+#
 # A pin on *this* repository, which is the only kind that can be verified from here.
 #
 # A pin's target is self-asserted. Relabelling that one field made a local pin read foreign, so
@@ -5351,7 +5361,7 @@ underived_judged() {
 
         [ "$(clause_kind "$1" "$id")" = Judged ] || { printf 'deleted: Judged %s\n' "$text"; continue; }
         has_local_pin "$1" "$id" "$here" || printf 'unpinned: Judged %s\n' "$text"
-        has_record "$1" judge "$id"      || printf 'unresolved: Judged %s\n' "$text"
+        has_this_judge "$1" "$id" "$who" || printf 'unresolved: Judged %s [%s]\n' "$text" "$who"
     done
 }
 

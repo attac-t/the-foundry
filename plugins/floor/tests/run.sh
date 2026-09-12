@@ -2445,6 +2445,11 @@ wreck_runner "a second meaning under a taken id is caught" \
 wreck_runner "a pin written once per member is caught" \
   pinpermember 's#^    grep -qxF "$pin" "$draft" && return 0#    :#'
 
+# A drift check asking whether some judge record exists, rather than this member's. Every member of
+# a clause derives one id, so one surviving record answered for the whole panel.
+wreck_runner "a panel reduced by a deleted member is caught" \
+  anyjudgerecord 's#^        has_this_judge "$1" "$id" "$who" ||#        has_record "$1" judge "$id" ||#'
+
 #
 # A panel is several minds, and unanimous. Each break takes one half of that.
 #

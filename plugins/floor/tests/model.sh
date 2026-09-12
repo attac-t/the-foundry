@@ -4718,6 +4718,37 @@ first:adversary  tests
 a_clause_taking_a_gate_id_is_refused
 
 #
+# **A panel can be reduced to one by deleting a line, and nothing noticed.**
+#
+# Every member of a clause derives the same id, so a check asking whether *some* judge record exists
+# answered yes for both while one survived. The charter then read as whole, the runner asked one
+# member, and one approval carried the clause.
+#
+# A judge found this, on the change that made two members on one clause possible.
+a_member_deleted_from_the_charter_is_named() {
+  d=$tmp/reduced
+
+  a_judged_repo "$d" reduced "$(a_judge_that_approves)" 'reach  first:adversary  sh bin/fake-judge.sh
+reach  second:adversary  sh bin/fake-judge.sh
+first:adversary  a stranger can read it
+second:adversary  a stranger can read it
+' || { skip "a reduced panel — git could not make a repo here"; return; }
+
+  floor_new_as "$d" ada@example.com "Reduced" >/dev/null 2>&1
+  floor "$d" charter derive >/dev/null 2>&1
+
+  is "a whole charter drifts in no way" "$(floor "$d" charter check | wc -l | tr -d ' ')" "0"
+
+  held=$(floor "$d" path)/charter
+  grep -v 'second:adversary' "$held" > "$held.cut" && mv "$held.cut" "$held"
+
+  said=$(floor "$d" charter check)
+  has "the member that went missing is named" "$said" "second:adversary"
+  has "and the clause it stood on"            "$said" "unresolved: Judged a stranger can read it"
+}
+a_member_deleted_from_the_charter_is_named
+
+#
 # A round limit the charter pins — #526, and #332's last open box.
 #
 # **The count was already there and the ceiling was not.** `next_round` counts every verdict a judge
