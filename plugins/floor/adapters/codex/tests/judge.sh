@@ -56,14 +56,20 @@ judged() {
 }
 
 # --- what floor must have handed over ---
+#
+# **Absent is said, never left unsaid.** Omitting one of these let the subshell inherit it, and a
+# judge running the gate suite exports both. So this case ran the real harness against a fixture
+# brief and appended a verdict to a live receipt — one that had already been answered.
+#
+# It cost a panel on 12 September: one receipt carried two verdicts, the second from nobody.
 
 d=$(handed nobrief)
 is "a run with no brief is refused" \
-   "$( ( cd "$d" && FOUNDRY_RECEIPT="$d/r.receipt" sh "$adapter" >/dev/null 2>&1 ); printf '%s' "$?")" "2"
+   "$( ( cd "$d" && FOUNDRY_BRIEF= FOUNDRY_RECEIPT="$d/r.receipt" sh "$adapter" >/dev/null 2>&1 ); printf '%s' "$?")" "2"
 
 d=$(handed noreceipt)
 is "a run with no receipt is refused" \
-   "$( ( cd "$d" && FOUNDRY_BRIEF="$d/brief" sh "$adapter" >/dev/null 2>&1 ); printf '%s' "$?")" "2"
+   "$( ( cd "$d" && FOUNDRY_BRIEF="$d/brief" FOUNDRY_RECEIPT= sh "$adapter" >/dev/null 2>&1 ); printf '%s' "$?")" "2"
 
 # --- the harness is not here ---
 #
