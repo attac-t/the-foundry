@@ -16,6 +16,9 @@
 # **A comment may name a judge**, for the reason `hosts` and `providers` both give: the sentence
 # explaining a seam contains the word the check forbids.
 #
+# **Floor's own suite is stricter, and it bites first.** It greps core for whole words with no
+# exemption for prose, so a comment naming a judge passes here and reddens floor — as one did.
+#
 # Usage: sh bin/judges.sh
 #
 # Exit: 0 core names no judge, 1 a name is in code, 3 the gate could not read

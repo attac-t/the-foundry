@@ -2271,10 +2271,10 @@ record_the_deadlock() {
 brief_for()   { printf '%s/judged/%s-%s.brief' "$1" "$2" "$(path_safe "$3")"; }
 receipt_for() { printf '%s/judged/%s-%s.receipt' "$1" "$2" "$(path_safe "$3")"; }
 
-# A member's name reaches a path and a repository writes it. `codex:adversary` carries a colon,
-# which Windows refuses in a filename and Git Bash rewrites in `rev:path`, and nothing stops a
-# declaration writing a slash. So a checksum stands in the path and the name itself sits in the
-# receipt, on the `role` line the runner writes before anything is asked.
+# A member's name reaches a path and a repository writes it. Every member carries a colon, which
+# Windows refuses in a filename and Git Bash rewrites in `rev:path`, and nothing stops a declaration
+# writing a slash. So a checksum stands in the path and the name itself sits in the receipt, on the
+# `role` line the runner writes before anything is asked.
 path_safe() { printf '%s' "$1" | cksum | awk '{ print $1 }'; }
 
 #
