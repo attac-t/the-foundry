@@ -4920,13 +4920,17 @@ write_the_clause_once() {
 # carry the same words, and the gates loop writes into this same draft first — so matching the text
 # alone would drop the judged clause and leave its judges standing on a gate.
 clause_kind_and_text() {
-    awk -v id="$2" '$1 == "clause" && ($2 "") == (id "") { $1 = ""; $2 = ""; sub(/^ +/, ""); print; exit }' "$1" 2>/dev/null
+    awk -v id="$2" '$1 == "clause" && ($2 "") == (id "") { print substr($0, 9 + length($2)); exit }' "$1" 2>/dev/null
 }
 
 #
 # **A clause may have many pins** — a meaning drawn from two repositories names both, and
-# `moved_sources` reads every one of them. So a pin is skipped only when this draft already holds
-# that clause pinned at that source, never because the clause has been seen.
+# `moved_sources` reads every one of them. So the whole line is matched, and a pin is skipped only
+# when this draft already holds that exact one.
+#
+# **No test reaches two sources, because nothing produces them.** The shipped resolver reads one
+# file, so every pin in one derivation names it. A repository's own resolver could emit two, and
+# then two lines differ and both land. Unreached, not unheld.
 write_the_pin_once() {
     pin=$(print_pin "$1" "$target" "$ref" "$2" "$3")
 

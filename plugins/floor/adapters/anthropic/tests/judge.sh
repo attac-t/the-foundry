@@ -71,6 +71,30 @@ is "a run with no brief is refused"    "$( ( cd "$d" && FOUNDRY_BRIEF= FOUNDRY_R
 
 is "and a run with no receipt is refused"    "$( ( cd "$d" && FOUNDRY_BRIEF="$d/brief" FOUNDRY_RECEIPT= sh "$adapter" >/dev/null 2>&1 ); printf '%s' "$?")" "2"
 
+# --- the same two, with a live receipt in the environment ---
+#
+# **This is the case that would have caught it.** The overrides above are green on any machine that
+# sets neither variable, so removing one would go red nowhere. Here the bait is exported first, which
+# is what floor does when it runs a judge.
+#
+# A guard that is gone lets the adapter inherit the bait, find a real harness on PATH, and write.
+
+bait=$tmp/bait.receipt
+printf 'run bait
+role nobody
+' > "$bait"
+was=$(cksum < "$bait")
+
+d=$(handed baited)
+(
+  cd "$d" && export FOUNDRY_RECEIPT="$bait" FOUNDRY_BRIEF="$d/brief"
+  FOUNDRY_BRIEF= FOUNDRY_RECEIPT="$d/r.receipt" sh "$adapter" >/dev/null 2>&1
+  FOUNDRY_BRIEF="$d/brief" FOUNDRY_RECEIPT= sh "$adapter" >/dev/null 2>&1
+)
+
+is "a receipt the environment names is not written to" "$(cksum < "$bait")" "$was"
+is "and nothing is written beside it" "$(ls "$tmp" | grep -c '^bait\.')" "1"
+
 # --- the harness is not here ---
 #
 # **Look before calling.** That PATH keeps a shell, and a `claude` under `/usr` is still on it.
