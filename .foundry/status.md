@@ -45,16 +45,21 @@ worker's read to a blob. So a worker cannot tell an accepted doctrine from a mer
 | runs | on the machine, readable with Docker stopped |
 
 **`sh bin/host.sh --worker` puts both providers in it**, pinned, on a second image built from the
-first. `claude --version` and `codex --version` answer there as `forge`. **That is not a provider
-call**, and no call has been made — neither store is mounted.
+first. `claude --version` and `codex --version` answer there as `forge`.
 
-**The plain host carries neither.** `claude` and `codex` both answer *not found* — the image carries
-`git`, `python3`, `gh` and certificates. So the host grades and judges nothing.
+**A version is not a call, and calls have been made since.** On 12 September a fresh container
+answered `gh api user` live and authenticated a push against the real remote, as `forge`, with the
+credential coming from a Docker volume. Two adapters made real model calls through floor's own seam
+on the same day.
+
+**The plain host still carries neither.** `claude` and `codex` answer *not found* there — that image
+carries `git`, `python3`, `gh` and certificates, and `--worker` is what adds the two.
 [#696](https://github.com/attac-t/the-foundry/issues/696) owns that.
 
-**Both sign-ins are asked every run**, because no credential store is mounted.
-[#682](https://github.com/attac-t/the-foundry/issues/682) holds whether that changes, and it wants a
-person.
+**Sign-ins persist where `FOUNDRY_KEYS` names a place**, and are asked every run where it does not.
+The setting is described below.
+[#682](https://github.com/attac-t/the-foundry/issues/682) held whether that changes, and it was
+answered for this installation in writing.
 
 ### The whole path, from a machine that has only Docker
 
