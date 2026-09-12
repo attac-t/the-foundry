@@ -292,9 +292,23 @@ settled() {
 
     note "these runs hold a workspace, so this host is not settled:"
     printf '%s
-' "$inflight" | while read -r underway; do note "  $underway"; done
+' "$inflight" | while read -r underway; do note "  $underway  $(last_moved "$RUNS/$underway")"; done
 
     return 29
+}
+
+#
+# **When the run last wrote anything, or that it never has.**
+#
+# A position says how far a run got and nothing about whether it is still going, so a run abandoned
+# on Tuesday and one working now print the same line. 101 of 109 runs here hold only `run.began`,
+# which is exactly the pair a reader cannot tell apart.
+#
+# The stamp, never an age. Working one out needs date arithmetic, and floor ships POSIX and `git`.
+last_moved() {
+    when=$(tail -n 1 "$(observations_file "$1")" 2>/dev/null | cut -f1)
+
+    printf '%s' "${when:-never moved}"
 }
 
 # A workspace is the part a worker writes to. A run that only charted holds

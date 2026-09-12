@@ -5404,6 +5404,17 @@ a_host_is_settled_when_no_run_holds_a_workspace() {
   said=$( cd "$tmp/stl" && FOUNDRY_HOME="$quiet" FOUNDRY_RUN="$strun" FOUNDRY_WHO="" \
           sh "$runner" settled 2>&1 )
   has "and it is named"            "$said" "$(basename "$strun")"
+
+  # **A position says how far, never whether it is still going.** A run abandoned days ago and one
+  # working now printed the same line, and 101 of 109 runs here hold only `run.began`.
+  has "and it says when the run last moved" "$said" "$(tail -n 1 "$strun/observations" | cut -f1)"
+
+  # A directory with no observations at all cannot be made by `new`, and a reader of the list must
+  # still be told something rather than a blank.
+  mv "$strun/observations" "$strun/observations.aside"
+  silent=$( cd "$tmp/stl" && FOUNDRY_HOME="$quiet" FOUNDRY_RUN="$strun" FOUNDRY_WHO=""             sh "$runner" settled 2>&1 )
+  has "a run that wrote nothing says so" "$silent" "never moved"
+  mv "$strun/observations.aside" "$strun/observations"
   # Grading changes nothing. The workspace is still there and still being read.
   q gates >/dev/null 2>&1
   is "and grading it does not settle the host" "$(code_of q settled)" "29"
