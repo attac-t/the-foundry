@@ -88,7 +88,7 @@ was=$(cksum < "$bait")
 d=$(handed baited)
 (
   cd "$d" && export FOUNDRY_RECEIPT="$bait" FOUNDRY_BRIEF="$d/brief"
-  FOUNDRY_BRIEF= FOUNDRY_RECEIPT="$d/r.receipt" sh "$adapter" >/dev/null 2>&1
+  FOUNDRY_BRIEF= sh "$adapter" >/dev/null 2>&1
   FOUNDRY_BRIEF="$d/brief" FOUNDRY_RECEIPT= sh "$adapter" >/dev/null 2>&1
 )
 

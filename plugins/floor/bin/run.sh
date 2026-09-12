@@ -5314,16 +5314,22 @@ has_record() { awk -v kind="$2" -v id="$3" '$1 == kind && $2 == id { seen = 1 } 
 # holding `one`, and called a charter that was never touched unresolved.
 every_member_has_a_record() {
     missing=
+    named=
 
     # **Globbing off while the list is split.** A member is one word a repository chose, and `*` is
     # one word — left to expand it becomes this directory's filenames and matches no record, so a
     # whole panel reads as missing.
     set -f
     for member in $(printf '%s' "$3" | tr ',' ' '); do
+        named=yes
         holds_the_member "$1" "$2" "$member" || missing=$member
         [ -n "$missing" ] && break
     done
     set +f
+
+    # **A field of commas names nobody**, so the loop never runs. Reporting only what it found would
+    # then call an empty bench sound, where the check this replaced refused it for having no record.
+    [ -n "$named" ] || missing=nobody
 
     [ -z "$missing" ]
 }

@@ -4815,6 +4815,23 @@ reach  01  sh bin/fake-judge.sh
 a_member_that_looks_like_a_number_is_its_own
 
 #
+# **A field of commas names nobody**, and a check reporting only what it found called that sound.
+# The check this replaced refused it for holding no record, so the regression arrived with the fix.
+a_clause_naming_nobody_is_refused() {
+  d=$tmp/nobody
+
+  a_judged_repo "$d" nobody "$(a_judge_that_approves)" ',  a stranger can read it
+' || { skip "a clause naming nobody — git could not make a repo here"; return; }
+
+  floor_new_as "$d" ada@example.com "Nobody" >/dev/null 2>&1
+  floor "$d" charter derive >/dev/null 2>&1
+
+  is "it derives no judge at all" "$(floor "$d" charter | awk '$1 == "judge"' | wc -l | tr -d ' ')" "0"
+  has "and the charter says so"   "$(floor "$d" charter check)" "[nobody]"
+}
+a_clause_naming_nobody_is_refused
+
+#
 # A round limit the charter pins — #526, and #332's last open box.
 #
 # **The count was already there and the ceiling was not.** `next_round` counts every verdict a judge
