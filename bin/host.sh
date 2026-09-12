@@ -67,7 +67,7 @@ main() {
     [ "${1:-}" = audit ] && { prove_it_can_go_red; return $?; }
 
     keep=home
-    image=foundry-host
+    image=foundry:host
 
     while read_one_flag "${1:-}"; do shift; done
 
@@ -85,7 +85,7 @@ main() {
 read_one_flag() {
     case $1 in
         --volume) keep=volume  ;;
-        --worker) image=foundry-worker ;;
+        --worker) image=foundry:worker ;;
         *)        return 1 ;;
     esac
 }
@@ -122,11 +122,11 @@ ensure_docker_answers() {
 ensure_the_image_is_built() {
     command -v cygpath >/dev/null 2>&1 && { root=$(cygpath -m "$root"); export MSYS_NO_PATHCONV=1; }
 
-    build_it foundry-host gates || fail "the image would not build. Run the same build without -q to see why." 3
+    build_it foundry:host gates || fail "the image would not build. Run the same build without -q to see why." 3
 
-    [ "$image" = foundry-worker ] || return 0
+    [ "$image" = foundry:worker ] || return 0
 
-    build_it foundry-worker worker || fail "the worker image would not build. Run the same build without -q to see why." 3
+    build_it foundry:worker worker || fail "the worker image would not build. Run the same build without -q to see why." 3
 }
 
 # The worker is built on the host, so the host is built first and always. One base, so the two can

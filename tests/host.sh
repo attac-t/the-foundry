@@ -124,16 +124,16 @@ stub_docker
 hosted --worker true
 
 case $(asked) in
-  *'-t foundry-worker'*) ok  "--worker builds the worker image" ;;
+  *'-t foundry:worker'*) ok  "--worker builds the worker image" ;;
   *)                     bad "--worker builds the worker image — it did not" ;;
 esac
 
 case $(asked) in
-  *'-t foundry-host'*) ok  "and the host is built first, because the worker is built on it" ;;
+  *'-t foundry:host'*) ok  "and the host is built first, because the worker is built on it" ;;
   *)                   bad "and the host is built first — it was not" ;;
 esac
 
-grep -qx foundry-worker "$tmp/argv" \
+grep -qx foundry:worker "$tmp/argv" \
   && ok  "and the container runs the worker image" \
   || bad "and the container runs the worker image — it ran something else"
 
