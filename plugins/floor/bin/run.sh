@@ -5334,9 +5334,16 @@ every_member_has_a_record() {
     [ -z "$missing" ]
 }
 
+#
+# **The member reaches awk through the environment, never `-v`.** An assignment there decodes
+# escapes before the comparison, so a member written `\\061` matched a record holding `1` and a
+# panel cut to one read as whole. `ENVIRON` hands the value over as the repository wrote it.
+#
+# Both sides are still forced to strings. An id is digits and a member may be, and awk compares two
+# things that look like numbers as numbers — `1` and `01` are two members, which `reach_of` says.
 holds_the_member() {
-    awk -v id="$2" -v who="$3" \
-        '$1 == "judge" && $2 "" == id "" && $3 "" == who "" { seen = 1 } END { exit !seen }' "$1"
+    who=$3 awk -v id="$2" \
+        '$1 == "judge" && $2 "" == id "" && $3 "" == ENVIRON["who"] "" { seen = 1 } END { exit !seen }' "$1"
 }
 
 #

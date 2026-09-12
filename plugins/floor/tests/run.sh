@@ -2455,6 +2455,14 @@ wreck_runner "a panel reduced by a deleted member is caught" \
 wreck_runner "a member left to expand into filenames is caught" \
   memberglob 's#^    set -f$#    :#'
 
+# Two more ways one identity reads as another. A bare compare makes `1` answer for `01`; a value
+# through `-v` decodes an escape, so `\\061` answers too.
+wreck_runner "a member compared as a number is caught" \
+  membernumeric 's#\$3 "" == ENVIRON\["who"\] ""#$3 == ENVIRON["who"]#'
+
+wreck_runner "an empty bench read as a whole panel is caught" \
+  emptybench 's#^    \[ -n "$named" \] || missing=nobody#    :#'
+
 #
 # A panel is several minds, and unanimous. Each break takes one half of that.
 #

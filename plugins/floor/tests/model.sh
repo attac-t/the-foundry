@@ -4815,6 +4815,32 @@ reach  01  sh bin/fake-judge.sh
 a_member_that_looks_like_a_number_is_its_own
 
 #
+# **A member reaches awk through the environment, never `-v`.**
+#
+# An assignment there decodes escapes before the comparison, so a member written `\\061` matched
+# a record holding `1`. Deleting it left the panel reading as whole, which is the third way one
+# identity has been read as another here — after the number and the pattern.
+a_member_written_with_an_escape_is_its_own() {
+  d=$tmp/escaped
+
+  a_judged_repo "$d" escaped "$(a_judge_that_approves)" 'reach  1  sh bin/fake-judge.sh
+reach  \061  sh bin/fake-judge.sh
+1,\061  a stranger can read it
+' || { skip "an escaped member — git could not make a repo here"; return; }
+
+  floor_new_as "$d" ada@example.com "Escaped" >/dev/null 2>&1
+  floor "$d" charter derive >/dev/null 2>&1
+
+  is "both derive, and the charter is whole" "$(floor "$d" charter check | wc -l | tr -d ' ')" "0"
+
+  held=$(floor "$d" path)/charter
+  grep -v '^judge [0-9]* .061 ' "$held" > "$held.cut" && mv "$held.cut" "$held"
+
+  has "the escaped one is not answered by 1" "$(floor "$d" charter check)" "061"
+}
+a_member_written_with_an_escape_is_its_own
+
+#
 # **A field of commas names nobody**, and a check reporting only what it found called that sound.
 # The check this replaced refused it for holding no record, so the regression arrived with the fix.
 a_clause_naming_nobody_is_refused() {
