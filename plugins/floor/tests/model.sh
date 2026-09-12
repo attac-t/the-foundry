@@ -4789,6 +4789,32 @@ a_member_named_like_a_pattern_stays_itself() {
 a_member_named_like_a_pattern_stays_itself
 
 #
+# **A member named `1` and one named `01` are two members.** This file says so at `reach_of`, and
+# `round_limit` and `judge_command` both compare as strings because of it.
+#
+# The drift check did not, so deleting `01`'s record left `1` matching it as a number, and a panel
+# cut to one read as whole. A judge found it, in the function written to close that exact fault.
+a_member_that_looks_like_a_number_is_its_own() {
+  d=$tmp/numeric
+
+  a_judged_repo "$d" numeric "$(a_judge_that_approves)" 'reach  1  sh bin/fake-judge.sh
+reach  01  sh bin/fake-judge.sh
+1,01  a stranger can read it
+' || { skip "a numeric member — git could not make a repo here"; return; }
+
+  floor_new_as "$d" ada@example.com "Numeric" >/dev/null 2>&1
+  floor "$d" charter derive >/dev/null 2>&1
+
+  is "both derive, and the charter is whole" "$(floor "$d" charter check | wc -l | tr -d ' ')" "0"
+
+  held=$(floor "$d" path)/charter
+  grep -v '^judge [0-9]* 01 ' "$held" > "$held.cut" && mv "$held.cut" "$held"
+
+  has "losing 01 is not answered by 1" "$(floor "$d" charter check)" "[01]"
+}
+a_member_that_looks_like_a_number_is_its_own
+
+#
 # A round limit the charter pins — #526, and #332's last open box.
 #
 # **The count was already there and the ceiling was not.** `next_round` counts every verdict a judge

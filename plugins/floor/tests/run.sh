@@ -2450,6 +2450,11 @@ wreck_runner "a pin written once per member is caught" \
 wreck_runner "a panel reduced by a deleted member is caught" \
   anyjudgerecord 's#^        every_member_has_a_record "$1" "$id" "$who" ||#        has_record "$1" judge "$id" ||#'
 
+# A member is one word a repository chose, and `*` is one word. Left to expand it becomes this
+# directory's filenames, matches no record, and a whole panel reads as missing.
+wreck_runner "a member left to expand into filenames is caught" \
+  memberglob 's#^    set -f$#    :#'
+
 #
 # A panel is several minds, and unanimous. Each break takes one half of that.
 #

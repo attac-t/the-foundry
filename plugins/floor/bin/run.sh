@@ -5330,7 +5330,7 @@ every_member_has_a_record() {
 
 holds_the_member() {
     awk -v id="$2" -v who="$3" \
-        '$1 == "judge" && ($2 "") == (id "") && $3 == who { seen = 1 } END { exit !seen }' "$1"
+        '$1 == "judge" && $2 "" == id "" && $3 "" == who "" { seen = 1 } END { exit !seen }' "$1"
 }
 
 #
