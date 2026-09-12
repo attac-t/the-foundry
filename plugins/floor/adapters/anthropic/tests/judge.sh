@@ -87,7 +87,11 @@ was=$(cksum < "$bait")
 
 d=$(handed baited)
 (
-  cd "$d" && export FOUNDRY_RECEIPT="$bait" FOUNDRY_BRIEF="$d/brief"
+  # **The stub, never the live PATH.** This file's header says it reaches no network, and a guard
+  # that regressed here would call the real harness to prove it. The stub writes the same receipt,
+  # so the bait still moves and the check still goes red.
+  cd "$d" && export PATH="$tmp/bin:$PATH" TMP="$tmp"
+  export FOUNDRY_RECEIPT="$bait" FOUNDRY_BRIEF="$d/brief"
   FOUNDRY_BRIEF= sh "$adapter" >/dev/null 2>&1
   FOUNDRY_BRIEF="$d/brief" FOUNDRY_RECEIPT= sh "$adapter" >/dev/null 2>&1
 )

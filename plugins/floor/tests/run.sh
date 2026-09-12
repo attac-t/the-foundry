@@ -2463,6 +2463,11 @@ wreck_runner "a member compared as a number is caught" \
 wreck_runner "an empty bench read as a whole panel is caught" \
   emptybench 's#^    \[ -n "$named" \] || missing=nobody#    :#'
 
+# The member back through `-v`, where awk decodes it before comparing. A member written as an escape
+# for a digit then answers for that digit, and takes its reach and its adapter with it.
+wreck_runner "a member decoded before it is compared is caught" \
+  memberdecoded 's#who=$3 awk -v id="$2" #awk -v id="$2" -v who="$3" #;s#ENVIRON\["who"\]#who#g'
+
 #
 # A panel is several minds, and unanimous. Each break takes one half of that.
 #

@@ -5072,7 +5072,9 @@ declared_limits() { detect_judged | awk '$1 == "rounds" { $1 = ""; sub(/^ +/, ""
 # How one judge is reached, from that table. `""` on both sides: a judge named `01` and one named
 # `1` are two judges, and an `-v` assignment compares as a number.
 reach_of() {
-    printf '%s\n' "$1" | awk -v who="$2" '$1 "" == who "" { $1 = ""; sub(/^ +/, ""); print; exit }'
+    who=$2 awk '$1 "" == ENVIRON["who"] "" { $1 = ""; sub(/^ +/, ""); print; exit }' <<EOF
+$1
+EOF
 }
 
 # How often one judge may be asked, from that table. One reading, because the two tables are one
@@ -5082,8 +5084,8 @@ limit_of() { reach_of "$1" "$2"; }
 # The rounds the charter allows one member on one clause, or nothing when it bounds none. `""` on
 # both sides for `reach_of`'s reason: an `-v` assignment compares as a number.
 round_limit() {
-    awk -v id="$2" -v who="$3" \
-        '$1 == "rounds" && $2 "" == id "" && $3 "" == who "" { print $4; exit }' "$1" 2>/dev/null
+    who=$3 awk -v id="$2" \
+        '$1 == "rounds" && $2 "" == id "" && $3 "" == ENVIRON["who"] "" { print $4; exit }' "$1" 2>/dev/null
 }
 
 # Every member, one per line, in the order the repository declared them.
@@ -5094,7 +5096,7 @@ named_judges() { awk -v want="$2" '$1 == "judge" && $2 == want { print $3 }' "$1
 # Three fields blanked, and `+` rather than a count: blanking three of a three-field record — a judge
 # nobody said how to reach — leaves two spaces where a four-field one leaves three.
 judge_command() {
-    awk -v id="$2" -v who="$3" '$1 == "judge" && $2 "" == id "" && $3 "" == who "" {
+    who=$3 awk -v id="$2" '$1 == "judge" && $2 "" == id "" && $3 "" == ENVIRON["who"] "" {
              $1 = ""; $2 = ""; $3 = ""; sub(/^ +/, ""); print; exit }' "$1" 2>/dev/null
 }
 
