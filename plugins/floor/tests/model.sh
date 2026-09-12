@@ -4597,14 +4597,19 @@ second:adversary  a stranger can read it
   has "the first member derives into its own record"  "$held" "first:adversary sh bin/fake-judge.sh"
   has "and the second into a record beside it"        "$held" "second:adversary sh bin/other-judge.sh"
 
-  # One clause, two judges. A record per member read as two clauses to anything counting
-  # lines, and `complete` named the same unmet clause once for each of them.
+  # One clause, two judges. A record per member read as two clauses to anything counting them, and
+  # `complete` named the same unmet clause once for each.
+  #
+  # **Keyed on the judged clause's id, never on the record type.** The fixture also derives a gate,
+  # so counting every `clause` line counts that too — which is what two judges caught here.
+  bar=$(printf %s "$held" | awk '$1 == "judge" { print $2; exit }')
+
   is "the clause itself is written once" \
-     "$(printf %s "$held" | awk '$1 == "clause"' | wc -l | tr -d " ")" "1"
+     "$(printf %s "$held" | awk -v id="$bar" '$1 == "clause" && $2 == id' | wc -l | tr -d " ")" "1"
   is "and so is the pin under it" \
-     "$(printf %s "$held" | awk '$1 == "pin"' | wc -l | tr -d " ")" "1"
+     "$(printf %s "$held" | awk -v id="$bar" '$1 == "pin" && $2 == id' | wc -l | tr -d " ")" "1"
   is "while both judges stand on it" \
-     "$(printf %s "$held" | awk '$1 == "judge"' | wc -l | tr -d " ")" "2"
+     "$(printf %s "$held" | awk -v id="$bar" '$1 == "judge" && $2 == id' | wc -l | tr -d " ")" "2"
 
   floor "$d" policy authorize 'https://gitlab.com/acme/bench.git' >/dev/null 2>&1
   floor "$d" targets add 'https://gitlab.com/acme/bench.git' main >/dev/null 2>&1
@@ -4651,12 +4656,43 @@ second:adversary  a stranger can read it
   is "one refusal leaves the clause unmet" "$(code_of floor "$d" judged)"   "39"
   is "and the run may not deliver"         "$(code_of floor "$d" complete)" "15"
 
+  # **The symptom, not the shape.** A charter that derives one record is what the fix does; naming
+  # an unmet clause once is what a reader sees, and a second record per member is how it broke.
+  is "and the refusal names the clause once, not once per member" \
+     "$(floor_says "$d" complete | grep -c '^unmet:')" "1"
+
   # The approval is real and recorded. What it does not do is carry the clause on its own.
   both=$(cat "$(floor "$d" path)"/judged/*.receipt)
   has "the member that approved is on the record"  "$both" "verdict approve"
   has "and so is the one that refused"             "$both" "verdict reject"
 }
 one_refusal_blocks_the_rest
+
+#
+# **Two meanings, one checksum.** `clause_id` is a 32-bit `cksum`, so a pair that collides exists and
+# can be found — a judge found this one. Keyed on the id alone, the second meaning would vanish
+# silently and its judge would stand on the first.
+#
+# `refuse_collision` cannot see it: that reads the charter already held, and both arrive in one
+# derivation.
+a_collision_inside_one_derivation_is_refused() {
+  d=$tmp/collide
+
+  a_judged_repo "$d" collide "$(a_judge_that_approves)" 'reach  first:adversary  sh bin/fake-judge.sh
+reach  second:adversary  sh bin/fake-judge.sh
+first:adversary  nikdlnficqhehpuwwtny
+second:adversary  nmykqkvvpxkzekxeynew
+' || { skip "a collision — git could not make a repo here"; return; }
+
+  floor_new_as "$d" ada@example.com "Collide" >/dev/null 2>&1
+
+  said=$(floor_says "$d" charter derive)
+  has "the second meaning under a taken id is refused" "$said" "already means"
+  has "and the refusal names both"                     "$said" "nmykqkvvpxkzekxeynew"
+
+  is "and no charter is written at all" "$(floor "$d" charter | wc -l | tr -d ' ')" "0"
+}
+a_collision_inside_one_derivation_is_refused
 
 #
 # A round limit the charter pins — #526, and #332's last open box.

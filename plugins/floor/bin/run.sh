@@ -4872,7 +4872,6 @@ while_reading_judged() {
     held=$1; draft=$2; target=$3; ref=$4
     reaches=$(declared_reaches)
     limits=$(declared_limits)
-    written=
 
     refuse_a_reach_no_charter_may_hold "$reaches" || return 1
     refuse_a_limit_no_charter_may_hold "$limits"  || return 1
@@ -4890,7 +4889,8 @@ while_reading_judged() {
 
         refuse_moved_from_base "$source" "$sha" "$ref" || return 1
 
-        write_the_clause_once "$id" "$text" "$source" "$sha" || return 1
+        write_the_clause_once "$id" "$text" || return 1
+        write_the_pin_once    "$id" "$source" "$sha" || return 1
         print_judges "$id" "$judge" "$reaches" "$limits" >> "$draft" || return 1
     done
     return 0
@@ -4900,17 +4900,34 @@ while_reading_judged() {
 # One clause record, however many members stand on it.
 #
 # **A record per member gave a clause two identical ones**, so `complete` named the same unmet clause
-# once per member and a panel of five would have named it five times. The exit codes were right
-# throughout, which is why it took a panel of two to show it.
+# once per member and a panel of five would have named it five times.
 #
-# `written` is this derivation's own memory. `refuse_collision` reads the charter already held and
-# cannot see what this loop wrote a line ago.
+# **The draft is the memory, and it carries the meaning too.** `refuse_collision` reads the charter
+# already held, so within one derivation it sees nothing this loop wrote a line ago — and two texts
+# can share a 32-bit checksum. Keyed on the id alone, the second meaning would vanish and its judge
+# would stand on the first.
 write_the_clause_once() {
-    case " $written " in *" $1 "*) return 0 ;; esac
-    written="$written $1"
+    meant=$(clause_text "$draft" "$1")
 
-    print_clause "$1" Judged "$2" >> "$draft" || return 1
-    print_pin    "$1" "$target" "$ref" "$3" "$4" >> "$draft"
+    [ -z "$meant" ]     && { print_clause "$1" Judged "$2" >> "$draft"; return $?; }
+    [ "$meant" = "$2" ] && return 0
+
+    note "id $1 already means [$meant] — refusing to reuse it for [$2]"
+    return 1
+}
+
+#
+# **A clause may have many pins** — a meaning drawn from two repositories names both, and
+# `moved_sources` reads every one of them. So a pin is skipped only when this draft already holds
+# that clause pinned at that source, never because the clause has been seen.
+write_the_pin_once() {
+    already_pinned "$1" "$2" && return 0
+
+    print_pin "$1" "$target" "$ref" "$2" "$3" >> "$draft"
+}
+
+already_pinned() {
+    awk -v id="$1" -v src="$2"         '$1 == "pin" && $2 == id && $5 == src { held = 1; exit } END { exit !held }' "$draft"
 }
 
 # The first words that are not a judge. Each says something about one member rather than naming a
