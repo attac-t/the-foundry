@@ -2429,7 +2429,21 @@ wreck_runner "a judged clause naming no judge is caught" \
   nojudge 's#^        print_judges "\$id" "\$judge" "\$reaches" "\$limits" >> "\$draft" || return 1$#        : >> "$draft" || return 1#'
 
 wreck_runner "a judgement derived as a gate is caught" \
-  judgedasgate 's#print_clause "\$id" Judged "\$text"#print_clause "$id" Gate "$text"#'
+  judgedasgate 's#print_clause "\$1" Judged "\$2"#print_clause "$1" Gate "$2"#'
+
+#
+# A clause carries its whole panel, and its meaning is what the id stands for. One break writes the
+# clause once per member again; the other lets a second meaning take a taken id in silence.
+wreck_runner "a clause written once per member is caught" \
+  clausepermember 's#^    meant=$(clause_text "$draft" "$1")#    meant=#'
+
+wreck_runner "a second meaning under a taken id is caught" \
+  quietcollision 's#^    \[ "$meant" = "$2" \] && return 0#    return 0#'
+
+# A clause may have many pins, and only a pin already written is skipped. Refusing none writes one
+# per member instead.
+wreck_runner "a pin written once per member is caught" \
+  pinpermember 's#^already_pinned() {#already_pinned() { return 1;#'
 
 #
 # A panel is several minds, and unanimous. Each break takes one half of that.
