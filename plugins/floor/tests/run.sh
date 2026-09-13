@@ -2473,6 +2473,11 @@ wreck_runner "a member decoded before it is compared is caught" \
 wreck_runner "a ledger row read for the wrong member is caught" \
   ledgerdecoded 's#judge=$5 name=$2 awk#name=$2 awk#'
 
+# A seat per occurrence rather than per member. A declaration naming one twice then asked it twice
+# and spent two rounds on one candidate.
+wreck_runner "a member seated once per occurrence is caught" \
+  seatperline 's#holds_the_member "$draft" "$1" "$member" && continue#:#'
+
 # The clause text back through `-v`, which decodes it. Two clauses named differently then alias, and
 # an approval for one hides a rejection recorded for the other.
 wreck_runner "a clause text decoded before it is matched is caught" \

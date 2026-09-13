@@ -4891,7 +4891,7 @@ while_reading_judged() {
 
         write_the_clause_once "$id" "$text" || return 1
         write_the_pin_once    "$id" "$source" "$sha" || return 1
-        print_judges "$id" "$judge" "$reaches" "$limits" >> "$draft" || return 1
+        write_the_judges_once "$id" "$judge" "$reaches" "$limits" || return 1
     done
     return 0
 }
@@ -5034,11 +5034,21 @@ say_why_the_adapter_reach_is_unusable() {
 #
 # A panel is several minds, and a clause naming one is not a panel. Each member is written on its own
 # line, so a charter says who sits and completion can name whichever has not spoken.
-print_judges() {
-    printf '%s\n' "$2" | tr ',' '\n' | while IFS= read -r who; do
-        [ -n "$who" ] || continue
-        print_judge  "$1" "$who" "$(reach_of "$3" "$who")"
-        print_rounds "$1" "$who" "$(limit_of "$4" "$who")"
+#
+# **One seat per member, however many times a declaration names one.**
+#
+# A record per occurrence asked the member twice on one candidate and spent two rounds. With a
+# limit of one, the second ask recorded a deadlock after the first had approved — so a clause the
+# panel said yes to failed closed.
+#
+# The draft is the memory, as it is for the clause and the pin.
+write_the_judges_once() {
+    printf '%s\n' "$2" | tr ',' '\n' | while IFS= read -r member; do
+        [ -n "$member" ] || continue
+        holds_the_member "$draft" "$1" "$member" && continue
+
+        print_judge  "$1" "$member" "$(reach_of "$3" "$member")" >> "$draft"
+        print_rounds "$1" "$member" "$(limit_of "$4" "$member")" >> "$draft"
     done
 }
 

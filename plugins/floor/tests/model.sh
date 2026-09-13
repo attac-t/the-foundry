@@ -4895,6 +4895,25 @@ a_clause_naming_nobody_is_refused() {
 a_clause_naming_nobody_is_refused
 
 #
+# **A member named twice takes one seat.** A record per occurrence asked it twice on one candidate
+# and spent two rounds, so a charter allowing one gave none — a clause the panel had approved failed
+# closed on its own second ask. A judge found it.
+a_member_named_twice_takes_one_seat() {
+  d=$tmp/twice
+
+  a_judged_repo "$d" twice "$(a_judge_that_approves)" 'reach  one  sh bin/fake-judge.sh
+one  a stranger can read it
+one  a stranger can read it
+' || { skip "a member named twice — git could not make a repo here"; return; }
+
+  floor_new_as "$d" ada@example.com "Twice" >/dev/null 2>&1
+  floor "$d" charter derive >/dev/null 2>&1
+
+  is "one seat, not two"      "$(floor "$d" charter | awk '$1 == "judge"' | wc -l | tr -d ' ')" "1"
+}
+a_member_named_twice_takes_one_seat
+
+#
 # A round limit the charter pins — #526, and #332's last open box.
 #
 # **The count was already there and the ceiling was not.** `next_round` counts every verdict a judge
