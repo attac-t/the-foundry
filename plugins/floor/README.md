@@ -1833,6 +1833,44 @@ floor carries the words and adds nothing, and the rule lands with the stage that
 
 ---
 
+## Every setting floor reads
+
+Nine, and the page named seven of them a paragraph at a time. **Absent is the ordinary path** — the
+column says what happens then, because that is the case almost every reader is in.
+
+| Setting | Absent | Set |
+|---|---|---|
+| `FOUNDRY_HOME` | runs live under `$HOME/.foundry` | they live where it says |
+| `FOUNDRY_RUN` | the pointer in the git directory decides | that run, and no other |
+| `FOUNDRY_WHO` | `git config user.email` answers | it answers instead |
+| `FOUNDRY_WORKER` | the record leaves the field out | it names what produced the work |
+| `FOUNDRY_SOURCE` | the source is read from the target | it names one |
+| `FOUNDRY_SOURCE_DIR` | a directory source reads the repository | it reads that directory |
+| `FOUNDRY_CLAIM_TTL` | a claim is held until released | it expires after that long |
+| `FOUNDRY_BRIEF`, `FOUNDRY_RECEIPT` | nothing — floor sets these when it runs a judge | an adapter reads and writes them |
+
+**Two more are not settings. They are replacement.**
+
+| Setting | Replaces |
+|---|---|
+| `FOUNDRY_GATES` | the script that reads a gate declaration |
+| `FOUNDRY_JUDGED` | the script that reads a judged declaration |
+
+Each names a script floor runs instead of its own. **A repository pointing one at its own script
+owns what a clause means, where a pin comes from, and who may judge.** `.foundry/gates` and
+`.foundry/judged` are then a default rather than a contract.
+
+**What a replacement takes on.** Floor checks a declaration against what the resolver returned, and
+it cannot check the resolver. So the bar a run is graded against is whatever that script says it is,
+and nothing outside the repository can tell. A panel verdict here read that as a way to forge a bar
+and be self-consistent about it, which is exactly right.
+
+**That is the price of the seam, and it is deliberate.** A repository that writes its own resolver
+has chosen to own the meaning of its own bar. One that does not touch these two never meets the
+question.
+
+---
+
 ## Which run is active
 
 ```
