@@ -286,6 +286,46 @@ settings_match_the_page() {
 settings_match_the_page
 
 #
+# **Every harness file the code reads is on the page, and every one on the page is read.**
+#
+# Twelve reads sat in core and nothing listed them. The list is written now, and a thirteenth would
+# drift exactly as two settings did before a check counted those.
+#
+# **By filename, not by path.** The code writes `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plugins/…` and
+# the page writes the resolved form, so the paths cannot match and the filenames must.
+#
+# `composer.json` and `package.json` are the repository's own. `detect-gates.sh` reads them to find
+# a test command, which is the consumer's business and moves with no harness.
+harness_reads_match_the_page() {
+  local read named missing stale
+  local theirs='composer.json package.json'
+
+  read=$(grep -ohE '[a-z_]+\.json|\.claude/rules'            "$root"/bin/*.sh "$root"/lib/*.sh "$root"/hooks/*.sh 2>/dev/null | sort -u)
+
+  for one in $theirs; do read=$(printf '%s
+' "$read" | grep -vxF "$one"); done
+
+  named=$(sed -n '/^## Every harness read/,/^---$/p' "$root/README.md" 2>/dev/null             | grep -ohE '[a-z_]+\.json|\.claude/rules' | sort -u)
+
+  missing=$(printf '%s
+' "$read"  | comm -23 - <(printf '%s
+' "$named") | tr '
+' ' ')
+  stale=$(  printf '%s
+' "$named" | comm -23 - <(printf '%s
+' "$read")  | tr '
+' ' ')
+
+  [ -z "$missing" ] || bad "core reads harness files the page does not list: $missing"
+  [ -z "$stale" ]   || bad "the page lists harness files core does not read: $stale"
+
+  printf '  ok    all %s harness files core reads are on the page
+'          "$(printf '%s
+' "$read" | grep -c .)"
+}
+harness_reads_match_the_page
+
+#
 # Run a command with a deadline, and answer **2 when the deadline passed** — never the command's own
 # status, because a command that never answered did not answer badly.
 #
