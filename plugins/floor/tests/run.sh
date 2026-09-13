@@ -2473,6 +2473,16 @@ wreck_runner "a member decoded before it is compared is caught" \
 wreck_runner "a ledger row read for the wrong member is caught" \
   ledgerdecoded 's#judge=$5 awk -F#awk -F -v judge="$5"#'
 
+# The clause text back through `-v`, which decodes it. Two clauses named differently then alias, and
+# an approval for one hides a rejection recorded for the other.
+wreck_runner "a clause text decoded before it is matched is caught" \
+  namedecoded 's#name=$2 awk -F#awk -F -v name="$2"#'
+
+# The panel matched as a regular expression. A member whose name is not a plain word then cannot
+# answer its own clause, and derivation accepts what delivery refuses.
+wreck_runner "a panel matched as a pattern is caught" \
+  panelpattern 's#grep -qxF "$3" && return 0#grep -qx "$3" \&\& return 0#'
+
 #
 # A panel is several minds, and unanimous. Each break takes one half of that.
 #

@@ -4841,21 +4841,23 @@ reach  \061  sh bin/fake-judge.sh
 a_member_written_with_an_escape_is_its_own
 
 #
-# **A member that was never asked must not be answered by another.**
+# **A member whose name is not a plain word still answers, and its refusal still blocks.**
 #
-# `satisfied` read the ledger with the member through `awk -v`, which decodes it. A member written
-# `\\061` then matched the row belonging to `1`, so one approval carried the whole clause and the
-# run could deliver on half a panel.
+# Three things read a member, and each read it as something other than the word a repository wrote.
+# `satisfied` took it through `awk -v`, which decodes an escape. So did the clause text beside it,
+# which made two clauses alias. And the handoff matched the name as a regular expression, so the
+# member could never answer at all.
 #
-# The handoff refuses that member for its own reason, so it never answers. That is what makes the
-# fault reachable rather than harmless: `complete` still walks every declared member.
-a_member_that_never_answered_is_not_answered_for() {
+# Together those let one approval carry a clause the other member had rejected.
+a_member_whose_name_is_odd_still_answers() {
   d=$tmp/halfpanel
 
   a_judged_repo "$d" halfpanel "$(a_judge_that_approves)" 'reach  1  sh bin/fake-judge.sh
-reach  \061  sh bin/fake-judge.sh
+reach  \061  sh bin/other-judge.sh
 1,\061  a stranger can read it
 ' || { skip "half a panel — git could not make a repo here"; return; }
+
+  commit_file "$d" bin/other-judge.sh "$(a_judge_that_approves reject)" >/dev/null 2>&1
 
   floor_new_as "$d" ada@example.com "Half" >/dev/null 2>&1
   floor "$d" charter derive >/dev/null 2>&1
@@ -4865,10 +4867,15 @@ reach  \061  sh bin/fake-judge.sh
   floor "$d" gates >/dev/null 2>&1
   floor "$d" judged >/dev/null 2>&1
 
-  is "one member answered, and only one"      "$(ls "$(floor "$d" path)"/judged/*.receipt 2>/dev/null | wc -l | tr -d ' ')" "1"
-  is "and the run may not deliver on it" "$(code_of floor "$d" complete)" "15"
+  is "both members answered"      "$(ls "$(floor "$d" path)"/judged/*.receipt 2>/dev/null | wc -l | tr -d ' ')" "2"
+
+  both=$(cat "$(floor "$d" path)"/judged/*.receipt)
+  has "and the one with the odd name is on the record" "$both" "role \\061"
+  has "with its own answer"                            "$both" "verdict reject"
+
+  is "so the run may not deliver" "$(code_of floor "$d" complete)" "15"
 }
-a_member_that_never_answered_is_not_answered_for
+a_member_whose_name_is_odd_still_answers
 
 #
 # **A field of commas names nobody**, and a check reporting only what it found called that sound.

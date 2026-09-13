@@ -2575,9 +2575,9 @@ print_prior() {
 next_round() {
     [ -f "$(evidence_file "$1")" ] || { printf 1; return 0; }
 
-    judge=$3 awk -F'\t' -v name="$2" '
+    judge=$3 name=$2 awk -F'\t' '
         $2 != "judged"    { next }
-        $4 "" != name ""  { next }
+        $4 "" != ENVIRON["name"] ""  { next }
         $8 "" != ENVIRON["judge"] "" { next }
         { rounds++ }
         END { print rounds + 1 }' "$(evidence_file "$1")" 2>/dev/null
@@ -2585,9 +2585,9 @@ next_round() {
 
 # What that judge last said about that clause, as the ledger kept it.
 prior_verdict() {
-    judge=$3 awk -F'\t' -v name="$2" '
+    judge=$3 name=$2 awk -F'\t' '
         $2 != "judged"    { next }
-        $4 "" != name ""  { next }
+        $4 "" != ENVIRON["name"] ""  { next }
         $8 "" != ENVIRON["judge"] "" { next }
         { said = $7 }
         END { print said }' "$(evidence_file "$1")" 2>/dev/null
@@ -3454,8 +3454,8 @@ what_it_lacks() {
 # a judgement that never happened, and `stopped` holds those — reporting one as a refusal would send
 # a reader to commit their way out of a harness that was never reached.
 refused() {
-    judge=$4 awk -F'\t' -v name="$2" -v ref="$3" '
-        $4 "" != name "" || $6 "" != ref "" { next }
+    judge=$4 name=$2 awk -F'\t' -v ref="$3" '
+        $4 "" != ENVIRON["name"] "" || $6 "" != ref "" { next }
         $8 "" != ENVIRON["judge"] ""                   { next }
         $5 == "1" || $5 == "2"              { found = 1 }
         END { exit !found }' "$(evidence_file "$1")" 2>/dev/null
@@ -3471,8 +3471,8 @@ refused() {
 # Told apart by the code the receipt's outcome mapped to, which the recorder already writes. Nothing
 # new is stored.
 stopped() {
-    judge=$4 awk -F'\t' -v name="$2" -v ref="$3" '
-        $4 "" != name "" || $6 "" != ref "" { next }
+    judge=$4 name=$2 awk -F'\t' -v ref="$3" '
+        $4 "" != ENVIRON["name"] "" || $6 "" != ref "" { next }
         $8 "" != ENVIRON["judge"] ""                   { next }
         $5 == "3" || $5 == "4"              { found = 1 }
         END { exit !found }' "$(evidence_file "$1")" 2>/dev/null
@@ -3597,8 +3597,8 @@ answers_for() {
 # `judge` is empty for every kind but `Judged`. Where it is set, a record from anybody else is
 # skipped: they answered a question nobody put to them, which is neither a yes nor a no.
 satisfied() {
-    judge=$5 awk -F'\t' -v name="$2" -v ref="$3" -v trust="$4" '
-        $4 "" != name "" || $6 "" != ref ""   { next }
+    judge=$5 name=$2 awk -F'\t' -v ref="$3" -v trust="$4" '
+        $4 "" != ENVIRON["name"] "" || $6 "" != ref ""   { next }
         ENVIRON["judge"] "" != "" && $8 "" != ENVIRON["judge"] ""   { next }
         $5 != "0"                             { no = 1; next }
         trust == "" || $2 "" == trust ""      { yes = 1 }
@@ -3689,9 +3689,9 @@ refuse_a_judge_never_handed_the_bar() {
 # One row is enough and every field must be that row's. A handoff at another commit, or under a
 # charter since rewritten, is a different handoff.
 was_handed() {
-    judge=$3 awk -F'\t' -v name="$2" -v ref="$4" -v version="$5" '
+    judge=$3 name=$2 awk -F'\t' -v ref="$4" -v version="$5" '
         $2 != "handed"      { next }
-        $4 "" != name ""    { next }
+        $4 "" != ENVIRON["name"] ""    { next }
         $8 "" != ENVIRON["judge"] ""   { next }
         $6 "" != ref ""     { next }
         $7 "" == version "" { found = 1 }
@@ -3726,7 +3726,7 @@ refuse_a_judge_nobody_asked() {
     panel=$(named_judges "$(charter_file "$1")" "$(clause_id "$2")")
 
     printf '%s
-' "$panel" | grep -qx "$3" && return 0
+' "$panel" | grep -qxF "$3" && return 0
 
     [ -n "$panel" ] && {
         note "[$2] is answered by [$(spaced "$panel")], and this verdict is from [$3]"
@@ -4163,9 +4163,9 @@ refuse_a_brief_nothing_recorded() {
 # The brief digest recorded when the bar went over. `was_handed` has already found this row, so an
 # empty answer means the handoff carried no brief — never that there was no handoff.
 handed_brief() {
-    judge=$3 awk -F'\t' -v name="$2" -v ref="$4" -v version="$5" '
+    judge=$3 name=$2 awk -F'\t' -v ref="$4" -v version="$5" '
         $2 != "handed"      { next }
-        $4 "" != name ""    { next }
+        $4 "" != ENVIRON["name"] ""    { next }
         $8 "" != ENVIRON["judge"] ""   { next }
         $6 "" != ref ""     { next }
         $7 "" != version "" { next }
