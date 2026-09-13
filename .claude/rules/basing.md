@@ -25,6 +25,30 @@ git diff --stat main HEAD
 
 **A deletion on a file your change never names is the tell.** Nothing else says it.
 
+## Inside a run, this rule can make the work ungradeable
+
+**A run's base is pinned, and its charter hangs off that commit.** Merging `origin/main` into a run's
+workspace brings whatever main changed — and when main changed a file the charter pins as a gate,
+floor refuses to grade at all:
+
+```
+floor: grading with the base's own gates: bin/host.sh bin/taper.sh
+floor: each was graded as the base wrote it, so a gate reading one saw neither tree whole
+floor: a change to the bar itself is landed by a person — no run can prove it
+```
+
+Exit 14, and nothing graded. **That is invariant 1 working**, not a fault.
+
+**So the rule above is for a branch.** A branch has no pinned base and no charter. A run has both.
+
+**The reconcile belongs at the merge, not before the grade.** A run proves its work against the bar
+it was chartered on. What main did since is settled when the pull request lands, by a person, the
+way any other conflict is.
+
+**A judge will read the staleness as a defect, and it is not wrong to.** One did here, on
+13 September: seventeen commits ahead, six behind, and the same runner changed on both sides. The
+answer is this section, not a merge the run cannot then grade.
+
 ## Why a rule and not a gate
 
 Every gate here reads the tree. **This fault is only visible in a diff**, between two trees that are
