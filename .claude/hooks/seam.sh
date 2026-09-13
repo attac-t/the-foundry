@@ -20,13 +20,24 @@
 
 set -u
 
+# The file the guard opened, so a refusal can name it. Empty when no body file was resolved.
+unread=
+
 main() {
     call=$(cat)
 
     writes_a_body "$call" || allow
     carries_the_marker "$call" && allow
 
-    deny "a public comment is rendered by plugins/floor/bin/say.sh, which takes fields and refuses six ways. This command carries no seam marker. Run say.sh and post what it printed."
+    deny "a public comment is rendered by plugins/floor/bin/say.sh, which takes fields and refuses six ways. $(what_was_read) Run say.sh and post what it printed."
+}
+
+# A worker told only that a marker is missing re-renders a body that already had one. Naming the
+# file the guard opened is the difference between fixing the body and fixing the path.
+what_was_read() {
+    [ -n "$unread" ] || { printf 'This command carries no seam marker.'; return; }
+
+    printf 'No seam marker in [%s], the file this command names.' "$unread"
 }
 
 #
@@ -63,6 +74,11 @@ carries_no_body() {
 #
 # `seam:` alone was enough once. Any log mentioning the word walked through, which is the shape this
 # exists to stop.
+# The call is JSON, so a quote the caller typed arrives as an escaped one. Flattening the quote
+# and leaving its backslash resolved `--body-file \"path\"` to a file named `\` — the
+# guard refusing the comment it had just been handed correctly.
+unescaped() { printf '%s' "$1" | sed 's/\\"/"/g'; }
+
 carries_the_marker() {
     case $1 in *'<!-- seam:'*' -->'*) return 0 ;; esac
 
@@ -70,7 +86,7 @@ carries_the_marker() {
     # tool has already silently broken, twice.
     #
     # The quote goes first, turned into a space, so no pattern below has to contain one.
-    said=$(printf '%s' "$1" | tr '"' ' ')
+    said=$(unescaped "$1" | tr '"' ' ')
 
     # `-F` is `--body-file`, and `carries_no_body` above already counts it. Reading only the long
     # form here denied a correctly rendered comment posted the short way — the guard refusing the
@@ -78,6 +94,11 @@ carries_the_marker() {
     said=$(printf '%s' "$said" | sed 's/ -F / --body-file /')
 
     named=${said#*--body-file}
+
+    # Here, never after the strips below. Compared at the end it read the first field of the
+    # call instead, so a command naming no file at all was refused for the wrong reason.
+    [ "$named" != "$said" ] || return 1
+
     named=${named#=}
 
     # Every leading space, never one. The quote above became a space, so `--body-file "path"` leaves
@@ -89,15 +110,20 @@ carries_the_marker() {
 
     named=${named%% *}
 
-    [ "$named" != "$said" ] || return 1
     [ -n "$named" ] || return 1
+
+    unread=$named
     grep -q '<!-- seam:' "$named" 2>/dev/null
 }
+
+# The reason names a path now, and a Windows path is backslashes. Unescaped, one of them ends the
+# JSON string early and the harness reads no decision at all — which is an allow, silently.
+as_json() { printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g'; }
 
 deny() {
     printf '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny",'
     printf '"permissionDecisionReason":"%s"}}
-' "$1"
+' "$(as_json "$1")"
     exit 0
 }
 

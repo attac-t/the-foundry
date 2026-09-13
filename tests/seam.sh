@@ -24,7 +24,15 @@ mkdir -p "$tmp"
 trap 'rm -rf "$tmp"' EXIT
 
 # One tool call, as the harness sends it. Written, never typed.
-call() { printf '{"tool_name":"Bash","tool_input":{"command":"%s"}}' "$1" > "$tmp/call.json"; }
+#
+# **The escape is the call.** A quote the caller typed reaches the hook as an escaped quote, and
+# writing it bare made this payload invalid JSON — a shape nothing sends. Every quoted case below
+# passed against it while the live hook denied the same comment.
+call() {
+    printf '{"tool_name":"Bash","tool_input":{"command":"%s"}}' "$(as_json "$1")" > "$tmp/call.json"
+}
+
+as_json() { printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g'; }
 
 asked() { sh "$root/.claude/hooks/seam.sh" < "$tmp/call.json" 2>&1; }
 
@@ -112,6 +120,26 @@ a_call_with_no_body_is_not_a_comment() {
   allows "reading a pull request"
 }
 a_call_with_no_body_is_not_a_comment
+
+# --- what the refusal says ---
+
+says() {
+  case $(asked) in *"$2"*) ok "$1" ;; *) bad "$1 — it did not" ;; esac
+}
+
+#
+# A worker told only that a marker is missing re-renders a body that already carried one. Naming
+# the file the guard opened is the difference between fixing the body and fixing the path.
+the_refusal_names_the_file_it_read() {
+  printf 'no marker here\n' > "$tmp/named.md"
+
+  call "$(verb issue comment) 1 --body-file $tmp/named.md"
+  says "the refusal names the file it read" "$tmp/named.md"
+
+  call "$(verb issue comment) 1 --body 'no marker anywhere'"
+  says "and says plainly when no file was named" "carries no seam marker"
+}
+the_refusal_names_the_file_it_read
 
 printf 'seam — %d passed, %d failed\n' "$passed" "$failed"
 [ "$((passed + failed))" -gt 0 ] || { printf 'FAIL — seam ran nothing.\n'; exit 1; }
