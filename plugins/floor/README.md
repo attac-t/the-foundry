@@ -1833,6 +1833,41 @@ floor carries the words and adds nothing, and the rule lands with the stage that
 
 ---
 
+## Every harness read in floor's core
+
+**Twelve, and they are one harness's.** Listed here because #711 asks whether a second could ever be
+reached, and nobody could answer without reading the source.
+
+| Read | Where | For |
+|---|---|---|
+| `.claude-plugin/plugin.json` | `bin/run.sh`, `lib/plugins.sh` | a plugin's own version |
+| `.claude-plugin/marketplace.json` | `lib/plugins.sh` | what a checkout ships |
+| `~/.claude/settings.json` | `bin/join.sh` | which plugins this host enabled |
+| `~/.claude/plugins/known_marketplaces.json` | `lib/plugins.sh` | where a plugin came from |
+| `~/.claude/plugins/installed_plugins.json` | `lib/plugins.sh` | what version is installed |
+| `.claude/rules` | `bin/join.sh` | which skills a repository's rules name |
+
+**`CLAUDE_CONFIG_DIR` overrides the home in three of them**, which is the harness's own way of
+moving its state. Floor honours it and owns none of it.
+
+### Which would move for a second harness
+
+**All of them.** There is no read here that a different harness would leave alone.
+
+| Kind | Why it moves |
+|---|---|
+| the manifest layout | a second harness keeps manifests somewhere of its own |
+| the harness's own state | a different program, a different place |
+| a repository's rules | the folder is named for the harness that reads it |
+
+**That is the finding, not a complaint.** Floor is useful today because it speaks one harness
+fluently. A seam here costs a second implementation to prove, and there is one harness.
+
+**One read is not like the others.** `bin/run.sh` reads `.claude-plugin/plugin.json` to learn
+floor's own version. It is floor asking about floor, through a layout the harness chose.
+
+---
+
 ## Every setting floor reads
 
 Nine, and the page named seven of them a paragraph at a time. **Absent is the ordinary path** — the
