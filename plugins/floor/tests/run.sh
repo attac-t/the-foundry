@@ -2471,7 +2471,7 @@ wreck_runner "a member decoded before it is compared is caught" \
 # The ledger read with the member through `-v`, which decodes it. One member's row then answers for
 # another, and a run delivers on half a panel.
 wreck_runner "a ledger row read for the wrong member is caught" \
-  ledgerdecoded 's#judge=$5 awk -F#awk -F -v judge="$5"#'
+  ledgerdecoded 's#judge=$5 name=$2 awk -F'\''\t'\''#name=$2 awk -F'\''\t'\'' -v judge="$5"#'
 
 # The clause text back through `-v`, which decodes it. Two clauses named differently then alias, and
 # an approval for one hides a rejection recorded for the other.
