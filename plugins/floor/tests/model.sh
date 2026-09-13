@@ -4841,6 +4841,36 @@ reach  \061  sh bin/fake-judge.sh
 a_member_written_with_an_escape_is_its_own
 
 #
+# **A member that was never asked must not be answered by another.**
+#
+# `satisfied` read the ledger with the member through `awk -v`, which decodes it. A member written
+# `\\061` then matched the row belonging to `1`, so one approval carried the whole clause and the
+# run could deliver on half a panel.
+#
+# The handoff refuses that member for its own reason, so it never answers. That is what makes the
+# fault reachable rather than harmless: `complete` still walks every declared member.
+a_member_that_never_answered_is_not_answered_for() {
+  d=$tmp/halfpanel
+
+  a_judged_repo "$d" halfpanel "$(a_judge_that_approves)" 'reach  1  sh bin/fake-judge.sh
+reach  \061  sh bin/fake-judge.sh
+1,\061  a stranger can read it
+' || { skip "half a panel — git could not make a repo here"; return; }
+
+  floor_new_as "$d" ada@example.com "Half" >/dev/null 2>&1
+  floor "$d" charter derive >/dev/null 2>&1
+  floor "$d" policy authorize 'https://gitlab.com/acme/halfpanel.git' >/dev/null 2>&1
+  floor "$d" targets add 'https://gitlab.com/acme/halfpanel.git' main >/dev/null 2>&1
+  floor "$d" open  >/dev/null 2>&1
+  floor "$d" gates >/dev/null 2>&1
+  floor "$d" judged >/dev/null 2>&1
+
+  is "one member answered, and only one"      "$(ls "$(floor "$d" path)"/judged/*.receipt 2>/dev/null | wc -l | tr -d ' ')" "1"
+  is "and the run may not deliver on it" "$(code_of floor "$d" complete)" "15"
+}
+a_member_that_never_answered_is_not_answered_for
+
+#
 # **A field of commas names nobody**, and a check reporting only what it found called that sound.
 # The check this replaced refused it for holding no record, so the regression arrived with the fix.
 a_clause_naming_nobody_is_refused() {

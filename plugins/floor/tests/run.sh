@@ -2468,6 +2468,11 @@ wreck_runner "an empty bench read as a whole panel is caught" \
 wreck_runner "a member decoded before it is compared is caught" \
   memberdecoded 's#who=$3 awk -v id="$2" #awk -v id="$2" -v who="$3" #;s#ENVIRON\["who"\]#who#g'
 
+# The ledger read with the member through `-v`, which decodes it. One member's row then answers for
+# another, and a run delivers on half a panel.
+wreck_runner "a ledger row read for the wrong member is caught" \
+  ledgerdecoded 's#judge=$5 awk -F#awk -F -v judge="$5"#'
+
 #
 # A panel is several minds, and unanimous. Each break takes one half of that.
 #
