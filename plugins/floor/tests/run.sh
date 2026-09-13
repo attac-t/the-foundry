@@ -2772,6 +2772,11 @@ wreck_runner "a receipt claiming a pin the charter never gave is caught" \
 wreck_runner "an upgrade refusal that names no remedy is caught" \
   deadend 's#^    note "    git hash-object --no-filters -- \$4"$#    :#'
 
+# A run list that says how far and never when. A run abandoned days ago and one working now then
+# print the same line, which is the pair a watcher exists to tell apart.
+wreck_runner "a run list that never says when it last moved is caught" \
+  nowhen 's#note "  $underway  $(last_moved "$RUNS/$underway")"#note "  $underway"#'
+
 report_breaks
 
 # --- break the install ---

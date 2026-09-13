@@ -111,8 +111,9 @@ verdict() {
 
     [ -s "$work/unnamed" ] || [ -s "$work/stale" ] && exit 1
 
-    printf 'PASS — %s files read, %s paragraphs named in %s.\n' \
+    printf 'PASS — %s shell and awk files under plugins/ and bin/. %s paragraphs named in %s.\n' \
         "$(lines_in "$files")" "$(lines_in "$DEBT")" "$DEBT"
+    printf '       Prose is not read. A green here says nothing about a page, an issue or a comment.\n'
 }
 
 report() {

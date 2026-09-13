@@ -3,13 +3,13 @@
 # `bin/gates.Dockerfile` stays 258 MB and the container grading lane keeps using it. Adding these
 # there would make every grade carry 1.3 GB it never calls — measured 11 September 2026:
 #
-#     foundry-host            258 MB
+#     foundry:host            258 MB
 #     plus nodejs and npm     457 MB
 #     plus both providers     1.56 GB
 #
-# **`FROM foundry-host` is what keeps the promise the other file opens with.** Two independent
+# **`FROM foundry:host` is what keeps the promise the other file opens with.** Two independent
 # recipes can disagree about what is installed. One built on the other cannot.
-FROM foundry-host
+FROM foundry:host
 
 USER root
 
