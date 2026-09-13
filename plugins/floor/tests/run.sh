@@ -250,6 +250,42 @@ vendor_words() {
 core_names_no_vendor
 
 #
+# **Every setting the code reads is on the page, and every one on the page is read.**
+#
+# Nine reached floor and the README named seven. The two it missed were `FOUNDRY_GATES` and
+# `FOUNDRY_JUDGED` — the two that replace the script deciding what a bar is, which is the last thing
+# a consumer should have to find by reading the source.
+#
+# **Both ways, because both drift.** A setting added and not written down is undiscoverable. One
+# written down and removed is worse: a reader sets it and nothing happens.
+#
+# `BRIEF` and `RECEIPT` are read by the adapters and set by core, so they count as read here — a
+# consumer writing an adapter needs them named as much as any other.
+settings_match_the_page() {
+  local read named missing stale
+
+  read=$(grep -ohE 'FOUNDRY_[A-Z_]+' "$root"/bin/*.sh "$root"/lib/*.sh "$root"/hooks/*.sh 2>/dev/null | sort -u)
+  named=$(grep -ohE '`FOUNDRY_[A-Z_]+`' "$root/README.md" 2>/dev/null | tr -d '`' | sort -u)
+
+  missing=$(printf '%s
+' "$read"  | comm -23 - <(printf '%s
+' "$named") | tr '
+' ' ')
+  stale=$(  printf '%s
+' "$named" | comm -23 - <(printf '%s
+' "$read")  | tr '
+' ' ')
+
+  [ -z "$missing" ] || bad "the code reads settings the page does not name: $missing"
+  [ -z "$stale" ]   || bad "the page names settings the code does not read: $stale"
+
+  printf '  ok    all %s settings the code reads are on the page
+'          "$(printf '%s
+' "$read" | grep -c .)"
+}
+settings_match_the_page
+
+#
 # Run a command with a deadline, and answer **2 when the deadline passed** — never the command's own
 # status, because a command that never answered did not answer badly.
 #
