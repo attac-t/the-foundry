@@ -12,6 +12,9 @@ sh bin/host.sh <the recipe>     # the same 21 from a clone — see below
 Leave `agree` out of your run and a PR can still go red on a check this file never mentioned — the
 drift this file exists to prevent, one level up.
 
+**When one of them goes red and the message reads like a different problem**, see
+[docs/failure.md](docs/failure.md). Six failures that look like something else, each with its tell.
+
 ## The third lane grades a clone, and it found something the others could not
 
 `bin/gates.sh linux` copies the source into a container and grades the copy. **`bin/host.sh` can
