@@ -31,7 +31,7 @@ worker's read to a blob. So a worker cannot tell an accepted doctrine from a mer
 | autonomous work | Floor is the first adapter. **It is not the product** |
 | the harness | Claude Code is today's wrapper. **It is not the mission** |
 | a second harness | unproved. No core path has run through one |
-| a machine | **Docker, through `bin/host.sh`.** One command, and the nineteenth gate drives it |
+| a machine | **Docker, through `bin/host.sh`.** One command, and the `host` gate drives it |
 
 ### The host runs work and cannot do the work
 
@@ -39,7 +39,7 @@ worker's read to a blob. So a worker cannot tell an accepted doctrine from a mer
 
 | | |
 |---|---|
-| nineteen gates, from a clone | green, on dash and mawk. Not a copy — `.git` is a directory |
+| nineteen gates, from a clone | green, on dash and mawk. Not a copy — `.git` is a directory. **Every gate this repository had that day**; two have landed since, and `sh bin/gates.sh list` is the count |
 | a commit | the host's author and committer, as a person who exists |
 | a claim against a shared source | taken, and a second host refused |
 | runs | on the machine, readable with Docker stopped |
