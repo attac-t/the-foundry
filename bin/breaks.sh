@@ -181,6 +181,15 @@ every_break() {
         'sed -i "/^unescaped()/ s#| sed .*; }#; }#" .claude/hooks/seam.sh' \
         'sh bin/hooks.sh'
 
+    # A plugin file changed and the version did not. `plugins.md` opens with that rule and nothing
+    # read it — `versions.sh` asks only whether a version key is there, never whether it moved.
+    #
+    # The break is the fault itself, not a neutered guard. Editing a shipped plugin file is exactly
+    # what the gate exists to notice, so the plant and the fault are one act.
+    drive bumps plugins/floor/README.md \
+        "echo 'a line no bump covers' >> plugins/floor/README.md" \
+        'sh bin/bumps.sh'
+
     # Three comment lines that do not step down by three. The gate graded evenness once, and a block
     # dropping eighteen twice went through for weeks.
     #
