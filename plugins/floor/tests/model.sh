@@ -3368,6 +3368,49 @@ one_id_means_one_thing() {
 one_id_means_one_thing
 
 #
+# **The judged loop closed this and the gate loop kept it.** A gate name declared twice derived
+# twice — one id, two clauses, two pins, two gate lines — so a run reported one unmet gate as two.
+#
+# `refuse_collision` cannot see it. It reads the charter this derivation replaces, never the draft
+# being built.
+#
+a_gate_declared_twice_derives_once() {
+  make_repo "$tmp/g2" main && set_origin "$tmp/g2" 'https://github.com/acme/g2.git'     && mkdir -p "$tmp/g2/.foundry"     && commit_file "$tmp/g2" .foundry/gates 'tests  echo ok
+tests  echo ok
+' || { skip "a gate declared twice — git could not make a repo here"; return; }
+
+  g=$(floor "$tmp/g2" new "Twice")
+  floor "$tmp/g2" charter derive >/dev/null 2>&1
+
+  id=$(clause_of 'tests')
+  ch=$(charter_of "$g")
+
+  is "a gate declared twice derives one clause" "$(grep -c "^clause $id " "$ch")" "1"
+  is "one pin"                                  "$(grep -c "^pin $id " "$ch")"    "1"
+  is "and one gate line"                        "$(grep -c "^gate $id " "$ch")"   "1"
+}
+a_gate_declared_twice_derives_once
+
+#
+# The clause guard cannot reach this one. Its text is the gate's name, identical on both lines, so
+# the name agrees with itself and passes. **The command is where the collision shows**, and it is
+# the half a run would go on to execute.
+#
+a_gate_name_carrying_two_commands_is_refused() {
+  make_repo "$tmp/g3" main && set_origin "$tmp/g3" 'https://github.com/acme/g3.git'     && mkdir -p "$tmp/g3/.foundry"     && commit_file "$tmp/g3" .foundry/gates 'tests  echo one
+tests  echo two
+' || { skip "two commands on one name — git could not make a repo here"; return; }
+
+  floor "$tmp/g3" new "Two commands" >/dev/null
+  said=$(floor_says "$tmp/g3" charter derive)
+
+  has "a gate name carrying two commands is refused" "$said" "already runs"
+  has "and names both"                               "$said" "echo one"
+  is  "and derive does not call that clean"       "$(code_of floor "$tmp/g3" charter derive)" "6"
+}
+a_gate_name_carrying_two_commands_is_refused
+
+#
 # The resolver is an adapter, so another one must work without editing anything above it.
 #
 # This one knows no ecosystem at all — it answers for a repository holding none of the files the

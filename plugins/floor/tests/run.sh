@@ -2428,6 +2428,18 @@ wreck_runner "a declared judgement nothing derives is caught" \
 wreck_runner "a judged clause naming no judge is caught" \
   nojudge 's#^        write_the_judges_once "\$id" "\$judge" "\$reaches" "\$limits" || return 1$#        :#'
 
+#
+# The gate loop kept the hole the judged loop closed. A name declared twice wrote two clauses, two
+# pins and two gate lines, so one unmet gate was reported as two.
+#
+# The clause guard cannot reach the second break. Its text is the name, the same on both lines, so
+# only the command differs — and the command is what a run executes.
+wreck_runner "a gate clause written per occurrence is caught" \
+  gatetwice 's#^write_the_gate_clause_once() {#write_the_gate_clause_once() { print_clause "$1" Gate "$2" >> "$draft"; return 0;#'
+
+wreck_runner "a second command on one gate name is caught" \
+  gatecommand 's#^write_the_gate_once() {#write_the_gate_once() { print_gate "$1" "$2" >> "$draft"; return 0;#'
+
 wreck_runner "a judgement derived as a gate is caught" \
   judgedasgate 's#print_clause "\$1" Judged "\$2"#print_clause "$1" Gate "$2"#'
 

@@ -4835,6 +4835,37 @@ dropped_clauses() {
 # Refuses rather than notes: a gate whose source has no sha at the base ref is a pin that cannot be
 # captured, and half a record is worse than none.
 #
+#
+# **The judged loop closed this and the gate loop kept it.** A gate name declared twice derives
+# twice — one id, two clauses, two pins, two gate lines — and a run then reports one unmet gate as
+# two. `refuse_collision` cannot see it: it reads the charter this derivation replaces, never the
+# draft being built.
+#
+# The kind travels with the text, so a `Gate` and a `Judged` sharing an id are refused rather than
+# read as agreeing. `refuse_collision` compares text alone and would let that through.
+write_the_gate_clause_once() {
+    meant=$(clause_kind_and_text "$draft" "$1")
+
+    [ -z "$meant" ]          && { print_clause "$1" Gate "$2" >> "$draft"; return $?; }
+    [ "$meant" = "Gate $2" ] && return 0
+
+    note "id $1 already means [$meant] — refusing to reuse it for [Gate $2]"
+    return 1
+}
+
+# The clause guard above cannot reach this. Its text is the gate's name, identical on both lines,
+# so a name declared twice with two commands agrees with itself and passes. **The command is where
+# that collision shows**, and it is the half a run would go on to execute.
+write_the_gate_once() {
+    was=$(pinned_command "$draft" "$1")
+
+    [ -z "$was" ]     && { print_gate "$1" "$2" >> "$draft"; return $?; }
+    [ "$was" = "$2" ] && return 0
+
+    note "gate $1 already runs [$was] — refusing to reuse it for [$2]"
+    return 1
+}
+
 while_reading_gates() {
     held=$1; draft=$2; target=$3; ref=$4
 
@@ -4849,9 +4880,9 @@ while_reading_gates() {
 
         refuse_moved_from_base "$source" "$sha" "$ref" || return 1
 
-        print_clause "$id" Gate "$name" >> "$draft" || return 1
-        print_pin    "$id" "$target" "$ref" "$source" "$sha" >> "$draft" || return 1
-        print_gate   "$id" "$command" >> "$draft" || return 1
+        write_the_gate_clause_once "$id" "$name"    || return 1
+        write_the_pin_once         "$id" "$source" "$sha" || return 1
+        write_the_gate_once        "$id" "$command" || return 1
     done
     return 0
 }
