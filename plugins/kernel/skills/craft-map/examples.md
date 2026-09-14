@@ -17,9 +17,9 @@ craftsman/                        # Cognitive Operating System
 │   └── ...                       → 3 more
 │
 ├── hooks/                        → automatic reflexes
-│   ├── anchor.sh                 → echo objective
-│   ├── recite.sh                 → load memory
-│   └── ...                       → 5 more
+│   ├── prompt.sh                 → everything a prompt gets
+│   ├── ground.sh                 → start a session
+│   └── ...                       → 4 more
 │
 ├── skills/                       → domain knowledge (37)
 │   ├── craft-*/                  → creation patterns
