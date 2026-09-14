@@ -83,6 +83,32 @@ required_fields() {
 
 listed=$(components)
 
+#
+# An agent declares its tools in frontmatter, and the prose beside it repeats the list in words.
+# **Change one and nothing makes you change the other.** A judge caught that on a live branch: the
+# frontmatter granted two new tools and three sentences still named the old three, one of them the
+# plugin's own guarantee.
+#
+# Narrow on purpose. It compares a declared string against strings, so it decides mechanically and
+# needs no threshold. A plugin whose agents declare nothing is not asked.
+TOOL='(Read|Glob|Grep|Write|Edit|Bash|WebSearch|WebFetch|Task)'
+
+tool_lists_that_no_agent_declares() {
+  for plugin in plugins/*/; do
+    declared=$(grep -h '^tools:' "$plugin"agents/*.md 2>/dev/null | sed 's/^tools: *//') || true
+    [ -n "$declared" ] || continue
+
+    # Inside the loop, never past a pipe. The comparison needs `declared`, and a pipe stage runs in
+    # its own shell where that name is empty — so every hit read as undeclared.
+    while IFS= read -r hit; do
+      [ -n "$hit" ] || continue
+      printf '%s\n' "$declared" | grep -qxF "${hit##*:}" && continue
+
+      printf '  %s names [%s], and no agent in that plugin declares it\n' "${hit%:*}" "${hit##*:}"
+    done <<< "$(grep -rnoE "$TOOL(, *$TOOL)+" "$plugin" --include='*.md' 2>/dev/null | grep -v '/agents/' || true)"
+  done
+}
+
 # Nothing to check is not a clean check. `bin/shell.sh` wrote this convention and floor uses it in
 # three places: a gate given nothing to read exits 3 and says so.
 [ -n "$listed" ] || { echo "FAIL — no plugin components found. This gate read nothing."; exit 3; }
@@ -99,11 +125,23 @@ while IFS=$'\t' read -r kind path; do
   report+=$(printf '\n  %s\n%s\n' "$path" "$(printf '%s\n' "$found" | sed 's/^/      /')")
 done <<< "$listed"
 
+disagreeing=$(tool_lists_that_no_agent_declares)
+if [ -n "$disagreeing" ]; then
+  faults=$((faults + $(printf '%s
+' "$disagreeing" | grep -c .)))
+  report+=$(printf '
+  a tool list no agent declares
+%s
+' "$disagreeing")
+fi
+
 if [ "$faults" -eq 0 ]; then
-  echo "PASS — $checked components carry the frontmatter that registers them."
+  echo "PASS — $checked components carry the frontmatter that registers them, and every tool list is declared."
   exit 0
 fi
 
-echo "FAIL — $faults of $checked components will register wrong or not at all."
+# Two faults with one count, so the line names both. A component that will not register is not a
+# tool list that disagrees, and saying only the first read as a lie about the second.
+echo "FAIL — $faults across $checked components: registering wrong, or naming a tool list no agent declares."
 printf '%s\n' "$report"
 exit 1
