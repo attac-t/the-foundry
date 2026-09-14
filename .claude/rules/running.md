@@ -39,6 +39,24 @@ By then a crash loses the thing you meant to record.
 
 Filing an issue is not acting on it. **Working on one is.**
 
+## What a run needs after `new`
+
+**A bare run is enough, and it is enough for one thing only.** It claims the item, survives a
+restart, and records that work began. That is the whole of what `new` does.
+
+**It cannot say what the work proved.** Nothing reads a workspace and works that out.
+
+```sh
+sh plugins/floor/bin/run.sh observe <event> key=value ...
+```
+
+**Nothing calls that for you, and 14 runs in 119 carry one.** Measured 14 September 2026, across a
+week when 115 of those runs were opened. Four of the fourteen were written the day of the measure.
+
+So the rule is two lines, not one. **Open a run before you act. Record what it proved before you
+stop.** The second is the half that is missing, and
+[#595](https://github.com/attac-t/the-foundry/issues/595) owns closing it.
+
 ## What it does not do
 
 **Nothing enforces this.** A run lives outside the tree, so no exit code can see one. A worker that
