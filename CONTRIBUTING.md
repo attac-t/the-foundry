@@ -3,10 +3,10 @@
 22 gates. Run them before you open a pull request:
 
 ```bash
-sh bin/gates.sh                 # all 21, here
+sh bin/gates.sh                 # all 22, here
 sh bin/agree.sh                 # this table, the workflow, gates.sh and every harness file
-sh bin/gates.sh linux           # the same 21 where `sh` is dash
-sh bin/host.sh <the recipe>     # the same 21 from a clone — see below
+sh bin/gates.sh linux           # the same 22 where `sh` is dash
+sh bin/host.sh <the recipe>     # the same 22 from a clone — see below
 ```
 
 Leave `agree` out of your run and a PR can still go red on a check this file never mentioned — the
