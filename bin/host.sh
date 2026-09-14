@@ -27,8 +27,17 @@
 # are asked every run. Named, three of its directories are mounted where each tool keeps its own —
 # the forge's, the harness's and the judge's — and a login inside survives the container.
 #
-# **The owner authorised that for this installation on 11 September 2026, in writing.** It is off
-# everywhere else, and it is a volume rather than a path so nothing of a host's crosses.
+# **The decision, the owner's, 11 September 2026 and restated 14 September, in writing:**
+#
+#   do not mount the host's credential stores
+#
+# **An installation may keep its own**, through a place `FOUNDRY_KEYS` names explicitly. Off by
+# default. Outside the image and outside the repository. Limited to the exact credential paths and
+# nothing above them.
+#
+# **What a reader is owed, and it is not comfortable:** anyone who can run as this user can read
+# what is mounted. A volume is not a vault. It stops a host's own stores crossing into a container;
+# it does not stop the person at the keyboard.
 #
 # **Every process in the container can read all three.** They run as one user, so a suite, a plugin
 # and a judge share the reach. That is what the grant costs.
