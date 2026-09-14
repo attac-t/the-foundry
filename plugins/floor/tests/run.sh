@@ -1381,7 +1381,17 @@ break_verdict() {
 #
 report_verdict() {
   local verdict killer=''
-  verdict=$(cat "$tmp/verdict/$1")
+  verdict=$(cat "$tmp/verdict/$1" 2>/dev/null)
+
+  # A slot nothing wrote fell to the default arm and was counted as a failed break — the loudest
+  # verdict this file has, for the one thing that proves nothing at all. It is a MOOT, and it says
+  # which slot, because the number is the only handle on a break whose own line never arrived.
+  [ -n "$verdict" ] || {
+      printf '  MOOT  slot %s says nothing — its verdict was never written\n' "$1"
+      [ "$failed" -eq 0 ] && failed=3
+      never_ran=$((never_ran + 1))
+      return
+  }
 
   case "$verdict" in
       '  ok    '*) killer=$(cat "$tmp/verdict/$1.killer")
@@ -1419,6 +1429,32 @@ a_moot_read_from_a_file_is_counted() {
   failed=$keep_failed
 }
 a_moot_read_from_a_file_is_counted
+
+#
+# A slot nothing wrote. It fell to the default arm and read as a failed break — the loudest verdict
+# here, for the one thing that proves nothing. **Two ways in:** the file was never seeded, or it was
+# seeded and came back empty. Both look the same from here, and both are the same finding.
+#
+a_slot_that_says_nothing_is_named_not_failed() {
+  local was=$never_ran keep_failed=$failed said=''
+
+  : > "$tmp/verdict/selftest"
+  said=$(report_verdict selftest)
+
+  case $said in
+    *"slot selftest says nothing"*) : ;;
+    *) bad "an empty verdict slot was not named" ;;
+  esac
+
+  [ "$never_ran" -eq $((was + 1)) ] && [ "$failed" -ne 1 ] \
+    && printf '  ok    a slot that says nothing is a MOOT, never a failed break\n' \
+    || bad "an empty verdict slot was counted as a failed break"
+
+  rm -f "$tmp/verdict/selftest"
+  never_ran=$was
+  failed=$keep_failed
+}
+a_slot_that_says_nothing_is_named_not_failed
 
 # The same proof for the clock, which is a different finding from a mutant that ran and missed.
 # Without it `say_when_the_clock_took_them` returns at zero and the whole report never prints.
