@@ -1,6 +1,6 @@
 # Contributing
 
-21 gates. Run them before you open a pull request:
+22 gates. Run them before you open a pull request:
 
 ```bash
 sh bin/gates.sh                 # all 21, here
@@ -168,6 +168,7 @@ Edit a rule, then run it — a row typed by hand into one file is the drift noth
 | `hooks` | a hook this repository ships stops answering. It drives each one against the calls it has to judge |
 | `taper` | a three-line comment paragraph does not narrow by three, and nothing names it |
 | `comments` | a public comment carrying the seam's marker breaks a rule the seam applies |
+| `stale` | the honest page cites an issue that closed, and nothing says it is history |
 | `host` | the one command that makes a host mounts the wrong home, keeps nothing, or asks for a terminal that is not there |
 | `judged` | `.foundry/judged` pins an adapter this tree does not ship at that content |
 | `bytes` | a tracked text file holds a byte no decoder can read, a character already lost, or a carriage return |
@@ -204,7 +205,7 @@ no such bit.
 
 **What they do not check:** that `laravel-ddd`, `laravel-playbook`, `pest` or `product` still load,
 or that their skills say anything true. Those four ship no code, so there is nothing to run — but
-nothing here reads them either. Green means 21 gates passed. For those four plugins it does not
+nothing here reads them either. Green means 22 gates passed. For those four plugins it does not
 mean the change works.
 
 **Whether their guidance has aged is answered, not gated.** Each README that teaches a version names

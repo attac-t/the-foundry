@@ -203,6 +203,11 @@ gate taper       sh   bin/taper.sh
 # step in the delivery path calls `bin/comments.sh read`, so the detection is built and unscheduled.
 gate comments    sh   bin/comments.sh audit
 
+# The same shape and the same reason. `bin/stale.sh` reads the issues the honest page cites and
+# names the closed ones, so a live read needs the network and cannot be a gate. The audit drives
+# both refusals against a stub, which is what an exit code here can hold.
+gate stale       sh   bin/stale.sh audit
+
 #
 # The command line, not a container. `bin/host.sh` starts one, and Docker is absent on most machines
 # that grade this repository — so its suite writes a `docker` and reads what it was asked for.
