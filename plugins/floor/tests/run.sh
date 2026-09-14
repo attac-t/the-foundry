@@ -1542,6 +1542,12 @@ wreck_runner "a runner that ignores FOUNDRY_HOME is caught" \
 wreck_runner "a runner that exits 0 on no run is caught" \
   softno 's|dir=$(active_run) \|\| exit 1|dir=$(active_run) \|\| exit 0|'
 
+# The bottom of the stage ladder. `runs` prints the stage in column one, so a run left at `new`
+# is readable without opening its directory — #595 asks for exactly that, and a case has held it
+# since before the issue. **Nothing proved the case load-bearing until this.**
+wreck_runner "a bare run reported as charted is caught" \
+  barecharted 's#^    stage=new$#    stage=charted#'
+
 wreck_runner "a layout with no units level is caught" \
   flatten 's|"$1/units/01/memory"||'
 
