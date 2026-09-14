@@ -19,6 +19,20 @@ seen.
 they were done, one of them saying DONE in its prose while its list stayed silent. A reader scans
 boxes, not paragraphs, and an unannounced finish reads as work still open.
 
+## Tick before you merge, not after
+
+**`Closes #N` shuts the issue whether or not its boxes hold.** It reads nothing. The merge lands,
+the issue closes, and the list is exactly as unticked as it was.
+
+A hook here does notice, and it says so — *closed by this merge with N open.* **It fires after the
+merge**, which is after the lie is already on the page.
+
+It happened on 14 September. Four of five boxes held, one was genuinely unbuilt, and the request
+carried `Closes`. The issue closed, the hook spoke, and the only repair was to reopen it.
+
+**So tick the list on the issue before the request merges.** A box that will not tick is a box that
+keeps the issue open, and then the request says `Refs` rather than `Closes`.
+
 ## A box that cannot be met yet
 
 Say so on the issue, and say which of four things it is:
