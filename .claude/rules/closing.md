@@ -32,6 +32,16 @@ Say so on the issue, and say which of four things it is:
 
 None of the four is a tick. A box removed silently and a box ticked wrongly read the same six months later.
 
+**A moved box is the one that rots.** The other three end. This one waits on an issue somebody else
+will close, and nothing walks back when they do.
+
+#625 moved a box to #630 and said so. **#630 closed six of six on 9 September**, and its first box
+is that box in its own words. The source read as open work for five days. A sweep of twenty-five closed
+issues found it, and it was the only one carrying an unticked box.
+
+So: **when you close an issue, tick every box that moved to it.** The move names the destination;
+only the destination knows the day.
+
 **Unreached is the one that looks like the others and behaves opposite.** The first three end a box.
 This one keeps it, because the day the condition arrives the check costs nothing.
 

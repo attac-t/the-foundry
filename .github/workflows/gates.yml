@@ -92,6 +92,12 @@ jobs:
       - name: A comment through the seam still obeys it
         run: sh bin/comments.sh audit
 
+      # The honest page cites issues, and a closed one read as an open gap is worse than an open
+      # issue — nobody looks again. The live read needs the network, so what runs here is its audit,
+      # driven against a page it writes and a reader it swaps.
+      - name: The page does not name finished work as an open gap
+        run: sh bin/stale.sh audit
+
       # The one command that makes a host, driven through a `docker` its suite writes. Docker is
       # absent here as on most machines that grade this, so what is read is the command line — the
       # mounts, the flags, and the two exit codes a person meets when their machine is not ready.

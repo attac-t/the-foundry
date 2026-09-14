@@ -1,0 +1,10 @@
+# Closed issues `.foundry/status.md` cites on purpose, and why each is history rather than a gap.
+#
+# `bin/stale.sh` reports every closed citation. A line here says a person read that one and decided
+# it belongs. **An exemption for an issue the page stopped citing is a failure too** — a record of a
+# record, and the script says so.
+#
+# One issue per line: the number, then the reason.
+
+337  named as the owner of a gap it never asked about, and the row now says so
+573  cited for a question it settled, and the page now says which half refuses
