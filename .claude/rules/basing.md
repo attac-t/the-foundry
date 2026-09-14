@@ -25,6 +25,14 @@ git diff --stat main HEAD
 
 **A deletion on a file your change never names is the tell.** Nothing else says it.
 
+**Resolve the conflict first, or the stat lies.** While a merge is unresolved, `HEAD` is still your
+old commit, so the diff reports every merge your branch predates as a deletion.
+
+On 14 September that read as **99 deletions across five files** — all of them work that had landed
+hours earlier. Resolved and committed, the same command said two files and nothing deleted.
+
+**A stat taken mid-conflict is noise, and it wears the tell's clothes.**
+
 ## Inside a run, this rule can make the work ungradeable
 
 **A run's base is pinned, and its charter hangs off that commit.** Merging `origin/main` into a run's
