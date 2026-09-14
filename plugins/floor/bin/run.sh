@@ -3722,11 +3722,18 @@ code_for_outcome() {
 #
 # A clause with no judge recorded takes no verdict at all. A reader that came back empty must never
 # be the reason a requirement quietly went away.
+#
+# **`-e`, because a judge name is a repository's word and `grep` reads a leading dash as its own.**
+# A member called `-x` was refused by the option parser rather than by the panel, and the message
+# named the panel as though it had decided. A judge found it.
+#
+# The two other `grep -qxF` reads here take a sha and a line starting `pin `. Neither can wear a
+# dash, so neither needs this.
 refuse_a_judge_nobody_asked() {
     panel=$(named_judges "$(charter_file "$1")" "$(clause_id "$2")")
 
     printf '%s
-' "$panel" | grep -qxF "$3" && return 0
+' "$panel" | grep -qxF -e "$3" && return 0
 
     [ -n "$panel" ] && {
         note "[$2] is answered by [$(spaced "$panel")], and this verdict is from [$3]"
@@ -4881,7 +4888,7 @@ while_reading_gates() {
         refuse_moved_from_base "$source" "$sha" "$ref" || return 1
 
         write_the_gate_clause_once "$id" "$name"    || return 1
-        write_the_pin_once         "$id" "$source" "$sha" || return 1
+        write_the_pin_once         "$id" "$target" "$ref" "$source" "$sha" || return 1
         write_the_gate_once        "$id" "$command" || return 1
     done
     return 0
@@ -4921,7 +4928,7 @@ while_reading_judged() {
         refuse_moved_from_base "$source" "$sha" "$ref" || return 1
 
         write_the_clause_once "$id" "$text" || return 1
-        write_the_pin_once    "$id" "$source" "$sha" || return 1
+        write_the_pin_once    "$id" "$target" "$ref" "$source" "$sha" || return 1
         write_the_judges_once "$id" "$judge" "$reaches" "$limits" || return 1
     done
     return 0
@@ -4962,10 +4969,14 @@ clause_kind_and_text() {
 # **No test reaches two sources, because nothing produces them.** The shipped resolver reads one
 # file, so every pin in one derivation names it. A repository's own resolver could emit two, and
 # then two lines differ and both land. Unreached, not unheld.
+#
+# **Every field is an argument.** Two of the five came from `$target` and `$ref`, which seven places
+# in this file assign — so a pin recorded whichever loop had run last. A judge found it, and no test
+# would have: the globals happen to be right at both call sites today.
 write_the_pin_once() {
-    pin=$(print_pin "$1" "$target" "$ref" "$2" "$3")
+    pin=$(print_pin "$1" "$2" "$3" "$4" "$5")
 
-    grep -qxF "$pin" "$draft" && return 0
+    grep -qxF -- "$pin" "$draft" && return 0
     printf '%s\n' "$pin" >> "$draft"
 }
 
@@ -5078,8 +5089,10 @@ write_the_judges_once() {
         [ -n "$member" ] || continue
         holds_the_member "$draft" "$1" "$member" && continue
 
-        print_judge  "$1" "$member" "$(reach_of "$3" "$member")" >> "$draft"
-        print_rounds "$1" "$member" "$(limit_of "$4" "$member")" >> "$draft"
+        # **A failed append is a charter missing a judge, and it used to carry on.** The loop runs in
+        # a pipeline, so this status is the function's — and the caller already reads it.
+        print_judge  "$1" "$member" "$(reach_of "$3" "$member")" >> "$draft" || return 1
+        print_rounds "$1" "$member" "$(limit_of "$4" "$member")" >> "$draft" || return 1
     done
 }
 

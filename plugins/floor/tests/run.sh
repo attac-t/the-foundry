@@ -2492,8 +2492,11 @@ wreck_runner "a member seated once per occurrence is caught" \
 
 # The clause text back through `-v`, which decodes it. Two clauses named differently then alias, and
 # an approval for one hides a rejection recorded for the other.
+# **`-v` before `-F`, never after.** A judge read the first shape and found it dead: `awk -F -v name=...`
+# makes `-v` the value of `-F`, so awk never ran and nothing went red. The pattern also cannot
+# reach past `-F` — `sed` reads a backslash-t in a pattern as a tab, and the file holds two characters.
 wreck_runner "a clause text decoded before it is matched is caught" \
-  namedecoded 's#name=$2 awk -F#awk -F -v name="$2"#'
+  namedecoded 's#name=$2 awk #awk -v name="$2" #'
 
 # The panel matched as a regular expression. A member whose name is not a plain word then cannot
 # answer its own clause, and derivation accepts what delivery refuses.
