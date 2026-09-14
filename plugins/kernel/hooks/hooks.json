@@ -40,37 +40,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/anchor.sh\"",
-            "shell": "bash",
-            "timeout": 10
-          }
-        ]
-      },
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/recite.sh\"",
-            "shell": "bash",
-            "timeout": 10
-          }
-        ]
-      },
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/evaluate.sh\"",
-            "shell": "bash",
-            "timeout": 10
-          }
-        ]
-      },
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/delegate.sh\"",
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/prompt.sh\"",
             "shell": "bash",
             "timeout": 10
           }

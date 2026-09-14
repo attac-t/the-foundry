@@ -153,10 +153,10 @@ is "every plugin root is quoted" "$quoted" "$placeholders"
 is  "preflight is silent when healthy"    "$(fire preflight.sh '{"source":"startup"}')" ""
 has "remember loads working memory"       "$(fire remember.sh '{"source":"startup"}')" "Ship the harness"
 has "ground demands grounding"            "$(fire ground.sh '{"source":"startup"}')" "GROUND NOW"
-has "anchor echoes the objective"         "$(fire anchor.sh '{"prompt":"go"}')" "Ship the harness"
-has "recite points at working memory"     "$(fire recite.sh '{"prompt":"go"}')" "working.md"
-has "evaluate forces skill evaluation"    "$(fire evaluate.sh '{"prompt":"go"}')" "Skill Evaluation"
-has "delegate fires with a blueprint"     "$(fire delegate.sh '{"prompt":"go"}')" "Delegation Check"
+has "the prompt hook echoes the objective"  "$(fire prompt.sh '{"prompt":"go"}')" "Ship the harness"
+has "and points at working memory"          "$(fire prompt.sh '{"prompt":"go"}')" "working.md"
+has "and forces skill evaluation"           "$(fire prompt.sh '{"prompt":"go"}')" "Skill Evaluation"
+has "and fires the delegation check"        "$(fire prompt.sh '{"prompt":"go"}')" "Delegation Check"
 has "verify blocks on in-progress work"   "$(fire verify.sh '{"stop_hook_active":false}')" '"decision"'
 
 # Once per turn, not eight. The payload above already carried the flag; nothing had ever read it.
