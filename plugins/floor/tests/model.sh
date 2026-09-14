@@ -3375,12 +3375,14 @@ one_id_means_one_thing
 # being built.
 #
 a_gate_declared_twice_derives_once() {
-  make_repo "$tmp/g2" main && set_origin "$tmp/g2" 'https://github.com/acme/g2.git'     && mkdir -p "$tmp/g2/.foundry"     && commit_file "$tmp/g2" .foundry/gates 'tests  echo ok
+  make_repo "$tmp/gtwice" main && set_origin "$tmp/gtwice" 'https://github.com/acme/gtwice.git' \
+    && mkdir -p "$tmp/gtwice/.foundry" \
+    && commit_file "$tmp/gtwice" .foundry/gates 'tests  echo ok
 tests  echo ok
 ' || { skip "a gate declared twice — git could not make a repo here"; return; }
 
-  g=$(floor "$tmp/g2" new "Twice")
-  floor "$tmp/g2" charter derive >/dev/null 2>&1
+  g=$(floor "$tmp/gtwice" new "Twice")
+  floor "$tmp/gtwice" charter derive >/dev/null 2>&1
 
   id=$(clause_of 'tests')
   ch=$(charter_of "$g")
@@ -3397,16 +3399,18 @@ a_gate_declared_twice_derives_once
 # the half a run would go on to execute.
 #
 a_gate_name_carrying_two_commands_is_refused() {
-  make_repo "$tmp/g3" main && set_origin "$tmp/g3" 'https://github.com/acme/g3.git'     && mkdir -p "$tmp/g3/.foundry"     && commit_file "$tmp/g3" .foundry/gates 'tests  echo one
+  make_repo "$tmp/gtwocmd" main && set_origin "$tmp/gtwocmd" 'https://github.com/acme/gtwocmd.git' \
+    && mkdir -p "$tmp/gtwocmd/.foundry" \
+    && commit_file "$tmp/gtwocmd" .foundry/gates 'tests  echo one
 tests  echo two
 ' || { skip "two commands on one name — git could not make a repo here"; return; }
 
-  floor "$tmp/g3" new "Two commands" >/dev/null
-  said=$(floor_says "$tmp/g3" charter derive)
+  floor "$tmp/gtwocmd" new "Two commands" >/dev/null
+  said=$(floor_says "$tmp/gtwocmd" charter derive)
 
   has "a gate name carrying two commands is refused" "$said" "already runs"
   has "and names both"                               "$said" "echo one"
-  is  "and derive does not call that clean"       "$(code_of floor "$tmp/g3" charter derive)" "6"
+  is  "and derive does not call that clean"       "$(code_of floor "$tmp/gtwocmd" charter derive)" "6"
 }
 a_gate_name_carrying_two_commands_is_refused
 
