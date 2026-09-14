@@ -48,6 +48,25 @@ fail, a revise and a reject. Every one carried its evidence, and none went hunti
 **A judge given no attack looks for one.** That is how a review reaches round ten. Each defect is
 real, and none of them is the thing that decides it.
 
+## A second reader gets a different question
+
+**Never ask the second one whether it agrees.** Ask what the first one missed.
+
+Two read one charter on 14 September. The first refused it and named five changes, and the author
+took all five. The second was given those five and one question: **what did the first reader not
+see?**
+
+It found that the charter used two criteria without noticing — the title said *durable* and the goal
+said *what two installations must both mean*. **Those are different lists**, and the first reader had
+added an item that belongs on one and not the other. It also cut one of the first reader's own
+additions as a noun with no failing case.
+
+**Asked to agree, it would have agreed.** The five changes were sound. The fault was in what nobody
+had looked at.
+
+So the second brief carries the first verdict, the revision, and a question the first was never
+asked.
+
 ## What the answer owes
 
 **A recommendation, then the strongest case against it.** A round with nothing rejected is a round
