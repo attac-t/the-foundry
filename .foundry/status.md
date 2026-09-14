@@ -31,7 +31,7 @@ worker's read to a blob. So a worker cannot tell an accepted doctrine from a mer
 | autonomous work | Floor is the first adapter. **It is not the product** |
 | the harness | Claude Code is today's wrapper. **It is not the mission** |
 | a second harness | unproved. No core path has run through one |
-| a machine | **Docker, through `bin/host.sh`.** One command, and the nineteenth gate drives it |
+| a machine | **Docker, through `bin/host.sh`.** One command, and the `host` gate drives it |
 
 ### The host runs work and cannot do the work
 
@@ -39,7 +39,7 @@ worker's read to a blob. So a worker cannot tell an accepted doctrine from a mer
 
 | | |
 |---|---|
-| nineteen gates, from a clone | green, on dash and mawk. Not a copy — `.git` is a directory |
+| nineteen gates, from a clone | green, on dash and mawk. Not a copy — `.git` is a directory. **Every gate this repository had that day**; two have landed since, and `sh bin/gates.sh list` is the count |
 | a commit | the host's author and committer, as a person who exists |
 | a claim against a shared source | taken, and a second host refused |
 | runs | on the machine, readable with Docker stopped |
@@ -203,8 +203,10 @@ name, and the plugins this host loaded.
 [#573](https://github.com/attac-t/the-foundry/issues/573) owned it the whole time.
 [#593](https://github.com/attac-t/the-foundry/pull/593) closed ten of its eleven boxes. Floor 0.75.0.
 
-**The exit code is the half still open.** #573 wants a join a script can read. Six absences once
-exited 0, and three now refuse. The rest is that issue's.
+**The exit code was settled, not left open.** [#573](https://github.com/attac-t/the-foundry/issues/573)
+closed 9 September with all eleven boxes. Three absences refuse — gates, judges and grants. **The
+other three still print and stop nothing, by decision.** A tree missing none of the three exits 0
+and gains no new line.
 
 And nothing says what a capability expects a repository to own - #519. So nothing can stop work that
 crosses that line - #520. And nothing reports the gap without naming where it was found - #521.
@@ -231,7 +233,7 @@ Both are true, both are done, and neither closes the line above it.
 | who said yes is more than the run's word | [#156](https://github.com/attac-t/the-foundry/issues/156) |
 | a person can answer a judged clause | **none yet.** [#343](https://github.com/attac-t/the-foundry/pull/343) is merged and refuses one |
 | acceptance can be withheld | **none yet.** [#359](https://github.com/attac-t/the-foundry/pull/359) is merged and only measured it |
-| the record outlives the run directory | [#337](https://github.com/attac-t/the-foundry/issues/337) |
+| the record outlives the run directory | [#337](https://github.com/attac-t/the-foundry/issues/337) closed 9 September, six of six. **It asked whether a reader who was not there catches a forged record, which is not this row.** Nothing named owns the row today |
 | a question reaches a person and comes back | none yet |
 | end-to-end work runs without a hand at some step | none yet |
 | the same core path works through a second harness | none yet |
