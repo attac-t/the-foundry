@@ -140,6 +140,13 @@ the tree.
 **A merge lands a page. It accepts nothing.** A goal a merged page proposes stays proposed until a
 named person says yes, in writing, dated.
 
+**Three things Foundry will never do**, whatever ships. It will not merge or deploy by default.
+It will not decide what good means. It will not let a green check stand in for your judgement.
+
+It carries what people state, and cannot supply what nobody said.
+[`.foundry/doctrine.md`](.foundry/doctrine.md) holds the whole list. Those are enduring lines, not
+today's gaps.
+
 **So read [`.foundry/status.md`](.foundry/status.md) before you rely on anything here.** The
 doctrine says which promises Foundry means to earn. That page says which ones it can keep today,
 and names the ones it cannot.
