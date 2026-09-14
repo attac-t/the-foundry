@@ -15,8 +15,18 @@ Done when:
 - [ ] That machine grades what this one grades, and the two agree.
 - [ ] The plugins are pulled after every bump, so the session runs what the tree says.
 
-State: in force from 7 September 2026, for one week. **That is 14 September, derived — the owner
-said *the next week* and named no last day.**
+State: **renewed to 21 September 2026**, by the owner, on 14 September. In force from 7 September,
+so this is the second week.
+
+**The first week is closed and not met.** Three conditions held, one agrees by hand, three are
+unmet — and two of those three want a second physical machine and nothing else. The renewal is a
+decision to keep going, never a claim the week succeeded.
+
+**What the week did.** 33 issues closed, 69 opened, 109 requests merged, 115 runs begun. **It found
+more than it fixed**, and every one of the 36 extra names a gap somebody can check.
+
+**The sharpest measure, and it is the one to move: 14 runs in 119 record anything past `run.began`.**
+A run says work started and almost never what it proved. #595 owns it.
 
 | Condition | Where it stands |
 |---|---|
