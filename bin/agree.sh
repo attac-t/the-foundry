@@ -125,12 +125,28 @@ counted_in_prose() {
         sort -u
 }
 
+#
+# **The word `gates` is what the reader above needs, and the first code block never says it.** Three
+# lines there said twelve on a branch that ran thirteen, and this check passed. #527 named that and
+# offered three ways out; this takes the one it called the bounds of that code block.
+#
+# Every number inside the first fence is a gate count. Nothing else belongs there — the block holds
+# the commands a contributor runs, and each line names `bin/`.
+counted_in_the_first_block() {
+    awk '/^```/ { fenced = !fenced; if (!fenced) exit; next }
+         fenced { while (match($0, /[0-9]+/)) {
+                      print substr($0, RSTART, RLENGTH)
+                      $0 = substr($0, RSTART + RLENGTH)
+                  } }' "$1" | sort -u
+}
+
 counts_agree() {
     total=$(wc -l < "$listed" | tr -d ' ')
     wanted=$(word_for_the_count "$total")
 
     # Either spelling passes. This holds the number, never the house style.
-    wrong=$( { counted_in_prose README.md; counted_in_prose CONTRIBUTING.md; } |
+    wrong=$( { counted_in_prose README.md; counted_in_prose CONTRIBUTING.md
+               counted_in_the_first_block CONTRIBUTING.md; } |
         sort -u | grep -vx "$wanted" | grep -vx "$total")
 
     [ -z "$wrong" ] && { printf '  PASS  %s\n' "the number in prose"; return; }
@@ -173,6 +189,11 @@ audit() {
     caught "a gate swapped for another"            1 workflow 's/panel\]/pest]/'
     caught "a duplicate hiding a gate"             1 workflow 's/, panel\]/, floor]/'
     caught "a gate dropped from CONTRIBUTING"      1 contributing '/^| `versions` |/d'
+
+    # The count inside the first code block. Three lines there said twelve on a branch that ran
+    # thirteen, and this check passed — #527. A number in that fence is a gate count, so a wrong one
+    # must go red even though the word `gates` is nowhere near it.
+    caught "a count wrong inside the code block"   1 contributing '6s/# all /# all 99 /'
 
     # A gate list that could not be produced is not a list nobody disagrees with, and it is not a
     # rule broken either. The two exits are different remedies: one edits a document, the other
