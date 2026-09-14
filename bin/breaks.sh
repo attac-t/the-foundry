@@ -181,6 +181,15 @@ every_break() {
         'sed -i "/^unescaped()/ s#| sed .*; }#; }#" .claude/hooks/seam.sh' \
         'sh bin/hooks.sh'
 
+    # A plugin file changed and the version did not. `plugins.md` opens with that rule and nothing
+    # read it — `versions.sh` asks only whether a version key is there, never whether it moved.
+    #
+    # The break is the fault itself, not a neutered guard. Editing a shipped plugin file is exactly
+    # what the gate exists to notice, so the plant and the fault are one act.
+    drive bumps plugins/floor/README.md \
+        "echo 'a line no bump covers' >> plugins/floor/README.md" \
+        'sh bin/bumps.sh'
+
     # Prose naming a tool list its agent does not declare. A judge caught this on a live branch —
     # the frontmatter granted two new tools and three sentences still named the old three, one of
     # them the plugin's own guarantee. The panel found the same shape seven times.
