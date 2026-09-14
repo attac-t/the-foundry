@@ -170,6 +170,17 @@ every_break() {
         "sed -i 's/^    deny /    allow #/' .claude/hooks/identity.sh" \
         'sh bin/hooks.sh'
 
+    # The escape left standing. `unescaped` strips the backslash a JSON quote arrives with, and
+    # without it `--body-file \"path\"` resolves to a file named `\` — so the guard denies the
+    # comment it was handed correctly.
+    #
+    # **The suite could not see this until it sent the escape.** Its calls wrote a bare quote,
+    # which is invalid JSON and a shape nothing sends, so every quoted case passed against a hook
+    # that denied the same comment live.
+    drive hooks-seam .claude/hooks/seam.sh \
+        'sed -i "/^unescaped()/ s#| sed .*; }#; }#" .claude/hooks/seam.sh' \
+        'sh bin/hooks.sh'
+
     # Three comment lines that do not step down by three. The gate graded evenness once, and a block
     # dropping eighteen twice went through for weeks.
     #
