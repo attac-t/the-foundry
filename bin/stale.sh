@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# Read the issues the honest page cites, against the service.
+# Read what this repository claims, against the service.
 #
 #   sh bin/stale.sh          every issue the page cites, read live
 #   sh bin/stale.sh debt     the exemption list this tree needs
@@ -33,6 +33,7 @@ set -u
 
 PAGE=.foundry/status.md
 DEBT=bin/stale.debt
+FORMS=.github/ISSUE_TEMPLATE/config.yml
 
 main() {
     case ${1:-check} in
@@ -52,6 +53,7 @@ check_the_page() {
 
     report 'a closed issue the page cites as open work' "$(not_exempt "$closed")"
     report 'a named exemption that no longer applies'   "$unused"
+    report 'a link on the new-issue page the service does not serve' "$(links_the_service_refuses)"
 
     say "stale  $(printf '%s\n' "$(cited)" | grep -c .) cited, $(printf '%s' "$closed" | grep -c .) closed, $(exempt_count) exempt"
 }
@@ -77,6 +79,24 @@ state_of() {
     gh issue view "$1" --json state -q .state 2>/dev/null
 }
 
+#
+# **A link that 404s is worse than no link.** Two on the new-issue page pointed at discussions for
+# months, and discussions were never enabled — #425. Nothing read the config, so nothing said.
+#
+# One question to the service, never a fetch of each page. A feature that is off cannot serve a
+# link into it, and that is decidable without leaving the API.
+links_the_service_refuses() {
+    [ -f "$FORMS" ] || return 0
+
+    grep -q '/discussions' "$FORMS" 2>/dev/null || return 0
+    [ "$(discussions_are_on)" = true ] && return 0
+
+    printf 'the config links into discussions, and this repository has them off
+'
+}
+
+discussions_are_on() { gh repo view --json hasDiscussionsEnabled -q .hasDiscussionsEnabled 2>/dev/null; }
+
 # --- the list a person keeps ---
 
 exempt_count() { printf '%s\n' "$(exemptions)" | grep -c . ; }
@@ -91,7 +111,7 @@ not_exempt() {
     [ -n "$1" ] || return 0
 
     for number in $1; do
-        exemptions | grep -qx "$number" || printf '%s\n' "$number"
+        exemptions | grep -qx "$number" || printf '#%s\n' "$number"
     done
 }
 
@@ -99,7 +119,7 @@ not_exempt() {
 # about something nobody asks about now.
 exemptions_nobody_cites() {
     for number in $(exemptions); do
-        printf '%s\n' "$(cited)" | grep -qx "$number" || printf '%s\n' "$number"
+        printf '%s\n' "$(cited)" | grep -qx "$number" || printf '#%s\n' "$number"
     done
 }
 
@@ -143,7 +163,9 @@ prove_it_can_go_red() {
     a_closed_citation_is_named "$work"
     an_exemption_nobody_cites_is_named "$work"
 
-    say 'stale    both refusals go red on a page that earns them'
+    a_link_the_service_does_not_serve "$work"
+
+    say 'stale    every refusal goes red on a page that earns it'
 }
 
 a_closed_citation_is_named() {
@@ -164,9 +186,20 @@ an_exemption_nobody_cites_is_named() {
 
     PAGE=$1/page DEBT=$1/debt
 
-    [ "$(exemptions_nobody_cites)" = 9999 ] && return 0
+    [ "$(exemptions_nobody_cites)" = '#9999' ] && return 0
 
     fail 1 'stale: an exemption nobody cites was not named'
+}
+
+a_link_the_service_does_not_serve() {
+    printf 'url: https://x/discussions/new\n' > "$1/forms"
+
+    FORMS=$1/forms
+    discussions_are_on() { printf 'false'; }
+
+    [ -n "$(links_the_service_refuses)" ] && return 0
+
+    fail 1 'stale: a link into a feature that is off was not named'
 }
 
 # --- one voice ---
@@ -175,7 +208,7 @@ report() {
     [ -z "$2" ] && return 0
 
     printf 'FAIL  %s\n' "$1" >&2
-    printf '%s\n' "$2" | sed 's/^/      #/' >&2
+    printf '%s\n' "$2" | sed 's/^/      /' >&2
     exit 1
 }
 
