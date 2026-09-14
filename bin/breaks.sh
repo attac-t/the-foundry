@@ -181,6 +181,13 @@ every_break() {
         'sed -i "/^unescaped()/ s#| sed .*; }#; }#" .claude/hooks/seam.sh' \
         'sh bin/hooks.sh'
 
+    # Prose naming a tool list its agent does not declare. A judge caught this on a live branch —
+    # the frontmatter granted two new tools and three sentences still named the old three, one of
+    # them the plugin's own guarantee. The panel found the same shape seven times.
+    drive frontmatter-tools plugins/panel/README.md \
+        "echo 'Read, Glob, Bash' >> plugins/panel/README.md" \
+        'bash bin/frontmatter.sh'
+
     # Three comment lines that do not step down by three. The gate graded evenness once, and a block
     # dropping eighteen twice went through for weeks.
     #
