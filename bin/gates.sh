@@ -179,7 +179,9 @@ say_what_is_being_graded() {
 
     printf 'graded %s, and %s file(s) differ from it\n' "$graded" "$adrift"
 }
-say_what_is_being_graded
+# **Not in `list` mode.** `agree.sh` counts the lines that come back from `gates.sh list`, and this
+# line counted as a twenty-third gate the moment it landed. The check caught it the same evening.
+[ "$mode" = list ] || say_what_is_being_graded
 
 gate frontmatter bash bin/frontmatter.sh
 gate versions    bash bin/versions.sh
