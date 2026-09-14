@@ -334,7 +334,7 @@ unshell()  { grep -v '"shell"' "$1/hooks/hooks.json" | rewrite "$1/hooks/hooks.j
 unship()   { rm -f "$1/hooks/lib/unjson.awk"; }
 rewire()   { sed 's|hooks/ground.sh|hooks/gone.sh|' "$1/hooks/hooks.json" | rewrite "$1/hooks/hooks.json"; }
 unwire()   { grep -v 'consider.sh' "$1/hooks/hooks.json" | rewrite "$1/hooks/hooks.json"; }
-bashism()  { sed 's|dirname "\$0"|dirname "${BASH_SOURCE[0]}"|' "$1/hooks/delegate.sh" | rewrite "$1/hooks/delegate.sh"; }
+bashism()  { sed 's|dirname "\$0"|dirname "${BASH_SOURCE[0]}"|'  "$1/hooks/prompt.sh" | rewrite "$1/hooks/prompt.sh"; }
 
 #
 # Last, because everything above fires the preflight and this has to see all of it.
