@@ -259,7 +259,7 @@ The kernel is stack-agnostic. Stack plugins extend it with domain-specific philo
 
 Stack plugins provide `ground-*` skills that establish framework philosophy.
 
-The kernel's `evaluate.sh` evaluates ALL skills from ALL plugins on every prompt. When Claude detects a task requires Laravel context, it activates `ground-laravel`. Vue context? `ground-vue`.
+The kernel's `prompt.sh` evaluates ALL skills from ALL plugins on every prompt. When Claude detects a task requires Laravel context, it activates `ground-laravel`. Vue context? `ground-vue`.
 
 No new hooks needed. No detection scripts. The machinery exists.
 
