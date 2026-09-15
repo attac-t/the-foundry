@@ -33,11 +33,13 @@ call() { printf '{"tool_name":"Bash","tool_input":{"command":"%s"}}' "$1" > "$tm
 # A stand-in for the forge, so this suite never asks the real one. It answers two questions and
 # tells them apart by the noun: a request body carries what it closes, an issue body carries boxes.
 stub_gh() {
+  printf "%s" "$1" > "$tmp/pr.body"
+  printf "%s" "$2" > "$tmp/issue.body"
   {
     printf '#!/bin/sh\n'
     printf 'case "$1 $2" in\n'
-    printf '  "pr view")    printf "%%s\\\\n" "%s" ;;\n' "$1"
-    printf '  "issue view") [ "$3" = 711 ] && printf "%%s\\\\n" "%s" ;;\n' "$2"
+    printf '  "pr view")    cat %s ;;\n' "$tmp/pr.body"
+    printf '  "issue view") [ "$3" = 711 ] && cat %s ;;\n' "$tmp/issue.body"
     printf 'esac\nexit 0\n'
   } > "$tmp/bin/gh"
   chmod +x "$tmp/bin/gh"
@@ -118,6 +120,25 @@ call "$(verb pr merge) 740 --merge"
 case $(asked) in
   *'"permissionDecision":"deny"'*) ok "a keyword inside a word still refuses, by choice" ;;
   *)                               bad "a keyword inside a word still refuses, by choice — it did not" ;;
+esac
+
+# --- two issues in one body, and the right line is quoted ---
+#
+# Driven live on 15 September, the message named the wrong sentence: the first keyword anywhere in
+# the body, not the one for the issue it refused. **The author reads a line they did not write.**
+
+stub_gh 'A quote: this closes #999 and nothing else.
+Closes #711' '- [ ] one thing'
+
+call "$(verb pr merge) 740 --merge"
+case $(asked) in
+  *'Closes #711'*) ok "it quotes the line for the issue it refuses" ;;
+  *)               bad "it quotes the line for the issue it refuses — it quoted another" ;;
+esac
+
+case $(asked) in
+  *'closes #999'*) bad "it does not quote another issue's line — it did" ;;
+  *)               ok "it does not quote another issue's line" ;;
 esac
 
 # --- every box ticked, so the merge may close it ---

@@ -23,9 +23,9 @@
 
 set -u
 
-# What the body would close, and the line that said so. Filled by the walk, read by the refusal.
+# What the body would close, and the body itself. Filled by the walk, read by the refusal.
 shut=
-matched=
+body=
 
 main() {
     call=$(cat)
@@ -74,7 +74,6 @@ read_what_it_would_close() {
     )
     shut=$(printf '%s\n' $shut | sort -u)
 
-    matched=$(printf '%s' "$body" | grep -i -m1 -E '(close[sd]*|fix(e[sd])*|resolve[sd]*) *#[0-9]')
 }
 
 numbers_after() {
@@ -87,8 +86,14 @@ refuse_while_a_box_is_open() {
 
         [ "$open" -gt 0 ] 2>/dev/null || continue
 
-        deny "this merge would close #$issue with $open box(es) still open. The line that closes it is [$matched]. Tick what holds against the merge tree, or say Refs and close it by hand with a receipt."
+        deny "this merge would close #$issue with $open box(es) still open. The line that closes it is [$(line_closing "$issue")]. Tick what holds against the merge tree, or say Refs and close it by hand with a receipt."
     done
+}
+
+# **The line for this issue, never the first in the body.** A body closing two issues quoted the
+# wrong one, and the author read a sentence they had not written.
+line_closing() {
+    printf '%s' "$body" | grep -i -m1 -E "(close[sd]*|fix[esd]*|resolve[sd]*) *#$1"
 }
 
 open_boxes_on() {
