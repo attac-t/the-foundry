@@ -424,7 +424,9 @@ a_run_nothing_here_can_find() {
   mkdir -p "$tmp/unpointable/.git/foundry-run"
 
   made=$(floor "$tmp/unpointable" new "Nothing Can Find Me"     2>/dev/null)
-  said=$(floor "$tmp/unpointable" new "Nothing Can Find Me Too" 2>&1 >/dev/null)
+  # `floor` drops stderr, so an outer `2>&1` here captures nothing. `floor_says` keeps it, and its
+  # own comment names that trap — which is the one this walked into.
+  said=$(floor_says "$tmp/unpointable" new "Nothing Can Find Me Too")
   code=$(code_of floor "$tmp/unpointable" new "Nothing Can Find Me Either")
 
   is     "a run this checkout cannot point at answers 41" "$code" "41"
