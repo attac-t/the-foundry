@@ -37,8 +37,8 @@ stub_gh() {
     printf '#!/bin/sh\n'
     printf 'case "$1 $2" in\n'
     printf '  "pr view")    printf "%%s\\\\n" "%s" ;;\n' "$1"
-    printf '  "issue view") printf "%%s\\\\n" "%s" ;;\n' "$2"
-    printf 'esac\n'
+    printf '  "issue view") [ "$3" = 711 ] && printf "%%s\\\\n" "%s" ;;\n' "$2"
+    printf 'esac\nexit 0\n'
   } > "$tmp/bin/gh"
   chmod +x "$tmp/bin/gh"
 }
@@ -66,6 +66,58 @@ esac
 case $(asked) in
   *'This closes #711 last box'*) ok "it quotes the line that closes it" ;;
   *)                             bad "it quotes the line that closes it — it did not" ;;
+esac
+
+# --- the forge takes nine words, not one ---
+#
+# `close`, `closes`, `closed`, `fix`, `fixes`, `fixed`, `resolve`, `resolves`, `resolved`. A check
+# that knows one of them lets the other eight through, and the fault is identical every time.
+
+for word in close closes closed fix fixes fixed resolve resolves resolved; do
+  stub_gh "$word #711" '- [ ] one thing'
+
+  call "$(verb pr merge) 740 --merge"
+  case $(asked) in
+    *'"permissionDecision":"deny"'*) ok "$word #N is closure" ;;
+    *)                               bad "$word #N is closure — it was let through" ;;
+  esac
+done
+
+# --- a word that merely contains one is not closure ---
+
+stub_gh 'Refs #711. Disclosure is not closure, and unfixable is not fixed.' '- [ ] one thing'
+
+call "$(verb pr merge) 740 --merge"
+case $(asked) in
+  *deny*) bad "a word containing a keyword is not closure — it was denied" ;;
+  *)      ok "a word containing a keyword is not closure" ;;
+esac
+
+# --- the capital the author actually typed ---
+#
+# Every keyword above is lowercase, so nothing drove the lowering until this. The body that caused
+# this hook read `This closes`, and a request template writes `Closes #N` at the start of a line.
+
+stub_gh 'Closes #711' '- [ ] one thing'
+
+call "$(verb pr merge) 740 --merge"
+case $(asked) in
+  *'"permissionDecision":"deny"'*) ok "a capitalised keyword is closure" ;;
+  *)                               bad "a capitalised keyword is closure — it was let through" ;;
+esac
+
+# --- a keyword inside a longer word refuses, and that is on purpose ---
+#
+# The forge wants a word boundary and this does not. **It refuses more than the forge closes**, which
+# costs a reword and never a wrongly closed issue. The message quotes the line so the author can see
+# what matched.
+
+stub_gh 'This discloses #711 in full.' '- [ ] one thing'
+
+call "$(verb pr merge) 740 --merge"
+case $(asked) in
+  *'"permissionDecision":"deny"'*) ok "a keyword inside a word still refuses, by choice" ;;
+  *)                               bad "a keyword inside a word still refuses, by choice — it did not" ;;
 esac
 
 # --- every box ticked, so the merge may close it ---
