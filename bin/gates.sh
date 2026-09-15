@@ -159,6 +159,30 @@ gate() {
 # The dash coverage is not lost by that. It lands where it belongs: floor's suite is bash, and the
 # runner it exercises opens `#!/bin/sh`, so on Linux that runner executes under dash. The harness
 # and the shipped code are different languages here on purpose.
+#
+# **A green run named nothing.** `log_dir` works the commit out, and nothing called it until the
+# first failure — so every green run said `ALL GREEN` about a tree nobody could identify later.
+#
+# Read once, here, before any gate. A tree that moves mid-run cannot change what this already said,
+# and that is the point: the line names what was graded, never what is there when it ends.
+#
+# **A dirty tree is reported and the run carries on.** Grading uncommitted work is ordinary — the
+# gates exist to be run before the commit. What is not ordinary is not knowing afterwards.
+say_what_is_being_graded() {
+    graded=$(git rev-parse --short HEAD 2>/dev/null) || graded=
+
+    [ -n "$graded" ] || { printf 'graded — this checkout has no commit yet\n'; return; }
+
+    adrift=$(git status --porcelain 2>/dev/null | grep -c .)
+
+    [ "$adrift" -eq 0 ] && { printf 'graded %s, and the tree matches it\n' "$graded"; return; }
+
+    printf 'graded %s, and %s file(s) differ from it\n' "$graded" "$adrift"
+}
+# **Not in `list` mode.** `agree.sh` counts the lines that come back from `gates.sh list`, and this
+# line counted as a twenty-third gate the moment it landed. The check caught it the same evening.
+[ "$mode" = list ] || say_what_is_being_graded
+
 gate frontmatter bash bin/frontmatter.sh
 gate versions    bash bin/versions.sh
 
