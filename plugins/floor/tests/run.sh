@@ -2455,7 +2455,7 @@ wreck_runner "a second meaning under a taken id is caught" \
 # A clause may have many pins, and only a pin already written is skipped. Refusing none writes one
 # per member instead.
 wreck_runner "a pin written once per member is caught" \
-  pinpermember 's#^    grep -qxF "$pin" "$draft" && return 0#    :#'
+  pinpermember 's#^    grep -qxF -- "$pin" "$draft" && return 0#    :#'
 
 # A drift check asking whether some judge record exists, rather than this member's. Every member of
 # a clause derives one id, so one surviving record answered for the whole panel.
@@ -2501,7 +2501,7 @@ wreck_runner "a clause text decoded before it is matched is caught" \
 # The panel matched as a regular expression. A member whose name is not a plain word then cannot
 # answer its own clause, and derivation accepts what delivery refuses.
 wreck_runner "a panel matched as a pattern is caught" \
-  panelpattern 's#grep -qxF "$3" && return 0#grep -qx "$3" \&\& return 0#'
+  panelpattern 's#grep -qxF -e "$3" && return 0#grep -qx "$3" \&\& return 0#'
 
 #
 # A panel is several minds, and unanimous. Each break takes one half of that.
