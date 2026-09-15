@@ -59,11 +59,45 @@ judged() {
 }
 
 # --- what floor must have handed over ---
+#
+# **Absent is said, never left unsaid.** Omitting one of these let the subshell inherit it, and a
+# judge running the gate suite exports both. So this case ran the real harness against a fixture
+# brief and appended a verdict to a live receipt — one that had already been answered.
+#
+# It cost a panel on 12 September: one receipt carried two verdicts, the second from nobody.
 
 d=$(handed nobrief)
-is "a run with no brief is refused"    "$( ( cd "$d" && FOUNDRY_RECEIPT="$d/r.receipt" sh "$adapter" >/dev/null 2>&1 ); printf '%s' "$?")" "2"
+is "a run with no brief is refused"    "$( ( cd "$d" && FOUNDRY_BRIEF= FOUNDRY_RECEIPT="$d/r.receipt" sh "$adapter" >/dev/null 2>&1 ); printf '%s' "$?")" "2"
 
-is "and a run with no receipt is refused"    "$( ( cd "$d" && FOUNDRY_BRIEF="$d/brief" sh "$adapter" >/dev/null 2>&1 ); printf '%s' "$?")" "2"
+is "and a run with no receipt is refused"    "$( ( cd "$d" && FOUNDRY_BRIEF="$d/brief" FOUNDRY_RECEIPT= sh "$adapter" >/dev/null 2>&1 ); printf '%s' "$?")" "2"
+
+# --- the same two, with a live receipt in the environment ---
+#
+# **This is the case that would have caught it.** The overrides above are green on any machine that
+# sets neither variable, so removing one would go red nowhere. Here the bait is exported first, which
+# is what floor does when it runs a judge.
+#
+# A guard that is gone lets the adapter inherit the bait, find a real harness on PATH, and write.
+
+bait=$tmp/bait.receipt
+printf 'run bait
+role nobody
+' > "$bait"
+was=$(cksum < "$bait")
+
+d=$(handed baited)
+(
+  # **The stub, never the live PATH.** This file's header says it reaches no network, and a guard
+  # that regressed here would call the real harness to prove it. The stub writes the same receipt,
+  # so the bait still moves and the check still goes red.
+  cd "$d" && export PATH="$tmp/bin:$PATH" TMP="$tmp"
+  export FOUNDRY_RECEIPT="$bait" FOUNDRY_BRIEF="$d/brief"
+  FOUNDRY_BRIEF= sh "$adapter" >/dev/null 2>&1
+  FOUNDRY_BRIEF="$d/brief" FOUNDRY_RECEIPT= sh "$adapter" >/dev/null 2>&1
+)
+
+is "a receipt the environment names is not written to" "$(cksum < "$bait")" "$was"
+is "and nothing is written beside it" "$(ls "$tmp" | grep -c '^bait\.')" "1"
 
 # --- the harness is not here ---
 #
