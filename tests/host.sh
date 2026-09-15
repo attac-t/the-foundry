@@ -53,9 +53,21 @@ stub_docker() {
 asked() { cat "$tmp/asked" 2>/dev/null; }
 
 # `FOUNDRY_HOME` decides where runs go, so the suite names one rather than reading the machine's.
+# **Stdin is closed, and that is the point.** `host.sh` decides `-it` from `[ -t 0 ]`, and this
+# redirected only stdout and stderr — so every case below answered about the shell that ran the
+# suite. `gates.sh` captures a gate's output and leaves stdin alone, so the gate refused on a
+# terminal and passed without one, on code nobody had touched.
 hosted() {
-  ( PATH="$tmp/bin:$PATH" FOUNDRY_HOME="$tmp/home" sh "$root/bin/host.sh" "$@" >/dev/null 2>&1 )
+  ( PATH="$tmp/bin:$PATH" FOUNDRY_HOME="$tmp/home" sh "$root/bin/host.sh" "$@" >/dev/null 2>&1 </dev/null )
 }
+
+# The same, with a terminal on stdin. `script` is the only portable way to make one, and it is not
+# everywhere — so the case that needs it says why it skipped rather than reporting absent as passed.
+hosted_on_a_terminal() {
+  script -qec "PATH=\"$tmp/bin:\$PATH\" FOUNDRY_HOME=\"$tmp/home\" sh \"$root/bin/host.sh\" $*" /dev/null >/dev/null 2>&1
+}
+
+a_terminal_can_be_made() { command -v script >/dev/null 2>&1; }
 
 code_of() { hosted "$@"; echo $?; }
 
@@ -85,11 +97,27 @@ case $(asked) in
 esac
 
 # **The flag that made the first run pleasant made every scripted one impossible.** Docker refuses to
-# attach a terminal where there is none, and a suite has none.
+# attach a terminal where there is none, and a scripted run has none.
+#
+# **Two cases, because one proves nothing.** A single reading with stdin left alone answers about the
+# caller's shell: green under a pipe, red on a terminal, and the code the same either way.
 case $(asked) in
-  *-it*) bad "a terminal is asked for only where there is one — it asked anyway" ;;
-  *)     ok  "a terminal is asked for only where there is one" ;;
+  *-it*) bad "with no terminal, none is asked for — it asked anyway" ;;
+  *)     ok  "with no terminal, none is asked for" ;;
 esac
+
+if a_terminal_can_be_made; then
+  stub_docker
+  hosted_on_a_terminal true
+
+  case $(asked) in
+    *-it*) ok  "with a terminal, one is asked for" ;;
+    *)     bad "with a terminal, one is asked for — it did not" ;;
+  esac
+else
+  printf '  skip  with a terminal, one is asked for — script is not on this machine
+'
+fi
 
 # --- the volume ---
 
