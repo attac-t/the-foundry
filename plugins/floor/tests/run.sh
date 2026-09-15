@@ -3380,6 +3380,18 @@ live_after=$(live_runs)
   failed=1
 }
 
+# Every slot queued was read back. `report_breaks` counts up to `queued`, so these agree unless
+# that loop is changed — and a loop that stops short drops breaks silently, which is the one
+# way this audit can report green on work it never looked at.
+#
+# No mutant can reach this. A break patches the runner, and the root suite is what runs, so a
+# mutation of this file is never executed. #434 owns that gap and this line is what is possible
+# without it.
+[ "$reported" -eq "$queued" ] || {
+  printf 'FAIL  %s break(s) were queued and %s were read back\n' "$queued" "$reported"
+  failed=1
+}
+
 [ "$failed" -eq 0 ] && echo "ALL GREEN"
 [ "$failed" -eq 1 ] && echo "FAILURES ABOVE"
 [ "$never_ran" -gt 0 ] && printf 'audit — %s experiments never ran.\n' "$never_ran"
