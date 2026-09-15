@@ -83,6 +83,8 @@
 #  40  the adapter that would judge this run is not the one the repository authorised — the pin is
 #      not a digest, or it names content that is not what is there. Not 21: that is an adapter
 #      nobody could find, and the remedy is an install. This one is here and it is the wrong one
+#  41  the run is made and this checkout cannot point at it. The record is there and complete, so
+#      this is an answer about the checkout: tell every later command the id, or work elsewhere
 #
 # Eight through twelve are one stage and five remedies: write a requirement down, select a target it
 # governs, or start again. Collapsing them would make the exit code say *authorisation refused* and
@@ -239,6 +241,9 @@ EOF
 
 note() { printf 'floor: %s\n' "$1" >&2; }
 
+# The pointer this checkout could not be given, so `new` can answer about it after it prints.
+unpointed=
+
 die_homeless() {
     note "no FOUNDRY_HOME and no HOME — nowhere to put a run"
     exit 3
@@ -368,6 +373,14 @@ make_run() {
     emit "$dir" run.began "$(began_with)"
 
     printf '%s\n' "$dir"
+
+    [ -z "$unpointed" ] || say_nothing_here_can_find_it_again
+}
+
+say_nothing_here_can_find_it_again() {
+    note "[$dir] is made and this checkout cannot point at it — $unpointed could not be written"
+    note "so tell every later command which run: export FOUNDRY_RUN=$dir"
+    exit 41
 }
 
 # `<date>-<slug>-<first free slot>`. The day arrives read, because a name cannot check itself.
@@ -549,9 +562,19 @@ pointer() {
     printf '%s/foundry-run' "$git_dir"
 }
 
+# **A note is not an answer.** This wrote one and returned 0, so `new` exited 0 on a run the next
+# verb could not find. #226 named that shape for `open` and fixed it there; this is the same
+# fault one verb earlier, and it stopped a second harness at its first two commands.
+#
+# The failure is kept rather than raised here. The run is made and worth having, so `new` prints
+# its path and answers about the pointer afterwards.
 point_this_checkout_at() {
     mark=$(pointer) || return 0
-    printf '%s\n' "$1" > "$mark" 2>/dev/null || note "could not write $mark"
+    # **The subshell is the guard.** `2>/dev/null` here binds to `printf`, and the shell reports a
+    # redirect it could not open on its own stderr. #226 found that exact trap and this is it again.
+    ( printf '%s\n' "$1" > "$mark" ) 2>/dev/null && return 0
+
+    unpointed=$mark
 }
 
 active_run() {
