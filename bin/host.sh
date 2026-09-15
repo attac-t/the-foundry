@@ -47,12 +47,17 @@
 #     the forge     `gh auth login`, or delivery cannot open a request
 #     the harness   whatever runs the worker, or nothing works at all
 #
-# **Neither store is mounted, so neither survives.** `gh` keeps its token under
-# `~/.config/gh` and the harness keeps its own beside it; only `.foundry` comes across.
+# **By default no store is mounted, so none survives.** `gh` keeps its token under `~/.config/gh`
+# and the harness keeps its own beside it; only `.foundry` comes across.
 #
-# **That is a choice, not an oversight.** Mounting a token store into a container hands every process
-# in it a credential, and `bin/secrets.sh` exists because this repository refuses that in a build
-# recipe. #682 owns whether it should be refused here too.
+# **Configured, three do** — the forge's, the harness's and the judge's, and only those, at the exact
+# credential paths. `FOUNDRY_KEYS` is the whole of the switch.
+#
+# **The reasoning it had to answer.** Mounting a token store into a container hands every process in
+# it a credential, and `bin/secrets.sh` exists because this repository refuses exactly that in a
+# build recipe. **That refusal stands and is not overruled**: a recipe still may not carry a
+# secret, and nothing here puts one in the image or the tree. What the decision allows is a mount a
+# person names, which `secrets.sh` never read and was never about.
 #
 # **This is not the grading lane.** `bin/gates.sh linux` keeps `--rm` and `FOUNDRY_EPHEMERAL`, so
 # the run inside it keeps nothing on purpose. That is right for grading and wrong for working.
