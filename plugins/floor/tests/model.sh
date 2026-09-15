@@ -410,6 +410,40 @@ the_pointer() {
 }
 the_pointer
 
+#
+# A checkout that cannot be pointed at. `new` used to write a note and exit 0, so the run was made
+# and the next verb could not find it — a second harness stopped there on 15 September, two commands
+# in. #226 named this shape for `open` and fixed it only there.
+#
+# **A directory where the pointer file goes, not `chmod`.** Windows ignores permissions, so a chmod
+# fixture skips on half the hosts that run this. The cause does not matter to the check: what is
+# graded is what `new` says when the write fails.
+a_run_nothing_here_can_find() {
+  make_repo "$tmp/unpointable" main || { skip "an unpointable checkout — git could not make a repo here"; return; }
+
+  mkdir -p "$tmp/unpointable/.git/foundry-run"
+
+  made=$(floor "$tmp/unpointable" new "Nothing Can Find Me"     2>/dev/null)
+  # `floor` drops stderr, so an outer `2>&1` here captures nothing. `floor_says` keeps it, and its
+  # own comment names that trap — which is the one this walked into.
+  said=$(floor_says "$tmp/unpointable" new "Nothing Can Find Me Too")
+  code=$(code_of floor "$tmp/unpointable" new "Nothing Can Find Me Either")
+
+  is     "a run this checkout cannot point at answers 41" "$code" "41"
+  has    "it says the checkout cannot point at the run"   "$said" "cannot point at it"
+  has    "it names what a later command must be told"     "$said" "FOUNDRY_RUN"
+  exists "the record is made anyway, and its path printed" "$made"
+
+  # The shell reports a redirect it could not open on its own stderr, and `2>/dev/null` there binds
+  # to `printf`. #226 found that trap; this is the line that proves the subshell holds it.
+  case $said in
+    *"Is a directory"*|*"Permission denied"*) bad "the shell's own redirect error leaked" "leak" ;;
+    *)                                        ok  "the shell's redirect error is held" ;;
+  esac
+}
+
+a_run_nothing_here_can_find
+
 two_checkouts_on_one_branch_name() {
   make_repo "$tmp/repo-a" shared && make_repo "$tmp/repo-b" shared \
     || { skip "two checkouts on one branch name — git could not make the repos"; return; }
