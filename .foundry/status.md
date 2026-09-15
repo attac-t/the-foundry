@@ -81,8 +81,12 @@ ALL GREEN and the documents AGREED, each naming the commit, the shell and the aw
 **Three refusals on the way, and each named its own cure.** A clone of the mount is not a portable
 identity. A clause grading no selected target is no bar. And `HEAD` is not a ref it takes.
 
-**Delivery is the step this cannot reach**, because the sign-in it needs does not survive the
-container.
+**Delivery is the step the default cannot reach**, because nothing is mounted and the sign-in it
+needs is asked again every run.
+
+**Configured, it reaches.** `FOUNDRY_KEYS` names a place, that place is mounted, and the sign-in
+persists across containers. Two cases, and this page states both because one of them was written
+here as if it were the only one.
 
 ### Sign-ins, and the three things people conflate
 
@@ -124,7 +128,8 @@ container, started after, read the same run back.
 | runs, and what they record | this machine's own directory, mounted in |
 | a grade's log and a red gate's reason | the same, when the recipe puts them there |
 | the image | rebuilt from a pinned base. **Its packages float**, so two builds can differ |
-| **a sign-in** | **no.** Neither store is mounted, so both are asked again |
+| **a sign-in, by default** | **no.** Nothing is mounted, so every store is asked again |
+| **a sign-in, configured** | **yes.** `FOUNDRY_KEYS` names the place, and what it names survives the container |
 
 **A rollback changes one number and loses no record**, because the record was never in the container.
 **It does not rebuild the same image.** The base and both providers are pinned; `apt-get` is not, and
