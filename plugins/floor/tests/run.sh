@@ -2561,10 +2561,82 @@ wreck_runner "a declared judgement nothing derives is caught" \
   nojudged 's#^    detect_judged | while_reading_judged#    false | while_reading_judged#'
 
 wreck_runner "a judged clause naming no judge is caught" \
-  nojudge 's#^        print_judges "\$id" "\$judge" "\$reaches" "\$limits" >> "\$draft" || return 1$#        : >> "$draft" || return 1#'
+  nojudge 's#^        write_the_judges_once "\$id" "\$judge" "\$reaches" "\$limits" || return 1$#        :#'
+
+#
+# The gate loop kept the hole the judged loop closed. A name declared twice wrote two clauses, two
+# pins and two gate lines, so one unmet gate was reported as two.
+#
+# The clause guard cannot reach the second break. Its text is the name, the same on both lines, so
+# only the command differs — and the command is what a run executes.
+wreck_runner "a gate clause written per occurrence is caught" \
+  gatetwice 's#^write_the_gate_clause_once() {#write_the_gate_clause_once() { print_clause "$1" Gate "$2" >> "$draft"; return 0;#'
+
+wreck_runner "a second command on one gate name is caught" \
+  gatecommand 's#^write_the_gate_once() {#write_the_gate_once() { print_gate "$1" "$2" >> "$draft"; return 0;#'
 
 wreck_runner "a judgement derived as a gate is caught" \
-  judgedasgate 's#print_clause "\$id" Judged "\$text"#print_clause "$id" Gate "$text"#'
+  judgedasgate 's#print_clause "\$1" Judged "\$2"#print_clause "$1" Gate "$2"#'
+
+#
+# A clause carries its whole panel, and its meaning is what the id stands for. One break writes the
+# clause once per member again; the other lets a second meaning take a taken id in silence.
+wreck_runner "a clause written once per member is caught" \
+  clausepermember 's#^    meant=$(clause_kind_and_text "$draft" "$1")#    meant=#'
+
+wreck_runner "a second meaning under a taken id is caught" \
+  quietcollision 's#^    \[ "$meant" = "Judged $2" \] && return 0#    return 0#'
+
+# A clause may have many pins, and only a pin already written is skipped. Refusing none writes one
+# per member instead.
+wreck_runner "a pin written once per member is caught" \
+  pinpermember 's#^    grep -qxF -- "$pin" "$draft" && return 0#    :#'
+
+# A drift check asking whether some judge record exists, rather than this member's. Every member of
+# a clause derives one id, so one surviving record answered for the whole panel.
+wreck_runner "a panel reduced by a deleted member is caught" \
+  anyjudgerecord 's#^        every_member_has_a_record "$1" "$id" "$who" ||#        has_record "$1" judge "$id" ||#'
+
+# A member is one word a repository chose, and `*` is one word. Left to expand it becomes this
+# directory's filenames, matches no record, and a whole panel reads as missing.
+wreck_runner "a member left to expand into filenames is caught" \
+  memberglob 's#^    set -f$#    :#'
+
+# Two more ways one identity reads as another. A bare compare makes `1` answer for `01`; a value
+# through `-v` decodes an escape, so `\\061` answers too.
+wreck_runner "a member compared as a number is caught" \
+  membernumeric 's#\$3 "" == ENVIRON\["who"\] ""#$3 == ENVIRON["who"]#'
+
+wreck_runner "an empty bench read as a whole panel is caught" \
+  emptybench 's#^    \[ -n "$named" \] || missing=nobody#    :#'
+
+# The member back through `-v`, where awk decodes it before comparing. A member written as an escape
+# for a digit then answers for that digit, and takes its reach and its adapter with it.
+wreck_runner "a member decoded before it is compared is caught" \
+  memberdecoded 's#who=$3 awk -v id="$2" #awk -v id="$2" -v who="$3" #;s#ENVIRON\["who"\]#who#g'
+
+# The ledger read with the member through `-v`, which decodes it. One member's row then answers for
+# another, and a run delivers on half a panel.
+wreck_runner "a ledger row read for the wrong member is caught" \
+  ledgerdecoded 's#judge=$5 name=$2 awk#name=$2 awk#'
+
+# A seat per occurrence rather than per member. A declaration naming one twice then asked it twice
+# and spent two rounds on one candidate.
+wreck_runner "a member seated once per occurrence is caught" \
+  seatperline 's#holds_the_member "$draft" "$1" "$member" && continue#:#'
+
+# The clause text back through `-v`, which decodes it. Two clauses named differently then alias, and
+# an approval for one hides a rejection recorded for the other.
+# **`-v` before `-F`, never after.** A judge read the first shape and found it dead: `awk -F -v name=...`
+# makes `-v` the value of `-F`, so awk never ran and nothing went red. The pattern also cannot
+# reach past `-F` — `sed` reads a backslash-t in a pattern as a tab, and the file holds two characters.
+wreck_runner "a clause text decoded before it is matched is caught" \
+  namedecoded 's#name=$2 awk #awk -v name="$2" #'
+
+# The panel matched as a regular expression. A member whose name is not a plain word then cannot
+# answer its own clause, and derivation accepts what delivery refuses.
+wreck_runner "a panel matched as a pattern is caught" \
+  panelpattern 's#grep -qxF -e "$3" && return 0#grep -qx "$3" \&\& return 0#'
 
 #
 # A panel is several minds, and unanimous. Each break takes one half of that.
@@ -2572,7 +2644,7 @@ wreck_runner "a judgement derived as a gate is caught" \
 # `onejudge` keeps the list whole, so a panel of two becomes one member nobody is called. `anyjudge`
 # lets one approval stand for all of them, which is a majority of one.
 wreck_runner "a panel kept whole instead of split is caught" \
-  onejudge 's#^print_judges() {#print_judges() { printf "judge %s %s\n" "$1" "$2"; return 0;#'
+  onejudge 's#^write_the_judges_once() {#write_the_judges_once() { printf "judge %s %s\n" "$1" "$2" >> "$draft"; return 0;#'
 
 wreck_runner "one approval standing for the whole panel is caught" \
   anyjudge 's#satisfied "\$1" "\$2" "\$3" judged "\$who" || exit 1#satisfied "$1" "$2" "$3" judged "$who" \&\& exit 0#'

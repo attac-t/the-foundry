@@ -3402,6 +3402,53 @@ one_id_means_one_thing() {
 one_id_means_one_thing
 
 #
+# **The judged loop closed this and the gate loop kept it.** A gate name declared twice derived
+# twice — one id, two clauses, two pins, two gate lines — so a run reported one unmet gate as two.
+#
+# `refuse_collision` cannot see it. It reads the charter this derivation replaces, never the draft
+# being built.
+#
+a_gate_declared_twice_derives_once() {
+  make_repo "$tmp/gtwice" main && set_origin "$tmp/gtwice" 'https://github.com/acme/gtwice.git' \
+    && mkdir -p "$tmp/gtwice/.foundry" \
+    && commit_file "$tmp/gtwice" .foundry/gates 'tests  echo ok
+tests  echo ok
+' || { skip "a gate declared twice — git could not make a repo here"; return; }
+
+  g=$(floor "$tmp/gtwice" new "Twice")
+  floor "$tmp/gtwice" charter derive >/dev/null 2>&1
+
+  id=$(clause_of 'tests')
+  ch=$(charter_of "$g")
+
+  is "a gate declared twice derives one clause" "$(grep -c "^clause $id " "$ch")" "1"
+  is "one pin"                                  "$(grep -c "^pin $id " "$ch")"    "1"
+  is "and one gate line"                        "$(grep -c "^gate $id " "$ch")"   "1"
+}
+a_gate_declared_twice_derives_once
+
+#
+# The clause guard cannot reach this one. Its text is the gate's name, identical on both lines, so
+# the name agrees with itself and passes. **The command is where the collision shows**, and it is
+# the half a run would go on to execute.
+#
+a_gate_name_carrying_two_commands_is_refused() {
+  make_repo "$tmp/gtwocmd" main && set_origin "$tmp/gtwocmd" 'https://github.com/acme/gtwocmd.git' \
+    && mkdir -p "$tmp/gtwocmd/.foundry" \
+    && commit_file "$tmp/gtwocmd" .foundry/gates 'tests  echo one
+tests  echo two
+' || { skip "two commands on one name — git could not make a repo here"; return; }
+
+  floor "$tmp/gtwocmd" new "Two commands" >/dev/null
+  said=$(floor_says "$tmp/gtwocmd" charter derive)
+
+  has "a gate name carrying two commands is refused" "$said" "already runs"
+  has "and names both"                               "$said" "echo one"
+  is  "and derive does not call that clean"       "$(code_of floor "$tmp/gtwocmd" charter derive)" "6"
+}
+a_gate_name_carrying_two_commands_is_refused
+
+#
 # The resolver is an adapter, so another one must work without editing anything above it.
 #
 # This one knows no ecosystem at all — it answers for a repository holding none of the files the
@@ -4631,6 +4678,20 @@ second:adversary  a stranger can read it
   has "the first member derives into its own record"  "$held" "first:adversary sh bin/fake-judge.sh"
   has "and the second into a record beside it"        "$held" "second:adversary sh bin/other-judge.sh"
 
+  # One clause, two judges. A record per member read as two clauses to anything counting them, and
+  # `complete` named the same unmet clause once for each.
+  #
+  # **Keyed on the judged clause's id, never on the record type.** The fixture also derives a gate,
+  # so counting every `clause` line counts that too — which is what two judges caught here.
+  bar=$(printf %s "$held" | awk '$1 == "judge" { print $2; exit }')
+
+  is "the clause itself is written once" \
+     "$(printf %s "$held" | awk -v id="$bar" '$1 == "clause" && $2 == id' | wc -l | tr -d " ")" "1"
+  is "and so is the pin under it" \
+     "$(printf %s "$held" | awk -v id="$bar" '$1 == "pin" && $2 == id' | wc -l | tr -d " ")" "1"
+  is "while both judges stand on it" \
+     "$(printf %s "$held" | awk -v id="$bar" '$1 == "judge" && $2 == id' | wc -l | tr -d " ")" "2"
+
   floor "$d" policy authorize 'https://gitlab.com/acme/bench.git' >/dev/null 2>&1
   floor "$d" targets add 'https://gitlab.com/acme/bench.git' main >/dev/null 2>&1
   floor "$d" open  >/dev/null 2>&1
@@ -4676,12 +4737,262 @@ second:adversary  a stranger can read it
   is "one refusal leaves the clause unmet" "$(code_of floor "$d" judged)"   "39"
   is "and the run may not deliver"         "$(code_of floor "$d" complete)" "15"
 
+  # **The symptom, not the shape.** A charter that derives one record is what the fix does; naming
+  # an unmet clause once is what a reader sees, and a second record per member is how it broke.
+  is "and the refusal names the clause once, not once per member" \
+     "$(floor_says "$d" complete | grep -c '^unmet:')" "1"
+
   # The approval is real and recorded. What it does not do is carry the clause on its own.
   both=$(cat "$(floor "$d" path)"/judged/*.receipt)
   has "the member that approved is on the record"  "$both" "verdict approve"
   has "and so is the one that refused"             "$both" "verdict reject"
 }
 one_refusal_blocks_the_rest
+
+#
+# **Two meanings, one checksum.** `clause_id` is a 32-bit `cksum`, so a pair that collides exists and
+# can be found — a judge found this one. Keyed on the id alone, the second meaning would vanish
+# silently and its judge would stand on the first.
+#
+# `refuse_collision` cannot see it: that reads the charter already held, and both arrive in one
+# derivation.
+a_collision_inside_one_derivation_is_refused() {
+  d=$tmp/collide
+
+  a_judged_repo "$d" collide "$(a_judge_that_approves)" 'reach  first:adversary  sh bin/fake-judge.sh
+reach  second:adversary  sh bin/fake-judge.sh
+first:adversary  nikdlnficqhehpuwwtny
+second:adversary  nmykqkvvpxkzekxeynew
+' || { skip "a collision — git could not make a repo here"; return; }
+
+  floor_new_as "$d" ada@example.com "Collide" >/dev/null 2>&1
+
+  said=$(floor_says "$d" charter derive)
+  has "the second meaning under a taken id is refused" "$said" "already means"
+  has "and the refusal names both"                     "$said" "nmykqkvvpxkzekxeynew"
+
+  is "and no charter is written at all" "$(floor "$d" charter | wc -l | tr -d ' ')" "0"
+}
+a_collision_inside_one_derivation_is_refused
+
+#
+# **A gate and a judged clause can carry the same words.** `a_judged_repo` declares a gate named
+# `tests`, and a gate's id is the checksum of its name — so a judged clause reading `tests` lands on
+# the same id. The gates loop writes into this draft first.
+#
+# Matching the text alone, the judged clause would be dropped in silence and its judge would stand
+# on a gate. A judge found this one.
+a_clause_taking_a_gate_id_is_refused() {
+  d=$tmp/kinds
+
+  a_judged_repo "$d" kinds "$(a_judge_that_approves)" 'reach  first:adversary  sh bin/fake-judge.sh
+first:adversary  tests
+' || { skip "a kind clash — git could not make a repo here"; return; }
+
+  floor_new_as "$d" ada@example.com "Kinds" >/dev/null 2>&1
+
+  said=$(floor_says "$d" charter derive)
+  has "a judged clause landing on a gate's id is refused" "$said" "already means"
+  has "and the refusal names the kind it found"          "$said" "Gate tests"
+  has "and the kind it was asked for"                    "$said" "Judged tests"
+}
+a_clause_taking_a_gate_id_is_refused
+
+#
+# **A panel can be reduced to one by deleting a line, and nothing noticed.**
+#
+# Every member of a clause derives the same id, so a check asking whether *some* judge record exists
+# answered yes for both while one survived. The charter then read as whole, the runner asked one
+# member, and one approval carried the clause.
+#
+# A judge found this, on the change that made two members on one clause possible.
+a_member_deleted_from_the_charter_is_named() {
+  d=$tmp/reduced
+
+  a_judged_repo "$d" reduced "$(a_judge_that_approves)" 'reach  first:adversary  sh bin/fake-judge.sh
+reach  second:adversary  sh bin/fake-judge.sh
+first:adversary  a stranger can read it
+second:adversary  a stranger can read it
+' || { skip "a reduced panel — git could not make a repo here"; return; }
+
+  floor_new_as "$d" ada@example.com "Reduced" >/dev/null 2>&1
+  floor "$d" charter derive >/dev/null 2>&1
+
+  is "a whole charter drifts in no way" "$(floor "$d" charter check | wc -l | tr -d ' ')" "0"
+
+  held=$(floor "$d" path)/charter
+  grep -v 'second:adversary' "$held" > "$held.cut" && mv "$held.cut" "$held"
+
+  said=$(floor "$d" charter check)
+  has "the member that went missing is named" "$said" "second:adversary"
+  has "and the clause it stood on"            "$said" "unresolved: Judged a stranger can read it"
+
+  # **A panel is declared on one line, comma separated**, and that is the shape that broke first.
+  # Reading the field whole compared `one,two` against a record holding `one`, and called a charter
+  # nobody had touched unresolved.
+  c=$tmp/commas
+
+  a_judged_repo "$c" commas "$(a_judge_that_approves)" 'reach  one  sh bin/fake-judge.sh
+reach  two  sh bin/fake-judge.sh
+one,two  a stranger can read it
+' || { skip "a comma-separated panel — git could not make a repo here"; return; }
+
+  floor_new_as "$c" ada@example.com "Commas" >/dev/null 2>&1
+  floor "$c" charter derive >/dev/null 2>&1
+
+  is "a panel named on one line drifts in no way" "$(floor "$c" charter check | wc -l | tr -d ' ')" "0"
+
+  held=$(floor "$c" path)/charter
+  grep -v '^judge .* two' "$held" > "$held.cut" && mv "$held.cut" "$held"
+
+  has "and losing one of them names that one" "$(floor "$c" charter check)" "[two]"
+}
+a_member_deleted_from_the_charter_is_named
+
+#
+# **A member is one word a repository chose, and `*` is one word.**
+#
+# Splitting the list left it to expand, so it became this repository's filenames and matched no
+# record — a whole panel read as missing, and the refusal named a directory. A judge found it.
+a_member_named_like_a_pattern_stays_itself() {
+  d=$tmp/pattern
+
+  a_judged_repo "$d" pattern "$(a_judge_that_approves)" 'reach  *  sh bin/fake-judge.sh
+*  a stranger can read it
+' || { skip "a pattern member — git could not make a repo here"; return; }
+
+  floor_new_as "$d" ada@example.com "Pattern" >/dev/null 2>&1
+  floor "$d" charter derive >/dev/null 2>&1
+
+  has "the member derives as itself"      "$(floor "$d" charter)" "judge"
+  is  "and the charter drifts in no way"  "$(floor "$d" charter check | wc -l | tr -d ' ')" "0"
+}
+a_member_named_like_a_pattern_stays_itself
+
+#
+# **A member named `1` and one named `01` are two members.** This file says so at `reach_of`, and
+# `round_limit` and `judge_command` both compare as strings because of it.
+#
+# The drift check did not, so deleting `01`'s record left `1` matching it as a number, and a panel
+# cut to one read as whole. A judge found it, in the function written to close that exact fault.
+a_member_that_looks_like_a_number_is_its_own() {
+  d=$tmp/numeric
+
+  a_judged_repo "$d" numeric "$(a_judge_that_approves)" 'reach  1  sh bin/fake-judge.sh
+reach  01  sh bin/fake-judge.sh
+1,01  a stranger can read it
+' || { skip "a numeric member — git could not make a repo here"; return; }
+
+  floor_new_as "$d" ada@example.com "Numeric" >/dev/null 2>&1
+  floor "$d" charter derive >/dev/null 2>&1
+
+  is "both derive, and the charter is whole" "$(floor "$d" charter check | wc -l | tr -d ' ')" "0"
+
+  held=$(floor "$d" path)/charter
+  grep -v '^judge [0-9]* 01 ' "$held" > "$held.cut" && mv "$held.cut" "$held"
+
+  has "losing 01 is not answered by 1" "$(floor "$d" charter check)" "[01]"
+}
+a_member_that_looks_like_a_number_is_its_own
+
+#
+# **A member reaches awk through the environment, never `-v`.**
+#
+# An assignment there decodes escapes before the comparison, so a member written `\\061` matched
+# a record holding `1`. Deleting it left the panel reading as whole, which is the third way one
+# identity has been read as another here — after the number and the pattern.
+a_member_written_with_an_escape_is_its_own() {
+  d=$tmp/escaped
+
+  a_judged_repo "$d" escaped "$(a_judge_that_approves)" 'reach  1  sh bin/fake-judge.sh
+reach  \061  sh bin/fake-judge.sh
+1,\061  a stranger can read it
+' || { skip "an escaped member — git could not make a repo here"; return; }
+
+  floor_new_as "$d" ada@example.com "Escaped" >/dev/null 2>&1
+  floor "$d" charter derive >/dev/null 2>&1
+
+  is "both derive, and the charter is whole" "$(floor "$d" charter check | wc -l | tr -d ' ')" "0"
+
+  held=$(floor "$d" path)/charter
+  grep -v '^judge [0-9]* .061 ' "$held" > "$held.cut" && mv "$held.cut" "$held"
+
+  has "the escaped one is not answered by 1" "$(floor "$d" charter check)" "061"
+}
+a_member_written_with_an_escape_is_its_own
+
+#
+# **A member whose name is not a plain word still answers, and its refusal still blocks.**
+#
+# Three things read a member, and each read it as something other than the word a repository wrote.
+# `satisfied` took it through `awk -v`, which decodes an escape. So did the clause text beside it,
+# which made two clauses alias. And the handoff matched the name as a regular expression, so the
+# member could never answer at all.
+#
+# Together those let one approval carry a clause the other member had rejected.
+a_member_whose_name_is_odd_still_answers() {
+  d=$tmp/halfpanel
+
+  a_judged_repo "$d" halfpanel "$(a_judge_that_approves)" 'reach  1  sh bin/fake-judge.sh
+reach  \061  sh bin/other-judge.sh
+1,\061  a stranger can read it
+' || { skip "half a panel — git could not make a repo here"; return; }
+
+  commit_file "$d" bin/other-judge.sh "$(a_judge_that_approves reject)" >/dev/null 2>&1
+
+  floor_new_as "$d" ada@example.com "Half" >/dev/null 2>&1
+  floor "$d" charter derive >/dev/null 2>&1
+  floor "$d" policy authorize 'https://gitlab.com/acme/halfpanel.git' >/dev/null 2>&1
+  floor "$d" targets add 'https://gitlab.com/acme/halfpanel.git' main >/dev/null 2>&1
+  floor "$d" open  >/dev/null 2>&1
+  floor "$d" gates >/dev/null 2>&1
+  floor "$d" judged >/dev/null 2>&1
+
+  is "both members answered"      "$(ls "$(floor "$d" path)"/judged/*.receipt 2>/dev/null | wc -l | tr -d ' ')" "2"
+
+  both=$(cat "$(floor "$d" path)"/judged/*.receipt)
+  has "and the one with the odd name is on the record" "$both" "role \\061"
+  has "with its own answer"                            "$both" "verdict reject"
+
+  is "so the run may not deliver" "$(code_of floor "$d" complete)" "15"
+}
+a_member_whose_name_is_odd_still_answers
+
+#
+# **A field of commas names nobody**, and a check reporting only what it found called that sound.
+# The check this replaced refused it for holding no record, so the regression arrived with the fix.
+a_clause_naming_nobody_is_refused() {
+  d=$tmp/nobody
+
+  a_judged_repo "$d" nobody "$(a_judge_that_approves)" ',  a stranger can read it
+' || { skip "a clause naming nobody — git could not make a repo here"; return; }
+
+  floor_new_as "$d" ada@example.com "Nobody" >/dev/null 2>&1
+  floor "$d" charter derive >/dev/null 2>&1
+
+  is "it derives no judge at all" "$(floor "$d" charter | awk '$1 == "judge"' | wc -l | tr -d ' ')" "0"
+  has "and the charter says so"   "$(floor "$d" charter check)" "[nobody]"
+}
+a_clause_naming_nobody_is_refused
+
+#
+# **A member named twice takes one seat.** A record per occurrence asked it twice on one candidate
+# and spent two rounds, so a charter allowing one gave none — a clause the panel had approved failed
+# closed on its own second ask. A judge found it.
+a_member_named_twice_takes_one_seat() {
+  d=$tmp/twice
+
+  a_judged_repo "$d" twice "$(a_judge_that_approves)" 'reach  one  sh bin/fake-judge.sh
+one  a stranger can read it
+one  a stranger can read it
+' || { skip "a member named twice — git could not make a repo here"; return; }
+
+  floor_new_as "$d" ada@example.com "Twice" >/dev/null 2>&1
+  floor "$d" charter derive >/dev/null 2>&1
+
+  is "one seat, not two"      "$(floor "$d" charter | awk '$1 == "judge"' | wc -l | tr -d ' ')" "1"
+}
+a_member_named_twice_takes_one_seat
 
 #
 # A round limit the charter pins — #526, and #332's last open box.

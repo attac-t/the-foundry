@@ -2612,20 +2612,20 @@ print_prior() {
 next_round() {
     [ -f "$(evidence_file "$1")" ] || { printf 1; return 0; }
 
-    awk -F'\t' -v name="$2" -v judge="$3" '
+    judge=$3 name=$2 awk -F'\t' '
         $2 != "judged"    { next }
-        $4 "" != name ""  { next }
-        $8 "" != judge "" { next }
+        $4 "" != ENVIRON["name"] ""  { next }
+        $8 "" != ENVIRON["judge"] "" { next }
         { rounds++ }
         END { print rounds + 1 }' "$(evidence_file "$1")" 2>/dev/null
 }
 
 # What that judge last said about that clause, as the ledger kept it.
 prior_verdict() {
-    awk -F'\t' -v name="$2" -v judge="$3" '
+    judge=$3 name=$2 awk -F'\t' '
         $2 != "judged"    { next }
-        $4 "" != name ""  { next }
-        $8 "" != judge "" { next }
+        $4 "" != ENVIRON["name"] ""  { next }
+        $8 "" != ENVIRON["judge"] "" { next }
         { said = $7 }
         END { print said }' "$(evidence_file "$1")" 2>/dev/null
 }
@@ -3491,9 +3491,9 @@ what_it_lacks() {
 # a judgement that never happened, and `stopped` holds those — reporting one as a refusal would send
 # a reader to commit their way out of a harness that was never reached.
 refused() {
-    awk -F'\t' -v name="$2" -v ref="$3" -v judge="$4" '
-        $4 "" != name "" || $6 "" != ref "" { next }
-        $8 "" != judge ""                   { next }
+    judge=$4 name=$2 awk -F'\t' -v ref="$3" '
+        $4 "" != ENVIRON["name"] "" || $6 "" != ref "" { next }
+        $8 "" != ENVIRON["judge"] ""                   { next }
         $5 == "1" || $5 == "2"              { found = 1 }
         END { exit !found }' "$(evidence_file "$1")" 2>/dev/null
 }
@@ -3508,9 +3508,9 @@ refused() {
 # Told apart by the code the receipt's outcome mapped to, which the recorder already writes. Nothing
 # new is stored.
 stopped() {
-    awk -F'\t' -v name="$2" -v ref="$3" -v judge="$4" '
-        $4 "" != name "" || $6 "" != ref "" { next }
-        $8 "" != judge ""                   { next }
+    judge=$4 name=$2 awk -F'\t' -v ref="$3" '
+        $4 "" != ENVIRON["name"] "" || $6 "" != ref "" { next }
+        $8 "" != ENVIRON["judge"] ""                   { next }
         $5 == "3" || $5 == "4"              { found = 1 }
         END { exit !found }' "$(evidence_file "$1")" 2>/dev/null
 }
@@ -3634,9 +3634,9 @@ answers_for() {
 # `judge` is empty for every kind but `Judged`. Where it is set, a record from anybody else is
 # skipped: they answered a question nobody put to them, which is neither a yes nor a no.
 satisfied() {
-    awk -F'\t' -v name="$2" -v ref="$3" -v trust="$4" -v judge="$5" '
-        $4 "" != name "" || $6 "" != ref ""   { next }
-        judge "" != "" && $8 "" != judge ""   { next }
+    judge=$5 name=$2 awk -F'\t' -v ref="$3" -v trust="$4" '
+        $4 "" != ENVIRON["name"] "" || $6 "" != ref ""   { next }
+        ENVIRON["judge"] "" != "" && $8 "" != ENVIRON["judge"] ""   { next }
         $5 != "0"                             { no = 1; next }
         trust == "" || $2 "" == trust ""      { yes = 1 }
         END { exit !(yes && !no) }' "$(evidence_file "$1")" 2>/dev/null
@@ -3726,10 +3726,10 @@ refuse_a_judge_never_handed_the_bar() {
 # One row is enough and every field must be that row's. A handoff at another commit, or under a
 # charter since rewritten, is a different handoff.
 was_handed() {
-    awk -F'\t' -v name="$2" -v judge="$3" -v ref="$4" -v version="$5" '
+    judge=$3 name=$2 awk -F'\t' -v ref="$4" -v version="$5" '
         $2 != "handed"      { next }
-        $4 "" != name ""    { next }
-        $8 "" != judge ""   { next }
+        $4 "" != ENVIRON["name"] ""    { next }
+        $8 "" != ENVIRON["judge"] ""   { next }
         $6 "" != ref ""     { next }
         $7 "" == version "" { found = 1 }
         END { exit !found }' "$(evidence_file "$1")" 2>/dev/null
@@ -3759,11 +3759,18 @@ code_for_outcome() {
 #
 # A clause with no judge recorded takes no verdict at all. A reader that came back empty must never
 # be the reason a requirement quietly went away.
+#
+# **`-e`, because a judge name is a repository's word and `grep` reads a leading dash as its own.**
+# A member called `-x` was refused by the option parser rather than by the panel, and the message
+# named the panel as though it had decided. A judge found it.
+#
+# The two other `grep -qxF` reads here take a sha and a line starting `pin `. Neither can wear a
+# dash, so neither needs this.
 refuse_a_judge_nobody_asked() {
     panel=$(named_judges "$(charter_file "$1")" "$(clause_id "$2")")
 
     printf '%s
-' "$panel" | grep -qx "$3" && return 0
+' "$panel" | grep -qxF -e "$3" && return 0
 
     [ -n "$panel" ] && {
         note "[$2] is answered by [$(spaced "$panel")], and this verdict is from [$3]"
@@ -4200,10 +4207,10 @@ refuse_a_brief_nothing_recorded() {
 # The brief digest recorded when the bar went over. `was_handed` has already found this row, so an
 # empty answer means the handoff carried no brief — never that there was no handoff.
 handed_brief() {
-    awk -F'\t' -v name="$2" -v judge="$3" -v ref="$4" -v version="$5" '
+    judge=$3 name=$2 awk -F'\t' -v ref="$4" -v version="$5" '
         $2 != "handed"      { next }
-        $4 "" != name ""    { next }
-        $8 "" != judge ""   { next }
+        $4 "" != ENVIRON["name"] ""    { next }
+        $8 "" != ENVIRON["judge"] ""   { next }
         $6 "" != ref ""     { next }
         $7 "" != version "" { next }
         { said = $10 }
@@ -4872,6 +4879,37 @@ dropped_clauses() {
 # Refuses rather than notes: a gate whose source has no sha at the base ref is a pin that cannot be
 # captured, and half a record is worse than none.
 #
+#
+# **The judged loop closed this and the gate loop kept it.** A gate name declared twice derives
+# twice — one id, two clauses, two pins, two gate lines — and a run then reports one unmet gate as
+# two. `refuse_collision` cannot see it: it reads the charter this derivation replaces, never the
+# draft being built.
+#
+# The kind travels with the text, so a `Gate` and a `Judged` sharing an id are refused rather than
+# read as agreeing. `refuse_collision` compares text alone and would let that through.
+write_the_gate_clause_once() {
+    meant=$(clause_kind_and_text "$draft" "$1")
+
+    [ -z "$meant" ]          && { print_clause "$1" Gate "$2" >> "$draft"; return $?; }
+    [ "$meant" = "Gate $2" ] && return 0
+
+    note "id $1 already means [$meant] — refusing to reuse it for [Gate $2]"
+    return 1
+}
+
+# The clause guard above cannot reach this. Its text is the gate's name, identical on both lines,
+# so a name declared twice with two commands agrees with itself and passes. **The command is where
+# that collision shows**, and it is the half a run would go on to execute.
+write_the_gate_once() {
+    was=$(pinned_command "$draft" "$1")
+
+    [ -z "$was" ]     && { print_gate "$1" "$2" >> "$draft"; return $?; }
+    [ "$was" = "$2" ] && return 0
+
+    note "gate $1 already runs [$was] — refusing to reuse it for [$2]"
+    return 1
+}
+
 while_reading_gates() {
     held=$1; draft=$2; target=$3; ref=$4
 
@@ -4886,9 +4924,9 @@ while_reading_gates() {
 
         refuse_moved_from_base "$source" "$sha" "$ref" || return 1
 
-        print_clause "$id" Gate "$name" >> "$draft" || return 1
-        print_pin    "$id" "$target" "$ref" "$source" "$sha" >> "$draft" || return 1
-        print_gate   "$id" "$command" >> "$draft" || return 1
+        write_the_gate_clause_once "$id" "$name"    || return 1
+        write_the_pin_once         "$id" "$target" "$ref" "$source" "$sha" || return 1
+        write_the_gate_once        "$id" "$command" || return 1
     done
     return 0
 }
@@ -4926,11 +4964,57 @@ while_reading_judged() {
 
         refuse_moved_from_base "$source" "$sha" "$ref" || return 1
 
-        print_clause "$id" Judged "$text" >> "$draft" || return 1
-        print_pin    "$id" "$target" "$ref" "$source" "$sha" >> "$draft" || return 1
-        print_judges "$id" "$judge" "$reaches" "$limits" >> "$draft" || return 1
+        write_the_clause_once "$id" "$text" || return 1
+        write_the_pin_once    "$id" "$target" "$ref" "$source" "$sha" || return 1
+        write_the_judges_once "$id" "$judge" "$reaches" "$limits" || return 1
     done
     return 0
+}
+
+#
+# One clause record, however many members stand on it.
+#
+# **A record per member gave a clause two identical ones**, so `complete` named the same unmet clause
+# once per member and a panel of five would have named it five times.
+#
+# **The draft is the memory, and it carries the meaning too.** `refuse_collision` reads the charter
+# already held, so within one derivation it sees nothing this loop wrote a line ago — and two texts
+# can share a 32-bit checksum. Keyed on the id alone, the second meaning would vanish and its judge
+# would stand on the first.
+write_the_clause_once() {
+    meant=$(clause_kind_and_text "$draft" "$1")
+
+    [ -z "$meant" ]            && { print_clause "$1" Judged "$2" >> "$draft"; return $?; }
+    [ "$meant" = "Judged $2" ] && return 0
+
+    note "id $1 already means [$meant] — refusing to reuse it for [Judged $2]"
+    return 1
+}
+
+# The kind and the text, which together are what an id stands for. A gate and a judged clause can
+# carry the same words, and the gates loop writes into this same draft first — so matching the text
+# alone would drop the judged clause and leave its judges standing on a gate.
+clause_kind_and_text() {
+    awk -v id="$2" '$1 == "clause" && ($2 "") == (id "") { print substr($0, 9 + length($2)); exit }' "$1" 2>/dev/null
+}
+
+#
+# **A clause may have many pins** — a meaning drawn from two repositories names both, and
+# `moved_sources` reads every one of them. So the whole line is matched, and a pin is skipped only
+# when this draft already holds that exact one.
+#
+# **No test reaches two sources, because nothing produces them.** The shipped resolver reads one
+# file, so every pin in one derivation names it. A repository's own resolver could emit two, and
+# then two lines differ and both land. Unreached, not unheld.
+#
+# **Every field is an argument.** Two of the five came from `$target` and `$ref`, which seven places
+# in this file assign — so a pin recorded whichever loop had run last. A judge found it, and no test
+# would have: the globals happen to be right at both call sites today.
+write_the_pin_once() {
+    pin=$(print_pin "$1" "$2" "$3" "$4" "$5")
+
+    grep -qxF -- "$pin" "$draft" && return 0
+    printf '%s\n' "$pin" >> "$draft"
 }
 
 # The first words that are not a judge. Each says something about one member rather than naming a
@@ -5029,11 +5113,23 @@ say_why_the_adapter_reach_is_unusable() {
 #
 # A panel is several minds, and a clause naming one is not a panel. Each member is written on its own
 # line, so a charter says who sits and completion can name whichever has not spoken.
-print_judges() {
-    printf '%s\n' "$2" | tr ',' '\n' | while IFS= read -r who; do
-        [ -n "$who" ] || continue
-        print_judge  "$1" "$who" "$(reach_of "$3" "$who")"
-        print_rounds "$1" "$who" "$(limit_of "$4" "$who")"
+#
+# **One seat per member, however many times a declaration names one.**
+#
+# A record per occurrence asked the member twice on one candidate and spent two rounds. With a
+# limit of one, the second ask recorded a deadlock after the first had approved — so a clause the
+# panel said yes to failed closed.
+#
+# The draft is the memory, as it is for the clause and the pin.
+write_the_judges_once() {
+    printf '%s\n' "$2" | tr ',' '\n' | while IFS= read -r member; do
+        [ -n "$member" ] || continue
+        holds_the_member "$draft" "$1" "$member" && continue
+
+        # **A failed append is a charter missing a judge, and it used to carry on.** The loop runs in
+        # a pipeline, so this status is the function's — and the caller already reads it.
+        print_judge  "$1" "$member" "$(reach_of "$3" "$member")" >> "$draft" || return 1
+        print_rounds "$1" "$member" "$(limit_of "$4" "$member")" >> "$draft" || return 1
     done
 }
 
@@ -5067,7 +5163,9 @@ declared_limits() { detect_judged | awk '$1 == "rounds" { $1 = ""; sub(/^ +/, ""
 # How one judge is reached, from that table. `""` on both sides: a judge named `01` and one named
 # `1` are two judges, and an `-v` assignment compares as a number.
 reach_of() {
-    printf '%s\n' "$1" | awk -v who="$2" '$1 "" == who "" { $1 = ""; sub(/^ +/, ""); print; exit }'
+    who=$2 awk '$1 "" == ENVIRON["who"] "" { $1 = ""; sub(/^ +/, ""); print; exit }' <<EOF
+$1
+EOF
 }
 
 # How often one judge may be asked, from that table. One reading, because the two tables are one
@@ -5077,8 +5175,8 @@ limit_of() { reach_of "$1" "$2"; }
 # The rounds the charter allows one member on one clause, or nothing when it bounds none. `""` on
 # both sides for `reach_of`'s reason: an `-v` assignment compares as a number.
 round_limit() {
-    awk -v id="$2" -v who="$3" \
-        '$1 == "rounds" && $2 "" == id "" && $3 "" == who "" { print $4; exit }' "$1" 2>/dev/null
+    who=$3 awk -v id="$2" \
+        '$1 == "rounds" && $2 "" == id "" && $3 "" == ENVIRON["who"] "" { print $4; exit }' "$1" 2>/dev/null
 }
 
 # Every member, one per line, in the order the repository declared them.
@@ -5089,7 +5187,7 @@ named_judges() { awk -v want="$2" '$1 == "judge" && $2 == want { print $3 }' "$1
 # Three fields blanked, and `+` rather than a count: blanking three of a three-field record — a judge
 # nobody said how to reach — leaves two spaces where a four-field one leaves three.
 judge_command() {
-    awk -v id="$2" -v who="$3" '$1 == "judge" && $2 "" == id "" && $3 "" == who "" {
+    who=$3 awk -v id="$2" '$1 == "judge" && $2 "" == id "" && $3 "" == ENVIRON["who"] "" {
              $1 = ""; $2 = ""; $3 = ""; sub(/^ +/, ""); print; exit }' "$1" 2>/dev/null
 }
 
@@ -5299,6 +5397,49 @@ forged_ids() {
 has_record() { awk -v kind="$2" -v id="$3" '$1 == kind && $2 == id { seen = 1 } END { exit !seen }' "$1"; }
 
 #
+# **Every member, not merely a judge.** A whole panel stands on one clause and each member derives
+# the same id, so `has_record` answers yes for all of them while one record survives. Deleting a
+# `judge` line would pass `charter check`, and the run would be asked of the rest and completed on
+# their approval.
+#
+# **The declaration names the panel on one line, comma separated**, and `print_judges` splits it.
+# So this splits it the same way. Reading the field whole compared `one,two` against a record
+# holding `one`, and called a charter that was never touched unresolved.
+every_member_has_a_record() {
+    missing=
+    named=
+
+    # **Globbing off while the list is split.** A member is one word a repository chose, and `*` is
+    # one word — left to expand it becomes this directory's filenames and matches no record, so a
+    # whole panel reads as missing.
+    set -f
+    for member in $(printf '%s' "$3" | tr ',' ' '); do
+        named=yes
+        holds_the_member "$1" "$2" "$member" || missing=$member
+        [ -n "$missing" ] && break
+    done
+    set +f
+
+    # **A field of commas names nobody**, so the loop never runs. Reporting only what it found would
+    # then call an empty bench sound, where the check this replaced refused it for having no record.
+    [ -n "$named" ] || missing=nobody
+
+    [ -z "$missing" ]
+}
+
+#
+# **The member reaches awk through the environment, never `-v`.** An assignment there decodes
+# escapes before the comparison, so a member written `\\061` matched a record holding `1` and a
+# panel cut to one read as whole. `ENVIRON` hands the value over as the repository wrote it.
+#
+# Both sides are still forced to strings. An id is digits and a member may be, and awk compares two
+# things that look like numbers as numbers — `1` and `01` are two members, which `reach_of` says.
+holds_the_member() {
+    who=$3 awk -v id="$2" \
+        '$1 == "judge" && $2 "" == id "" && $3 "" == ENVIRON["who"] "" { seen = 1 } END { exit !seen }' "$1"
+}
+
+#
 # A pin on *this* repository, which is the only kind that can be verified from here.
 #
 # A pin's target is self-asserted. Relabelling that one field made a local pin read foreign, so
@@ -5346,7 +5487,7 @@ underived_judged() {
 
         [ "$(clause_kind "$1" "$id")" = Judged ] || { printf 'deleted: Judged %s\n' "$text"; continue; }
         has_local_pin "$1" "$id" "$here" || printf 'unpinned: Judged %s\n' "$text"
-        has_record "$1" judge "$id"      || printf 'unresolved: Judged %s\n' "$text"
+        every_member_has_a_record "$1" "$id" "$who" || printf 'unresolved: Judged %s [%s]\n' "$text" "$missing"
     done
 }
 
