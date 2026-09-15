@@ -1408,6 +1408,18 @@ report_verdict() {
 }
 
 #
+# Put back what `report_verdict` set, and nothing else.
+#
+# It marks a MOOT with `failed=3`, and a self-test is not a run — so 3 is undone. **Never 1.** `bad`
+# sets that, and a blanket restore erased the only verdict a self-test has: one printed FAIL beside
+# ALL GREEN for as long as it shipped, and a box was ticked against that green.
+restore_what_report_verdict_set() {
+  [ "$failed" -eq 3 ] && failed=$keep_failed
+
+  return 0
+}
+
+#
 # A backgrounded break counts nowhere else. `moot` raises `never_ran` inside the break's own
 # subshell and it dies there, so `report_verdict` reading the file afterwards is the only place
 # left. This proves that reading counts, which the closing line cannot prove about itself.
@@ -1426,7 +1438,7 @@ a_moot_read_from_a_file_is_counted() {
 
   rm -f "$tmp/verdict/selftest"
   never_ran=$was
-  failed=$keep_failed
+  restore_what_report_verdict_set
 }
 a_moot_read_from_a_file_is_counted
 
@@ -1439,7 +1451,12 @@ a_slot_that_says_nothing_is_named_not_failed() {
   local was=$never_ran keep_failed=$failed said=''
 
   : > "$tmp/verdict/selftest"
-  said=$(report_verdict selftest)
+
+  # **Through a file, never a command substitution.** `$(...)` is a subshell: `report_verdict` raised
+  # `never_ran` inside it and the rise died there, so the count below could never hold and this check
+  # failed on every run since it shipped.
+  report_verdict selftest > "$tmp/selftest.said"
+  said=$(cat "$tmp/selftest.said")
 
   case $said in
     *"slot selftest says nothing"*) : ;;
@@ -1450,9 +1467,9 @@ a_slot_that_says_nothing_is_named_not_failed() {
     && printf '  ok    a slot that says nothing is a MOOT, never a failed break\n' \
     || bad "an empty verdict slot was counted as a failed break"
 
-  rm -f "$tmp/verdict/selftest"
+  rm -f "$tmp/selftest.said" "$tmp/verdict/selftest"
   never_ran=$was
-  failed=$keep_failed
+  restore_what_report_verdict_set
 }
 a_slot_that_says_nothing_is_named_not_failed
 
@@ -1475,7 +1492,7 @@ a_clock_kill_read_from_a_file_is_counted() {
   rm -f "$tmp/verdict/selftest"
   killed_by_the_clock=$was
   never_ran=$keep_ran
-  failed=$keep_failed
+  restore_what_report_verdict_set
 }
 a_clock_kill_read_from_a_file_is_counted
 
