@@ -174,6 +174,13 @@ in floor's suite hold it: a panel of two that agrees, and a panel of two where o
 **What is still one is the harness Foundry runs on.** Two judges are two vendors; the thing that
 runs the work is not. Floor's core reads one harness in thirteen places, and #711 owns that.
 
+**The decision is written and it is not an adapter.** *Neither yet, and explicitly not an
+exemption list* — the owner's words, 15 September 2026. An adapter derived from one harness would
+encode that harness behind an abstraction, and an exemption list writes down thirteen allowances
+nothing ever removes. **[#738](https://github.com/attac-t/the-foundry/issues/738) is the successor**:
+one bounded passage with Codex as the harness, never as a judge. The passage comes first and the
+adapter is extracted from what it needed.
+
 **A panel of two also broke something.** A brief and a receipt were named for their clause alone, so
 the second member's landed on the first's. The member names the file now, and the ledger's digest
 points at a file that is still there.
@@ -236,7 +243,7 @@ Both are true, both are done, and neither closes the line above it.
 | the record outlives the run directory | [#337](https://github.com/attac-t/the-foundry/issues/337) closed 9 September, six of six. **It asked whether a reader who was not there catches a forged record, which is not this row.** Nothing named owns the row today |
 | a question reaches a person and comes back | none yet |
 | end-to-end work runs without a hand at some step | none yet |
-| the same core path works through a second harness | none yet |
+| the same core path works through a second harness | [#738](https://github.com/attac-t/the-foundry/issues/738) |
 
 ## How far each promise has got
 
