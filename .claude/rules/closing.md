@@ -33,6 +33,27 @@ carried `Closes`. The issue closed, the hook spoke, and the only repair was to r
 **So tick the list on the issue before the request merges.** A box that will not tick is a box that
 keeps the issue open, and then the request says `Refs` rather than `Closes`.
 
+**`.claude/hooks/closes.sh` now refuses that merge.** It reads the request body before `gh pr merge`
+runs, counts the open boxes on every issue the body would close, and denies while any stands. It
+names the issue, the count, and the line it matched.
+
+**The keyword is nine words, in any case, anywhere in the body.** `close`, `closes`, `closed`,
+`fix`, `fixes`, `fixed`, `resolve`, `resolves`, `resolved`.
+
+On 15 September a body ending `Refs #711, #738` closed #711 with one box open. **What fired was
+prose** — *this closes #711's last box and nothing else* — and the close event carries no commit, so
+afterwards it does not even read as a keyword close.
+
+**Some boxes can only be true after the merge.** #711's last one was *`.foundry/status.md` names
+#738*, a claim about `main`. **That box can never tick first.** So the request says `Refs`, it
+merges, and a person closes the issue by hand against the merge tree.
+
+**Compare trees, never commits.** A merge commit has a new hash and the same tree, and the tree is
+what a gate read.
+
+**The hook is lint.** The worker holds the same account and can edit it, so it closes the easy path
+and nothing more. `ticks.sh` still reports after the merge, and that remains the audit.
+
 ## A box that cannot be met yet
 
 Say so on the issue, and say which of four things it is:
