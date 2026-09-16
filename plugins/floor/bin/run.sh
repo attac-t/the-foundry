@@ -298,7 +298,7 @@ settled() {
     [ -n "$inflight" ] || { note "nothing is in flight"; return 0; }
 
     # Both asked once, before the loop. A bad bar is one fact about the caller rather than one about
-    # each run, and the quiet set is one `find` rather than one per row.
+    # each run, and the quiet set is two `find` calls rather than two per row.
     days=$(quiet_days)
     quiet="|$(quiet_runs "$days" | tr '
 ' '|')"
@@ -385,7 +385,7 @@ is_a_quiet_bar() {
 # `-newermt` would ask this in one primary and is not POSIX — it ships on GNU and the BSDs, and
 # on no more than the two primaries below. Two `find` calls answer it wherever those do.
 #
-# **One process for the whole list, never one per run.** Asking per run put a `find` on every row;
+# **Two processes for the whole list, never two per run.** Asking per run put a `find` on every row;
 # asking once puts it on the command. The numbers are below, measured where each call is written.
 #
 # **Minutes, and not days.** Both count whole units and round the leftover, and the hosts disagree
@@ -408,8 +408,9 @@ quiet_runs() {
                     -mmin "+$(($1 * 1440 - 1))" 2>/dev/null | sed 's#/observations$##; s#.*/##')
     touched=$(anything_touched_since "$1")
 
-    # **Nothing touched is not an empty pattern.** `grep -vxF -e ''` matches every line under
-    # `-x` on GNU, so passing it drops the whole list — silently, and the word never prints.
+    # **An empty pattern is a question nobody asked.** Measured on GNU grep 3.0 it keeps the list,
+    # so this guard buys a process rather than a fix — and it says what it means, which the
+    # measurement did not. A grep that read `-e ''` as *every line* would empty the column.
     [ -n "$touched" ] || { printf '%s\n' "$untouched"; return 0; }
 
     printf '%s\n' "$untouched" | grep -vxF -e "$touched"
@@ -435,7 +436,7 @@ quiet_runs() {
 # **and a `git status`, which writes `index.lock`.** A glance counts as work, and that is the safe
 # way round: naming a live run quiet is the fault, and naming a quiet one live is a wasted look.
 #
-# **It does not see an edit deeper than the slot** — a worker saving into `src/` for two days with
+# **It does not see an edit below the checkout's top** — a worker saving into `src/` for two days with
 # no commit and no gate is still named quiet. #561 owns the thirty seconds.
 anything_touched_since() {
     find "$RUNS" -maxdepth 6 -mmin "-$(($1 * 1440))" 2>/dev/null \
