@@ -164,6 +164,9 @@ record_unreachable() {
     printf 'claude is not on this host, and this adapter reaches nothing else.\n' > "$1"
 
     say_the_report "$1" ''
+
+    # Nothing was asked, so nothing was spent. Said rather than counted: there is no stream.
+    printf 'commands 0\n' >> "$FOUNDRY_RECEIPT"
     printf 'verdict unavailable\n' >> "$FOUNDRY_RECEIPT"
     note "claude is not on this host — recorded unavailable, and nothing else was asked"
 }
@@ -182,6 +185,7 @@ record_what_came_back() {
 
     [ -n "$said" ] || { note "the judge named no verdict, so this receipt claims none"; return 1; }
 
+    say_what_it_spent "$2"
     printf 'verdict %s\n' "$said" >> "$FOUNDRY_RECEIPT"
 }
 
@@ -200,6 +204,23 @@ record_silence() {
 # No `model`, no `provider`, no `effort`. The stream names none of the three, and asked outright this
 # harness gave a name other than the one requested — so what is written is what was asked for, said
 # as such. Floor refuses the bare keys by name.
+#
+# **What the round spent, counted from the stream the harness wrote.**
+#
+# On 14 September one judge ran 169 commands through 163 shells and the other ran none. Nine of the
+# 169 failed, one with the Windows code for *the process could not be started*. **No receipt said
+# any of it**, so the asymmetry was only visible once a machine fell over.
+#
+# A judge that reads is not worse than one that runs. What is wrong is that nobody could tell.
+say_what_it_spent() {
+    printf 'commands %s\n' "$(commands_in "$1")" >> "$FOUNDRY_RECEIPT"
+}
+
+# Zero is an answer, so this always prints a number. A stream that is not there spent nothing here.
+commands_in() {
+    grep -o '"command":' "$1" 2>/dev/null | wc -l | tr -d ' '
+}
+
 say_the_report() {
     printf 'adapter %s\nrequested_model %s\nrequested_effort %s\n' "$ADAPTER" "$MODEL" "$EFFORT" \
         >> "$FOUNDRY_RECEIPT"
