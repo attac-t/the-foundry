@@ -299,7 +299,9 @@ settled() {
 
     note "these runs hold a workspace, so this host is not settled:"
     printf '%s
-' "$inflight" | while read -r underway; do note "  $underway  $(last_moved "$RUNS/$underway")"; done
+' "$inflight" | while read -r underway; do
+        note "  $underway  $(last_moved "$RUNS/$underway")$(said_about_silence "$RUNS/$underway")"
+    done
 
     return 29
 }
@@ -311,11 +313,42 @@ settled() {
 # on Tuesday and one working now print the same line. 101 of 109 runs here hold only `run.began`,
 # which is exactly the pair a reader cannot tell apart.
 #
-# The stamp, never an age. Working one out needs date arithmetic, and floor ships POSIX and `git`.
+# The stamp, and never an age. Turning an ISO time into one needs `date -d` on GNU and `date -j -f`
+# on BSD, and floor ships POSIX and `git`. `has_gone_quiet` asks the question a different way.
 last_moved() {
     when=$(tail -n 1 "$(observations_file "$1")" 2>/dev/null | cut -f1)
 
     printf '%s' "${when:-never moved}"
+}
+
+#
+# How long a run may say nothing before a reader is told it stalled. **Days, because `find` counts
+# them** — `-mmin` is GNU and BSD, and this has to answer the same on every host.
+#
+# Two, and not one. `-mtime` rounds an age to whole days and the two rules disagree on which way:
+# measured here, a file 30 hours old matched `+0` and not `+1`, which is rounding down. The POSIX
+# text rounds up, and a 30-hour file would then match `+1`. **A threshold two days out is past the
+# argument**, because nobody acts differently at 48 hours and 72.
+STALE_DAYS=${FOUNDRY_STALE_DAYS:-2}
+
+#
+# Whether a run has said nothing for long enough to act on.
+#
+# **`find`, never date arithmetic.** The question is asked of the filesystem, which POSIX defines a
+# verb for, and answered without parsing the stamp at all.
+#
+# **The filesystem is not the record.** A run restored from a copy carries a fresh time and reads as
+# working. The stamp beside this is the durable fact, and this is the reading a person acts on.
+has_gone_quiet() {
+    [ -n "$(find "$(observations_file "$1")" -mtime "+$((STALE_DAYS - 1))" 2>/dev/null)" ]
+}
+
+# What a reader does about it, or nothing at all. A run that moved today gets no word, because a
+# column saying *working* on every line is a column nobody reads.
+said_about_silence() {
+    has_gone_quiet "$1" || return 0
+
+    printf '  stalled — quiet %s days or more' "$STALE_DAYS"
 }
 
 # A workspace is the part a worker writes to. A run that only charted holds

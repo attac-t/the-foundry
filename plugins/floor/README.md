@@ -587,6 +587,27 @@ Three of the four conditions a safe boundary wants fall out of that single test 
 and a gate mid-run both hold a workspace. **The fourth is a transition floor has no word for**, and
 nothing here pretends otherwise.
 
+**Each run in flight carries the time it last moved, and a run that has gone quiet is named.**
+A stamp says how far a run got and nothing about whether it is still going, so one abandoned in
+the spring and one working now printed the same line.
+
+| | |
+|---|---|
+| quiet under the bar | the stamp alone |
+| quiet at the bar or past it | **`stalled — quiet N days or more`** |
+| `FOUNDRY_STALE_DAYS` | the bar, in days. Two by default |
+
+**Days, and the answer comes from `find -mtime`.** Turning an ISO stamp into an age needs `date -d`
+on GNU and `date -j -f` on BSD; POSIX defines `-mtime`, so the question goes to the filesystem
+instead and is answered anywhere.
+
+**Two by default, and not one.** `-mtime` rounds an age to whole days and the two rules disagree on
+which way. Measured: a file 30 hours old matched `+0` and not `+1`, which is rounding down, while
+the POSIX text rounds up and would match `+1`. A bar two days out is past the argument.
+
+**The filesystem is not the record.** A run restored from a copy carries a fresh time and reads as
+working. The stamp beside the word is the durable fact.
+
 **A row names the runtime that wrote it.** `run.began` and `gate.finished` carry `runtime=floor/x.y.z`,
 read from the manifest beside the script rather than compiled in.
 

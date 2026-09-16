@@ -5802,6 +5802,25 @@ a_host_is_settled_when_no_run_holds_a_workspace() {
   # working now printed the same line, and 101 of 109 runs here hold only `run.began`.
   has "and it says when the run last moved" "$said" "$(tail -n 1 "$strun/observations" | cut -f1)"
 
+  #
+  # **A stamp is not an age, and a reader acts on the age.** A run abandoned in the spring and one
+  # working now printed the same line, which is the pair this whole list exists to tell apart.
+  #
+  # `touch -t` and a fixed date, never `-d "3 days ago"` — that flag is GNU, and a case that skips
+  # on BSD is a case that proves nothing there.
+  lacks "a run that moved just now is not called stalled" "$said" "stalled"
+
+  touch -t 202601010000 "$strun/observations" 2>/dev/null
+  old=$( cd "$tmp/stl" && FOUNDRY_HOME="$quiet" FOUNDRY_RUN="$strun" FOUNDRY_WHO="" \
+         sh "$runner" settled 2>&1 )
+  has "a run quiet for months is called stalled" "$old" "stalled"
+
+  # The bar is the repository's, so raising it past the run silences the word and nothing else.
+  patient=$( cd "$tmp/stl" && FOUNDRY_HOME="$quiet" FOUNDRY_RUN="$strun" FOUNDRY_WHO="" \
+             FOUNDRY_STALE_DAYS=99999 sh "$runner" settled 2>&1 )
+  lacks "and a bar nothing reaches says nothing" "$patient" "stalled"
+  has   "while the run is still named"          "$patient" "$(basename "$strun")"
+
   # A directory with no observations at all cannot be made by `new`, and a reader of the list must
   # still be told something rather than a blank.
   mv "$strun/observations" "$strun/observations.aside"

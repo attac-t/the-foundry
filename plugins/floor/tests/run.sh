@@ -3010,7 +3010,25 @@ wreck_runner "an upgrade refusal that names no remedy is caught" \
 # A run list that says how far and never when. A run abandoned days ago and one working now then
 # print the same line, which is the pair a watcher exists to tell apart.
 wreck_runner "a run list that never says when it last moved is caught" \
-  nowhen 's#note "  $underway  $(last_moved "$RUNS/$underway")"#note "  $underway"#'
+  nowhen 's#  $(last_moved "$RUNS/$underway")##'
+
+#
+# **A stamp is not an age, and a reader acts on the age.** Three breaks, and each takes one case.
+#
+# Blind the word and a run quiet since the spring reads exactly like one working now — which is
+# the pair `settled` exists to tell apart, and what the stamp alone could never say.
+wreck_runner "a run quiet for months reported as working is caught" \
+  nostalled 's#^said_about_silence() {#said_about_silence() { return 0;#'
+
+# The other way. Say it of every run and the word means nothing, because a column reading
+# *stalled* on every line is a column nobody looks at twice.
+wreck_runner "a run that moved just now called stalled is caught" \
+  allstalled 's#^    has_gone_quiet "$1" || return 0#    :#'
+
+# **The bar is the repository's.** Pin it in the script and a host that knows its own work is slow
+# cannot say so, and the word lands on runs nobody would call stranded.
+wreck_runner "a quiet bar no repository can set is caught" \
+  fixedbar 's#^STALE_DAYS=${FOUNDRY_STALE_DAYS:-2}#STALE_DAYS=2#'
 
 report_breaks
 
