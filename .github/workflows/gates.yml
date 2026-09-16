@@ -58,6 +58,10 @@ jobs:
       - name: Floor's core names no host
         run: sh bin/hosts.sh
 
+      # A branch cut before a merge deletes what it landed, and git reports no conflict.
+      - name: A branch names what it would delete
+        run: sh bin/basing.sh audit
+
       # The resolver and the adapter may name a vendor. Core held that on discipline, checked in
       # one file, because that is where a copy of `remote_is_github` once landed.
       - name: Floor's core names no provider

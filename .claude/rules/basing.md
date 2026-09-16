@@ -57,10 +57,24 @@ way any other conflict is.
 13 September: seventeen commits ahead, six behind, and the same runner changed on both sides. The
 answer is this section, not a merge the run cannot then grade.
 
-## Why a rule and not a gate
+## A check holds half of it now
 
-Every gate here reads the tree. **This fault is only visible in a diff**, between two trees that are
-each fine on their own. No exit code can hold it.
+`sh bin/basing.sh [<target>]` names every file that loses lines and this branch never touched. It
+refuses with exit 1 and prints the merge to run.
+
+**It refuses to answer mid-conflict**, exit 3, because `HEAD` is the old commit while a merge is
+open and the diff would then name every merge the branch predates.
+
+**Two trees, never `...`.** Three dots compares against the merge base, where a file the target
+added after the cut is simply absent — so the deletion never appears. That was written and driven,
+and the fixture caught it.
+
+## Why it is not a gate
+
+Every gate here reads one tree. **This fault lives between two**, so no gate can hold it — and a
+check can, because `git diff` takes two refs.
+
+`bin/basing.sh audit` is gated. The check itself belongs where a request is opened.
 
 The same reason `closing.md` is a rule: the check happens before the work is judged, so nothing
 downstream can catch it.

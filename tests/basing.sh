@@ -38,11 +38,15 @@ a_branch_cut_before_a_merge() {
   git -C "$d" config user.name  fixture
   git -C "$d" symbolic-ref HEAD refs/heads/main >/dev/null 2>&1
 
-  printf 'shared\n' > "$d/shared.txt"
+  printf 'one\ntwo\nthree\n' > "$d/shared.txt"
   git -C "$d" add . && git -C "$d" commit -qm base
 
   git -C "$d" checkout -qb side
   printf 'mine\n' > "$d/mine.txt"
+
+  # **And it cuts a line from a file it shares.** Without this the filter is never exercised: an
+  # added file deletes nothing, so it never reaches the list the filter trims.
+  printf 'one\ntwo\n' > "$d/shared.txt"
   git -C "$d" add . && git -C "$d" commit -qm mine
 
   git -C "$d" checkout -q main
@@ -68,9 +72,11 @@ esac
   && ok  "and the exit code says so" \
   || bad "and the exit code says so — it did not"
 
+# **A file the branch cut a line from, which is what the filter is for.** `mine.txt` adds and
+# deletes nothing, so it never reaches the list at all.
 case $(asked "$tmp/cut") in
-  *mine.txt*) bad "the branch's own file is not named — it was" ;;
-  *)          ok  "the branch's own file is not named" ;;
+  *shared.txt*) bad "a file the branch cut itself is not named — it was" ;;
+  *)            ok  "a file the branch cut itself is not named" ;;
 esac
 
 # --- the same branch, once the target is merged in ---
