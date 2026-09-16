@@ -19,6 +19,7 @@ be swapped out. Foundry installs on a repository and uses its knowledge, tools, 
 | continuous | improvement keeps going, and a run may work unattended. **Never outside the authority it was given** |
 | claim | one statement somebody is answerable for, together with the person entitled to decide it. Never a file, a role, or a worker's inference |
 | worker | whoever does the work — a person, a model, a harness. Replaceable by design, and never the authority |
+| **the forge** | wherever the work is listed and proposed. **One adapter, not the protocol** — floor ships a directory source, a GitHub source and a read-only one |
 
 **This is identity, not mission.** Identity says what kind of thing Foundry is; mission says why it
 matters. Keeping them apart stops a mechanism being taken for the reason.
@@ -97,7 +98,7 @@ Enduring lines, not today's gaps — [`status.md`](status.md) holds those.
 - that every user decides every claim
 - merge or deploy by default
 - that every repository runs unattended
-- one model, vendor, harness or plugin forever
+- one model, vendor, harness, **forge** or plugin forever
 - learning that rewrites purpose
 - purpose, missing domain truth, or every consequential claim found. **Foundry carries what people
   state. It cannot supply what nobody said**

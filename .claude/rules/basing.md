@@ -50,7 +50,7 @@ Exit 14, and nothing graded. **That is invariant 1 working**, not a fault.
 **So the rule above is for a branch.** A branch has no pinned base and no charter. A run has both.
 
 **The reconcile belongs at the merge, not before the grade.** A run proves its work against the bar
-it was chartered on. What main did since is settled when the pull request lands, by a person, the
+it was chartered on. What main did since is settled when the work lands, by a person, the
 way any other conflict is.
 
 **A judge will read the staleness as a defect, and it is not wrong to.** One did here, on
@@ -75,6 +75,10 @@ Every gate here reads one tree. **This fault lives between two**, so no gate can
 check can, because `git diff` takes two refs.
 
 `bin/basing.sh audit` is gated. The check itself belongs where a request is opened.
+
+**It reaches git and nothing else.** Three calls — `rev-parse`, `diff`, `merge` — and no forge. The
+fault is git's: a clean merge that removes shipped work, on any host of any remote. **The forge is
+one adapter**, and the doctrine says so.
 
 The same reason `closing.md` is a rule: the check happens before the work is judged, so nothing
 downstream can catch it.
