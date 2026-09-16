@@ -120,6 +120,10 @@ else
 fi
 has "a harness that is not here says so" "$out" "not on this host"
 has "and records it unavailable"         "$(cat "$d/r.receipt")" "unavailable"
+
+# **And what it spent, which is zero.** One judge ran 169 commands on 14 September and the other ran
+# none; no receipt said either number, so the asymmetry only showed when a machine fell over.
+has "and says it spent nothing"          "$(cat "$d/r.receipt")" "commands 0"
 hasnt "and asks nothing else"            "$(cat "$d/r.receipt")" "context"
 
 # --- what it makes of what came back ---
@@ -136,6 +140,19 @@ a_codex_that_says '{"type":"thread.started","thread_id":"01a0-cafe"}' 'VERDICT: 
 actually, no'
 d=$(handed buried); judged "$d"
 hasnt "a verdict that is not the last word is not taken" "$(cat "$d/r.receipt")" "approve"
+
+# **What the round spent, counted from the stream.** Two command lines in, two out. Zero is the
+# answer when a judge only reads, and the count is the whole of what tells the two apart.
+a_codex_that_says '{"type":"thread.started","thread_id":"01a0-c0st"}
+{"type":"item.completed","item":{"command":"ls","exit_code":0}}
+{"type":"item.completed","item":{"command":"git log","exit_code":0}}' 'VERDICT: approve'
+d=$(handed spend); judged "$d"
+is "what the round spent is counted" "$(awk '$1 == "commands" { print $2 }' "$d/r.receipt")" "2"
+
+# A judge that ran nothing spent nothing, and says so rather than leaving the line out.
+a_codex_that_says '{"type":"thread.started","thread_id":"01a0-read"}' 'VERDICT: approve'
+d=$(handed readonly); judged "$d"
+is "a judge that only read says zero" "$(awk '$1 == "commands" { print $2 }' "$d/r.receipt")" "0"
 
 # A stream that opened no thread claims none. `fresh` about nothing is a claim about nothing.
 a_codex_that_says '{"type":"turn.started"}' 'VERDICT: reject'
