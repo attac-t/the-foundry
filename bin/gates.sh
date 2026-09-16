@@ -238,6 +238,7 @@ gate stale       sh   bin/stale.sh audit
 #
 # **Two faults in it were found by driving it and neither by reading it**: a terminal asked for where
 # there was none, and a flag that reached `docker run` because a function shifted its own copy.
+gate basing      sh   bin/basing.sh audit
 gate host        sh   bin/host.sh audit
 
 #
