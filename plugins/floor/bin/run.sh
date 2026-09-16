@@ -40,9 +40,11 @@
 #      nothing
 #  20  the work source could not be asked — a tool that is not there, a credential it refused, a
 #      network. Not 1: that is the source answering, and answering that nothing is there
-#  21  a gate or a judge never answered — its command is not on this host, or a signal killed it
-#      before it could. Nothing was graded and nothing is recorded. Not 14:
-#      that is a gate answering, and its answer stands at that ref for good
+#  21  a gate or a judge never answered — its command is not on this host, a signal killed it
+#      before it could, or it ran and left the receipt exactly as the runner wrote it. Nothing was
+#      graded and nothing is recorded. Not 14: that is a gate answering, and its answer stands at
+#      that ref for good. Not 37: that is a receipt saying something unreadable, and this is one
+#      saying nothing at all
 #  23  nobody said this run may merge into that repository. `policy deliver-to` grants proposing,
 #      and landing work in the trunk is a third act a human takes
 #  24  the delivery is not the thing that was graded, or the source will not take it. An answer
@@ -3834,13 +3836,18 @@ refuse_a_judge_that_is_the_worker() {
 # is the shape — `fresh` needs a context to be about, and it says yes or no — never that the thread
 # was new. Floor cannot verify a handle it did not issue.
 #
+# **`commands` is counted, which is why it is a key and `model` is not.** The harness wrote the
+# stream and the adapter counted lines in it, so the number is a reading of a record rather than a
+# thing a judge said about itself. Optional for the same reason `context` is: a reach with no stream
+# has nothing to count, and a zero invented there would read like one somebody took.
+#
 # **`adapter_pin` and `adapter_digest` are the runner's, and they are why `adapter` stayed a label.**
 # A shipped adapter is reached at a content the repository committed, so those two say which code
 # had authority and which code ran. A repository's own command has neither, and absence there is the
 # honest answer rather than a default.
 RECEIPT_KEYS='run clause candidate role adapter brief verdict report round prior time
               adapter_pin adapter_digest
-              context fresh
+              context fresh commands
               requested_model    self_reported_model
               requested_provider self_reported_provider
               requested_effort   self_reported_effort'
@@ -3856,6 +3863,14 @@ RECEIPT_UNPROVABLE='model provider effort'
 # say which model answered leaves `model` out; nothing here writes a default, and nothing writes
 # `unknown`. A missing field says nobody checked, which is true. A filled-in one would be a claim.
 RECEIPT_REQUIRED='run clause candidate role adapter brief verdict report round time'
+
+#
+# The required ones the runner cannot write, so their absence says nothing answered.
+#
+# `write_receipt_context` writes the run, the clause, the candidate, the role, the brief and the
+# round before the judge is asked. **These four are the whole of what an answer adds**, and a file
+# carrying none of them is the context and nothing else.
+RECEIPT_ANSWERED='adapter verdict report time'
 
 #
 # A judgement receipt — what a runner writes down when something judged this work.
@@ -3918,7 +3933,34 @@ receipt() {
 refuse_a_malformed_receipt() {
     refuse_an_unreadable_receipt "$1"
     refuse_a_line_that_is_not_a_receipt_line "$1"
+    refuse_a_receipt_nothing_answered "$1"
     refuse_a_field_that_is_not_there "$1"
+}
+
+#
+# The context the runner wrote, with nothing appended to it.
+#
+# A round killed before the judge could speak leaves exactly this file: the runner wrote it, the
+# judge was asked, and every key an answer carries is absent. **That is a round that did not happen,
+# never a receipt missing a line.**
+#
+# Ahead of the required-field reader, which names the first key it misses and would send a reader
+# after `adapter` — an install, for a judge that was asked and killed. Four attempts ended this way
+# on 14 September and each read as an adapter fault.
+#
+# 21 rather than 37, because 21 already means *a judge never answered*. The other two ways into it
+# are a command that is not on this host and a signal; this is the third, and it arrives through a
+# file instead of an exit status.
+refuse_a_receipt_nothing_answered() {
+    said=$(awk -v want="$RECEIPT_ANSWERED" '
+        BEGIN { n = split(want, key); for (i = 1; i <= n; i++) answers[key[i]] = 1 }
+        !/^[ \t]*#/ && NF && $1 in answers { print $1; exit }' "$1" 2>/dev/null)
+
+    [ -z "$said" ] || return 0
+
+    note "[$1] holds no $(spaced "$RECEIPT_ANSWERED") — the judge was asked and answered nothing"
+    note "  this is the context the runner wrote before asking, so the round did not happen"
+    exit 21
 }
 
 #
