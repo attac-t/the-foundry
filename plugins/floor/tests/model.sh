@@ -5808,39 +5808,49 @@ a_host_is_settled_when_no_run_holds_a_workspace() {
   #
   # `touch -t` and a fixed date, never `-d "3 days ago"` — that flag is GNU, and a case that skips
   # on BSD is a case that proves nothing there.
-  lacks "a run that moved just now is not called stalled" "$said" "stalled"
+  lacks "a run that moved just now gets no word" "$said" "nothing written for"
 
   touch -t 202601010000 "$strun/observations" 2>/dev/null
   old=$( cd "$tmp/stl" && FOUNDRY_HOME="$quiet" FOUNDRY_RUN="$strun" FOUNDRY_WHO="" \
          sh "$runner" settled 2>&1 )
-  has "a run quiet for months is called stalled" "$old" "stalled"
+  has "a run quiet for months says nothing was written" "$old" "nothing written for"
 
-  # The bar is the repository's, so raising it past the run silences the word and nothing else.
+  # The bar is the caller's, so raising it past the run silences the word and nothing else.
+  # Four digits, because five is refused — a bar of twenty-seven years is already absurd.
   patient=$( cd "$tmp/stl" && FOUNDRY_HOME="$quiet" FOUNDRY_RUN="$strun" FOUNDRY_WHO="" \
-             FOUNDRY_STALE_DAYS=99999 sh "$runner" settled 2>&1 )
-  lacks "and a bar nothing reaches says nothing" "$patient" "stalled"
+             FOUNDRY_STALE_DAYS=9999 sh "$runner" settled 2>&1 )
+  lacks "and a bar nothing reaches says nothing" "$patient" "nothing written for"
   has   "while the run is still named"          "$patient" "$(basename "$strun")"
 
   #
   # **The bar comes from the environment, so it is a preference and not a record.** A repository
   # commits `.foundry/gates`; whoever types the command sets this. So it is checked before use.
   #
-  # A typo must not quietly double the bar. `[ 1 -gt abc ]` complains to stderr and returns
-  # non-zero, so an unchecked value would read as a run that is working.
+  # A typo must not reach the arithmetic. `is_a_count` was not enough and a reader found out why:
+  # it takes `00`, `08` and `010`, which become `-1`, a base error, and seven.
   typo=$( cd "$tmp/stl" && FOUNDRY_HOME="$quiet" FOUNDRY_RUN="$strun" FOUNDRY_WHO="" \
         FOUNDRY_STALE_DAYS=abc sh "$runner" settled 2>&1 )
   has "a bar that is not a count is named"   "$typo" "which is not a count of days"
-  has "and the default is used instead"      "$typo" "stalled — quiet 2 days"
+  has "and the default is used instead"      "$typo" "nothing written for 2 days"
 
-  # Zero and below are not counts of days either, and each would ask `find` for a bar it cannot
-  # answer. `-mtime +-1` is an error, and an error reads here as a run that is working.
+  # Zero and below are not counts of days either. **A bad bar is worse than a silent one:** measured,
+  # `find -mtime +-1` does not fail — it matches a file made seconds ago, so every run reads quiet.
   nought=$( cd "$tmp/stl" && FOUNDRY_HOME="$quiet" FOUNDRY_RUN="$strun" FOUNDRY_WHO="" \
         FOUNDRY_STALE_DAYS=0 sh "$runner" settled 2>&1 )
   has "a bar of zero is named too"           "$nought" "is [0], which is not a count"
   below=$( cd "$tmp/stl" && FOUNDRY_HOME="$quiet" FOUNDRY_RUN="$strun" FOUNDRY_WHO="" \
         FOUNDRY_STALE_DAYS=-3 sh "$runner" settled 2>&1 )
   has "and so is one below zero"             "$below" "is [-3], which is not a count"
-  has "and the run is still called stalled"  "$below" "stalled"
+  has "and the run is still named quiet"     "$below" "nothing written for"
+
+  # **A leading zero is four faults wearing one shape**, and `is_a_count` takes all of them.
+  # Twenty digits is the fifth: it overflows to a number nobody asked for.
+  for odd in 00 08 010 99999; do
+    odd_said=$( cd "$tmp/stl" && FOUNDRY_HOME="$quiet" FOUNDRY_RUN="$strun" FOUNDRY_WHO="" \
+                FOUNDRY_STALE_DAYS="$odd" sh "$runner" settled 2>&1 )
+    has "a bar of $odd is refused"           "$odd_said" "is [$odd], which is not a count"
+    has "and $odd falls back to the default" "$odd_said" "nothing written for 2 days"
+  done
 
   # A directory with no observations at all cannot be made by `new`, and a reader of the list must
   # still be told something rather than a blank.

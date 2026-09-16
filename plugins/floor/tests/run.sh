@@ -3021,8 +3021,8 @@ wreck_runner "a run quiet for months reported as working is caught" \
   nostalled 's#^said_about_silence() {#said_about_silence() { return 0;#'
 
 # The other way. Say it of every run and the word means nothing, because a column reading
-# *stalled* on every line is a column nobody looks at twice.
-wreck_runner "a run that moved just now called stalled is caught" \
+# *nothing written* on every line is a column nobody looks at twice.
+wreck_runner "a run that moved just now named as quiet is caught" \
   allstalled 's#^    has_gone_quiet "$1" "$2" || return 0#    :#'
 
 # **The bar is the caller's.** Pin it in the script and a host that knows its own work is slow
@@ -3031,10 +3031,19 @@ wreck_runner "a quiet bar nobody can set is caught" \
 
 #
 # **The caller sets it, so it is checked.** Take the check away and `abc` reaches the arithmetic,
-# where an unset name counts as zero — `-mtime +-1` is an error, `find` prints nothing, and a run
-# quiet since January reads as working. **A typo becomes an all-clear.**
+# where an unset name counts as zero. **`find -mtime +-1` does not fail** — measured, it matches
+# a file made seconds ago, so every run in flight reads quiet at once.
+#
+# A reader named it: the first draft of this comment said `+-1` errors, and it does not.
 wreck_runner "a quiet bar nothing checks is caught" \
-  anybar 's#^    is_a_count "$asked" #    true "$asked" #'
+  anybar 's#^    is_a_quiet_bar "$asked" #    true "$asked" #'
+
+#
+# **A leading zero is the form `is_a_count` lets through**, and each breaks differently: `00` is
+# `-1`, `08` is not a number in base 8, and `010` is seven. Put the looser test back and all
+# three reach the arithmetic.
+wreck_runner "a quiet bar with a leading zero is caught" \
+  loosebar 's#|0[*]) return 1 ;;#|0) return 1 ;;#'
 
 report_breaks
 

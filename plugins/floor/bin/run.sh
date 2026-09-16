@@ -326,7 +326,7 @@ last_moved() {
 }
 
 #
-# How long a run may say nothing before a reader is told it stalled. **Days, because `find` counts
+# How long a run may say nothing before the list says so. **Days, because `find` counts
 # them** — `-mmin` is GNU and BSD, and this has to answer the same on every host.
 #
 # **The caller's, never the repository's.** `.foundry/gates` and `.foundry/judged` are files a
@@ -334,16 +334,33 @@ last_moved() {
 # read as a preference, checked before use, and a bad one is said out loud rather than obeyed.
 STALE_QUIET_DAYS=2
 
-# What the caller asked for, or the default and a word about why. **A typo must not silently double
-# the bar** — `[ 1 -gt abc ]` complains to stderr and returns non-zero, so an unchecked value reads
-# as a run that is working.
+# What the caller asked for, or the default and a word about why.
 quiet_days() {
     asked=${FOUNDRY_STALE_DAYS:-$STALE_QUIET_DAYS}
 
-    is_a_count "$asked" && { printf '%s' "$asked"; return 0; }
+    is_a_quiet_bar "$asked" && { printf '%s' "$asked"; return 0; }
 
     note "FOUNDRY_STALE_DAYS is [$asked], which is not a count of days — using $STALE_QUIET_DAYS"
     printf '%s' "$STALE_QUIET_DAYS"
+}
+
+#
+# A plain decimal above zero, short enough to survive arithmetic.
+#
+# **`is_a_count` is not enough here, and a reader found out why.** It takes `00`, `08` and `010`,
+# and each breaks differently: `00` yields `-1`, `08` is not a number in base 8, and `010` is seven.
+# A twenty-digit string overflows to something unrelated. So a leading zero is refused outright.
+#
+# **And a bad bar is worse than a silent one.** `find -mtime +-1` does not fail — measured, it
+# matches a file made seconds ago. So an unchecked value names every run at once rather than none.
+#
+# Four digits is twenty-seven years. Past that it is not a bar anybody meant.
+is_a_quiet_bar() {
+    case "$1" in
+        ''|*[!0-9]*|0*) return 1 ;;
+    esac
+
+    [ "${#1}" -le 4 ]
 }
 
 #
@@ -362,12 +379,18 @@ has_gone_quiet() {
     [ -n "$(find "$(observations_file "$1")" -mtime "+$(($2 - 1))" 2>/dev/null)" ]
 }
 
+#
 # What a reader does about it, or nothing at all. A run that moved today gets no word, because a
 # column saying *working* on every line is a column nobody reads.
+#
+# **The fact, and never the verdict.** `stalled` was the first word here and a reader refused it:
+# a copied run carries a fresh time, and a live one writing nothing ages past any bar. What this
+# knows is that the file has not been written. **Whether that means stranded is the reader's call**,
+# and the stamp beside it is what they judge on.
 said_about_silence() {
     has_gone_quiet "$1" "$2" || return 0
 
-    printf '  stalled — quiet %s days or more' "$2"
+    printf '  nothing written for %s days or more' "$2"
 }
 
 # A workspace is the part a worker writes to. A run that only charted holds

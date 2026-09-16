@@ -594,8 +594,12 @@ the spring and one working now printed the same line.
 | | |
 |---|---|
 | quiet under the bar | the stamp alone |
-| quiet at the bar or past it | **`stalled — quiet N days or more`** |
+| quiet at the bar or past it | **`nothing written for N days or more`** |
 | `FOUNDRY_STALE_DAYS` | the bar, in days. Two by default |
+
+**The fact, and never the verdict.** `stalled` was the first word here and a reader refused it: a
+copied run carries a fresh time, and a live one writing nothing ages past any bar. What floor knows
+is that the file has not been written. **Whether that means stranded is the reader's call.**
 
 **Days, and the answer comes from `find -mtime`.** Turning an ISO stamp into an age needs `date -d`
 on GNU and `date -j -f` on BSD; POSIX defines `-mtime`, so the question goes to the filesystem
@@ -609,6 +613,11 @@ more. Measured: 30 hours matched `+0` and not `+1`.
 `.foundry/judged` are files a repository commits. This is an environment variable whoever types the
 command sets, so it is a preference — **checked before use, and a value that is not a count of days
 is named out loud and ignored.**
+
+**A leading zero is refused, and so is a fifth digit.** `00` is minus one, `08` is not a number in
+base 8, `010` is seven, and twenty digits overflow. **A bad bar is worse than a silent one:** `find
+-mtime +-1` does not fail — measured, it matches a file made seconds ago, so every run would read
+quiet at once.
 
 **The filesystem is not the record.** A run restored from a copy carries a fresh time and reads as
 working. The stamp beside the word is the durable fact.
