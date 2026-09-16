@@ -3023,12 +3023,18 @@ wreck_runner "a run quiet for months reported as working is caught" \
 # The other way. Say it of every run and the word means nothing, because a column reading
 # *stalled* on every line is a column nobody looks at twice.
 wreck_runner "a run that moved just now called stalled is caught" \
-  allstalled 's#^    has_gone_quiet "$1" || return 0#    :#'
+  allstalled 's#^    has_gone_quiet "$1" "$2" || return 0#    :#'
 
-# **The bar is the repository's.** Pin it in the script and a host that knows its own work is slow
-# cannot say so, and the word lands on runs nobody would call stranded.
-wreck_runner "a quiet bar no repository can set is caught" \
-  fixedbar 's#^STALE_DAYS=${FOUNDRY_STALE_DAYS:-2}#STALE_DAYS=2#'
+# **The bar is the caller's.** Pin it in the script and a host that knows its own work is slow
+wreck_runner "a quiet bar nobody can set is caught" \
+  fixedbar 's#^    asked=${FOUNDRY_STALE_DAYS:-$STALE_QUIET_DAYS}#    asked=$STALE_QUIET_DAYS#'
+
+#
+# **The caller sets it, so it is checked.** Take the check away and `abc` reaches the arithmetic,
+# where an unset name counts as zero — `-mtime +-1` is an error, `find` prints nothing, and a run
+# quiet since January reads as working. **A typo becomes an all-clear.**
+wreck_runner "a quiet bar nothing checks is caught" \
+  anybar 's#^    is_a_count "$asked" #    true "$asked" #'
 
 report_breaks
 

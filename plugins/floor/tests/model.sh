@@ -5821,6 +5821,27 @@ a_host_is_settled_when_no_run_holds_a_workspace() {
   lacks "and a bar nothing reaches says nothing" "$patient" "stalled"
   has   "while the run is still named"          "$patient" "$(basename "$strun")"
 
+  #
+  # **The bar comes from the environment, so it is a preference and not a record.** A repository
+  # commits `.foundry/gates`; whoever types the command sets this. So it is checked before use.
+  #
+  # A typo must not quietly double the bar. `[ 1 -gt abc ]` complains to stderr and returns
+  # non-zero, so an unchecked value would read as a run that is working.
+  typo=$( cd "$tmp/stl" && FOUNDRY_HOME="$quiet" FOUNDRY_RUN="$strun" FOUNDRY_WHO="" \
+        FOUNDRY_STALE_DAYS=abc sh "$runner" settled 2>&1 )
+  has "a bar that is not a count is named"   "$typo" "which is not a count of days"
+  has "and the default is used instead"      "$typo" "stalled — quiet 2 days"
+
+  # Zero and below are not counts of days either, and each would ask `find` for a bar it cannot
+  # answer. `-mtime +-1` is an error, and an error reads here as a run that is working.
+  nought=$( cd "$tmp/stl" && FOUNDRY_HOME="$quiet" FOUNDRY_RUN="$strun" FOUNDRY_WHO="" \
+        FOUNDRY_STALE_DAYS=0 sh "$runner" settled 2>&1 )
+  has "a bar of zero is named too"           "$nought" "is [0], which is not a count"
+  below=$( cd "$tmp/stl" && FOUNDRY_HOME="$quiet" FOUNDRY_RUN="$strun" FOUNDRY_WHO="" \
+        FOUNDRY_STALE_DAYS=-3 sh "$runner" settled 2>&1 )
+  has "and so is one below zero"             "$below" "is [-3], which is not a count"
+  has "and the run is still called stalled"  "$below" "stalled"
+
   # A directory with no observations at all cannot be made by `new`, and a reader of the list must
   # still be told something rather than a blank.
   mv "$strun/observations" "$strun/observations.aside"

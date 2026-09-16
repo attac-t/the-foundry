@@ -601,9 +601,14 @@ the spring and one working now printed the same line.
 on GNU and `date -j -f` on BSD; POSIX defines `-mtime`, so the question goes to the filesystem
 instead and is answered anywhere.
 
-**Two by default, and not one.** `-mtime` rounds an age to whole days and the two rules disagree on
-which way. Measured: a file 30 hours old matched `+0` and not `+1`, which is rounding down, while
-the POSIX text rounds up and would match `+1`. A bar two days out is past the argument.
+**`+N` is more than N whole days.** POSIX discards the remainder and GNU ignores the fractional
+part, which are one rule said twice. So a bar of two days asks for `+1`, and `+1` is 48 hours or
+more. Measured: 30 hours matched `+0` and not `+1`.
+
+**`FOUNDRY_STALE_DAYS` is the caller's, not the repository's.** `.foundry/gates` and
+`.foundry/judged` are files a repository commits. This is an environment variable whoever types the
+command sets, so it is a preference — **checked before use, and a value that is not a count of days
+is named out loud and ignored.**
 
 **The filesystem is not the record.** A run restored from a copy carries a fresh time and reads as
 working. The stamp beside the word is the durable fact.

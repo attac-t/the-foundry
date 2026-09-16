@@ -297,10 +297,14 @@ settled() {
     inflight=$(runs_in_flight)
     [ -n "$inflight" ] || { note "nothing is in flight"; return 0; }
 
+    # Asked once, before the loop. Inside it the note would repeat per run, and a bad value is one
+    # fact about the caller rather than one about each run.
+    days=$(quiet_days)
+
     note "these runs hold a workspace, so this host is not settled:"
     printf '%s
 ' "$inflight" | while read -r underway; do
-        note "  $underway  $(last_moved "$RUNS/$underway")$(said_about_silence "$RUNS/$underway")"
+        note "  $underway  $(last_moved "$RUNS/$underway")$(said_about_silence "$RUNS/$underway" "$days")"
     done
 
     return 29
@@ -325,11 +329,22 @@ last_moved() {
 # How long a run may say nothing before a reader is told it stalled. **Days, because `find` counts
 # them** — `-mmin` is GNU and BSD, and this has to answer the same on every host.
 #
-# Two, and not one. `-mtime` rounds an age to whole days and the two rules disagree on which way:
-# measured here, a file 30 hours old matched `+0` and not `+1`, which is rounding down. The POSIX
-# text rounds up, and a 30-hour file would then match `+1`. **A threshold two days out is past the
-# argument**, because nobody acts differently at 48 hours and 72.
-STALE_DAYS=${FOUNDRY_STALE_DAYS:-2}
+# **The caller's, never the repository's.** `.foundry/gates` and `.foundry/judged` are files a
+# repository commits; this is an environment variable whoever runs the command can set. So it is
+# read as a preference, checked before use, and a bad one is said out loud rather than obeyed.
+STALE_QUIET_DAYS=2
+
+# What the caller asked for, or the default and a word about why. **A typo must not silently double
+# the bar** — `[ 1 -gt abc ]` complains to stderr and returns non-zero, so an unchecked value reads
+# as a run that is working.
+quiet_days() {
+    asked=${FOUNDRY_STALE_DAYS:-$STALE_QUIET_DAYS}
+
+    is_a_count "$asked" && { printf '%s' "$asked"; return 0; }
+
+    note "FOUNDRY_STALE_DAYS is [$asked], which is not a count of days — using $STALE_QUIET_DAYS"
+    printf '%s' "$STALE_QUIET_DAYS"
+}
 
 #
 # Whether a run has said nothing for long enough to act on.
@@ -339,16 +354,20 @@ STALE_DAYS=${FOUNDRY_STALE_DAYS:-2}
 #
 # **The filesystem is not the record.** A run restored from a copy carries a fresh time and reads as
 # working. The stamp beside this is the durable fact, and this is the reading a person acts on.
+#
+# **`+N` is *more than* N whole days**, and the fraction is thrown away — POSIX discards the
+# remainder and GNU ignores the fractional part, which are the same rule said twice. So `+1` is
+# 48 hours or more, and a bar of two days asks for `+1`.
 has_gone_quiet() {
-    [ -n "$(find "$(observations_file "$1")" -mtime "+$((STALE_DAYS - 1))" 2>/dev/null)" ]
+    [ -n "$(find "$(observations_file "$1")" -mtime "+$(($2 - 1))" 2>/dev/null)" ]
 }
 
 # What a reader does about it, or nothing at all. A run that moved today gets no word, because a
 # column saying *working* on every line is a column nobody reads.
 said_about_silence() {
-    has_gone_quiet "$1" || return 0
+    has_gone_quiet "$1" "$2" || return 0
 
-    printf '  stalled — quiet %s days or more' "$STALE_DAYS"
+    printf '  stalled — quiet %s days or more' "$2"
 }
 
 # A workspace is the part a worker writes to. A run that only charted holds
