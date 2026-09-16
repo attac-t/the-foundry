@@ -76,9 +76,9 @@ check can, because `git diff` takes two refs.
 
 `bin/basing.sh audit` is gated. The check itself belongs where a request is opened.
 
-**It reaches git and nothing else.** Three calls — `rev-parse`, `diff`, `merge` — and no forge. The
-fault is git's: a clean merge that removes shipped work, on any host of any remote. **The forge is
-an adapter, not the protocol**, and the doctrine says so.
+**It asks git, and no forge.** `rev-parse` and `diff` — the merge it prints is a person's to run.
+The fault is git's: a clean merge that removes shipped work, on any host of any remote. **The forge
+is an adapter, not the protocol**, and the doctrine says so.
 
 The same reason `closing.md` is a rule: the check happens before the work is judged, so nothing
 downstream can catch it.
