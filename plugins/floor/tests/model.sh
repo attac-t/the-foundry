@@ -4319,6 +4319,19 @@ a_receipt_is_read_and_not_believed() {
       "$(floor_says "$tmp/rcpt" evidence receipt "$tmp/rcpt.verdictonly")" "carries no [adapter]"
 
   #
+  # **The round the box is about, and the third of three answers.** The adapter ran and the judge
+  # named no verdict, so every key the adapter writes is there and that one is not.
+  #
+  # 37 naming `verdict`, because something did answer. A round nothing answered on is 21 above,
+  # and a harness that could not be reached says `unavailable` and is recorded. Three states,
+  # three sentences.
+  grep -v '^verdict ' "$base" > "$tmp/rcpt.noverdict"
+  is  "a judge that named no verdict is refused" \
+      "$(code_of floor "$tmp/rcpt" evidence receipt "$tmp/rcpt.noverdict")" "37"
+  has "and it names the verdict, not the round" \
+      "$(floor_says "$tmp/rcpt" evidence receipt "$tmp/rcpt.noverdict")" "carries no [verdict]"
+
+  #
   # A field standing on one that is not there. Each of these reads as checked and rests on nothing.
   grep -v '^context ' "$base" > "$tmp/rcpt.nocontext"
   is  "freshness about a context nobody named is refused" \

@@ -2720,6 +2720,10 @@ wreck_runner "a round that answered nothing, asked about second, is caught" \
 # badly; narrow the set to that one key and its receipt is reported as a round that never happened.
 wreck_runner "a malformed answer reported as a round that never happened is caught"   oneanswer "s#^RECEIPT_ANSWERED='adapter verdict report time'#RECEIPT_ANSWERED='adapter'#"
 
+# **And the other way.** Narrow the set to `verdict` and a judge that answered without naming one is
+# reported as a round that never ran — the sentence points at the round instead of the missing word.
+wreck_runner "a judge that named no verdict reported as a round that never ran is caught"   verdictset "s#^RECEIPT_ANSWERED='adapter verdict report time'#RECEIPT_ANSWERED='verdict'#"
+
 #
 # What the round spent. **The adapters write this line, so a key floor has no reading for refuses
 # every receipt either of them produces** — the grammar is closed and this is what closes on it.
