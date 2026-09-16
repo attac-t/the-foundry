@@ -5823,7 +5823,7 @@ a_host_is_settled_when_no_run_holds_a_workspace() {
   # The bar is the caller's, so raising it past the run silences the word and nothing else.
   # Four digits, because five is refused — a bar of twenty-seven years is already absurd.
   patient=$( cd "$tmp/stl" && FOUNDRY_HOME="$quiet" FOUNDRY_RUN="$strun" FOUNDRY_WHO="" \
-             FOUNDRY_STALE_DAYS=9999 sh "$runner" settled 2>&1 )
+             FOUNDRY_QUIET_DAYS=9999 sh "$runner" settled 2>&1 )
   lacks "and a bar nothing reaches says nothing" "$patient" "nothing touched for"
   has   "while the run is still named"          "$patient" "$(basename "$strun")"
 
@@ -5834,23 +5834,23 @@ a_host_is_settled_when_no_run_holds_a_workspace() {
   # A typo must not reach the arithmetic. `is_a_count` was not enough and a reader found out why:
   # it takes `00`, `08` and `010`, which become `-1`, a base error, and seven.
   typo=$( cd "$tmp/stl" && FOUNDRY_HOME="$quiet" FOUNDRY_RUN="$strun" FOUNDRY_WHO="" \
-        FOUNDRY_STALE_DAYS=abc sh "$runner" settled 2>&1 )
+        FOUNDRY_QUIET_DAYS=abc sh "$runner" settled 2>&1 )
   has "a bar that is not a count is named"   "$typo" "which is not a count of days"
   has "and the default is used instead"      "$typo" "nothing touched for 2 days"
 
   # Zero and below are not counts of days either. **A bad bar is worse than a silent one:** measured,
   # `find -mmin +-1` does not fail — it matches a file made seconds ago, so every run reads quiet.
   nought=$( cd "$tmp/stl" && FOUNDRY_HOME="$quiet" FOUNDRY_RUN="$strun" FOUNDRY_WHO="" \
-        FOUNDRY_STALE_DAYS=0 sh "$runner" settled 2>&1 )
+        FOUNDRY_QUIET_DAYS=0 sh "$runner" settled 2>&1 )
   has "a bar of zero is named too"           "$nought" "is [0], which is not a count"
   below=$( cd "$tmp/stl" && FOUNDRY_HOME="$quiet" FOUNDRY_RUN="$strun" FOUNDRY_WHO="" \
-        FOUNDRY_STALE_DAYS=-3 sh "$runner" settled 2>&1 )
+        FOUNDRY_QUIET_DAYS=-3 sh "$runner" settled 2>&1 )
   has "and so is one below zero"             "$below" "is [-3], which is not a count"
   has "and the run is still named quiet"     "$below" "nothing touched for"
 
   # `1 days` is the tell that nobody read the line back.
   one=$( cd "$tmp/stl" && FOUNDRY_HOME="$quiet" FOUNDRY_RUN="$strun" FOUNDRY_WHO="" \
-         FOUNDRY_STALE_DAYS=1 sh "$runner" settled 2>&1 )
+         FOUNDRY_QUIET_DAYS=1 sh "$runner" settled 2>&1 )
   has   "a bar of one day reads as one day" "$one" "for 1 day or more"
   lacks "and never as one days"             "$one" "1 days"
 
@@ -5867,6 +5867,15 @@ a_host_is_settled_when_no_run_holds_a_workspace() {
             sh "$runner" settled 2>&1 )
   lacks "a run whose workspace moved is not quiet" \
         "$(printf '%s' "$worked" | grep "$(basename "$strun")")" "nothing touched"
+
+  #
+  # **Nothing touched is not an empty pattern.** `grep -vxF -e ''` matches every line under `-x`,
+  # so a home where nobody is working would drop the whole list and print no word at all.
+  age_the_run 202601010000
+  alone=$( cd "$tmp/stl" && FOUNDRY_HOME="$quiet" FOUNDRY_RUN="$strun" FOUNDRY_WHO="" \
+           sh "$runner" settled 2>&1 )
+  has "a home where nothing was touched still names the quiet run" \
+      "$(printf '%s' "$alone" | grep "$(basename "$strun")")" "nothing touched"
 
   #
   # **The boundary, and nothing else held it.** A fixture months past the bar stays quiet whatever
@@ -5905,7 +5914,7 @@ a_host_is_settled_when_no_run_holds_a_workspace() {
   # Twenty digits is the fifth: it overflows to a number nobody asked for.
   for odd in 00 08 010 99999; do
     odd_said=$( cd "$tmp/stl" && FOUNDRY_HOME="$quiet" FOUNDRY_RUN="$strun" FOUNDRY_WHO="" \
-                FOUNDRY_STALE_DAYS="$odd" sh "$runner" settled 2>&1 )
+                FOUNDRY_QUIET_DAYS="$odd" sh "$runner" settled 2>&1 )
     has "a bar of $odd is refused"           "$odd_said" "is [$odd], which is not a count"
     has "and $odd falls back to the default" "$odd_said" "nothing touched for 2 days"
   done

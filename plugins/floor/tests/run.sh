@@ -3027,7 +3027,7 @@ wreck_runner "a run that moved just now named as quiet is caught" \
 
 # **The bar is the caller's.** Pin it in the script and a host that knows its own work is slow
 wreck_runner "a quiet bar nobody can set is caught" \
-  fixedbar 's#^    asked=${FOUNDRY_STALE_DAYS:-$STALE_QUIET_DAYS}#    asked=$STALE_QUIET_DAYS#'
+  fixedbar 's#^    asked=${FOUNDRY_QUIET_DAYS:-$QUIET_DAYS}#    asked=$QUIET_DAYS#'
 
 #
 # **The caller sets it, so it is checked.** Take the check away and `abc` reaches the arithmetic,
@@ -3075,6 +3075,12 @@ wreck_runner "a quiet set that takes anything named observations is caught" \
 # of one reader never looked one directory over; a second model asked what the line was for.
 wreck_runner "a worker at a keyboard reported as quiet is caught" \
   noworkspace 's@^    touched=$(anything_touched_since "$1")@    touched=@'
+
+#
+# **Nothing touched is not an empty pattern.** Take the guard away and `grep -vxF -e ""` matches
+# every line under `-x`, so a home nobody is working in drops its whole list and says nothing.
+wreck_runner "an empty touched set that swallows the list is caught" \
+  emptyset 's@^    [[] -n "$touched" []] [|][|] @    false || @'
 
 report_breaks
 

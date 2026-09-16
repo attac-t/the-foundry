@@ -334,16 +334,19 @@ last_moved() {
 # **The caller's, never the repository's.** `.foundry/gates` and `.foundry/judged` are files a
 # repository commits; this is an environment variable whoever runs the command can set. So it is
 # read as a preference, checked before use, and a bad one is said out loud rather than obeyed.
-STALE_QUIET_DAYS=2
+#
+# **`quiet`, and never `stale`.** A knob is public the day it ships and cannot be renamed after. The
+# word this line refused three times is a verdict, and three functions here already say `quiet`.
+QUIET_DAYS=2
 
 # What the caller asked for, or the default and a word about why.
 quiet_days() {
-    asked=${FOUNDRY_STALE_DAYS:-$STALE_QUIET_DAYS}
+    asked=${FOUNDRY_QUIET_DAYS:-$QUIET_DAYS}
 
     is_a_quiet_bar "$asked" && { printf '%s' "$asked"; return 0; }
 
-    note "FOUNDRY_STALE_DAYS is [$asked], which is not a count of days — using $STALE_QUIET_DAYS"
-    printf '%s' "$STALE_QUIET_DAYS"
+    note "FOUNDRY_QUIET_DAYS is [$asked], which is not a count of days — using $QUIET_DAYS"
+    printf '%s' "$QUIET_DAYS"
 }
 
 #
@@ -366,15 +369,13 @@ is_a_quiet_bar() {
 }
 
 #
-# Whether a run has said nothing for long enough to act on.
+# Every run nothing has touched for the bar.
 #
-# **`find`, never date arithmetic.** The question is asked of the filesystem, which POSIX defines a
-# verb for, and answered without parsing the stamp at all.
+# **`find`, never date arithmetic.** The question is asked of the filesystem, and answered without
+# parsing the stamp at all.
 #
 # **The filesystem is not the record.** A run restored from a copy carries a fresh time and reads as
 # working. The stamp beside this is the durable fact, and this is the reading a person acts on.
-#
-# Every run nothing has touched for the bar, in one call.
 #
 # **Two places, because a worker writes one and a run writes the other.** A gate, a judge or
 # `observe` appends to `observations`; a person coding appends to the workspace. **Reading only the
@@ -400,20 +401,38 @@ is_a_quiet_bar() {
 # **`-type f` because a directory of that name would enter the set**, and `2>/dev/null` because a
 # host with no `-mmin` must not spill its usage into the list. That host reports nothing quiet.
 #
-# **Cost: two `find` calls and one substitution a row.** Measured on Windows, a `find` is 30ms and a
-# substitution 18ms, against a `how_far` that refuses helpers over 19ms. The rows share the two
-# calls; only the 18ms is per run.
+# **Cost: two `find` calls and one substitution a row.** Measured on the live home, the two calls
+# are 431ms and 739ms, and a substitution is 18ms. The rows share the calls; only the 18ms is per
+# run, against a command that already spends thirty seconds.
 quiet_runs() {
+    untouched=$(find "$RUNS" -maxdepth 2 -type f -name observations \
+                    -mmin "+$(($1 * 1440 - 1))" 2>/dev/null | sed 's#/observations$##; s#.*/##')
     touched=$(anything_touched_since "$1")
 
-    find "$RUNS" -maxdepth 2 -type f -name observations -mmin "+$(($1 * 1440 - 1))" 2>/dev/null         | sed 's#/observations$##; s#.*/##'         | grep -vxF -e "$touched" 2>/dev/null
+    # **Nothing touched is not an empty pattern.** `grep -vxF -e ''` matches every line under
+    # `-x` on GNU, so passing it drops the whole list — silently, and the word never prints.
+    [ -n "$touched" ] || { printf '%s\n' "$untouched"; return 0; }
+
+    printf '%s\n' "$untouched" | grep -vxF -e "$touched"
 }
 
-# Every run whose workspace moved inside the bar. `-mmin -N` is *less than*, so this is the set a
-# person is working in, and the list above takes it away.
+#
+# Every run whose unit moved inside the bar. `-mmin -N` is *less than*, so this is the set
+# somebody is working in, and the list above takes it away.
+#
+# **Four levels, and that is a cost, not a depth somebody liked.** Measured on this home, 2,440
+# entries: depth four is 739ms, the whole tree is 13.2 seconds, and pruning `.git` makes it 33.8 —
+# the walk then enters every checkout instead.
+#
+# **The command already spends thirty seconds**, nearly all of it in `runs` over 144 of them, so
+# this adds three per cent and the deep walk would have added forty. #561 owns that thirty.
+#
+# So this sees the unit, the workspace and the slot: a workspace opened, a clone made, a file
+# added at the top of one. **It does not see an edit deep inside a checkout**, and a worker who
+# saves in place for two days without touching git is named quiet. A reader found that.
 anything_touched_since() {
-    find "$RUNS" -maxdepth 6 -mmin "-$(($1 * 1440))" 2>/dev/null \
-        | sed -n "s#^$RUNS/\([^/]*\)/units/.*#\1#p" | sort -u
+    find "$RUNS" -maxdepth 4 -mmin "-$(($1 * 1440))" 2>/dev/null \
+        | sed -n "s#^$RUNS/\([^/]*\)/units.*#\1#p" | sort -u
 }
 
 # One day or many. `1 days` is the tell that nobody read the line back.

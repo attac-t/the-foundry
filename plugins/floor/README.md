@@ -596,7 +596,7 @@ the spring and one working now printed the same line.
 | quiet under the bar | the stamp alone |
 | untouched at the bar or past it | **`nothing touched for N days or more`** |
 | what counts as touched | the workspace **or** `observations`. A gate, a judge, a delivery and `observe` write the second; **a person coding writes the first** |
-| `FOUNDRY_STALE_DAYS` | the bar, in days. Two by default |
+| `FOUNDRY_QUIET_DAYS` | the bar, in days. Two by default |
 
 **Three words were refused before this one, and each refusal moved the reading.** `stalled` claimed
 a state the filesystem cannot establish — a copy carries a fresh time. *Nothing written* dropped its
@@ -618,11 +618,17 @@ boundary: `+2879` takes 49 hours and leaves 47.
 keep the call portable, and the argument was contradicted on its own line. **The bar is GNU and
 BSD, and this page says so rather than claiming anywhere.**
 
-**Two `find` calls for the whole list, and one substitution a row.** Measured on Windows: a `find`
-costs 30ms and a substitution 18ms, against a `how_far` that refuses helpers over 19ms. The rows
-share the two calls.
+**Two `find` calls for the whole list, and one substitution a row.** Measured on the live home:
+431ms and 739ms, and a substitution is 18ms.
 
-**`FOUNDRY_STALE_DAYS` is the caller's, not the repository's.** `.foundry/gates` and
+**The second call stops at four levels, and that is a cost.** The whole tree is 13.2 seconds, and
+pruning `.git` makes it 33.8 — the walk then enters every checkout. So it sees a workspace opened,
+a clone made, a file added at the top of one. **It does not see an edit deep inside a checkout.**
+
+**`settled` already spends thirty seconds**, nearly all of it in `runs` over 144 of them. This adds
+three per cent, and the deep walk would have added forty. [#561](https://github.com/attac-t/the-foundry/issues/561) owns that thirty.
+
+**`FOUNDRY_QUIET_DAYS` is the caller's, not the repository's.** `.foundry/gates` and
 `.foundry/judged` are files a repository commits. This is an environment variable whoever types the
 command sets, so it is a preference — **checked before use, and a value that is not a count of days
 is named out loud and ignored.**
