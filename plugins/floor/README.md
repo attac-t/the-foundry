@@ -594,16 +594,17 @@ the spring and one working now printed the same line.
 | | |
 |---|---|
 | quiet under the bar | the stamp alone |
-| quiet at the bar or past it | **`observations not written for N days or more`** |
-| what writes that file | a gate, a judge, a delivery or `observe`. **Coding in a workspace does not**, and the list says so above the runs |
+| untouched at the bar or past it | **`nothing touched for N days or more`** |
+| what counts as touched | the workspace **or** `observations`. A gate, a judge, a delivery and `observe` write the second; **a person coding writes the first** |
 | `FOUNDRY_STALE_DAYS` | the bar, in days. Two by default |
 
-**The file is named, and that is the whole of the honesty here.** Two readers refused the words
-before this one. `stalled` claimed a state the filesystem cannot establish — a copy carries a fresh
-time. *Nothing written* dropped its subject: **opening a workspace writes no observation**, so a run
-being coded in right now, with no gate yet, read as silent.
+**Three words were refused before this one, and each refusal moved the reading.** `stalled` claimed
+a state the filesystem cannot establish — a copy carries a fresh time. *Nothing written* dropped its
+subject. *Observations not written* named the file and **still called a worker at a keyboard idle**,
+because coding writes the workspace and never that file.
 
-**It is one file, and the line says which.** Whether that means stranded is the reader's call.
+**So both are read.** By floor's own count, 101 of 109 runs hold nothing but `run.began` — so one
+file alone was wrong about most of them. Whether untouched means stranded is the reader's call.
 
 **The answer comes from `find -mmin`.** Turning an ISO stamp into an age needs `date -d` on GNU and
 `date -j -f` on BSD, so the question goes to the filesystem instead.
@@ -617,8 +618,9 @@ boundary: `+2879` takes 49 hours and leaves 47.
 keep the call portable, and the argument was contradicted on its own line. **The bar is GNU and
 BSD, and this page says so rather than claiming anywhere.**
 
-**One `find` for the whole list, never one per run.** Measured on Windows: a `find` costs 30ms and
-a command substitution 18ms, and `how_far` refuses helpers over 19ms each.
+**Two `find` calls for the whole list, and one substitution a row.** Measured on Windows: a `find`
+costs 30ms and a substitution 18ms, against a `how_far` that refuses helpers over 19ms. The rows
+share the two calls.
 
 **`FOUNDRY_STALE_DAYS` is the caller's, not the repository's.** `.foundry/gates` and
 `.foundry/judged` are files a repository commits. This is an environment variable whoever types the

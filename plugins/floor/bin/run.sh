@@ -304,7 +304,7 @@ settled() {
 ' '|')"
 
     note "these runs hold a workspace, so this host is not settled:"
-    note "  a gate, a judge, a delivery or \`observe\` writes a run's \`observations\` — coding does not"
+    note "  nothing touched means neither the workspace nor \`observations\` moved"
     printf '%s
 ' "$inflight" | while read -r underway; do
         note "  $underway  $(last_moved "$RUNS/$underway")$(said_about_silence "$underway" "$quiet" "$days")"
@@ -321,7 +321,7 @@ settled() {
 # which is exactly the pair a reader cannot tell apart.
 #
 # The stamp, and never an age. Turning an ISO time into one needs `date -d` on GNU and `date -j -f`
-# on BSD, and floor ships POSIX and `git`. `has_gone_quiet` asks the question a different way.
+# on BSD, and floor ships POSIX and `git`. `quiet_runs` asks the question a different way.
 last_moved() {
     when=$(tail -n 1 "$(observations_file "$1")" 2>/dev/null | cut -f1)
 
@@ -329,7 +329,7 @@ last_moved() {
 }
 
 #
-# How long a run may say nothing before the list says so. Days, because that is what a person asks.
+# How long a run may go untouched before the list says so. Days, because that is what a person asks.
 #
 # **The caller's, never the repository's.** `.foundry/gates` and `.foundry/judged` are files a
 # repository commits; this is an environment variable whoever runs the command can set. So it is
@@ -374,7 +374,15 @@ is_a_quiet_bar() {
 # **The filesystem is not the record.** A run restored from a copy carries a fresh time and reads as
 # working. The stamp beside this is the durable fact, and this is the reading a person acts on.
 #
-# Every run whose `observations` has not been written for the bar, in one call.
+# Every run nothing has touched for the bar, in one call.
+#
+# **Two places, because a worker writes one and a run writes the other.** A gate, a judge or
+# `observe` appends to `observations`; a person coding appends to the workspace. **Reading only the
+# first calls a worker at a keyboard idle** — 101 of 109 runs here hold nothing but `run.began`, so
+# that was most of them. A reader found it after four rounds of reading the other file.
+#
+# `-newermt` would ask this in one primary and is GNU only. Two `find` calls answer it anywhere the
+# other two primaries do.
 #
 # **One process for the whole list, never one per run.** Measured on Windows: a `find` costs 30ms
 # and a command substitution 18ms, and `how_far` already refuses helpers over 19ms each. Asking
@@ -390,10 +398,22 @@ is_a_quiet_bar() {
 # whole days, and it was contradicted seven characters later. A reader found it.
 #
 # **`-type f` because a directory of that name would enter the set**, and `2>/dev/null` because a
-# host with no `-mmin` must not spill its usage into the list. That host reports nothing quiet, and
-# a reader found that too.
+# host with no `-mmin` must not spill its usage into the list. That host reports nothing quiet.
+#
+# **Cost: two `find` calls and one substitution a row.** Measured on Windows, a `find` is 30ms and a
+# substitution 18ms, against a `how_far` that refuses helpers over 19ms. The rows share the two
+# calls; only the 18ms is per run.
 quiet_runs() {
-    find "$RUNS" -maxdepth 2 -type f -name observations -mmin "+$(($1 * 1440 - 1))" 2>/dev/null         | sed 's#/observations$##; s#.*/##'
+    touched=$(anything_touched_since "$1")
+
+    find "$RUNS" -maxdepth 2 -type f -name observations -mmin "+$(($1 * 1440 - 1))" 2>/dev/null         | sed 's#/observations$##; s#.*/##'         | grep -vxF -e "$touched" 2>/dev/null
+}
+
+# Every run whose workspace moved inside the bar. `-mmin -N` is *less than*, so this is the set a
+# person is working in, and the list above takes it away.
+anything_touched_since() {
+    find "$RUNS" -maxdepth 6 -mmin "-$(($1 * 1440))" 2>/dev/null \
+        | sed -n "s#^$RUNS/\([^/]*\)/units/.*#\1#p" | sort -u
 }
 
 # One day or many. `1 days` is the tell that nobody read the line back.
@@ -407,13 +427,13 @@ spelt_days() {
 # What a reader does about it, or nothing at all. A run that moved today gets no word, because a
 # column saying *working* on every line is a column nobody reads.
 #
-# **The file is named, and that is the whole of the honesty here.** Two readers refused the words
-# before this one. `stalled` claimed a state the filesystem cannot establish. *Nothing written*
-# dropped its subject — **opening a workspace writes no observation**, so a run being coded in
-# right now, with no gate yet, would have read as silent. It is one file, and the line says which.
+# **Three words were refused before this one**, and each refusal moved the reading rather than the
+# wording. `stalled` claimed a state the filesystem cannot establish. *Nothing written* dropped its
+# subject. *Observations not written* named the file and still called a worker at a keyboard idle,
+# **because coding writes the workspace and never that file.** This reads both.
 said_about_silence() {
     case "$2" in
-        *"|$1|"*) printf '  observations not written for %s or more' "$(spelt_days "$3")" ;;
+        *"|$1|"*) printf '  nothing touched for %s or more' "$(spelt_days "$3")" ;;
     esac
 }
 

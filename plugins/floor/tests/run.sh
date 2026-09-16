@@ -3069,6 +3069,13 @@ wreck_runner "a bar that fires an hour early is caught" \
 wreck_runner "a quiet set that takes anything named observations is caught" \
   anytype 's@ -type f -name observations@ -name observations@'
 
+#
+# **Coding writes the workspace and never `observations`.** Blind the second reading and a worker
+# at a keyboard is named quiet — which is the box this whole line exists for, missed. Four rounds
+# of one reader never looked one directory over; a second model asked what the line was for.
+wreck_runner "a worker at a keyboard reported as quiet is caught" \
+  noworkspace 's@^    touched=$(anything_touched_since "$1")@    touched=@'
+
 report_breaks
 
 # --- break the install ---
