@@ -621,9 +621,14 @@ BSD, and this page says so rather than claiming anywhere.**
 **Two `find` calls for the whole list, and one substitution a row.** Measured on the live home:
 431ms and 739ms, and a substitution is 18ms.
 
-**The second call stops at four levels, and that is a cost.** The whole tree is 13.2 seconds, and
-pruning `.git` makes it 33.8 — the walk then enters every checkout. So it sees a workspace opened,
-a clone made, a file added at the top of one. **It does not see an edit deep inside a checkout.**
+**The second call goes six levels, because that is where a commit lands.** A run holds
+`units/01/workspace/<slot>`, so the checkout is five deep and its `.git` is six. Measured on this
+home: **1.2 seconds warm, 13.2 cold**. Pruning `.git` is the wrong saving at 33.8, because the walk
+then enters every working tree.
+
+So it sees a workspace opened, a clone made, a file written at the top of one, and a commit. **It
+does not see an edit deeper than the slot** — a worker saving into a subdirectory for two days,
+with no commit and no gate, is still named quiet.
 
 **`settled` already spends thirty seconds**, nearly all of it in `runs` over 144 of them. This adds
 three per cent, and the deep walk would have added forty. [#561](https://github.com/attac-t/the-foundry/issues/561) owns that thirty.

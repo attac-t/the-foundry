@@ -420,18 +420,22 @@ quiet_runs() {
 # Every run whose unit moved inside the bar. `-mmin -N` is *less than*, so this is the set
 # somebody is working in, and the list above takes it away.
 #
-# **Four levels, and that is a cost, not a depth somebody liked.** Measured on this home, 2,440
-# entries: depth four is 739ms, the whole tree is 13.2 seconds, and pruning `.git` makes it 33.8 —
-# the walk then enters every checkout instead.
+# **Six levels, because that is where a commit lands.** A run holds `units/01/workspace/<slot>`,
+# so the checkout is five deep and its `.git` is six. **Stopping at four sees a workspace opened
+# and nothing a worker does inside one** — not an edit, not a commit.
 #
-# **The command already spends thirty seconds**, nearly all of it in `runs` over 144 of them, so
-# this adds three per cent and the deep walk would have added forty. #561 owns that thirty.
+# Measured on this home, 2,440 entries: 1.2 seconds warm and 13.2 cold, against a command that
+# already spends thirty in `runs` over 144 runs. **The cold number is the one to plan for**, and
+# the first measurement here was warm and read like the whole answer.
 #
-# So this sees the unit, the workspace and the slot: a workspace opened, a clone made, a file
-# added at the top of one. **It does not see an edit deep inside a checkout**, and a worker who
-# saves in place for two days without touching git is named quiet. A reader found that.
+# Pruning `.git` is the wrong saving: it takes 33.8 seconds, because the walk then enters every
+# working tree instead of stopping at the directory that moves when git writes.
+#
+# So this sees a workspace opened, a clone made, a file written at the top of one, and a commit.
+# **It does not see an edit deeper than the slot** — a worker saving into `src/` for two days
+# with no commit and no gate is still named quiet. #561 owns the thirty seconds.
 anything_touched_since() {
-    find "$RUNS" -maxdepth 4 -mmin "-$(($1 * 1440))" 2>/dev/null \
+    find "$RUNS" -maxdepth 6 -mmin "-$(($1 * 1440))" 2>/dev/null \
         | sed -n "s#^$RUNS/\([^/]*\)/units.*#\1#p" | sort -u
 }
 
