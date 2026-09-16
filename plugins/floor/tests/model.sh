@@ -4298,6 +4298,40 @@ a_receipt_is_read_and_not_believed() {
       "$(floor_says "$tmp/rcpt" evidence receipt "$tmp/rcpt.nobrief")" "carries no [brief]"
 
   #
+  # **The file the runner leaves when a round is killed.** Every key an answer carries is gone and
+  # the context stays — which is not a receipt missing a line, and 21 rather than 37 says so.
+  #
+  # Four rounds ended this way on 14 September. The required-field reader named `adapter`, so each
+  # one read as an install to fix rather than a judge that was asked and never spoke.
+  grep -vE '^(adapter|verdict|report|time) ' "$base" > "$tmp/rcpt.unanswered"
+  is  "a receipt nothing answered on is refused" \
+      "$(code_of floor "$tmp/rcpt" evidence receipt "$tmp/rcpt.unanswered")" "21"
+  has "and it says the round did not happen" \
+      "$(floor_says "$tmp/rcpt" evidence receipt "$tmp/rcpt.unanswered")" "the round did not happen"
+
+  #
+  # One of the four, and the guard above must not take it. A judge that spoke and left a line out
+  # is a malformed answer; only the whole set absent means nothing answered.
+  grep -vE '^(adapter|report|time) ' "$base" > "$tmp/rcpt.verdictonly"
+  is  "a receipt carrying a verdict and nothing else is malformed, not unanswered" \
+      "$(code_of floor "$tmp/rcpt" evidence receipt "$tmp/rcpt.verdictonly")" "37"
+  has "and it names the field it wanted" \
+      "$(floor_says "$tmp/rcpt" evidence receipt "$tmp/rcpt.verdictonly")" "carries no [adapter]"
+
+  #
+  # **The round the box is about, and the third of three answers.** The adapter ran and the judge
+  # named no verdict, so every key the adapter writes is there and that one is not.
+  #
+  # 37 naming `verdict`, because something did answer. A round nothing answered on is 21 above,
+  # and a harness that could not be reached says `unavailable` and is recorded. Three states,
+  # three sentences.
+  grep -v '^verdict ' "$base" > "$tmp/rcpt.noverdict"
+  is  "a judge that named no verdict is refused" \
+      "$(code_of floor "$tmp/rcpt" evidence receipt "$tmp/rcpt.noverdict")" "37"
+  has "and it names the verdict, not the round" \
+      "$(floor_says "$tmp/rcpt" evidence receipt "$tmp/rcpt.noverdict")" "carries no [verdict]"
+
+  #
   # A field standing on one that is not there. Each of these reads as checked and rests on nothing.
   grep -v '^context ' "$base" > "$tmp/rcpt.nocontext"
   is  "freshness about a context nobody named is refused" \
@@ -4441,6 +4475,20 @@ a_receipt_is_read_and_not_believed() {
         "$(code_of floor "$tmp/rcpt" evidence receipt "$tmp/rcpt.nomodel")" "0"
   lacks "and nothing is written in its place" \
         "$(floor "$tmp/rcpt" evidence | tail -1)" "self_reported_model="
+
+  #
+  # **What the round spent, carried into the record beside the verdict.** #737: one judge ran 169
+  # commands and the other ran none, and no receipt said either number.
+  #
+  # The adapters write this line and floor had no reading for it, so every receipt either of them
+  # wrote refused at the grammar. The key and the writers are one change or neither works.
+  { cat "$base"; printf 'commands 163
+'; } > "$tmp/rcpt.spent"
+
+  is  "a receipt saying what the round spent is taken" \
+      "$(code_of floor "$tmp/rcpt" evidence receipt "$tmp/rcpt.spent")" "0"
+  has "and the record keeps the count" \
+      "$(floor "$tmp/rcpt" evidence | tail -1)" "commands=163"
 
   #
   # **A producer with no thread handle to name**, which is the case `context` was made optional for.

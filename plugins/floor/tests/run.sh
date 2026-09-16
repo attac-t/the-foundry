@@ -2703,6 +2703,34 @@ wreck_runner "a receipt missing a field it must carry is caught" \
   nofield 's#^refuse_a_field_that_is_not_there() {#refuse_a_field_that_is_not_there() { return 0;#'
 
 #
+# The context the runner wrote, with nothing appended. **Three breaks, and the first two answer
+# different questions.**
+#
+# Blind the guard and the required-field reader answers in its place — 37, naming `adapter`, for a
+# judge that was asked and killed. That is the sentence four rounds got on 14 September.
+wreck_runner "a round that answered nothing, reported as a missing field, is caught" \
+  noanswer 's#^    refuse_a_receipt_nothing_answered #    : #'
+
+# **Order is the whole of it.** Both guards are there and the field reader speaks first, so the
+# receipt is still refused and the reader is still sent after an install.
+wreck_runner "a round that answered nothing, asked about second, is caught" \
+  answerlate 's#^    refuse_a_receipt_nothing_answered #    : #; s#^    refuse_a_field_that_is_not_there \(.*\)#    refuse_a_field_that_is_not_there \1; refuse_a_receipt_nothing_answered \1#'
+
+# **One of the four is not the four.** A judge that spoke and left the adapter line out answered
+# badly; narrow the set to that one key and its receipt is reported as a round that never happened.
+wreck_runner "a malformed answer reported as a round that never happened is caught"   oneanswer "s#^RECEIPT_ANSWERED='adapter verdict report time'#RECEIPT_ANSWERED='adapter'#"
+
+# **And the other way.** Narrow the set to `verdict` and a judge that answered without naming one is
+# reported as a round that never ran — the sentence points at the round instead of the missing word.
+wreck_runner "a judge that named no verdict reported as a round that never ran is caught"   verdictset "s#^RECEIPT_ANSWERED='adapter verdict report time'#RECEIPT_ANSWERED='verdict'#"
+
+#
+# What the round spent. **The adapters write this line, so a key floor has no reading for refuses
+# every receipt either of them produces** — the grammar is closed and this is what closes on it.
+wreck_runner "a cost the adapters report and floor cannot read is caught" \
+  nocommands 's#^              context fresh commands$#              context fresh#'
+
+#
 # Three fields that stand on one which is not there. Each break lets a claim through that reads as
 # checked and rests on nothing.
 #

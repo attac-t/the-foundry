@@ -1041,7 +1041,7 @@ time       2026-09-04T11:02:00Z
 | Required | Vouched for, or absent |
 |---|---|
 | `run` `clause` `candidate` `role` `adapter` | `context` `fresh` `prior` |
-| `brief` `verdict` `report` `round` `time` | `adapter_pin` `adapter_digest` |
+| `brief` `verdict` `report` `round` `time` | `adapter_pin` `adapter_digest` `commands` |
 | | `requested_model` `self_reported_model` |
 | | `requested_provider` `self_reported_provider` |
 | | `requested_effort` `self_reported_effort` |
@@ -1069,6 +1069,15 @@ fact to every reader and every script, and the caveat beside it gets skipped.**
 whether that thread was new.
 
 **A missing field is the honest answer.** Nothing is defaulted and nothing is written `unknown`.
+
+**`commands` is a key because it is counted.** The harness writes a stream and the adapter counts the
+command lines in it, so the number is a reading of a record rather than something a judge said about
+itself — which is the whole difference between this key and `model`. Optional for `context`'s reason:
+a reach with no stream has nothing to count, and a zero invented there would read like one somebody
+took.
+
+One round on 14 September ran **169** commands through one judge and **0** through the other, and no
+receipt said either number. The asymmetry showed when the machine fell over.
 
 **`context` and `fresh` are optional, and that is a decision.** A fresh thread hands back a new
 handle and a resumed one hands back the same. So a producer with threads can attest both. One with
@@ -1176,6 +1185,7 @@ this run introduced has nothing to compare against. #341 owns the rest of that s
 |---|---|
 | there is none, or it holds nothing | 37 |
 | a key with no reading, said twice, or claiming nothing | 37 |
+| **every field an answer carries is absent** — the runner's context, and nothing appended | **21** |
 | a required field absent | 37 |
 | `fresh` naming no context, or answering neither `yes` nor `no` | 37 |
 | a round that is not a count, or a later round naming no prior | 37 |
@@ -1187,6 +1197,11 @@ this run introduced has nothing to compare against. #341 owns the rest of that s
 | the candidate is not where the work is | 35 |
 | nothing handed that judge the bar | 36 |
 | the role is this run's own worker, is nobody the charter asked, or the clause is not `Judged` | 2 |
+
+**21 is the round that did not happen.** The runner writes the context before the judge is asked, so
+a killed round leaves a file that exists and proves nothing. The required-field reader would name
+`adapter` and send a reader after an install. **Nothing answered is a different fact from an answer
+missing a line**, and it takes the code a judge that never ran already has.
 
 **`verdict` may also say `deadlock` or `unavailable`.** Neither is a judgement. They record an
 exhausted review budget, or a harness nobody could reach. Both stop the delivery, and **completion
