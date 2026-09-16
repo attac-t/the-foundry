@@ -595,7 +595,7 @@ the spring and one working now printed the same line.
 |---|---|
 | quiet under the bar | the stamp alone |
 | untouched at the bar or past it | **`nothing touched for N days or more`** |
-| what it reads | `observations`, the top of the workspace, and `.git`. **A `git status` counts**, because that writes `index.lock` |
+| what it reads | `observations`, and the workspace down to the checkout's top. **A `git status` counts**, because that writes `index.lock` |
 | `FOUNDRY_QUIET_DAYS` | the bar, in days. Two by default |
 
 **Three words were refused before this one, and each refusal moved the reading.** `stalled` claimed
@@ -626,9 +626,9 @@ BSD, and this page says so rather than claiming anywhere.**
 home: **1.2 seconds warm, 13.2 cold**. Pruning `.git` is the wrong saving at 33.8, because the walk
 then enters every working tree.
 
-So it sees a workspace opened, a clone made, a file written at the top of one, and a commit. **It
-does not see an edit deeper than the slot** — a worker saving into a subdirectory for two days,
-with no commit and no gate, is still named quiet.
+So it sees a workspace opened, a clone made, a file written at the checkout's top, and a commit.
+**It does not see an edit below that** — a worker saving into a subdirectory for two days, with no
+commit and no gate, is still named quiet.
 
 **`settled` already spends thirty seconds**, nearly all of it in `runs` over 144 of them. This adds
 three per cent, and the deep walk would have added forty. [#561](https://github.com/attac-t/the-foundry/issues/561) owns that thirty.

@@ -304,7 +304,7 @@ settled() {
 ' '|')"
 
     note "these runs hold a workspace, so this host is not settled:"
-    note "  read: a run's \`observations\`, the top of its workspace, and \`.git\` — never inside a checkout"
+    note "  read: a run's \`observations\` and its workspace down to the checkout's top — no deeper"
     printf '%s
 ' "$inflight" | while read -r underway; do
         note "  $underway  $(last_moved "$RUNS/$underway")$(said_about_silence "$underway" "$quiet" "$days")"
@@ -353,7 +353,7 @@ quiet_days() {
 # A plain decimal above zero, short enough to survive arithmetic.
 #
 # **`is_a_count` is not enough here, and a reader found out why.** It takes `00`, `08` and `010`,
-# and each breaks differently: `00` yields `-1`, `08` is not a number in base 8, and `010` is seven.
+# and each breaks differently: `00` yields `-1`, `08` is not a number in base 8, and `010` is eight.
 # A twenty-digit string overflows to something unrelated. So a leading zero is refused outright.
 #
 # **And a bad bar is worse than a silent one.** `find -mtime +-1` does not fail — measured, it
@@ -385,9 +385,8 @@ is_a_quiet_bar() {
 # `-newermt` would ask this in one primary and is GNU only. Two `find` calls answer it anywhere the
 # other two primaries do.
 #
-# **One process for the whole list, never one per run.** Measured on Windows: a `find` costs 30ms
-# and a command substitution 18ms, and `how_far` already refuses helpers over 19ms each. Asking
-# per run put 48ms on every row; asking once puts 30ms on the command.
+# **One process for the whole list, never one per run.** Asking per run put a `find` on every row;
+# asking once puts it on the command. The numbers are below, measured where each call is written.
 #
 # **Minutes, and not days.** Both count whole units and round the leftover, and the hosts disagree
 # on which way: GNU and POSIX discard it, and FreeBSD and macOS round it up. **The unit is the whole
@@ -431,7 +430,7 @@ quiet_runs() {
 # Pruning `.git` is the wrong saving: it takes 33.8 seconds, because the walk then enters every
 # working tree instead of stopping at the directory that moves when git writes.
 #
-# So this sees a workspace opened, a clone made, a file written at the top of one, and a commit —
+# So this sees a workspace opened, a clone made, a file written at the checkout's top, and a commit —
 # **and a `git status`, which writes `index.lock`.** A glance counts as work, and that is the safe
 # way round: naming a live run quiet is the fault, and naming a quiet one live is a wasted look.
 #

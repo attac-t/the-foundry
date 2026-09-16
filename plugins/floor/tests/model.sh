@@ -5856,7 +5856,7 @@ a_host_is_settled_when_no_run_holds_a_workspace() {
 
   # **The line names a file, and a reader has to know what writes it.** Said once, above the list,
   # because the boundary belongs where the person looking at the output is.
-  has "the list says what it read" "$said" "never inside a checkout"
+  has "the list says what it read" "$said" "down to the checkout's top"
 
   #
   # **Coding writes the workspace and never `observations`.** Four rounds of one reader judged the
