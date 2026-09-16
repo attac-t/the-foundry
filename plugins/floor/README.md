@@ -79,7 +79,7 @@ here. It refuses that now and says so, but the full path is what a reader needs 
 One line lands in `.foundry/judged`:
 
 ```
-reach  codex:adversary  @adapter codex a758b76d7ec5383720966deb4189541f0628ac88
+reach  codex:adversary  @adapter codex ad39b8d163d8589fba3797d62eca45ac6e2c55f8
 ```
 
 The last field is `git hash-object --no-filters` of the adapter this plugin ships. **Nothing is
@@ -99,7 +99,7 @@ sh bin/adopt.sh upgrade
 
 ```
   moved  codex:adversary
-         was a758b76d7ec5383720966deb4189541f0628ac88
+         was ad39b8d163d8589fba3797d62eca45ac6e2c55f8
          now 3c0d9f1b6a2e47d85f19c0b3e7a4d61c82f5039e
 moved 1 pin(s) in /repo/.foundry/judged. Nothing is staged and nothing is committed.
 ```
