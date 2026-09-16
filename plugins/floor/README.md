@@ -595,6 +595,7 @@ the spring and one working now printed the same line.
 |---|---|
 | quiet under the bar | the stamp alone |
 | quiet at the bar or past it | **`observations not written for N days or more`** |
+| what writes that file | a gate, a judge, a delivery or `observe`. **Coding in a workspace does not**, and the list says so above the runs |
 | `FOUNDRY_STALE_DAYS` | the bar, in days. Two by default |
 
 **The file is named, and that is the whole of the honesty here.** Two readers refused the words
@@ -604,16 +605,17 @@ being coded in right now, with no gate yet, read as silent.
 
 **It is one file, and the line says which.** Whether that means stranded is the reader's call.
 
-**Days, and the answer comes from `find -mtime`.** Turning an ISO stamp into an age needs `date -d`
-on GNU and `date -j -f` on BSD; POSIX defines `-mtime`, so the question goes to the filesystem
-instead and is answered anywhere.
+**The answer comes from `find -mmin`.** Turning an ISO stamp into an age needs `date -d` on GNU and
+`date -j -f` on BSD, so the question goes to the filesystem instead.
 
-**`+N` is more than N whole days on POSIX and GNU.** Both discard the remainder, so a bar of two
-days asks for `+1`, and `+1` is 48 hours or more. Measured there: 30 hours matched `+0` and not
-`+1`.
+**Minutes, and not whole days.** `-mtime` counts days and the hosts round the remainder
+differently: GNU and POSIX discard it, and a reader reports that FreeBSD and macOS round up — so a
+two-day bar would fire there after one. **`-mmin` has no remainder to round.** Measured at the
+boundary: `+2879` takes 49 hours and leaves 47.
 
-**BSD is untested here.** A reader reports that FreeBSD and macOS round the interval up instead,
-which would fire a two-day bar a day early. The measurement above was taken on GNU only.
+**Neither `-mmin` nor `-maxdepth` is POSIX**, and this call needs both. Whole days were chosen to
+keep the call portable, and the argument was contradicted on its own line. **The bar is GNU and
+BSD, and this page says so rather than claiming anywhere.**
 
 **One `find` for the whole list, never one per run.** Measured on Windows: a `find` costs 30ms and
 a command substitution 18ms, and `how_far` refuses helpers over 19ms each.

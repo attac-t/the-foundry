@@ -3045,6 +3045,18 @@ wreck_runner "a quiet bar nothing checks is caught" \
 wreck_runner "a quiet bar with a leading zero is caught" \
   loosebar 's#|0[*]) return 1 ;;#|0) return 1 ;;#'
 
+#
+# **One day or many.** `1 days` is the tell that nobody read the line back, and a report a reader
+# stops trusting is a report nobody acts on.
+wreck_runner "a count that cannot say one day is caught" \
+  onedays 's@^    [[] "$1" = 1 []] && { printf .1 day.; return 0; }@    :@'
+
+#
+# **The line names a file and the reader has to know what writes it.** Take the sentence away and
+# the output says `observations` with nothing saying that coding in a workspace does not touch it.
+wreck_runner "a file named with nothing saying what writes it is caught" \
+  nowriters 's@^    note "  a gate, a judge@    : "  a gate, a judge@'
+
 report_breaks
 
 # --- break the install ---

@@ -304,6 +304,7 @@ settled() {
 ' '|')"
 
     note "these runs hold a workspace, so this host is not settled:"
+    note "  a gate, a judge, a delivery or \`observe\` writes that file — coding in one does not"
     printf '%s
 ' "$inflight" | while read -r underway; do
         note "  $underway  $(last_moved "$RUNS/$underway")$(said_about_silence "$underway" "$quiet" "$days")"
@@ -328,8 +329,7 @@ last_moved() {
 }
 
 #
-# How long a run may say nothing before the list says so. **Days, because `find` counts
-# them** — `-mmin` is GNU and BSD, and this has to answer the same on every host.
+# How long a run may say nothing before the list says so. Days, because that is what a person asks.
 #
 # **The caller's, never the repository's.** `.foundry/gates` and `.foundry/judged` are files a
 # repository commits; this is an environment variable whoever runs the command can set. So it is
@@ -380,11 +380,22 @@ is_a_quiet_bar() {
 # and a command substitution 18ms, and `how_far` already refuses helpers over 19ms each. Asking
 # per run put 48ms on every row; asking once puts 30ms on the command.
 #
-# **`+N` is *more than* N whole days on POSIX and GNU** — the remainder is discarded. Measured
-# there, 30 hours matches `+0` and not `+1`. **BSD is untested here**, and a reader reports that
-# FreeBSD and macOS round the interval up instead, which would fire a two-day bar a day early.
+# **Minutes, and not days.** `-mtime` counts whole days and the hosts round the remainder
+# differently — GNU and POSIX discard it, and a reader reports that FreeBSD and macOS round up, so
+# a two-day bar would fire there after one. **`-mmin` has no remainder to round.** Measured at the
+# boundary: `+2879` takes 49 hours and leaves 47.
+#
+# **`-mmin` is not POSIX, and neither is `-maxdepth` on the same line.** That was the argument for
+# whole days, and it was contradicted seven characters later. A reader found it.
 quiet_runs() {
-    find "$RUNS" -maxdepth 2 -name observations -mtime "+$(($1 - 1))" 2>/dev/null         | sed 's#/observations$##; s#.*/##'
+    find "$RUNS" -maxdepth 2 -name observations -mmin "+$(($1 * 1440 - 1))" 2>/dev/null         | sed 's#/observations$##; s#.*/##'
+}
+
+# One day or many. `1 days` is the tell that nobody read the line back.
+spelt_days() {
+    [ "$1" = 1 ] && { printf '1 day'; return 0; }
+
+    printf '%s days' "$1"
 }
 
 #
@@ -397,7 +408,7 @@ quiet_runs() {
 # right now, with no gate yet, would have read as silent. It is one file, and the line says which.
 said_about_silence() {
     case "$2" in
-        *"|$1|"*) printf '  observations not written for %s days or more' "$3" ;;
+        *"|$1|"*) printf '  observations not written for %s or more' "$(spelt_days "$3")" ;;
     esac
 }
 

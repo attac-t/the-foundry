@@ -5834,7 +5834,7 @@ a_host_is_settled_when_no_run_holds_a_workspace() {
   has "and the default is used instead"      "$typo" "observations not written for 2 days"
 
   # Zero and below are not counts of days either. **A bad bar is worse than a silent one:** measured,
-  # `find -mtime +-1` does not fail — it matches a file made seconds ago, so every run reads quiet.
+  # `find -mmin +-1` does not fail — it matches a file made seconds ago, so every run reads quiet.
   nought=$( cd "$tmp/stl" && FOUNDRY_HOME="$quiet" FOUNDRY_RUN="$strun" FOUNDRY_WHO="" \
         FOUNDRY_STALE_DAYS=0 sh "$runner" settled 2>&1 )
   has "a bar of zero is named too"           "$nought" "is [0], which is not a count"
@@ -5842,6 +5842,16 @@ a_host_is_settled_when_no_run_holds_a_workspace() {
         FOUNDRY_STALE_DAYS=-3 sh "$runner" settled 2>&1 )
   has "and so is one below zero"             "$below" "is [-3], which is not a count"
   has "and the run is still named quiet"     "$below" "observations not written for"
+
+  # `1 days` is the tell that nobody read the line back.
+  one=$( cd "$tmp/stl" && FOUNDRY_HOME="$quiet" FOUNDRY_RUN="$strun" FOUNDRY_WHO="" \
+         FOUNDRY_STALE_DAYS=1 sh "$runner" settled 2>&1 )
+  has   "a bar of one day reads as one day" "$one" "for 1 day or more"
+  lacks "and never as one days"             "$one" "1 days"
+
+  # **The line names a file, and a reader has to know what writes it.** Said once, above the list,
+  # because the boundary belongs where the person looking at the output is.
+  has "the list says what writes that file" "$said" "coding in one does not"
 
   # **A leading zero is four faults wearing one shape**, and `is_a_count` takes all of them.
   # Twenty digits is the fifth: it overflows to a number nobody asked for.
