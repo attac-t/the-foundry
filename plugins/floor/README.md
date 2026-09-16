@@ -618,13 +618,13 @@ boundary: `+2879` takes 49 hours and leaves 47.
 keep the call portable, and the argument was contradicted on its own line. **The bar is GNU and
 BSD, and this page says so rather than claiming anywhere.**
 
-**Two `find` calls for the whole list, and one substitution a row.** Measured on the live home:
+**Two `find` calls for the whole list, one substitution a row, and a second on a quiet one.** Measured on the live home:
 431ms for the first, and a substitution is 18ms.
 
 **The second call goes six levels, because that is where a commit lands.** A run holds
 `units/01/workspace/<slot>`, so the checkout is five deep and its `.git` is six. Measured on this
-home: **1.2 seconds warm, 13.2 cold**. Pruning `.git` is the wrong saving at 33.8, because the walk
-then enters every working tree.
+home: **1.2 seconds warm, 13.2 cold**. Pruning `.git` measured 33.8, on a walk that carried no depth
+at all — so that number is an unbounded walk's, not a prune's.
 
 So it sees a workspace opened, a clone made, a file written at the checkout's top, and a commit.
 **It does not see an edit below that** — a worker saving into a subdirectory for two days, with no

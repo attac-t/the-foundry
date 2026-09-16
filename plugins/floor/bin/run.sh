@@ -382,8 +382,8 @@ is_a_quiet_bar() {
 # first calls a worker at a keyboard idle** — 101 of 109 runs here hold nothing but `run.began`, so
 # that was most of them. A reader found it after four rounds of reading the other file.
 #
-# `-newermt` would ask this in one primary and is GNU only. Two `find` calls answer it anywhere the
-# other two primaries do.
+# `-newermt` would ask this in one primary and is not POSIX — it ships on GNU and the BSDs, and
+# on no more than the two primaries below. Two `find` calls answer it wherever those do.
 #
 # **One process for the whole list, never one per run.** Asking per run put a `find` on every row;
 # asking once puts it on the command. The numbers are below, measured where each call is written.
@@ -400,7 +400,7 @@ is_a_quiet_bar() {
 # **`-type f` because a directory of that name would enter the set**, and `2>/dev/null` because a
 # host with no `-mmin` must not spill its usage into the list. That host reports nothing quiet.
 #
-# **Cost: two `find` calls and one substitution a row.** This call is 431ms on the live home; the
+# **Cost: two `find` calls, one substitution a row, and a second on a quiet one.** This call is 431ms on the live home; the
 # second one is measured where it is written. A substitution is 18ms, and only that is per run —
 # against a command already spending thirty seconds.
 quiet_runs() {
@@ -427,8 +427,9 @@ quiet_runs() {
 # already spends thirty in `runs` over 144 runs. **The cold number is the one to plan for**, and
 # the first measurement here was warm and read like the whole answer.
 #
-# Pruning `.git` is the wrong saving: it takes 33.8 seconds, because the walk then enters every
-# working tree instead of stopping at the directory that moves when git writes.
+# Pruning `.git` measured 33.8 seconds, and that walk carried no depth at all — so the number says
+# what an unbounded walk costs and **not** what pruning costs. Untangling the two was never worth a
+# measurement, because the depth is what this needed and the depth is cheap.
 #
 # So this sees a workspace opened, a clone made, a file written at the checkout's top, and a commit —
 # **and a `git status`, which writes `index.lock`.** A glance counts as work, and that is the safe
