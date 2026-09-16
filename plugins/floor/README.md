@@ -594,20 +594,29 @@ the spring and one working now printed the same line.
 | | |
 |---|---|
 | quiet under the bar | the stamp alone |
-| quiet at the bar or past it | **`nothing written for N days or more`** |
+| quiet at the bar or past it | **`observations not written for N days or more`** |
 | `FOUNDRY_STALE_DAYS` | the bar, in days. Two by default |
 
-**The fact, and never the verdict.** `stalled` was the first word here and a reader refused it: a
-copied run carries a fresh time, and a live one writing nothing ages past any bar. What floor knows
-is that the file has not been written. **Whether that means stranded is the reader's call.**
+**The file is named, and that is the whole of the honesty here.** Two readers refused the words
+before this one. `stalled` claimed a state the filesystem cannot establish — a copy carries a fresh
+time. *Nothing written* dropped its subject: **opening a workspace writes no observation**, so a run
+being coded in right now, with no gate yet, read as silent.
+
+**It is one file, and the line says which.** Whether that means stranded is the reader's call.
 
 **Days, and the answer comes from `find -mtime`.** Turning an ISO stamp into an age needs `date -d`
 on GNU and `date -j -f` on BSD; POSIX defines `-mtime`, so the question goes to the filesystem
 instead and is answered anywhere.
 
-**`+N` is more than N whole days.** POSIX discards the remainder and GNU ignores the fractional
-part, which are one rule said twice. So a bar of two days asks for `+1`, and `+1` is 48 hours or
-more. Measured: 30 hours matched `+0` and not `+1`.
+**`+N` is more than N whole days on POSIX and GNU.** Both discard the remainder, so a bar of two
+days asks for `+1`, and `+1` is 48 hours or more. Measured there: 30 hours matched `+0` and not
+`+1`.
+
+**BSD is untested here.** A reader reports that FreeBSD and macOS round the interval up instead,
+which would fire a two-day bar a day early. The measurement above was taken on GNU only.
+
+**One `find` for the whole list, never one per run.** Measured on Windows: a `find` costs 30ms and
+a command substitution 18ms, and `how_far` refuses helpers over 19ms each.
 
 **`FOUNDRY_STALE_DAYS` is the caller's, not the repository's.** `.foundry/gates` and
 `.foundry/judged` are files a repository commits. This is an environment variable whoever types the

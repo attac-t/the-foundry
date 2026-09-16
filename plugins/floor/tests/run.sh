@@ -3021,9 +3021,9 @@ wreck_runner "a run quiet for months reported as working is caught" \
   nostalled 's#^said_about_silence() {#said_about_silence() { return 0;#'
 
 # The other way. Say it of every run and the word means nothing, because a column reading
-# *nothing written* on every line is a column nobody looks at twice.
+# *observations not written* on every line is a column nobody looks at twice.
 wreck_runner "a run that moved just now named as quiet is caught" \
-  allstalled 's#^    has_gone_quiet "$1" "$2" || return 0#    :#'
+  allstalled 's@^        [*]"[|]$1[|]"[*]) printf@        *) printf@'
 
 # **The bar is the caller's.** Pin it in the script and a host that knows its own work is slow
 wreck_runner "a quiet bar nobody can set is caught" \

@@ -297,14 +297,16 @@ settled() {
     inflight=$(runs_in_flight)
     [ -n "$inflight" ] || { note "nothing is in flight"; return 0; }
 
-    # Asked once, before the loop. Inside it the note would repeat per run, and a bad value is one
-    # fact about the caller rather than one about each run.
+    # Both asked once, before the loop. A bad bar is one fact about the caller rather than one about
+    # each run, and the quiet set is one `find` rather than one per row.
     days=$(quiet_days)
+    quiet="|$(quiet_runs "$days" | tr '
+' '|')"
 
     note "these runs hold a workspace, so this host is not settled:"
     printf '%s
 ' "$inflight" | while read -r underway; do
-        note "  $underway  $(last_moved "$RUNS/$underway")$(said_about_silence "$RUNS/$underway" "$days")"
+        note "  $underway  $(last_moved "$RUNS/$underway")$(said_about_silence "$underway" "$quiet" "$days")"
     done
 
     return 29
@@ -372,25 +374,31 @@ is_a_quiet_bar() {
 # **The filesystem is not the record.** A run restored from a copy carries a fresh time and reads as
 # working. The stamp beside this is the durable fact, and this is the reading a person acts on.
 #
-# **`+N` is *more than* N whole days**, and the fraction is thrown away — POSIX discards the
-# remainder and GNU ignores the fractional part, which are the same rule said twice. So `+1` is
-# 48 hours or more, and a bar of two days asks for `+1`.
-has_gone_quiet() {
-    [ -n "$(find "$(observations_file "$1")" -mtime "+$(($2 - 1))" 2>/dev/null)" ]
+# Every run whose `observations` has not been written for the bar, in one call.
+#
+# **One process for the whole list, never one per run.** Measured on Windows: a `find` costs 30ms
+# and a command substitution 18ms, and `how_far` already refuses helpers over 19ms each. Asking
+# per run put 48ms on every row; asking once puts 30ms on the command.
+#
+# **`+N` is *more than* N whole days on POSIX and GNU** — the remainder is discarded. Measured
+# there, 30 hours matches `+0` and not `+1`. **BSD is untested here**, and a reader reports that
+# FreeBSD and macOS round the interval up instead, which would fire a two-day bar a day early.
+quiet_runs() {
+    find "$RUNS" -maxdepth 2 -name observations -mtime "+$(($1 - 1))" 2>/dev/null         | sed 's#/observations$##; s#.*/##'
 }
 
 #
 # What a reader does about it, or nothing at all. A run that moved today gets no word, because a
 # column saying *working* on every line is a column nobody reads.
 #
-# **The fact, and never the verdict.** `stalled` was the first word here and a reader refused it:
-# a copied run carries a fresh time, and a live one writing nothing ages past any bar. What this
-# knows is that the file has not been written. **Whether that means stranded is the reader's call**,
-# and the stamp beside it is what they judge on.
+# **The file is named, and that is the whole of the honesty here.** Two readers refused the words
+# before this one. `stalled` claimed a state the filesystem cannot establish. *Nothing written*
+# dropped its subject — **opening a workspace writes no observation**, so a run being coded in
+# right now, with no gate yet, would have read as silent. It is one file, and the line says which.
 said_about_silence() {
-    has_gone_quiet "$1" "$2" || return 0
-
-    printf '  nothing written for %s days or more' "$2"
+    case "$2" in
+        *"|$1|"*) printf '  observations not written for %s days or more' "$3" ;;
+    esac
 }
 
 # A workspace is the part a worker writes to. A run that only charted holds
