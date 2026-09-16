@@ -78,7 +78,7 @@ check can, because `git diff` takes two refs.
 
 **It reaches git and nothing else.** Three calls — `rev-parse`, `diff`, `merge` — and no forge. The
 fault is git's: a clean merge that removes shipped work, on any host of any remote. **The forge is
-one adapter**, and the doctrine says so.
+an adapter, not the protocol**, and the doctrine says so.
 
 The same reason `closing.md` is a rule: the check happens before the work is judged, so nothing
 downstream can catch it.
