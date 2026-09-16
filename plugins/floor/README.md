@@ -595,7 +595,7 @@ the spring and one working now printed the same line.
 |---|---|
 | quiet under the bar | the stamp alone |
 | untouched at the bar or past it | **`nothing touched for N days or more`** |
-| what counts as touched | the workspace **or** `observations`. A gate, a judge, a delivery and `observe` write the second; **a person coding writes the first** |
+| what it reads | `observations`, the top of the workspace, and `.git`. **A `git status` counts**, because that writes `index.lock` |
 | `FOUNDRY_QUIET_DAYS` | the bar, in days. Two by default |
 
 **Three words were refused before this one, and each refusal moved the reading.** `stalled` claimed
@@ -619,7 +619,7 @@ keep the call portable, and the argument was contradicted on its own line. **The
 BSD, and this page says so rather than claiming anywhere.**
 
 **Two `find` calls for the whole list, and one substitution a row.** Measured on the live home:
-431ms and 739ms, and a substitution is 18ms.
+431ms for the first, and a substitution is 18ms.
 
 **The second call goes six levels, because that is where a commit lands.** A run holds
 `units/01/workspace/<slot>`, so the checkout is five deep and its `.git` is six. Measured on this

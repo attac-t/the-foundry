@@ -304,7 +304,7 @@ settled() {
 ' '|')"
 
     note "these runs hold a workspace, so this host is not settled:"
-    note "  nothing touched means neither the workspace nor \`observations\` moved"
+    note "  read: a run's \`observations\`, the top of its workspace, and \`.git\` — never inside a checkout"
     printf '%s
 ' "$inflight" | while read -r underway; do
         note "  $underway  $(last_moved "$RUNS/$underway")$(said_about_silence "$underway" "$quiet" "$days")"
@@ -401,9 +401,9 @@ is_a_quiet_bar() {
 # **`-type f` because a directory of that name would enter the set**, and `2>/dev/null` because a
 # host with no `-mmin` must not spill its usage into the list. That host reports nothing quiet.
 #
-# **Cost: two `find` calls and one substitution a row.** Measured on the live home, the two calls
-# are 431ms and 739ms, and a substitution is 18ms. The rows share the calls; only the 18ms is per
-# run, against a command that already spends thirty seconds.
+# **Cost: two `find` calls and one substitution a row.** This call is 431ms on the live home; the
+# second one is measured where it is written. A substitution is 18ms, and only that is per run —
+# against a command already spending thirty seconds.
 quiet_runs() {
     untouched=$(find "$RUNS" -maxdepth 2 -type f -name observations \
                     -mmin "+$(($1 * 1440 - 1))" 2>/dev/null | sed 's#/observations$##; s#.*/##')
@@ -431,9 +431,12 @@ quiet_runs() {
 # Pruning `.git` is the wrong saving: it takes 33.8 seconds, because the walk then enters every
 # working tree instead of stopping at the directory that moves when git writes.
 #
-# So this sees a workspace opened, a clone made, a file written at the top of one, and a commit.
-# **It does not see an edit deeper than the slot** — a worker saving into `src/` for two days
-# with no commit and no gate is still named quiet. #561 owns the thirty seconds.
+# So this sees a workspace opened, a clone made, a file written at the top of one, and a commit —
+# **and a `git status`, which writes `index.lock`.** A glance counts as work, and that is the safe
+# way round: naming a live run quiet is the fault, and naming a quiet one live is a wasted look.
+#
+# **It does not see an edit deeper than the slot** — a worker saving into `src/` for two days with
+# no commit and no gate is still named quiet. #561 owns the thirty seconds.
 anything_touched_since() {
     find "$RUNS" -maxdepth 6 -mmin "-$(($1 * 1440))" 2>/dev/null \
         | sed -n "s#^$RUNS/\([^/]*\)/units.*#\1#p" | sort -u
