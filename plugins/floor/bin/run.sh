@@ -304,7 +304,7 @@ settled() {
 ' '|')"
 
     note "these runs hold a workspace, so this host is not settled:"
-    note "  a gate, a judge, a delivery or \`observe\` writes that file — coding in one does not"
+    note "  a gate, a judge, a delivery or \`observe\` writes a run's \`observations\` — coding does not"
     printf '%s
 ' "$inflight" | while read -r underway; do
         note "  $underway  $(last_moved "$RUNS/$underway")$(said_about_silence "$underway" "$quiet" "$days")"
@@ -380,15 +380,20 @@ is_a_quiet_bar() {
 # and a command substitution 18ms, and `how_far` already refuses helpers over 19ms each. Asking
 # per run put 48ms on every row; asking once puts 30ms on the command.
 #
-# **Minutes, and not days.** `-mtime` counts whole days and the hosts round the remainder
-# differently — GNU and POSIX discard it, and a reader reports that FreeBSD and macOS round up, so
-# a two-day bar would fire there after one. **`-mmin` has no remainder to round.** Measured at the
-# boundary: `+2879` takes 49 hours and leaves 47.
+# **Minutes, and not days.** Both count whole units and round the leftover, and the hosts disagree
+# on which way: GNU and POSIX discard it, and FreeBSD and macOS round it up. **The unit is the whole
+# of the reach.** A day of disagreement fires a two-day bar after one; a minute of it fires a
+# one-day bar at 23h 59m 01s, and nobody acts on a minute. Measured on GNU at the boundary: `+2879`
+# takes 49 hours and leaves 47.
 #
 # **`-mmin` is not POSIX, and neither is `-maxdepth` on the same line.** That was the argument for
 # whole days, and it was contradicted seven characters later. A reader found it.
+#
+# **`-type f` because a directory of that name would enter the set**, and `2>/dev/null` because a
+# host with no `-mmin` must not spill its usage into the list. That host reports nothing quiet, and
+# a reader found that too.
 quiet_runs() {
-    find "$RUNS" -maxdepth 2 -name observations -mmin "+$(($1 * 1440 - 1))" 2>/dev/null         | sed 's#/observations$##; s#.*/##'
+    find "$RUNS" -maxdepth 2 -type f -name observations -mmin "+$(($1 * 1440 - 1))" 2>/dev/null         | sed 's#/observations$##; s#.*/##'
 }
 
 # One day or many. `1 days` is the tell that nobody read the line back.

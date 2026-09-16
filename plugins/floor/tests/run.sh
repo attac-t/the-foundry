@@ -3057,6 +3057,18 @@ wreck_runner "a count that cannot say one day is caught" \
 wreck_runner "a file named with nothing saying what writes it is caught" \
   nowriters 's@^    note "  a gate, a judge@    : "  a gate, a judge@'
 
+#
+# **The boundary itself.** `- 1` is the whole of what makes `+2879` mean 48 hours, and a fixture
+# months past the bar holds none of it. Move it by one and a run quiet 47 hours is named.
+wreck_runner "a bar that fires an hour early is caught" \
+  offbyone 's@[$][(][(][$]1 [*] 1440 - 1[)][)]@$(($1 * 1440 - 61))@'
+
+#
+# **A directory of that name would enter the quiet set.** `-type f` is what keeps the list about
+# files a run writes.
+wreck_runner "a quiet set that takes anything named observations is caught" \
+  anytype 's@ -type f -name observations@ -name observations@'
+
 report_breaks
 
 # --- break the install ---

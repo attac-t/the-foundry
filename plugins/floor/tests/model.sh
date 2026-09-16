@@ -5851,7 +5851,38 @@ a_host_is_settled_when_no_run_holds_a_workspace() {
 
   # **The line names a file, and a reader has to know what writes it.** Said once, above the list,
   # because the boundary belongs where the person looking at the output is.
-  has "the list says what writes that file" "$said" "coding in one does not"
+  has "the list says what writes that file" "$said" "coding does not"
+
+  #
+  # **The boundary, and nothing else held it.** A fixture months past the bar stays quiet whatever
+  # the arithmetic does, so `- 1` could go and every case above would still pass. A reader found it.
+  #
+  # An age relative to now needs `date -d` on GNU or `date -v` on BSD. Neither is POSIX, so both are
+  # asked for and the case says it cannot run rather than proving nothing quietly.
+  edge=$(date -d '47 hours ago' +%Y%m%d%H%M 2>/dev/null) \
+      || edge=$(date -v-47H +%Y%m%d%H%M 2>/dev/null)
+  past=$(date -d '49 hours ago' +%Y%m%d%H%M 2>/dev/null) \
+      || past=$(date -v-49H +%Y%m%d%H%M 2>/dev/null)
+
+  if [ -z "$edge" ] || [ -z "$past" ]; then
+    cannot "the two-day boundary — no date on this host counts backwards"
+  else
+    touch -t "$edge" "$strun/observations"
+    inside=$( cd "$tmp/stl" && FOUNDRY_HOME="$quiet" FOUNDRY_RUN="$strun" FOUNDRY_WHO="" \
+              sh "$runner" settled 2>&1 )
+    # **This run's row, never the whole list.** Other runs in this home are quiet too, and a check
+    # reading every line would answer about one of them.
+    lacks "a run quiet 47 hours is under a two-day bar" \
+          "$(printf '%s' "$inside" | grep "$(basename "$strun")")" "observations not written"
+
+    touch -t "$past" "$strun/observations"
+    outside=$( cd "$tmp/stl" && FOUNDRY_HOME="$quiet" FOUNDRY_RUN="$strun" FOUNDRY_WHO="" \
+               sh "$runner" settled 2>&1 )
+    has "and one quiet 49 hours is over it" \
+        "$(printf '%s' "$outside" | grep "$(basename "$strun")")" "observations not written for 2 days"
+  fi
+
+  touch -t 202601010000 "$strun/observations"
 
   # **A leading zero is four faults wearing one shape**, and `is_a_count` takes all of them.
   # Twenty digits is the fifth: it overflows to a number nobody asked for.
@@ -5867,6 +5898,18 @@ a_host_is_settled_when_no_run_holds_a_workspace() {
   mv "$strun/observations" "$strun/observations.aside"
   silent=$( cd "$tmp/stl" && FOUNDRY_HOME="$quiet" FOUNDRY_RUN="$strun" FOUNDRY_WHO=""             sh "$runner" settled 2>&1 )
   has "a run that wrote nothing says so" "$silent" "never moved"
+
+  #
+  # **A name is not a file.** With the observations moved aside, put a directory of that name in
+  # its place and age it. `find` matches the name either way, so `-type f` is the whole of what
+  # keeps a directory out of the quiet set — and this run genuinely wrote nothing.
+  mkdir -p "$strun/observations" 2>/dev/null
+  touch -t 202601010000 "$strun/observations" 2>/dev/null
+  shaped=$( cd "$tmp/stl" && FOUNDRY_HOME="$quiet" FOUNDRY_RUN="$strun" FOUNDRY_WHO="" \
+            sh "$runner" settled 2>&1 )
+  lacks "a directory of that name is not a quiet run" \
+        "$(printf '%s' "$shaped" | grep "$(basename "$strun")")" "observations not written"
+  rmdir "$strun/observations" 2>/dev/null
   mv "$strun/observations.aside" "$strun/observations"
   # Grading changes nothing. The workspace is still there and still being read.
   q gates >/dev/null 2>&1
