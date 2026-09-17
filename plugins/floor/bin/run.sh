@@ -297,9 +297,18 @@ settled() {
     inflight=$(runs_in_flight)
     [ -n "$inflight" ] || { note "nothing is in flight"; return 0; }
 
+    # Both asked once, before the loop. A bad bar is one fact about the caller rather than one about
+    # each run, and the quiet set is two `find` calls rather than two per row.
+    days=$(quiet_days)
+    quiet="|$(quiet_runs "$days" | tr '
+' '|')"
+
     note "these runs hold a workspace, so this host is not settled:"
+    note "  read: a run's \`observations\` and its workspace down to the checkout's top — no deeper"
     printf '%s
-' "$inflight" | while read -r underway; do note "  $underway  $(last_moved "$RUNS/$underway")"; done
+' "$inflight" | while read -r underway; do
+        note "  $underway  $(last_moved "$RUNS/$underway")$(said_about_silence "$underway" "$quiet" "$days")"
+    done
 
     return 29
 }
@@ -311,11 +320,152 @@ settled() {
 # on Tuesday and one working now print the same line. 101 of 109 runs here hold only `run.began`,
 # which is exactly the pair a reader cannot tell apart.
 #
-# The stamp, never an age. Working one out needs date arithmetic, and floor ships POSIX and `git`.
+# The stamp, and never an age. Turning an ISO time into one needs `date -d` on GNU and `date -j -f`
+# on BSD, and floor ships POSIX and `git`. `quiet_runs` asks the question a different way.
 last_moved() {
     when=$(tail -n 1 "$(observations_file "$1")" 2>/dev/null | cut -f1)
 
     printf '%s' "${when:-never moved}"
+}
+
+#
+# How long a run may go untouched before the list says so. Days, because that is what a person asks.
+#
+# **The caller's, never the repository's.** `.foundry/gates` and `.foundry/judged` are files a
+# repository commits; this is an environment variable whoever runs the command can set. So it is
+# read as a preference, checked before use, and a bad one is said out loud rather than obeyed.
+#
+# **`quiet`, and never `stale`.** A knob is public the day it ships and cannot be renamed after. The
+# word this line refused three times is a verdict, and three functions here already say `quiet`.
+QUIET_DAYS=2
+
+# What the caller asked for, or the default and a word about why.
+quiet_days() {
+    asked=${FOUNDRY_QUIET_DAYS:-$QUIET_DAYS}
+
+    is_a_quiet_bar "$asked" && { printf '%s' "$asked"; return 0; }
+
+    note "FOUNDRY_QUIET_DAYS is [$asked] — one to four digits, no leading zero. Using $QUIET_DAYS"
+    printf '%s' "$QUIET_DAYS"
+}
+
+#
+# A plain decimal above zero, short enough to survive arithmetic.
+#
+# **`is_a_count` is not enough here, and a reader found out why.** It takes `00`, `08` and `010`,
+# and each breaks differently: `00` yields `-1`, `08` is not a number in base 8, and `010` is eight.
+# A twenty-digit string overflows to something unrelated. So a leading zero is refused outright.
+#
+# **And a bad bar is worse than a silent one.** `find -mtime +-1` does not fail — measured, it
+# matches a file made seconds ago. So an unchecked value names every run at once rather than none.
+#
+# Four digits is twenty-seven years. Past that it is not a bar anybody meant.
+is_a_quiet_bar() {
+    case "$1" in
+        ''|*[!0-9]*|0*) return 1 ;;
+    esac
+
+    [ "${#1}" -le 4 ]
+}
+
+#
+# Every run nothing has touched for the bar.
+#
+# **`find`, never date arithmetic.** The question is asked of the filesystem, and answered without
+# parsing the stamp at all.
+#
+# **The filesystem is not the record.** A run restored from a copy carries a fresh time and reads as
+# working. The stamp beside this is the durable fact, and this is the reading a person acts on.
+#
+# **Two places, because a worker writes one and a run writes the other.** A gate, a judge or
+# `observe` appends to `observations`; a person coding appends to the workspace. **Reading only the
+# first calls a worker at a keyboard idle** — 101 of 109 runs here hold nothing but `run.began`, so
+# that was most of them. A reader found it after four rounds of reading the other file.
+#
+# `-newermt` would ask this in one primary and is not POSIX — it ships on GNU and the BSDs, and
+# on no more than the two primaries below. Two `find` calls answer it wherever those do.
+#
+# **Two processes for the whole list, never two per run.** Asking per run put a `find` on every row;
+# asking once puts it on the command. The numbers are below, measured where each call is written.
+#
+# **Minutes, and not days.** Both count whole units and round the leftover, and the hosts disagree
+# on which way: GNU and POSIX discard it, and FreeBSD and macOS round it up. **The unit is the whole
+# of the reach.** A day of disagreement fires a two-day bar after one; a minute of it fires a
+# one-day bar at 23h 59m 01s, and nobody acts on a minute. Measured on GNU at the boundary: `+2879`
+# takes 49 hours and leaves 47.
+#
+# **`-mmin` is not POSIX, and neither is `-maxdepth` on the same line.** That was the argument for
+# whole days, and it was contradicted seven characters later. A reader found it.
+#
+# **`-type f` because a directory of that name would enter the set**, and `2>/dev/null` because a
+# host with no `-mmin` must not spill its usage into the list. That host reports nothing quiet.
+#
+# **Cost: two `find` calls, one substitution a row, and a second on a quiet one.** This call is 431ms on the live home; the
+# second one is measured where it is written. A substitution is 18ms, and only that is per run —
+# against a command already spending thirty seconds.
+quiet_runs() {
+    untouched=$(find "$RUNS" -maxdepth 2 -type f -name observations \
+                    -mmin "+$(($1 * 1440 - 1))" 2>/dev/null | sed 's#/observations$##; s#.*/##')
+    touched=$(anything_touched_since "$1")
+
+    # **An empty pattern is a question nobody asked.** Measured on GNU grep 3.0 it keeps the list,
+    # so this guard buys a process rather than a fix — and it says what it means, which the
+    # measurement did not. A grep that read `-e ''` as *every line* would empty the column.
+    [ -n "$touched" ] || { printf '%s\n' "$untouched"; return 0; }
+
+    printf '%s\n' "$untouched" | grep -vxF -e "$touched"
+}
+
+#
+# Every run whose unit moved inside the bar. `-mmin -N` is *less than*, so this is the set
+# somebody is working in, and the list above takes it away.
+#
+# **Six levels, because that is where a commit lands.** A run holds `units/01/workspace/<slot>`,
+# so the checkout is five deep and its `.git` is six. **Stopping at four sees a workspace opened
+# and nothing a worker does inside one** — not an edit, not a commit.
+#
+# Measured on this home, 2,440 entries: 1.2 seconds warm and 13.2 cold, against a command that
+# already spends thirty in `runs` over 144 runs. **The cold number is the one to plan for**, and
+# the first measurement here was warm and read like the whole answer.
+#
+# Pruning `.git` measured 33.8 seconds, and that walk carried no depth at all — so the number says
+# what an unbounded walk costs and **not** what pruning costs. Untangling the two was never worth a
+# measurement, because the depth is what this needed and the depth is cheap.
+#
+# So this sees a workspace opened, a clone made, a file written at the checkout's top, and a commit —
+# **and a `git status`, which writes `index.lock`.** A glance counts as work, and that is the safe
+# way round: naming a live run quiet is the fault, and naming a quiet one live is a wasted look.
+#
+# **What it misses is narrower than it looks.** Creating, renaming or deleting a file moves its
+# parent, and `src/` is depth six — so a write-by-rename one level in is seen, which is how vim,
+# emacs and `sed -i` all save. **Missed is an in-place rewrite, and anything two levels down.**
+# A worker editing `src/lib/` in place for two days, with no commit and no gate, is named quiet.
+#
+# #561 owns the thirty seconds.
+anything_touched_since() {
+    find "$RUNS" -maxdepth 6 -mmin "-$(($1 * 1440))" 2>/dev/null \
+        | sed -n "s#^$RUNS/\([^/]*\)/units.*#\1#p" | sort -u
+}
+
+# One day or many. `1 days` is the tell that nobody read the line back.
+spelt_days() {
+    [ "$1" = 1 ] && { printf '1 day'; return 0; }
+
+    printf '%s days' "$1"
+}
+
+#
+# What a reader does about it, or nothing at all. A run that moved today gets no word, because a
+# column saying *working* on every line is a column nobody reads.
+#
+# **Three words were refused before this one**, and each refusal moved the reading rather than the
+# wording. `stalled` claimed a state the filesystem cannot establish. *Nothing written* dropped its
+# subject. *Observations not written* named the file and still called a worker at a keyboard idle,
+# **because coding writes the workspace and never that file.** This reads both.
+said_about_silence() {
+    case "$2" in
+        *"|$1|"*) printf '  nothing touched for %s or more' "$(spelt_days "$3")" ;;
+    esac
 }
 
 # A workspace is the part a worker writes to. A run that only charted holds
