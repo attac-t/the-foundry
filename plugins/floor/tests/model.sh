@@ -6037,6 +6037,40 @@ a_host_is_settled_when_no_run_holds_a_workspace() {
 a_host_is_settled_when_no_run_holds_a_workspace
 
 #
+# **Every reading walks the home, and the home is the thing that grows.** Four loops replaced an
+# `ls`, an `awk`, a `tail` and a `cut` this month. Each was proved on the edge it decides, and
+# none on the size it was written for — a home of one run exercises no loop at all.
+#
+# Sixty runs, written straight to disk. `new` would be sixty starts of the runner at 137ms each,
+# and this file is run once per mutant by the audit.
+#
+the_readings_hold_at_a_home_that_grew() {
+  many="$tmp/many"
+  n=0
+
+  while [ "$n" -lt 60 ]; do
+    n=$((n + 1))
+    mkdir -p "$many/runs/2026-01-01-grew-$n-0000" || { skip "scale — no home could be made here"; return; }
+    printf '2026-01-01T00:00:0%s\ta host\tnew\tmade for scale\n' "$((n % 10))" \
+        > "$many/runs/2026-01-01-grew-$n-0000/observations"
+  done
+
+  listed=$( FOUNDRY_HOME="$many" FOUNDRY_RUN="" sh "$runner" runs 2>/dev/null )
+  is  "every run in a home of sixty is listed" "$(printf %s "$listed" | grep -c "^new")" "60"
+  has "and one from the middle is named"       "$listed" "2026-01-01-grew-30-0000"
+
+  # One row each, so the count is the proof that no file was skipped and none was read twice.
+  seen=$( FOUNDRY_HOME="$many" FOUNDRY_RUN="" sh "$runner" observed 2>/dev/null )
+  is  "and every row of every one is read" "$(printf %s "$seen" | grep -c "")" "60"
+  has "and a row still names its run"      "$seen" "2026-01-01-grew-47-0000"
+
+  # Sixty runs and not one workspace. A host with nothing open is settled, whatever its size.
+  is "a home of sixty holding no workspace is settled" \
+     "$( FOUNDRY_HOME="$many" FOUNDRY_RUN="" sh "$runner" settled >/dev/null 2>&1; printf %s "$?" )" "0"
+}
+the_readings_hold_at_a_home_that_grew
+
+#
 # One kind, two adapters that spell it differently. A directory carries `kind: defect` in
 # frontmatter; GitHub carries a label called `foundry:defect`. Core is told `defect` by both and
 # knows neither spelling.
