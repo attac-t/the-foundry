@@ -3123,6 +3123,17 @@ wreck_runner "a landing nobody checked against the trunk is caught" \
 wreck_runner "a landing lost to a space in the host name is caught" \
   notab 's@while IFS="$TAB" read -r _ _ event said@while read -r _ _ event said@'
 
+#
+# **Two breaks, and they fail opposite ways.** One takes the notice away, so a run that said
+# nothing is never told. The other stops the loop reading, so every run is told — including the
+# ones that did record something, which is the noise that teaches a worker to ignore it.
+#
+wreck_runner "a run that recorded nothing and is never told is caught" \
+  nevertold 's@^say_what_this_run_never_recorded() {@say_what_this_run_never_recorded() { return 0;@'
+
+wreck_runner "a run told it said nothing when it said something is caught" \
+  alwaystold 's@read -r _ _ event _; do@read -r _ _ event _; do continue;@'
+
 report_breaks
 
 # --- break the install ---

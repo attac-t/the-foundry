@@ -6071,6 +6071,31 @@ the_readings_hold_at_a_home_that_grew() {
 the_readings_hold_at_a_home_that_grew
 
 #
+# **A run that never said what it proved, told so where a worker meets it.**
+#
+# A rule read when a session starts is gone by the time it applies. On 17 September, 51 runs of
+# 156 held a line past `run.began`, and every one of those lines was typed by one worker.
+#
+# It names and never refuses, so both halves are checked: the run with nothing is told, and the
+# run with something is left alone.
+#
+a_run_that_said_nothing_is_told_so_at_complete() {
+  make_repo "$tmp/said" main || { skip "the notice — git could not make a repo here"; return; }
+
+  floor "$tmp/said" new "A run that says nothing" >/dev/null 2>&1
+
+  bare=$(floor_says "$tmp/said" complete)
+  has "a run holding only run.began is named at complete" "$bare" "nothing says what it proved"
+  has "and it is told what to run"                        "$bare" "run.sh observe"
+
+  floor "$tmp/said" observe measured what=a-thing >/dev/null 2>&1
+
+  told=$(floor_says "$tmp/said" complete)
+  lacks "a run that recorded something is left alone" "$told" "nothing says what it proved"
+}
+a_run_that_said_nothing_is_told_so_at_complete
+
+#
 # One kind, two adapters that spell it differently. A directory carries `kind: defect` in
 # frontmatter; GitHub carries a label called `foundry:defect`. Core is told `defect` by both and
 # knows neither spelling.
