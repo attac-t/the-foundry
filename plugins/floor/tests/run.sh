@@ -3010,7 +3010,77 @@ wreck_runner "an upgrade refusal that names no remedy is caught" \
 # A run list that says how far and never when. A run abandoned days ago and one working now then
 # print the same line, which is the pair a watcher exists to tell apart.
 wreck_runner "a run list that never says when it last moved is caught" \
-  nowhen 's#note "  $underway  $(last_moved "$RUNS/$underway")"#note "  $underway"#'
+  nowhen 's#  $(last_moved "$RUNS/$underway")##'
+
+#
+# **A stamp is not an age, and a reader acts on the age.** Three breaks, and each takes one case.
+#
+# Blind the word and a run quiet since the spring reads exactly like one working now — which is
+# the pair `settled` exists to tell apart, and what the stamp alone could never say.
+wreck_runner "a run quiet for months reported as working is caught" \
+  nostalled 's#^said_about_silence() {#said_about_silence() { return 0;#'
+
+# The other way. Say it of every run and the word means nothing, because a column reading
+# *observations not written* on every line is a column nobody looks at twice.
+wreck_runner "a run that moved just now named as quiet is caught" \
+  allstalled 's@^        [*]"[|]$1[|]"[*]) printf@        *) printf@'
+
+# **The bar is the caller's.** Pin it in the script and a host that knows its own work is slow
+wreck_runner "a quiet bar nobody can set is caught" \
+  fixedbar 's#^    asked=${FOUNDRY_QUIET_DAYS:-$QUIET_DAYS}#    asked=$QUIET_DAYS#'
+
+#
+# **The caller sets it, so it is checked.** Take the check away and `abc` reaches the arithmetic,
+# where an unset name counts as zero. **`find -mtime +-1` does not fail** — measured, it matches
+# a file made seconds ago, so every run in flight reads quiet at once.
+#
+# A reader named it: the first draft of this comment said `+-1` errors, and it does not.
+wreck_runner "a quiet bar nothing checks is caught" \
+  anybar 's#^    is_a_quiet_bar "$asked" #    true "$asked" #'
+
+#
+# **A leading zero is the form `is_a_count` lets through**, and each breaks differently: `00` is
+# `-1`, `08` is not a number in base 8, and `010` is seven. Put the looser test back and all
+# three reach the arithmetic.
+wreck_runner "a quiet bar with a leading zero is caught" \
+  loosebar 's#|0[*]) return 1 ;;#|0) return 1 ;;#'
+
+#
+# **One day or many.** `1 days` is the tell that nobody read the line back, and a report a reader
+# stops trusting is a report nobody acts on.
+wreck_runner "a count that cannot say one day is caught" \
+  onedays 's@^    [[] "$1" = 1 []] && { printf .1 day.; return 0; }@    :@'
+
+#
+# **The line names a file and the reader has to know what writes it.** Take the sentence away and
+# the output says `observations` with nothing saying that coding in a workspace does not touch it.
+wreck_runner "a file named with nothing saying what writes it is caught" \
+  nowriters 's@^    note "  read:@    : "  read:@'
+
+#
+# **The boundary itself.** `- 1` is the whole of what makes `+2879` mean 48 hours, and a fixture
+# months past the bar holds none of it. Move it by one and a run quiet 47 hours is named.
+wreck_runner "a bar that fires an hour early is caught" \
+  offbyone 's@[$][(][(][$]1 [*] 1440 - 1[)][)]@$(($1 * 1440 - 61))@'
+
+#
+# **A directory of that name would enter the quiet set.** `-type f` is what keeps the list about
+# files a run writes.
+wreck_runner "a quiet set that takes anything named observations is caught" \
+  anytype 's@ -type f -name observations@ -name observations@'
+
+#
+# **Coding writes the workspace and never `observations`.** Blind the second reading and a worker
+# at a keyboard is named quiet — which is the box this whole line exists for, missed. Four rounds
+# of one reader never looked one directory over; a second model asked what the line was for.
+wreck_runner "a worker at a keyboard reported as quiet is caught" \
+  noworkspace 's@^    touched=$(anything_touched_since "$1")@    touched=@'
+
+#
+# **Nothing touched is not an empty pattern.** Take the guard away and `grep -vxF -e ""` matches
+# every line under `-x`, so a home nobody is working in drops its whole list and says nothing.
+wreck_runner "an empty touched set that swallows the list is caught" \
+  emptyset 's@^    [[] -n "$touched" []] [|][|] @    false || @'
 
 report_breaks
 
