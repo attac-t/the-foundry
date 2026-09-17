@@ -299,9 +299,53 @@ settled() {
 
     note "these runs hold a workspace, so this host is not settled:"
     printf '%s
-' "$inflight" | while read -r underway; do note "  $underway  $(last_moved "$RUNS/$underway")"; done
+' "$inflight" | while read -r underway; do
+        note "  $underway  $(last_moved "$RUNS/$underway")$(said_about_landing "$RUNS/$underway")"
+    done
 
     return 29
+}
+
+#
+# The commit a run says its work left for, or nothing.
+#
+# **A run's base is pinned and its charter hangs off it**, so merging the trunk in makes the run
+# ungradeable — exit 14, and `basing.md` calls that invariant 1 working. The work comes out and
+# lands as an ordinary branch. **That is the correct path, and floor had no word for it.**
+#
+# Seven runs here sat at `graded` with their work merged, and `settled` said nothing about any of
+# them. A finished run was not mislabelled. It was unmentioned.
+#
+# The last one wins. A run that says it landed twice moved twice, and the later sha is where the
+# work is now.
+landed_at() {
+    awk -F"\t" '$3 == "landed" { print $4 }' "$(observations_file "$1")" 2>/dev/null \
+        | sed -n 's/.*sha=\([^ ]*\).*/\1/p' | tail -1
+}
+
+#
+# What a reader does about a run that says it finished, or nothing at all.
+#
+# **The record is a check, never a claim.** `observe landed sha=x` is a line anybody may write, so
+# this asks git whether that commit is on the trunk. A sha nobody merged is named as such, and
+# the run keeps its stamp either way.
+#
+# **It asks the checkout it was run in**, which is the repository whose trunk a person cares about
+# here. A commit this checkout has never heard of is the same answer as one that never landed:
+# floor cannot see it, and says so rather than believing the line.
+said_about_landing() {
+    sha=$(landed_at "$1")
+    [ -n "$sha" ] || return 0
+
+    the_trunk_holds "$sha" && { printf '  landed at %s' "$sha"; return 0; }
+
+    printf '  says it landed at %s, and this checkout cannot find that on origin/main' "$sha"
+}
+
+# Whether the trunk holds that commit. `merge-base --is-ancestor` and no `rev-parse` first — an
+# unknown sha fails it the same way an unmerged one does, and both mean *floor cannot see it*.
+the_trunk_holds() {
+    git merge-base --is-ancestor "$1" origin/main 2>/dev/null
 }
 
 #

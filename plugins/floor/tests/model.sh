@@ -5802,6 +5802,27 @@ a_host_is_settled_when_no_run_holds_a_workspace() {
   # working now printed the same line, and 101 of 109 runs here hold only `run.began`.
   has "and it says when the run last moved" "$said" "$(tail -n 1 "$strun/observations" | cut -f1)"
 
+  #
+  # **A run whose work left by hand had no word.** Its base is pinned, so merging the trunk in
+  # makes it ungradeable — the work comes out and lands as an ordinary branch, and that is the
+  # correct path. Seven runs here sat at `graded` with their work merged and `settled` named none.
+  #
+  # **The record is a check.** `observe landed sha=x` is a line anybody may write, so `settled`
+  # asks git whether the trunk holds it. The stamp stays either way.
+  landing=$(git -C "$tmp/stl" rev-parse HEAD)
+  q observe landed sha="$landing" >/dev/null 2>&1
+  done_with=$( cd "$tmp/stl" && FOUNDRY_HOME="$quiet" FOUNDRY_RUN="$strun" FOUNDRY_WHO="" \
+         sh "$runner" settled 2>&1 )
+  has "a run that says its work landed is named"  "$done_with" "landed at $landing"
+
+  # A sha the trunk does not hold. **Named, never believed** — and this is the same answer as a
+  # sha this checkout never heard of, because both mean floor cannot see it.
+  q observe landed sha=deadbeefcafe >/dev/null 2>&1
+  unfound=$( cd "$tmp/stl" && FOUNDRY_HOME="$quiet" FOUNDRY_RUN="$strun" FOUNDRY_WHO="" \
+         sh "$runner" settled 2>&1 )
+  has "a landing the trunk does not hold is said so"  "$unfound" "cannot find that on origin/main"
+  lacks "and it is not called landed"                 "$unfound" "landed at deadbeefcafe"
+
   # A directory with no observations at all cannot be made by `new`, and a reader of the list must
   # still be told something rather than a blank.
   mv "$strun/observations" "$strun/observations.aside"
