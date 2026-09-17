@@ -35,6 +35,11 @@ readonly STEP=3
 # word-boundary split of its own words. None had a taper, so rule 4 applies and two lines is what a
 # searched paragraph becomes. The trace is here because the file keeps none, and a two-line block
 # looks exactly like one nobody ever tried.
+#
+# **The sixteen that remain were searched twice, and they stay.** Once over every split of their own
+# words, and again over every split with one word removed. Five would land by dropping a word, and
+# the words are `positional`, `scoped`, `active`, `field` and `inside`. Cutting a qualifier to reach
+# a byte count is the worst outcome `economy` names, so the list keeps them.
 readonly DEBT=bin/taper.debt
 
 work=$(mktemp -d) || exit 3

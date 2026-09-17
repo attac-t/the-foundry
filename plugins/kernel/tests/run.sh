@@ -368,9 +368,7 @@ audit_the_tally() {
     || printf '  ok    a suite that ran nothing does not pass\n'
 }
 
-# The bound itself, because no mutant has ever hung
-# and an unused guard is the one
-# that rots.
+# The bound itself, because no mutant has ever hung and an unused guard is the one that rots.
 audit_the_bound() {
   ( deadline=1; bounded "$deadline" sleep 5 )
 

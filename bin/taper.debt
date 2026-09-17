@@ -12,8 +12,5 @@ plugins/floor/tests/model.sh	# The run's own words, in the same place a person's
 plugins/floor/tests/model.sh	  # The other half of the same verb.  already exits 19 when the push is refused; the
 plugins/floor/tests/model.sh	  # A second run, its own delivery, and the first one may not land it. The adapter finds
 plugins/kernel/tests/run.sh	# macOS ships no timeout unless someone installed the GNU tools, so without
-plugins/kernel/tests/run.sh	# The bound itself, because no mutant has ever hung
 plugins/panel/tests/run.sh	# macOS ships no timeout unless someone installed the GNU tools, so without
-plugins/panel/tests/run.sh	# The bound itself, because no mutant has ever hung
 plugins/signal/tests/run.sh	# macOS ships no timeout unless someone installed the GNU tools, so without
-plugins/signal/tests/run.sh	# The bound itself, because no mutant has ever hung

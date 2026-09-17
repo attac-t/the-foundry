@@ -263,9 +263,7 @@ mkdir -p "$tmp/hang/bin" && printf '#!/bin/sh\nsleep 30\n' > "$tmp/hang/bin/verd
 [ "$?" -eq 2 ] && printf '  ok    a hanging mutant reaches the verdict, not a pass\n' \
                || bad "a hanging mutant did not reach the verdict"
 
-# The bound itself, because no mutant has ever hung
-# and an unused guard is the one
-# that rots.
+# The bound itself, because no mutant has ever hung and an unused guard is the one that rots.
 ( deadline=1; bounded "$deadline" sleep 5 )
 [ "$?" -eq 2 ] && printf '  ok    a mutant that never answers is bounded\n' \
                || bad "a mutant that never answers was not bounded"
