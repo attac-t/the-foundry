@@ -2938,6 +2938,8 @@ complete() {
     dir=$(active_run) || exit 1
     refuse_unreadable_run "$dir"
 
+    say_what_this_run_never_recorded "$dir"
+
     findings=$(unmet_for_delivery "$dir")
 
     [ -n "$findings" ] || return 0
@@ -2970,6 +2972,34 @@ unmet_for_delivery() {
     ungradable_targets "$1"
     underived_clauses "$1"
     unmet_clauses "$1"
+}
+
+#
+# What this run never said it proved.
+#
+# **Said here because this is where a worker meets it.** A rule read when a session starts is gone
+# by the time it applies. Measured 17 September: 51 runs of 156 hold a line past `run.began`, and
+# every one of those lines was typed by one worker on one host.
+#
+# It names and does not refuse. What a run proved is not a condition of delivering it, and turning
+# a habit into a gate is a decision only a person makes.
+#
+say_what_this_run_never_recorded() {
+    a_run_said_more_than_it_began "$1" && return 0
+
+    note "this run holds only \`run.began\`, so nothing says what it proved"
+    note "  sh run.sh observe <event> key=value"
+}
+
+a_run_said_more_than_it_began() {
+    moves=$(observations_file "$1")
+    [ -f "$moves" ] || return 1
+
+    while IFS="$TAB" read -r _ _ event _; do
+        [ "$event" = run.began ] || return 0
+    done < "$moves"
+
+    return 1
 }
 #
 # A clause the charter no longer derives.
