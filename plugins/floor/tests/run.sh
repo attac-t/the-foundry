@@ -3117,6 +3117,12 @@ wreck_runner "a run whose work landed, said nothing about, is caught" \
 wreck_runner "a landing nobody checked against the trunk is caught" \
   anylanding 's@^    the_trunk_holds "$sha"@    true "$sha"@'
 
+# **The tab is what makes the third column the event.** Drop it and the split counts words, so a
+# host name of two words moves `landed` along by one and the landing is never seen. Every machine
+# this runs on answers `uname -n` with one word, which is why only a fixture can hold it.
+wreck_runner "a landing lost to a space in the host name is caught" \
+  notab 's@while IFS="$TAB" read -r _ _ event said@while read -r _ _ event said@'
+
 report_breaks
 
 # --- break the install ---
