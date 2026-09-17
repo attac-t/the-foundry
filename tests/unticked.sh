@@ -31,6 +31,7 @@ trap 'rm -rf "$tmp"' EXIT
 cat > "$tmp/bin/gh" <<'STUB'
 #!/bin/sh
 case "$*" in
+  *"issue list"*length*) cat "$BODIES/total" 2>/dev/null ;;
   *"issue list"*) cat "$BODIES/numbers" ;;
   *"issue view"*) for a in "$@"; do case $a in [0-9]*) n=$a ;; esac; done
                   cat "$BODIES/$n" 2>/dev/null ;;
@@ -90,6 +91,33 @@ printf -- '- [x] held\n'                   > "$tmp/bodies/2"
 printf -- '- [ ] ~~struck~~ — and why\n'   > "$tmp/bodies/3"
 
 has "only the issues with an open box are tallied" "$(swept 3)" "1 of the last 3"
+
+# --- the edge of the window ---
+#
+# **A window is honest about its edge, or it is not honest.** The default reads the last sixty,
+# and this tree holds a hundred and sixty-six closed. Seven and forty-four are both true, and the
+# line that says seven has to say which it is.
+
+printf '1\n2\n3\n' > "$tmp/bodies/numbers"
+printf '20\n'      > "$tmp/bodies/total"
+printf -- '- [ ] open\n' > "$tmp/bodies/1"
+
+has "a window that read three of twenty says so" "$(swept 3)" "17 more are closed and were not read"
+
+# The same line, and the same silence, when nothing was left out.
+printf '3\n' > "$tmp/bodies/total"
+
+is "a window that read all of them adds nothing" \
+   "$(swept 3 | grep -c "more are closed")" "0"
+
+# A total nobody could read is not a reason to say a wrong one.
+printf 'not a number\n' > "$tmp/bodies/total"
+
+is "a total that is not a number is left unsaid" \
+   "$(swept 3 | grep -c "more are closed")" "0"
+has "and the sweep still reports"  "$(swept 3)" "of the last 3"
+
+rm -f "$tmp/bodies/total"
 
 # --- GitHub not answering is not a clean sweep ---
 

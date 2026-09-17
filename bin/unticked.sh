@@ -56,9 +56,35 @@ holds_an_unticked_box() { [ -n "$(unticked_lines "$1")" ]; }
 
 count_of() { unticked_lines "$1" | grep -c '' || true; }
 
+#
+# How many closed issues there are, so `the last 60` is read against a number.
+#
+# **A window is honest about its edge, or it is not honest.** At the default this tree reports
+# seven and holds forty-four. Both sentences are true and only one of them says which.
+#
+# A thousand is the ceiling, so a repository past that reads as a thousand. Nothing here needs a
+# truer number than the one it just failed to reach.
+closed_total() {
+    gh issue list --state closed --limit 1000 --json number --jq 'length' 2>/dev/null
+}
+
+# What the window left out, and only when it left something out.
+say_what_was_not_read() {
+    # `set -e` is on, so the failure has to be taken here. A total nobody could read is a line
+    # left unsaid, never a sweep that stops.
+    total=$(closed_total) || total=
+    case $total in ""|*[!0-9]*) return 0 ;; esac
+    [ "$total" -gt "$1" ] || return 0
+
+    printf '           %s more are closed and were not read. Give it a bigger limit
+' "$((total - $1))"
+}
+
 main() {
     numbers=$(closed_numbers) || { note 'unticked — GitHub could not be asked'; exit 3; }
     [ -n "$numbers" ] || { note 'unticked — no closed issues came back'; exit 3; }
+
+    read_count=$(printf %s "$numbers" | grep -c .)
 
     : > "$found"
     for number in $numbers; do
@@ -75,10 +101,11 @@ main() {
     rm -f "$found"
 
     [ "$left" = 0 ] && { printf 'unticked — none in the last %s closed
-' "$LIMIT"; exit 0; }
+' "$read_count"; say_what_was_not_read "$read_count"; exit 0; }
 
     printf 'unticked — %s of the last %s closed issues have a box nobody ticked
-' "$left" "$LIMIT"
+' "$left" "$read_count"
+    say_what_was_not_read "$read_count"
     exit 1
 }
 
