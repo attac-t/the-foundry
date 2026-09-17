@@ -5919,6 +5919,33 @@ a_host_is_settled_when_no_run_holds_a_workspace() {
     has "and $odd falls back to the default" "$odd_said" "nothing touched for 2 days"
   done
 
+  # --- a run whose work left, and where it went ---
+  # **A run whose work left by hand had no word.** Its base is pinned, so merging the trunk in
+  # makes it ungradeable — the work comes out and lands as an ordinary branch, and that is the
+  # correct path. Seven runs here sat at `graded` with their work merged and `settled` named none.
+  #
+  # **The record is a check.** `observe landed sha=x` is a line anybody may write, so `settled`
+  # asks git whether the trunk holds it. The stamp stays either way.
+  # **A real checkout has the ref; a fixture does not.** `set_origin` writes a URL and no
+  # `refs/remotes/origin/main`, so without this the check answers *cannot find it* — correctly, and
+  # about the fixture rather than the code.
+  landing=$(git -C "$tmp/stl" rev-parse HEAD)
+  git -C "$tmp/stl" update-ref refs/remotes/origin/main "$landing" 2>/dev/null
+  q observe landed sha="$landing" >/dev/null 2>&1
+  done_with=$( cd "$tmp/stl" && FOUNDRY_HOME="$quiet" FOUNDRY_RUN="$strun" FOUNDRY_WHO="" \
+         sh "$runner" settled 2>&1 )
+  # **Two spaces, because the refusal contains the word.** `says it landed at x` holds
+  # `landed at x`, so a loose check passes on the sentence that denies it.
+  has "a run that says its work landed is named"  "$done_with" "  landed at $landing"
+
+  # A sha the trunk does not hold. **Named, never believed** — and this is the same answer as a
+  # sha this checkout never heard of, because both mean floor cannot see it.
+  q observe landed sha=deadbeefcafe >/dev/null 2>&1
+  unfound=$( cd "$tmp/stl" && FOUNDRY_HOME="$quiet" FOUNDRY_RUN="$strun" FOUNDRY_WHO="" \
+         sh "$runner" settled 2>&1 )
+  has "a landing the trunk does not hold is said so"  "$unfound" "cannot find that on origin/main"
+  lacks "and it is not called landed"                 "$unfound" "  landed at deadbeefcafe"
+
   # A directory with no observations at all cannot be made by `new`, and a reader of the list must
   # still be told something rather than a blank.
   mv "$strun/observations" "$strun/observations.aside"

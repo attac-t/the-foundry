@@ -3082,6 +3082,18 @@ wreck_runner "a worker at a keyboard reported as quiet is caught" \
 wreck_runner "an empty touched set that swallows the list is caught" \
   emptyset 's@^    [[] -n "$touched" []] [|][|] @    false || @'
 
+#
+# **A run whose work left had no word.** Seven sat at `graded` with their work merged and the
+# list named none: a finished run was not mislabelled, it was unmentioned.
+wreck_runner "a run whose work landed, said nothing about, is caught" \
+  nolanding 's@^said_about_landing() {@said_about_landing() { return 0;@'
+
+#
+# **The record is a check, never a claim.** `observe landed sha=x` is a line anybody may write.
+# Believe it without asking git and a sha nobody merged reads as finished work.
+wreck_runner "a landing nobody checked against the trunk is caught" \
+  anylanding 's@^    the_trunk_holds "$sha"@    true "$sha"@'
+
 report_breaks
 
 # --- break the install ---
