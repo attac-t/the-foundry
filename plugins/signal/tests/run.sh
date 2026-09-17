@@ -276,9 +276,7 @@ marks_after=$(strays)
   && bad "a suite that ran nothing passed" \
   || printf '  ok    a suite that ran nothing does not pass\n'
 echo
-# The bound itself, because no mutant has ever hung
-# and an unused guard is the one
-# that rots.
+# The bound itself, because no mutant has ever hung and an unused guard is the one that rots.
 ( deadline=1; bounded "$deadline" sleep 5 )
 [ "$?" -eq 2 ] && printf '  ok    a mutant that never answers is bounded\n' \
                || bad "a mutant that never answers was not bounded"
