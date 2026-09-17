@@ -3013,6 +3013,12 @@ wreck_runner "a run list that never says when it last moved is caught" \
   nowhen 's#  $(last_moved "$RUNS/$underway")##'
 
 #
+# **One `awk` for the home, and `FILENAME` names each row.** Set the name once for the whole pass
+# and every row carries the first file's run — two runs reading one item then read as one.
+wreck_runner "rows named after the wrong run is caught" \
+  oncename 's@^        FNR == 1 { run = FILENAME@        NR == 1 { run = FILENAME@'
+
+#
 # **Two forks a run, replaced by two builtins.** `$(ls …)` and `$(awk …)` cost 7.0 seconds over a
 # home of 150 runs; a glob and a `read` loop cost 70ms, and `runs` went 12.1 seconds to 244ms.
 # **What must not change is the answer**, so each reading has a break on the edge it decides.

@@ -577,6 +577,10 @@ work item compose there without either having heard of the other, and neither ho
 
 Nothing is summed. The rows go out as they were written and the question is asked with `awk`.
 
+**`observed` reads the whole home in one `awk`.** It forked twice a run — `basename` and the
+reader — and over 150 runs that cost **19.7 seconds. It is 230ms**, and the 375 rows are identical.
+`FILENAME` names each row's run, so one pass reads and names.
+
 **Asking costs no fork a run.** `how_far` reads the ladder with a glob and a `read` loop, never
 `$(ls …)` and `$(awk …)`. Measured on a home of 150 runs: **`runs` went 12.1 seconds to 244ms, and
 the answer is byte-identical.** [#561](https://github.com/attac-t/the-foundry/issues/561) named the

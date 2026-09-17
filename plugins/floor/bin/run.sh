@@ -3403,15 +3403,31 @@ observed() {
     [ "$#" -le 1 ] || { usage; exit 2; }
 
     want=${1:-}
-    for held in "$RUNS"/*/; do
-        [ -f "${held}observations" ] || continue
-        say_the_rows "$(basename "${held%/}")" "${held}observations" "$want"
-    done
+
+    # **One `awk` for the home, never one a run.** The loop forked twice a run — `basename` and
+    # the reader — and over 150 runs that cost 19.7 seconds. `awk` takes every file at once and
+    # `FILENAME` says which one a row came from. #561 names the fork.
+    # **The guard is for the reader, not for awk.** With no run the glob stays the pattern, and
+    # `2>/dev/null` on the reader already swallows what awk says about a file nobody has. So a break
+    # here kills nothing, and the line earns its place by saying *no runs* out loud.
+    set -- "$RUNS"/*/observations
+    [ -e "$1" ] || return 0
+
+    say_the_rows "$want" "$@"
 }
 
+#
+# Every row of every file given, with the run it came from in front.
+#
+# **The name is derived, never passed.** `FILENAME` holds the path awk is reading, and the run is
+# the directory above `observations` — so one pass reads the rows and names them. The first-record
+# block runs before the filter, so a row the filter drops still names the rows after it.
 say_the_rows() {
-    awk -F'\t' -v run="$1" -v want="$3" \
-        'want == "" || $3 == want { print run "\t" $0 }' "$2" 2>/dev/null
+    want=$1; shift
+
+    awk -F'\t' -v want="$want" '
+        FNR == 1 { run = FILENAME; sub(/\/observations$/, "", run); sub(/.*\//, "", run) }
+        want == "" || $3 == want { print run "\t" $0 }' "$@" 2>/dev/null
 }
 
 #

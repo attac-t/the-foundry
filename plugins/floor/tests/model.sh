@@ -3737,9 +3737,27 @@ two_runs_over_one_item_compose() {
   is "and each row names its own run" \
      "$(floor "$tmp/cmp" observed item.read | awk -F'\t' '/item=62/ { print $1 }' | sort -u | grep -c .)" "2"
 
+
   # Neither run ever heard of the other. The home is what holds them, and nothing was coordinated.
   is "and neither run holds the other's row" \
      "$(floor "$tmp/cmp" observe | grep -c 'item=62')" "1"
+  #
+  # **One `awk` reads every file, so an empty one is in the list.** The loop skipped it with `-f`;
+  # this passes it and `FNR == 1` never fires for it. What must not happen is a neighbour's name
+  # leaking onto its rows, which is what a once-only `NR == 1` would do.
+  : > "$second/observations"
+  is "a run that wrote nothing contributes nothing" \
+     "$(floor "$tmp/cmp" observed | awk -F'\t' -v r="$(basename "$second")" '$1 == r' | grep -c .)" "0"
+  is "and the other run still names its own rows" \
+     "$(floor "$tmp/cmp" observed item.read | grep -c 'item=62')" "1"
+
+  #
+  # **A home with no runs leaves the glob as the pattern it was.** Hand that to `awk` and the
+  # command speaks about a file nobody has, so the guard answers before the reader sees it.
+  mkdir -p "$tmp/emptyhome"
+  bare=$( cd "$tmp/cmp" && FOUNDRY_HOME="$tmp/emptyhome" FOUNDRY_RUN="" FOUNDRY_WHO="" \
+          sh "$runner" observed 2>&1 )
+  is "a home holding no run says nothing at all" "$bare" ""
 }
 two_runs_over_one_item_compose
 
