@@ -580,6 +580,26 @@ Nothing is summed. The rows go out as they were written and the question is aske
 **A host is settled when no run holds a workspace.** `settled` answers 0 when nothing is in flight,
 and 29 with the runs that are.
 
+**A run whose work left says where it went.** A run's base is pinned and its charter hangs off it,
+so merging the trunk in makes the run ungradeable — `basing.md` calls that invariant 1 working. The
+work comes out and lands as an ordinary branch. **That is the correct path, and floor had no word
+for it.**
+
+```sh
+sh bin/run.sh observe landed sha=87cdb8a
+```
+
+| | |
+|---|---|
+| the trunk holds that commit | **`landed at 87cdb8a`** |
+| it does not, or this checkout never saw it | **`says it landed at …, and this checkout cannot find that on origin/main`** |
+
+**The record is a check, never a claim.** That line is one anybody may write, so `settled` asks git
+whether `origin/main` holds it. The stamp stays beside it either way.
+
+**Seven runs here sat at `graded` with their work merged, and nothing said so.** A finished run was
+not mislabelled. It was unmentioned.
+
 A workspace is the part a worker writes to, so replacing a host under one loses work nobody recorded.
 A run that only charted holds none, and a delivered one has finished.
 
