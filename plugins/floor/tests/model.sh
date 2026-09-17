@@ -6009,6 +6009,18 @@ a_host_is_settled_when_no_run_holds_a_workspace() {
   # Grading changes nothing. The workspace is still there and still being read.
   q gates >/dev/null 2>&1
   is "and grading it does not settle the host" "$(code_of q settled)" "29"
+
+  # --- the last row, and never the first ---
+  #
+  # **A file is read to its end, and the stamp printed is the last row's.** Nothing here held that:
+  # every other case writes one row, or reads a sentence rather than a time. Two rows, decades
+  # apart, so the wrong one cannot pass for the right one.
+  printf '2020-01-01T00:00:00Z\thost\tnew\tfirst\n2031-12-31T23:59:59Z\thost\tnew\tlast\n' \
+      > "$strun/observations"
+  ordered=$( cd "$tmp/stl" && FOUNDRY_HOME="$quiet" FOUNDRY_RUN="$strun" FOUNDRY_WHO="" \
+             sh "$runner" settled 2>&1 )
+  has   "the last row is what moved it"  "$ordered" "2031-12-31T23:59:59Z"
+  lacks "and the first row is not"       "$ordered" "2020-01-01T00:00:00Z"
 }
 a_host_is_settled_when_no_run_holds_a_workspace
 

@@ -3012,6 +3012,12 @@ wreck_runner "an upgrade refusal that names no remedy is caught" \
 wreck_runner "a run list that never says when it last moved is caught" \
   nowhen 's#  $(last_moved "$RUNS/$underway")##'
 
+# **Which row it keeps is now a decision.** `tail -n 1` could only read the end; a `read` loop
+# sees every row, so keeping the first instead of the last is one token away — and it answers a
+# stamp that is true about the run and wrong about when it moved.
+wreck_runner "a run list printing its oldest stamp is caught" \
+  firstmoved 's@^        when=$stamp@        when=${when:-$stamp}@'
+
 #
 # **One `awk` for the home, and `FILENAME` names each row.** Set the name once for the whole pass
 # and every row carries the first file's run — two runs reading one item then read as one.
