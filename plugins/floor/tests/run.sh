@@ -1663,6 +1663,14 @@ wreck_runner "targets stored at the run root are caught" \
 wreck_runner "a bootstrap written without an identity is caught" \
   alwaysboot 's|line=$(bootstrap_here) \|\| return 0|line=$(bootstrap_here); line="${line:-unknown unknown}"|'
 
+#
+# **A run with no target, allowed to derive from nothing.** The guard had no break, and #595 is the
+# count of what sits behind it: 80 runs holding a title and nothing else. A charter derived from no
+# target would give every one of them the look of work.
+#
+wreck_runner "a run with no target allowed to derive a charter is caught" \
+  noboot 's@^    boot=$(bootstrap_identity "$dir") || {@    boot=$(bootstrap_identity "$dir") \&\& {@'
+
 # The whole point of the allowlist. A run that may reach anything makes every check below decorative.
 wreck_runner "an allowlist that authorises anything is caught" \
   openbar 's|\[ "$(bootstrap_identity "$1")" = "$2" \] && return 0|[ -n "$2" ] \&\& return 0|'
