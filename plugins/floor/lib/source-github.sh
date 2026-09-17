@@ -437,9 +437,8 @@ open_deliveries() {
 }
 
 #
-# Where the source read this item from, as a target identity. A directory
-# is not a repository and says nothing; only a source
-# that lives in one can answer.
+# Where the source read this item from, as a target identity. A directory is not a repository and
+# says nothing; only a source that lives in one can answer.
 #
 # `.git` is appended because that is the identity floor compares against, and `gh` reports the
 # browse URL. One shape on both sides, or the comparison silently never matches.

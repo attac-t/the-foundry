@@ -20,14 +20,12 @@ bad() { failed=1; printf '  FAIL  %s\n' "$1"; }
 # than shared, because a plugin ships alone and a suite needing a
 # sibling breaks the thing it tests.
 #
-# Timeout exits 124 when it kills one. Inverting that gives zero,
-# which is this file's word for the suite noticing, so
-# a mutant that hung would be filed as caught.
+# Timeout exits 124 when it kills one. Inverting that gives zero, which is this file's word for the
+# suite noticing, so a mutant that hung would be filed as caught.
 #
 moot() { [ "$failed" -eq 0 ] && failed=3; printf '  MOOT  %s\n' "$1"; }
 
-# Eight times the slowest mutant measured here, which
-# was about fifteen seconds. A deadline reached
+# Eight times the slowest mutant measured here, which was about fifteen seconds. A deadline reached
 # too early is a verdict nobody earned.
 deadline=${FOUNDRY_AUDIT_DEADLINE:-120}
 
@@ -252,16 +250,14 @@ wreck "a review holding the stamp's own punctuation is caught" \
             s|^        \*"$newline"\*)|        ZZBREAK)|'
 
 
-# The tally every check reports through. A break that empties a
-# suite used to turn it green, and no audit could see it,
-# because the audit reads the same exit code.
+# The tally every check reports through. A break that empties a suite used to turn it green, and no
+# audit could see it, because the audit reads the same exit code.
 ( . "$root/tests/lib.sh"; summary 'a suite that ran nothing' ) >/dev/null 2>&1 \
   && bad "a suite that ran nothing passed" \
   || printf '  ok    a suite that ran nothing does not pass\n'
 echo
-# End to end, and not just the bound. A runner that never returns
-# must reach the verdict rather than the answer
-# the suite would have given without it.
+# End to end, and not just the bound. A runner that never returns must reach the verdict rather
+# than the answer the suite would have given without it.
 mkdir -p "$tmp/hang/bin" && printf '#!/bin/sh\nsleep 30\n' > "$tmp/hang/bin/verdicts.sh"
 ( deadline=1; caught hang )
 [ "$?" -eq 2 ] && printf '  ok    a hanging mutant reaches the verdict, not a pass\n' \

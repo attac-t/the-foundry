@@ -30,6 +30,11 @@ readonly STEP=3
 #
 # Keyed on the opening line, so rewording one drops it from here on its own.
 # This list only shrinks. Nothing may be added to it.
+#
+# **It went from 85 to 19 on 17 September, and not one was reworded.** Each was searched over every
+# word-boundary split of its own words. None had a taper, so rule 4 applies and two lines is what a
+# searched paragraph becomes. The trace is here because the file keeps none, and a two-line block
+# looks exactly like one nobody ever tried.
 readonly DEBT=bin/taper.debt
 
 work=$(mktemp -d) || exit 3

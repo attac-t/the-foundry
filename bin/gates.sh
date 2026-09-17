@@ -2,9 +2,8 @@
 #
 # Every product gate. `bin/agree.sh` checks the README and the workflow name these same ones.
 #
-#   sh bin/gates.sh         run them here
-#   sh bin/gates.sh linux   run them where `sh` is dash
-#   sh bin/gates.sh list    name them, run nothing
+# sh bin/gates.sh         run them here sh bin/gates.sh linux   run them where `sh` is dash sh
+# bin/gates.sh list    name them, run nothing
 #
 # A failing gate's output is kept under `~/.foundry-runs/gates`, one directory per run. Not under
 # `linux`: that container is `--rm`, so `FOUNDRY_EPHEMERAL` tells the run inside to keep nothing.
