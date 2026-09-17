@@ -5803,6 +5803,123 @@ a_host_is_settled_when_no_run_holds_a_workspace() {
   has "and it says when the run last moved" "$said" "$(tail -n 1 "$strun/observations" | cut -f1)"
 
   #
+  # **A stamp is not an age, and a reader acts on the age.** A run abandoned in the spring and one
+  # working now printed the same line, which is the pair this whole list exists to tell apart.
+  #
+  # `touch -t` and a fixed date, never `-d "3 days ago"` — that flag is GNU, and a case that skips
+  # on BSD is a case that proves nothing there.
+  lacks "a run that moved just now gets no word" "$said" "nothing touched for"
+
+  # **Both places, because the list reads both.** Ageing `observations` alone leaves the workspace
+  # minutes old, and a run a person is working in is not quiet however long the file sat.
+  age_the_run() { touch -t "$1" "$strun/observations" 2>/dev/null
+                  find "$strun/units" -exec touch -t "$1" {} + 2>/dev/null; return 0; }
+
+  age_the_run 202601010000
+  old=$( cd "$tmp/stl" && FOUNDRY_HOME="$quiet" FOUNDRY_RUN="$strun" FOUNDRY_WHO="" \
+         sh "$runner" settled 2>&1 )
+  has "a run quiet for months says nothing was written" "$old" "nothing touched for"
+
+  # The bar is the caller's, so raising it past the run silences the word and nothing else.
+  # Four digits, because five is refused — a bar of twenty-seven years is already absurd.
+  patient=$( cd "$tmp/stl" && FOUNDRY_HOME="$quiet" FOUNDRY_RUN="$strun" FOUNDRY_WHO="" \
+             FOUNDRY_QUIET_DAYS=9999 sh "$runner" settled 2>&1 )
+  lacks "and a bar nothing reaches says nothing" "$patient" "nothing touched for"
+  has   "while the run is still named"          "$patient" "$(basename "$strun")"
+
+  #
+  # **The bar comes from the environment, so it is a preference and not a record.** A repository
+  # commits `.foundry/gates`; whoever types the command sets this. So it is checked before use.
+  #
+  # A typo must not reach the arithmetic. `is_a_count` was not enough and a reader found out why:
+  # it takes `00`, `08` and `010`, which become `-1`, a base error, and seven.
+  typo=$( cd "$tmp/stl" && FOUNDRY_HOME="$quiet" FOUNDRY_RUN="$strun" FOUNDRY_WHO="" \
+        FOUNDRY_QUIET_DAYS=abc sh "$runner" settled 2>&1 )
+  has "a bar that is not a count is named"   "$typo" "one to four digits, no leading zero"
+  has "and the default is used instead"      "$typo" "nothing touched for 2 days"
+
+  # Zero and below are not counts of days either. **A bad bar is worse than a silent one:** measured,
+  # `find -mmin +-1` does not fail — it matches a file made seconds ago, so every run reads quiet.
+  nought=$( cd "$tmp/stl" && FOUNDRY_HOME="$quiet" FOUNDRY_RUN="$strun" FOUNDRY_WHO="" \
+        FOUNDRY_QUIET_DAYS=0 sh "$runner" settled 2>&1 )
+  has "a bar of zero is named too"           "$nought" "is [0] — one to four digits"
+  below=$( cd "$tmp/stl" && FOUNDRY_HOME="$quiet" FOUNDRY_RUN="$strun" FOUNDRY_WHO="" \
+        FOUNDRY_QUIET_DAYS=-3 sh "$runner" settled 2>&1 )
+  has "and so is one below zero"             "$below" "is [-3] — one to four digits"
+  has "and the run is still named quiet"     "$below" "nothing touched for"
+
+  # `1 days` is the tell that nobody read the line back.
+  one=$( cd "$tmp/stl" && FOUNDRY_HOME="$quiet" FOUNDRY_RUN="$strun" FOUNDRY_WHO="" \
+         FOUNDRY_QUIET_DAYS=1 sh "$runner" settled 2>&1 )
+  has   "a bar of one day reads as one day" "$one" "for 1 day or more"
+  lacks "and never as one days"             "$one" "1 days"
+
+  # **The line names a file, and a reader has to know what writes it.** Said once, above the list,
+  # because the boundary belongs where the person looking at the output is.
+  has "the list says what it read" "$said" "down to the checkout's top"
+
+  #
+  # **Coding writes the workspace and never `observations`.** Four rounds of one reader judged the
+  # word against one file, and a second model asked what the line was for. By floor's own count 101
+  # of 109 runs hold nothing but `run.began`, so reading that file alone calls a worker idle.
+  touch "$strun/units/01/workspace" 2>/dev/null
+  worked=$( cd "$tmp/stl" && FOUNDRY_HOME="$quiet" FOUNDRY_RUN="$strun" FOUNDRY_WHO="" \
+            sh "$runner" settled 2>&1 )
+  lacks "a run whose workspace moved is not quiet" \
+        "$(printf '%s' "$worked" | grep "$(basename "$strun")")" "nothing touched"
+
+  #
+  # **Nothing touched is not an empty pattern.** `grep -vxF -e ''` matches every line under `-x`,
+  # so a home where nobody is working would drop the whole list and print no word at all.
+  age_the_run 202601010000
+  alone=$( cd "$tmp/stl" && FOUNDRY_HOME="$quiet" FOUNDRY_RUN="$strun" FOUNDRY_WHO="" \
+           sh "$runner" settled 2>&1 )
+  has "a home where nothing was touched still names the quiet run" \
+      "$(printf '%s' "$alone" | grep "$(basename "$strun")")" "nothing touched"
+
+  #
+  # **The boundary, and nothing else held it.** A fixture months past the bar stays quiet whatever
+  # the arithmetic does, so `- 1` could go and every case above would still pass. A reader found it.
+  #
+  # An age relative to now needs `date -d` on GNU or `date -v` on BSD. Neither is POSIX, so both are
+  # asked for and the case says it cannot run rather than proving nothing quietly.
+  edge=$(date -d '47 hours ago' +%Y%m%d%H%M 2>/dev/null) \
+      || edge=$(date -v-47H +%Y%m%d%H%M 2>/dev/null)
+  past=$(date -d '49 hours ago' +%Y%m%d%H%M 2>/dev/null) \
+      || past=$(date -v-49H +%Y%m%d%H%M 2>/dev/null)
+
+  if [ -z "$edge" ] || [ -z "$past" ]; then
+    cannot "the two-day boundary — no date on this host counts backwards"
+  else
+    # **The workspace far back, and the file at the edge.** Otherwise the touched set answers
+    # for this run and the boundary in the other reading is never reached.
+    age_the_run 202601010000; touch -t "$edge" "$strun/observations"
+    inside=$( cd "$tmp/stl" && FOUNDRY_HOME="$quiet" FOUNDRY_RUN="$strun" FOUNDRY_WHO="" \
+              sh "$runner" settled 2>&1 )
+    # **This run's row, never the whole list.** Other runs in this home are quiet too, and a check
+    # reading every line would answer about one of them.
+    lacks "a run quiet 47 hours is under a two-day bar" \
+          "$(printf '%s' "$inside" | grep "$(basename "$strun")")" "nothing touched"
+
+    touch -t "$past" "$strun/observations"
+    outside=$( cd "$tmp/stl" && FOUNDRY_HOME="$quiet" FOUNDRY_RUN="$strun" FOUNDRY_WHO="" \
+               sh "$runner" settled 2>&1 )
+    has "and one quiet 49 hours is over it" \
+        "$(printf '%s' "$outside" | grep "$(basename "$strun")")" "nothing touched for 2 days"
+  fi
+
+  age_the_run 202601010000
+
+  # **A leading zero is four faults wearing one shape**, and `is_a_count` takes all of them.
+  # Twenty digits is the fifth: it overflows to a number nobody asked for.
+  for odd in 00 08 010 99999; do
+    odd_said=$( cd "$tmp/stl" && FOUNDRY_HOME="$quiet" FOUNDRY_RUN="$strun" FOUNDRY_WHO="" \
+                FOUNDRY_QUIET_DAYS="$odd" sh "$runner" settled 2>&1 )
+    has "a bar of $odd is refused"           "$odd_said" "is [$odd] — one to four digits"
+    has "and $odd falls back to the default" "$odd_said" "nothing touched for 2 days"
+  done
+
+  # --- a run whose work left, and where it went ---
   # **A run whose work left by hand had no word.** Its base is pinned, so merging the trunk in
   # makes it ungradeable — the work comes out and lands as an ordinary branch, and that is the
   # correct path. Seven runs here sat at `graded` with their work merged and `settled` named none.
@@ -5834,6 +5951,18 @@ a_host_is_settled_when_no_run_holds_a_workspace() {
   mv "$strun/observations" "$strun/observations.aside"
   silent=$( cd "$tmp/stl" && FOUNDRY_HOME="$quiet" FOUNDRY_RUN="$strun" FOUNDRY_WHO=""             sh "$runner" settled 2>&1 )
   has "a run that wrote nothing says so" "$silent" "never moved"
+
+  #
+  # **A name is not a file.** With the observations moved aside, put a directory of that name in
+  # its place and age it. `find` matches the name either way, so `-type f` is the whole of what
+  # keeps a directory out of the quiet set — and this run genuinely wrote nothing.
+  mkdir -p "$strun/observations" 2>/dev/null
+  age_the_run 202601010000
+  shaped=$( cd "$tmp/stl" && FOUNDRY_HOME="$quiet" FOUNDRY_RUN="$strun" FOUNDRY_WHO="" \
+            sh "$runner" settled 2>&1 )
+  lacks "a directory of that name is not a quiet run" \
+        "$(printf '%s' "$shaped" | grep "$(basename "$strun")")" "nothing touched"
+  rmdir "$strun/observations" 2>/dev/null
   mv "$strun/observations.aside" "$strun/observations"
   # Grading changes nothing. The workspace is still there and still being read.
   q gates >/dev/null 2>&1

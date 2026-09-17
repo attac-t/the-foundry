@@ -607,6 +607,65 @@ Three of the four conditions a safe boundary wants fall out of that single test 
 and a gate mid-run both hold a workspace. **The fourth is a transition floor has no word for**, and
 nothing here pretends otherwise.
 
+**Each run in flight carries the time it last moved, and a run that has gone quiet is named.**
+A stamp says how far a run got and nothing about whether it is still going, so one abandoned in
+the spring and one working now printed the same line.
+
+| | |
+|---|---|
+| quiet under the bar | the stamp alone |
+| untouched at the bar or past it | **`nothing touched for N days or more`** |
+| what it reads | `observations`, and the workspace down to the checkout's top. **A `git status` counts**, because that writes `index.lock` |
+| `FOUNDRY_QUIET_DAYS` | the bar, in days. Two by default |
+
+**Three words were refused before this one, and each refusal moved the reading.** `stalled` claimed
+a state the filesystem cannot establish — a copy carries a fresh time. *Nothing written* dropped its
+subject. *Observations not written* named the file and **still called a worker at a keyboard idle**,
+because coding writes the workspace and never that file.
+
+**So both are read.** By floor's own count, 101 of 109 runs hold nothing but `run.began` — so one
+file alone was wrong about most of them. Whether untouched means stranded is the reader's call.
+
+**The answer comes from `find -mmin`.** Turning an ISO stamp into an age needs `date -d` on GNU and
+`date -j -f` on BSD, so the question goes to the filesystem instead.
+
+**Minutes, and not whole days.** `-mtime` counts days and the hosts round the remainder
+differently: GNU and POSIX discard it, and a reader reports that FreeBSD and macOS round up — so a
+two-day bar would fire there after one. **`-mmin` has no remainder to round.** Measured at the
+boundary: `+2879` takes 49 hours and leaves 47.
+
+**Neither `-mmin` nor `-maxdepth` is POSIX**, and this call needs both. Whole days were chosen to
+keep the call portable, and the argument was contradicted on its own line. **The bar is GNU and
+BSD, and this page says so rather than claiming anywhere.**
+
+**Two `find` calls for the whole list, one substitution a row, and a second on a quiet one.** Measured on the live home:
+431ms for the first, and a substitution is 18ms.
+
+**The second call goes six levels, because that is where a commit lands.** A run holds
+`units/01/workspace/<slot>`, so the checkout is five deep and its `.git` is six. Measured on this
+home: **1.2 seconds warm, 13.2 cold**. Pruning `.git` measured 33.8, on a walk that carried no depth
+at all — so that number is an unbounded walk's, not a prune's.
+
+**What it misses is narrower than it looks.** Creating, renaming or deleting a file moves its
+parent, and `src/` is depth six — so a write-by-rename one level in is seen, which is how vim,
+emacs and `sed -i` all save. **Missed is an in-place rewrite, and anything two levels down.**
+
+**`settled` already spends thirty seconds**, nearly all of it in `runs` over 144 of them. This adds
+three per cent, and the deep walk would have added forty. [#561](https://github.com/attac-t/the-foundry/issues/561) owns that thirty.
+
+**`FOUNDRY_QUIET_DAYS` is the caller's, not the repository's.** `.foundry/gates` and
+`.foundry/judged` are files a repository commits. This is an environment variable whoever types the
+command sets, so it is a preference — **checked before use, and a value that is not a count of days
+is named out loud and ignored.**
+
+**A leading zero is refused, and so is a fifth digit.** `00` is minus one, `08` is not a number in
+base 8, `010` is seven, and twenty digits overflow. **A bad bar is worse than a silent one:** `find
+-mtime +-1` does not fail — measured, it matches a file made seconds ago, so every run would read
+quiet at once.
+
+**The filesystem is not the record.** A run restored from a copy carries a fresh time and reads as
+working. The stamp beside the word is the durable fact.
+
 **A row names the runtime that wrote it.** `run.began` and `gate.finished` carry `runtime=floor/x.y.z`,
 read from the manifest beside the script rather than compiled in.
 
