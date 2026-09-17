@@ -3055,7 +3055,7 @@ wreck_runner "a count that cannot say one day is caught" \
 # **The line names a file and the reader has to know what writes it.** Take the sentence away and
 # the output says `observations` with nothing saying that coding in a workspace does not touch it.
 wreck_runner "a file named with nothing saying what writes it is caught" \
-  nowriters 's@^    note "  a gate, a judge@    : "  a gate, a judge@'
+  nowriters 's@^    note "  read:@    : "  read:@'
 
 #
 # **The boundary itself.** `- 1` is the whole of what makes `+2879` mean 48 hours, and a fixture
