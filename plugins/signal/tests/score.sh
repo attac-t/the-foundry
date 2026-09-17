@@ -61,9 +61,8 @@ is "and nothing else fired"     "$(without long "$longwords")" 0
 
 # --- one thing to answer ---
 #
-# A person answers one question. Two is two things, and the count is the
-# only half of the conclusion standard a machine
-# can see without guessing.
+# A person answers one question. Two is two things, and the count is the only half of the
+# conclusion standard a machine can see without guessing.
 #
 asked_one='Done. Shall I merge it?'
 asked_three='Should we merge? Or wait? Or drop it?'
@@ -232,8 +231,7 @@ not "and still say why"          "$(printf '%s\n' "$report" | awk -F= '$1 == "re
 # --- the plugin holds itself to this ---
 # Capture the code before anything else runs, or a command substitution in the label overwrites it.
 
-# A document is not a reply. Both counts measure what a
-# person answers in one turn, and a page
+# A document is not a reply. Both counts measure what a person answers in one turn, and a page
 # explaining them holds many of each.
 
 # Named files let a new skill ship unheld. `stranger` did, and so had `economy` since the day it

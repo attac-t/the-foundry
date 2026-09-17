@@ -6,9 +6,8 @@
 # shape — an issue tracker nobody may post to, an export, a file someone handed you — and a contract
 # admitting only four-verb sources would make those unusable rather than limited.
 #
-# Every other verb exits 2. Core reads that as this source having no
-# way, and refuses at 27, which is a different fact
-# from a source that failed today.
+# Every other verb exits 2. Core reads that as this source having no way, and refuses at 27, which
+# is a different fact from a source that failed today.
 #
 #     items/<item>                   what someone wants
 #

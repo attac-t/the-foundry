@@ -283,9 +283,8 @@ list_runs() {
 }
 
 #
-# Whether this host can be replaced. A run holding a workspace has a
-# checkout somebody may be writing to, and swapping the
-# host under it loses work nobody recorded.
+# Whether this host can be replaced. A run holding a workspace has a checkout somebody may be
+# writing to, and swapping the host under it loses work nobody recorded.
 #
 # Three of the four conditions a safe boundary wants fall out of that one test. An attached
 # session and a gate mid-run both hold a workspace, and the fourth
@@ -1176,9 +1175,8 @@ record_base() {
 }
 
 #
-# The only operation that makes a commit and the only one
-# that records provenance. A commit made any other way is
-# unrecorded, and `deliver` refuses it.
+# The only operation that makes a commit and the only one that records provenance. A commit made
+# any other way is unrecorded, and `deliver` refuses it.
 #
 # Provenance, never acceptance. A commit this made needs no
 # human. A commit nobody can account for does.
@@ -1716,13 +1714,11 @@ add_advised() {
 }
 
 #
-# Advice may not make the source a target. An item filed in a repository
-# can name that repository, and the bootstrap already authorises
-# it wherever you stand, so advice alone would select it.
+# Advice may not make the source a target. An item filed in a repository can name that repository,
+# and the bootstrap already authorises it wherever you stand, so advice alone would select it.
 #
-# A source that cannot say leaves this open. Nothing here can
-# refuse what nothing can name, and a directory
-# source has no repository to be.
+# A source that cannot say leaves this open. Nothing here can refuse what nothing can name, and a
+# directory source has no repository to be.
 #
 refuse_the_source_as_advice() {
     from=$(source_says where "$(item_id "$1")" 2>/dev/null) || return 0
@@ -1945,9 +1941,8 @@ never_ran() { [ "$1" -eq 126 ] || [ "$1" -eq 127 ]; }
 # The next run passed all eight gates at the same commit and completion
 # still refused, because a failure at a ref can never be taken back.
 #
-# A gate wanting to fail has 1. Nothing here kills itself to say so,
-# and a gate that did would be choosing a code this
-# reads as never having answered.
+# A gate wanting to fail has 1. Nothing here kills itself to say so, and a gate that did would be
+# choosing a code this reads as never having answered.
 #
 was_killed() { [ "$1" -gt 128 ] && [ "$1" -lt 160 ]; }
 
@@ -2371,9 +2366,8 @@ EOF
     return 14
 }
 
-# Why a gate failed here and passes by hand. The run changed a
-# file the gate runs, so it was graded against a tree
-# that is neither the base nor what ships.
+# Why a gate failed here and passes by hand. The run changed a file the gate runs, so it was graded
+# against a tree that is neither the base nor what ships.
 #
 # Said only when a gate actually failed. Nearly every run that substitutes
 # something passes anyway, and a note on all of those is a note people skip.
@@ -3171,9 +3165,8 @@ what_the_target_requires() { printf '%s\n' "$1" | sed 1d; }
 
 
 #
-# Two deliveries against one target, and whether they can be brought
-# together. Nothing coordinates them: the source is asked what
-# else is open, and a branch name is all that crosses.
+# Two deliveries against one target, and whether they can be brought together. Nothing coordinates
+# them: the source is asked what else is open, and a branch name is all that crosses.
 #
 # **Nothing reads another run's workspace.** The merge is tried in a tree of this run's own, and a
 # branch name is the whole of what came from anywhere else.
@@ -3245,9 +3238,8 @@ their_head() {
 }
 
 #
-# The merge, tried and thrown away. In the workspace it would leave
-# this run's work in conflict over a question
-# about someone else's.
+# The merge, tried and thrown away. In the workspace it would leave this run's work in conflict
+# over a question about someone else's.
 #
 # `FETCH_HEAD` is per worktree and this one was just made, so the sha travels rather than the name.
 #
@@ -3283,9 +3275,8 @@ forget_tree() {
 }
 
 #
-# Exactly one host may take an item. Two seeing the same one
-# and both starting is the failure, and almost never
-# is not a claim — it is money spent twice.
+# Exactly one host may take an item. Two seeing the same one and both starting is the failure, and
+# almost never is not a claim — it is money spent twice.
 #
 # A claim is not authority. It says a host started, never that it may — `policy` still decides what
 # a run may touch, and this widens nothing.
@@ -3369,13 +3360,11 @@ claim_when() { printf '%s\n' "$1" | awk -F'\t' '{ print $1 }'; }
 # carried between machines and its own history went with it, and a run
 # somebody deletes took its own history too.
 #
-# An observation is not evidence. It says a thing occurred, and satisfying
-# a clause needs a trusted producer, a ref and a clause to bind
-# to — which is why completion never reads this file.
+# An observation is not evidence. It says a thing occurred, and satisfying a clause needs a trusted
+# producer, a ref and a clause to bind to — which is why completion never reads this file.
 #
-# A field nobody set is absent rather than empty. Composition follows
-# the identities a record genuinely knows, so a missing one
-# narrows what can be asked and breaks nothing.
+# A field nobody set is absent rather than empty. Composition follows the identities a record
+# genuinely knows, so a missing one narrows what can be asked and breaks nothing.
 #
 observe() {
     dir=$(active_run) || exit 1
@@ -3403,9 +3392,8 @@ refuse_an_unnamed_field() {
 }
 
 #
-# The recording host names itself, because two machines do not
-# agree on the time. Order inside one file is the order
-# it was written, and across two there is none.
+# The recording host names itself, because two machines do not agree on the time. Order inside one
+# file is the order it was written, and across two there is none.
 #
 record_observation() {
     dir=$1; event=$2
@@ -3442,9 +3430,8 @@ refuse_a_torn_row() {
 }
 
 #
-# Every run this home holds, one row each, with the run named first. Two
-# runs over one work item compose here without either
-# ever having heard of the other.
+# Every run this home holds, one row each, with the run named first. Two runs over one work item
+# compose here without either ever having heard of the other.
 #
 # A run holding none contributes none. Nothing is counted here and nothing is summed — the rows go
 # out as they were written, and the question is asked with `awk`.
@@ -3481,21 +3468,17 @@ say_the_rows() {
 }
 
 #
-# What produced this row. A run graded under one implementation
-# and completed under another was judged twice, and the two
-# holes closed this week are why that is worth knowing.
+# What produced this row. A run graded under one implementation and completed under another was
+# judged twice, and the two holes closed this week are why that is worth knowing.
 #
-# Read from the manifest beside this script, because a version compiled
-# in is a second copy of the same fact and the
-# one that goes stale.
+# Read from the manifest beside this script, because a version compiled in is a second copy of the
+# same fact and the one that goes stale.
 #
-# Recorded and not yet refused. Nothing here compares
-# two runtimes, and the decision to refuse wants
-# rows to argue from rather than a guess.
+# Recorded and not yet refused. Nothing here compares two runtimes, and the decision to refuse
+# wants rows to argue from rather than a guess.
 #
-# Resolved once, before anything moves. `gates` enters the workspace, and a
-# path relative to `$0` stops resolving from there — so
-# every gate row said `floor/unknown`.
+# Resolved once, before anything moves. `gates` enters the workspace, and a path relative to `$0`
+# stops resolving from there — so every gate row said `floor/unknown`.
 #
 # `run.began` was right and the gate rows were wrong,
 # which is the worst shape: the rows worth arguing
@@ -3510,9 +3493,8 @@ runtime() {
     printf 'floor/%s' "$stated"
 }
 
-# Which agent produced the work, in whatever word its harness uses. Core names the
-# field and never the value, the same rule that keeps a
-# label's prefix out of core.
+# Which agent produced the work, in whatever word its harness uses. Core names the field and never
+# the value, the same rule that keeps a label's prefix out of core.
 #
 # No fallback. `selector` falls back to a git address because a run with no
 # human may not deliver. A run with no named worker is ordinary.
@@ -3530,9 +3512,8 @@ began_with() {
 }
 
 #
-# Floor's own moments. An observation is not evidence, so a home that
-# cannot take one must not stop the work somebody
-# actually asked for.
+# Floor's own moments. An observation is not evidence, so a home that cannot take one must not stop
+# the work somebody actually asked for.
 #
 # Silent when it fails, on purpose. A run whose home went read-only has a louder problem, and every
 # verb that needs to write already says so.
@@ -3544,13 +3525,11 @@ observations_file() { printf '%s/observations' "$1"; }
 list_observations() { cat "$(observations_file "$1")" 2>/dev/null; }
 
 #
-# Something this run learned that its own bar does not cover. Recorded so it survives the
-# run, and it blocks nothing — a run that widened itself to act on
-# one would be doing work nobody selected.
+# Something this run learned that its own bar does not cover. Recorded so it survives the run, and
+# it blocks nothing — a run that widened itself to act on one would be doing work nobody selected.
 #
-# Never read by completion. An aside is not a clause, not evidence and not
-# a grant, and the only thing that changes because of
-# one is what a person does next.
+# Never read by completion. An aside is not a clause, not evidence and not a grant, and the only
+# thing that changes because of one is what a person does next.
 #
 aside() {
     [ "$#" -le 1 ] || { usage; exit 2; }
@@ -3565,9 +3544,8 @@ aside() {
         >> "$(asides_file "$dir")" 2>/dev/null || die_unwritable "$(asides_file "$dir")"
 }
 
-# Every run's, and never only this one's. An aside is written
-# for whoever comes next, so a reader who can see one
-# run's has been shown the least useful half.
+# Every run's, and never only this one's. An aside is written for whoever comes next, so a reader
+# who can see one run's has been shown the least useful half.
 #
 # Measured before this existed: one aside, across
 # each run ever made here. A verb that records
@@ -3585,9 +3563,8 @@ asides_file() { printf '%s/asides' "$1"; }
 list_asides() { cat "$(asides_file "$1")" 2>/dev/null; }
 
 #
-# Printed after the delivery, never before it. A reader who has just been
-# told where the work went is the one who can act
-# on what it left behind.
+# Printed after the delivery, never before it. A reader who has just been told where the work went
+# is the one who can act on what it left behind.
 #
 say_the_asides() {
     held=$(list_asides "$1")
@@ -3907,9 +3884,8 @@ spaced() { printf '%s' "$1" | awk '{ $1 = $1; print }' | tr '
 # `""` on both sides of each comparison. An `-v` assignment is a numeric string, so a clause named
 # `123` would match a record named `0123` — the identity defect §2.2 already paid for once.
 #
-# What may answer a clause, decided by the kind a human wrote. Trust was
-# recorded and never read, so a gate could satisfy a
-# clause whose whole point is that no command can.
+# What may answer a clause, decided by the kind a human wrote. Trust was recorded and never read,
+# so a gate could satisfy a clause whose whole point is that no command can.
 #
 # One row per kind, and no order over them. RFC-001 says the kinds are not a
 # scale: a judgement raised to a gate wants a command that cannot exist.
@@ -3942,9 +3918,8 @@ satisfied() {
         END { exit !(yes && !no) }' "$(evidence_file "$1")" 2>/dev/null
 }
 
-# A verdict from something that did not produce the work. That is the whole of
-# what `judged` means, and a worker writing one about
-# itself has answered nothing.
+# A verdict from something that did not produce the work. That is the whole of what `judged` means,
+# and a worker writing one about itself has answered nothing.
 #
 # Floor cannot prove who typed it, because the file is writable by the same
 # user. Refusing the name it already knows is what an honest record can do.
@@ -4725,9 +4700,8 @@ authorise() {
     freeze_selection "$run_dir" "$selection_path"
 }
 
-# A run authorised before the rename holds `authorised-targets`, and it is
-# read rather than refused. That name said who allowed the
-# selection, which `policy` already answers.
+# A run authorised before the rename holds `authorised-targets`, and it is read rather than
+# refused. That name said who allowed the selection, which `policy` already answers.
 #
 # Silently, and on purpose. This is asked three
 # times per command, and any note that fires
@@ -5601,9 +5575,8 @@ ask_to_authorise() {
 
     [ "$asked" -eq 0 ] && return 0
 
-    # This one blocks rather than exits, because authorisation
-    # names every introduced clause before it stops
-    # and a reader needs all of them.
+    # This one blocks rather than exits, because authorisation names every introduced clause before
+    # it stops and a reader needs all of them.
     [ "$asked" -eq 2 ] && {
         note "this work source can only be read, so nothing can carry that question"
         return 1
@@ -6041,9 +6014,8 @@ refuse_unasked() {
 refuse_unless_answered() {
     [ "$1" -eq 0 ] && return 0
 
-    # A source with no way to carry this is not a source that failed
-    # today. One is a shape a caller picks and the other is a fault
-    # it should retry, and a single message made them look alike.
+    # A source with no way to carry this is not a source that failed today. One is a shape a caller
+    # picks and the other is a fault it should retry, and a single message made them look alike.
     [ "$1" -eq 2 ] && {
         note "this work source can only be read, so nothing here can carry a $2"
         exit 27

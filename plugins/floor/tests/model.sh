@@ -300,9 +300,8 @@ STUB
 # that person saying yes. A second author is what tells them apart.
 gh_says() { said_by a-person "$1"; }
 
-# The run's own words, in the same place a person's would land. Only a test that means to
-# check the refusal calls this — every other comment in this suite is a
-# person's, and reads that way.
+# The run's own words, in the same place a person's would land. Only a test that means to check the
+# refusal calls this — every other comment in this suite is a person's, and reads that way.
 run_says() { said_by foundry-run "$1"; }
 
 said_by() {
@@ -1510,9 +1509,8 @@ a_run_cannot_author_its_own_bar() {
 }
 a_run_cannot_author_its_own_bar
 
-# Whether `chmod 000` means anything here. Windows records no read bit and root ignores
-# the one it finds, so a check about an unreadable file would pass for a
-# reason that is not the rule.
+# Whether `chmod 000` means anything here. Windows records no read bit and root ignores the one it
+# finds, so a check about an unreadable file would pass for a reason that is not the rule.
 records_unreadable() {
   probe="$tmp/read-probe"
   : > "$probe"
@@ -1629,9 +1627,8 @@ a_pinned_name_is_not_recordable() {
 a_pinned_name_is_not_recordable
 
 #
-# A gate a signal killed is not a gate that failed. The ledger is append-only,
-# so a row saying it failed spends that commit for good and the
-# work has to move to a new one to be gradeable at all.
+# A gate a signal killed is not a gate that failed. The ledger is append-only, so a row saying it
+# failed spends that commit for good and the work has to move to a new one to be gradeable at all.
 #
 a_killed_gate_is_not_a_failed_one() {
   make_repo "$tmp/kg" main && set_origin "$tmp/kg" 'https://github.com/acme/kg.git' \
@@ -1660,9 +1657,8 @@ a_killed_gate_is_not_a_failed_one() {
 a_killed_gate_is_not_a_failed_one
 
 #
-# An idea outside this run's bar is recorded, never a blocker. A run that
-# widened itself to act on one would be doing work nobody
-# selected, and one that dropped it loses what it learned.
+# An idea outside this run's bar is recorded, never a blocker. A run that widened itself to act on
+# one would be doing work nobody selected, and one that dropped it loses what it learned.
 #
 an_aside_is_kept_and_blocks_nothing() {
   make_repo "$tmp/as" main && set_origin "$tmp/as" 'https://github.com/acme/as.git' \
@@ -1729,9 +1725,8 @@ an_aside_outlives_the_run_that_wrote_it() {
 an_aside_outlives_the_run_that_wrote_it
 
 #
-# Something happened, recorded. Not evidence, not a grant, and not a clause —
-# the ledger beside it answers whether a bar was met,
-# and this answers only that a thing occurred.
+# Something happened, recorded. Not evidence, not a grant, and not a clause — the ledger beside it
+# answers whether a bar was met, and this answers only that a thing occurred.
 #
 an_observation_is_not_evidence() {
   make_repo "$tmp/ob" main && set_origin "$tmp/ob" 'https://github.com/acme/ob.git' \
@@ -3669,9 +3664,8 @@ the_work_source() {
 the_work_source
 
 #
-# Floor records the moments it already knows. Nothing is kept as a total, so
-# how many gates failed before one passed is counted from the rows
-# rather than read from a number somebody incremented.
+# Floor records the moments it already knows. Nothing is kept as a total, so how many gates failed
+# before one passed is counted from the rows rather than read from a number somebody incremented.
 #
 a_run_answers_from_its_own_rows() {
   make_repo "$tmp/ans" main && set_origin "$tmp/ans" 'https://github.com/acme/ans.git' \
@@ -3713,9 +3707,8 @@ a_run_answers_from_its_own_rows() {
 a_run_answers_from_its_own_rows
 
 #
-# Every run this home holds, one row each, with the run named first. Two
-# runs over one work item compose here without either
-# ever having heard of the other.
+# Every run this home holds, one row each, with the run named first. Two runs over one work item
+# compose here without either ever having heard of the other.
 #
 two_runs_over_one_item_compose() {
   make_repo "$tmp/cmp" main && set_origin "$tmp/cmp" 'https://github.com/acme/cmp.git' \
@@ -3762,9 +3755,8 @@ two_runs_over_one_item_compose() {
 two_runs_over_one_item_compose
 
 #
-# Exactly one host may take an item. Two seeing the same one
-# and both starting is the failure, and almost never
-# is not a claim — it is money spent twice.
+# Exactly one host may take an item. Two seeing the same one and both starting is the failure, and
+# almost never is not a claim — it is money spent twice.
 #
 exactly_one_host_takes_an_item() {
   make_repo "$tmp/clm" main && set_origin "$tmp/clm" 'https://gitlab.com/acme/clm.git' \
@@ -3841,13 +3833,11 @@ exactly_one_host_takes_an_item() {
 }
 exactly_one_host_takes_an_item
 #
-# What produced this row. A run graded under one implementation
-# and completed under another was judged twice, and the two
-# holes closed this week are why that is worth knowing.
+# What produced this row. A run graded under one implementation and completed under another was
+# judged twice, and the two holes closed this week are why that is worth knowing.
 #
-# Recorded and not yet refused. Nothing compares two runtimes,
-# and choosing whether to refuse wants rows to argue
-# from rather than a guess.
+# Recorded and not yet refused. Nothing compares two runtimes, and choosing whether to refuse wants
+# rows to argue from rather than a guess.
 #
 a_row_names_the_runtime_that_wrote_it() {
   make_repo "$tmp/rt" main && set_origin "$tmp/rt" 'https://github.com/acme/rt.git' \
@@ -5802,9 +5792,8 @@ a_panel_agrees_or_nothing_moves
 a_declared_judgement_is_answered_by_a_verdict
 
 #
-# Whether this host can be replaced. A run holding a workspace has a
-# checkout somebody may be writing to, and swapping the
-# host under it loses work nobody recorded.
+# Whether this host can be replaced. A run holding a workspace has a checkout somebody may be
+# writing to, and swapping the host under it loses work nobody recorded.
 #
 # Its own home, because every other fixture here leaves runs behind and a
 # host is only settled when nothing at all is in flight.
@@ -6846,9 +6835,8 @@ The answer is 9876543210.'
   # pull request came back as this one's delivery, so `publish` compared branches,
   # found them different, and refused a run that had never delivered.
   #
-  # The day comes from the run under test. Written out, it was true for one
-  # day: past midnight the decoy shared no tokens, the adapter
-  # answered right for the wrong reason, and main went red.
+  # The day comes from the run under test. Written out, it was true for one day: past midnight the
+  # decoy shared no tokens, the adapter answered right for the wrong reason, and main went red.
   day=$(basename "$ghrun" | cut -c1-10)
   decoy="foundry/$day-item-219-0000 https://example.invalid/pr/9 $day-item-219-0000"
   { echo "$decoy"; cat "$GH_STORE/prs"; } > "$GH_STORE/prs.new"
@@ -6976,13 +6964,11 @@ The answer is 9876543210.'
 the_other_adapter
 
 #
-# An item filed in a repository, advising that same repository. The bootstrap
-# authorises it because the run stands there, so nothing else
-# would stop advice alone from selecting it.
+# An item filed in a repository, advising that same repository. The bootstrap authorises it because
+# the run stands there, so nothing else would stop advice alone from selecting it.
 #
-# A human naming it still can. The refusal is about the path nobody
-# typed, not about the repository, and self-hosting is
-# exactly this shape done deliberately.
+# A human naming it still can. The refusal is about the path nobody typed, not about the
+# repository, and self-hosting is exactly this shape done deliberately.
 #
 advice_may_not_make_the_source_a_target() {
   make_repo "$tmp/sn" main && set_origin "$tmp/sn" 'https://github.com/acme/sn.git' \
@@ -7016,13 +7002,11 @@ advice_may_not_make_the_source_a_target() {
 advice_may_not_make_the_source_a_target
 
 #
-# A source that answers `read` and nothing else. §2.1 proposes four
-# operations and this has one, which the goal calls valid, so the
-# contract admits a source that is less than four verbs.
+# A source that answers `read` and nothing else. §2.1 proposes four operations and this has one,
+# which the goal calls valid, so the contract admits a source that is less than four verbs.
 #
-# The run reads its item and then cannot ask. Both facts matter:
-# a source this small still carries work, and every
-# verb it lacks says which one and why.
+# The run reads its item and then cannot ask. Both facts matter: a source this small still carries
+# work, and every verb it lacks says which one and why.
 #
 a_source_that_can_only_be_read() {
   make_repo "$tmp/ro" main && set_origin "$tmp/ro" 'https://gitlab.com/acme/ro.git' \
@@ -7054,9 +7038,8 @@ a_source_that_can_only_be_read() {
   is "and telling it about a delivery refuses too" \
      "$(code_of ro source publish work/ro 'The work')" "27"
 
-  # Authorisation is where a person notices. It blocks on an introduced clause, and the
-  # reason it gives has to be the shape of the source rather
-  # than a fault it should retry.
+  # Authorisation is where a person notices. It blocks on an introduced clause, and the reason it
+  # gives has to be the shape of the source rather than a fault it should retry.
   has "an introduced clause blocks, and says the source cannot ask" \
       "$(ro_says authorise)" "can only be read"
 }

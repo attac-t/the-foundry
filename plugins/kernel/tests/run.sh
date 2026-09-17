@@ -40,14 +40,12 @@ bad() { failed=1; printf '  FAIL  %s\n' "$1"; }
 # than shared, because a plugin ships alone and a suite needing a
 # sibling breaks the thing it tests.
 #
-# Timeout exits 124 when it kills one. Inverting that gives zero,
-# which is this file's word for the suite noticing, so
-# a mutant that hung would be filed as caught.
+# Timeout exits 124 when it kills one. Inverting that gives zero, which is this file's word for the
+# suite noticing, so a mutant that hung would be filed as caught.
 #
 moot() { [ "$failed" -eq 0 ] && failed=3; printf '  MOOT  %s\n' "$1"; }
 
-# Eight times the slowest mutant measured here, which
-# was about fifteen seconds. A deadline reached
+# Eight times the slowest mutant measured here, which was about fifteen seconds. A deadline reached
 # too early is a verdict nobody earned.
 deadline=${FOUNDRY_AUDIT_DEADLINE:-120}
 
@@ -362,9 +360,8 @@ strays() { ls "${TMPDIR:-/tmp}"/kernel-preflight-*.md 2>/dev/null | sort; }
 tally() { printf '%s\n' "$1" | grep -c . ; }
 
 
-# The tally every check reports through. A break that empties a
-# suite used to turn it green, and no audit could see it,
-# because the audit reads the same exit code.
+# The tally every check reports through. A break that empties a suite used to turn it green, and no
+# audit could see it, because the audit reads the same exit code.
 audit_the_tally() {
   ( . "$root/tests/lib.sh"; summary 'a suite that ran nothing' ) >/dev/null 2>&1 \
     && bad "a suite that ran nothing passed" \

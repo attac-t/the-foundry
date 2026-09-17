@@ -40,9 +40,8 @@ lacks() {
   esac
 }
 
-# Report the tally, and answer whether it stands. Zero failures over zero
-# checks is not a suite that passed but one that never ran, and the
-# gate printed PASS for both. A skip counts as neither.
+# Report the tally, and answer whether it stands. Zero failures over zero checks is not a suite
+# that passed but one that never ran, and the gate printed PASS for both. A skip counts as neither.
 summary() {
   printf '%s — %d passed, %d failed\n' "$1" "$passed" "$failed"
 

@@ -34,9 +34,8 @@ BEGIN {
   # Four, and only on block. A warn costs nothing, so it keeps firing on the share alone.
   if (long_min    == "") long_min    = 4
 
-  # Questions in the prose, counted. More than one and a person has
-  # more than one thing to answer, which is the only half
-  # of the conclusion standard a machine can see.
+  # Questions in the prose, counted. More than one and a person has more than one thing to answer,
+  # which is the only half of the conclusion standard a machine can see.
   if (asks_warn   == "") asks_warn   = 1
   fence = 0
 
@@ -75,13 +74,11 @@ fence               { fbuf = fbuf EDGE $0; next }
                                  { pbuf = pbuf " " line }
 
 #
-# A question mark inside a fence never reaches here, and
-# one inside a link still does. Both are wrong in the
-# safe direction, and a warn costs a reply nothing.
+# A question mark inside a fence never reaches here, and one inside a link still does. Both are
+# wrong in the safe direction, and a warn costs a reply nothing.
 #
-# Merging three asks into one sentence beats this count and
-# loses to the sentence length. Splitting them across
-# replies beats both, and nothing here sees it.
+# Merging three asks into one sentence beats this count and loses to the sentence length. Splitting
+# them across replies beats both, and nothing here sees it.
 #
 function questions(s,   t) { t = s; return gsub(/\?/, "", t) }
 
