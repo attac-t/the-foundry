@@ -43,9 +43,18 @@ body_of() { gh issue view "$1" --json body --jq .body 2>/dev/null; }
 # `- [ ]` and nothing looser. A plain `- ` bullet is the older shape and cannot be ticked at all —
 # `closing.md` calls that unrecordable, counts 219 of them, and says converting one is worth it only
 # when somebody is about to rely on it. Not this script's question.
-holds_an_unticked_box() { printf '%s' "$1" | grep -q -- '- \[ \]'; }
+#
+# **At the start of a line, because an issue discusses its own boxes.** Unanchored, this counted
+# `- [ ]` inside a sentence and inside backticks: #494 read as ten boxes and holds seven, and #746
+# read as one and holds none. **A box quoted is not a box open.**
+#
+# **A struck box is answered, not ignored.** `closing.md` strikes a requirement that was wrong when
+# written and leaves the `- [ ]`, so counting it makes a decision look like debt for ever.
+unticked_lines() { printf '%s' "$1" | grep -- '^- \[ \]' | grep -v -- '^- \[ \] ~~'; }
 
-count_of() { printf '%s' "$1" | grep -c -- '- \[ \]' || true; }
+holds_an_unticked_box() { [ -n "$(unticked_lines "$1")" ]; }
+
+count_of() { unticked_lines "$1" | grep -c '' || true; }
 
 main() {
     numbers=$(closed_numbers) || { note 'unticked — GitHub could not be asked'; exit 3; }

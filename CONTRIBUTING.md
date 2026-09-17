@@ -121,6 +121,14 @@ yours to run when it applies:
 | three operating systems | a matrix nobody has locally | you touch anything a suite runs |
 | `sh bin/unticked.sh` | a minute, and it reaches GitHub | before you close an issue, and after a `Closes #N` merge |
 
+**It counts a box at the start of a line, and never one quoted in prose.** An issue explaining why
+a box was struck quotes it, and unanchored that read as debt: #494 counted ten and holds seven,
+#746 counted one and holds none. **A struck box is answered, not ignored**, so it does not count
+either.
+
+**`tests/unticked.sh` grades this** — nine cases, and two breaks go red. The sweep is not a gate,
+because it reaches the network, so nothing else does.
+
 **`unticked` finds, and cannot tick.** A tick is a judgement — did this box hold? — and that lives
 in the pull request and the gate output. `Closes #N` flips an issue closed and never touches its
 body, so eighteen met boxes sat blank on 4 September until somebody looked.
