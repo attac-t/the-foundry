@@ -5835,17 +5835,17 @@ a_host_is_settled_when_no_run_holds_a_workspace() {
   # it takes `00`, `08` and `010`, which become `-1`, a base error, and seven.
   typo=$( cd "$tmp/stl" && FOUNDRY_HOME="$quiet" FOUNDRY_RUN="$strun" FOUNDRY_WHO="" \
         FOUNDRY_QUIET_DAYS=abc sh "$runner" settled 2>&1 )
-  has "a bar that is not a count is named"   "$typo" "which is not a count of days"
+  has "a bar that is not a count is named"   "$typo" "one to four digits, no leading zero"
   has "and the default is used instead"      "$typo" "nothing touched for 2 days"
 
   # Zero and below are not counts of days either. **A bad bar is worse than a silent one:** measured,
   # `find -mmin +-1` does not fail — it matches a file made seconds ago, so every run reads quiet.
   nought=$( cd "$tmp/stl" && FOUNDRY_HOME="$quiet" FOUNDRY_RUN="$strun" FOUNDRY_WHO="" \
         FOUNDRY_QUIET_DAYS=0 sh "$runner" settled 2>&1 )
-  has "a bar of zero is named too"           "$nought" "is [0], which is not a count"
+  has "a bar of zero is named too"           "$nought" "is [0] — one to four digits"
   below=$( cd "$tmp/stl" && FOUNDRY_HOME="$quiet" FOUNDRY_RUN="$strun" FOUNDRY_WHO="" \
         FOUNDRY_QUIET_DAYS=-3 sh "$runner" settled 2>&1 )
-  has "and so is one below zero"             "$below" "is [-3], which is not a count"
+  has "and so is one below zero"             "$below" "is [-3] — one to four digits"
   has "and the run is still named quiet"     "$below" "nothing touched for"
 
   # `1 days` is the tell that nobody read the line back.
@@ -5915,7 +5915,7 @@ a_host_is_settled_when_no_run_holds_a_workspace() {
   for odd in 00 08 010 99999; do
     odd_said=$( cd "$tmp/stl" && FOUNDRY_HOME="$quiet" FOUNDRY_RUN="$strun" FOUNDRY_WHO="" \
                 FOUNDRY_QUIET_DAYS="$odd" sh "$runner" settled 2>&1 )
-    has "a bar of $odd is refused"           "$odd_said" "is [$odd], which is not a count"
+    has "a bar of $odd is refused"           "$odd_said" "is [$odd] — one to four digits"
     has "and $odd falls back to the default" "$odd_said" "nothing touched for 2 days"
   done
 

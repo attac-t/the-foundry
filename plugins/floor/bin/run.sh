@@ -345,7 +345,7 @@ quiet_days() {
 
     is_a_quiet_bar "$asked" && { printf '%s' "$asked"; return 0; }
 
-    note "FOUNDRY_QUIET_DAYS is [$asked], which is not a count of days — using $QUIET_DAYS"
+    note "FOUNDRY_QUIET_DAYS is [$asked] — one to four digits, no leading zero. Using $QUIET_DAYS"
     printf '%s' "$QUIET_DAYS"
 }
 
@@ -436,8 +436,12 @@ quiet_runs() {
 # **and a `git status`, which writes `index.lock`.** A glance counts as work, and that is the safe
 # way round: naming a live run quiet is the fault, and naming a quiet one live is a wasted look.
 #
-# **It does not see an edit below the checkout's top** — a worker saving into `src/` for two days with
-# no commit and no gate is still named quiet. #561 owns the thirty seconds.
+# **What it misses is narrower than it looks.** Creating, renaming or deleting a file moves its
+# parent, and `src/` is depth six — so a write-by-rename one level in is seen, which is how vim,
+# emacs and `sed -i` all save. **Missed is an in-place rewrite, and anything two levels down.**
+# A worker editing `src/lib/` in place for two days, with no commit and no gate, is named quiet.
+#
+# #561 owns the thirty seconds.
 anything_touched_since() {
     find "$RUNS" -maxdepth 6 -mmin "-$(($1 * 1440))" 2>/dev/null \
         | sed -n "s#^$RUNS/\([^/]*\)/units.*#\1#p" | sort -u

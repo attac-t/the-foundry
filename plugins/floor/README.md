@@ -626,9 +626,9 @@ BSD, and this page says so rather than claiming anywhere.**
 home: **1.2 seconds warm, 13.2 cold**. Pruning `.git` measured 33.8, on a walk that carried no depth
 at all — so that number is an unbounded walk's, not a prune's.
 
-So it sees a workspace opened, a clone made, a file written at the checkout's top, and a commit.
-**It does not see an edit below that** — a worker saving into a subdirectory for two days, with no
-commit and no gate, is still named quiet.
+**What it misses is narrower than it looks.** Creating, renaming or deleting a file moves its
+parent, and `src/` is depth six — so a write-by-rename one level in is seen, which is how vim,
+emacs and `sed -i` all save. **Missed is an in-place rewrite, and anything two levels down.**
 
 **`settled` already spends thirty seconds**, nearly all of it in `runs` over 144 of them. This adds
 three per cent, and the deep walk would have added forty. [#561](https://github.com/attac-t/the-foundry/issues/561) owns that thirty.
