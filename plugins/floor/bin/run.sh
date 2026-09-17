@@ -338,8 +338,18 @@ said_about_the_run() {
 # The last one wins. A run that says it landed twice moved twice, and the later sha is where the
 # work is now.
 landed_at() {
-    awk -F"\t" '$3 == "landed" { print $4 }' "$(observations_file "$1")" 2>/dev/null \
-        | sed -n 's/.*sha=\([^ ]*\).*/\1/p' | tail -1
+    sha=
+    moves=$(observations_file "$1")
+
+    # **A tab, where `last_moved` needs no `IFS` at all.** That one reads field one, which nothing
+    # before it can shift. This reads field three, and one space in a host name would move it.
+    [ -f "$moves" ] && while IFS="$TAB" read -r _ _ event said; do
+        [ "$event" = landed ] || continue
+
+        case $said in *sha=*) sha=${said##*sha=}; sha=${sha%% *} ;; esac
+    done < "$moves"
+
+    printf '%s' "$sha"
 }
 
 #

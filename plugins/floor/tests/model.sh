@@ -5988,6 +5988,18 @@ a_host_is_settled_when_no_run_holds_a_workspace() {
   has "a landing the trunk does not hold is said so"  "$unfound" "cannot find that on origin/main"
   lacks "and it is not called landed"                 "$unfound" "  landed at deadbeefcafe"
 
+  # --- a host name with a space in it ---
+  #
+  # **This is the whole reason that loop sets `IFS`.** The event is the third column, and the
+  # default split counts words rather than tabs — so two words in the host push `landed` along
+  # by one, and the row stops being a landing. `uname -n` answers with no space on every machine
+  # here, so nothing else in this suite would ever meet it.
+  printf '%s\ta host with spaces\tlanded\tsha=%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$landing" \
+      >> "$strun/observations"
+  spaced=$( cd "$tmp/stl" && FOUNDRY_HOME="$quiet" FOUNDRY_RUN="$strun" FOUNDRY_WHO="" \
+            sh "$runner" settled 2>&1 )
+  has "a landing recorded by a host with a space is still read" "$spaced" "  landed at $landing"
+
   # A directory with no observations at all cannot be made by `new`, and a reader of the list must
   # still be told something rather than a blank.
   mv "$strun/observations" "$strun/observations.aside"
