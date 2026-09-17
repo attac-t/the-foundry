@@ -6096,6 +6096,44 @@ a_run_that_said_nothing_is_told_so_at_complete() {
 a_run_that_said_nothing_is_told_so_at_complete
 
 #
+# **A run with no target cannot hold work, and this walks the chain that makes it so.**
+#
+# A target is what a workspace is cut from. With none, nothing derives a charter, nothing opens a
+# workspace, nothing grades, and the stage stays `new`. #595 counted 80 runs sitting there, each
+# holding the sentence its work was described by and nothing else.
+#
+# **A commit and no origin**, so the half that is missing is the target and not the history.
+#
+# A home of its own, because the last check counts the rows in it.
+#
+a_run_with_no_target_holds_no_work() {
+  make_repo "$tmp/notgt" main && commit_file "$tmp/notgt" a 'one' \
+    || { skip "no target — git could not make a repo here"; return; }
+
+  mine="$tmp/notgt-home"
+  floor_as "$tmp/notgt" "$mine" "" new "A run that took no target" >/dev/null 2>&1
+
+  is "a run with no target names none" "$(floor_as "$tmp/notgt" "$mine" "" targets)" ""
+
+  is "and it derives no charter" \
+     "$(code_of floor_as "$tmp/notgt" "$mine" "" charter derive)" "1"
+
+  # The refusal says which half is missing, because adding the wrong one changes nothing.
+  said=$( cd "$tmp/notgt" && FOUNDRY_HOME="$mine" FOUNDRY_RUN="" FOUNDRY_WHO="" \
+          sh "$runner" charter derive 2>&1 )
+  has "and says a target is what it would have derived from" "$said" "no bootstrap target"
+
+  is "and it cannot open a workspace" "$(code_of floor_as "$tmp/notgt" "$mine" "" open)"  "1"
+  is "and it cannot be graded"        "$(code_of floor_as "$tmp/notgt" "$mine" "" gates)" "1"
+
+  # The stage is what a watcher reads, and it never says this run holds anything.
+  rows=$(floor_as "$tmp/notgt" "$mine" "" runs)
+  is "and its own home holds one run"  "$(printf %s "$rows" | grep -c "")" "1"
+  is "and that run reads as new"       "$(printf %s "$rows" | cut -f1)" "new"
+}
+a_run_with_no_target_holds_no_work
+
+#
 # One kind, two adapters that spell it differently. A directory carries `kind: defect` in
 # frontmatter; GitHub carries a label called `foundry:defect`. Core is told `defect` by both and
 # knows neither spelling.
