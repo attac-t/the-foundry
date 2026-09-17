@@ -3013,6 +3013,17 @@ wreck_runner "a run list that never says when it last moved is caught" \
   nowhen 's#  $(last_moved "$RUNS/$underway")##'
 
 #
+# **Two forks a run, replaced by two builtins.** `$(ls …)` and `$(awk …)` cost 7.0 seconds over a
+# home of 150 runs; a glob and a `read` loop cost 70ms, and `runs` went 12.1 seconds to 244ms.
+# **What must not change is the answer**, so each reading has a break on the edge it decides.
+wreck_runner "an empty workspace called open is caught" \
+  anyworkspace 's@^    [[] -e "$1" []]@    true "$1"@'
+
+# A comment is not a target. Take the guard away and a targets file of comments selects one.
+wreck_runner "a comment counted as a target is caught" \
+  anytarget 's@^        case $first in@        case zz in@'
+
+#
 # **A stamp is not an age, and a reader acts on the age.** Three breaks, and each takes one case.
 #
 # Blind the word and a run quiet since the spring reads exactly like one working now — which is

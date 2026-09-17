@@ -551,11 +551,39 @@ how_far() {
     [ -s "$1/delivery" ] && { stage=delivered; return; }
     [ -s "$1/evidence" ] && { stage=graded;    return; }
 
-    [ -n "$(ls "$1/units/01/workspace" 2>/dev/null)" ]  && { stage=open;     return; }
-    [ -n "$(selected_targets "$1/units/01/targets")" ]  && { stage=selected; return; }
-    [ -s "$1/charter" ]                                 && { stage=charted;  return; }
+    a_workspace_is_open "$1"  && { stage=open;     return; }
+    a_target_is_selected "$1" && { stage=selected; return; }
+
+    [ -s "$1/charter" ] && { stage=charted; return; }
 
     stage=new
+}
+
+#
+# **A glob, never `ls`.** An unmatched glob stays the pattern it was, so `-e` on the first word
+# answers *is anything there* without a process.
+#
+# Measured on a home of 150 runs: `$(ls …)` a run cost 7.0 seconds and this costs 70ms. `runs` took
+# 12.3 of which that was 7. **A status command is asked often, and #561 names the fork.**
+a_workspace_is_open() {
+    set -- "$1/units/01/workspace"/*
+
+    [ -e "$1" ]
+}
+
+#
+# **`read`, never `awk`.** One line that is neither blank nor a comment is the whole question, and
+# the shell asks it without forking. `selected_targets` still exists for the caller that wants the
+# lines themselves.
+a_target_is_selected() {
+    [ -f "$1/units/01/targets" ] || return 1
+
+    while read -r first _; do
+        case $first in ''|\#*) continue ;; esac
+        return 0
+    done < "$1/units/01/targets"
+
+    return 1
 }
 
 make_run() {

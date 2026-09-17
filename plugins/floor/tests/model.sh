@@ -2869,8 +2869,32 @@ a_home_says_what_it_holds() {
   floor "$tmp/rl" policy authorize 'https://github.com/acme/rl.git' >/dev/null 2>&1
   floor "$tmp/rl" targets add 'https://github.com/acme/rl.git' main >/dev/null 2>&1
   is "a selected target makes it selected"  "$(rung)" "selected"
+
+  #
+  # **The two readings that replaced a fork each.** `$(ls …)` and `$(awk …)` cost 7.0 seconds over a
+  # home of 150 runs, and a glob and a `read` loop cost 70ms. What a reader must not lose is the
+  # answer, so the edges each one decides are checked here.
+  #
+  # A targets file holding only comments selects nothing. The `awk` skipped them and so does this.
+  sel="$(floor "$tmp/rl" path)/units/01/targets"
+  cp "$sel" "$sel.keep"
+  printf '# a comment and nothing else
+
+' > "$sel"
+  is "a targets file of comments selects nothing" "$(rung)" "charted"
+  mv "$sel.keep" "$sel"
+  is "and the real one still does"                "$(rung)" "selected"
   floor "$tmp/rl" open >/dev/null 2>&1
   is "a workspace makes it open"            "$(rung)" "open"
+
+  # An empty workspace directory is not an open one. An unmatched glob stays the pattern, so `-e`
+  # on the first word answers it — the same answer `ls` gave, without the process.
+  ws="$(floor "$tmp/rl" path)/units/01/workspace"
+  slot=$(ls "$ws" 2>/dev/null | head -1)
+  mv "$ws/$slot" "$ws.aside" 2>/dev/null
+  is "an empty workspace is not open"       "$(rung)" "selected"
+  mv "$ws.aside" "$ws/$slot" 2>/dev/null
+  is "and the slot back makes it open"      "$(rung)" "open"
   floor "$tmp/rl" gates >/dev/null 2>&1
   is "a stamped gate makes it graded"       "$(rung)" "graded"
 

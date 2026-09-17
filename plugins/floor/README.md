@@ -577,6 +577,11 @@ work item compose there without either having heard of the other, and neither ho
 
 Nothing is summed. The rows go out as they were written and the question is asked with `awk`.
 
+**Asking costs no fork a run.** `how_far` reads the ladder with a glob and a `read` loop, never
+`$(ls …)` and `$(awk …)`. Measured on a home of 150 runs: **`runs` went 12.1 seconds to 244ms, and
+the answer is byte-identical.** [#561](https://github.com/attac-t/the-foundry/issues/561) named the
+fork; an independent judge gave the shape.
+
 **A host is settled when no run holds a workspace.** `settled` answers 0 when nothing is in flight,
 and 29 with the runs that are.
 
