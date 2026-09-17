@@ -377,7 +377,17 @@ the_trunk_holds() {
 # The stamp, and never an age. Turning an ISO time into one needs `date -d` on GNU and `date -j -f`
 # on BSD, and floor ships POSIX and `git`. `quiet_runs` asks the question a different way.
 last_moved() {
-    when=$(tail -n 1 "$(observations_file "$1")" 2>/dev/null | cut -f1)
+    when=
+    moves=$(observations_file "$1")
+
+    # **No `IFS`.** A stamp holds no space, so the default split takes the first field either way,
+    # and setting `IFS` to a tab costs the very `printf` fork this exists to remove.
+    #
+    # A torn last line reads as the row before it. Every row is one `printf` ending in a newline, so
+    # a line without one means the write died — and the last whole row is the answer.
+    [ -f "$moves" ] && while read -r stamp _; do
+        when=$stamp
+    done < "$moves"
 
     printf '%s' "${when:-never moved}"
 }
