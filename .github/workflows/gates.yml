@@ -127,6 +127,12 @@ jobs:
       - name: A byte no decoder can read
         run: sh bin/bytes.sh audit
 
+      # The doctrine names what survives replacing the machinery. A list nothing checks drifts
+      # within a revision or two, so the registry beside it is compared on every run. Names only —
+      # what two installations mean by a word is beyond any check here.
+      - name: The durable kinds and their registry still agree
+        run: sh bin/durable.sh audit
+
   # The gates above read files. This one runs the plugins that ship code, on each operating system a
   # user installs them on, because that is where both of them broke last: signal's hook was not
   # executable, so it died before reading a word, and kernel's nine hooks named a bare path with no

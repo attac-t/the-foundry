@@ -1,0 +1,20 @@
+# The durable kinds, and what writes each one.
+#
+# `.foundry/doctrine.md` names them. This says where each comes from, so the two cannot drift apart
+# in silence. `bin/durable.sh` reads both and goes red when they part.
+#
+#   <kind>  <written by>  <the one function that writes it>
+#
+# **Only the machinery half names a function.** A goal, a doctrine and a clause are written by
+# people, so `-` is the honest answer and not a gap.
+#
+# **A kind joins here only after it joins the doctrine**, and the doctrine admits one through
+# approval by the named human authority. This file follows that page; it never leads it.
+
+goal         people      -
+doctrine     people      -
+clause       people      -
+pin          machinery   print_pin
+receipt      machinery   stamp_receipt
+ledger row   machinery   stamp
+run record   machinery   record_observation
