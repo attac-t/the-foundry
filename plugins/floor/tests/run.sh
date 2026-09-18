@@ -1086,6 +1086,23 @@ unnamed='nothing named a check'
 several='more than one check answered'
 setup='a setup that would not build'
 
+# The suites that record a killing check, named so one recording none is caught.
+#
+# **An empty file is red and a missing suite was not.** `refuse_a_record_with_no_rows` reads the
+# whole file, so deleting one `remember_the_killer` left that phase unrecorded, unrefused and
+# green. #505 found it by reading, and nothing here would have.
+RECORDING_SUITES='model install host adopt'
+
+# Which of them wrote no row. A reader taking both, so the self-test can drive it.
+suites_with_no_row() {
+  local suite
+  for suite in $2; do
+    awk -F'\t' -v s="$suite" '$1 == s { found = 1 } END { exit !found }' "$1" && continue
+    printf '%s
+' "$suite"
+  done
+}
+
 # `grep -m1 .`, not `head -n 1`: the count is of lines holding something, so the name has to be read
 # the same way. A blank first line made the two disagree and returned nothing at all.
 killed_by() {
@@ -1304,6 +1321,29 @@ a_run_of_silence_stops_the_audit
 a_killer_is_named_by_the_check_that_wrote_it
 a_suite_is_read_under_fail_fast
 a_shared_killer_is_reported_with_the_breaks_that_share_it
+
+#
+# A suite that ran and wrote no row, against one that wrote nothing at all.
+#
+# **The second is what #505 found.** Three suites write, one does not, and the file is not empty —
+# so every reading of it passes while one phase went unrecorded.
+#
+a_suite_that_recorded_nothing_is_named() {
+  printf 'model\tits own\ta break\ninstall\tits own\ta break\nhost\tits own\ta break\nadopt\tits own\ta break\n' > "$tmp/rows"
+  same "four suites writing leaves none missing" \
+       "$(suites_with_no_row "$tmp/rows" "$RECORDING_SUITES")" ""
+
+  printf 'model\tits own\ta break\nhost\tits own\ta break\nadopt\tits own\ta break\n' > "$tmp/rows"
+  same "a suite that recorded nothing is named" \
+       "$(suites_with_no_row "$tmp/rows" "$RECORDING_SUITES")" "install"
+
+  # An empty file names every one of them, which is the row above saying the same thing louder.
+  : > "$tmp/rows"
+  same "an empty record names them all" \
+       "$(suites_with_no_row "$tmp/rows" "$RECORDING_SUITES")" \
+       "$(printf 'model\ninstall\nhost\nadopt')"
+}
+a_suite_that_recorded_nothing_is_named
 
 #
 # Does the model suite fail against a broken runner?
@@ -3600,6 +3640,30 @@ refuse_a_record_with_no_rows() {
 '
 }
 refuse_a_record_with_no_rows
+
+#
+# A suite that ran and recorded nothing, named.
+#
+# **The row above reads the whole file, so one missing suite hides behind three that wrote.**
+# Deleting a single `remember_the_killer` left that phase unrecorded, unrefused and green.
+#
+# Every recording line sits after guards that are red on their own, so a missing row means either
+# this fault or an audit that is already red. Saying so twice is cheaper than saying it never.
+#
+refuse_a_suite_that_recorded_nothing() {
+  local silent
+  silent=$(suites_with_no_row "$killed" "$RECORDING_SUITES")
+
+  [ -n "$silent" ] || { printf '  ok    every suite that breaks recorded a killing check
+'; return; }
+
+  printf '  FAIL  a suite ran and recorded no killing check
+'
+  printf '      %s
+' $silent
+  failed=1
+}
+refuse_a_suite_that_recorded_nothing
 say_when_two_breaks_share_a_check
 
 #
