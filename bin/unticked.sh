@@ -72,9 +72,15 @@ body_of() { gh api "repos/{owner}/{repo}/issues/$1" --jq '.body // ""' 2>/dev/nu
 # Five of thirty-six read that way on 18 September, and four of them were the next four I would
 # have picked up.
 #
-# **It takes the word, not the number.** Asking the forge again per issue was a second request for a
-# fact the first one already carried.
-declined() { [ "$1" = NOT_PLANNED ]; }
+# **Both spellings, because the two readers disagree.** REST answers `not_planned` and GraphQL
+# answered `NOT_PLANNED`. Moving to REST and keeping the old word made every declined issue read as
+# debt again — five of them, silently, in the one report written to stop exactly that.
+declined() {
+    case $1 in
+        NOT_PLANNED|not_planned) return 0 ;;
+    esac
+    return 1
+}
 
 # A body carrying an unticked box.
 #

@@ -127,6 +127,20 @@ has "a declined issue is counted apart"      "$said" "1 of the last 2"
 has "and the line says what it was"          "$said" "1 more closed as not planned"
 lacks "and it is not in the tally above"     "$said" "#2 "
 
+#
+# **The word REST answers, and the word GraphQL answered.** They differ only in case, and moving the
+# reader from one to the other while the fixture kept the old spelling turned five declined issues
+# back into debt — silently, in the report written to stop that.
+#
+# So both are driven. A fixture that knows one reader's spelling cannot catch a change of reader.
+printf 'not_planned\n' > "$tmp/bodies/2.reason"
+has "the word REST answers is read too" "$(swept 2)" "1 more closed as not planned"
+
+printf 'NOT_PLANNED\n' > "$tmp/bodies/2.reason"
+has "and the word GraphQL answered still is" "$(swept 2)" "1 more closed as not planned"
+
+rm -f "$tmp/bodies/2.reason"
+
 # Nothing declined, nothing said. A line that always prints is a line nobody reads.
 rm -f "$tmp/bodies/2.reason"
 lacks "no declined issue says nothing about them" "$(swept 2)" "not planned"
