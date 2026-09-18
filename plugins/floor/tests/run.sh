@@ -2633,6 +2633,17 @@ wreck_runner "a ledger row read for the wrong member is caught" \
 wreck_runner "a member seated once per occurrence is caught" \
   seatperline 's#holds_the_member "$draft" "$1" "$member" && continue#:#'
 
+#
+# **The first reach declared is the one a seat takes, and the `exit` is that rule.** Without it a
+# member named twice puts its second reach on a line of its own, whose first field is `sh` — so the
+# record is torn and a read filtered to `judge` lines still passes. #717.
+#
+# **Anchored on the member lookup.** `print; exit }` alone matches five awk programs here, and a
+# break that mutates five cannot say which one the red came from.
+#
+wreck_runner "a seat taking the last reach rather than the first is caught" \
+  lastreach 's@ENVIRON\["who"\] "" { $1 = ""; sub(/^ +/, ""); print; exit }@ENVIRON\["who"\] "" { $1 = ""; sub(/^ +/, ""); print }@'
+
 # The clause text back through `-v`, which decodes it. Two clauses named differently then alias, and
 # an approval for one hides a rejection recorded for the other.
 # **`-v` before `-F`, never after.** A judge read the first shape and found it dead: `awk -F -v name=...`

@@ -5063,6 +5063,8 @@ a_member_named_twice_takes_one_seat() {
   d=$tmp/twice
 
   a_judged_repo "$d" twice "$(a_judge_that_approves)" 'reach  one  sh bin/fake-judge.sh
+reach  one  sh bin/other-judge.sh
+rounds  one  2
 one  a stranger can read it
 one  a stranger can read it
 ' || { skip "a member named twice — git could not make a repo here"; return; }
@@ -5071,6 +5073,19 @@ one  a stranger can read it
   floor "$d" charter derive >/dev/null 2>&1
 
   is "one seat, not two"      "$(floor "$d" charter | awk '$1 == "judge"' | wc -l | tr -d ' ')" "1"
+
+  # **The ceiling rides with the seat.** Both records are written inside the guard that keeps one
+  # seat, so a second ceiling can only arrive if the dedupe went. Nothing asked it until now.
+  is "one ceiling, not two" \
+     "$(floor "$d" charter | awk '$1 == "rounds"' | wc -l | tr -d ' ')" "1"
+
+  # **The first reach wins, and that is the rule rather than an accident.** `reach_of` exits on the
+  # first line that names the member, so a second declaration is never read. Nothing said so.
+  #
+  # **The whole charter, never the `judge` lines.** Dropping that `exit` puts the second reach on a
+  # line of its own, whose first field is `sh` — so a filtered read passes while the record is torn.
+  has   "and the seat holds the first reach declared" "$(floor "$d" charter)" "fake-judge.sh"
+  lacks "never the second"                            "$(floor "$d" charter)" "other-judge.sh"
 }
 a_member_named_twice_takes_one_seat
 

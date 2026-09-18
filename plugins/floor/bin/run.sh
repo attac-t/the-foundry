@@ -5476,6 +5476,8 @@ declared_limits() { detect_judged | awk '$1 == "rounds" { $1 = ""; sub(/^ +/, ""
 
 # How one judge is reached, from that table. `""` on both sides: a judge named `01` and one named
 # `1` are two judges, and an `-v` assignment compares as a number.
+# One member's reach, and **the first declaration wins** — the `exit` is that rule, not a detail.
+# A member named twice with two reaches takes the first and the second is never read. #717.
 reach_of() {
     who=$2 awk '$1 "" == ENVIRON["who"] "" { $1 = ""; sub(/^ +/, ""); print; exit }' <<EOF
 $1
