@@ -270,6 +270,16 @@ gate judged      sh   bin/judged.sh
 # `audit` runs the suite first, because a gate that has only ever been green proves nothing.
 gate bytes       sh   bin/bytes.sh audit
 
+#
+# The doctrine names what is durable. This says the registry beside it still agrees.
+#
+# **A list nobody checks drifts within a revision or two**, which is #611's fault and #725's answer.
+# `audit` runs the suite first, because a gate that has only ever been green proves nothing.
+#
+# It reaches names and never meaning. Whether two installations mean the same by a word is beyond
+# any check here, and both the page and the gate say so on their own faces.
+gate durable     sh   bin/durable.sh audit
+
 for plugin in kernel signal floor panel; do
     gate "$plugin" bash "plugins/$plugin/tests/run.sh"
 done
