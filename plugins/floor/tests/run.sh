@@ -2565,6 +2565,19 @@ wreck_runner "a pass handed over for a pinned gate is caught" \
 wreck_runner "a gate the run rewrote itself is caught" \
   basegate 's#^    enter_base_gates.*#    :#'
 
+#
+# **The substitution had a break and the closure behind it did not.** `basegate` blanks the whole
+# call, so it proves the first file is restored and says nothing about the second.
+#
+# #282 is that fault: a command names one file, that file runs another, and rewriting the second
+# lowered the bar while every pin still matched. `files_run_by` is what follows the chain, so
+# silencing it leaves the closure exactly the files the command named.
+#
+# **A rule with no break is a rule the next edit deletes for free**, and this one guards three files
+# of reach.
+wreck_runner "a closure that never follows what a gate runs is caught" \
+  noclosure 's#^files_run_by() {#files_run_by() { return 0;#'
+
 # A run whose delivery moved after it was graded landed a tree nothing answered for.
 wreck_runner "a merge that lands a moved head is caught" \
   movedhead 's#^    refuse_a_moved_head.*#    :#'
