@@ -20,6 +20,10 @@ bad() { failed=$((failed + 1)); printf '  FAIL  %s\n' "$1"; }
 is()  { [ "$2" = "$3" ] && ok "$1" || bad "$1 — want [$3], got [$2]"; }
 has() { case "$2" in *"$3"*) ok "$1" ;; *) bad "$1 — [$3] missing from [$2]" ;; esac; }
 
+# **Added because two checks of mine called it and nothing did.** The shell said `command not
+# found`, the tally said 17 passed, and both assertions had simply gone.
+lacks() { case "$2" in *"$3"*) bad "$1 — [$3] is in [$2]" ;; *) ok "$1" ;; esac; }
+
 echo "unticked"
 
 tmp="${TMPDIR:-/tmp}/unticked-suite-$$"
@@ -33,6 +37,8 @@ cat > "$tmp/bin/gh" <<'STUB'
 case "$*" in
   *"issue list"*length*) cat "$BODIES/total" 2>/dev/null ;;
   *"issue list"*) cat "$BODIES/numbers" ;;
+  *"issue view"*stateReason*) for a in "$@"; do case $a in [0-9]*) n=$a ;; esac; done
+                             cat "$BODIES/$n.reason" 2>/dev/null ;;
   *"issue view"*) for a in "$@"; do case $a in [0-9]*) n=$a ;; esac; done
                   cat "$BODIES/$n" 2>/dev/null ;;
 esac
@@ -91,6 +97,36 @@ printf -- '- [x] held\n'                   > "$tmp/bodies/2"
 printf -- '- [ ] ~~struck~~ — and why\n'   > "$tmp/bodies/3"
 
 has "only the issues with an open box are tallied" "$(swept 3)" "1 of the last 3"
+
+# --- an issue the repository turned down ---
+#
+# **A declined issue's open box is the record, never a lie.** #431 asked for a whole capability and
+# closed `NOT_PLANNED`; its ten boxes describe work nobody was going to do. Counted as debt, they
+# send the next reader to build what the repository already refused.
+#
+# Five of thirty-six read that way on 18 September, and four were the next four I would have taken.
+
+printf '1\n2\n' > "$tmp/bodies/numbers"
+printf -- '- [ ] open\n' > "$tmp/bodies/1"
+printf -- '- [ ] open\n' > "$tmp/bodies/2"
+printf 'NOT_PLANNED\n'  > "$tmp/bodies/2.reason"
+
+said=$(swept 2)
+has "a declined issue is counted apart"      "$said" "1 of the last 2"
+has "and the line says what it was"          "$said" "1 more closed as not planned"
+lacks "and it is not in the tally above"     "$said" "#2 "
+
+# Nothing declined, nothing said. A line that always prints is a line nobody reads.
+rm -f "$tmp/bodies/2.reason"
+lacks "no declined issue says nothing about them" "$(swept 2)" "not planned"
+
+# Every one declined is still a sweep that found nothing owing.
+printf 'NOT_PLANNED\n' > "$tmp/bodies/1.reason"
+printf 'NOT_PLANNED\n' > "$tmp/bodies/2.reason"
+is  "a sweep of only declined issues is clean" "$(code_of 2)" "0"
+has "and it still names them"                  "$(swept 2)" "2 more closed as not planned"
+
+rm -f "$tmp/bodies/1.reason" "$tmp/bodies/2.reason"
 
 # --- the edge of the window ---
 #

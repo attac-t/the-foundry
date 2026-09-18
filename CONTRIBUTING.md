@@ -126,12 +126,16 @@ a box was struck quotes it, and unanchored that read as debt: #494 counted ten a
 #746 counted one and holds none. **A struck box is answered, not ignored**, so it does not count
 either.
 
-**`tests/unticked.sh` grades this** — thirteen cases, and three breaks go red. The sweep is not a
+**`tests/unticked.sh` grades this** — nineteen cases, and six breaks go red. The sweep is not a
 gate, because it reaches the network, so nothing else does.
 
 **It says what its window missed.** The default reads the last sixty closed issues, and this tree
 holds a hundred and sixty-six. Seven and forty-four are both true, so the line names the number it
 did not reach and how to widen it.
+
+**A declined issue is counted apart.** An issue closed `NOT_PLANNED` keeps its open boxes on
+purpose — they say what nobody was going to build. Five of thirty-six read that way, and counting
+them as debt sends the next reader to build what the repository refused.
 
 **`unticked` finds, and cannot tick.** A tick is a judgement — did this box hold? — and that lives
 in the pull request and the gate output. `Closes #N` flips an issue closed and never touches its
