@@ -26,20 +26,19 @@ FROM debian:stable-slim@sha256:1710bde34461551a19a47c787885ec9ad7058d9a5bead2aff
 #
 # `git` — every suite needs it, and a plugin that ships code may declare it.
 #
-# `python3` — only `bin/frontmatter.sh` and `bin/versions.sh` need it, to parse frontmatter and JSON.
-# Those are this repository's own tooling, not shipped plugin code, and CI's runner image happened to
-# carry python so nothing ever said so out loud. **The four plugin suites pass without it**, which is
-# this image's other use: it holds the `sh`, `awk`, `git` contract to its word, and would go red if a
-# plugin ever reached past it.
-#
 # `gh` — **no gate needs it and delivery cannot happen without it.** Floor's GitHub adapter answers
 # only where `gh` is, so an image with none grades and stops. It is here from Debian's own archive,
 # which is why this takes no key, no `curl` and no third-party source.
 #
 # **It is a binary, never a sign-in.** A token belongs to the host and arrives when the container
 # starts, and nothing here reaches a network at run time.
+#
+# **`python3` is gone, and that is the point of the line below.** This image once installed it
+# because `frontmatter` and `versions` parsed with it. Both were rewritten to one `awk` call, and
+# neither names python now. **The install outlived the need and the comment outlived both**, which
+# is how a dependency nobody has becomes one nobody can drop. #275 counted it.
 RUN apt-get update -qq \
- && apt-get install -y -qq --no-install-recommends git python3 gh ca-certificates \
+ && apt-get install -y -qq --no-install-recommends git gh ca-certificates \
  && rm -rf /var/lib/apt/lists/*
 
 # Not root. Root ignores permission bits, so a gate that must refuse an unwritable directory would
