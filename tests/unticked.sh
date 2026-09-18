@@ -32,15 +32,26 @@ trap 'rm -rf "$tmp"' EXIT
 
 # **A body is a file, never an argument.** A box is markdown with newlines and backticks in it, and
 # one folded onto a command line stops being the thing under test.
+#
+# **The index is composed here, from the same two fixtures.** The script asks REST for numbers and
+# reasons together now, and a fixture per fact keeps each case saying one thing.
+#
+# **`state_reason` comes first, and the order is the whole stub.** Both paginated calls carry
+# `--paginate`, so matching that first answered the index with the total and turned fourteen cases
+# red. What tells them apart is the field each one asks for.
 cat > "$tmp/bin/gh" <<'STUB'
 #!/bin/sh
 case "$*" in
-  *"issue list"*length*) cat "$BODIES/total" 2>/dev/null ;;
-  *"issue list"*) cat "$BODIES/numbers" ;;
-  *"issue view"*stateReason*) for a in "$@"; do case $a in [0-9]*) n=$a ;; esac; done
-                             cat "$BODIES/$n.reason" 2>/dev/null ;;
-  *"issue view"*) for a in "$@"; do case $a in [0-9]*) n=$a ;; esac; done
-                  cat "$BODIES/$n" 2>/dev/null ;;
+  *state_reason*) while read -r number; do
+                      printf '%s\t%s\n' "$number" "$(cat "$BODIES/$number.reason" 2>/dev/null)"
+                  done < "$BODIES/numbers" ;;
+
+  *--paginate*) n=$(cat "$BODIES/total" 2>/dev/null) || n=0
+                case $n in ""|*[!0-9]*) exit 0 ;; esac
+                i=0; while [ "$i" -lt "$n" ]; do echo "$i"; i=$((i + 1)); done ;;
+
+  *"/issues/"*) for a in "$@"; do case $a in *"/issues/"*) n=${a##*/issues/} ;; esac; done
+                cat "$BODIES/$n" 2>/dev/null ;;
 esac
 STUB
 chmod +x "$tmp/bin/gh"
@@ -115,6 +126,20 @@ said=$(swept 2)
 has "a declined issue is counted apart"      "$said" "1 of the last 2"
 has "and the line says what it was"          "$said" "1 more closed as not planned"
 lacks "and it is not in the tally above"     "$said" "#2 "
+
+#
+# **The word REST answers, and the word GraphQL answered.** They differ only in case, and moving the
+# reader from one to the other while the fixture kept the old spelling turned five declined issues
+# back into debt — silently, in the report written to stop that.
+#
+# So both are driven. A fixture that knows one reader's spelling cannot catch a change of reader.
+printf 'not_planned\n' > "$tmp/bodies/2.reason"
+has "the word REST answers is read too" "$(swept 2)" "1 more closed as not planned"
+
+printf 'NOT_PLANNED\n' > "$tmp/bodies/2.reason"
+has "and the word GraphQL answered still is" "$(swept 2)" "1 more closed as not planned"
+
+rm -f "$tmp/bodies/2.reason"
 
 # Nothing declined, nothing said. A line that always prints is a line nobody reads.
 rm -f "$tmp/bodies/2.reason"
