@@ -95,7 +95,7 @@ page.
 | `reconcile` | 2 |  | — |  |
 | `refuse_a_judge_nobody_asked` | 2 |  | [$2] is answered by [$(spaced  |  |
 | `refuse_a_judge_nobody_asked` | 2 |  | [$2] names no panel, so nothing can answer it — declare one and re-derive |  |
-| `refuse_a_judge_that_is_the_worker` | 2 |  | a verdict comes from something that did not write what it grades |  |
+| `refuse_a_judge_that_is_the_worker` | 2 | invariant | a verdict comes from something that did not write what it grades | the principle *producing work grants no authority over it* |
 | `refuse_a_kind_a_person_cannot_answer` | 2 |  | record a verdict instead — \`evidence verdict\` names who judged it and what they said |  |
 | `refuse_a_kind_that_is_not_judged` | 2 |  | a Gate clause is answered by \`gates\`, and a Decided one by a human where the item is |  |
 | `refuse_a_pinned_name` | 2 |  | record a name the charter does not pin, or run \`gates\` |  |
@@ -163,7 +163,7 @@ page.
 | `unit_work_tree` | 16 |  | — |  |
 | `refuse_another_item` | 17 |  | start a new run — one item has many runs, and a second item is one of them |  |
 | `refuse_unless_answered` | 17 |  | send the one it sent, or start a new run |  |
-| `refuse_ungranted_delivery` | 18 |  | nobody said this run may deliver to [$2] — \`policy deliver-to\` is what says so |  |
+| `refuse_ungranted_delivery` | 18 | invariant | nobody said this run may deliver to [$2] — \`policy deliver-to\` is what says so | doctrine's core refusal — *producing, merging and staying silent confer none* |
 | `push_workspace` | 19 |  | could not deliver [$3] to [$2]: $why |  |
 | `refuse_unasked` | 20 |  | the work source could not be asked for that $2 |  |
 | `ask_the_judge` | 21 |  | the judge could not run on this host: $said |  |
@@ -173,7 +173,7 @@ page.
 | `stamp_command` | 21 |  | [$name] could not run on this host: $why |  |
 | `stamp_command` | 21 |  | [$name] was killed by signal $((result - 128)), so nothing was graded |  |
 | `refuse_unreadable_declaration` | 22 |  | the bar this repository declares cannot be read |  |
-| `refuse_ungranted_merge` | 23 |  | nobody said this run may merge into [$2] — \`policy merge-to\` is what says so |  |
+| `refuse_ungranted_merge` | 23 | invariant | nobody said this run may merge into [$2] — \`policy merge-to\` is what says so | doctrine's core refusal — *producing, merging and staying silent confer none* |
 | `land_what_was_graded` | 24 | answer | this run has delivered nothing, so there is nothing to merge | the runner's own header calls it an answer |
 | `refuse_a_delivery_not_open` | 24 | answer | the delivery is [$1], so there is nothing here to merge | the runner's own header calls it an answer |
 | `refuse_a_moved_head` | 24 | answer | the thing merged must be the thing graded — grade again, or deliver what was graded | the runner's own header calls it an answer |
@@ -183,15 +183,15 @@ page.
 | `land_what_was_graded` | 25 |  | this run has delivered nothing, so there is nothing to merge |  |
 | `source_says` | 25 |  | — |  |
 | `refuse_unless_answered` | 27 |  | this work source can only be read, so nothing here can carry a $2 |  |
-| `refuse_the_source_as_advice` | 28 |  | a human naming it with \`targets add\` still can |  |
+| `refuse_the_source_as_advice` | 28 | invariant | a human naming it with \`targets add\` still can | doctrine's core refusal — *producing, merging and staying silent confer none* |
 | `claim` | 30 | answer | — | the runner's own header calls it an answer |
 | `release` | 30 | answer | [$item] is not this host's to release | the runner's own header calls it an answer |
 | `refuse_two_kinds` | 31 |  | an item is one kind — the inventory is short on purpose |  |
 | `refuse_foreign_ancestry` | 32 |  |   a person runs \`reconcile accept <sha> <reason>\`, in a shell with no FOUNDRY_WORKER |  |
-| `refuse_foreign_ancestry` | 33 |  | [$base] is not behind [$head] in [$tree] — saw a rebuilt branch, wanted a grown one |  |
-| `refuse_foreign_ancestry` | 33 |  | [$tree] has no head to inspect — saw nothing, wanted a sha |  |
-| `refuse_foreign_ancestry` | 33 |  | could not walk [$base..$head] in [$tree] — saw a failed rev-list, wanted a range |  |
-| `refuse_foreign_ancestry` | 33 |  | no base was recorded for [$2] — saw nothing, wanted a sha from \`open\` |  |
+| `refuse_foreign_ancestry` | 33 | default | [$base] is not behind [$head] in [$tree] — saw a rebuilt branch, wanted a grown one | an unmerged branch reports a foreign commit instead of refusing it, and argues that one is often deliberate. Nothing lets a repository choose — #888 |
+| `refuse_foreign_ancestry` | 33 | default | [$tree] has no head to inspect — saw nothing, wanted a sha | an unmerged branch reports a foreign commit instead of refusing it, and argues that one is often deliberate. Nothing lets a repository choose — #888 |
+| `refuse_foreign_ancestry` | 33 | default | could not walk [$base..$head] in [$tree] — saw a failed rev-list, wanted a range | an unmerged branch reports a foreign commit instead of refusing it, and argues that one is often deliberate. Nothing lets a repository choose — #888 |
+| `refuse_foreign_ancestry` | 33 | default | no base was recorded for [$2] — saw nothing, wanted a sha from \`open\` | an unmerged branch reports a foreign commit instead of refusing it, and argues that one is often deliberate. Nothing lets a repository choose — #888 |
 | `refuse_unrecorded_base` | 33 |  |   this run opened before its base was recorded. Open a new one from where the work is |  |
 | `refuse_self_accounting` | 34 |  |   a person runs this in a shell with no FOUNDRY_WORKER set |  |
 | `refuse_self_accounting` | 34 |  | nobody is named to account for this — saw nothing, wanted FOUNDRY_WHO |  |
