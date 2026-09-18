@@ -120,6 +120,64 @@ test of whether it earns its place.
 | **Learn without silently changing direction.** A worker may propose a change to doctrine, goals or rules. It reaches later work only once the right people accept it | authority that amends itself, a lesson promoting itself into a rule |
 | **Prefer the smallest system that solves the observed problem.** Convention before configuration; a file before a service | machinery for a problem nobody has had, a permanent org chart of agents |
 
+## What is durable
+
+The principle above says **anything durable is written where anyone can read it.** This says which
+things those are.
+
+**Durable is not shared meaning.** What survives a swap of the machinery is one question. What two
+copies of Foundry must both mean by a word is another. **This list answers the first and not the
+second**, and it binds no consumer.
+
+**Replace every worker, host, model, tracker and delivery mechanism. These survive:**
+
+| Kind | Written by | What a reader can still check |
+|---|---|---|
+| a **goal** | people | what someone is reaching for, and who said so |
+| a **doctrine** | people | what must stay true, and what each part refuses |
+| a **clause** | people | one requirement, and what would show it met |
+| a **pin** | machinery | the exact content a clause was judged against |
+| a **receipt** | machinery | that a named judge was asked, and answered |
+| a **ledger row** | machinery | what happened, in the order it happened |
+| a **run record** | machinery | that work began, what it claimed, and what it proved |
+
+**The two halves are durable for different reasons.** Direction is durable because people decided it
+and may be held to it. Evidence is durable because machinery wrote down what it did. Losing either
+loses a different thing, so the column says which.
+
+**A run means its record, never a run in flight.** The record outlives the machine. The process, the
+workspace and a worker's memory do not, and nothing here promises they will.
+
+### What is not durable
+
+**Authority is not on this list.** A record may say a named person granted something, dated. It
+never confers the right. [`authority.md`](authority.md) holds that line, and this does not restate
+it.
+
+**Everything above the record may be swapped freely.** The harness, the model, the resolver, the
+judge, the host, the plugins. This repository's own gates, suites and runner sit there too. Swap any
+of them and every row above still reads the same.
+
+**Naming only one half would read as naming both**, so both halves are named.
+
+### How a kind joins
+
+**A revision closes. The ontology does not.** Each published revision of this list is finite and
+complete for itself. A seventh kind is a decision, never a breach — a closed list would make
+tomorrow's valid seam a violation.
+
+**The gate is doctrine approval by the named human authority.** A panel advises and never admits. An
+open list with no admitter moves the authority it removed onto its own gate.
+
+**A candidate must pass one test.** Replace every worker, host, model, tracker and delivery
+mechanism, then ask whether a reader can still check the thing. If the answer depends on which
+machinery ran, it is a choice and not a kind. **A fourth seam in this repository is tested against
+that sentence.**
+
+**Each published revision carries an identifier, because adoption names one.** A revision freezes
+when the authority above approves it. **No pinning machinery exists here** — nothing today can hold
+a consumer to a named revision, and this page does not pretend otherwise.
+
 ## Vision
 
 **Not a promise.**
