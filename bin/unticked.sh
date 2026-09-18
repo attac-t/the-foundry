@@ -22,25 +22,48 @@
 set -eu
 
 readonly LIMIT="${1:-60}"
+
+# The field separator the index uses. A reason holds no space and a number holds none either, but
+# `read` with the default IFS would still fold an empty reason into nothing to read.
+readonly TAB="$(printf "	")"
 readonly found="${TMPDIR:-/tmp}/unticked.$$"
 readonly refused="${TMPDIR:-/tmp}/unticked-declined.$$"
 
 note() { printf '%s\n' "$*" >&2; }
 
-# The numbers of the closed issues, newest first.
 #
-# Numbers, not bodies. A body is markdown anyone may write, and folding one to a line through `--jq`
-# left a real newline in it here — so a loop reading line by line saw only each body's first line and
-# found nothing, every time. **An empty answer was my query, not the tree.**
-closed_numbers() {
-    gh issue list --state closed --limit "$LIMIT" --json number --jq '.[].number' 2>/dev/null
+# The closed issues, newest first, as `number<TAB>why it closed`.
+#
+# **REST, and that is not a preference.** `gh issue list` and `gh issue view` both speak GraphQL,
+# and GraphQL is the bucket a room full of workers empties first. On 18 September every call here
+# was refused for hours while the REST limit sat untouched at five thousand — so the one report that
+# says what the tree owes went dark exactly when the most work was landing.
+#
+# **One call for both facts.** Asking why an issue closed used to be a second request per issue, so
+# a sweep of a hundred and sixty-seven cost three hundred and thirty-four.
+#
+# **`select` and `head` together, because REST counts a pull request as an issue.** `gh issue list`
+# does not, so a page of a hundred here is not a hundred issues. Filtering alone made a window of
+# sixty read ten and say so honestly — an honest number for a promise nobody kept. The limit means
+# issues, so the pages are walked until that many are found.
+#
+# **The suite drives the window and not the filter.** Its `gh` is a shell stub, so nothing there runs
+# `--jq` — a case can prove that sixty of a hundred and sixty-seven were read, and cannot prove that a
+# merged request was one of the hundred and seven left out. That half is driven by running it.
+closed_index() {
+    gh api "repos/{owner}/{repo}/issues?state=closed&per_page=100&sort=created&direction=desc" \
+       --paginate \
+       --jq '.[] | select(has("pull_request") | not) | "\(.number)\t\(.state_reason // "")"' \
+       2>/dev/null | head -n "$LIMIT"
 }
 
-# The body of one issue, as it stands.
-body_of() { gh issue view "$1" --json body --jq .body 2>/dev/null; }
+# The body of one issue, as it stands. REST, for the reason above.
+body_of() { gh api "repos/{owner}/{repo}/issues/$1" --jq '.body // ""' 2>/dev/null; }
 
 #
-# Why it closed. `COMPLETED`, `NOT_PLANNED`, or nothing at all on an older close.
+#
+# Why it closed, as the index already read it: `COMPLETED`, `NOT_PLANNED`, or nothing on an older
+# close.
 #
 # **A declined issue's open box is the record, never a lie.** #431 asked for a whole capability
 # and closed `NOT_PLANNED`; its ten boxes describe work nobody was going to do. Counting them as
@@ -48,9 +71,10 @@ body_of() { gh issue view "$1" --json body --jq .body 2>/dev/null; }
 #
 # Five of thirty-six read that way on 18 September, and four of them were the next four I would
 # have picked up.
-reason_of() { gh issue view "$1" --json stateReason --jq '.stateReason // ""' 2>/dev/null; }
-
-declined() { [ "$(reason_of "$1")" = NOT_PLANNED ]; }
+#
+# **It takes the word, not the number.** Asking the forge again per issue was a second request for a
+# fact the first one already carried.
+declined() { [ "$1" = NOT_PLANNED ]; }
 
 # A body carrying an unticked box.
 #
@@ -71,15 +95,17 @@ holds_an_unticked_box() { [ -n "$(unticked_lines "$1")" ]; }
 count_of() { unticked_lines "$1" | grep -c '' || true; }
 
 #
+#
 # How many closed issues there are, so `the last 60` is read against a number.
 #
 # **A window is honest about its edge, or it is not honest.** At the default this tree reports
 # seven and holds forty-four. Both sentences are true and only one of them says which.
 #
-# A thousand is the ceiling, so a repository past that reads as a thousand. Nothing here needs a
-# truer number than the one it just failed to reach.
+# **No ceiling now.** `--paginate` walks every page, where the old reader asked for a thousand and a
+# repository past that read as a thousand. The pages cost one request each and they are REST.
 closed_total() {
-    gh issue list --state closed --limit 1000 --json number --jq 'length' 2>/dev/null
+    gh api "repos/{owner}/{repo}/issues?state=closed&per_page=100" --paginate \
+       --jq '.[] | select(has("pull_request") | not) | .number' 2>/dev/null | grep -c . || true
 }
 
 # Issues the repository turned down, said apart from the ones it owes.
@@ -103,26 +129,30 @@ say_what_was_not_read() {
 }
 
 main() {
-    numbers=$(closed_numbers) || { note 'unticked — GitHub could not be asked'; exit 3; }
-    [ -n "$numbers" ] || { note 'unticked — no closed issues came back'; exit 3; }
+    index=$(closed_index) || { note 'unticked — GitHub could not be asked'; exit 3; }
+    [ -n "$index" ] || { note 'unticked — no closed issues came back'; exit 3; }
 
-    read_count=$(printf %s "$numbers" | grep -c .)
+    read_count=$(printf %s "$index" | grep -c .)
 
     : > "$found"
     : > "$refused"
-    for number in $numbers; do
+
+    # A here-doc, and not a pipe. Both tallies are written inside this loop, and a pipeline runs it
+    # in a subshell where every count dies with the last line.
+    while IFS="$TAB" read -r number reason; do
+        [ -n "$number" ] || continue
+
         body=$(body_of "$number")
         holds_an_unticked_box "$body" || continue
 
         # A declined issue is counted apart, not counted out. Its boxes are still worth seeing.
-        declined "$number" && { printf 'x
-' >> "$refused"; continue; }
+        declined "$reason" && { printf 'x\n' >> "$refused"; continue; }
 
-        printf '  #%-5s %s unticked
-' "$number" "$(count_of "$body")"
-        printf 'x
-' >> "$found"
-    done
+        printf '  #%-5s %s unticked\n' "$number" "$(count_of "$body")"
+        printf 'x\n' >> "$found"
+    done <<EOF
+$index
+EOF
 
     left=$(grep -c . "$found" || true)
     turned_down=$(grep -c . "$refused" || true)
