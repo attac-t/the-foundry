@@ -35,16 +35,20 @@ main() {
 # One `awk` and no second pass. A second read would have to find the enclosing function again, and
 # the first pass already knows it.
 #
-# **The message is taken from at most three lines back.** A refusal explains itself where it stops,
-# and a note further away belongs to something else — six sites here print nothing that close, and
-# calling a stranger's sentence theirs would be worse than saying they are silent.
+# **Two passes over one file.** The first learns every function it defines, because the head of a
+# guarded exit is the thing it rests on — and that is only a head when this file defines it. `[` and
+# `mkdir` resolve to nothing, so a site resting on one keeps its own name.
+#
 sites_in() {
     awk '
+        FNR == 1 && NR != FNR { second = 1 }
+        !second { if (match($0, /^[a-z_]+\(\) \{/)) { f = $0; sub(/\(\).*/, "", f); defined[f] = 1 } ; next }
+
         /^[a-z_]+\(\) \{/ { fn = $1; sub(/\(\).*/, "", fn) }
 
         # The whole `note "..."`, never a fragment. A message holding a quote would end early, and a
         # truncated sentence reads like a different refusal.
-        match($0, /note "[^"]*"/) { said = substr($0, RSTART + 6, RLENGTH - 7); at = NR }
+        match($0, /note "[^"]*"/) { said = substr($0, RSTART + 6, RLENGTH - 7); at = FNR }
 
         #
         # A statement, never prose. `usage` prints `exit 1, 5, 8` and the comments name codes too,
@@ -52,22 +56,33 @@ sites_in() {
         # what tells them apart: a statement ends, a list goes on.
         #
         # **Both shapes, and the second is most of them.** A guard writes `|| { note "…"; exit 2; }`
-        # on one line seventy times here, against eighteen standing alone. A reader anchored to the
-        # line start finds the eighteen and reports them as the whole.
+        # on one line a hundred and twenty-one times here, against eighty-eight standing alone. A
+        # reader anchored to the line start finds the eighty-eight and reports them as the whole.
         {
             line = $0
             sub(/^[ \t]*#.*/, "", line)
 
-            while (match(line, /(^[ 	]*|[;{}&|][ \t]*)exit [0-9]+[ \t]*($|[;}])/)) {
+            head = fn
+            if (line ~ /\|\|/) {
+                guard = line
+                sub(/\|\|.*/, "", guard)
+                gsub(/^[ \t]*/, "", guard)
+                sub(/^[a-z_]+=\$\(/, "", guard)
+                sub(/\).*/, "", guard)
+                split(guard, word, /[ \t]+/)
+                if (word[1] in defined) head = word[1]
+            }
+
+            while (match(line, /(^[ \t]*|[;{}&|][ \t]*)exit [0-9]+[ \t]*($|[;}])/)) {
                 code = substr(line, RSTART, RLENGTH)
                 sub(/^.*exit /, "", code)
                 sub(/[^0-9].*/, "", code)
 
-                printf "%s\t%s\t%s\n", fn, code, (NR - at <= 3 ? said : "")
+                printf "%s\t%s\t%s\n", head, code, (FNR - at <= 3 ? said : "")
                 line = substr(line, RSTART + RLENGTH)
             }
         }
-    ' "$1"
+    ' "$1" "$1"
 }
 
 fail() { printf 'refusals: %s\n' "$2" >&2; exit "$1"; }
