@@ -76,7 +76,7 @@ every_gate_is_green() {
 # Three more shapes, each answered: one side bumping alone passes, a HEAD that is not a merge passes
 # and says why, and a directory with no repository above it exits 3.
 say_what_drives_itself() {
-    say "  self     bytes comments host           their own audit, which the gate line passes"
+    say "  self     bytes comments host stale basing durable   their own audit, which the gate line passes"
     say "  self     codex anthropic              the same, one per shipped adapter"
     say "  self     kernel signal panel floor      bash plugins/<name>/tests/run.sh"
     say "  by hand  bumps      needs a merge commit, so no file break reaches it — see the comment above"
@@ -91,7 +91,7 @@ say_what_drives_itself() {
 # Typed, because a `drive` line carries a break name and `shell` has two of them. A derived list
 # would have to guess which gate `shell-taper` belongs to, and guessing is what this refuses.
 ACCOUNTED="frontmatter versions repeats shell taper hosts providers secrets hooks judged
-bytes comments codex host judges anthropic
+bytes comments codex host judges anthropic stale basing durable unnamed
 kernel signal panel floor
 bumps"
 
@@ -158,6 +158,12 @@ every_break() {
     drive judged plugins/floor/adapters/codex/run.sh \
         'a_drifted_adapter >> plugins/floor/adapters/codex/run.sh' \
         'sh bin/judged.sh'
+
+    # A refusal the page has no row for, on a code twenty-one rows already use. #890 asked for this
+    # break by name: a new code is the easy half, and it would pass a page keyed the wrong way.
+    drive unnamed plugins/floor/bin/run.sh \
+        'a_new_refusal >> plugins/floor/bin/run.sh' \
+        'sh bin/unnamed.sh'
 
     # A hook that judges nothing. Every suite under `tests/` writes its calls to disk, so this
     # break reaches the hook rather than the harness reading it.
@@ -312,6 +318,12 @@ a_wedge() {
 }
 
 a_new_rule() { printf '# Probe\n\nA rule no harness file has a row for.\n'; }
+
+# A new head on a code the runner already uses, never a new code. A page keyed on codes finds 2
+# already listed and stays green, and that is the half this gate exists for.
+a_new_refusal() {
+    printf '\nrefuse_for_a_break() {\n    note "a break planted this"\n    exit 2\n}\n'
+}
 
 # --- saying it ---
 

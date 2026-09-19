@@ -1,12 +1,12 @@
 # Contributing
 
-24 gates. Run them before you open a pull request:
+25 gates. Run them before you open a pull request:
 
 ```bash
-sh bin/gates.sh                 # all 24, here
+sh bin/gates.sh                 # all 25, here
 sh bin/agree.sh                 # this table, the workflow, gates.sh and every harness file
-sh bin/gates.sh linux           # the same 24 where `sh` is dash
-sh bin/host.sh <the recipe>     # the same 24 from a clone — see below
+sh bin/gates.sh linux           # the same 25 where `sh` is dash
+sh bin/host.sh <the recipe>     # the same 25 from a clone — see below
 ```
 
 Leave `agree` out of your run and a PR can still go red on a check this file never mentioned — the
@@ -190,6 +190,7 @@ Edit a rule, then run it — a row typed by hand into one file is the drift noth
 | `judged` | `.foundry/judged` pins an adapter this tree does not ship at that content |
 | `bytes` | a tracked text file holds a byte no decoder can read, a character already lost, or a carriage return |
 | `durable` | the doctrine's durable kinds and `.foundry/durable.txt` have parted — a kind missing, a kind in the other half, or a writer the runner no longer holds |
+| `unnamed` | a refusal floor's runner makes has no row on `.foundry/refusals.md`, or a row names one it no longer makes |
 | `codex` | the adapter reaching a judge takes a verdict that was not the reply's last word, or claims a thread the harness never opened |
 | `anthropic` | the second adapter takes a verdict that was not the reply's last word, or claims a handle this harness never opened |
 | `kernel` | the plugin does not run — checked on Linux, macOS and Windows |
@@ -223,7 +224,7 @@ no such bit.
 
 **What they do not check:** that `laravel-ddd`, `laravel-playbook`, `pest` or `product` still load,
 or that their skills say anything true. Those four ship no code, so there is nothing to run — but
-nothing here reads them either. Green means 24 gates passed. For those four plugins it does not
+nothing here reads them either. Green means 25 gates passed. For those four plugins it does not
 mean the change works.
 
 **Whether their guidance has aged is answered, not gated.** Each README that teaches a version names
