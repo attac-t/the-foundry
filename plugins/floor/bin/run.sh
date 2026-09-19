@@ -201,7 +201,7 @@ floor — where work happens.
   run.sh complete                 may this run deliver? exit 15 names what is missing
   run.sh deliver <title> [brief]  push the work, with a file the source carries as the body
   run.sh aside [text]             record what this run cannot act on, or print what it has
-  run.sh claim <item>             take it for this host, or say who has it
+  run.sh claim [item]             take it for this host, or keep the one this run holds
   run.sh release <item>           let it go, if this host took it
   run.sh observe [event] [k=v...] record that something happened, or print what did
   run.sh observed [event]         every run's observations, with the run named
@@ -3281,12 +3281,56 @@ forget_tree() {
 # A claim is not authority. It says a host started, never that it may — `policy` still decides what
 # a run may touch, and this widens nothing.
 #
+#
+# The share of the window a claim may age before it is re-stamped. Below it, nothing is asked of
+# the source: the github adapter claims by pushing a ref, and asking on every edit would push on
+# every edit.
+#
+# **A third, not a half.** Two re-stamps fit inside a window, so one that fails still leaves one
+# before the claim ages out. The number is a setting because a slower source wants it larger.
+CLAIM_FLOOR=${FOUNDRY_CLAIM_FLOOR:-3}
+
+#
+# Keep the claim this run already holds, and only when it has aged.
+#
+# **`take_claim` re-stamps for its own holder and always could.** What was missing is a caller on a
+# path a working host repeats — #859 measured that, and until then age said when an item was taken
+# and never whether anyone was still on it.
+#
+# Silent and exit 0 whatever happens. The caller is a hook firing after an edit, and a claim that
+# could not be re-stamped must never be the reason an edit reports a failure.
+renew_this_run_claim() {
+    dir=$(active_run) || return 0
+    item=$(item_id "$dir")
+    [ -n "$item" ] || return 0
+
+    held=$(source_says held "$item") || return 0
+    age=$(claim_age "$held")         || return 0
+
+    [ "$age" -gt "$(( CLAIM_TTL / CLAIM_FLOOR ))" ] || return 0
+
+    #
+    # **Somebody else holds it, and this is where that is found out.** Before this the first host
+    # learned at delivery, with the work already done — #859 named that as its own cost.
+    #
+    # Recorded, never said. The caller is a hook after an edit and an edit is not the place to
+    # argue about a claim. A line in the run survives the session; a message would not.
+    holder=$(claim_holder "$held")
+    [ "$holder" = "$(recording_host)" ] || {
+        emit "$dir" claim.lost item="$item" holder="$(one_token "$holder")"
+        return 0
+    }
+
+    source_says claim "$item" "$(recording_host)" >/dev/null 2>&1
+    return 0
+}
+
 claim() {
     [ "$#" -le 1 ] || { usage; exit 2; }
     refuse_missing_source
 
     item=${1:-}
-    [ -n "$item" ] || { note "claim names an item"; exit 2; }
+    [ -n "$item" ] || { renew_this_run_claim; return 0; }
 
     source_says claim "$item" "$(recording_host)" && { note "claimed [$item]"; return 0; }
     break_a_dead_claim "$item" && return 0
