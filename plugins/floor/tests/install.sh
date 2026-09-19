@@ -153,14 +153,29 @@ done
 # **A tool event has the other channel, and it has to use it.** `additionalContext` reaches the
 # session where stdout does not, so a hook wired to one and printing plainly is the same silence
 # wearing a different event. The first draft of `pulled.sh` did exactly that, and this caught it.
+#
+# **Saying nothing is not that fault.** A hook may exist to write a record rather than to speak, and
+# `ended.sh` does — it appends one line to a run and prints not a word. A hook that prints nothing
+# reaches nobody because there is nobody it was trying to reach.
+#
+# So the fault is **printing** where nobody reads, never silence. Firing it is what tells them apart,
+# and a grep for the channel cannot.
 reaches_the_session() {
   [ "$(event_for "$1")" = SessionStart ] && return 0
 
-  grep -q additionalContext "$root/hooks/$1"
+  grep -q additionalContext "$root/hooks/$1" && return 0
+
+  # **Both states, because a hook that leaves early is silent for the wrong reason.** Fired from a
+  # bare directory `ended.sh` exits at its first guard, so a `printf` further down never runs and a
+  # check reading only that state passes it. Driven: the break was invisible until this line.
+  [ -z "$(fire "$1" '{}')" ] && [ -z "$(FIRE_RUN="$spoken" fire "$1" '{}')" ]
 }
 
+# A run for the loop below to fire into, so a hook is read doing its work and not only refusing to.
+spoken=$(make_run_in "$tmp/bare" "Wired Up")
+
 for script in $(wired); do
-  reaches_the_session "$script" && ok "reaches the session — $script" \
+  reaches_the_session "$script" && ok "reaches the session, or says nothing — $script" \
     || bad "$script fires on $(event_for "$script") and prints where nobody reads"
 done
 
@@ -184,10 +199,9 @@ is "every plugin root is quoted" "$quoted" "$placeholders"
 is "preflight is silent when healthy" "$(fire preflight.sh '{"source":"startup"}')" ""
 is "announce is silent with no run"   "$(fire announce.sh '{"source":"startup"}')"  ""
 
-made=$(make_run_in "$tmp/bare" "Wired Up")
-handed=$(FIRE_RUN="$made" fire announce.sh '{"source":"startup"}')
+handed=$(FIRE_RUN="$spoken" fire announce.sh '{"source":"startup"}')
 
-has   "announce names the run it was handed"            "$handed" "$(basename "$made")"
+has   "announce names the run it was handed"            "$handed" "$(basename "$spoken")"
 lacks "and says nothing about the variable when it is set" "$handed" "is not set"
 
 announce_through_the_pointer() {

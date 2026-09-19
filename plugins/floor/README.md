@@ -640,8 +640,13 @@ a state the filesystem cannot establish — a copy carries a fresh time. *Nothin
 subject. *Observations not written* named the file and **still called a worker at a keyboard idle**,
 because coding writes the workspace and never that file.
 
-**So both are read.** By floor's own count, 101 of 109 runs hold nothing but `run.began` — so one
+**So both are read.** By floor's own count, 107 of 183 runs hold nothing but `run.began` — so one
 file alone was wrong about most of them. Whether untouched means stranded is the reader's call.
+
+**A run that ended cleanly now says so.** The `SessionEnd` hook writes `session.ended stage=<how
+far>` into whichever run the checkout points at. **A line proves a clean end and a missing one
+proves nothing**, because a killed session never reaches the hook — so this narrows the reader's
+call and does not settle it.
 
 **The answer comes from `find -mmin`.** Turning an ISO stamp into an age needs `date -d` on GNU and
 `date -j -f` on BSD, so the question goes to the filesystem instead.
