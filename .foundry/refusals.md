@@ -105,6 +105,41 @@ The refusing line is the evidence principle, one section up.
 **Every row that moved was read at `plugins/floor/bin/run.sh` first.** A verdict is not a patch.
 Adopting one unread would put this page back where the second reading found it.
 
+## A row with nothing to read
+
+**Forty-four rows carry no message.** That is not forty-four rows nobody judged.
+
+**Twenty-nine of them are codes 1 and 2, where a blank message is what the key means.** `usage`
+speaks for the verb dispatchers and the site says nothing of its own. `nothing-held` fires where
+there is nothing to answer about. A message there would be a second voice saying the same thing.
+
+**The other fifteen were judged at the code**, one at a time, at `plugins/floor/bin/run.sh`.
+
+## What a blank message costs
+
+**A row is one head, one code and one message. Two silent sites under one head are one row.**
+
+Measured at `1cef1a3`: **five rows stand for thirty-five sites.**
+
+| Head | Code | Sites |
+|---|---|---|
+| `active_run` | 1 | 19 |
+| `unit_work_tree` | 16 | 7 |
+| `refuse_moved_selection` | 10 | 4 |
+| `refuse_unselectable` | 5 | 3 |
+| `derive_charter` | 6 | 2 |
+
+**Four of the five are right.** One decision — no run is active, no workspace opened — reached from
+many call sites. Nineteen rows for `active_run` would say nothing nineteen times.
+
+**The fifth is two decisions wearing one row.** `derive_charter` 6 refuses once when the gate reader
+fails and once when the judge reader fails. Both say nothing at the site, because the message is
+inside the pipe. **So the page cannot tell them apart, and `bin/unnamed.sh` cannot either** — it
+reads the same two tuples and folds them the same way.
+
+**Giving one a message would split them.** That is a change to the runner, and it is not this page's
+to make.
+
 ## The decisions
 **16 lines carry most of this page**, so a row names one by key. A line cited once stays
 where it is — a key for a one-off buys indirection and saves nothing.
