@@ -133,6 +133,12 @@ jobs:
       - name: The durable kinds and their registry still agree
         run: sh bin/durable.sh audit
 
+      # A refusal with no row leaves the page claiming a completeness it lost, and #791 and
+      # #792 read that page before making anything adjustable. A new head on a code already
+      # in use is the case a page keyed on codes would pass.
+      - name: Every refusal floor makes has a row, and every row is a refusal
+        run: sh bin/unnamed.sh
+
   # The gates above read files. This one runs the plugins that ship code, on each operating system a
   # user installs them on, because that is where both of them broke last: signal's hook was not
   # executable, so it died before reading a word, and kernel's nine hooks named a bare path with no

@@ -280,6 +280,16 @@ gate bytes       sh   bin/bytes.sh audit
 # any check here, and both the page and the gate say so on their own faces.
 gate durable     sh   bin/durable.sh audit
 
+#
+# The page reading floor's refusals, against the refusals floor still makes. A refusal with no row
+# leaves the page claiming a completeness it lost, and nothing else looks.
+#
+# **A new head on a code already in use is the case that matters.** The page is keyed on decisions,
+# so a page keyed on codes would hand that refusal a row it never earned and stay green.
+#
+# It could not be a gate until today. It refuses while any row is blank, and fifty-one were.
+gate unnamed     sh   bin/unnamed.sh
+
 for plugin in kernel signal floor panel; do
     gate "$plugin" bash "plugins/$plugin/tests/run.sh"
 done

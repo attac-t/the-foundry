@@ -159,6 +159,12 @@ every_break() {
         'a_drifted_adapter >> plugins/floor/adapters/codex/run.sh' \
         'sh bin/judged.sh'
 
+    # A refusal the page has no row for, on a code twenty-one rows already use. #890 asked for this
+    # break by name: a new code is the easy half, and it would pass a page keyed the wrong way.
+    drive unnamed plugins/floor/bin/run.sh \
+        'a_new_refusal >> plugins/floor/bin/run.sh' \
+        'sh bin/unnamed.sh'
+
     # A hook that judges nothing. Every suite under `tests/` writes its calls to disk, so this
     # break reaches the hook rather than the harness reading it.
     # A guard that refuses nothing, which looks exactly like a guard that is working.
@@ -312,6 +318,12 @@ a_wedge() {
 }
 
 a_new_rule() { printf '# Probe\n\nA rule no harness file has a row for.\n'; }
+
+# A new head on a code the runner already uses, never a new code. A page keyed on codes finds 2
+# already listed and stays green, and that is the half this gate exists for.
+a_new_refusal() {
+    printf '\nrefuse_for_a_break() {\n    note "a break planted this"\n    exit 2\n}\n'
+}
 
 # --- saying it ---
 
