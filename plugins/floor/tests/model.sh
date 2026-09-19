@@ -7642,4 +7642,42 @@ a_delivery_that_succeeds() {
 }
 a_delivery_that_succeeds
 
+# --- the one line floor writes that nobody typed ---
+
+# The hook, run where a session would end. `cd` because it finds the run through the checkout.
+ended_in()      { ( cd "$1" 2>/dev/null || exit 9; FOUNDRY_HOME="$home" sh "$here/hooks/ended.sh" ); }
+ended_says()    { ( cd "$1" 2>/dev/null || exit 9; FOUNDRY_HOME="$home" sh "$here/hooks/ended.sh" 2>&1 ); }
+rows_of()       { cat "$(floor "$1" path)/observations" 2>/dev/null; }
+
+#
+# **Measured 19 September: 76 runs of 183 held anything past `run.began`, and a worker typed every
+# one.** A number that only moves when somebody decides to type more says nothing about the next
+# worker.
+#
+# The stage comes through `runs`, because `how_far` is the runner's and a hook is another process.
+a_session_that_ended_says_so() {
+  make_repo "$tmp/se" main || { skip "session end — git could not make a repo here"; return; }
+
+  floor "$tmp/se" new "Ended" >/dev/null
+
+  is  "the hook answers 0"                "$(code_of ended_in "$tmp/se")" "0"
+  is  "and the run holds one session.ended"       "$(rows_of "$tmp/se" | grep -c 'session\.ended')" "1"
+  has "naming the stage floor read, never one a worker passed"       "$(rows_of "$tmp/se" | grep 'session\.ended')" "stage=new"
+
+  # Two sessions in one checkout are two ends, and a reader wants both. Never a repeat to fold away.
+  ended_in "$tmp/se"
+  is  "a second session writes a second line"       "$(rows_of "$tmp/se" | grep -c 'session\.ended')" "2"
+}
+a_session_that_ended_says_so
+
+# A session holding no run writes nothing, and does not say so either. There is no record to write
+# into and nothing a person needs told at the moment a session closes.
+a_session_that_held_no_run() {
+  make_repo "$tmp/quiet-end" main || { skip "session end — git could not make a repo here"; return; }
+
+  is "the hook still answers 0" "$(code_of ended_in "$tmp/quiet-end")" "0"
+  is "and says nothing at all"  "$(ended_says "$tmp/quiet-end")"       ""
+}
+a_session_that_held_no_run
+
 summary "model"
