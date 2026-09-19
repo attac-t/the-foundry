@@ -108,6 +108,38 @@ is  "a row with no word is caught"    "$(code_of)" "1"
 has "and counted"                    "$(said)"    "1 rows carry no word"
 has "and called unjudged, not wrong" "$(said)"    "nobody has judged them"
 
+
+# --- a refusal added on a code the page already carries ---
+#
+# **One function, one code, two reasons.** A new code is the easy half, and so are two functions —
+# the head already parts those. This is the hard one: the same head refusing the same way twice for
+# different reasons, which only the message can separate.
+#
+# **The first version of this check passed against a weaker key.** Its two refusals sat in different
+# functions, so head and code alone told them apart and the message proved nothing.
+
+cat > "$tmp/twocode.sh" <<'FIX'
+refuse_a_thing() {
+    note "it was not there"
+    exit 7
+
+    note "and this is a different reason"
+    exit 7
+}
+FIX
+
+page <<'P'
+| Head | Code | Word | Says | Cited by |
+|---|---|---|---|---|
+| `refuse_a_thing` | 7 | default | it was not there | nobody has asked |
+P
+
+is  "a second refusal on a listed code is caught" \
+    "$( ( cd "$root" && FOUNDRY_REFUSALS_PAGE="$tmp/page.md" FOUNDRY_REFUSALS_READS="$tmp/twocode.sh" \
+          sh bin/unnamed.sh >/dev/null 2>&1 ); printf '%s' "$?")" "1"
+has "and it is named by what it says" \
+    "$( cd "$root" && FOUNDRY_REFUSALS_PAGE="$tmp/page.md" FOUNDRY_REFUSALS_READS="$tmp/twocode.sh" \
+        sh bin/unnamed.sh 2>&1 )" "a different reason"
 # --- what it refuses ---
 
 is "a page it cannot read refuses" \
