@@ -39,7 +39,7 @@ worker's read to a blob. So a worker cannot tell an accepted doctrine from a mer
 
 | | |
 |---|---|
-| nineteen gates, from a clone | green, on dash and mawk. Not a copy — `.git` is a directory. **Every gate this repository had that day**; two have landed since, and `sh bin/gates.sh list` is the count |
+| nineteen gates, from a clone | green, on dash and mawk. Not a copy — `.git` is a directory. **Every gate this repository had that day**; six have landed since — twenty-five on 19 September — and `sh bin/gates.sh list` is the count |
 | a commit | the host's author and committer, as a person who exists |
 | a claim against a shared source | taken, and a second host refused |
 | runs | on the machine, readable with Docker stopped |
@@ -154,6 +154,32 @@ A delivery cannot silently claim it was checked against something it was not.
 | every clause was held | an unheld clause is named as unheld |
 | the commit exists | an absent commit is absent |
 | a swap was written down | a made-up one has no record |
+
+### Which refusals may never soften is written down, and none of it is accepted
+
+**Floor's runner stops in a hundred and eighty places.** Until 19 September nothing said which of
+those a repository could reasonably want softened, and which are fixed.
+
+`.foundry/refusals.md` now carries one row per decision, and each says one of three things.
+
+| | |
+|---|---|
+| `invariant` | 69 rows. It may never soften, and the row cites the doctrine line that fixes it |
+| `default` | 98 rows. Somebody chose it once. The row names who could want otherwise, or the line a person would have to write |
+| `answer` | 13 rows. It reports what a source did and refuses nothing of its own |
+
+**`sh bin/unnamed.sh` is gate 25.** It compares the runner's exit sites to the page and refuses
+either way round — a refusal with no row, or a row for a refusal the code no longer makes.
+
+**Green there means the list is complete, never that it is correct.** The gate counts rows. Whether
+any row carries the right word is beyond it, and the page says so on its own face.
+
+**So every `invariant` row is proposed, and none is accepted.** Two models read the page across
+three rounds and moved twenty-nine rows between them. **Agreement between readers is not
+acceptance** — that wants a named person, in writing, dated, and nobody has given one.
+
+#791 wants to make some of these adjustable and #792 decides where a setting may live. Both wait on
+somebody accepting this list.
 
 ### A verdict is written by something that did not do the work
 
