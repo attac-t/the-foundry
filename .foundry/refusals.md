@@ -26,7 +26,7 @@ yet.
 file defines it as a function, and the enclosing function otherwise — so `[`, `mkdir` and `cd` are
 never heads.
 
-**Two hundred and nine exit sites, one hundred and seventy-nine decisions.** `sh bin/refusals.sh
+**Two hundred and nine exit sites, one hundred and eighty decisions.** `sh bin/refusals.sh
 plugins/floor/bin/run.sh` prints the sites, and `sh bin/unnamed.sh` compares them to this
 page.
 
@@ -72,9 +72,9 @@ Measured at `24b2549`, across sixty shipped scripts — every `plugins/*/bin`, `
 
 | | Sites | Decisions |
 |---|---|---|
-| `plugins/floor/bin/run.sh` | 209 | 179 |
+| `plugins/floor/bin/run.sh` | 209 | 180 |
 | the other fifty-nine | 187 | 155 |
-| **all sixty** | **396** | **334** |
+| **all sixty** | **396** | **335** |
 
 **Twelve scripts hold two hundred and fifty-five of the decisions.** Five refuse nothing at all, and
 forty-three make three or fewer. Outside the runner the weight sits in two files —
@@ -119,7 +119,7 @@ there is nothing to answer about. A message there would be a second voice saying
 
 **A row is one head, one code and one message. Two silent sites under one head are one row.**
 
-Measured at `1cef1a3`: **five rows stand for thirty-five sites.**
+Measured at `f7bb3a9`: **four rows stand for thirty-three sites.**
 
 | Head | Code | Sites |
 |---|---|---|
@@ -127,18 +127,18 @@ Measured at `1cef1a3`: **five rows stand for thirty-five sites.**
 | `unit_work_tree` | 16 | 7 |
 | `refuse_moved_selection` | 10 | 4 |
 | `refuse_unselectable` | 5 | 3 |
-| `derive_charter` | 6 | 2 |
 
-**Four of the five are right.** One decision — no run is active, no workspace opened — reached from
-many call sites. Nineteen rows for `active_run` would say nothing nineteen times.
+**All four are right.** One decision — no run is active, no workspace opened — reached from many
+call sites. Nineteen rows for `active_run` would say nothing nineteen times.
 
-**The fifth is two decisions wearing one row.** `derive_charter` 6 refuses once when the gate reader
-fails and once when the judge reader fails. Both say nothing at the site, because the message is
-inside the pipe. **So the page cannot tell them apart, and `bin/unnamed.sh` cannot either** — it
-reads the same two tuples and folds them the same way.
+**A fifth was wrong, and it was fixed rather than written down.** `derive_charter` 6 refused once
+when the gate reader stopped and once when the judged reader stopped. Both were silent at the
+site, so the page held one row and `bin/unnamed.sh` folded them the same way — the check agreed
+with the page because both were wrong in the same direction.
 
-**Giving one a message would split them.** That is a change to the runner, and it is not this page's
-to make.
+**Each site now names its half.** The reader above already said why it stopped; what nobody could
+tell from here was which pass it was in. Two messages, two rows, and the check refused until both
+were on the page.
 
 ## The decisions
 **16 lines carry most of this page**, so a row names one by key. A line cited once stays
@@ -253,7 +253,8 @@ where it is — a key for a one-off buys indirection and saves nothing.
 | `add_target` | 5 | invariant | not authorised for this run: [$identity] — run \`policy authorize\` first | `refusal` |
 | `refuse_unselectable` | 5 | invariant | — | `refusal` |
 | `targets` | 5 | invariant | — | `refusal` |
-| `derive_charter` | 6 | invariant | — | `refusal` |
+| `derive_charter` | 6 | invariant | the gate half stopped, so no charter was written | `evidence` — a charter half written grades against a bar nobody declared |
+| `derive_charter` | 6 | invariant | the judged half stopped, so no charter was written | `evidence` — a charter half written grades against a bar nobody declared |
 | `derive_charter` | 6 | invariant | refusing to drop what no longer derives: | `refusal` |
 | `derive_charter` | 6 | invariant | start a new run — one made before this rule cannot prove what it derived from | `refusal` |
 | `introduce_clause` | 6 | invariant | this clause is already $was — only derivation may make it $kind | `refusal` |
