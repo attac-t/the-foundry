@@ -5126,13 +5126,20 @@ derive_charter() {
 
     # Everything is checked and staged before the charter moves. A refusal leaves it untouched.
     : > "$draft" || die_unwritable "$draft"
+    #
+    # Each names its own half. The reader above already said why it stopped — what nobody could
+    # tell from here is which pass it was in, and a page keyed on the message read both as one
+    # decision because both said nothing.
+    #
     detect_gates | while_reading_gates "$file" "$draft" "$boot" "$ref" || {
         rm -f "$draft"
+        note "the gate half stopped, so no charter was written"
         exit 6
     }
 
     detect_judged | while_reading_judged "$file" "$draft" "$boot" "$ref" || {
         rm -f "$draft"
+        note "the judged half stopped, so no charter was written"
         exit 6
     }
 
