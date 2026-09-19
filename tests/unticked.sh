@@ -121,12 +121,17 @@ lacks "and nothing calls it bare"        "$(swept 1)"   "1 bare"
 
 # --- each of the four ---
 
+#
+# **Read as stated, never only as not-debt.** The first version of this loop asserted exit 0, and a
+# box holding any bold word exits 0 — so a broken state list passed it. Driving the break is what
+# said so.
 for state in "unmeetable here" "wrong when written" "ungateable" "unreached"; do
     printf -- '## Done when
 
 - [ ] a claim — **%s, and here is why.**
 ' "$state" > "$tmp/bodies/1"
-    is "[$state] is a state, not debt" "$(code_of 1)" "0"
+    has   "[$state] reads as stated"          "$(swept 1)" "0 bare, 1 stated"
+    lacks "[$state] is not an unnamed word"   "$(swept 1)" "the rule does not name"
 done
 
 # --- a word the rule does not name ---
