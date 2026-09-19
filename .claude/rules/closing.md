@@ -67,6 +67,16 @@ Say so on the issue, and say which of four things it is:
 
 None of the four is a tick. A box removed silently and a box ticked wrongly read the same six months later.
 
+**Write the state as the first bold word in the box**, so a check can read it:
+
+```
+- [ ] the check is right and nothing has happened for it to read — **unreached.** Four goals, none finished
+```
+
+**`bin/unticked.sh` reads that word.** A box naming one of the four is answered and is not counted as debt. A box saying nothing is, and the exit code follows only those. Measured 19 September: thirty-four open boxes across thirteen closed issues, seventeen naming a state and eight saying nothing.
+
+**A bold word that is none of the four is reported, not counted either way.** Three boxes read `**unverifiable**` — the check ran and what it read cannot be confirmed afterwards, which is not *ungateable*, where no check can exist. **Whether that is a fifth state is a person's call**, and the report exists so nobody has to notice it by hand.
+
 **A moved box is the one that rots.** The other three end. This one waits on an issue somebody else
 will close, and nothing walks back when they do.
 
