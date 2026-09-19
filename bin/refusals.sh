@@ -79,6 +79,11 @@ sites_in() {
                 sub(/[^0-9].*/, "", code)
 
                 printf "%s\t%s\t%s\n", head, code, (FNR - at <= 3 ? said : "")
+
+                # **Spent, and that is the whole of it.** A message belongs to the first exit that
+                # follows it. Leaving it set handed `commit names the change` to an `|| exit 1` two
+                # lines below the `exit 2` that had already said it.
+                at = 0
                 line = substr(line, RSTART + RLENGTH)
             }
         }

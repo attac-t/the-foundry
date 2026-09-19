@@ -26,7 +26,7 @@ yet.
 file defines it as a function, and the enclosing function otherwise — so `[`, `mkdir` and `cd` are
 never heads.
 
-**Two hundred and nine exit sites, one hundred and eighty-two decisions.** `sh bin/refusals.sh
+**Two hundred and nine exit sites, one hundred and seventy-nine decisions.** `sh bin/refusals.sh
 plugins/floor/bin/run.sh` prints the sites, and `sh bin/unnamed.sh` compares them to this
 page.
 
@@ -35,9 +35,6 @@ page.
 | Head | Code | Word | Says | Cited by |
 |---|---|---|---|---|
 | `active_run` | 1 |  | — |  |
-| `active_run` | 1 |  | accept names why [$sha] belongs here |  |
-| `active_run` | 1 |  | commit names the change |  |
-| `active_run` | 1 |  | deliver names the change |  |
 | `ask_about_each` | 1 |  | — |  |
 | `authorise` | 1 |  | this run has no charter — run \`charter derive\` first |  |
 | `check_charter` | 1 |  | this run has no charter |  |
@@ -49,67 +46,67 @@ page.
 | `refuse_unheld_clause` | 1 |  | this run's charter holds no clause [$2], so nothing would ever read an answer about it |  |
 | `satisfied` | 1 |  | — |  |
 | `accept_ancestry` | 2 |  | [$sha] is not a commit in [$tree] |  |
-| `accept_ancestry` | 2 |  | accept names a commit |  |
-| `accept_ancestry` | 2 |  | accept names why [$sha] belongs here |  |
+| `accept_ancestry` | 2 | default | accept names why [$sha] belongs here | nobody — a verb running without what it needs would act on nothing. Unlike the `usage` guards, this one says which field is missing |
+| `accept_ancestry` | 2 | default | accept names a commit | nobody — a verb running without what it needs would act on nothing. Unlike the `usage` guards, this one says which field is missing |
 | `add_advised` | 2 |  | the item advises no target, so name one |  |
-| `add_target` | 2 |  | targets add needs a repo and a ref |  |
-| `aside` | 2 |  | — |  |
-| `ask_about` | 2 |  | — |  |
-| `ask_about` | 2 |  | ask needs a stage, a clause and the question to put |  |
-| `charter` | 2 |  | — |  |
-| `claim` | 2 |  | — |  |
-| `claim` | 2 |  | claim names an item |  |
+| `add_target` | 2 | default | targets add needs a repo and a ref | nobody — a verb running without what it needs would act on nothing. Unlike the `usage` guards, this one says which field is missing |
+| `aside` | 2 | default | — | nobody — a verb that took a shape it has no meaning for would mean two things. `usage` is what speaks here, and the site says nothing of its own |
+| `ask_about` | 2 | default | ask needs a stage, a clause and the question to put | nobody — a verb running without what it needs would act on nothing. Unlike the `usage` guards, this one says which field is missing |
+| `ask_about` | 2 | default | — | nobody — a verb that took a shape it has no meaning for would mean two things. `usage` is what speaks here, and the site says nothing of its own |
+| `charter` | 2 | default | — | nobody — a verb that took a shape it has no meaning for would mean two things. `usage` is what speaks here, and the site says nothing of its own |
+| `claim` | 2 | default | — | nobody — a verb that took a shape it has no meaning for would mean two things. `usage` is what speaks here, and the site says nothing of its own |
+| `claim` | 2 | default | claim names an item | nobody — a verb running without what it needs would act on nothing. Unlike the `usage` guards, this one says which field is missing |
 | `closes` | 2 |  | this run reads no item, so there is nothing to close |  |
-| `code_for_judgement` | 2 |  | — |  |
-| `code_for_outcome` | 2 |  | a verdict names the clause, the judge, the outcome, what they said, and the sha they read |  |
-| `commit_work` | 2 |  | — |  |
-| `commit_work` | 2 |  | commit names the change |  |
+| `code_for_judgement` | 2 | default | — | nobody — a verb that took a shape it has no meaning for would mean two things. `usage` is what speaks here, and the site says nothing of its own |
+| `code_for_outcome` | 2 | default | — | nobody — a verb that took a shape it has no meaning for would mean two things. `usage` is what speaks here, and the site says nothing of its own |
 | `commit_work` | 2 |  | nothing is staged in [$tree] |  |
-| `complete` | 2 |  | — |  |
-| `deliver` | 2 |  | — |  |
-| `deliver` | 2 |  | deliver names the change |  |
-| `evidence` | 2 |  | — |  |
-| `gates` | 2 |  | — |  |
+| `commit_work` | 2 | default | commit names the change | nobody — a verb running without what it needs would act on nothing. Unlike the `usage` guards, this one says which field is missing |
+| `commit_work` | 2 | default | — | nobody — a verb that took a shape it has no meaning for would mean two things. `usage` is what speaks here, and the site says nothing of its own |
+| `complete` | 2 | default | — | nobody — a verb that took a shape it has no meaning for would mean two things. `usage` is what speaks here, and the site says nothing of its own |
+| `deliver` | 2 | default | — | nobody — a verb that took a shape it has no meaning for would mean two things. `usage` is what speaks here, and the site says nothing of its own |
+| `deliver` | 2 | default | deliver names the change | nobody — a verb running without what it needs would act on nothing. Unlike the `usage` guards, this one says which field is missing |
+| `evidence` | 2 | default | — | nobody — a verb that took a shape it has no meaning for would mean two things. `usage` is what speaks here, and the site says nothing of its own |
+| `gates` | 2 | default | — | nobody — a verb that took a shape it has no meaning for would mean two things. `usage` is what speaks here, and the site says nothing of its own |
 | `grant` | 2 |  | a grant names a repo |  |
 | `handed` | 2 |  | a handoff names the clause, the judge, and how that judge was run |  |
 | `is_kind` | 2 |  | a clause is Gate, Judged or Decided — not [$kind] |  |
+| `is_one_line` | 2 |  | an event name is one line: [$event] |  |
 | `is_one_line` | 2 |  | a clause is one line of text |  |
 | `is_one_line` | 2 |  | a gate's name is one line: [$name] |  |
-| `is_one_line` | 2 |  | an event name is one line: [$event] |  |
 | `is_stage` | 2 |  | a question is asked at authorisation or at completion, not at [$2] |  |
-| `judged` | 2 |  | — |  |
+| `judged` | 2 | default | — | nobody — a verb that took a shape it has no meaning for would mean two things. `usage` is what speaks here, and the site says nothing of its own |
 | `keep_the_brief` | 2 |  | no brief to read at [$2] |  |
-| `list_runs` | 2 |  | — |  |
-| `main` | 2 |  | — |  |
-| `make_run` | 2 |  | new needs a title |  |
+| `list_runs` | 2 | default | — | nobody — a verb that took a shape it has no meaning for would mean two things. `usage` is what speaks here, and the site says nothing of its own |
+| `main` | 2 | default | — | nobody — a verb that took a shape it has no meaning for would mean two things. `usage` is what speaks here, and the site says nothing of its own |
+| `make_run` | 2 | default | new needs a title | nobody — a verb running without what it needs would act on nothing. Unlike the `usage` guards, this one says which field is missing |
 | `make_run` | 2 |  | the clock did not answer, so this run would have no date |  |
-| `merge_delivery` | 2 |  | — |  |
-| `observed` | 2 |  | — |  |
-| `open_workspace` | 2 |  | — |  |
-| `policy` | 2 |  | — |  |
-| `publish_delivery` | 2 |  | — |  |
-| `publish_delivery` | 2 |  | publish needs a branch and a title |  |
-| `read_work_item` | 2 |  | read names an item — its words are the source's to say, not yours |  |
-| `read_work_item` | 2 |  | read needs an item to read |  |
-| `receive_answer` | 2 |  | receive names a stage and a clause — an answer is not something you pass |  |
-| `reconcile` | 2 |  | — |  |
-| `refuse_a_judge_nobody_asked` | 2 |  | [$2] is answered by [$(spaced  |  |
+| `merge_delivery` | 2 | default | — | nobody — a verb that took a shape it has no meaning for would mean two things. `usage` is what speaks here, and the site says nothing of its own |
+| `observed` | 2 | default | — | nobody — a verb that took a shape it has no meaning for would mean two things. `usage` is what speaks here, and the site says nothing of its own |
+| `open_workspace` | 2 | default | — | nobody — a verb that took a shape it has no meaning for would mean two things. `usage` is what speaks here, and the site says nothing of its own |
+| `policy` | 2 | default | — | nobody — a verb that took a shape it has no meaning for would mean two things. `usage` is what speaks here, and the site says nothing of its own |
+| `publish_delivery` | 2 | default | publish needs a branch and a title | nobody — a verb running without what it needs would act on nothing. Unlike the `usage` guards, this one says which field is missing |
+| `publish_delivery` | 2 | default | — | nobody — a verb that took a shape it has no meaning for would mean two things. `usage` is what speaks here, and the site says nothing of its own |
+| `read_work_item` | 2 | default | read needs an item to read | nobody — a verb running without what it needs would act on nothing. Unlike the `usage` guards, this one says which field is missing |
+| `read_work_item` | 2 | default | read names an item — its words are the source's to say, not yours | nobody — a verb running without what it needs would act on nothing. Unlike the `usage` guards, this one says which field is missing |
+| `receive_answer` | 2 | default | receive names a stage and a clause — an answer is not something you pass | nobody — a verb running without what it needs would act on nothing. Unlike the `usage` guards, this one says which field is missing |
+| `reconcile` | 2 | default | — | nobody — a verb that took a shape it has no meaning for would mean two things. `usage` is what speaks here, and the site says nothing of its own |
 | `refuse_a_judge_nobody_asked` | 2 |  | [$2] names no panel, so nothing can answer it — declare one and re-derive |  |
+| `refuse_a_judge_nobody_asked` | 2 |  | [$2] is answered by [$(spaced  |  |
 | `refuse_a_judge_that_is_the_worker` | 2 | invariant | a verdict comes from something that did not write what it grades | the principle *producing work grants no authority over it* |
 | `refuse_a_kind_a_person_cannot_answer` | 2 |  | record a verdict instead — \`evidence verdict\` names who judged it and what they said |  |
 | `refuse_a_kind_that_is_not_judged` | 2 |  | a Gate clause is answered by \`gates\`, and a Decided one by a human where the item is |  |
 | `refuse_a_pinned_name` | 2 |  | record a name the charter does not pin, or run \`gates\` |  |
-| `refuse_a_receipt_nobody_named` | 2 |  | receipt needs the file to read |  |
+| `refuse_a_receipt_nobody_named` | 2 | default | receipt needs the file to read | nobody — a verb running without what it needs would act on nothing. Unlike the `usage` guards, this one says which field is missing |
 | `refuse_a_torn_row` | 2 |  | an observation must fit one atomic write, and that one is ${#1} long |  |
 | `refuse_an_unnamed_field` | 2 |  | an observation's fields are key=value, and [$pair] is not one |  |
-| `refuse_unrecordable` | 2 |  | record needs a command to run — a result is not something you pass |  |
-| `refuse_unrecordable` | 2 |  | record needs a name and a command |  |
-| `release` | 2 |  | — |  |
-| `release` | 2 |  | release names an item |  |
-| `settled` | 2 |  | — |  |
-| `targets` | 2 |  | — |  |
+| `refuse_unrecordable` | 2 | default | record needs a command to run — a result is not something you pass | nobody — a verb running without what it needs would act on nothing. Unlike the `usage` guards, this one says which field is missing |
+| `refuse_unrecordable` | 2 | default | record needs a name and a command | nobody — a verb running without what it needs would act on nothing. Unlike the `usage` guards, this one says which field is missing |
+| `release` | 2 | default | release names an item | nobody — a verb running without what it needs would act on nothing. Unlike the `usage` guards, this one says which field is missing |
+| `release` | 2 | default | — | nobody — a verb that took a shape it has no meaning for would mean two things. `usage` is what speaks here, and the site says nothing of its own |
+| `settled` | 2 | default | — | nobody — a verb that took a shape it has no meaning for would mean two things. `usage` is what speaks here, and the site says nothing of its own |
+| `targets` | 2 | default | — | nobody — a verb that took a shape it has no meaning for would mean two things. `usage` is what speaks here, and the site says nothing of its own |
 | `verdict` | 2 |  | a verdict names the clause, the judge, the outcome, what they said, and the sha they read |  |
-| `work_source` | 2 |  | — |  |
+| `work_source` | 2 | default | — | nobody — a verb that took a shape it has no meaning for would mean two things. `usage` is what speaks here, and the site says nothing of its own |
 | `die_homeless` | 3 |  | no FOUNDRY_HOME and no HOME — nowhere to put a run |  |
 | `die_unwritable` | 3 |  | could not write $1 |  |
 | `refuse_missing_resolver` | 3 |  | no gate resolver at [$(gate_resolver)] |  |
@@ -130,13 +127,13 @@ page.
 | `refuse_moved_resolution` | 6 |  | — |  |
 | `refuse_wrong_repository` | 6 |  | run this inside [$boot], not [${here:-nowhere}] |  |
 | `check_charter` | 7 |  | — |  |
-| `gate_held` | 7 |  | the charter pins a command under [$id] and names no clause for it |  |
 | `gate_held` | 7 |  | the charter pins no command for [$name] |  |
-| `judge_answered` | 7 |  | the charter names a judge under [$id] and no clause for it |  |
+| `gate_held` | 7 |  | the charter pins a command under [$id] and names no clause for it |  |
 | `judge_answered` | 7 |  | the charter says nothing about how [$who] is reached for [$text] |  |
+| `judge_answered` | 7 |  | the charter names a judge under [$id] and no clause for it |  |
 | `refuse_a_judge_this_run_rewrote` | 7 |  | a judge the work can rewrite grades the work that rewrote it |  |
 | `refuse_an_unknown_transport` | 7 |  | [$1] is not a transport — @adapter ships one, @custom is the repository's own command |  |
-| `refuse_gates_from_elsewhere` | 7 |  | this charter pins no gate, so it grades nothing mechanically |  |
+| `refuse_gates_from_elsewhere` | 7 |  | — |  |
 | `ask_pinned_judges` | 8 |  | this charter names no judge, so there is nothing here to judge |  |
 | `authorise` | 8 |  | declare a gate this run's targets can be checked with, or write the requirement into an artifact derivation reads |  |
 | `run_pinned_gates` | 8 |  | this charter pins no gate, so it grades nothing mechanically |  |
@@ -149,10 +146,10 @@ page.
 | `refuse_incomplete` | 15 | answer | — | the runner's own header calls it an answer |
 | `build_and_publish` | 16 |  | [$2] is being checked out — remove [$building] if no session is |  |
 | `check_out_target` | 16 |  | no checkout here to clone [$2] from — one target, for now |  |
-| `clone_into` | 16 |  | [$2] is being checked out — remove [$building] if no session is |  |
+| `clone_into` | 16 |  | — |  |
 | `commit_work` | 16 |  | could not commit in [$tree]: $why |  |
-| `enter_base_gates` | 16 |  | cannot enter [$tree] |  |
 | `enter_base_gates` | 16 |  | the gates this run changed could not be restored from the base |  |
+| `enter_base_gates` | 16 |  | cannot enter [$tree] |  |
 | `enter_work_tree` | 16 |  | cannot enter [$tree] |  |
 | `open_workspace` | 16 |  | [$root] holds a checkout nobody can join — its run pointer could not be written |  |
 | `publish_workspace` | 16 |  | [$2] appeared while it was being built |  |
@@ -177,10 +174,10 @@ page.
 | `land_what_was_graded` | 24 | answer | this run has delivered nothing, so there is nothing to merge | the runner's own header calls it an answer |
 | `refuse_a_delivery_not_open` | 24 | answer | the delivery is [$1], so there is nothing here to merge | the runner's own header calls it an answer |
 | `refuse_a_moved_head` | 24 | answer | the thing merged must be the thing graded — grade again, or deliver what was graded | the runner's own header calls it an answer |
-| `refuse_a_required_check_that_did_not_pass` | 24 | answer | [$check] is required to land on [$1], and $(what_became_of  | the runner's own header calls it an answer |
+| `refuse_a_required_check_that_did_not_pass` | 24 |  | [$check] is required to land on [$1], and $(what_became_of  |  |
 | `refuse_a_source_that_will_not` | 24 | answer | the source says this delivery is [$1], so it will not take it | the runner's own header calls it an answer |
+| `land_what_was_graded` | 25 |  | — |  |
 | `land_what_was_graded` | 25 |  | the source would not land it — a bar floor cannot read may be what refused |  |
-| `land_what_was_graded` | 25 |  | this run has delivered nothing, so there is nothing to merge |  |
 | `source_says` | 25 |  | — |  |
 | `refuse_unless_answered` | 27 |  | this work source can only be read, so nothing here can carry a $2 |  |
 | `refuse_the_source_as_advice` | 28 | invariant | a human naming it with \`targets add\` still can | doctrine's core refusal — *producing, merging and staying silent confer none* |
@@ -188,13 +185,13 @@ page.
 | `release` | 30 | answer | [$item] is not this host's to release | the runner's own header calls it an answer |
 | `refuse_two_kinds` | 31 |  | an item is one kind — the inventory is short on purpose |  |
 | `refuse_foreign_ancestry` | 32 |  |   a person runs \`reconcile accept <sha> <reason>\`, in a shell with no FOUNDRY_WORKER |  |
+| `refuse_foreign_ancestry` | 33 | default | no base was recorded for [$2] — saw nothing, wanted a sha from \`open\` | an unmerged branch reports a foreign commit instead of refusing it, and argues that one is often deliberate. Nothing lets a repository choose — #888 |
 | `refuse_foreign_ancestry` | 33 | default | [$base] is not behind [$head] in [$tree] — saw a rebuilt branch, wanted a grown one | an unmerged branch reports a foreign commit instead of refusing it, and argues that one is often deliberate. Nothing lets a repository choose — #888 |
 | `refuse_foreign_ancestry` | 33 | default | [$tree] has no head to inspect — saw nothing, wanted a sha | an unmerged branch reports a foreign commit instead of refusing it, and argues that one is often deliberate. Nothing lets a repository choose — #888 |
 | `refuse_foreign_ancestry` | 33 | default | could not walk [$base..$head] in [$tree] — saw a failed rev-list, wanted a range | an unmerged branch reports a foreign commit instead of refusing it, and argues that one is often deliberate. Nothing lets a repository choose — #888 |
-| `refuse_foreign_ancestry` | 33 | default | no base was recorded for [$2] — saw nothing, wanted a sha from \`open\` | an unmerged branch reports a foreign commit instead of refusing it, and argues that one is often deliberate. Nothing lets a repository choose — #888 |
 | `refuse_unrecorded_base` | 33 |  |   this run opened before its base was recorded. Open a new one from where the work is |  |
-| `refuse_self_accounting` | 34 |  |   a person runs this in a shell with no FOUNDRY_WORKER set |  |
 | `refuse_self_accounting` | 34 |  | nobody is named to account for this — saw nothing, wanted FOUNDRY_WHO |  |
+| `refuse_self_accounting` | 34 |  |   a person runs this in a shell with no FOUNDRY_WORKER set |  |
 | `refuse_a_revision_nobody_reviewed` | 35 |  | a review of one commit is not a review of another |  |
 | `refuse_a_judge_never_handed_the_bar` | 36 |  |   run.sh evidence handed <clause> <judge> is what says it was |  |
 | `refuse_a_brief_nothing_recorded` | 37 |  |   run.sh evidence handed <clause> <judge> <how> <brief> is what records it |  |

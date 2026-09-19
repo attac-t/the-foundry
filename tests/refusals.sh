@@ -179,6 +179,28 @@ is  "and one row"  "$(read_it "$tmp/heads.sh" | grep 'helper	5' | sort -u | grep
 lacks "a guard on a command it does not define is not a head" "$(read_it "$tmp/heads.sh")" "cd	16"
 is    "so those two stay two decisions" \
       "$(read_it "$tmp/heads.sh" | grep '	16	' | sort -u | grep -c .)" "2"
+
+# --- a message is spent by the exit that says it ---
+#
+# `[ -n "$said" ] || { note "commit names the change"; exit 2; }` sits two lines above
+# `dir=$(active_run) || exit 1`. Leaving the message set gave it to both, and the page carried three
+# rows pairing a head with a sentence another refusal had already used.
+
+cat > "$tmp/spent.sh" <<'FIX'
+f() {
+    [ -n "$said" ] || { note "this one names the change"; exit 2; }
+
+    dir=$(helper) || exit 1
+}
+
+helper() {
+    return 1
+}
+FIX
+
+has  "the exit that says it keeps it"   "$(read_it "$tmp/spent.sh")" "this one names the change"
+is   "and it is said once"              "$(read_it "$tmp/spent.sh" | grep -c 'names the change')" "1"
+has  "the next exit is silent"          "$(read_it "$tmp/spent.sh")" "helper	1	"
 # --- what it refuses ---
 
 is "naming no script refuses"          "$(code_of)" "2"
