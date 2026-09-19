@@ -30,6 +30,21 @@ never heads.
 plugins/floor/bin/run.sh` prints the sites, and `sh bin/unnamed.sh` compares them to this
 page.
 
+
+## What the check cannot tell you
+
+`sh bin/unnamed.sh` proves three things. Every decision the code makes has a row. Every row matches a
+decision the code still makes. No row is blank.
+
+**It cannot prove a word is the right word.** A row reading `default` that should read `invariant`
+passes, and so does the reverse. The check counts rows; a person reads doctrine.
+
+**So a green check here means the list is complete, never that it is correct.** The two are different
+claims and only one of them has a gate.
+
+**The citation is the only thing a reader can check.** An `invariant` row names a line somebody wrote,
+and a reader who disagrees can open that line and say so. A row citing nothing is a `default` by that
+rule, and the page says which line a person would have to write to change it.
 ## The decisions
 
 | Head | Code | Word | Says | Cited by |
