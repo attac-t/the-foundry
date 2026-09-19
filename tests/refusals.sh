@@ -142,6 +142,65 @@ FIX
 is  "both shapes are read"        "$(read_it "$tmp/shapes.sh" | grep -c .)" "2"
 has "the guard one"               "$(read_it "$tmp/shapes.sh")" "the guard form"
 has "and the standalone one"      "$(read_it "$tmp/shapes.sh")" "the standalone form"
+
+# --- the head is what the site rests on, and only if this file defines it ---
+#
+# `cd "$tree" || { note "cannot enter"; exit 16; }` sits in two functions here. Reading `cd` as the
+# head made them one decision. They are two, and only a file that defines `cd` could say otherwise.
+
+cat > "$tmp/heads.sh" <<'FIX'
+helper() {
+    note "the helper explains"
+    return 1
+}
+
+one() {
+    helper || exit 5
+}
+
+two() {
+    helper || exit 5
+}
+
+three() {
+    cd "$x" || { note "cannot enter"; exit 16; }
+}
+
+four() {
+    cd "$x" || { note "cannot enter"; exit 16; }
+}
+FIX
+
+has "a guard on a function this file defines takes its name" "$(read_it "$tmp/heads.sh")" "helper	5"
+is  "so two callers of it are one decision" \
+    "$(read_it "$tmp/heads.sh" | grep -c 'helper	5')" "2"
+is  "and one row"  "$(read_it "$tmp/heads.sh" | grep 'helper	5' | sort -u | grep -c .)" "1"
+
+lacks "a guard on a command it does not define is not a head" "$(read_it "$tmp/heads.sh")" "cd	16"
+is    "so those two stay two decisions" \
+      "$(read_it "$tmp/heads.sh" | grep '	16	' | sort -u | grep -c .)" "2"
+
+# --- a message is spent by the exit that says it ---
+#
+# `[ -n "$said" ] || { note "commit names the change"; exit 2; }` sits two lines above
+# `dir=$(active_run) || exit 1`. Leaving the message set gave it to both, and the page carried three
+# rows pairing a head with a sentence another refusal had already used.
+
+cat > "$tmp/spent.sh" <<'FIX'
+f() {
+    [ -n "$said" ] || { note "this one names the change"; exit 2; }
+
+    dir=$(helper) || exit 1
+}
+
+helper() {
+    return 1
+}
+FIX
+
+has  "the exit that says it keeps it"   "$(read_it "$tmp/spent.sh")" "this one names the change"
+is   "and it is said once"              "$(read_it "$tmp/spent.sh" | grep -c 'names the change')" "1"
+has  "the next exit is silent"          "$(read_it "$tmp/spent.sh")" "helper	1	"
 # --- what it refuses ---
 
 is "naming no script refuses"          "$(code_of)" "2"
