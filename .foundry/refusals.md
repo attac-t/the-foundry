@@ -26,7 +26,7 @@ yet.
 file defines it as a function, and the enclosing function otherwise — so `[`, `mkdir` and `cd` are
 never heads.
 
-**Two hundred and nine exit sites, one hundred and eighty decisions.** `sh bin/refusals.sh
+**Two hundred and eight exit sites, one hundred and seventy-nine decisions.** `sh bin/refusals.sh
 plugins/floor/bin/run.sh` prints the sites, and `sh bin/unnamed.sh` compares them to this
 page.
 
@@ -74,9 +74,9 @@ Measured at `24b2549`, across sixty shipped scripts — every `plugins/*/bin`, `
 
 | | Sites | Decisions |
 |---|---|---|
-| `plugins/floor/bin/run.sh` | 209 | 180 |
+| `plugins/floor/bin/run.sh` | 208 | 179 |
 | the other fifty-nine | 187 | 155 |
-| **all sixty** | **396** | **335** |
+| **all sixty** | **395** | **334** |
 
 **Twelve scripts hold two hundred and fifty-five of the decisions.** Five refuse nothing at all, and
 forty-three make three or fewer. Outside the runner the weight sits in two files —
@@ -191,7 +191,6 @@ where it is — a key for a one-off buys indirection and saves nothing.
 | `ask_about` | 2 | default | — | `usage` |
 | `charter` | 2 | default | — | `usage` |
 | `claim` | 2 | default | — | `usage` |
-| `claim` | 2 | default | claim names an item | `no-field` |
 | `closes` | 2 | default | this run reads no item, so there is nothing to close | `nothing-held` |
 | `code_for_judgement` | 2 | default | — | `usage` |
 | `code_for_outcome` | 2 | default | — | `usage` |
