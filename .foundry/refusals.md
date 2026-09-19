@@ -47,8 +47,9 @@ and a reader who disagrees can open that line and say so. A row citing nothing i
 rule, and the page says which line a person would have to write to change it.
 ## The settings, by name
 
-**A count hides a swap.** Thirteen were reported on 18 September and fifteen were true; seventeen
-stand at `24b2549`. Two of the seventeen arrived this week, on the check that reads this page.
+**A count hides a swap.** Thirteen were reported on 18 September and fifteen were true. **Eighteen
+stand today.** Three arrived this week: two on the check that reads this page, and one on the runner
+itself.
 
 | | |
 |---|---|
@@ -58,7 +59,8 @@ stand at `24b2549`. Two of the seventeen arrived this week, on the check that re
 | `FOUNDRY_FORGE` `FOUNDRY_SOURCE` `FOUNDRY_SOURCE_DIR` | which adapter answers |
 | `FOUNDRY_GATES` `FOUNDRY_JUDGED` `FOUNDRY_KEYS` | what a charter derives from |
 | `FOUNDRY_HOME` `FOUNDRY_RUN` | where runs live, and which one is active |
-| `FOUNDRY_REFUSALS_PAGE` `FOUNDRY_REFUSALS_READS` | **new** — `bin/unnamed.sh`, both ends settable |
+| `FOUNDRY_REFUSALS_PAGE` `FOUNDRY_REFUSALS_READS` | `bin/unnamed.sh`, both ends settable |
+| `FOUNDRY_UNDER` | **new** — what the host says it runs on. Core writes it down and never reads it |
 | `FOUNDRY_WHO` `FOUNDRY_WORKER` | who the record says did it |
 
 **No setting changes the condition any decision below fires on.** Several change what the run is

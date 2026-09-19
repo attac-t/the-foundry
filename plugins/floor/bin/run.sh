@@ -3503,15 +3503,53 @@ runtime() {
 # human may not deliver. A run with no named worker is ordinary.
 worker() { printf '%s' "${FOUNDRY_WORKER:-}"; }
 
-# Three facts, and collapsing any two of them is what #156 is about.
 #
-# The host is where it ran. The selector permitted it. The worker produced it.
-# A record naming one of the three has answered a different question.
+# What the host says it is running on. Core names the field and never the value, the same rule as
+# `worker` above — and here it is the only shape left, because `bin/hosts.sh` refuses core any word
+# for what it runs in. The host knows. Core writes down what it was told.
+#
+# **`nothing` is an answer and an empty field is not.** A host that stated nothing and a host that
+# stated the empty string are one case, and neither is *this did not run in anything*. Core cannot
+# tell those apart and must not look as though it did.
+#
+# **One token, not one line.** The record is `key=value` split on spaces, so a stated value holding
+# one reaches the reader as three fields it never wrote. `one_line` folds a newline to a space and
+# would hand this the very thing that breaks it.
+#
+# Folded, never refused. Core is told a value and writes it down; judging the host's word is the
+# one thing this may not start doing.
+under() {
+    said=$(one_token "${FOUNDRY_UNDER:-}")
+
+    [ -n "$said" ] || said=nothing
+
+    printf '%s' "$said"
+}
+
+# One underscore per space, never one per run of them. A reader who wants the host's own word back
+# counts them, and squeezing would spend a fact to save a character.
+one_token() {
+    said=$(one_line "$1")
+
+    while :; do
+        case $said in
+            *" "*) said="${said%% *}_${said#* }" ;;
+            *)     break ;;
+        esac
+    done
+
+    printf '%s' "$said"
+}
+
+# Four facts, and collapsing any two of them is what #156 is about.
+#
+# The host is where it ran. The selector permitted it. The worker produced it. What it ran under is
+# the host's own word, and it is the one no gate here may go and check.
 began_with() {
     said=$(worker)
-    [ -n "$said" ] && { printf 'runtime=%s worker=%s' "$(runtime)" "$(one_line "$said")"; return 0; }
+    [ -n "$said" ] && { printf 'runtime=%s under=%s worker=%s' "$(runtime)" "$(under)" "$(one_line "$said")"; return 0; }
 
-    printf 'runtime=%s' "$(runtime)"
+    printf 'runtime=%s under=%s' "$(runtime)" "$(under)"
 }
 
 #
