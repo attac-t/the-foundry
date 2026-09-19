@@ -116,9 +116,26 @@ test of whether it earns its place.
 | **Automate mechanics; escalate meaning.** Foundry never invents a costly trade-off because nobody stated one. It asks | approval theatre, stripping out the calls only people can rightly make |
 | **Direction and evidence outlive replaceable workers.** Anything durable is written where anyone can read it | lock-in, session memory treated as truth, a worker's identity baked into the design |
 | **Evidence supports judgement; it does not replace it.** A check that failed or never ran never quietly becomes a pass | green means good, unknown read as pass, a record claiming more than a reader can check |
-| **Compose with the repository.** Use its purpose, knowledge, tools and habits before inventing substitutes | pasting Foundry's direction into a target, replacing local knowledge that works |
+| **Compose with the repository, and stay composable.** Use its purpose, knowledge, tools and habits before inventing substitutes, and ship parts that are each useful alone | pasting Foundry's direction into a target, replacing local knowledge that works, a part that only works beside another |
 | **Learn without silently changing direction.** A worker may propose a change to doctrine, goals or rules. It reaches later work only once the right people accept it | authority that amends itself, a lesson promoting itself into a rule |
-| **Prefer the smallest system that solves the observed problem.** Convention before configuration; a file before a service | machinery for a problem nobody has had, a permanent org chart of agents |
+| **Prefer the smallest system that solves the observed problem.** Convention sets the default and configuration gives the choice; a file before a service | machinery for a problem nobody has had, a permanent org chart of agents, a policy the repository cannot change |
+| **The core names no host and no vendor.** What Foundry runs on, and what answers it, are the repository's to choose. Neither name reaches the code that decides | a runner that works on one kind of machine, an adapter's name inside the thing that calls it, a choice made by whoever shipped the default |
+| **A repository brings its own opinion.** Foundry's defaults are one repository's taste. Every judgement a target could reasonably hold differently is the target's to set | Foundry's taste shipped as a requirement, a default nobody can change, a standard a business cannot make its own |
+
+**Four things people ask for are here, and two are new lines.** *Agnosticism* is one, and two
+gates already hold it — `bin/hosts.sh` and `bin/providers.sh`. **Opinion is the other**: Foundry
+will drive businesses that are not this one, and a default nobody can change is a standard
+imposed. *Configuration* and *composability* are the last two rows, each now read both ways.
+
+**Flexibility reaches every preference and no invariant.** The core refusal is not configurable,
+and neither is a refusal that rests on it — `.foundry/refusals.md` says which of floor's are which,
+and #791 decides what a setting may reach. **Bringing your own opinion is not a
+principle at all**: it is what Foundry is, stated above — *Foundry carries what people state. It
+cannot supply what nobody said.*
+
+**Nothing here is enforced because it is written.** Five of these are cited by a refusal floor's
+runner makes; four are held by a reader. #910 says which is which, and a line nothing holds is
+worth knowing as that.
 
 ## What is durable
 
