@@ -49,17 +49,17 @@ rule, and the page says which line a person would have to write to change it.
 
 | Head | Code | Word | Says | Cited by |
 |---|---|---|---|---|
-| `active_run` | 1 |  | — |  |
-| `ask_about_each` | 1 |  | — |  |
-| `authorise` | 1 |  | this run has no charter — run \`charter derive\` first |  |
-| `check_charter` | 1 |  | this run has no charter |  |
-| `derive_charter` | 1 |  |   one is written from an origin remote and a first commit. Add whichever is missing |  |
-| `print_bootstrap` | 1 |  | — |  |
-| `read_work_item` | 1 |  | the work source holds no item [$item] |  |
-| `receive_answer` | 1 |  | — |  |
-| `refuse_unaddressed` | 1 |  | this run has read no item, so there is nowhere to address that |  |
-| `refuse_unheld_clause` | 1 |  | this run's charter holds no clause [$2], so nothing would ever read an answer about it |  |
-| `satisfied` | 1 |  | — |  |
+| `active_run` | 1 | default | — | nobody — there is nothing to answer about. The line a person would write: **a run answers only about work it holds** |
+| `ask_about_each` | 1 | default | — | nobody — there is nothing to answer about. The line a person would write: **a run answers only about work it holds** |
+| `authorise` | 1 | default | this run has no charter — run \`charter derive\` first | nobody — there is nothing to answer about. The line a person would write: **a run answers only about work it holds** |
+| `check_charter` | 1 | default | this run has no charter | nobody — there is nothing to answer about. The line a person would write: **a run answers only about work it holds** |
+| `derive_charter` | 1 | default |   one is written from an origin remote and a first commit. Add whichever is missing | nobody — there is nothing to answer about. The line a person would write: **a run answers only about work it holds** |
+| `print_bootstrap` | 1 | default | — | nobody — there is nothing to answer about. The line a person would write: **a run answers only about work it holds** |
+| `read_work_item` | 1 | default | the work source holds no item [$item] | nobody — there is nothing to answer about. The line a person would write: **a run answers only about work it holds** |
+| `receive_answer` | 1 | default | — | nobody — there is nothing to answer about. The line a person would write: **a run answers only about work it holds** |
+| `refuse_unaddressed` | 1 | default | this run has read no item, so there is nowhere to address that | nobody — there is nothing to answer about. The line a person would write: **a run answers only about work it holds** |
+| `refuse_unheld_clause` | 1 | default | this run's charter holds no clause [$2], so nothing would ever read an answer about it | nobody — there is nothing to answer about. The line a person would write: **a run answers only about work it holds** |
+| `satisfied` | 1 | default | — | nobody — there is nothing to answer about. The line a person would write: **a run answers only about work it holds** |
 | `accept_ancestry` | 2 |  | [$sha] is not a commit in [$tree] |  |
 | `accept_ancestry` | 2 | default | accept names why [$sha] belongs here | nobody — a verb running without what it needs would act on nothing. Unlike the `usage` guards, this one says which field is missing |
 | `accept_ancestry` | 2 | default | accept names a commit | nobody — a verb running without what it needs would act on nothing. Unlike the `usage` guards, this one says which field is missing |
@@ -122,33 +122,33 @@ rule, and the page says which line a person would have to write to change it.
 | `targets` | 2 | default | — | nobody — a verb that took a shape it has no meaning for would mean two things. `usage` is what speaks here, and the site says nothing of its own |
 | `verdict` | 2 |  | a verdict names the clause, the judge, the outcome, what they said, and the sha they read |  |
 | `work_source` | 2 | default | — | nobody — a verb that took a shape it has no meaning for would mean two things. `usage` is what speaks here, and the site says nothing of its own |
-| `die_homeless` | 3 |  | no FOUNDRY_HOME and no HOME — nowhere to put a run |  |
-| `die_unwritable` | 3 |  | could not write $1 |  |
-| `refuse_missing_resolver` | 3 |  | no gate resolver at [$(gate_resolver)] |  |
-| `refuse_missing_source` | 3 |  | no work source at [$(source_resolver)] |  |
-| `add_target` | 4 |  | no portable identity for [$repo] — needs a remote url, no local path, no space, no .. |  |
-| `grant` | 4 |  | no portable identity for [$repo] — needs a remote url, no local path, no space, no .. |  |
-| `is_usable_ref` | 4 |  | not a usable ref: [$ref] |  |
-| `refuse_second_ref` | 4 |  | start a run there, or select [$from] |  |
-| `refuse_selected_twice` | 4 |  | already selected: [$2] |  |
+| `die_homeless` | 3 | default | no FOUNDRY_HOME and no HOME — nowhere to put a run | nobody — a run with nowhere to write has nothing to record. The line a person would write: **a run needs a home it can write** |
+| `die_unwritable` | 3 | default | could not write $1 | nobody — a run with nowhere to write has nothing to record. The line a person would write: **a run needs a home it can write** |
+| `refuse_missing_resolver` | 3 | default | no gate resolver at [$(gate_resolver)] | nobody — a run with nowhere to write has nothing to record. The line a person would write: **a run needs a home it can write** |
+| `refuse_missing_source` | 3 | default | no work source at [$(source_resolver)] | nobody — a run with nowhere to write has nothing to record. The line a person would write: **a run needs a home it can write** |
+| `add_target` | 4 | invariant | no portable identity for [$repo] — needs a remote url, no local path, no space, no .. | the principle *Direction and evidence outlive replaceable workers*, which refuses lock-in and a worker's identity baked into the design |
+| `grant` | 4 | invariant | no portable identity for [$repo] — needs a remote url, no local path, no space, no .. | the principle *Direction and evidence outlive replaceable workers*, which refuses lock-in and a worker's identity baked into the design |
+| `is_usable_ref` | 4 | invariant | not a usable ref: [$ref] | the principle *Direction and evidence outlive replaceable workers*, which refuses lock-in and a worker's identity baked into the design |
+| `refuse_second_ref` | 4 | invariant | start a run there, or select [$from] | the principle *Direction and evidence outlive replaceable workers*, which refuses lock-in and a worker's identity baked into the design |
+| `refuse_selected_twice` | 4 | invariant | already selected: [$2] | the principle *Direction and evidence outlive replaceable workers*, which refuses lock-in and a worker's identity baked into the design |
 | `add_target` | 5 |  | not authorised for this run: [$identity] — run \`policy authorize\` first |  |
 | `refuse_unselectable` | 5 |  | — |  |
 | `targets` | 5 |  | — |  |
-| `derive_charter` | 6 |  | — |  |
-| `derive_charter` | 6 |  | refusing to drop what no longer derives: |  |
-| `derive_charter` | 6 |  | start a new run — one made before this rule cannot prove what it derived from |  |
-| `introduce_clause` | 6 |  | this clause is already $was — only derivation may make it $kind |  |
-| `refuse_collision` | 6 |  | — |  |
-| `refuse_moved_resolution` | 6 |  | — |  |
-| `refuse_wrong_repository` | 6 |  | run this inside [$boot], not [${here:-nowhere}] |  |
-| `check_charter` | 7 |  | — |  |
-| `gate_held` | 7 |  | the charter pins no command for [$name] |  |
-| `gate_held` | 7 |  | the charter pins a command under [$id] and names no clause for it |  |
-| `judge_answered` | 7 |  | the charter says nothing about how [$who] is reached for [$text] |  |
-| `judge_answered` | 7 |  | the charter names a judge under [$id] and no clause for it |  |
-| `refuse_a_judge_this_run_rewrote` | 7 |  | a judge the work can rewrite grades the work that rewrote it |  |
-| `refuse_an_unknown_transport` | 7 |  | [$1] is not a transport — @adapter ships one, @custom is the repository's own command |  |
-| `refuse_gates_from_elsewhere` | 7 |  | — |  |
+| `derive_charter` | 6 | invariant | — | doctrine's core refusal — *authority attaches to a claim… producing, merging and staying silent confer none* |
+| `derive_charter` | 6 | invariant | refusing to drop what no longer derives: | doctrine's core refusal — *authority attaches to a claim… producing, merging and staying silent confer none* |
+| `derive_charter` | 6 | invariant | start a new run — one made before this rule cannot prove what it derived from | doctrine's core refusal — *authority attaches to a claim… producing, merging and staying silent confer none* |
+| `introduce_clause` | 6 | invariant | this clause is already $was — only derivation may make it $kind | doctrine's core refusal — *authority attaches to a claim… producing, merging and staying silent confer none* |
+| `refuse_collision` | 6 | invariant | — | doctrine's core refusal — *authority attaches to a claim… producing, merging and staying silent confer none* |
+| `refuse_moved_resolution` | 6 | invariant | — | doctrine's core refusal — *authority attaches to a claim… producing, merging and staying silent confer none* |
+| `refuse_wrong_repository` | 6 | invariant | run this inside [$boot], not [${here:-nowhere}] | doctrine's core refusal — *authority attaches to a claim… producing, merging and staying silent confer none* |
+| `check_charter` | 7 | default | — | nobody — a charter that drifted or is pinned elsewhere cannot grade this tree. The line a person would write: **a run grades only against a charter that still derives** |
+| `gate_held` | 7 | default | the charter pins no command for [$name] | nobody — a charter that drifted or is pinned elsewhere cannot grade this tree. The line a person would write: **a run grades only against a charter that still derives** |
+| `gate_held` | 7 | default | the charter pins a command under [$id] and names no clause for it | nobody — a charter that drifted or is pinned elsewhere cannot grade this tree. The line a person would write: **a run grades only against a charter that still derives** |
+| `judge_answered` | 7 | default | the charter says nothing about how [$who] is reached for [$text] | nobody — a charter that drifted or is pinned elsewhere cannot grade this tree. The line a person would write: **a run grades only against a charter that still derives** |
+| `judge_answered` | 7 | default | the charter names a judge under [$id] and no clause for it | nobody — a charter that drifted or is pinned elsewhere cannot grade this tree. The line a person would write: **a run grades only against a charter that still derives** |
+| `refuse_a_judge_this_run_rewrote` | 7 | default | a judge the work can rewrite grades the work that rewrote it | nobody — a charter that drifted or is pinned elsewhere cannot grade this tree. The line a person would write: **a run grades only against a charter that still derives** |
+| `refuse_an_unknown_transport` | 7 | default | [$1] is not a transport — @adapter ships one, @custom is the repository's own command | nobody — a charter that drifted or is pinned elsewhere cannot grade this tree. The line a person would write: **a run grades only against a charter that still derives** |
+| `refuse_gates_from_elsewhere` | 7 | default | — | nobody — a charter that drifted or is pinned elsewhere cannot grade this tree. The line a person would write: **a run grades only against a charter that still derives** |
 | `ask_pinned_judges` | 8 |  | this charter names no judge, so there is nothing here to judge |  |
 | `authorise` | 8 |  | declare a gate this run's targets can be checked with, or write the requirement into an artifact derivation reads |  |
 | `run_pinned_gates` | 8 |  | this charter pins no gate, so it grades nothing mechanically |  |
@@ -159,31 +159,31 @@ rule, and the page says which line a person would have to write to change it.
 | `refuse_renamed_run` | 13 |  | move it back, or start a new run — authority a human gave is not renamed with a directory |  |
 | `complete` | 15 | answer | — | the runner's own header calls it an answer |
 | `refuse_incomplete` | 15 | answer | — | the runner's own header calls it an answer |
-| `build_and_publish` | 16 |  | [$2] is being checked out — remove [$building] if no session is |  |
-| `check_out_target` | 16 |  | no checkout here to clone [$2] from — one target, for now |  |
-| `clone_into` | 16 |  | — |  |
-| `commit_work` | 16 |  | could not commit in [$tree]: $why |  |
-| `enter_base_gates` | 16 |  | the gates this run changed could not be restored from the base |  |
-| `enter_base_gates` | 16 |  | cannot enter [$tree] |  |
-| `enter_work_tree` | 16 |  | cannot enter [$tree] |  |
-| `open_workspace` | 16 |  | [$root] holds a checkout nobody can join — its run pointer could not be written |  |
-| `publish_workspace` | 16 |  | [$2] appeared while it was being built |  |
-| `publish_workspace` | 16 |  | could not publish [$2] |  |
-| `record_base` | 16 |  | [$2] has no head to record as its base |  |
-| `record_produced` | 16 |  | committed in [$2] and could not read the sha back |  |
-| `refuse_occupied_slot` | 16 |  | [$1] is not a checkout of [$2] — remove it and open again |  |
-| `unit_work_tree` | 16 |  | — |  |
+| `build_and_publish` | 16 | default | [$2] is being checked out — remove [$building] if no session is | nobody — a run that could not reach its workspace has nothing to act on. The line a person would write: **a run acts only on a workspace it holds** |
+| `check_out_target` | 16 | default | no checkout here to clone [$2] from — one target, for now | nobody — a run that could not reach its workspace has nothing to act on. The line a person would write: **a run acts only on a workspace it holds** |
+| `clone_into` | 16 | default | — | nobody — a run that could not reach its workspace has nothing to act on. The line a person would write: **a run acts only on a workspace it holds** |
+| `commit_work` | 16 | default | could not commit in [$tree]: $why | nobody — a run that could not reach its workspace has nothing to act on. The line a person would write: **a run acts only on a workspace it holds** |
+| `enter_base_gates` | 16 | default | the gates this run changed could not be restored from the base | nobody — a run that could not reach its workspace has nothing to act on. The line a person would write: **a run acts only on a workspace it holds** |
+| `enter_base_gates` | 16 | default | cannot enter [$tree] | nobody — a run that could not reach its workspace has nothing to act on. The line a person would write: **a run acts only on a workspace it holds** |
+| `enter_work_tree` | 16 | default | cannot enter [$tree] | nobody — a run that could not reach its workspace has nothing to act on. The line a person would write: **a run acts only on a workspace it holds** |
+| `open_workspace` | 16 | default | [$root] holds a checkout nobody can join — its run pointer could not be written | nobody — a run that could not reach its workspace has nothing to act on. The line a person would write: **a run acts only on a workspace it holds** |
+| `publish_workspace` | 16 | default | [$2] appeared while it was being built | nobody — a run that could not reach its workspace has nothing to act on. The line a person would write: **a run acts only on a workspace it holds** |
+| `publish_workspace` | 16 | default | could not publish [$2] | nobody — a run that could not reach its workspace has nothing to act on. The line a person would write: **a run acts only on a workspace it holds** |
+| `record_base` | 16 | default | [$2] has no head to record as its base | nobody — a run that could not reach its workspace has nothing to act on. The line a person would write: **a run acts only on a workspace it holds** |
+| `record_produced` | 16 | default | committed in [$2] and could not read the sha back | nobody — a run that could not reach its workspace has nothing to act on. The line a person would write: **a run acts only on a workspace it holds** |
+| `refuse_occupied_slot` | 16 | default | [$1] is not a checkout of [$2] — remove it and open again | nobody — a run that could not reach its workspace has nothing to act on. The line a person would write: **a run acts only on a workspace it holds** |
+| `unit_work_tree` | 16 | default | — | nobody — a run that could not reach its workspace has nothing to act on. The line a person would write: **a run acts only on a workspace it holds** |
 | `refuse_another_item` | 17 |  | start a new run — one item has many runs, and a second item is one of them |  |
 | `refuse_unless_answered` | 17 |  | send the one it sent, or start a new run |  |
 | `refuse_ungranted_delivery` | 18 | invariant | nobody said this run may deliver to [$2] — \`policy deliver-to\` is what says so | doctrine's core refusal — *producing, merging and staying silent confer none* |
 | `push_workspace` | 19 |  | could not deliver [$3] to [$2]: $why |  |
 | `refuse_unasked` | 20 |  | the work source could not be asked for that $2 |  |
-| `ask_the_judge` | 21 |  | the judge could not run on this host: $said |  |
-| `ask_the_judge` | 21 |  | the judge was killed by signal $((answered - 128)) |  |
-| `refuse_a_receipt_nothing_answered` | 21 |  |   this is the context the runner wrote before asking, so the round did not happen |  |
-| `refuse_an_adapter_this_plugin_does_not_ship` | 21 |  |   looked at [$2] and nowhere else — update the plugin, or declare a custom command |  |
-| `stamp_command` | 21 |  | [$name] could not run on this host: $why |  |
-| `stamp_command` | 21 |  | [$name] was killed by signal $((result - 128)), so nothing was graded |  |
+| `ask_the_judge` | 21 | invariant | the judge could not run on this host: $said | the principle *Evidence supports judgement; it does not replace it* — *a check that failed or never ran never quietly becomes a pass* |
+| `ask_the_judge` | 21 | invariant | the judge was killed by signal $((answered - 128)) | the principle *Evidence supports judgement; it does not replace it* — *a check that failed or never ran never quietly becomes a pass* |
+| `refuse_a_receipt_nothing_answered` | 21 | invariant |   this is the context the runner wrote before asking, so the round did not happen | the principle *Evidence supports judgement; it does not replace it* — *a check that failed or never ran never quietly becomes a pass* |
+| `refuse_an_adapter_this_plugin_does_not_ship` | 21 | invariant |   looked at [$2] and nowhere else — update the plugin, or declare a custom command | the principle *Evidence supports judgement; it does not replace it* — *a check that failed or never ran never quietly becomes a pass* |
+| `stamp_command` | 21 | invariant | [$name] could not run on this host: $why | the principle *Evidence supports judgement; it does not replace it* — *a check that failed or never ran never quietly becomes a pass* |
+| `stamp_command` | 21 | invariant | [$name] was killed by signal $((result - 128)), so nothing was graded | the principle *Evidence supports judgement; it does not replace it* — *a check that failed or never ran never quietly becomes a pass* |
 | `refuse_unreadable_declaration` | 22 |  | the bar this repository declares cannot be read |  |
 | `refuse_ungranted_merge` | 23 | invariant | nobody said this run may merge into [$2] — \`policy merge-to\` is what says so | doctrine's core refusal — *producing, merging and staying silent confer none* |
 | `land_what_was_graded` | 24 | answer | this run has delivered nothing, so there is nothing to merge | the runner's own header calls it an answer |
@@ -209,22 +209,22 @@ rule, and the page says which line a person would have to write to change it.
 | `refuse_self_accounting` | 34 |  |   a person runs this in a shell with no FOUNDRY_WORKER set |  |
 | `refuse_a_revision_nobody_reviewed` | 35 |  | a review of one commit is not a review of another |  |
 | `refuse_a_judge_never_handed_the_bar` | 36 |  |   run.sh evidence handed <clause> <judge> is what says it was |  |
-| `refuse_a_brief_nothing_recorded` | 37 |  |   run.sh evidence handed <clause> <judge> <how> <brief> is what records it |  |
-| `refuse_a_field_that_is_not_there` | 37 |  | $1 carries no [$said], and a receipt without one is evidence of nothing |  |
-| `refuse_a_freshness_about_nothing` | 37 |  | $1 says the context was [$fresh] and names none, so the claim is about nothing |  |
-| `refuse_a_freshness_that_answers_neither` | 37 |  | $1 says fresh [$(said_in  |  |
-| `refuse_a_line_that_is_not_a_receipt_line` | 37 |  | $1: $said |  |
-| `refuse_a_receipt_holding_nothing` | 37 |  | [$1] is there and holds nothing this can read as a receipt |  |
-| `refuse_a_receipt_that_is_not_there` | 37 |  | no receipt at [$1], and a Judged clause is answered by one |  |
-| `refuse_a_round_that_is_not_a_count` | 37 |  | $1 says round [$round], and a round is counted from one |  |
-| `refuse_a_round_with_no_prior` | 37 |  | $1 says round [$round] and names no prior verdict, so the round before it is missing |  |
+| `refuse_a_brief_nothing_recorded` | 37 | invariant |   run.sh evidence handed <clause> <judge> <how> <brief> is what records it | the principle *Evidence supports judgement; it does not replace it* — *a check that failed or never ran never quietly becomes a pass* |
+| `refuse_a_field_that_is_not_there` | 37 | invariant | $1 carries no [$said], and a receipt without one is evidence of nothing | the principle *Evidence supports judgement; it does not replace it* — *a check that failed or never ran never quietly becomes a pass* |
+| `refuse_a_freshness_about_nothing` | 37 | invariant | $1 says the context was [$fresh] and names none, so the claim is about nothing | the principle *Evidence supports judgement; it does not replace it* — *a check that failed or never ran never quietly becomes a pass* |
+| `refuse_a_freshness_that_answers_neither` | 37 | invariant | $1 says fresh [$(said_in  | the principle *Evidence supports judgement; it does not replace it* — *a check that failed or never ran never quietly becomes a pass* |
+| `refuse_a_line_that_is_not_a_receipt_line` | 37 | invariant | $1: $said | the principle *Evidence supports judgement; it does not replace it* — *a check that failed or never ran never quietly becomes a pass* |
+| `refuse_a_receipt_holding_nothing` | 37 | invariant | [$1] is there and holds nothing this can read as a receipt | the principle *Evidence supports judgement; it does not replace it* — *a check that failed or never ran never quietly becomes a pass* |
+| `refuse_a_receipt_that_is_not_there` | 37 | invariant | no receipt at [$1], and a Judged clause is answered by one | the principle *Evidence supports judgement; it does not replace it* — *a check that failed or never ran never quietly becomes a pass* |
+| `refuse_a_round_that_is_not_a_count` | 37 | invariant | $1 says round [$round], and a round is counted from one | the principle *Evidence supports judgement; it does not replace it* — *a check that failed or never ran never quietly becomes a pass* |
+| `refuse_a_round_with_no_prior` | 37 | invariant | $1 says round [$round] and names no prior verdict, so the round before it is missing | the principle *Evidence supports judgement; it does not replace it* — *a check that failed or never ran never quietly becomes a pass* |
 | `refuse_a_brief_that_changed` | 38 |  | [$3] was handed brief [$was] and this receipt answers [$6] |  |
 | `refuse_a_receipt_from_another_run` | 38 |  | this receipt answers for run [$2], and this run is [$(recorded_id  |  |
-| `refuse_a_digest_nobody_authorised` | 40 |  | $1 says adapter [$ran] answered and names nothing that authorised it |  |
-| `refuse_a_pin_nobody_checked` | 40 |  | $1 authorises adapter [$pin] and says nothing about what ran |  |
-| `refuse_a_pin_that_is_not_a_digest` | 40 |  |   a tag, a version or a range moves while the repository says nothing changed |  |
-| `refuse_a_pin_the_charter_did_not_give` | 40 |  | [$3] is reached at [${given:-no pin at all}] and this receipt answers for [${4:-none}] |  |
-| `refuse_an_adapter_name_this_cannot_resolve` | 40 |  | [$1] is not an adapter name — lowercase letters, digits and hyphens, and no path in it |  |
-| `refuse_an_adapter_nobody_authorised` | 40 |  |   or declare a command of your own with \`@custom\` |  |
-| `refuse_an_adapter_that_moved` | 40 |  | $1 authorises adapter [$pin] and [$ran] is what answered |  |
+| `refuse_a_digest_nobody_authorised` | 40 | invariant | $1 says adapter [$ran] answered and names nothing that authorised it | doctrine's core refusal — *authority attaches to a claim… producing, merging and staying silent confer none* |
+| `refuse_a_pin_nobody_checked` | 40 | invariant | $1 authorises adapter [$pin] and says nothing about what ran | doctrine's core refusal — *authority attaches to a claim… producing, merging and staying silent confer none* |
+| `refuse_a_pin_that_is_not_a_digest` | 40 | invariant |   a tag, a version or a range moves while the repository says nothing changed | doctrine's core refusal — *authority attaches to a claim… producing, merging and staying silent confer none* |
+| `refuse_a_pin_the_charter_did_not_give` | 40 | invariant | [$3] is reached at [${given:-no pin at all}] and this receipt answers for [${4:-none}] | doctrine's core refusal — *authority attaches to a claim… producing, merging and staying silent confer none* |
+| `refuse_an_adapter_name_this_cannot_resolve` | 40 | invariant | [$1] is not an adapter name — lowercase letters, digits and hyphens, and no path in it | doctrine's core refusal — *authority attaches to a claim… producing, merging and staying silent confer none* |
+| `refuse_an_adapter_nobody_authorised` | 40 | invariant |   or declare a command of your own with \`@custom\` | doctrine's core refusal — *authority attaches to a claim… producing, merging and staying silent confer none* |
+| `refuse_an_adapter_that_moved` | 40 | invariant | $1 authorises adapter [$pin] and [$ran] is what answered | doctrine's core refusal — *authority attaches to a claim… producing, merging and staying silent confer none* |
 | `say_nothing_here_can_find_it_again` | 41 | answer | so tell every later command which run: export FOUNDRY_RUN=$dir | the runner's own header calls it an answer |
