@@ -76,7 +76,7 @@ every_gate_is_green() {
 # Three more shapes, each answered: one side bumping alone passes, a HEAD that is not a merge passes
 # and says why, and a directory with no repository above it exits 3.
 say_what_drives_itself() {
-    say "  self     bytes comments host           their own audit, which the gate line passes"
+    say "  self     bytes comments host stale basing durable   their own audit, which the gate line passes"
     say "  self     codex anthropic              the same, one per shipped adapter"
     say "  self     kernel signal panel floor      bash plugins/<name>/tests/run.sh"
     say "  by hand  bumps      needs a merge commit, so no file break reaches it — see the comment above"
@@ -91,7 +91,7 @@ say_what_drives_itself() {
 # Typed, because a `drive` line carries a break name and `shell` has two of them. A derived list
 # would have to guess which gate `shell-taper` belongs to, and guessing is what this refuses.
 ACCOUNTED="frontmatter versions repeats shell taper hosts providers secrets hooks judged
-bytes comments codex host judges anthropic
+bytes comments codex host judges anthropic stale basing durable unnamed
 kernel signal panel floor
 bumps"
 
