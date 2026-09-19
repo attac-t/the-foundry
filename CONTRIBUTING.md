@@ -120,6 +120,7 @@ yours to run when it applies:
 | the per-plugin tool check | seconds, in the matrix | a plugin starts reaching for something new |
 | three operating systems | a matrix nobody has locally | you touch anything a suite runs |
 | `sh bin/unticked.sh` | a minute, and it reaches GitHub | before you close an issue, and after a `Closes #N` merge |
+| `sh bin/audited.sh` | a second | before you grade, to learn whether floor's audit can answer at all |
 
 **It counts a box at the start of a line, and never one quoted in prose.** An issue explaining why
 a box was struck quotes it, and unanchored that read as debt: #494 counted ten and holds seven,
@@ -235,6 +236,28 @@ Bump the version in the plugin's own `plugin.json`, and there only. `marketplace
 version each is at. A second copy made one shared line every branch edits, so plugin work collided
 for packaging reasons. Commits use [Commitizen](https://commitizen-tools.github.io/commitizen/)
 format.
+
+### The audit that cannot answer
+
+**Floor's audit clones the branch and mutates `plugins/floor`.** A branch changing nothing there
+mutates the same bytes as the one before it, and pays forty minutes to be told what it knew.
+
+Measured 19 September: **ten of fourteen merges that day touched no file under `plugins/`.**
+
+`sh bin/audited.sh` reads the diff and answers. Four files outside the plugin still force one —
+`.gitattributes` and `.gitignore` decide what a clone holds, `bin/gates.sh` decides how the suite
+runs, and **`bin/audited.sh` itself, because a check that waives the bar sits under it**.
+
+**A waived audit is not twenty-five green. Twenty-five ran**, and one graded a smaller claim. The
+check prints the line a record carries, so a person never types it:
+
+```
+ALL GREEN, 25 of 25, audit waived: no file the audit reads (.foundry/doctrine.md)
+```
+
+**`tests/audited.sh` grades this** — fifteen cases against real trees. A fixture of file names would
+have graded the `case` arm and not the comparison, and the real-tree fixture caught a live bug: a
+`while read` on the right of a pipe runs in a subshell, so every clone-shaping file fell through.
 
 ## Is a stack plugin still current?
 
