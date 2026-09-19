@@ -12,9 +12,13 @@
 # **This finds them. It cannot tick them.** A tick is a judgement — did this box hold? — and that
 # lives in the pull request and the gate output, not in anything a script can read.
 #
+# **A box that says why it is open is not one of them.** `closing.md` names four states a box can
+# record instead of a tick, and a box leading with one of them is answered. Measured 19 September:
+# thirty-four open boxes across thirteen closed issues, and seventeen already said which.
+#
 # Usage: sh bin/unticked.sh [limit]
 #
-# Exit: 0 nothing unticked, 1 at least one found, 3 GitHub could not be asked.
+# Exit: 0 no box says nothing, 1 at least one does, 3 GitHub could not be asked.
 #
 # Not a gate. It reaches the network, and `.claude/rules/plugins.md` refuses a gate that goes red on
 # a train. `CONTRIBUTING.md` lists it beside the other checks a person runs when they apply.
@@ -101,6 +105,35 @@ holds_an_unticked_box() { [ -n "$(unticked_lines "$1")" ]; }
 count_of() { unticked_lines "$1" | grep -c '' || true; }
 
 #
+# The four states `closing.md` names for a box that cannot be met yet. A box leading with one of
+# them is answered, and counting it as debt sends a reader to read a judgement somebody already
+# made.
+#
+# Measured 19 September across every closed issue: thirteen hold an open box and thirty-four boxes
+# between them. **Seventeen name one of these four.** Reporting all thirty-four is twelve parts
+# noise, which is the shape this line removes.
+readonly STATES='unmeetable|wrong when written|ungateable|unreached'
+
+# Bold, and never the bare word. An issue discusses its own states in prose — #292 argues about
+# what ungateable means — and a sentence naming one is not a box claiming one.
+stated_of() { unticked_lines "$1" | grep -cE "\*\*($STATES)" || true; }
+
+#
+# A box that says something in bold and names none of the four.
+#
+# **Reported, never counted as debt and never counted as answered.** Three boxes read
+# `**unverifiable**` — the check ran and what it read cannot be confirmed afterwards, which is not
+# `ungateable`, where no check can exist. The rule names four and the record uses five.
+#
+# A word here is a question for whoever owns the rule. It is not this script's to settle.
+worded_of() {
+    unticked_lines "$1" | grep -E '\*\*[A-Za-z]' | grep -vcE "\*\*($STATES)" || true
+}
+
+# A box that says nothing at all. This is the debt, and the only thing the exit code follows.
+bare_of() { unticked_lines "$1" | grep -vc '\*\*' || true; }
+
+#
 #
 # How many closed issues there are, so `the last 60` is read against a number.
 #
@@ -112,6 +145,19 @@ count_of() { unticked_lines "$1" | grep -c '' || true; }
 closed_total() {
     gh api "repos/{owner}/{repo}/issues?state=closed&per_page=100" --paginate \
        --jq '.[] | select(has("pull_request") | not) | .number' 2>/dev/null | grep -c . || true
+}
+
+#
+# One issue's line: what it owes first, then what it has answered.
+#
+# **The bare count leads, because it is the only one a reader must act on.** A line reading
+# `0 bare` beside seven stated boxes says the issue was closed carefully, and saying nothing about
+# it would leave the reader to open it and find that out.
+say_one() {
+    printf '  #%-5s %s bare' "$1" "$2"
+    [ "$3" = 0 ] || printf ', %s stated' "$3"
+    [ "$4" = 0 ] || printf ', %s in a word the rule does not name' "$4"
+    printf '\n'
 }
 
 # Issues the repository turned down, said apart from the ones it owes.
@@ -154,8 +200,10 @@ main() {
         # A declined issue is counted apart, not counted out. Its boxes are still worth seeing.
         declined "$reason" && { printf 'x\n' >> "$refused"; continue; }
 
-        printf '  #%-5s %s unticked\n' "$number" "$(count_of "$body")"
-        printf 'x\n' >> "$found"
+        bare=$(bare_of "$body")
+        say_one "$number" "$bare" "$(stated_of "$body")" "$(worded_of "$body")"
+
+        [ "$bare" = 0 ] || printf 'x\n' >> "$found"
     done <<EOF
 $index
 EOF
@@ -164,10 +212,10 @@ EOF
     turned_down=$(grep -c . "$refused" || true)
     rm -f "$found" "$refused"
 
-    [ "$left" = 0 ] && { printf 'unticked — none in the last %s closed
+    [ "$left" = 0 ] && { printf 'unticked — no box left open without a reason, in the last %s closed
 ' "$read_count"; say_what_was_declined "$turned_down"; say_what_was_not_read "$read_count"; exit 0; }
 
-    printf 'unticked — %s of the last %s closed issues have a box nobody ticked
+    printf 'unticked — %s of the last %s closed issues hold a box that says nothing
 ' "$left" "$read_count"
     say_what_was_declined "$turned_down"
     say_what_was_not_read "$read_count"

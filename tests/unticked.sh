@@ -65,7 +65,7 @@ printf '1\n' > "$tmp/bodies/numbers"
 printf -- '## Done when\n\n- [x] one held\n- [ ] one did not\n' > "$tmp/bodies/1"
 
 is  "an open box is found"     "$(code_of 1)" "1"
-has "and it is counted once"   "$(swept 1)"   "#1     1 unticked"
+has "and it is counted once"   "$(swept 1)"   "#1     1 bare"
 
 # --- a box quoted in prose is not a box ---
 #
@@ -75,7 +75,7 @@ has "and it is counted once"   "$(swept 1)"   "#1     1 unticked"
 printf -- '## Done when\n\n- [x] one held\n\nThe line `- [ ] a box nobody can tick` was the older shape,\nand counting `- [ ]` anywhere is how this went wrong.\n' > "$tmp/bodies/1"
 
 is  "a body whose boxes all hold is clean" "$(code_of 1)" "0"
-has "and it says none"                     "$(swept 1)"   "none in the last"
+has "and it says none"                     "$(swept 1)"   "no box left open without a reason"
 
 # --- a struck box is answered ---
 #
@@ -92,13 +92,89 @@ is "a struck box is not debt" "$(code_of 1)" "0"
 
 printf -- '## Done when\n\n- [ ] first open\n- [ ] ~~struck~~\n- [ ] second open\n\nprose holding `- [ ] a quote`\n' > "$tmp/bodies/1"
 
-has "an open box beside a struck one counts only itself" "$(swept 1)" "#1     2 unticked"
+has "an open box beside a struck one counts only itself" "$(swept 1)" "#1     2 bare"
 
 # --- a plain bullet is unrecordable, and not this script's question ---
 
 printf -- '## Done when\n\n- a claim nobody can tick\n' > "$tmp/bodies/1"
 
 is "a plain bullet is not an unticked box" "$(code_of 1)" "0"
+
+# --- a box that says why it is open ---
+#
+# `closing.md` names four states a box can record instead of a tick. A box leading with one of them
+# is a judgement somebody made, and counting it as debt sends the next reader to read it again.
+#
+# **Seventeen of the thirty-four open boxes in this repository were in that state** when the split
+# was written, so the old report was twelve parts noise.
+
+printf '1
+' > "$tmp/bodies/numbers"
+printf -- '## Done when
+
+- [ ] the check is right and nothing has happened for it to read — **unreached.**
+' > "$tmp/bodies/1"
+
+is    "a box naming a state is not debt" "$(code_of 1)" "0"
+has   "and the line says it is stated"   "$(swept 1)"   "0 bare, 1 stated"
+lacks "and nothing calls it bare"        "$(swept 1)"   "1 bare"
+
+# --- each of the four ---
+
+for state in "unmeetable here" "wrong when written" "ungateable" "unreached"; do
+    printf -- '## Done when
+
+- [ ] a claim — **%s, and here is why.**
+' "$state" > "$tmp/bodies/1"
+    is "[$state] is a state, not debt" "$(code_of 1)" "0"
+done
+
+# --- a word the rule does not name ---
+#
+# **Three boxes read `**unverifiable**`** — the check ran, and what it read cannot be confirmed
+# afterwards. That is not `ungateable`, where no check can exist. The rule names four and the record
+# uses five, and a script is the wrong place to settle which.
+#
+# **So it is reported and it is not debt.** Calling it debt sends a reader to redo a judgement.
+# Calling it stated would hide the drift between the rule and what people write.
+
+printf -- '## Done when
+
+- [ ] the observation is recorded — **unverifiable after the fact.**
+' > "$tmp/bodies/1"
+
+is    "a bold word the rule does not name is not debt" "$(code_of 1)" "0"
+has   "and the line says so"                           "$(swept 1)"   "in a word the rule does not name"
+lacks "and it is not counted as stated"                "$(swept 1)"   "1 stated"
+
+# --- the three shapes on one issue ---
+#
+# The exit code follows the bare count and nothing else. An issue owing one box and answering six
+# is one box of work, and a report saying seven is what this split removes.
+
+printf -- '## Done when
+
+- [ ] says nothing
+- [ ] answered — **unreached.**
+- [ ] odd — **unverifiable.**
+' > "$tmp/bodies/1"
+
+is  "one bare box among three is still debt" "$(code_of 1)" "1"
+has "and all three are counted apart"        "$(swept 1)"   "1 bare, 1 stated, 1 in a word the rule does not name"
+
+# --- a state named in the body, away from any box ---
+#
+# **The state is the box's, never the issue's.** A body explaining what `ungateable` means does not
+# answer a box that says nothing.
+
+printf -- '## Done when
+
+- [ ] says nothing
+
+A box is **ungateable** when no check can hold it.
+' > "$tmp/bodies/1"
+
+is "a state in prose does not answer a bare box" "$(code_of 1)" "1"
 
 # --- the tally across issues ---
 
