@@ -1986,7 +1986,7 @@ floor's own version. It is floor asking about floor, through a layout the harnes
 
 ## Every setting floor reads
 
-Ten, and the page named seven of them a paragraph at a time. **Absent is the ordinary path** — the
+Eleven, and the page named seven of them a paragraph at a time. **Absent is the ordinary path** — the
 column says what happens then, because that is the case almost every reader is in.
 
 | Setting | Absent | Set |
@@ -1998,6 +1998,7 @@ column says what happens then, because that is the case almost every reader is i
 | `FOUNDRY_SOURCE` | the source is read from the target | it names one |
 | `FOUNDRY_SOURCE_DIR` | a directory source reads the repository | it reads that directory |
 | `FOUNDRY_CLAIM_TTL` | a claim is held until released | it expires after that long |
+| `FOUNDRY_CLAIM_FLOOR` | a claim is kept once it is a third of the window old | it is kept at that share instead |
 | `FOUNDRY_BRIEF`, `FOUNDRY_RECEIPT` | nothing — floor sets these when it runs a judge | an adapter reads and writes them |
 | `FOUNDRY_UNDER` | `run.began` records `under=nothing` | it records what the host stated, as one token |
 

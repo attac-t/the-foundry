@@ -3793,6 +3793,30 @@ exactly_one_host_takes_an_item() {
   is "the holder claiming again renews it" "$(code_of floor "$tmp/clm" claim 71)" "0"
   lacks "and the stamp moved" "$(cat "$src/claims/71/held")" "1767225600"
 
+  #
+  # **`claim` with no item keeps the one this run already holds.** The hook after an edit calls
+  # exactly that, and #859 measured what its absence cost: age said when an item was taken and
+  # never whether anyone was still on it.
+  #
+  # **Young is left alone**, because the github adapter claims by pushing a ref, and asking on every
+  # edit would push on every edit.
+  floor "$tmp/clm" source read 71 >/dev/null 2>&1
+  printf '2026-01-01T00:00:00Z\t%s\t%s\n' "$(uname -n)" "$(date -u +%s)" > "$src/claims/71/held"
+  young=$(cat "$src/claims/71/held")
+
+  is "a young claim is left alone" "$(code_of floor "$tmp/clm" claim)" "0"
+  is "and the stamp did not move"  "$(cat "$src/claims/71/held")"      "$young"
+
+  printf '2026-01-01T00:00:00Z\t%s\t1767225600\n' "$(uname -n)" > "$src/claims/71/held"
+
+  is    "an aged claim is kept" "$(code_of floor "$tmp/clm" claim)" "0"
+  lacks "and its stamp moved"   "$(cat "$src/claims/71/held")"      "1767225600"
+
+  # Another host's claim is never re-stamped by this one. Keeping is the holder's alone.
+  printf '2026-01-01T00:00:00Z\tOtherHost\t1767225600\n' > "$src/claims/71/held"
+
+  is  "another host's claim is not kept" "$(code_of floor "$tmp/clm" claim)" "0"
+  has "and its stamp is untouched"       "$(cat "$src/claims/71/held")"      "1767225600"
   printf '2026-01-01T00:00:00Z\tOtherHost\t%s\n' "$(date -u +%s)" > "$src/claims/71/held"
 
   is  "another host's claim is refused" "$(code_of floor "$tmp/clm" claim 71)" "30"

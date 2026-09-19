@@ -46,6 +46,17 @@
             "timeout": 10
           }
         ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/kept.sh\"",
+            "shell": "bash",
+            "timeout": 10
+          }
+        ]
       }
     ],
     "SessionEnd": [
