@@ -85,6 +85,26 @@ The other forty-three are a decision or two apiece, and cost more per decision t
 did. A page covering them needs a column this one does not have, because a head
 is only unique inside its file.
 
+## A second reader, and what it changed
+
+**One model judged this page in one pass, and the header above warns about exactly that.** A second
+reading ran on 19 September against the page at `8e18fab`. It was asked what the first reader
+missed, never whether it agreed. Two rounds, and the verdicts sit with the operator's consultation
+records.
+
+**It moved twenty-nine rows and repaired the citation on seventeen more.** Three keys named
+doctrine's durability table, which says what a reader can check and never says a runner must refuse.
+The refusing line is the evidence principle, one section up.
+
+| | |
+|---|---|
+| it was right and I was not | `grant` 2 cited authority. The unbounded grant is caught by the next guard |
+| I was right and it conceded | `refuse_second_ref` 4 and `refuse_gates_from_elsewhere` 7, both on round two |
+| neither of us had read it | `refuse_collision` 6. It judged by name, and the site says two clauses on one id |
+
+**Every row that moved was read at `plugins/floor/bin/run.sh` first.** A verdict is not a patch.
+Adopting one unread would put this page back where the second reading found it.
+
 ## The decisions
 **16 lines carry most of this page**, so a row names one by key. A line cited once stays
 where it is — a key for a one-off buys indirection and saves nothing.
@@ -176,7 +196,7 @@ where it is — a key for a one-off buys indirection and saves nothing.
 | `refuse_a_kind_that_is_not_judged` | 2 | default | a Gate clause is answered by \`gates\`, and a Decided one by a human where the item is | `usage` — the message redirects |
 | `refuse_a_pinned_name` | 2 | invariant | record a name the charter does not pin, or run \`gates\` | `evidence` |
 | `refuse_a_receipt_nobody_named` | 2 | default | receipt needs the file to read | `no-field` |
-| `refuse_a_torn_row` | 2 | invariant | an observation must fit one atomic write, and that one is ${#1} long | `record` |
+| `refuse_a_torn_row` | 2 | invariant | an observation must fit one atomic write, and that one is ${#1} long | `record` — the length is the runner's, and a setting could move it. **Whole-or-not-at-all is not a choice any backend has**, or *in the order it happened* is lost |
 | `refuse_an_unnamed_field` | 2 | default | an observation's fields are key=value, and [$pair] is not one | `our-format` |
 | `refuse_unrecordable` | 2 | invariant | record needs a command to run — a result is not something you pass | `evidence` — a worker writing the result of a command nothing ran |
 | `refuse_unrecordable` | 2 | default | record needs a name and a command | `no-field` |
@@ -202,7 +222,7 @@ where it is — a key for a one-off buys indirection and saves nothing.
 | `derive_charter` | 6 | invariant | refusing to drop what no longer derives: | `refusal` |
 | `derive_charter` | 6 | invariant | start a new run — one made before this rule cannot prove what it derived from | `refusal` |
 | `introduce_clause` | 6 | invariant | this clause is already $was — only derivation may make it $kind | `refusal` |
-| `refuse_collision` | 6 | invariant | — | `refusal` |
+| `refuse_collision` | 6 | invariant | — | `evidence` — two clauses on one id, so a reader looking it up gets whichever was written last |
 | `refuse_moved_resolution` | 6 | default | — | `charter-drifted` |
 | `refuse_wrong_repository` | 6 | default | run this inside [$boot], not [${here:-nowhere}] | `no-workspace` — wrong directory |
 | `check_charter` | 7 | default | — | `charter-drifted` |
