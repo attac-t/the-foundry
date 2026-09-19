@@ -3817,6 +3817,10 @@ exactly_one_host_takes_an_item() {
 
   is  "another host's claim is not kept" "$(code_of floor "$tmp/clm" claim)" "0"
   has "and its stamp is untouched"       "$(cat "$src/claims/71/held")"      "1767225600"
+  # **And this is where it is found out.** Before this a host learned its claim was taken at
+  # delivery, with the work already done. Recorded, never said — the caller is a hook after an edit.
+  has "a host whose claim was taken records it" \
+      "$(floor "$tmp/clm" observe)" "claim.lost	item=71 holder=OtherHost"
   printf '2026-01-01T00:00:00Z\tOtherHost\t%s\n' "$(date -u +%s)" > "$src/claims/71/held"
 
   is  "another host's claim is refused" "$(code_of floor "$tmp/clm" claim 71)" "30"

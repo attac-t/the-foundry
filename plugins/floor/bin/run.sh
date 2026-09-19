@@ -3308,7 +3308,18 @@ renew_this_run_claim() {
     age=$(claim_age "$held")         || return 0
 
     [ "$age" -gt "$(( CLAIM_TTL / CLAIM_FLOOR ))" ] || return 0
-    [ "$(claim_holder "$held")" = "$(recording_host)" ] || return 0
+
+    #
+    # **Somebody else holds it, and this is where that is found out.** Before this the first host
+    # learned at delivery, with the work already done — #859 named that as its own cost.
+    #
+    # Recorded, never said. The caller is a hook after an edit and an edit is not the place to
+    # argue about a claim. A line in the run survives the session; a message would not.
+    holder=$(claim_holder "$held")
+    [ "$holder" = "$(recording_host)" ] || {
+        emit "$dir" claim.lost item="$item" holder="$(one_token "$holder")"
+        return 0
+    }
 
     source_says claim "$item" "$(recording_host)" >/dev/null 2>&1
     return 0
