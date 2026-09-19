@@ -527,19 +527,27 @@ the run that wrote it and it gets read by eye.
 
 ### An observation says a thing happened, and nothing more
 
-**Three facts, and a row that names one has answered a different question.**
+**Four facts, and a row that names one has answered a different question.**
 
 | | |
 |---|---|
 | host | where it ran — `uname -n`, on every row |
 | selector | who permitted it — `authority`, and a run without one may not deliver |
 | worker | what produced it — `FOUNDRY_WORKER`, and left out when nothing says |
+| under | what the host says it runs on — `FOUNDRY_UNDER`, on `run.began`, and **never left out** |
 
 Core names the field and never the value, the same rule that keeps `foundry:defect` out of core.
 
 **No fallback for the worker.** The selector falls back to a git address because a run with nobody
 recorded may not deliver. A run with no named worker is ordinary, and a guessed name is worse than
 none.
+
+**`under` is the opposite, and on purpose.** A host that stated nothing writes `under=nothing`,
+because an absent field and a host that said nothing read alike, and only one of them is a fact.
+
+**Core cannot check it and does not try.** Floor may not name what it runs in — `bin/hosts.sh` is a
+gate on exactly that — so the host says, and the record says what it was told. **Two runs are told
+apart by it. Neither is checked by it.**
 
 **Naming a worker permits nothing.** It widens no allowlist and satisfies no clause — the same weight
 as every other observation.
@@ -1973,7 +1981,7 @@ floor's own version. It is floor asking about floor, through a layout the harnes
 
 ## Every setting floor reads
 
-Nine, and the page named seven of them a paragraph at a time. **Absent is the ordinary path** — the
+Ten, and the page named seven of them a paragraph at a time. **Absent is the ordinary path** — the
 column says what happens then, because that is the case almost every reader is in.
 
 | Setting | Absent | Set |
@@ -1986,6 +1994,7 @@ column says what happens then, because that is the case almost every reader is i
 | `FOUNDRY_SOURCE_DIR` | a directory source reads the repository | it reads that directory |
 | `FOUNDRY_CLAIM_TTL` | a claim is held until released | it expires after that long |
 | `FOUNDRY_BRIEF`, `FOUNDRY_RECEIPT` | nothing — floor sets these when it runs a judge | an adapter reads and writes them |
+| `FOUNDRY_UNDER` | `run.began` records `under=nothing` | it records what the host stated, as one token |
 
 **Two more are not settings. They are replacement.**
 
