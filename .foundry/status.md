@@ -30,7 +30,7 @@ worker's read to a blob. So a worker cannot tell an accepted doctrine from a mer
 |---|---|
 | autonomous work | Floor is the first adapter. **It is not the product** |
 | the harness | Claude Code is today's wrapper. **It is not the mission** |
-| a second harness | unproved. No core path has run through one |
+| a second harness | **one bounded passage ran**, [#738](https://github.com/attac-t/the-foundry/issues/738) — nine verbs under Codex, every one exit 0, and **not one of floor's harness reads was touched**. A passage is not the whole path |
 | a machine | **Docker, through `bin/host.sh`.** One command, and the `host` gate drives it |
 
 ### The host runs work and cannot do the work
