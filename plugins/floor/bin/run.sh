@@ -3296,8 +3296,11 @@ claim() {
     exit 30
 }
 
-# An hour with no word. A wake is ten minutes, so a live host renews six
-# times inside it, and a window this wide costs a slow host nothing.
+# An hour, and **nothing renews it**. This once said a live host re-stamps six times
+# inside the window. `take_claim` does re-stamp for its own holder, and no path a
+# working host repeats will call it. So a long run and a dead host read alike.
+#
+# The number is undefended too. Nothing says what an hour measured. #859 owns both.
 CLAIM_TTL=${FOUNDRY_CLAIM_TTL:-3600}
 
 # A host that died holding one would block that item for good, and nothing
