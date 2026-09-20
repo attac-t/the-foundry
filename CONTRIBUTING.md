@@ -134,8 +134,8 @@ gate, because it reaches the network, so nothing else does.
 
 ### Before you say nothing does it
 
-**A capability lives in one of three homes** and `guidance.md` says which: a script under `bin`, a
-plugin skill, or a rule. **27, 138 and 12 of them.** A search of one answers about one.
+**A capability lives in one of three homes and `guidance.md` says which.** There are 177 of them.
+A search of one home answers about one home.
 
 On 20 September I told the owner nothing here retrospects. `kernel:retrospect` had shipped three
 weeks earlier, and a sibling with it. **I had searched the issue tracker and none of the three.**
