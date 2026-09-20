@@ -622,6 +622,7 @@ make_run() {
     write_bootstrap "$dir"
     stamp_selection "$dir" "$(selector)" "$id"
     say_if_nobody_selected
+    say_it_holds_no_item
     point_this_checkout_at "$id"
     emit "$dir" run.began "$(began_with)"
 
@@ -677,6 +678,25 @@ say_if_nobody_selected() {
     [ -n "$(selector)" ] && return 0
 
     note "nobody is recorded as having selected this run — set FOUNDRY_WHO, or it may not deliver"
+}
+
+#
+# A run made from a title holds no work item, so it holds no claim on one.
+#
+# **A rule said the opposite for six days and every session loaded it.** Prose failed: a hook here
+# reached eighteen readers of eighteen, a rule two of five, and a usage line none of thirteen. This
+# is the same fact where the worker already is.
+#
+# **It is unconditional, and the first draft guarded it.** `new` takes a title and nothing else, so
+# a run it makes can never hold an item — the guard was dead the moment it was written, and a guard
+# nothing can reach is a claim nobody can check. Binding an item is a second command, which is what
+# the second line names.
+#
+# **Stderr, because stdout is the run's path** and a caller reads it. A notice on the wrong stream
+# would break every script that takes this output as an answer.
+say_it_holds_no_item() {
+    note "this run holds no item, so nothing is claimed and a second worker is not refused"
+    note "bind one with: run.sh source read <item>"
 }
 
 #

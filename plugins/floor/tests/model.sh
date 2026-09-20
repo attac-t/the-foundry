@@ -7277,6 +7277,30 @@ a_remote_with_no_gh_still_has_a_source
 is "new with no title exits 2"  "$(code_of floor "$tmp/bare" new)" "2"
 is "an unknown command exits 2" "$(code_of floor "$tmp/bare" fly)" "2"
 
+# --- a run that claims nothing says so ---
+#
+# **A rule said the opposite for six days and every session loaded it.** `new` takes a title and
+# nothing else, so a run it makes can never hold an item and never claims one. The page saying that
+# is prose, which is what failed; this is the same fact where the worker already is.
+#
+# **The stream is half the check.** `new` prints the run's path on stdout and callers read it, so a
+# notice landing there breaks every script that takes the output as an answer.
+
+a_run_that_claims_nothing_says_so() {
+  said=$(floor_says "$tmp/bare" new 'a run with no item')
+
+  has "new says the run holds no item"      "$said" "holds no item"
+  has "and that a second worker is allowed" "$said" "not refused"
+  has "and names the command that binds one" "$said" "source read"
+
+  # stdout alone — `floor` drops stderr, so what survives is what a caller parses.
+  alone=$(floor "$tmp/bare" new 'a run read by a script')
+
+  is    "stdout stays one line"        "$(printf '%s' "$alone" | grep -c .)" "1"
+  lacks "and carries none of the notice" "$alone" "holds no item"
+}
+a_run_that_claims_nothing_says_so
+
 #
 # Standing authority — §2.3's allowlist declared once instead of granted per run.
 #
