@@ -11,6 +11,12 @@
 # `bumps` is the one gate no break here can reach. It grades a merge, and every break below edits a
 # file. The reason and the hand-driven proof sit beside `say_what_drives_itself`.
 #
+# **The checks that are not gates are out of reach, and the report says so.** A break here works by
+# editing a file and running the gate line that grades it, and `unread`, `unticked`, `ships` and
+# `unlisted` have no gate line — they reach a forge, which `plugins.md` refuses in a gate. Each
+# carries its own breaks in its own suite, so reaching them from here would be a second driver for
+# work already driven.
+#
 # **Not a gate.** It makes the tree red on purpose, and a gate grading the gates is a loop nothing
 # outside it can check. Run by hand, read the count.
 #
@@ -81,6 +87,7 @@ say_what_drives_itself() {
     say "  self     kernel signal panel floor      bash plugins/<name>/tests/run.sh"
     say "  by hand  bumps      needs a merge commit, so no file break reaches it — see the comment above"
     say "  not a gate  harness  the board script. Driven here because nothing else drives it"
+    say "  out of reach  unread unticked ships unlisted   each has breaks in its own suite under tests/, and a person runs them"
 }
 
 #
