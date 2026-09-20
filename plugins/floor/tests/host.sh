@@ -578,6 +578,68 @@ is  "outside a repository it says nothing"    "$( cd "$tmp/nowhere" && sh "$drif
 
 installed 0.0.1
 
+
+# --- what this repository asked for, against what the host reads ---
+#
+# **The two records disagreed here on 20 September and nothing said so.** The checkout declared a
+# `github` source while the host had it registered as a directory, so a pull took the working tree
+# on whatever branch was out. The host's record is the one a pull obeys.
+#
+# A marketplace named `x`, because that is the key `offered` writes above.
+
+declares() {
+  mkdir -p "$tmp/asked/.claude"
+  printf '%s\n' '{' '  "extraKnownMarketplaces": {' "    \"$1\": {" '      "source": {' \
+    "        \"source\": \"$2\"," "        \"repo\": \"${3:-}\"" '      }' '    }' '  },' \
+    '  "enabledPlugins": {' '    "floor@x": true' '  }' '}' \
+    > "$tmp/asked/.claude/settings.json"
+}
+
+declared()      { CLAUDE_CONFIG_DIR="$home" sh "$lib" declared "$tmp/asked" 2>&1; }
+declared_code() { CLAUDE_CONFIG_DIR="$home" sh "$lib" declared "$tmp/asked" >/dev/null 2>&1; echo $?; }
+
+offered "$tmp/one" directory
+declares x github acme/thing
+
+has "a declared source the host overrode is named" "$(declared)" "x is declared github acme/thing"
+has "and the host's own reading comes with it"     "$(declared)" "this host reads a directory"
+has "and it says which of the two a pull obeys"    "$(declared)" "the one a pull obeys"
+is  "and that is a finding, not an answer"         "$(declared_code)" "1"
+
+# Silent when they agree. A hook that speaks on a healthy host is one nobody reads by Friday.
+offered "$tmp/one" github acme/thing
+is "two records that agree say nothing" "$(declared)"      ""
+is "and exit 0 carries it"              "$(declared_code)" "0"
+
+#
+# **An add, never a decision.** A marketplace nobody registered cannot be pulled from at all, and
+# that is a different remedy from one whose source was overridden.
+declares nowhere github acme/absent
+
+has "a marketplace this host never registered is named" "$(declared)" "has not registered it"
+has "and it names the command that adds one"            "$(declared)" "claude plugin marketplace add"
+is  "and that is a finding too"                         "$(declared_code)" "1"
+
+#
+# **Nothing to check is not a clean check.** A repository declaring no marketplace and one whose
+# settings cannot be read both answer nothing, and only one of those is a tree in good order.
+rm -f "$tmp/asked/.claude/settings.json"
+has "a repository with no settings is told"  "$(declared)" "none declared"
+has "and named the key it looked for"        "$(declared)" "extraKnownMarketplaces"
+is  "and that refuses with 3"                "$(declared_code)" "3"
+
+printf '%s\n' '{' '  "enabledPlugins": {' '    "floor@x": true' '  }' '}' \
+  > "$tmp/asked/.claude/settings.json"
+is "settings naming no marketplace refuses too" "$(declared_code)" "3"
+
+#
+# **The depth guard, and the whole reason a brace count is here.** `"source"` sits two levels inside
+# a marketplace, and a reader anchored on the key alone reads it as a second marketplace name — then
+# reports a disagreement about a marketplace nobody declared.
+offered "$tmp/one" github acme/thing
+declares x github acme/thing
+lacks "a nested source key is not read as a marketplace" "$(declared)" "source is declared"
+is    "so a well-formed pair still exits 0"              "$(declared_code)" "0"
 # --- the repository's half ---
 
 # **Superseded 8 September, by #573.** This asserted `0` for a repository carrying neither file, and

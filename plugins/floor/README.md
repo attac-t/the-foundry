@@ -1957,14 +1957,24 @@ floor carries the words and adds nothing, and the rule lands with the stage that
 
 ## Every harness read in floor's core
 
-**Twelve, and they are one harness's.** Listed here because #711 asks whether a second could ever be
+**Every one of them is one harness's.** Listed here because #711 asks whether a second could ever be
 reached, and nobody could answer without reading the source.
+
+**The table is the list, and it used to carry a count as well.** The count said twelve, over six
+rows — two units wearing one number. **It was right when it was written** and counted call sites in
+core, which `tests/run.sh` says in its own words. There are twenty-two of those today.
+
+**The check beside it counts filenames, and there are six.** So the page and the check that guards
+it answered different questions, and only one of them could go red.
+
+A row is added when a read is. Nothing has to remember to move a number.
 
 | Read | Where | For |
 |---|---|---|
 | `.claude-plugin/plugin.json` | `bin/run.sh`, `lib/plugins.sh` | a plugin's own version |
 | `.claude-plugin/marketplace.json` | `lib/plugins.sh` | what a checkout ships |
 | `~/.claude/settings.json` | `bin/join.sh` | which plugins this host enabled |
+| `<repository>/.claude/settings.json` | `lib/plugins.sh` | which marketplace that repository declared |
 | `~/.claude/plugins/known_marketplaces.json` | `lib/plugins.sh` | where a plugin came from |
 | `~/.claude/plugins/installed_plugins.json` | `lib/plugins.sh` | what version is installed |
 | `.claude/rules` | `bin/join.sh` | which skills a repository's rules name |
