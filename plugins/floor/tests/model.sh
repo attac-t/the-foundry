@@ -3816,9 +3816,12 @@ exactly_one_host_takes_an_item() {
   # runner reads it before it reads the source. Rewriting the stamp without clearing the mark
   # asks the keep to answer inside its own throttle, which is the one case it exists to skip.
   #
+  # **The mark is in the run, never the home**, and `path` is what knows which run. Clearing
+  # `$tmp/clm/claim.kept` removed nothing, three cases went red, and the audit is what said so.
+  #
   # Live, that skip is safe with margin: the claim was under a third of the window when marked,
   # so a third later it is under two thirds. Here the stamp jumps a year in no time at all.
-  rm -f "$tmp/clm/claim.kept"
+  rm -f "$(floor "$tmp/clm" path)/claim.kept"
 
   is    "an aged claim is kept" "$(code_of floor "$tmp/clm" claim)" "0"
   lacks "and its stamp moved"   "$(cat "$src/claims/71/held")"      "1767225600"
@@ -3839,7 +3842,7 @@ exactly_one_host_takes_an_item() {
       "$(floor "$tmp/clm" observe)" "claim.renewed	item=71"
 
   # Another host's claim is never re-stamped by this one. Keeping is the holder's alone.
-  rm -f "$tmp/clm/claim.kept"
+  rm -f "$(floor "$tmp/clm" path)/claim.kept"
   printf '2026-01-01T00:00:00Z\tOtherHost\t1767225600\n' > "$src/claims/71/held"
 
   is  "another host's claim is not kept" "$(code_of floor "$tmp/clm" claim)" "0"
