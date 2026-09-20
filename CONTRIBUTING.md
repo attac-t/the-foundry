@@ -129,6 +129,7 @@ yours to run when it applies:
 | `sh bin/unlisted.sh` | a minute, and it reaches GitHub | before you point at a closed issue as if it owned something |
 | `sh bin/stale.sh` | twenty seconds, and it reaches GitHub | before you publish a page that cites issues, and after you close one |
 | `sh bin/offboard.sh` | eleven seconds, measured | after you file an issue |
+| `sh bin/reading.sh` | six seconds, measured | when you want to know what a reader is being asked to read |
 
 **It counts a box at the start of a line, and never one quoted in prose.** An issue explaining why
 a box was struck quotes it, and unanchored that read as debt: #494 counted ten and holds seven,
@@ -163,6 +164,15 @@ day were too. Both times a person noticed by looking.
 `sh bin/offboard.sh` names every open issue the board does not carry, newest first. **An empty
 board refuses**, because a refused GraphQL read looks exactly like a board holding nothing, and
 reporting every issue as missing is the loudest way to be wrong.
+
+`sh bin/reading.sh` counts the words in the last hundred issues, requests and comments, and prints
+the median, the 75th, the 90th, the longest and two thresholds. **It is an alert and never a
+verdict**, so it returns zero whatever it finds — `.claude/rules/writing.md` says why no exit code
+can judge prose. Its header names two measures it refuses and why each would be gamed.
+
+**`tests/reading.sh` grades it** — fourteen cases, and three breaks go red: dropping the sort before
+the percentiles, reading the 90th at the 75th's index, and losing the guard that tells a kind with
+nothing to read from a kind that reads zero.
 
 **`tests/offboard.sh` grades it** — thirteen cases, and three breaks go red: dropping the
 empty-board guard, ignoring what the board carries, and listing the oldest first.
