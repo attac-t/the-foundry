@@ -50,3 +50,41 @@ it next.
 
 Floor can prove a *judge* was heard. A verdict is a row in the evidence file, with a name in its own
 column. It cannot prove which model wrote the row. #156 owns making an actor real.
+
+## Charter approval is delegated, 20 September 2026
+
+**The owner delegated approving a charter, and named who may do it.** Their words, exact and
+unedited.
+
+> I remind you that fable may explicitly approve charters in my absence. I must not be a blocker.
+
+They exercised it twice more the same day:
+
+> Do not forget to charter with fable members. I'll be away
+
+> Re 923, consult with fable and assert it's aligned with our vision and proceed
+
+### Why this record exists
+
+**The rule above says a Fable substitute does not satisfy the requirement**, and lists *choosing or
+reordering work* under next steps. Approving a charter decides whether work proceeds, so it sat on
+the wrong side of that line while the owner was plainly authorising it.
+
+**A spoken instruction and a written rule that disagree is the fault this page exists to prevent.**
+Five charters were approved by Fable on 19 and 20 September while the page still read the other way.
+
+### What it settles
+
+**Fable may approve a charter in the owner's absence.** That is one act, named by the owner.
+
+### What it does not settle
+
+**Everything else on the table above.** Doctrine, what a goal means, priority, scope, contracts,
+authority, acceptance policy, and whether a goal is met still wait for the answer this page names.
+
+**Whether an approval is a direction question at all.** The owner settled the practical case and did
+not redraw the boundary. A later reader deciding that charters were never *next steps* would be
+reading a convenience into a record that does not carry one.
+
+**Nothing enforces this either.** No exit code reads it. What holds it is the record and whoever
+reads it next.
