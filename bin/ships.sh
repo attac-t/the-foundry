@@ -5,9 +5,12 @@
 # **Written after saying *nothing here retrospects* three weeks after a skill for it shipped.** The
 # owner caught it by reloading plugins. I had searched the issue tracker and nowhere else.
 #
-# **Three homes and I read one.** 27 scripts under `bin`, 138 plugin skills, 12 rules. A capability
-# lives in whichever of those fits, and `guidance.md` says which — so a search of one home answers
-# about one home.
+# **Three homes and I read one.** A capability lives in a script, a plugin skill or a rule, and
+# `guidance.md` says which — so a search of one home answers about one home.
+#
+# **No count here.** The first draft carried three, and two were wrong within the hour — adding
+# this file and one rule moved both. A number in a header goes stale the day after it is written,
+# and this one did not last that long.
 #
 # **The same fault three times in a day.** A grep for a literal filename missed a loop variable. A
 # grep for a phrase found one row of six. A search of issues missed a skill. Each time the terms
