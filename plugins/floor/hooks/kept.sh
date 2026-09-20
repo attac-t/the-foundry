@@ -8,10 +8,15 @@
 # **The runner decides whether it is due, not this file.** A hook that carried
 # the window would be a second copy of it, and two copies drift.
 #
-# **Every edit, and the source asked on few of them.** `renew_this_run_claim`
-# returns before asking while the claim is young.
+# **An edit was not the whole of that path.** A host waiting on a grade makes
+# no edit at all, and one detached audit here ran forty-eight minutes — inside
+# twenty per cent of the hour a claim is broken after. Measured 20 September.
 #
-# Silent and exit 0 whatever happens. An edit must never report a failure
+# **So any tool use counts.** Reading a log is a host still on the work, and a
+# claim exists to say somebody is. The runner throttles on a local mark, so the
+# extra fires cost a `stat` rather than a read across the network.
+#
+# Silent and exit 0 whatever happens. A command must never report a failure
 # because a claim could not be kept — #859 names that as its own risk.
 
 root="$(cd "$(dirname "$0")/.." && pwd)"
