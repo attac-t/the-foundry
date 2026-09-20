@@ -56,6 +56,10 @@ in another. So a table one `awk` aligns is ragged to the next, and that is why n
 
 Never a heading to decorate a paragraph. Never a section restating the one above it.
 
+**Point, never recite.** A reference to a rule, a skill or a decision names it and says when to
+go there. Copying its list across gives a reader two versions of one thing, and the copy is the
+one that goes stale. Act like a road sign: it says which way, not what is at the end.
+
 **Do not enumerate.** State the rule once and let it apply. A rule rewritten per case is the same
 rule five times. The reader stops before the case they came for. Naming today's instances dates
 the file the moment one is added.
