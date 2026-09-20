@@ -86,6 +86,7 @@ has "and says how many carry a tick"       "$both" "1 carry a tick"
 has "and how many carry none"              "$both" "2 carry none"
 lacks "and a ticked list is not on the report" "$both" "#42"
 
+
 # --- an issue nothing names ---
 
 issues "$(printf '0	41	a list nobody read')" "$(printf '0	99	nobody ever mentioned this')"
@@ -203,6 +204,25 @@ has "with no forge it says which half still works" "$blind" "git and runs anywhe
 has "and which half cannot"                        "$blind" "cannot be read"
 is  "and refuses with 3, never a clean empty list"  \
     "$( cd "$repo" && PATH="$noforge" FIX="$tmp/fix" sh "$root/bin/unread.sh" >/dev/null 2>&1; printf '%s' "$?")" "3"
+
+# --- a reading that had nothing to tick ---
+#
+# **Three issues were read here on 20 September and every box came back unreachable.** Ticking one
+# would have been a lie and leaving them made a queue that never shortens. So a box naming one of
+# `closing.md`'s four states counts as read, the same four `bin/unticked.sh` already reads.
+
+issues "$(printf '0\t41\tuntouched')" "$(printf '2\t44\tread, and nothing could be ticked')"
+
+# **The history has to name it, or the case passes because nothing reached the report.** Driven: a
+# break letting a read list rank like an untouched one went green until this line existed.
+commit "answer the other thing" "Refs #44"
+
+stated=$(read_it)
+
+has   "a list saying why a box cannot be met is counted apart" "$stated" "1 say why a box cannot be met"
+has   "and it still counts toward every open list"             "$stated" "2 open lists"
+lacks "and it is off the report, like a ticked one"            "$stated" "#44"
+has   "while an untouched one stays on it"                     "$stated" "#41"
 
 printf '\nunread — %d passed, %d failed\n' "$passed" "$failed"
 [ "$failed" -eq 0 ]

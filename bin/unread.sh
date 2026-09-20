@@ -115,8 +115,11 @@ issues_with_a_list() {
     gh api "repos/{owner}/{repo}/issues?state=open&per_page=100" --paginate \
        --jq '.[]
              | select(has("pull_request") | not)
-             | select((.body // "") | test("(^|\n)\\s*- \\[[ xX]\\] "))
-             | (if ((.body // "") | test("(^|\n)\\s*- \\[[xX]\\] ")) then "1" else "0" end) as $t
+             | (.body // "") as $b
+             | select($b | test("(^|\n)\\s*- \\[[ xX]\\] "))
+             | (if   ($b | test("(^|\n)\\s*- \\[[xX]\\] ")) then "1"
+                elif ($b | test("\\*\\*(unmeetable|wrong when written|ungateable|unreached)")) then "2"
+                else "0" end) as $t
              | "\($t)\t\(.number)\t\(.title)"' 2>/dev/null
 }
 
@@ -125,7 +128,7 @@ issues_with_a_list() {
 report() {
     rows=$(joined | sort -rn) || rows=
 
-    say_both_halves
+    say_how_the_lists_stand
 
     [ -n "$rows" ] || {
         say 'unread — every open list with work behind it has been read'
@@ -144,13 +147,19 @@ report() {
 }
 
 #
-# **Two numbers, because one of them hid a pass.** Read the untouched count alone on a day when
-# issues were also filed, and a real reading looks like nothing. Both together cannot lie that way.
-say_both_halves() {
+# **Three numbers, because two of them hid something.** Read the untouched count alone on a day when
+# issues were also filed, and a real reading looks like nothing.
+#
+# **And a reading can end with nothing to tick.** Three issues were read here on 20 September and
+# every box came back unreachable. Ticking one would be a lie and leaving them made a queue that
+# never shortens, so a box naming a state counts as read — the four words `closing.md` gives and
+# `bin/unticked.sh` already reads.
+say_how_the_lists_stand() {
     untouched=$(awk -F"$TAB" '$1 == "0"' "$blank" | grep -c .) || untouched=0
     touched=$(awk -F"$TAB" '$1 == "1"' "$blank" | grep -c .)   || touched=0
+    stated=$(awk -F"$TAB" '$1 == "2"' "$blank" | grep -c .)    || stated=0
 
-    say "unread — $(( untouched + touched )) open lists: $touched carry a tick, $untouched carry none."
+    say "unread — $(( untouched + touched + stated )) open lists: $touched carry a tick, $stated say why a box cannot be met, $untouched carry none."
     say ''
 }
 
