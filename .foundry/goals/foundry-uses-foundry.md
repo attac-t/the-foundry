@@ -13,7 +13,7 @@ Done when:
 - [x] Two hosts take work from one source, and each item is paid for once — **11 September.** This machine and a container, two `uname -n` values, one directory both can see. `Lenovo` took the item; the container asked and was refused, exit 4, and the stamp still named `Lenovo`. Exclusivity under contention is `plugins/floor/tests/race.sh`: a thousand rounds, a thousand single winners, and a swap replaced by `cp` goes red.
 - [ ] A second machine becomes a host from a Docker image.
 - [ ] That machine grades what this one grades, and the two agree.
-- [ ] The plugins are pulled after every bump, so the session runs what the tree says.
+- [ ] The plugins are pulled after every bump, so the session runs what the tree says. — **ungateable**, and the table below already says which half is which. The pull holds: `plugins.sh session` exits 0 and says nothing. **The second half is unobservable** — nothing inside a session can say which copy it loaded. `closing.md` asks for the word, and this is it.
 
 State: **renewed to 21 September 2026**, by the owner, on 14 September. In force from 7 September,
 so this is the second week.
@@ -25,14 +25,29 @@ decision to keep going, never a claim the week succeeded.
 **What the week did.** 33 issues closed, 69 opened, 109 requests merged, 115 runs begun. **It found
 more than it fixed**, and every one of the 36 extra names a gap somebody can check.
 
-**The sharpest measure, and it is the one to move: 72 runs in 180 record anything past `run.began`.**
-That is 40 per cent, measured 19 September, against 14 in 119 when this was written.
+**The sharpest measure, and it is the one to move: 82 runs in 192 record anything past `run.began`.**
+That is 42.7 per cent, measured 20 September, against 40 per cent on the 19th and 14 in 119 when
+this was written.
 
-**The rise is not progress, and splitting it says why.** Floor emits five events and one is
-`run.began`. The other four each need a worker to run a gate, a judge, a delivery or a read.
-**Zero runs in 180 carry one of those without a worker also typing `observe`.** So all 72 were
-moved by somebody deciding to type more. #595 owns it, and a charter for the fix waits on the
-owner.
+**The rise is still mostly typing, and splitting it still says why.** Floor emits five events and
+one is `run.began`. Four of the rest each need a worker to run a gate, a judge, a delivery or a
+read.
+
+**But the split moved off zero for the first time.** One run carries `session.ended`, written by
+floor's `SessionEnd` hook when the session closed. **Nobody ran a command for it** — the first line
+of its kind in 192 runs. #911 merged on 19 September and this is it working. It registers
+through `${CLAUDE_PLUGIN_ROOT}`, so it travels to a host that only installed the plugin.
+
+**One, not eighty, and the reason is worth knowing.** Floor ships a second untyped writer and it has
+never emitted a line. `kept.sh` fires on every edit and calls `claim`. That returns early when the
+run holds no item, and **three runs in 192 hold one.** So the untyped count tracks runs holding an item,
+and nothing chooses one.
+
+**A run recorded by the code alone is still zero, and structurally so.** `run.began` follows a typed
+`new`. Until something selects an issue, every run begins with a command somebody typed. That is a
+faithful proxy for the loop #736 owns, not a broken measure.
+
+#595 owns the ratio and a charter for the fix waits on the owner.
 
 | Condition | Where it stands |
 |---|---|
