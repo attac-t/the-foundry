@@ -114,6 +114,22 @@ contradicts it. Reopening forty-seven issues to tick boxes nobody can check is a
 
 Converting a closed issue's list is worth it only when someone is about to rely on it.
 
+## A closed issue is not an owner
+
+**Twelve closed issues here are still pointed at by an open one.** A reader follows the link, finds
+a closed page, and reads the gap as handled.
+
+`.foundry/status.md` already says this of merged work. It holds for a closed issue for the same
+reason: **closing records that a list was answered, never that somebody is still watching.**
+
+So say which of two things a pointer means. *This was settled there* is a fact and needs nothing.
+*That owns the rest of it* is a claim about the future. **A closed issue cannot carry one.** Move
+the remainder to an open issue, or write the answer where the pointer is.
+
+**The twelve were read back on 20 September**, each against the tree, and none was reopened. Six
+hold in full, three in part, one is plainly unfinished, and two landed a shape without the answer.
+Reading was the whole of the repair.
+
 ## Look for the work before you start it
 
 **Three charters were written on 1 September, and nobody opened one for two days.** 190 KB on
