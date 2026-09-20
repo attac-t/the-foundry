@@ -248,11 +248,11 @@ Measured 19 September: **ten of fourteen merges that day touched no file under `
 `.gitattributes` and `.gitignore` decide what a clone holds, `bin/gates.sh` decides how the suite
 runs, and **`bin/audited.sh` itself, because a check that waives the bar sits under it**.
 
-**A waived audit is not twenty-five green. Twenty-five ran**, and one graded a smaller claim. The
-runner prints that, and nobody types it:
+**A declined audit is not a full grade, and the line says which.** A gate that declined ran; the
+thing it grades did not. The runner prints that, and nobody types it:
 
 ```
-ALL GREEN, 25 of 25 ran, and graded a smaller claim: floor
+ALL GREEN. 24 graded. 1 declined: floor, no file it reads changed.
 ```
 
 **The plugin decides, not the worker.** Floor's suite reads the diff against the trunk the

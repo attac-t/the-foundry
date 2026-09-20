@@ -319,15 +319,21 @@ done
 printf '\n'
 
 #
-# **Not twenty-five green. Twenty-five ran**, and one of them graded less than its whole claim.
+# **Graded, and declined.** A gate that declined ran; the thing it grades did not.
 #
-# A reader gets one line to tell those apart, so the line says it. `bin/audited.sh` used to print
-# words for a person to copy into the record, and a waiver a person types is a waiver a person can
-# soften — which is what #920 was.
+# **The first wording said `25 of 25 ran` and the delegate refused it before this landed.** The
+# plugin ran. The audit did not. A reader who stops at the count then reads a full grade, which is
+# the one thing this line exists to prevent.
+#
+# `bin/audited.sh` used to print words for a person to copy into the record, and a waiver a person
+# types is a waiver a person can soften — which is what #920 was.
 say_how_green() {
     [ -n "$lessened" ] || { printf 'ALL GREEN\n'; return; }
 
-    printf 'ALL GREEN, %s of %s ran, and graded a smaller claim:%s\n' "$ran" "$ran" "$lessened"
+    declined=$(printf '%s\n' $lessened | grep -c .)
+
+    printf 'ALL GREEN. %s graded. %s declined:%s, no file it reads changed.\n' \
+           "$(( ran - declined ))" "$declined" "$lessened"
 }
 
 [ "$failed" -eq 0 ] && { say_how_green; exit 0; }
