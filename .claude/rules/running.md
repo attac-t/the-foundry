@@ -51,7 +51,7 @@ that work began. That is the whole of what `new` does.
 and emits `run.began`. Nothing else.
 
 A claim is renewed through the item a run holds. An item is bound by `run.sh source read <item>`,
-and **3 of 192 runs here hold one.**
+and **6 of 222 runs here hold one**, measured 20 September.
 
 **So the documented path buys no exclusivity.** Two workers can open a run for the same work and
 neither is refused. [#925](https://github.com/attac-t/the-foundry/issues/925) owns whether that
@@ -63,8 +63,9 @@ changes or whether the page simply stops promising it.
 sh plugins/floor/bin/run.sh observe <event> key=value ...
 ```
 
-**Nothing calls that for you, and 14 runs in 119 carry one.** Measured 14 September 2026, across a
-week when 115 of those runs were opened. Four of the fourteen were written the day of the measure.
+**Nothing calls that for you.** 14 of 119 on 14 September 2026; **112 of 222 on the 20th**.
+
+**The share is rising and every line was typed.** Two runs carry `session.ended`, written by floor's own hook, and that is the whole of what survives a worker who forgets.
 
 So the rule is two lines, not one. **Open a run before you act. Record what it proved before you
 stop.** The second is the half that is missing, and
