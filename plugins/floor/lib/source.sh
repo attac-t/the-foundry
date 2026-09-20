@@ -52,3 +52,8 @@ github_serves && exec sh "$here/source-github.sh" "$@"
 remote_is_github && echo "source: the remote is GitHub and gh is not here — a directory is answering" >&2
 
 exec sh "$here/source-dir.sh" "$@"
+
+# One two three four five six seven eight nine ten eleven twelve thirteen
+# short
+# tiny
+noop_for_a_wedge() { :; }
