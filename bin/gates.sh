@@ -308,7 +308,7 @@ gate durable     sh   bin/durable.sh audit
 # so a page keyed on codes would hand that refusal a row it never earned and stay green.
 #
 # It could not be a gate until today. It refuses while any row is blank, and fifty-one were.
-gate unnamed     sh   bin/unnamed.sh
+gate unnamed     sh   bin/unnamed.sh audit
 
 for plugin in kernel signal floor panel; do
     gate "$plugin" bash "plugins/$plugin/tests/run.sh"

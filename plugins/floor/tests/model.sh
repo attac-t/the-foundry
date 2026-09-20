@@ -3804,13 +3804,21 @@ exactly_one_host_takes_an_item() {
   printf '2026-01-01T00:00:00Z\t%s\t%s\n' "$(uname -n)" "$(date -u +%s)" > "$src/claims/71/held"
   young=$(cat "$src/claims/71/held")
 
-  is "a young claim is left alone" "$(code_of floor "$tmp/clm" claim)" "0"
-  is "and the stamp did not move"  "$(cat "$src/claims/71/held")"      "$young"
+  is    "a young claim is left alone"    "$(code_of floor "$tmp/clm" claim)" "0"
+  is    "and the stamp did not move"     "$(cat "$src/claims/71/held")"      "$young"
+  lacks "and it leaves no line to count" "$(floor "$tmp/clm" observe)"       "claim.renewed"
 
   printf '2026-01-01T00:00:00Z\t%s\t1767225600\n' "$(uname -n)" > "$src/claims/71/held"
 
   is    "an aged claim is kept" "$(code_of floor "$tmp/clm" claim)" "0"
   lacks "and its stamp moved"   "$(cat "$src/claims/71/held")"      "1767225600"
+
+  #
+  # **The line is the whole bound.** An open issue refuses a live but non-progressing worker
+  # renewing for ever merely by existing, and this renews on an edit. So the count goes in the
+  # record: a person reads how many times one host renewed and decides. Nobody names a limit.
+  has "and a renewal leaves a line to count" \
+      "$(floor "$tmp/clm" observe)" "claim.renewed	item=71"
 
   # Another host's claim is never re-stamped by this one. Keeping is the holder's alone.
   printf '2026-01-01T00:00:00Z\tOtherHost\t1767225600\n' > "$src/claims/71/held"
@@ -7276,6 +7284,30 @@ a_remote_with_no_gh_still_has_a_source
 
 is "new with no title exits 2"  "$(code_of floor "$tmp/bare" new)" "2"
 is "an unknown command exits 2" "$(code_of floor "$tmp/bare" fly)" "2"
+
+# --- a run that claims nothing says so ---
+#
+# **A rule said the opposite for six days and every session loaded it.** `new` takes a title and
+# nothing else, so a run it makes can never hold an item and never claims one. The page saying that
+# is prose, which is what failed; this is the same fact where the worker already is.
+#
+# **The stream is half the check.** `new` prints the run's path on stdout and callers read it, so a
+# notice landing there breaks every script that takes the output as an answer.
+
+a_run_that_claims_nothing_says_so() {
+  said=$(floor_says "$tmp/bare" new 'a run with no item')
+
+  has "new says the run holds no item"      "$said" "holds no item"
+  has "and that a second worker is allowed" "$said" "not refused"
+  has "and names the command that binds one" "$said" "source read"
+
+  # stdout alone — `floor` drops stderr, so what survives is what a caller parses.
+  alone=$(floor "$tmp/bare" new 'a run read by a script')
+
+  is    "stdout stays one line"        "$(printf '%s' "$alone" | grep -c .)" "1"
+  lacks "and carries none of the notice" "$alone" "holds no item"
+}
+a_run_that_claims_nothing_says_so
 
 #
 # Standing authority — §2.3's allowlist declared once instead of granted per run.
