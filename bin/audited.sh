@@ -40,6 +40,11 @@ say()  { printf '%s\n' "$*"; }
 note() { printf '%s\n' "$*" >&2; }
 
 main() {
+    # **Its suite was run by nothing until today.** `tests/audited.sh` held sixteen cases and no
+    # gate, hook or verb executed one. `basing` carries the same verb for the same reason, and the
+    # collision with a branch called `audit` is the trade it already accepted.
+    [ "${1:-}" = audit ] && { cd "$(root)" || exit 3; drive_the_suite; return $?; }
+
     cd "$(root)" || exit 3
 
     changed=$(what_changed) || { note 'audited — the two trees could not be compared'; exit 3; }
@@ -74,6 +79,14 @@ main() {
 }
 
 root() { cd "$(dirname "$0")/.." && pwd; }
+
+# Refuses rather than reporting nothing, because a suite that is not there and a suite that passes
+# read the same from a caller that only checks the code.
+drive_the_suite() {
+    [ -f tests/audited.sh ] || { note 'tests/audited.sh is not here, so this read nothing'; exit 2; }
+
+    bash tests/audited.sh
+}
 
 # Every changed file on one line, so the waiver is one field a reader can scan.
 one_line() { printf '%s' "$1" | tr '\n' ' ' | sed 's/ *$//'; }
