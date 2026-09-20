@@ -196,6 +196,7 @@ sh bin/run.sh new "Ship the gift card flow"
 sh bin/run.sh path
 sh bin/run.sh home
 sh bin/run.sh runs
+sh bin/run.sh settled
 sh bin/run.sh bootstrap
 sh bin/run.sh targets
 sh bin/run.sh targets add https://github.com/acme/api.git main
@@ -221,11 +222,16 @@ sh bin/run.sh charter introduce Decided "pricing copy signed off"
 sh bin/run.sh authorise
 sh bin/run.sh open
 sh bin/run.sh commit "Add the gift card table"
+sh bin/run.sh aside "the pricing copy reads oddly, and this run cannot fix it"
+sh bin/run.sh observe gate.finished name=tests result=0
+sh bin/run.sh observed gate.finished
 sh bin/run.sh reconcile
 sh bin/run.sh reconcile accept 9c5e6cf "cherry-picked from the abandoned run"
 sh bin/run.sh complete
 sh bin/run.sh policy deliver-to https://github.com/acme/api.git
 sh bin/run.sh deliver "Gift card flow"
+sh bin/run.sh policy merge-to https://github.com/acme/api.git
+sh bin/run.sh merge
 ```
 
 `new` makes a run and points this checkout at it. `path` prints the active run, or exits 1.

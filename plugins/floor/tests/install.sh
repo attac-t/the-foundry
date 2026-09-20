@@ -348,4 +348,41 @@ the_stranded_report_speaks_only_when_something_stopped() {
 }
 the_stranded_report_speaks_only_when_something_stopped
 
+
+#
+# **A heading that says every is a claim.** It named twenty of twenty-five for weeks, and two of
+# the missing ones appeared nowhere else on the page, so a reader had no way to learn they exist.
+#
+# Both sides are derived. A typed list here would be a third copy, and the drift would move to it.
+dispatched_verbs() {
+  awk '/case "\$action" in/     { on = 1; next }
+       on && /^[ \t]*esac/      { exit }
+       on && /^[ \t]*[a-z]+\)/  { v = $1; sub(/\)$/, "", v); print v }' \
+      "$root/bin/run.sh" | sort -u
+}
+
+# **The marker is `bin/run.sh`, never `run.sh`.** A field holds the whole path, so the first draft
+# matched nothing and reported an unreadable file rather than a difference.
+shown_verbs() {
+  awk '/^## Every verb/ { on = 1; next }
+       on && /^```/     { fence++; if (fence == 2) exit; next }
+       on && fence == 1 { for (i = 1; i < NF; i++)
+                            if ($i ~ /run\.sh$/) { print $(i + 1); break } }' \
+      "$root/README.md" | sort -u
+}
+
+the_readme_shows_every_verb_the_runner_answers_to() {
+  shown=$(shown_verbs)
+  dispatched=$(dispatched_verbs)
+
+  # Two empty sets compare equal, and a check that passes on nothing certifies nothing.
+  [ -n "$shown" ] && [ -n "$dispatched" ] || {
+    bad "the verbs could not be read out of both bin/run.sh and README.md"
+    return
+  }
+
+  is "the README shows every verb the runner answers to" "$shown" "$dispatched"
+}
+the_readme_shows_every_verb_the_runner_answers_to
+
 summary "install"
