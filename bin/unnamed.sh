@@ -29,6 +29,19 @@ readonly READS=${FOUNDRY_REFUSALS_READS:-plugins/floor/bin/run.sh}
 note() { printf '%s\n' "$*" >&2; }
 
 main() {
+    #
+    # **Gate 25 ran on every branch and its own suite ran on none.** Seventeen cases sat green and
+    # unguarded until 20 September, when a sweep of `tests/` found four suites nothing executed.
+    #
+    # Five gates already do this in one line. This is the sixth, and it adds no gate — the same
+    # check answers, and now it answers for its own cases first.
+    #
+    # **It falls through, and `durable` does not.** That one runs its suite and exits, so a gate
+    # calling it with `audit` runs the cases and never the live comparison. Here the live comparison
+    # is the whole point of gate 25, so a green suite carries on into it. `bytes` is the shape
+    # copied.
+    [ "${1:-check}" = audit ] && { bash tests/unnamed.sh || exit 1; }
+
     [ -r "$PAGE" ]  || fail 3 "[$PAGE] could not be read"
     [ -r "$READS" ] || fail 3 "[$READS] could not be read"
 
