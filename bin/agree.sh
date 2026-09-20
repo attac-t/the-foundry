@@ -4,6 +4,16 @@
 #
 #   sh bin/agree.sh         check
 #   sh bin/agree.sh audit   break it four ways, require each to go red
+#
+# **The README advertised seven gates and CI ran six.** `panel` was the missing one, and it was
+# omission rather than decision: the commit that advertised it touched nine files and none was a
+# workflow.
+#
+# **Identities, never counts.** A count would have shown the same defect and could not say which
+# gate was missing, nor see one swapped for another, nor a duplicate hiding one.
+#
+# A meta-check, not a product gate. It grades the gates and is not one of them, so running it
+# beside them does not make the set it checks disagree with itself.
 
 set -u
 
