@@ -123,6 +123,7 @@ yours to run when it applies:
 | `sh bin/audited.sh` | a second | before you grade, to learn whether floor's audit can answer at all |
 | `sh bin/unread.sh` | a minute, and it reaches GitHub | weekly, and before you pick up work that may already be done |
 | `sh bin/ships.sh <word>` | a second | **before you say this repository lacks a thing** |
+| `sh bin/unlisted.sh` | a minute, and it reaches GitHub | before you point at a closed issue as if it owned something |
 
 **It counts a box at the start of a line, and never one quoted in prose.** An issue explaining why
 a box was struck quotes it, and unanchored that read as debt: #494 counted ten and holds seven,
@@ -145,6 +146,20 @@ says you may now claim it.
 
 **`tests/ships.sh` grades this** — seventeen cases against a fixture of all three homes, and two
 breaks go red: blinding it to skills, and letting it answer about itself.
+
+### A closed issue is not an owner
+
+**Forty-eight closed issues here carry no `- [ ]` box at all**, so closing recorded nothing about
+any claim they made. That is history, and `closing.md` refuses to reopen them.
+
+**Twelve of them are being relied on right now.** An open issue or a tracked page still sends a
+reader there, and the reader finds a closed page and reads the gap as handled.
+
+`sh bin/unlisted.sh` names those twelve, most pointed-at first, with who points. **It lists and
+never judges**, for the same reason `unread` does.
+
+**`tests/unlisted.sh` grades it** — sixteen cases, and four breaks go red: dropping the guard on an
+empty read, naming an issue nothing points at, ignoring tracked pages, and flattening the ranking.
 
 ### An open list is the other half, and nothing read it
 
