@@ -3810,8 +3810,26 @@ exactly_one_host_takes_an_item() {
 
   printf '2026-01-01T00:00:00Z\t%s\t1767225600\n' "$(uname -n)" > "$src/claims/71/held"
 
+  #
+  # **The local mark is cleared, because this fixture is time passing.** A keep writes
+  # `claim.kept` on every path that settled the question, including *too young to ask*, and the
+  # runner reads it before it reads the source. Rewriting the stamp without clearing the mark
+  # asks the keep to answer inside its own throttle, which is the one case it exists to skip.
+  #
+  # Live, that skip is safe with margin: the claim was under a third of the window when marked,
+  # so a third later it is under two thirds. Here the stamp jumps a year in no time at all.
+  rm -f "$tmp/clm/claim.kept"
+
   is    "an aged claim is kept" "$(code_of floor "$tmp/clm" claim)" "0"
   lacks "and its stamp moved"   "$(cat "$src/claims/71/held")"      "1767225600"
+
+  #
+  # **The mark is what stops a second read.** A keep that has just settled the question does not
+  # ask the source again, and on the github adapter every ask is a push or a fetch.
+  printf '2026-01-01T00:00:00Z\t%s\t1767225600\n' "$(uname -n)" > "$src/claims/71/held"
+
+  is  "a keep inside the throttle asks nothing" "$(code_of floor "$tmp/clm" claim)" "0"
+  has "and the stamp it would have moved stays" "$(cat "$src/claims/71/held")"      "1767225600"
 
   #
   # **The line is the whole bound.** An open issue refuses a live but non-progressing worker
@@ -3821,6 +3839,7 @@ exactly_one_host_takes_an_item() {
       "$(floor "$tmp/clm" observe)" "claim.renewed	item=71"
 
   # Another host's claim is never re-stamped by this one. Keeping is the holder's alone.
+  rm -f "$tmp/clm/claim.kept"
   printf '2026-01-01T00:00:00Z\tOtherHost\t1767225600\n' > "$src/claims/71/held"
 
   is  "another host's claim is not kept" "$(code_of floor "$tmp/clm" claim)" "0"
