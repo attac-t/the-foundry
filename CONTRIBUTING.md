@@ -122,6 +122,7 @@ yours to run when it applies:
 | `sh bin/unticked.sh` | a minute, and it reaches GitHub | before you close an issue, and after a `Closes #N` merge |
 | `sh bin/audited.sh` | a second | before you grade, to learn whether floor's audit can answer at all |
 | `sh bin/unread.sh` | a minute, and it reaches GitHub | weekly, and before you pick up work that may already be done |
+| `sh bin/ships.sh <word>` | a second | **before you say this repository lacks a thing** |
 
 **It counts a box at the start of a line, and never one quoted in prose.** An issue explaining why
 a box was struck quotes it, and unanchored that read as debt: #494 counted ten and holds seven,
@@ -130,6 +131,20 @@ either.
 
 **`tests/unticked.sh` grades this** — nineteen cases, and six breaks go red. The sweep is not a
 gate, because it reaches the network, so nothing else does.
+
+### Before you say nothing does it
+
+**A capability lives in one of three homes** and `guidance.md` says which: a script under `bin`, a
+plugin skill, or a rule. **27, 138 and 12 of them.** A search of one answers about one.
+
+On 20 September I told the owner nothing here retrospects. `kernel:retrospect` had shipped three
+weeks earlier, and a sibling with it. **I had searched the issue tracker and none of the three.**
+
+`sh bin/ships.sh <word>` reads all three and prints what answers. When nothing does it says so, and
+says you may now claim it.
+
+**`tests/ships.sh` grades this** — seventeen cases against a fixture of all three homes, and two
+breaks go red: blinding it to skills, and letting it answer about itself.
 
 ### An open list is the other half, and nothing read it
 
