@@ -74,6 +74,10 @@ Hedging is not honesty. "May be affected" hides; "unverified on macOS" informs.
 
 Never claim a guarantee the mechanism does not give. Name the boundary that would give it.
 
+**It fails hardest where a sentence sits beside the thing it describes.** A comment over the code. A README saying how a thing works. A status page naming an owner. **The sentence stays and the mechanism moves.**
+
+**So read the two together.** Eleven of fourteen breaches found in one day were caught that way, and no check found one of them.
+
 ---
 
 ## What only the artefact can tell you
