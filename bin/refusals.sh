@@ -23,6 +23,11 @@ set -eu
 TAB=$(printf '\t')
 
 main() {
+    # **Its suite was run by nothing until today.** Twenty-nine cases, and no gate, hook or verb
+    # executed one. A script named `audit` would now be unreadable here, which is the same trade
+    # `basing` and `audited` already take.
+    [ "${1:-}" = audit ] && { drive_the_suite; return $?; }
+
     [ "$#" -gt 0 ] || fail 2 'name at least one script'
 
     for script in "$@"; do
@@ -91,5 +96,15 @@ sites_in() {
 }
 
 fail() { printf 'refusals: %s\n' "$2" >&2; exit "$1"; }
+
+#
+# Refuses rather than reporting nothing, because a suite that is absent and a suite that passes
+# read the same to a caller that only checks the code.
+drive_the_suite() {
+    root=$(cd "$(dirname "$0")/.." && pwd) || return 3
+    [ -f "$root/tests/refusals.sh" ] || { fail 2 'tests/refusals.sh is not here, so this read nothing'; }
+
+    bash "$root/tests/refusals.sh"
+}
 
 main "$@"
