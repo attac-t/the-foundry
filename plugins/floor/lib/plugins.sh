@@ -11,22 +11,30 @@
 # itself; a github source points at its own clone. **Both hold the plugin manifests**, so one read
 # answers for a maintainer and a consumer alike.
 #
-# Two questions, and naming them the same would make one of them wrong:
+# Three questions, and naming them the same would make two of them wrong:
 #
 #     host      what has this host got, everywhere it registered anything
 #     session   what could a session standing in one repository load
+#     declared  what did that repository ask for, and is it what a pull obeys
 #
 # **`session` is the quiet one.** Ninety-six rows on the machine this was written on point at
 # directories deleted weeks ago, and `host` reports them because they are there. None can reach a
 # session, so `session` says nothing about them.
 #
+# **`declared` is the one that reads the other side.** Every other verb here reads the host record;
+# this one reads the repository's own settings and compares. A repository can name a marketplace the
+# host has registered differently, and the host's record is the one a pull obeys.
+#
 # Usage: sh plugins.sh host
 #        sh plugins.sh session <repository>
+#        sh plugins.sh declared <repository>
 #
-# Exit: 0 answered, 1 session found drift, 2 asked for something this does not do
+# Exit: 0 answered, 1 session found drift or declared found a disagreement, 2 asked for something
+#       this does not do, 3 declared found nothing to compare
 #
 # **The `1` was added below and left out of that line for a day.** A reader of the enumeration got a
 # contract missing a third of itself, which is how a hook came to pass the status straight through.
+# The `3` above is new with `declared`, and it is written here first for that reason.
 #
 # **`session` exits 1 when it found drift**, because both its absences speak too and a caller that
 # reads only whether anything was said cannot tell them apart. One shipped hook appended *pull it*
@@ -369,12 +377,126 @@ versions_reachable_from() {
     ' "$record" | sort -u | paste -sd, -
 }
 
+# --- what a repository asked for, against what this host reads ---
+
+#
+# **A repository declares a marketplace and the host decides what a pull obeys.** They can disagree,
+# and nothing said so. On 20 September this checkout declared a `github` source while the host had
+# it registered as a directory with `autoUpdate` on — so `claude plugin update` took the working
+# tree, on whatever branch was out, and installed a version only an open branch carried.
+#
+# **Silent when they agree**, because a hook that speaks on a healthy host is one nobody reads by
+# the end of the week. `session` above is silent for the same reason.
+report_what_this_repository_declared() {
+    settings="$1/.claude/settings.json"
+    disagreed=no
+
+    [ -r "$settings" ] || { say_nothing_is_declared "$settings"; return 3; }
+
+    named=$(marketplaces_this_repository_declares "$settings")
+    [ -n "$named" ] || { say_nothing_is_declared "$settings"; return 3; }
+
+    for market in $named; do
+        say_a_source_that_disagrees "$settings" "$market"
+    done
+
+    [ "$disagreed" = yes ] && return 1
+
+    return 0
+}
+
+# **Nothing to check is not a clean check**, in this file's own words. A repository declaring no
+# marketplace and one whose settings cannot be read both answer nothing, and only one of them is a
+# repository in good order.
+say_nothing_is_declared() {
+    say "plugin  none declared. Nothing here names a marketplace, so nothing can disagree"
+    say "        $1 — extraKnownMarketplaces is where that is written"
+}
+
+#
+# **Sets `disagreed`, because saying it is not the same as finding it.** The absence below speaks
+# too, and a caller reading only whether anything was said cannot tell an unregistered marketplace
+# from a source that was overridden. One of those wants an add and the other wants a decision.
+say_a_source_that_disagrees() {
+    asked=$(declared_source "$1" "$2")
+    reads=$(marketplace_source "$2") || reads=
+
+    [ -n "${asked%%"$(printf '\t')"*}" ] || return 0
+
+    [ -n "${reads%%"$(printf '\t')"*}" ] || { say_a_marketplace_nobody_registered "$2"; return 0; }
+    [ "$asked" = "$reads" ] && return 0
+
+    disagreed=yes
+    say "plugin  $2 is declared $(spelt "$asked"), and this host reads $(spelt "$reads")"
+    say "        the host's record is the one a pull obeys, and nothing else says so"
+}
+
+# An add, never a decision. The marketplace is named and absent, so no pull can reach it at all.
+say_a_marketplace_nobody_registered() {
+    disagreed=yes
+    say "plugin  $1 is declared here and this host has not registered it"
+    say "        claude plugin marketplace add, or an install from it finds nothing"
+}
+
+# `kind<TAB>name` as a person reads it. A directory carries no name, because the host record's own
+# `installLocation` is where that one lives and `host` already prints it.
+spelt() {
+    kind=${1%%"$(printf '\t')"*}
+    name=${1#*"$(printf '\t')"}
+
+    [ -n "$name" ] && printf '%s %s' "$kind" "$name" || printf 'a %s' "$kind"
+}
+
+#
+# Every marketplace the repository names, as keys. **One key per line, and a brace count for the
+# depth** — the block's own members sit at depth 0 here, so `"source"` two levels down is never
+# mistaken for one of them.
+#
+# A settings file written on one line yields nothing, which is the same limit every reader in this
+# file works under and the same shape both harnesses write.
+marketplaces_this_repository_declares() {
+    awk -F'"' '
+        !block && /"extraKnownMarketplaces"/ { block = 1; next }
+        !block                               { next }
+
+        { copy = $0; opens = gsub(/\{/, "", copy); copy = $0; shuts = gsub(/\}/, "", copy) }
+
+        depth == 0 && opens && NF >= 3 { print $2 }
+
+        { depth += opens - shuts }
+        depth < 0 { exit }
+    ' "$1"
+}
+
+#
+# What one of them was declared as, as `kind<TAB>name`. The same walk, asking about one key.
+#
+# **`exit` runs `END`**, so the brace closing the block ends the read and the answer still prints.
+declared_source() {
+    awk -F'"' -v want="$2" '
+        !block && /"extraKnownMarketplaces"/ { block = 1; next }
+        !block                               { next }
+
+        { copy = $0; opens = gsub(/\{/, "", copy); copy = $0; shuts = gsub(/\}/, "", copy) }
+
+        depth == 0 && opens               { mine = ($2 == want) }
+        mine && $2 == "source" && NF >= 4 { kind = $4 }
+        mine && $2 == "repo"              { name = $4 }
+
+        { depth += opens - shuts }
+        depth < 0 { exit }
+
+        END { print kind "\t" name }
+    ' "$1"
+}
+
 say() { printf '%s
 ' "$1"; }
 
 case "${1:-}" in
-    host)    report_plugins_this_host_registered ;;
-    session) shift; report_what_this_session_could_load "${1:-}" ;;
-    *)       echo "plugins: host | session <repository>" >&2
-             exit 2 ;;
+    host)     report_plugins_this_host_registered ;;
+    session)  shift; report_what_this_session_could_load "${1:-}" ;;
+    declared) shift; report_what_this_repository_declared "${1:-}" ;;
+    *)        echo "plugins: host | session <repository> | declared <repository>" >&2
+              exit 2 ;;
 esac
