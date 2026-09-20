@@ -26,6 +26,9 @@
 #
 # No `set -e`: `git grep` exits 1 when it matches nothing, and that is this gate passing.
 #
+# Usage: sh bin/bytes.sh
+#        sh bin/bytes.sh audit   drive tests/bytes.sh first, then the check
+#
 # Exit: 0 every tracked text file is clean, 1 at least one is not, 3 the tree could not be read
 
 set -u
