@@ -1960,9 +1960,14 @@ floor carries the words and adds nothing, and the rule lands with the stage that
 **Every one of them is one harness's.** Listed here because #711 asks whether a second could ever be
 reached, and nobody could answer without reading the source.
 
-**The table is the list, and it used to carry a count as well.** The count said twelve over six
-rows, and neither reading of it — files or readers — came to twelve. A row is added when a read is,
-and nothing has to remember to move a number.
+**The table is the list, and it used to carry a count as well.** The count said twelve, over six
+rows — two units wearing one number. **It was right when it was written** and counted call sites in
+core, which `tests/run.sh` says in its own words. There are twenty-two of those today.
+
+**The check beside it counts filenames, and there are six.** So the page and the check that guards
+it answered different questions, and only one of them could go red.
+
+A row is added when a read is. Nothing has to remember to move a number.
 
 | Read | Where | For |
 |---|---|---|
