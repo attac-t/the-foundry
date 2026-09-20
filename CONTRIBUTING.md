@@ -128,6 +128,7 @@ yours to run when it applies:
 | `sh bin/ships.sh <word>` | a second | **before you say this repository lacks a thing** |
 | `sh bin/unlisted.sh` | a minute, and it reaches GitHub | before you point at a closed issue as if it owned something |
 | `sh bin/stale.sh` | twenty seconds, and it reaches GitHub | before you publish a page that cites issues, and after you close one |
+| `sh bin/offboard.sh` | eleven seconds, measured | after you file an issue |
 
 **It counts a box at the start of a line, and never one quoted in prose.** An issue explaining why
 a box was struck quotes it, and unanchored that read as debt: #494 counted ten and holds seven,
@@ -150,6 +151,21 @@ says you may now claim it.
 
 **`tests/ships.sh` grades this** — seventeen cases against a fixture of all three homes, and two
 breaks go red: blinding it to skills, and letting it answer about itself.
+
+### An issue the front door never showed
+
+**The board is where a stranger starts**, and `README.md` says so. An issue missing from it is
+filed and invisible.
+
+**It has happened twice.** Four new issues were once all off it, and on 20 September two filed that
+day were too. Both times a person noticed by looking.
+
+`sh bin/offboard.sh` names every open issue the board does not carry, newest first. **An empty
+board refuses**, because a refused GraphQL read looks exactly like a board holding nothing, and
+reporting every issue as missing is the loudest way to be wrong.
+
+**`tests/offboard.sh` grades it** — thirteen cases, and three breaks go red: dropping the
+empty-board guard, ignoring what the board carries, and listing the oldest first.
 
 ### The gate proves the detector, never the page
 
