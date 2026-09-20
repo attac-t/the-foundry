@@ -11,6 +11,10 @@ carries no version — the field is optional and Claude Code falls back to `plug
 
 Patch for a fix or docs. Minor for a new skill or command. Major for a break.
 
+**Below 1.0, a break bumps the minor.** Four plugins here are. A major there reads as *this is stable now*, and a break is the proof against that.
+
+**Leaving 1.0 is a person's call, in writing.** It says the shape has settled, and nothing in a diff can know that.
+
 **That is why two plugin branches no longer collide.** The version used to sit in a shared file, so
 branches touching different plugins conflicted anyway and work was stacked for packaging reasons.
 `craft-pr-stack` is for work that genuinely builds on work.
