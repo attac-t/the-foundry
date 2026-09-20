@@ -203,7 +203,10 @@ both returned 15, naming both members.
 in floor's suite hold it: a panel of two that agrees, and a panel of two where one refuses.
 
 **What is still one is the harness Foundry runs on.** Two judges are two vendors; the thing that
-runs the work is not. Floor's core reads one harness in thirteen places, and #711 owns that.
+runs the work is not. Floor's core reaches that harness in thirteen places and **they are one
+surface**: `CLAUDE_CONFIG_DIR`, falling back to `$HOME/.claude`, holding three optional files.
+#711 asked whether a seam should hold them and #738 answered by disproving the adapter. Both are
+closed, and no open issue owns the question.
 
 **The decision is written and it is not an adapter.** *Neither yet, and explicitly not an
 exemption list* — the owner's words, 15 September 2026. An adapter derived from one harness would
@@ -280,7 +283,7 @@ what this table is for. Three rows below still say it, and each of those is true
 | the record outlives the run directory | [#337](https://github.com/attac-t/the-foundry/issues/337) closed 9 September, six of six. **It asked whether a reader who was not there catches a forged record, which is not this row.** Nothing named owns the row today |
 | a question reaches a person and comes back | none yet |
 | end-to-end work runs without a hand at some step | [#736](https://github.com/attac-t/the-foundry/issues/736) |
-| the same core path works through a second harness | [#738](https://github.com/attac-t/the-foundry/issues/738) |
+| the same core path works through a second harness | **none yet.** [#738](https://github.com/attac-t/the-foundry/issues/738) closed with one bounded passage proved, and claims neither unattended nor portable operation |
 | a repository brings its own opinion | [#519](https://github.com/attac-t/the-foundry/issues/519) |
 
 **Two principles landed on 19 September and only one of them is checked.** *The core names no host
