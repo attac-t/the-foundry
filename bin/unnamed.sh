@@ -13,6 +13,7 @@
 # reports it as absent is worth more than one that guesses `default`.
 #
 # Usage: sh bin/unnamed.sh
+#        sh bin/unnamed.sh audit     drive tests/unnamed.sh first, then the check
 #
 # Exit: 0 the page and the code agree, 1 they do not, 3 neither could be read.
 

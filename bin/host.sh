@@ -5,6 +5,7 @@
 #   sh bin/host.sh              a shell, and the runs kept on this machine
 #   sh bin/host.sh --worker     the same host, and both providers in it
 #   sh bin/host.sh --volume     the runs kept inside a Docker volume
+#   sh bin/host.sh audit        drive tests/host.sh, and start no container
 #
 # Give it a command and it runs that instead of a shell, which is what a script wants.
 #

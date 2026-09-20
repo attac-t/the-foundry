@@ -13,8 +13,10 @@
 # judging its own branch against the bar is the shape the doctrine refuses.
 #
 # Usage: sh bin/audited.sh [<target>]     default target: origin/main
+#        sh bin/audited.sh audit          drive tests/audited.sh, and read no diff
 #
 # Exit: 0 the audit is warranted, 1 it cannot answer, 3 the comparison could not be made.
+#       Under `audit` the code is the suite's: 0 every case passed, 1 one did not.
 
 set -u
 

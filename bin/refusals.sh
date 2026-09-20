@@ -15,8 +15,10 @@
 # reworded message is a new refusal and should cost a row; a shifted line is not and should not.
 #
 # Usage: sh bin/refusals.sh <script>...
+#        sh bin/refusals.sh audit        drive tests/refusals.sh, and read no script
 #
 # Exit: 0 the sites are on stdout, 2 no script was named, 3 a named script could not be read.
+#       Under `audit` the code is the suite's: 0 every case passed, 1 one did not.
 
 set -eu
 
