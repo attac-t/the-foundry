@@ -3804,13 +3804,21 @@ exactly_one_host_takes_an_item() {
   printf '2026-01-01T00:00:00Z\t%s\t%s\n' "$(uname -n)" "$(date -u +%s)" > "$src/claims/71/held"
   young=$(cat "$src/claims/71/held")
 
-  is "a young claim is left alone" "$(code_of floor "$tmp/clm" claim)" "0"
-  is "and the stamp did not move"  "$(cat "$src/claims/71/held")"      "$young"
+  is    "a young claim is left alone"    "$(code_of floor "$tmp/clm" claim)" "0"
+  is    "and the stamp did not move"     "$(cat "$src/claims/71/held")"      "$young"
+  lacks "and it leaves no line to count" "$(floor "$tmp/clm" observe)"       "claim.renewed"
 
   printf '2026-01-01T00:00:00Z\t%s\t1767225600\n' "$(uname -n)" > "$src/claims/71/held"
 
   is    "an aged claim is kept" "$(code_of floor "$tmp/clm" claim)" "0"
   lacks "and its stamp moved"   "$(cat "$src/claims/71/held")"      "1767225600"
+
+  #
+  # **The line is the whole bound.** An open issue refuses a live but non-progressing worker
+  # renewing for ever merely by existing, and this renews on an edit. So the count goes in the
+  # record: a person reads how many times one host renewed and decides. Nobody names a limit.
+  has "and a renewal leaves a line to count" \
+      "$(floor "$tmp/clm" observe)" "claim.renewed	item=71"
 
   # Another host's claim is never re-stamped by this one. Keeping is the holder's alone.
   printf '2026-01-01T00:00:00Z\tOtherHost\t1767225600\n' > "$src/claims/71/held"

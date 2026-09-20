@@ -3321,7 +3321,19 @@ renew_this_run_claim() {
         return 0
     }
 
-    source_says claim "$item" "$(recording_host)" >/dev/null 2>&1
+    #
+    # **A renewal leaves a line, and that line is the whole bound.**
+    #
+    # An open issue refuses a live but non-progressing worker renewing for ever merely by existing,
+    # and this renews on an edit. **An edit is not progress.** So the count goes in the record and
+    # nobody has to name a limit: a person reads how many times one host renewed and decides.
+    #
+    # **It certifies that the host is alive and nothing more.** The hour already trusts exactly
+    # that — a claim nobody renews is broken after it. This never claims work happened, and a
+    # renewal that did would be the worker marking its own paper.
+    source_says claim "$item" "$(recording_host)" >/dev/null 2>&1 \
+        && emit "$dir" claim.renewed item="$item" age="$age"
+
     return 0
 }
 
