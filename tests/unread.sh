@@ -64,7 +64,7 @@ issues() { printf '%s\n' "$@" > "$tmp/fix/issues"; }
 
 # --- an issue the history names ---
 
-issues "$(printf '41\ta list nobody read')"
+issues "$(printf '0	41	a list nobody read')"
 commit "fix the thing" "Refs #41"
 
 out=$(read_it)
@@ -72,9 +72,23 @@ has  "an issue merged work names is listed"     "$out" "#41"
 has  "and the title comes with it"              "$out" "a list nobody read"
 is   "and it exits 1, because something owes a reading" "$(code_of)" "1"
 
+# --- both halves, counted ---
+#
+# **One number hid a pass.** On 20 September ten issues were read and nine gained a first tick, and
+# the untouched count fell by one because eight issues were filed the same day. A reader of that
+# alone would have said nothing happened.
+
+issues "$(printf '0	41	untouched')" "$(printf '1	42	already ticked')" "$(printf '0	43	untouched too')"
+both=$(read_it)
+
+has "the summary counts every open list"   "$both" "3 open lists"
+has "and says how many carry a tick"       "$both" "1 carry a tick"
+has "and how many carry none"              "$both" "2 carry none"
+lacks "and a ticked list is not on the report" "$both" "#42"
+
 # --- an issue nothing names ---
 
-issues "$(printf '41\ta list nobody read')" "$(printf '99\tnobody ever mentioned this')"
+issues "$(printf '0	41	a list nobody read')" "$(printf '0	99	nobody ever mentioned this')"
 out=$(read_it)
 lacks "an issue no commit names is not on the report" "$out" "#99"
 
@@ -85,7 +99,7 @@ has "the commit it found is printed, so the claim can be argued with" "$(read_it
 
 # --- more evidence than fits ---
 
-issues "$(printf '41\ta list nobody read')"
+issues "$(printf '0	41	a list nobody read')"
 commit "second"  "Refs #41"
 commit "third"   "Refs #41"
 commit "fourth"  "Refs #41"
@@ -151,7 +165,7 @@ lacks "and no row says anything is likely" "$rows" "look"
 
 # --- the floor ---
 
-issues "$(printf '41\ta list nobody read')"
+issues "$(printf '0	41	a list nobody read')"
 under=$( cd "$repo" && PATH="$tmp/bin:$PATH" FIX="$tmp/fix" FOUNDRY_UNREAD_FLOOR=99 sh "$root/bin/unread.sh" 2>&1 )
 lacks "a floor above the count drops the row"  "$under" "#41"
 has   "and says so rather than printing nothing" "$under" "has been read"
@@ -159,14 +173,14 @@ is    "and that is exit 0"                     "$( cd "$repo" && PATH="$tmp/bin:
 
 # --- nothing to read ---
 
-issues "$(printf '99\tnobody ever mentioned this')"
+issues "$(printf '0	99	nobody ever mentioned this')"
 none=$(read_it)
 has "no issue with work behind it reads as finished, not as broken" "$none" "has been read"
 is  "and exits 0"                                                   "$(code_of)" "0"
 
 # --- a target that is not here ---
 
-issues "$(printf '41\ta list nobody read')"
+issues "$(printf '0	41	a list nobody read')"
 gone=$(read_it no-such-branch)
 has "a target that is not a ref is named"  "$gone" "no-such-branch"
 is  "and refuses with 3"                   "$(code_of no-such-branch)" "3"
