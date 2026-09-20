@@ -117,6 +117,7 @@ yours to run when it applies:
 | | Costs | Run it when |
 |---|---|---|
 | `sh bin/agree.sh audit` | five minutes | you change what `agree` reads, or how |
+| `sh bin/taper.sh audit` | a second, measured | you change what `taper` reads, or the shape it grades |
 | the per-plugin tool check | seconds, in the matrix | a plugin starts reaching for something new |
 | three operating systems | a matrix nobody has locally | you touch anything a suite runs |
 | `sh bin/unticked.sh` | a minute, and it reaches GitHub | before you close an issue, and after a `Closes #N` merge |
