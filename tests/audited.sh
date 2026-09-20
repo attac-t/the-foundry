@@ -105,11 +105,38 @@ lacks "and the prose beside it is not"                    "$(asked)" "README.md"
 # **A name with no reason is an exemption nobody can argue with.** The list is typed because a
 # derived one would have to guess which root file reaches a clone — so the reason is the check on
 # the typing.
+#
+# **This read `^[.a-z/]+` and skipped every other name.** A capital, a digit, a dash or an
+# underscore fell outside the class, so `README.md`, `Dockerfile` and `bin/table-format.sh` could
+# each have been added with no reason and stayed green. Driven 20 September: a lowercase entry went
+# red and an uppercase one did not.
+#
+# **One awk, and no quote outside it.** The block opens on its own name and closes on a line of one
+# character. Everything between is an entry, whatever it is called, and a row of one field is a
+# name nobody gave a reason.
+names_with_no_reason() {
+  awk '
+    /^FORCES_AN_AUDIT=/ { inside = 1; next }
+    inside && /^.$/     { inside = 0; next }
+    inside && NF == 1   { print $1 }
+  ' "$1"
+}
 
-bare=$(awk '/^FORCES_AN_AUDIT=/, /^'"'"'$/' "$root/bin/audited.sh" |
-       grep -E '^[.a-z/]+' | awk 'NF < 2 { print $1 }')
+is "every exempt file says why it is there" "$(names_with_no_reason "$root/bin/audited.sh")" ""
 
-is "every exempt file says why it is there" "$bare" ""
+# Driven against a copy, because a case that edits the shipped script cannot run beside the ones
+# that read it.
+planted="$tmp/planted.sh"
+mkdir -p "$tmp"
+
+for name in README.md Dockerfile bin/table-format.sh compose.yaml; do
+  awk -v add="$name" '
+    { print }
+    /^[.]gitattributes/ && !seen { print add; seen = 1 }
+  ' "$root/bin/audited.sh" > "$planted"
+
+  is "a reasonless [$name] is caught" "$(names_with_no_reason "$planted")" "$name"
+done
 
 # --- the check sits under the bar it guards ---
 #
