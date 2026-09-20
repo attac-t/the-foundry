@@ -249,13 +249,26 @@ Measured 19 September: **ten of fourteen merges that day touched no file under `
 runs, and **`bin/audited.sh` itself, because a check that waives the bar sits under it**.
 
 **A waived audit is not twenty-five green. Twenty-five ran**, and one graded a smaller claim. The
-check prints the line a record carries, so a person never types it:
+runner prints that, and nobody types it:
 
 ```
-ALL GREEN, 25 of 25, audit waived: no file the audit reads (.foundry/doctrine.md)
+ALL GREEN, 25 of 25 ran, and graded a smaller claim: floor
 ```
 
-**`tests/audited.sh` grades this** — fifteen cases against real trees. A fixture of file names would
+**The plugin decides, not the worker.** Floor's suite reads the diff against the trunk the
+repository records, and says `NOBODY ASKED` at exit 4 when nothing under its own directory changed.
+`bin/gates.sh` reads that code as a pass that graded less.
+
+**Exit 4 is not exit 3.** Three says the audit could not run and should have, and it still fails. One
+code carrying both facts is how a skipped grade lands as a clean pass — which is what #920 was.
+
+**On the trunk it always runs.** A diff with itself is empty and would read as a waiver, and a full
+audit there is what catches a mutant whose guarding change merged waived.
+
+**`sh bin/audited.sh` decides nothing.** It tells a worker, before they spend the time, whether the
+audit can answer at all.
+
+**`tests/audited.sh` grades this** — sixteen cases against real trees. A fixture of file names would
 have graded the `case` arm and not the comparison, and the real-tree fixture caught a live bug: a
 `while read` on the right of a pipe runs in a subshell, so every clone-shaping file fell through.
 

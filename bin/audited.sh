@@ -53,13 +53,18 @@ main() {
     # graded less. That is a different count, and the delegate approving this said it must be said
     # out loud.
     #
-    # **Printed here, so nobody types it.** A waiver a person writes is a waiver a person can
-    # soften, and the line is the whole of what a reader has to tell the two apart.
+    # **This once printed the line for a person to copy into the record, and that was the fault
+    # #920 names.** A line a person types is a line a person can soften, and the runner could not
+    # produce the state it described — `gate()` read the plugin's exit 3 as a failure, so a branch
+    # that correctly skipped reported twenty-four of twenty-five.
+    #
+    # **The runner prints it now**, because the plugin says *nobody asked* in its own exit code and
+    # `bin/gates.sh` reads that. This tells a worker before they spend the time. It decides nothing.
     [ -n "$reached" ] || {
-        say "audited — no. Twenty-five gates still run, and one grades a smaller claim,"
-        say 'audited — so the record has to say which. Put this line in it, unedited:'
+        say 'audited — no. Every gate still runs, and one will grade a smaller claim.'
+        say 'audited — the runner prints that line itself. Nothing here is yours to copy.'
         say ''
-        say "ALL GREEN, 25 of 25, audit waived: no file the audit reads ($(one_line "$changed"))"
+        say "audited — nothing the audit reads changed: $(one_line "$changed")"
         exit 1
     }
 

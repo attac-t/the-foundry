@@ -17,6 +17,11 @@ cd "$root" || exit 1
 
 mode=${1:-run}
 failed=0
+ran=0
+
+# Gates that ran and graded less than their whole claim. Not failures, and not full passes either —
+# a reader has one line at the end to tell the two apart.
+lessened=
 
 # Empty until a gate fails. `keep` fills it, and nothing else ever makes it.
 logs=
@@ -139,9 +144,24 @@ gate() {
     rehearsed=''
     runs_against_a_stand_in "$name" && rehearsed=" — its own audit, not a live read"
 
+    ran=$((ran + 1))
+
     said=$("$@" 2>&1) && { printf '  PASS  %s%s\n' "$name" "$rehearsed"; return; }
 
     code=$?
+
+    #
+    # Exit 4 is the one code here that is not a failure. A suite says it when nothing this branch
+    # changed is anything that suite grades, so running it would answer about the bytes it answered
+    # about last time.
+    #
+    # **It is not exit 3.** That one says the suite could not run and should have, and it still
+    # fails. One code carrying both facts is how a skipped grade lands as a clean pass.
+    [ "$code" -eq 4 ] && {
+        printf '  PASS  %s — ran, and graded a smaller claim\n' "$name"
+        lessened="$lessened $name"
+        return
+    }
 
     printf '  FAIL  %s — %s (exit %s)
 ' "$name" "$(why_failed "$code")" "$code"
@@ -298,7 +318,19 @@ done
 
 printf '\n'
 
-[ "$failed" -eq 0 ] && { printf 'ALL GREEN\n'; exit 0; }
+#
+# **Not twenty-five green. Twenty-five ran**, and one of them graded less than its whole claim.
+#
+# A reader gets one line to tell those apart, so the line says it. `bin/audited.sh` used to print
+# words for a person to copy into the record, and a waiver a person types is a waiver a person can
+# soften — which is what #920 was.
+say_how_green() {
+    [ -n "$lessened" ] || { printf 'ALL GREEN\n'; return; }
+
+    printf 'ALL GREEN, %s of %s ran, and graded a smaller claim:%s\n' "$ran" "$ran" "$lessened"
+}
+
+[ "$failed" -eq 0 ] && { say_how_green; exit 0; }
 
 printf '%d RED\n' "$failed"
 [ -d "$logs" ] && printf 'kept in %s\n' "$logs"

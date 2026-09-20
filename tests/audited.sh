@@ -127,14 +127,16 @@ git -C "$repo" commit -qm "touch the check"
 
 is "the check that waives the audit is itself audited" "$(code)" "0"
 
-# --- a waiver says so, in words the check writes ---
+# --- a waiver names the files and hands nobody a line to copy ---
 #
-# **Twenty-five ran. Twenty-four graded their full claim, one graded less.** That is a different
-# count, and the gate prints it so a person never types it.
+# **This check used to print the record's line for a person to paste.** The runner could not produce
+# the state that line described, which is #920. So the words a record carries come from the runner
+# now, and this says only what it knows: nothing the audit reads changed.
 
 changed README.md 'changed'
-has "a waived audit prints the line a record carries" "$(asked)" "ALL GREEN, 25 of 25, audit waived:"
-has "and the line says which files waived it"        "$(asked)" "README.md"
+has   "a waiver says which files waived it" "$(asked)" "README.md"
+has   "and sends the reader to the runner"  "$(asked)" "the runner prints that line itself"
+lacks "and hands nobody a line to copy"     "$(asked)" "ALL GREEN"
 
 # --- a target that is not there ---
 

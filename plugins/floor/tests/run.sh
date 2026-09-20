@@ -788,6 +788,141 @@ refuse_to_audit_a_red_suite() {
 refuse_to_audit_a_red_suite
 
 #
+# The branch merged work lands on, as the repository records it.
+#
+# **`origin/HEAD` is what a clone writes down**, so the answer belongs to the repository and not to
+# whoever is running this. No variable is read here on purpose: a setting naming the trunk is a way
+# for a worker to point the question somewhere it comes back empty.
+#
+# **Nothing found means the audit runs.** A waiver that fires when the question cannot even be asked
+# is the silent failure this whole mechanism exists to avoid.
+the_trunk_of() {
+    for said in "$(git -C "$1" rev-parse --abbrev-ref origin/HEAD 2>/dev/null)" origin/main main; do
+        [ -n "$said" ] || continue
+        git -C "$1" rev-parse --verify --quiet "$said" >/dev/null 2>&1 || continue
+        printf '%s' "$said"
+        return 0
+    done
+    return 1
+}
+
+#
+# Whether the audit was asked for, about one directory. **Takes the tree**, so a case can drive it
+# against a real repository instead of asserting the reasoning.
+#
+# **Three ways to answer no, and each is the safe answer.** No trunk to compare with, the tree is the
+# trunk, or something under the directory changed. Only the last is the interesting one; the first
+# two are how a waiver fires when the question could not honestly be asked.
+nobody_asked_about() {
+    trunk=$(the_trunk_of "$1") || return 1
+
+    [ "$(git -C "$1" rev-parse HEAD 2>/dev/null)" \
+      = "$(git -C "$1" rev-parse "$trunk" 2>/dev/null)" ] && return 1
+
+    git -C "$1" diff --quiet "$trunk" HEAD -- . 2>/dev/null
+}
+
+#
+# Whether anybody asked for this audit.
+#
+# It copies this plugin, mutates the runner, and asks whether the suite notices. **A branch changing
+# nothing here mutates the same bytes as the branch before it**, and pays forty minutes to be told
+# what it already knew. Measured 19 September: ten of fourteen merges touched no file under this
+# plugin, and every one of them ran the whole thing.
+#
+# **It reads the diff itself and takes no argument.** A flag would be a way for a worker to waive its
+# own bar, and the delegate who approved this refused that shape by name.
+#
+# **Order is the guard.** It runs after the cases and after the red-suite refusal, so a red suite on
+# a branch that changes nothing still fails. Nothing is proved either way, and the failure is the
+# louder fact.
+#
+# **On the trunk it always runs**, because the diff against itself is empty and would read as a
+# waiver. A full audit there is what catches a mutant whose guarding change merged waived.
+#
+# Exit 4, and it is deliberately not 3. *Nobody asked* and *it could not run* are different facts,
+# and one code carrying both is how a skipped audit lands as a clean pass.
+#
+# Driven against real repositories, because the whole decision is one `git diff` and a fixture of
+# filenames would grade the reasoning instead of git.
+asks_for_the_audit() {
+    said=no; nobody_asked_about "$2" && said=yes
+
+    [ "$said" = "$3" ] && { printf '  ok    %s\n' "$1"; return; }
+    bad "$1 — want [$3], got [$said]"
+}
+
+#
+# A repository shaped like this one: a trunk, a plugin directory, and a branch off the trunk.
+a_tree_like_ours() {
+    made=$tmp/asked/$1
+    mkdir -p "$made/plugins/floor" "$made/docs"
+
+    git -C "$made" init -q
+    git -C "$made" config user.email fixture@example.invalid
+    git -C "$made" config user.name fixture
+    git -C "$made" checkout -q -b main
+
+    printf 'seed\n' > "$made/plugins/floor/run.sh"
+    printf 'seed\n' > "$made/docs/page.md"
+    git -C "$made" add -A
+    git -C "$made" commit -qm seed
+
+    printf '%s' "$made"
+}
+
+nobody_asked_reads_the_diff() {
+    mkdir -p "$tmp/asked"
+
+    prose=$(a_tree_like_ours prose)
+    git -C "$prose" checkout -q -b side
+    printf 'more\n' >> "$prose/docs/page.md"
+    git -C "$prose" commit -qam prose
+    asks_for_the_audit 'a branch touching no plugin file asked for nothing' "$prose/plugins/floor" yes
+
+    inside=$(a_tree_like_ours inside)
+    git -C "$inside" checkout -q -b side
+    printf 'more\n' >> "$inside/plugins/floor/run.sh"
+    git -C "$inside" commit -qam inside
+    asks_for_the_audit 'a branch touching a plugin file asked for it' "$inside/plugins/floor" no
+
+    #
+    # **The trunk always asks.** Its diff against itself is empty, which reads exactly like a branch
+    # that changed nothing — and a full audit on the trunk is what catches a mutant whose guarding
+    # change merged waived.
+    asks_for_the_audit 'the trunk asks, because a diff with itself is empty' \
+                       "$(a_tree_like_ours trunk)/plugins/floor" no
+
+    #
+    # **No trunk means run it.** A waiver that fires when the question cannot be asked is the silent
+    # failure the whole mechanism exists to avoid.
+    lost=$tmp/asked/lost
+    mkdir -p "$lost/plugins/floor"
+    git -C "$lost" init -q
+    git -C "$lost" config user.email fixture@example.invalid
+    git -C "$lost" config user.name fixture
+    git -C "$lost" checkout -q -b wip
+    printf 'seed\n' > "$lost/plugins/floor/run.sh"
+    git -C "$lost" add -A
+    git -C "$lost" commit -qm seed
+
+    asks_for_the_audit 'a repository with no trunk asks, rather than waiving' "$lost/plugins/floor" no
+}
+nobody_asked_reads_the_diff
+
+say_if_nobody_asked() {
+    nobody_asked_about "$root" || return 0
+
+    printf 'audit — not run, and nobody asked for it. This branch changes no file under %s.\n' \
+           "${root##*/}"
+    printf 'audit — the audit mutates this plugin, so it would grade the bytes it graded last time.\n'
+    printf 'audit — that is a smaller claim than usual, and the runner says so rather than a person.\n'
+    printf 'NOBODY ASKED\n'
+    exit 4
+}
+say_if_nobody_asked
+
+#
 # The cases, and they run here rather than only when somebody asks for them.
 #
 # Eight patches pinned to exact context in `bin/run.sh`, and the commit under this one is `8199270`
