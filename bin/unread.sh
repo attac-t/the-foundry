@@ -2,9 +2,12 @@
 #
 # Open issues whose `## Done when` list nobody has ever ticked, and that merged work names.
 #
-# Measured 20 September: 178 of 210 open issues carry a list with not one tick. Two read by hand
-# that day were substantially built — one nine boxes of nine, with twelve driven cases, and one four
-# of ten. Neither said so, so both read as work nobody had started.
+# Measured when this was built, 20 September: 178 of 210 open issues carried a list with not one
+# tick. Two read by hand that day were substantially built — one nine boxes of nine, with twelve
+# driven cases, and one four of ten. Neither said so, so both read as work nobody had started.
+#
+# **The current figures are the report's own first line**, and this one is history. A number in a
+# header goes stale the day after it is written, which is the fault the whole page is about.
 #
 # `.claude/rules/closing.md` names the shape: their boxes were not failing, they were unread.
 #
@@ -45,7 +48,7 @@ main() {
     refuse_without_the_target
 
     history_names_issues > "$named"
-    issues_with_no_tick  > "$blank" || exit 3
+    issues_with_a_list   > "$blank" || exit 3
 
     report
 }
@@ -94,25 +97,35 @@ history_names_issues() {
 }
 
 #
-# Open issues carrying at least one unticked box and no ticked one, as `number<TAB>title`.
+# Every open issue carrying a list, as `ticked<TAB>number<TAB>title`, where ticked is 1 or 0.
 #
 # **REST, and that is not a preference.** GraphQL is the bucket a room full of workers empties
 # first, and on 18 September every call through it was refused for hours while REST sat untouched.
 # `select(has("pull_request") | not)` because REST counts a request as an issue and `gh issue` does
 # not.
-issues_with_no_tick() {
+#
+# **Both halves, because one count hid a pass.** On 20 September ten issues were read and nine
+# gained a first tick. The untouched count fell by one, because eight issues were filed the same
+# day. A reader of that number alone would have said nothing happened.
+#
+# So this carries the tick state too, and `report` says how many lists have been touched at all. A
+# single figure cannot say which half moved — that is the page's own lesson, met by its own
+# measure.
+issues_with_a_list() {
     gh api "repos/{owner}/{repo}/issues?state=open&per_page=100" --paginate \
        --jq '.[]
              | select(has("pull_request") | not)
-             | select((.body // "") | test("(^|\n)\\s*- \\[ \\] "))
-             | select((.body // "") | test("(^|\n)\\s*- \\[[xX]\\] ") | not)
-             | "\(.number)\t\(.title)"' 2>/dev/null
+             | select((.body // "") | test("(^|\n)\\s*- \\[[ xX]\\] "))
+             | (if ((.body // "") | test("(^|\n)\\s*- \\[[xX]\\] ")) then "1" else "0" end) as $t
+             | "\($t)\t\(.number)\t\(.title)"' 2>/dev/null
 }
 
 #
 # A row per issue, most-named first, so the top of the list is where to look.
 report() {
     rows=$(joined | sort -rn) || rows=
+
+    say_both_halves
 
     [ -n "$rows" ] || {
         say 'unread — every open list with work behind it has been read'
@@ -130,6 +143,17 @@ report() {
     exit 1
 }
 
+#
+# **Two numbers, because one of them hid a pass.** Read the untouched count alone on a day when
+# issues were also filed, and a real reading looks like nothing. Both together cannot lie that way.
+say_both_halves() {
+    untouched=$(awk -F"$TAB" '$1 == "0"' "$blank" | grep -c .) || untouched=0
+    touched=$(awk -F"$TAB" '$1 == "1"' "$blank" | grep -c .)   || touched=0
+
+    say "unread — $(( untouched + touched )) open lists: $touched carry a tick, $untouched carry none."
+    say ''
+}
+
 # Three is enough to argue with. The count above says how many more there are.
 first_few() {
     set -- $1
@@ -139,7 +163,9 @@ first_few() {
 
 # One pass over each file, because an issue nothing names is not on this report at all.
 joined() {
-    while IFS="$TAB" read -r number title; do
+    while IFS="$TAB" read -r ticked number title; do
+        [ "$ticked" = 0 ] || continue
+
         found=$(named_row "$number")
         [ -n "$found" ] || continue
 
