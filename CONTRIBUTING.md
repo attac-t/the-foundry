@@ -121,6 +121,7 @@ yours to run when it applies:
 | three operating systems | a matrix nobody has locally | you touch anything a suite runs |
 | `sh bin/unticked.sh` | a minute, and it reaches GitHub | before you close an issue, and after a `Closes #N` merge |
 | `sh bin/audited.sh` | a second | before you grade, to learn whether floor's audit can answer at all |
+| `sh bin/unread.sh` | a minute, and it reaches GitHub | weekly, and before you pick up work that may already be done |
 
 **It counts a box at the start of a line, and never one quoted in prose.** An issue explaining why
 a box was struck quotes it, and unanchored that read as debt: #494 counted ten and holds seven,
@@ -129,6 +130,22 @@ either.
 
 **`tests/unticked.sh` grades this** — nineteen cases, and six breaks go red. The sweep is not a
 gate, because it reaches the network, so nothing else does.
+
+### An open list is the other half, and nothing read it
+
+`unticked` reads closed issues. `ticks.sh` fires after a merge and `closes.sh` just before one.
+**All three act at closure**, so an issue that was finished and never closed fell through every one.
+
+Measured 20 September: **178 of 210 open issues carry a list with not one tick.** Two read by hand
+that day were substantially built and neither said so.
+
+`sh bin/unread.sh` names the ones merged work points at, ranked by how much, with the commits it
+found. **It never ticks and never says a box is met.** A report that judges a box has to decide what
+*blocks delivery* means and which file holds it, and a wrong *this looks met* is how a box gets
+ticked without being checked. The owner delegate refused that shape and approved this one.
+
+**`tests/unread.sh` grades this** — twenty-three cases against real trees, and three breaks go red:
+restoring `--first-parent`, dropping the commit dedupe, and letting a row claim a box is met.
 
 **It says what its window missed.** The default reads the last sixty closed issues, and this tree
 holds a hundred and sixty-six. Seven and forty-four are both true, so the line names the number it
