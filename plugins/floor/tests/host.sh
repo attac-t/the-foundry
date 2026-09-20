@@ -202,8 +202,14 @@ home=$tmp/cfg
 offered() {
   mkdir -p "$home/plugins" "$1/.claude-plugin"
 
-  printf '%s\n' '{' '  "x": {' "    \"installLocation\": \"$1\"" '  }' '}' \
-    > "$home/plugins/known_marketplaces.json"
+  if [ -n "${2:-}" ]; then
+    printf '%s\n' '{' '  "x": {' '    "source": {' "      \"source\": \"$2\"" \
+      "      ,\"repo\": \"${3:-}\"" '    },' "    \"installLocation\": \"$1\"" '  }' '}' \
+      > "$home/plugins/known_marketplaces.json"
+  else
+    printf '%s\n' '{' '  "x": {' "    \"installLocation\": \"$1\"" '  }' '}' \
+      > "$home/plugins/known_marketplaces.json"
+  fi
 
   printf '%s\n' '{' '  "name": "x",' '  "plugins": [' '    {' \
     '      "name": "floor",' '      "source": "./plugins/floor"' '    }' '  ]' '}' \
@@ -224,6 +230,24 @@ lacks "one install per version counts none" "$behind" "in 1 places"
 installed 1.0.0 0.0.1 9.9.9
 several=$( cd "$tmp/one" && CLAUDE_CONFIG_DIR="$home" FOUNDRY_WHO=a@b sh "$join" 2>&1 )
 has "every version registered is named" "$several" "this host has 0.0.1,1.0.0,9.9.9 registered"
+
+#
+# **Where `ships` came from, because the number alone reads as settled.** A directory source is the
+# working tree, so a pull takes whatever branch is checked out — and on 20 September one took a
+# version only an open branch carried, with nothing on this page saying it could.
+offered "$tmp/one" directory
+astree=$( cd "$tmp/one" && CLAUDE_CONFIG_DIR="$home" FOUNDRY_WHO=a@b sh "$join" 2>&1 )
+has "a directory source says a pull takes the tree" "$astree" "on whatever branch"
+
+offered "$tmp/one" github acme/plugins
+asrepo=$( cd "$tmp/one" && CLAUDE_CONFIG_DIR="$home" FOUNDRY_WHO=a@b sh "$join" 2>&1 )
+has   "another kind is named with where it points" "$asrepo" "github acme/plugins"
+lacks "and says nothing about a branch"            "$asrepo" "on whatever branch"
+
+# A record that does not say is `say_a_marketplace_with_no_home`'s subject, never this line's.
+offered "$tmp/one"
+silent=$( cd "$tmp/one" && CLAUDE_CONFIG_DIR="$home" FOUNDRY_WHO=a@b sh "$join" 2>&1 )
+lacks "a record with no source says nothing here" "$silent" "A pull takes"
 
 #
 # **Two keys on one line is legal, and counting fields reads the first value on it.** `version_in`

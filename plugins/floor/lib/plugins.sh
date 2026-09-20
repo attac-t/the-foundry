@@ -50,6 +50,8 @@ report_plugins_this_host_registered() {
         offered=$(plugins_offered_by "$where") \
             || { say_a_marketplace_with_no_manifest "$market" "$where"; continue; }
 
+        say_where_a_marketplace_reads_from "$market"
+
         for named in $offered; do
             seen=$((seen + 1))
             say_a_plugin_that_drifted "$where" "$named"
@@ -83,6 +85,41 @@ say_nothing_was_installed() {
 # plugins behind it cannot be read and skipping said so to nobody.
 say_a_marketplace_with_no_home() {
     say "        $1 — this host registered from it, and nothing says where it lives"
+}
+
+#
+# **A directory source is the working tree, and `ships` then means whatever is checked out.** On
+# 20 September a pull installed a version only an open branch carried, and nothing on this page
+# said where the number came from. The reader has no way to guess.
+#
+# Silent when the record cannot say. An absence here is `say_a_marketplace_with_no_home`'s subject.
+say_where_a_marketplace_reads_from() {
+    read_from=$(marketplace_source "$1")
+    kind=${read_from%%"$(printf '\t')"*}
+    [ -n "$kind" ] || return 0
+
+    [ "$kind" = directory ] \
+        && say "        $1 — a directory. A pull takes whatever this tree holds, on whatever branch" \
+        || say "        $1 — $kind ${read_from#*"$(printf '\t')"}"
+}
+
+#
+# What the harness recorded as the source, as `kind<TAB>name`. The name is empty for a directory,
+# because `marketplace_location` already answers where that one lives.
+#
+# **`exit` runs `END`**, so the next marketplace key ends the read and the block still prints.
+marketplace_source() {
+    known="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plugins/known_marketplaces.json"
+
+    [ -r "$known" ] || return 1
+
+    awk -F'"' -v want="$1" '
+        /^  "/ && $2 == want             { hit = 1; next }
+        hit && /^  "/                    { exit }
+        hit && $2 == "source" && NF >= 4 { kind = $4 }
+        hit && $2 == "repo"              { name = $4 }
+        END                              { print kind "\t" name }
+    ' "$known"
 }
 
 # The third of the same silence, and the one both verbs shared. A home that resolves and a manifest
