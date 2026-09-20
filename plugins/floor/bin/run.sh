@@ -3319,15 +3319,42 @@ CLAIM_FLOOR=${FOUNDRY_CLAIM_FLOOR:-3}
 #
 # Silent and exit 0 whatever happens. The caller is a hook firing after an edit, and a claim that
 # could not be re-stamped must never be the reason an edit reports a failure.
+#
+# **The throttle was in the source, and the source is a network away.** Every fire asked
+# `source_says held` before deciding it was too early, so a run holding an item paid a
+# `git ls-remote` each time. That was affordable only because almost no run binds an item.
+#
+# A local mark costs a `stat` and answers the same question, so the caller may fire far more often
+# than an edit — which is what #859 needs, because a host waiting on a grade makes no edit at all.
+#
+# **It is a floor, never a ceiling.** Losing the mark costs one extra source read, and the source
+# still decides whether the claim is really due.
+kept_recently() {
+    mark="$1/claim.kept"
+
+    [ -f "$mark" ] || return 1
+
+    now=$(date +%s 2>/dev/null)            || return 1
+    was=$(date -r "$mark" +%s 2>/dev/null) || return 1
+
+    [ "$(( now - was ))" -lt "$(( CLAIM_TTL / CLAIM_FLOOR ))" ]
+}
+
+# Written on every path that settled the question, so a decision of *not yet* costs as little as a
+# renewal does.
+mark_kept() { : > "$1/claim.kept" 2>/dev/null || true; }
+
 renew_this_run_claim() {
     dir=$(active_run) || return 0
     item=$(item_id "$dir")
     [ -n "$item" ] || return 0
 
+    kept_recently "$dir" && return 0
+
     held=$(source_says held "$item") || return 0
     age=$(claim_age "$held")         || return 0
 
-    [ "$age" -gt "$(( CLAIM_TTL / CLAIM_FLOOR ))" ] || return 0
+    [ "$age" -gt "$(( CLAIM_TTL / CLAIM_FLOOR ))" ] || { mark_kept "$dir"; return 0; }
 
     #
     # **Somebody else holds it, and this is where that is found out.** Before this the first host
@@ -3352,7 +3379,7 @@ renew_this_run_claim() {
     # that — a claim nobody renews is broken after it. This never claims work happened, and a
     # renewal that did would be the worker marking its own paper.
     source_says claim "$item" "$(recording_host)" >/dev/null 2>&1 \
-        && emit "$dir" claim.renewed item="$item" age="$age"
+        && { mark_kept "$dir"; emit "$dir" claim.renewed item="$item" age="$age"; }
 
     return 0
 }
