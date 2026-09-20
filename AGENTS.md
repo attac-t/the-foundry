@@ -17,6 +17,7 @@ the rule — open the file.
 - `.claude/rules/consulting.md` — What to send a second model, and what you already hold
 - `.claude/rules/context.md` — What a summary loses, and what to read again before carrying on
 - `.claude/rules/economy.md` — Say more with less. Do more with less
+- `.claude/rules/faults.md` — What to do when you were wrong, and who is cheapest to hear it from
 - `.claude/rules/guidance.md` — Anything an agent should know, before you decide where to put it
 - `.claude/rules/identity.md` — Who the record says did the work
 - `.claude/rules/plugins.md` — What a plugin owes when it changes

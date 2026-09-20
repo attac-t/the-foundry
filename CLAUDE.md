@@ -27,6 +27,7 @@ in your context, read it.
 | [consulting](.claude/rules/consulting.md) | What to send a second model, and what you already hold |
 | [context](.claude/rules/context.md) | What a summary loses, and what to read again before carrying on |
 | [economy](.claude/rules/economy.md) | Say more with less. Do more with less |
+| [faults](.claude/rules/faults.md) | What to do when you were wrong, and who is cheapest to hear it from |
 | [guidance](.claude/rules/guidance.md) | Anything an agent should know, before you decide where to put it |
 | [identity](.claude/rules/identity.md) | Who the record says did the work |
 | [plugins](.claude/rules/plugins.md) | What a plugin owes when it changes |
