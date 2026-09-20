@@ -281,6 +281,15 @@ what this table is for. Three rows below still say it, and each of those is true
 | a question reaches a person and comes back | none yet |
 | end-to-end work runs without a hand at some step | [#736](https://github.com/attac-t/the-foundry/issues/736) |
 | the same core path works through a second harness | [#738](https://github.com/attac-t/the-foundry/issues/738) |
+| a repository brings its own opinion | [#519](https://github.com/attac-t/the-foundry/issues/519) |
+
+**Two principles landed on 19 September and only one of them is checked.** *The core names no host
+and no vendor* holds and two gates read it. *A repository brings its own opinion* does not, and it
+had no row here until today — a reader of the doctrine alone would have taken it for a fact.
+
+**What it would take.** A capability states what it expects a repository to own, and #519 holds four
+boxes for that, none ticked. Nothing can say what a setting is or where it came from, which is #791
+at none of six.
 
 ## How far each promise has got
 
