@@ -324,4 +324,28 @@ the_receipt_vocabulary_agrees_everywhere() {
 }
 the_receipt_vocabulary_agrees_everywhere
 
+#
+# **The stranded report, both ways round.** A hook that speaks on a moving host is noise, and one
+# that stays silent on a stopped one is the whole fault #574 names.
+#
+# `evidence` is what makes a run `graded`, and `graded` is in flight. Backdating the tree is what
+# makes it quiet: `settled` subtracts anything touched under `units` inside the bar, so a run made
+# seconds ago is live however old its `observations` says it is.
+the_stranded_report_speaks_only_when_something_stopped() {
+  is "stranded is silent while nothing is in flight"      "$(fire stranded.sh '{"source":"startup"}')" ""
+
+  stopped=$(make_run_in "$tmp/bare" "Stopped Moving")     || { skip "the stranded report — no run could be made here"; return; }
+
+  printf 'gate	pass
+' > "$stopped/evidence"
+  find "$stopped" -exec touch -t 202001010000 {} + 2>/dev/null
+
+  spoke=$(fire stranded.sh '{"source":"startup"}')
+
+  has "stranded speaks when a run stopped moving" "$spoke" "stopped moving"
+  has "and says how many, not which"              "$spoke" "one run here has"
+  lacks "so the id stays in the report it belongs to" "$spoke" "$(basename "$stopped")"
+}
+the_stranded_report_speaks_only_when_something_stopped
+
 summary "install"

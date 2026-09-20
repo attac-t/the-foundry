@@ -33,6 +33,17 @@
             "timeout": 10
           }
         ]
+      },
+      {
+        "matcher": "startup|resume|clear|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/stranded.sh\"",
+            "shell": "bash",
+            "timeout": 10
+          }
+        ]
       }
     ],
     "PostToolUse": [
