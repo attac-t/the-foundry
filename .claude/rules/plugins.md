@@ -31,6 +31,23 @@ stdin or stdout is not a TTY.
 claude plugin update kernel@the-foundry -y
 ```
 
+## What a pull reads from is the host's record, never this repository's
+
+A checkout can declare `source: github` while the machine has that same marketplace registered as a
+**directory pointing at the checkout itself**. The host's record is the one a pull obeys, and
+nothing else says so.
+
+**Then a pull takes the working tree, on whatever branch is out.** It happened here on 20 September:
+`floor 0.87.1` installed from an open branch while that branch's audit was still running at 250 of
+273 breaks. It graded green ten minutes later. A red one would have installed the same way.
+
+```sh
+sh plugins/floor/lib/plugins.sh declared .
+```
+
+Silent when the two agree, and it names both when they do not. **Ask it before you pull on a
+branch.** [#943](https://github.com/attac-t/the-foundry/issues/943) owns the rest.
+
 **What needs a person is the restart, not the pull.** The command says so: *restart required to
 apply*. A session keeps the skills it loaded, and no pull reaches them.
 
