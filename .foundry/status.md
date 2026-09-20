@@ -264,6 +264,12 @@ link found a closed page and read the gap as handled. `#343` shipped the guard t
 person here; `#359` measured that the identity is an admin and the provider refuses nothing.
 Both are true, both are done, and neither closes the line above it.
 
+**And one said nobody owned it while the board's own measure did.** *End-to-end work runs without a
+hand at some step* read `none yet` here. #736 has owned exactly that claim, as a number — issues
+completing the whole path with no operator commands, currently zero against a threshold of one.
+**A row saying nobody owns a gap sends the next reader to file a synonym**, which is the opposite of
+what this table is for. Three rows below still say it, and each of those is true.
+
 | Not true today | Owner |
 |---|---|
 | a worker reads the doctrine pinned at its base | [#274](https://github.com/attac-t/the-foundry/issues/274) |
@@ -273,7 +279,7 @@ Both are true, both are done, and neither closes the line above it.
 | acceptance can be withheld | **none yet.** [#359](https://github.com/attac-t/the-foundry/pull/359) is merged and only measured it |
 | the record outlives the run directory | [#337](https://github.com/attac-t/the-foundry/issues/337) closed 9 September, six of six. **It asked whether a reader who was not there catches a forged record, which is not this row.** Nothing named owns the row today |
 | a question reaches a person and comes back | none yet |
-| end-to-end work runs without a hand at some step | none yet |
+| end-to-end work runs without a hand at some step | [#736](https://github.com/attac-t/the-foundry/issues/736) |
 | the same core path works through a second harness | [#738](https://github.com/attac-t/the-foundry/issues/738) |
 
 ## How far each promise has got
