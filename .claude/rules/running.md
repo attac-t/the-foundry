@@ -27,8 +27,11 @@ thinks to look one up.
 | | |
 |---|---|
 | a restart finds the work | the checkout points at its run in `.git/foundry-run`, so a fresh shell picks it up |
-| two workers cannot own one item | a claim is a directory, and the second `mkdir` fails |
 | the record outlives the session | a run is not in the chat and not in the tree |
+
+**Exclusivity is not on that list, and it used to be.** `run.sh claim <item>` refuses a second
+holder, proved at 1,000 rounds and 1,000 single winners. **`new` never calls it.** So opening a run
+buys none of that.
 
 **A sentence saying you started is not a start.** The run is.
 
@@ -41,8 +44,18 @@ Filing an issue is not acting on it. **Working on one is.**
 
 ## What a run needs after `new`
 
-**A bare run is enough, and it is enough for one thing only.** It claims the item, survives a
-restart, and records that work began. That is the whole of what `new` does.
+**A bare run is enough, and it is enough for two things.** It survives a restart, and it records
+that work began. That is the whole of what `new` does.
+
+**It does not claim anything, and this page said for six days that it did.** `new` writes the title
+and emits `run.began`. Nothing else.
+
+A claim is renewed through the item a run holds. An item is bound by `run.sh source read <item>`,
+and **3 of 192 runs here hold one.**
+
+**So the documented path buys no exclusivity.** Two workers can open a run for the same work and
+neither is refused. [#925](https://github.com/attac-t/the-foundry/issues/925) owns whether that
+changes or whether the page simply stops promising it.
 
 **It cannot say what the work proved.** Nothing reads a workspace and works that out.
 
