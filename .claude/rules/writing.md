@@ -7,8 +7,11 @@ Anything written down, not just replies — a reader came to understand, to act 
 nowhere else.
 
 **Nothing measures it, and this file does not meet it.** Signal's scorer reads any file. Run against
-every document here — the root files, the plugin READMEs and the rules — **the ones that pass are the exception.**
-Twelve warn and three block. This one warns, at 11% long words and a 29-word sentence.
+every document here — the root files, the plugin READMEs and the rules — **the ones that pass are the
+exception.**
+
+Measured 20 September: **five of twenty-nine pass, twenty-three warn, one blocks.** The blocker is
+`plugins/floor/README.md`. This one warns, at 8.7% long words and a 21-word sentence.
 
 ```sh
 awk -f plugins/signal/lib/score.awk -v words_warn=99999 -v words_block=99999     -v asks_warn=99999 < FILE
