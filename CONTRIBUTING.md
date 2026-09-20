@@ -125,6 +125,7 @@ yours to run when it applies:
 | `sh bin/unread.sh` | a minute, and it reaches GitHub | weekly, and before you pick up work that may already be done |
 | `sh bin/ships.sh <word>` | a second | **before you say this repository lacks a thing** |
 | `sh bin/unlisted.sh` | a minute, and it reaches GitHub | before you point at a closed issue as if it owned something |
+| `sh bin/stale.sh` | twenty seconds, and it reaches GitHub | before you publish a page that cites issues, and after you close one |
 
 **It counts a box at the start of a line, and never one quoted in prose.** An issue explaining why
 a box was struck quotes it, and unanchored that read as debt: #494 counted ten and holds seven,
@@ -147,6 +148,16 @@ says you may now claim it.
 
 **`tests/ships.sh` grades this** — seventeen cases against a fixture of all three homes, and two
 breaks go red: blinding it to skills, and letting it answer about itself.
+
+### The gate proves the detector, never the page
+
+**`stale` and `comments` grade an offline audit**, because both read GitHub and `plugins.md`
+refuses a gate that goes red on a train. So `ALL GREEN` says the detector works. It says nothing
+about what the page currently claims.
+
+**That is not theory.** On 20 September `sh bin/stale.sh` was red on `main` — three closed
+issues cited as open work — while every run of the gate said green. The live read had no row
+here, so nobody owed it.
 
 ### A closed issue is not an owner
 
