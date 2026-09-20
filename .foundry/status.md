@@ -284,7 +284,8 @@ what this table is for. Three rows below still say it, and each of those is true
 | a repository brings its own opinion | [#519](https://github.com/attac-t/the-foundry/issues/519) |
 
 **Two principles landed on 19 September and only one of them is checked.** *The core names no host
-and no vendor* holds and two gates read it. *A repository brings its own opinion* does not, and it
+and no vendor* holds, and `hosts`, `judges` and `providers` read it — one for what Foundry runs on
+and two for what answers it. *A repository brings its own opinion* does not, and it
 had no row here until today — a reader of the doctrine alone would have taken it for a fact.
 
 **What it would take.** A capability states what it expects a repository to own, and #519 holds four
