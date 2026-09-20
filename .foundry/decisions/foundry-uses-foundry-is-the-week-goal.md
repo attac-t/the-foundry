@@ -59,3 +59,26 @@ rather than a decision — the owner said *the next week* and named no date.
 **Whether this lapses, renews or becomes standing is unsettled**, and only the owner settles it. A
 goal that quietly outlives its week is the same fault as a box nobody ticks: it stops being checked
 and nobody notices.
+
+## Renewed a third time, 20 September 2026
+
+Their words, exact and unedited.
+
+> Renew the goal
+
+**No day was named, and the two renewals before it each ran a week**, so the goal now reads 28
+September. That is arithmetic and one word changes it.
+
+**The 14 September renewal is not in this file.** The goal records it and its words were never
+written down here. Recording a decision after the fact from memory would be the forgery this page
+exists to prevent, so it stays absent and named as absent.
+
+### What this settles
+
+The goal runs a third week. Nothing else changed: the conditions, the amendments and the standard
+are as they were.
+
+### What it does not settle
+
+**Whether the unmet conditions are still the right ones.** Two want a second physical machine and
+the third is ungateable. A renewal keeps the goal; it does not re-argue it.

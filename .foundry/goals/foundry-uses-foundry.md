@@ -15,8 +15,14 @@ Done when:
 - [ ] That machine grades what this one grades, and the two agree.
 - [ ] The plugins are pulled after every bump, so the session runs what the tree says. — **ungateable**, and the table below already says which half is which. The pull holds: `plugins.sh session` exits 0 and says nothing. **The second half is unobservable** — nothing inside a session can say which copy it loaded. `closing.md` asks for the word, and this is it.
 
-State: **renewed to 21 September 2026**, by the owner, on 14 September. In force from 7 September,
-so this is the second week.
+State: **renewed to 28 September 2026**, by the owner, on 20 September. In force from 7 September,
+so this is the third week.
+
+**The date is arithmetic, not a decision.** They said *renew the goal* and named no day, and the two
+renewals before it each ran a week. One word changes it.
+
+**What remains is not work.** Two of the three unmet conditions want a second physical machine and
+nothing else — the image is built and driven here. The third is marked `ungateable` above.
 
 **The first week is closed and not met.** Three conditions held, one agrees by hand, three are
 unmet — and two of those three want a second physical machine and nothing else. The renewal is a
