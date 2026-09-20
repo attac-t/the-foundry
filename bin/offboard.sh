@@ -28,19 +28,20 @@ set -eu
 readonly BOARD="${FOUNDRY_BOARD:-1}"
 readonly carried="${TMPDIR:-/tmp}/offboard-carried.$$"
 readonly open_now="${TMPDIR:-/tmp}/offboard-open.$$"
+readonly why="${TMPDIR:-/tmp}/offboard-why.$$"
 
 note() { printf '%s\n' "$*" >&2; }
 say()  { printf '%s\n' "$*"; }
 
 main() {
-    trap 'rm -f "$carried" "$open_now"' EXIT
+    trap 'rm -f "$carried" "$open_now" "$why"' EXIT
 
     refuse_without_a_forge
 
     owner=$(owner_in_origin) || refuse_without_an_owner
 
-    numbers_the_board_carries "$owner" > "$carried" || refuse_a_half_that_would_not_read board
-    numbers_open_here                  > "$open_now" || refuse_a_half_that_would_not_read issue
+    numbers_the_board_carries "$owner" > "$carried" 2> "$why" || refuse_a_half_that_would_not_read board
+    numbers_open_here                  > "$open_now" 2>> "$why" || refuse_a_half_that_would_not_read issue
 
     refuse_an_empty_board
 
@@ -61,8 +62,17 @@ refuse_without_an_owner() {
     exit 3
 }
 
+#
+# **The forge said why, and this threw it away.** A board read refused for a missing `read:project`
+# scope reads exactly like a rate limit, and both read like a network that is down. Three different
+# remedies, one sentence, and the person who hit it spent two retries finding out.
+#
+# `gh` writes that reason to stderr, so carrying it costs a file and no judgement.
 refuse_a_half_that_would_not_read() {
     note "offboard — the $1 half could not be read. Nothing was judged"
+
+    [ -s "$why" ] && sed 's/^/offboard — /' "$why" >&2
+
     exit 3
 }
 
@@ -88,14 +98,14 @@ owner_in_origin() {
 # one of these, which is why the field is asked for rather than counted.
 numbers_the_board_carries() {
     gh project item-list "$BOARD" --owner "$1" --format json --limit 500 \
-       --jq '.items[] | .content.number // empty' 2>/dev/null
+       --jq '.items[] | .content.number // empty'
 }
 
 # `select(has("pull_request") | not)` because REST counts a request as an issue and the board holds
 # both. A request is not the front door's subject.
 numbers_open_here() {
     gh api "repos/{owner}/{repo}/issues?state=open&per_page=100" --paginate \
-       --jq '.[] | select(has("pull_request") | not) | "\(.number)\t\(.title)"' 2>/dev/null
+       --jq '.[] | select(has("pull_request") | not) | "\(.number)\t\(.title)"'
 }
 
 #

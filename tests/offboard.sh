@@ -106,6 +106,48 @@ issues "$(printf '41\tone')"
 is  "an empty board refuses rather than blaming every issue" "$(code_of)" "3"
 has "and says the read may have been refused"                "$(said)" "the read was refused"
 
+# --- a half that would not read says why ---
+#
+# **A refused read and a refused scope are the same empty answer**, and so is a network that is
+# down. Three remedies, one sentence. The reason is on the forge's own stderr, so throwing it away
+# costs the reader two retries — which it did, on 20 September, for a missing `read:project`.
+
+forge_refuses() {
+  {
+    printf '#!/bin/sh
+'
+    printf 'case "$*" in
+'
+    printf '    *"item-list"*) printf "%%s\n" "%s" >&2; exit 1 ;;
+' "$1"
+    printf '    *state=open*)  cat "$FIX/issues" 2>/dev/null ;;
+'
+    printf 'esac
+'
+  } > "$tmp/bin/gh"
+  chmod +x "$tmp/bin/gh"
+}
+
+issues "$(printf '41	one')"
+forge_refuses "error: your authentication token is missing required scopes [read:project]"
+
+refused=$(said)
+
+has "a half that would not read still names the half" "$refused" "the board half could not be read"
+has "and the forge's own words come with it"          "$refused" "missing required scopes"
+has "and every line is the check's, not raw output"   "$refused" "offboard — error:"
+is  "and it still refuses with 3"                     "$(code_of)" "3"
+
+# Restored, because every case below reads a board.
+cat > "$tmp/bin/gh" <<'STUB'
+#!/bin/sh
+case "$*" in
+    *"item-list"*)    cat "$FIX/board"  2>/dev/null ;;
+    *state=open*)     cat "$FIX/issues" 2>/dev/null ;;
+esac
+STUB
+chmod +x "$tmp/bin/gh"
+
 # --- the refusals ---
 
 board "41"
