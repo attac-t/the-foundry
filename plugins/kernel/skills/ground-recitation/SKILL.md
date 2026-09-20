@@ -57,24 +57,34 @@ Reset to template when:
 
 Memory has layers. Each artifact serves a distinct purpose.
 
-| Artifact            | Lifespan     | Purpose        | When                     |
-|---------------------|--------------|----------------|--------------------------|
-| `working.md`        | Session      | Cognitive RAM  | Always active            |
-| `blueprint.md`      | Goal         | Task tracking  | Multi-step work          |
-| `spec.md`           | Goal         | Requirements   | New features             |
-| `adr/*.md`          | Permanent    | Decisions      | Architecture choices     |
-| `handoffs/*.md`     | Transitional | State transfer | Manual: `/handoff`       |
-| `observations/*.md` | Permanent    | Learnings      | Manual: `/observe`       |
+**Every one of them is branch memory, and branch memory is a directory on one machine.** Most
+repositories ignore it, this one included. Nothing here is committed, so nothing here outlives the
+laptop, the account or the checkout.
+
+| Artifact            | Lasts until       | Purpose        | When                     |
+|---------------------|-------------------|----------------|--------------------------|
+| `working.md`        | the session ends  | Cognitive RAM  | Always active            |
+| `blueprint.md`      | the goal ends     | Task tracking  | Multi-step work          |
+| `spec.md`           | the goal ends     | Requirements   | New features             |
+| `adr/*.md`          | the machine goes  | Decisions      | Architecture choices     |
+| `handoffs/*.md`     | the handoff lands | State transfer | Manual: `/handoff`       |
+| `observations/*.md` | the machine goes  | Learnings      | Manual: `/observe`       |
+
+**This table said Permanent for two of those rows.** It meant *the longest-lived thing here*, and a
+reader took it for durable. Five files sat in them on one laptop, on branches long merged, with
+nothing in any tree pointing at one.
 
 ### Clarifying Overlaps
 
 **Failures (working.md) vs Observations**:
 - `Failures` = temporary. Remove when lesson internalized.
-- `observations/` = permanent. Worth reading again later.
+- `observations/` = the last thing here to go. **Still not durable.**
 
-> Rule: If a failure taught you something worth remembering, create an observation. Then remove the failure.
+> Rule: If a failure taught you something worth remembering, write it where it survives. An
+> observation here is a draft of that, never the home.
 
-Don't wait to be asked. If the work warrants an artifact, create it proactively.
+**Where it survives is not this skill's call.** A repository states it, and `craft-observation`
+says what to weigh. Don't wait to be asked — but a note nobody can read later was not a learning.
 
 ## The File
 
