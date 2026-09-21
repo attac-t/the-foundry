@@ -94,6 +94,13 @@ and_changed plugins/floor/lib/plugins.sh 'and floor with it'
 is    "floor beside it brings the audit back" "$(code)" "0"
 has   "and floor is the file it names"        "$(asked)" "plugins/floor/lib/plugins.sh"
 
+# **Both, or the case proves only what the first one did.** Asserting the floor file alone passes
+# whether or not the kernel file is on the branch, so it would grade a one-file change wearing a
+# mixed branch's clothes. The kernel file must be absent from what the audit reads, and present in
+# the diff that produced it.
+lacks "and the kernel file is not among them"  "$(asked)" "craft-swimlane"
+has   "while the diff still carries it"        "$( cd "$repo" && git diff --name-only base HEAD )" "craft-swimlane"
+
 # --- prose the audit never reads ---
 
 changed README.md 'changed'
