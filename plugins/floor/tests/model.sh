@@ -2519,8 +2519,10 @@ last line
   kept=$(cat "$seam/deliveries/run-one.brief" 2>/dev/null)
   sent=$(cat "$seam/store/lastbody" 2>/dev/null)
 
-  exists "the directory adapter kept a brief" "$kept"
-  exists "and the other adapter sent one"     "$sent"
+  # **`exists` asserts a path, and the first version handed it file contents.** Both cases went red
+  # with the brief printed back as the missing path, which is the shape a wrong helper takes.
+  exists "the directory adapter kept a brief" "$seam/deliveries/run-one.brief"
+  exists "and the other adapter sent one"     "$seam/store/lastbody"
 
   # **The four, in both.** A dollar that expanded or a backtick that ran would show as an absence.
   for mark in 'VAR' 'tick' 'quote' 'last line'; do
