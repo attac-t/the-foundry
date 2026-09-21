@@ -1889,6 +1889,11 @@ who holds it; `release` gives it back, and only to the host that took it.
 `gh` and not to git cannot push the ref, and that used to leave by 30 — *held*, with no holder to
 print. A worker reading that stands down from work nothing was doing.
 
+**Which of the two a refused push is, the remote decides.** The server refuses a fast-forward that
+lost a race and a push with no credential in the same words, so the ref is read back before either
+name is used: a claim that is there and is another host's is **30**, and a remote that answers
+nothing is **20**. Losing a race still names the winner.
+
 | Adapter | Compare-and-swap |
 |---|---|
 | a directory | `mkdir` — it makes the directory or it fails |
