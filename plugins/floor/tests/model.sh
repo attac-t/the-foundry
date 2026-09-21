@@ -3978,7 +3978,18 @@ a_refused_push_says_which_refusal_it_was() {
   # The server, in the two ways this needs one. **`refuse` makes it say no**, which is what a dead
   # credential looks like from the client. **`racer` moves the ref to another host's claim while
   # this host's push is in flight** — the race, and `pre-receive` is the only place inside that
-  # window. Git then refuses the push itself, because the value it advertised is gone.
+  # window.
+  #
+  # **Moving the ref is half of a race, and on its own it stages the opposite.** `receive-pack`
+  # applies its own update after the hook returns, against the value it advertised before it ran, so
+  # the winner's claim is overwritten and the loser's push reports success. Driven on 21 September:
+  # the ref held the pushed commit and `claim` exited 0, which is a host told it took an item
+  # another host holds.
+  #
+  # So the hook says no in the same breath. A real server refuses the loser itself — its push is no
+  # longer a fast-forward — and the words it refuses in are not what this grades. **The adapter reads
+  # no refusal wording at all**, which is why it reads the ref back, and the ref is what the case
+  # below asserts.
   #
   # `core.hooksPath` is pinned. A machine that sets one globally would run no hook at all, and every
   # case below would pass for a reason nobody wrote.
@@ -3987,7 +3998,11 @@ a_refused_push_says_which_refusal_it_was() {
     cat <<'HOOK'
 while read -r old new ref; do
   case "$ref" in *foundry/claim/*) ;; *) continue ;; esac
-  [ -s "$bare/racer" ] && git update-ref "$ref" "$(cat "$bare/racer")"
+  [ -s "$bare/racer" ] && {
+    git update-ref "$ref" "$(cat "$bare/racer")"
+    echo 'another host claimed it first' >&2
+    exit 1
+  }
   [ -f "$bare/refuse" ] && { echo 'the claim ref is refused here' >&2; exit 1; }
 done
 exit 0
@@ -4025,9 +4040,10 @@ HOOK
 
   #
   # **The race, staged where it happens.** Another host's claim lands while this one's push is in
-  # flight, so the value the adapter read is gone and git refuses the push for the true reason. The
-  # loser is owed the winner's name, and 30 is the only exit that carries one — so a reader that
-  # stopped at the exit code would be exactly as wrong the other way.
+  # flight, so the value the adapter read is gone and the push is refused — by the hook here, by the
+  # fast-forward rule on a real remote, and the adapter cannot tell those apart because it reads
+  # neither. The loser is owed the winner's name, and 30 is the only exit that carries one — so a
+  # reader that stopped at the exit code would be exactly as wrong the other way.
   #
   # The winning commit goes to a ref of its own first, because the hook can only point at an object
   # the bare repository already holds. Its subject is the shape `holder_at` reads.
