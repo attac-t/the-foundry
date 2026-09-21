@@ -84,9 +84,29 @@ identity. A clause grading no selected target is no bar. And `HEAD` is not a ref
 **Delivery is the step the default cannot reach**, because nothing is mounted and the sign-in it
 needs is asked again every run.
 
-**Configured, it reaches.** `FOUNDRY_KEYS` names a place, that place is mounted, and the sign-in
-persists across containers. Two cases, and this page states both because one of them was written
-here as if it were the only one.
+**Configured, the sign-ins reach. Git did not.** `FOUNDRY_KEYS` mounts three stores and `gh` is
+signed in inside. **Git had no credential of its own.** A claim, a push and a delivery each failed
+with *could not read Username*. Floor then read that failure as the item being held, and nothing
+held it. Driven 21 September. Three `-e` flags now hand git the helper through its environment, and nothing
+is written to disk.
+
+**So this page said *configured, it reaches* and meant only half of it.** One sentence covered two
+mechanisms and one of them was missing.
+
+**What a container reached on 21 September**, each step driven:
+
+| | |
+|---|---|
+| a host | one command, both harnesses live inside |
+| a run | opened, and an issue read and claimed |
+| a charter | derived and pinned at the base |
+| a workspace | opened, and a worker changed files in it |
+| a commit | made through the run, then pushed |
+| the gates | twenty-five green, floor's audit included |
+| a panel | two judges, and it refused the work twice |
+
+**Delivery is the step still unproved.** A judge out of credits is what stopped it, not the
+mechanism.
 
 ### Sign-ins, and the three things people conflate
 
