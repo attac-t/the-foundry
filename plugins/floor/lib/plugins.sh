@@ -107,8 +107,27 @@ say_where_a_marketplace_reads_from() {
     [ -n "$kind" ] || return 0
 
     [ "$kind" = directory ] \
-        && say "        $1 — a directory. A pull takes whatever this tree holds, on whatever branch" \
+        && say "        $1 — a directory. A pull takes whatever this tree holds$(the_ref_it_holds "$1")" \
         || say "        $1 — $kind ${read_from#*"$(printf '\t')"}"
+}
+
+#
+# **`on whatever branch` named the hazard and not the ref.** #943 asked which tree and which ref a
+# pull is about to take, and half of that was a sentence a reader could not act on.
+#
+# It reads `, on main at 24de790` now. A reader compares that with what they merged, and a
+# mismatch is the whole finding.
+#
+# **Silent where the tree is no repository**, because a marketplace may be a plain directory git
+# never touched. Saying *on whatever branch* there is a guess wearing a fact's clothes.
+the_ref_it_holds() {
+    at=$(marketplace_location "$1") || return 0
+    [ -n "$at" ] || return 0
+
+    named=$(git -C "$at" rev-parse --abbrev-ref HEAD 2>/dev/null) || return 0
+    head=$(git -C "$at" rev-parse --short HEAD 2>/dev/null)       || return 0
+
+    printf ', on %s at %s' "$named" "$head"
 }
 
 #
