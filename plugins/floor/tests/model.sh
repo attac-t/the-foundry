@@ -3975,40 +3975,56 @@ a_refused_push_says_which_refusal_it_was() {
   git -C "$bare" config uploadpack.allowAnySHA1InWant true
 
   #
-  # The server, in the two ways this needs one. **`refuse` makes it say no**, which is what a dead
-  # credential looks like from the client. **`racer` moves the ref to another host's claim while
-  # this host's push is in flight** — the race, and `pre-receive` is the only place inside that
-  # window.
+  # The server saying no. **`refuse` is what a dead credential looks like from the client** — a
+  # rejection with no wording the adapter reads, which is the whole reason it reads the ref back.
   #
-  # **Moving the ref is half of a race, and on its own it stages the opposite.** `receive-pack`
-  # applies its own update after the hook returns, against the value it advertised before it ran, so
-  # the winner's claim is overwritten and the loser's push reports success. Driven on 21 September:
-  # the ref held the pushed commit and `claim` exited 0, which is a host told it took an item
-  # another host holds.
+  # **The race is not staged here, and two attempts proved why.** A receive hook runs inside the
+  # quarantine a push is unpacked in, where `update-ref` is refused outright. Driven on
+  # 21 September: moving the ref there and letting the push through left `receive-pack` to apply its
+  # own update afterwards, so the loser's claim overwrote the winner's and `claim` exited 0; adding
+  # a refusal in the same breath moved no ref at all, so the re-read found the value the push was
+  # built on and the loser was told the source could not be asked.
   #
-  # So the hook says no in the same breath. A real server refuses the loser itself — its push is no
-  # longer a fast-forward — and the words it refuses in are not what this grades. **The adapter reads
-  # no refusal wording at all**, which is why it reads the ref back, and the ref is what the case
-  # below asserts.
+  # **A real race has no hook in it.** The winner's claim lands first, and the loser's push is then
+  # not an update of the value it was advertised — git rejects it by itself, on any remote, in
+  # whatever words that remote likes. `pre-push` is where a fixture can stand between the tip this
+  # host read and the objects it sends.
   #
-  # `core.hooksPath` is pinned. A machine that sets one globally would run no hook at all, and every
-  # case below would pass for a reason nobody wrote.
+  # `core.hooksPath` is pinned on both. A machine that sets one globally would run no hook at all,
+  # and every case below would pass for a reason nobody wrote.
   git -C "$bare" config core.hooksPath "$bare/hooks"
   { printf '#!/bin/sh\nbare=%s\n' "$bare"
     cat <<'HOOK'
 while read -r old new ref; do
   case "$ref" in *foundry/claim/*) ;; *) continue ;; esac
-  [ -s "$bare/racer" ] && {
-    git update-ref "$ref" "$(cat "$bare/racer")"
-    echo 'another host claimed it first' >&2
-    exit 1
-  }
   [ -f "$bare/refuse" ] && { echo 'the claim ref is refused here' >&2; exit 1; }
 done
 exit 0
 HOOK
   } > "$bare/hooks/pre-receive"
   chmod +x "$bare/hooks/pre-receive"
+
+  #
+  # **The other host, put on the ref before this one's objects are sent.** `racer` arms it, and the
+  # hook refuses nothing — git is left to reject a push whose ref no longer holds what the client
+  # was given.
+  #
+  # **The git environment is dropped first.** A hook inherits `GIT_DIR` from the push that ran it,
+  # and that variable outranks any directory a later `git` is pointed at. Left set, the winner's
+  # claim would land in the working repository and the remote would never see it.
+  mkdir -p "$work/.git/hooks"
+  git -C "$work" config core.hooksPath "$work/.git/hooks"
+  { printf '#!/bin/sh\nbare=%s\n' "$bare"
+    cat <<'HOOK'
+unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_OBJECT_DIRECTORY GIT_QUARANTINE_PATH
+while read -r mine made ref had; do
+  case "$ref" in *foundry/claim/*) ;; *) continue ;; esac
+  [ -s "$bare/racer" ] && git --git-dir="$bare" update-ref "$ref" "$(cat "$bare/racer")"
+done
+exit 0
+HOOK
+  } > "$work/.git/hooks/pre-push"
+  chmod +x "$work/.git/hooks/pre-push"
 
   gh_claims() { dir=$1; shift
     ( cd "$dir" 2>/dev/null || exit 9
@@ -4039,10 +4055,10 @@ HOOK
         "$(gh_claims_says "$work" claim 71)" "held by"
 
   #
-  # **The race, staged where it happens.** Another host's claim lands while this one's push is in
-  # flight, so the value the adapter read is gone and the push is refused — by the hook here, by the
-  # fast-forward rule on a real remote, and the adapter cannot tell those apart because it reads
-  # neither. The loser is owed the winner's name, and 30 is the only exit that carries one — so a
+  # **The race, staged the way one happens.** The other host claims first, in the window between the
+  # tip this host read and the objects it sends, and git refuses the loser on its own. The adapter
+  # cannot tell that from a credential that was never going to work, because it reads neither
+  # refusal. The loser is owed the winner's name, and 30 is the only exit that carries one — so a
   # reader that stopped at the exit code would be exactly as wrong the other way.
   #
   # The winning commit goes to a ref of its own first, because the hook can only point at an object
@@ -4062,6 +4078,10 @@ HOOK
   # a race that never happened, and they would still be green.
   is "and the ref really holds the other host's claim" \
      "$(git -C "$work" ls-remote origin refs/heads/foundry/claim/71 | cut -f1)" "$theirs"
+
+  # The window closes here. Nothing below races, and an armed hook would be a second hand on the ref
+  # while the last case reads it.
+  rm -f "$bare/racer"
 
   #
   # **#979: a container signed in to `gh` and not to git.** Every call to the remote fails, so there
