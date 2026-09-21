@@ -30,7 +30,8 @@
 #        sh source-github.sh state   <run>
 #        sh source-github.sh land    <run>
 #
-# Exit: 0 answered · 1 nothing there · 2 asked for something this does not do · 3 GitHub refused
+# Exit: 0 answered · 1 nothing there · 2 asked for something this does not do · 3 GitHub refused,
+#       or could not be reached at all
 #       4 this run already sent something else under that name
 #
 
@@ -452,6 +453,19 @@ where_from() {
 }
 
 
+#
+# **A push that could not happen is not an item somebody holds.** 4 is the answer meaning another
+# host got there first, and a container with no git credential fell through to it. The caller then
+# reported a holder nobody was: driven against #979 on 21 September, `git ls-remote` named no claim
+# before that run and none after it.
+#
+# So a push that failed leaves by 3, the door for a source that could not be reached. What a reader
+# gets is the git line — no credential, no network, a remote that refused — and never a name.
+#
+# **What this gives up is the race inside the window.** A tip that moved after `claim_tip` read it
+# fails the fast-forward and leaves by 3 as well, so a genuine loser is told the push failed rather
+# than who holds it. It retries, and the next `claim_tip` names the holder. One retry is cheaper
+# than a host standing down from work that is free.
 take_claim() {
     at=$(claim_tip "$1")
     [ -n "$at" ] && { holder_at "$at" "$2" || return 4; }
@@ -460,8 +474,8 @@ take_claim() {
 
     why=$(git push origin "$made:refs/heads/$(claim_ref "$1")" 2>&1) && return 0
 
-    printf 'source-github: the claim was refused: %s\n' "$why" >&2
-    return 4
+    printf 'source-github: the claim could not be pushed: %s\n' "$why" >&2
+    return 3
 }
 
 # A commit on top of the one there, so the push is a fast-forward the server

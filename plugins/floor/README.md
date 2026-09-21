@@ -1885,6 +1885,10 @@ source can settle which one runs it, because nothing above the source is shared.
 So the claim lives where the item does. `claim` takes it for this host or exits **30** and names
 who holds it; `release` gives it back, and only to the host that took it.
 
+**A source that could not be asked exits 20 instead, and names nobody.** A container signed in to
+`gh` and not to git cannot push the ref, and that used to leave by 30 — *held*, with no holder to
+print. A worker reading that stands down from work nothing was doing.
+
 | Adapter | Compare-and-swap |
 |---|---|
 | a directory | `mkdir` — it makes the directory or it fails |

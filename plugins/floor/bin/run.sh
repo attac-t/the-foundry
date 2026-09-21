@@ -3391,7 +3391,14 @@ claim() {
     item=${1:-}
     [ -n "$item" ] || { renew_this_run_claim; return 0; }
 
-    source_says claim "$item" "$(recording_host)" && { note "claimed [$item]"; return 0; }
+    source_says claim "$item" "$(recording_host)"; code=$?
+    [ "$code" -eq 0 ] && { note "claimed [$item]"; return 0; }
+
+    # **A source that could not be asked is not a host holding the item.** Every refusal used to
+    # leave by the same door, so a container with no git credential was told [979] was held — and
+    # a worker reading that stands down from work nobody is doing.
+    refuse_unasked "$code" "claim on [$item]"
+
     break_a_dead_claim "$item" && return 0
 
     say_who_holds "$item"
