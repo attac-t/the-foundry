@@ -124,9 +124,13 @@ the_ref_it_holds() {
     at=$(marketplace_location "$1") || return 0
     [ -n "$at" ] || return 0
 
-    named=$(git -C "$at" rev-parse --abbrev-ref HEAD 2>/dev/null) || return 0
-    head=$(git -C "$at" rev-parse --short HEAD 2>/dev/null)       || return 0
+    # **One guard, because two for one fault cannot be broken.** Guarding both asks meant either
+    # silence covered the other, and the suite stayed green with one of them gone. The commit is
+    # what must exist; a tree with one always answers for its branch too.
+    head=$(git -C "$at" rev-parse --short HEAD 2>/dev/null) || return 0
+    named=$(git -C "$at" rev-parse --abbrev-ref HEAD 2>/dev/null)
 
+    # A detached head answers `HEAD`, which is what it is and what a reader needs to see.
     printf ', on %s at %s' "$named" "$head"
 }
 
