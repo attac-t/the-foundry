@@ -98,13 +98,22 @@ one_line() { printf '%s' "$1" | tr '\n' ' ' | sed 's/ *$//'; }
 # changed after the cut is simply absent — `basing.md` names that and a fixture caught it.
 what_changed() { git diff --name-only "$TARGET" HEAD 2>/dev/null; }
 
-# Every changed file the audit could read: the plugin it mutates, and the few outside it
-# that decide what a clone holds.
+#
+# Every changed file the audit could read: **the plugin it mutates**, and the few outside it that
+# decide what a clone holds.
+#
+# **`plugins/*` was too wide, and it said yes four times in one night where the answer was no.**
+# Floor's audit clones the branch and mutates `plugins/floor`. A change under `plugins/kernel`
+# changes nothing it reads, so the audit waives with exit 4 — *nobody asked* — after a worker has
+# already spent the time.
+#
+# **The other plugins are graded, and not by this.** `bin/gates.sh` runs each plugin suite as its
+# own gate. What none of them has is floor's mutation pass, and saying yes here never gave them one.
 what_the_audit_reads() {
     printf '%s\n' "$1" | while read -r file; do
         [ -n "$file" ] || continue
 
-        case $file in plugins/*) printf '%s\n' "$file"; continue ;; esac
+        case $file in plugins/floor/*) printf '%s\n' "$file"; continue ;; esac
 
         forces_an_audit "$file" && printf '%s\n' "$file"
     done
