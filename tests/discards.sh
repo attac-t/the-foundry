@@ -73,6 +73,22 @@ has "and it names the way out"                  "$out" 'Commit or stash first'
 call 'git restore kept.md'
 has "git restore is read the same way" "$(said)" '"permissionDecision":"deny"'
 
+# --- a ref between the verb and the dashes ---
+#
+# **`git checkout HEAD -- <path>` discards the working tree exactly as the bare form does.** The
+# first version of this hook read only `git checkout -- `, and took a repair the hour it shipped:
+# a suite fix was uncommitted, the planted break was undone, and the fix went with it.
+
+call 'git checkout HEAD -- kept.md'
+has "a ref before the dashes is still a restore" "$(said)" '"permissionDecision":"deny"'
+has "and the path after them is what it names"   "$(said)" 'kept.md'
+# **The whole list, not a substring.** `HEAD` is in the refusal's own wording — *back to HEAD* —
+# so a `lacks` on the message would fail for the right answer.
+has "and the ref is not read as a path"          "$(said)" 'work in [kept.md ] back'
+
+call 'git checkout base -- kept.md'
+has "any ref, not only HEAD" "$(said)" '"permissionDecision":"deny"'
+
 # --- a clean path ---
 
 call 'git checkout -- other.md'

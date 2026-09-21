@@ -48,13 +48,18 @@ command_in() {
 # **Both spellings, because git ships two.** `git checkout -- <path>` is the old one and
 # `git restore <path>` the new, and a worker reaching for either means the same thing.
 #
+# **A ref may sit between the verb and the dashes**, and `git checkout HEAD -- <path>` discards the
+# working tree exactly as the bare form does. The first version read only the bare one, and took a
+# repair the hour it shipped. So the match is `git checkout` … ` -- `, and the paths start after the
+# dashes wherever they are.
+#
 # `--staged` and `--source` are left alone: the first moves the index and the second is a
 # deliberate read from elsewhere. Neither is the accident this refuses.
 paths_a_restore_would_take() {
     case $1 in
         *--staged*|*--source*|*--worktree\ --staged*) return 0 ;;
-        *git\ checkout\ --\ *)  after 'git checkout -- ' "$1" ;;
-        *git\ restore\ *)       after 'git restore ' "$1" ;;
+        *git\ checkout\ *--\ *)  after ' -- ' "$1" ;;
+        *git\ restore\ *)        after 'git restore ' "$1" ;;
         *) return 0 ;;
     esac
 }
