@@ -3940,6 +3940,132 @@ a_release_cannot_delete_a_claim_that_moved() {
   is "and the holder's own release still lets go" "$gone" "0"
 }
 a_release_cannot_delete_a_claim_that_moved
+
+#
+# **A refused push is two facts wearing one exit code.**
+#
+# A fast-forward that lost a race and a push no credential was ever going to make are refused in the
+# same words, so nothing in the failure itself tells them apart. Read alike, a container signed in
+# to `gh` and not to git was told the item was *held* — and a worker reading that stands down from
+# work nobody is doing.
+#
+# **The github adapter is driven here, against a bare repository on this disk.** Its claim is a ref,
+# so `ls-remote`, `push` and `fetch` are the whole mechanism, and no forge is needed to grade the
+# rule. What a service adds is the wording of a refusal, and the adapter reads none of it — which is
+# the whole reason the ref is read back at all.
+#
+# **One working repository throughout, and the remote is the only thing that moves.** A second one
+# would let an absent git identity stand in for an unreachable remote, and that is a different 3.
+a_refused_push_says_which_refusal_it_was() {
+  bare="$tmp/claimed.git"
+  work="$tmp/claimer"
+  gone="$tmp/nothing-here.git"
+  gh_source="$(dirname "$runner")/../lib/source-github.sh"
+
+  git init -q --bare "$bare" 2>/dev/null \
+    || { skip "a refused push — git could not make a bare repository here"; return; }
+  make_repo "$work" main || { skip "a refused push — git could not make a repo here"; return; }
+  set_origin "$work" "$bare"
+
+  #
+  # **GitHub serves a fetch by object name and a bare repository refuses one until told to.**
+  # `holder_at` reads a claim's subject that way, so without this the adapter would answer *another
+  # host holds it* here and *this host does* on the service — the fixture grading its own remote
+  # rather than the rule.
+  git -C "$bare" config uploadpack.allowAnySHA1InWant true
+
+  #
+  # The server, in the two ways this needs one. **`refuse` makes it say no**, which is what a dead
+  # credential looks like from the client. **`racer` moves the ref to another host's claim while
+  # this host's push is in flight** — the race, and `pre-receive` is the only place inside that
+  # window. Git then refuses the push itself, because the value it advertised is gone.
+  #
+  # `core.hooksPath` is pinned. A machine that sets one globally would run no hook at all, and every
+  # case below would pass for a reason nobody wrote.
+  git -C "$bare" config core.hooksPath "$bare/hooks"
+  { printf '#!/bin/sh\nbare=%s\n' "$bare"
+    cat <<'HOOK'
+while read -r old new ref; do
+  case "$ref" in *foundry/claim/*) ;; *) continue ;; esac
+  [ -s "$bare/racer" ] && git update-ref "$ref" "$(cat "$bare/racer")"
+  [ -f "$bare/refuse" ] && { echo 'the claim ref is refused here' >&2; exit 1; }
+done
+exit 0
+HOOK
+  } > "$bare/hooks/pre-receive"
+  chmod +x "$bare/hooks/pre-receive"
+
+  gh_claims() { dir=$1; shift
+    ( cd "$dir" 2>/dev/null || exit 9
+      FOUNDRY_HOME="$home" FOUNDRY_RUN="" FOUNDRY_WHO="" \
+        FOUNDRY_SOURCE="$gh_source" sh "$runner" "$@" 2>/dev/null ); }
+
+  gh_claims_says() { dir=$1; shift
+    ( cd "$dir" 2>/dev/null || exit 9
+      FOUNDRY_HOME="$home" FOUNDRY_RUN="" FOUNDRY_WHO="" \
+        FOUNDRY_SOURCE="$gh_source" sh "$runner" "$@" 2>&1 ); }
+
+  # The claim lands, and the three cases below rest on this one. A fixture that never reached the
+  # adapter would answer all of them with the same refusal and read as three rules holding.
+  is "an item nobody has claimed is taken there" "$(code_of gh_claims "$work" claim 71)" "0"
+
+  #
+  # **The holder's own renewal, refused.** The ref did not move, so there was no race and there is
+  # no winner to name. The only true thing left to say is that the source could not be asked, and
+  # that is 20 — never a holder, because a holder is a name this host would stand down for, and
+  # here it would be standing down for itself.
+  : > "$bare/refuse"
+
+  is    "a renewal the remote refused is a source that could not be asked" \
+        "$(code_of gh_claims "$work" claim 71)" "20"
+  has   "and the reader is sent to the source" \
+        "$(gh_claims_says "$work" claim 71)" "could not be asked"
+  lacks "and never names a holder" \
+        "$(gh_claims_says "$work" claim 71)" "held by"
+
+  #
+  # **The race, staged where it happens.** Another host's claim lands while this one's push is in
+  # flight, so the value the adapter read is gone and git refuses the push for the true reason. The
+  # loser is owed the winner's name, and 30 is the only exit that carries one — so a reader that
+  # stopped at the exit code would be exactly as wrong the other way.
+  #
+  # The winning commit goes to a ref of its own first, because the hook can only point at an object
+  # the bare repository already holds. Its subject is the shape `holder_at` reads.
+  rm -f "$bare/refuse"
+  tree=$(git -C "$work" hash-object -t tree /dev/null)
+  theirs=$(printf 'claimed by OtherHost\n' | git -C "$work" commit-tree "$tree")
+  git -C "$work" push -q origin "$theirs:refs/heads/otherhost" 2>/dev/null
+  printf '%s\n' "$theirs" > "$bare/racer"
+
+  is  "a claim another host took mid-push names the winner" \
+      "$(code_of gh_claims "$work" claim 71)" "30"
+  has "and says who won" \
+      "$(gh_claims_says "$work" claim 71)" "held by OtherHost"
+
+  # The staging, read back. A hook that quietly did nothing would leave both lines above resting on
+  # a race that never happened, and they would still be green.
+  is "and the ref really holds the other host's claim" \
+     "$(git -C "$work" ls-remote origin refs/heads/foundry/claim/71 | cut -f1)" "$theirs"
+
+  #
+  # **#979: a container signed in to `gh` and not to git.** Every call to the remote fails, so there
+  # is no tip to read before the push and none after it. The item came back *held* with no holder to
+  # print, and `git ls-remote` named no claim before that run or after it — the one case where the
+  # ref read back says nothing at all.
+  #
+  # A remote that is not there fails the same three calls. **What this cannot say is that a refused
+  # credential fails them** — nothing here has spoken to a service.
+  git -C "$work" remote set-url origin "$gone"
+
+  is    "a claim nothing could push is not an item somebody holds" \
+        "$(code_of gh_claims "$work" claim 71)" "20"
+  has   "and it names the source it could not ask" \
+        "$(gh_claims_says "$work" claim 71)" "could not be asked"
+  lacks "and never the host that last held it" \
+        "$(gh_claims_says "$work" claim 71)" "OtherHost"
+}
+a_refused_push_says_which_refusal_it_was
+
 #
 # What produced this row. A run graded under one implementation and completed under another was
 # judged twice, and the two holes closed this week are why that is worth knowing.
