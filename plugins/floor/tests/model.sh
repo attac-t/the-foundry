@@ -2488,6 +2488,58 @@ A reader knows what changed.
 a_delivery_carries_its_brief
 
 #
+# **Both adapters carry a brief and nothing compared them.** #377 calls that a seam built and
+# unproved: two implementations, one contract, and no case driving one input through both.
+#
+# **The shipped scripts, never a copy of them.** An inline rendering grades the quoting in this file.
+# `source-dir.sh` is called with its own root, `source-github.sh` through the same `gh` the other
+# cases use, and the bodies are read back from where each one put them.
+#
+# The brief holds a dollar, a backtick, a quote and a trailing blank line, because a body is written
+# by one shell and read by another, and those four are what travel badly.
+one_brief_through_both_adapters() {
+  fake_gh "$tmp/sbin" || { skip "the seam — could not put a gh on the path"; return; }
+
+  seam="$tmp/seam"
+  mkdir -p "$seam/deliveries" "$seam/store"
+
+  brief="$tmp/seam-brief.md"
+  printf 'A brief holding $VAR, a `tick` and a "quote".
+
+Refs #71
+
+last line
+
+
+' > "$brief"
+
+  ( FOUNDRY_SOURCE_DIR="$seam" sh "$here/lib/source-dir.sh"       publish 71 run-one a-branch 'A title' Refs "$brief" ) >/dev/null 2>&1
+  ( cd "$tmp" && PATH="$tmp/sbin:$PATH" GH_STORE="$seam/store" sh "$here/lib/source-github.sh"       publish 71 run-one a-branch 'A title' Refs "$brief" ) >/dev/null 2>&1
+
+  kept=$(cat "$seam/deliveries/run-one.brief" 2>/dev/null)
+  sent=$(cat "$seam/store/lastbody" 2>/dev/null)
+
+  exists "the directory adapter kept a brief" "$kept"
+  exists "and the other adapter sent one"     "$sent"
+
+  # **The four, in both.** A dollar that expanded or a backtick that ran would show as an absence.
+  for mark in 'VAR' 'tick' 'quote' 'last line'; do
+    has "the directory keeps [$mark]" "$kept" "$mark"
+    has "and the forge body carries [$mark]" "$sent" "$mark"
+  done
+
+  #
+  # **Two differences, and each is the seam doing its job.** The forge body drops a line that is
+  # only `Refs #71`, because the adapter appends its own; and it adds the run marker a machine reads.
+  # The directory record keeps the brief byte for byte and puts its identity in another file.
+  lacks "the forge body does not repeat the item twice" "$sent" "Refs #71
+Refs #71"
+  has   "and it carries the run a machine reads"        "$sent" "floor-run: run-one"
+  lacks "while the directory brief holds no marker"     "$kept" "floor-run:"
+}
+one_brief_through_both_adapters
+
+#
 # Two conjuncts that close fail-opens rather than edge cases. Quantified over clauses and over
 # targets, the invariant is satisfied by an empty charter and by an empty selection — vacuously, and
 # every fresh run has the second.
