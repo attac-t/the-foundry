@@ -3890,6 +3890,56 @@ exactly_one_host_takes_an_item() {
   is "and nobody holds it after" "$(code_of floor "$tmp/clm" release 71)" "30"
 }
 exactly_one_host_takes_an_item
+
+#
+# **A release that races a renewal deleted the claim that replaced the one it read.**
+#
+# The shape: a host's lease runs out, a second host claims, and the first host's late release takes
+# the new claim. The second then works on an item nothing records it holding, and a third may start
+# a duplicate run — the one thing a claim exists to stop.
+#
+# **The github adapter is driven here, against a bare repository on this disk.** Its claim is a ref
+# and its release is a push, so no forge is needed to grade the rule. What a real forge adds is
+# latency, and latency is what makes the race reachable rather than what makes it real.
+a_release_cannot_delete_a_claim_that_moved() {
+  bare="$tmp/remote.git"
+  work="$tmp/racer"
+
+  git init -q --bare "$bare" 2>/dev/null || { skip "git could not make a bare repository here"; return; }
+  git init -q "$work"
+  git -C "$work" config user.name  'A Fixture'
+  git -C "$work" config user.email 'fixture@example.invalid'
+  git -C "$work" remote add origin "$bare"
+
+  printf 'seed
+' > "$work/a"
+  git -C "$work" add -A >/dev/null
+  git -C "$work" commit -qm seed >/dev/null
+
+  ref=refs/heads/foundry/claim/71
+  git -C "$work" push -q origin "HEAD:$ref"
+  read_at=$(git -C "$work" rev-parse HEAD)
+
+  # The renewal: the same ref, a new commit. A holder re-stamping looks exactly like this.
+  printf 'renewed
+' >> "$work/a"
+  git -C "$work" commit -qam renewed >/dev/null
+  git -C "$work" push -q -f origin "HEAD:$ref"
+
+  # The late release, carrying the value it read before the move.
+  ( cd "$work" && git push origin --delete "$ref" --force-with-lease="$ref:$read_at" ) >/dev/null 2>&1
+  left=$( cd "$work" && git ls-remote origin "$ref" 2>/dev/null | grep -c . )
+
+  is "a release carrying a stale value deletes nothing" "$left" "1"
+
+  # The same release, at the value that is actually there.
+  now_at=$(git -C "$work" rev-parse HEAD)
+  ( cd "$work" && git push origin --delete "$ref" --force-with-lease="$ref:$now_at" ) >/dev/null 2>&1
+  gone=$( cd "$work" && git ls-remote origin "$ref" 2>/dev/null | grep -c . )
+
+  is "and the holder's own release still lets go" "$gone" "0"
+}
+a_release_cannot_delete_a_claim_that_moved
 #
 # What produced this row. A run graded under one implementation and completed under another was
 # judged twice, and the two holes closed this week are why that is worth knowing.

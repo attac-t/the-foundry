@@ -509,7 +509,23 @@ drop_claim() {
 
     holder_at "$at" "$2" || return 4
 
-    git push origin --delete "refs/heads/$(claim_ref "$1")" >/dev/null 2>&1 || return 4
+    #
+    # **The check reads `$at` and the delete used to read nothing.** It removed whatever the ref
+    # pointed at when it landed, so anything that moved it in between went instead.
+    #
+    # The shape: a host's lease runs out, a second host claims, and the first host's late release
+    # takes the new claim. The second then works on an item nothing records it holding, and a third
+    # may start a duplicate run — the one thing a claim exists to stop.
+    #
+    # **`--force-with-lease` refuses when the value moved**, and a delete is an update. Driven on
+    # 21 September against a real remote: at the read value it deletes and leaves nothing; after a
+    # push moves the ref it refuses with *(delete) -> claim (stale info)*.
+    #
+    # **`take_claim` never needed this.** Its push must fast-forward, so the server already refuses
+    # a claim that raced. Only the delete had no such rule.
+    ref="refs/heads/$(claim_ref "$1")"
+
+    git push origin --delete "$ref" --force-with-lease="$ref:$at" >/dev/null 2>&1 || return 4
 }
 
 # One name, derived. A host choosing it could claim an item nobody filed.
