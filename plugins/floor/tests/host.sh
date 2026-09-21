@@ -237,12 +237,46 @@ has "every version registered is named" "$several" "this host has 0.0.1,1.0.0,9.
 # version only an open branch carried, with nothing on this page saying it could.
 offered "$tmp/one" directory
 astree=$( cd "$tmp/one" && CLAUDE_CONFIG_DIR="$home" FOUNDRY_WHO=a@b sh "$join" 2>&1 )
-has "a directory source says a pull takes the tree" "$astree" "on whatever branch"
+has "a directory source says a pull takes the tree" "$astree" "whatever this tree holds"
+
+#
+# **The ref, not the hazard.** #943 asked which tree and which ref a pull is about to take, and
+# `on whatever branch` answered half of it with a sentence nobody could act on.
+#
+# The fixture is a real repository on a named branch, so the line can be compared with what a person
+# merged. A mismatch is the whole finding.
+# A real repository, because `rev-parse` is what the line asks. `identity.md` names a fixture as its
+# only exception to never writing an author.
+git -C "$tmp/one" init -q 2>/dev/null
+git -C "$tmp/one" config user.name  'A Fixture'
+git -C "$tmp/one" config user.email 'fixture@example.invalid'
+git -C "$tmp/one" add -A >/dev/null 2>&1
+git -C "$tmp/one" commit -q -m 'a tree to read' >/dev/null 2>&1
+git -C "$tmp/one" checkout -q -B a-branch
+here=$(git -C "$tmp/one" rev-parse --short HEAD 2>/dev/null)
+astree=$( cd "$tmp/one" && CLAUDE_CONFIG_DIR="$home" FOUNDRY_WHO=a@b sh "$join" 2>&1 )
+
+has "and it names the branch that tree is on" "$astree" "on a-branch"
+has "and the commit it is at"                 "$astree" "at $here"
+
+#
+# **A marketplace may be a plain directory git never touched.** Naming a branch there would be a
+# guess wearing a fact's clothes, so the tree half is said and the ref half is not.
+plain="$tmp/plain"
+mkdir -p "$plain/.claude-plugin"
+cp "$tmp/one/.claude-plugin/marketplace.json" "$plain/.claude-plugin/" 2>/dev/null
+mkdir -p "$plain/plugins/floor/.claude-plugin"
+cp "$tmp/one/plugins/floor/.claude-plugin/plugin.json" "$plain/plugins/floor/.claude-plugin/" 2>/dev/null
+offered "$plain" directory
+
+nogit=$( cd "$tmp/one" && CLAUDE_CONFIG_DIR="$home" FOUNDRY_WHO=a@b sh "$join" 2>&1 )
+has   "a tree no git touched still names the tree" "$nogit" "whatever this tree holds"
+lacks "and claims no ref at all"                   "$nogit" ", on "
 
 offered "$tmp/one" github acme/plugins
 asrepo=$( cd "$tmp/one" && CLAUDE_CONFIG_DIR="$home" FOUNDRY_WHO=a@b sh "$join" 2>&1 )
 has   "another kind is named with where it points" "$asrepo" "github acme/plugins"
-lacks "and says nothing about a branch"            "$asrepo" "on whatever branch"
+lacks "and says nothing about a tree"              "$asrepo" "whatever this tree holds"
 
 # A record that does not say is `say_a_marketplace_with_no_home`'s subject, never this line's.
 offered "$tmp/one"
