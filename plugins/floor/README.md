@@ -1893,9 +1893,15 @@ source can settle which one runs it, because nothing above the source is shared.
 So the claim lives where the item does. `claim` takes it for this host or exits **30** and names
 who holds it; `release` gives it back, and only to the host that took it.
 
-**A source that could not be asked exits 20 instead, and names nobody.** A container signed in to
-`gh` and not to git cannot push the ref, and that used to leave by 30 — *held*, with no holder to
-print. A worker reading that stands down from work nothing was doing.
+**A `claim` the source could not be asked exits 20 instead, and names nobody.** A container signed
+in to `gh` and not to git cannot push the ref, and that used to leave by 30 — *held*, with no holder
+to print. A worker reading that stands down from work nothing was doing.
+
+**`release` does not make that distinction yet.** `source-github.sh` returns 4 when the fetch could
+not run, when the delete had no credential, and when the claim is genuinely another host's;
+`run.sh` reads every one of them as *not this host's to release*, exit **30**. So on this verb an
+unreachable source still wears another host's claim, which is the fault the 20 door closed on
+`claim`. Fixing it is its own change.
 
 **Which of the two a refused push is, the remote decides.** The server refuses a fast-forward that
 lost a race and a push with no credential in the same words, so the ref is read back before either
