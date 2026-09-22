@@ -78,6 +78,19 @@ codex login
 Three tools, three stores, and the place named in step 3 keeps all three. **Every login is
 interactive**, so this is the step no command replaces.
 
+**Two of the three are login commands. `claude` is not.** It opens a session, and the sign-in
+happens inside it.
+
+| | |
+|---|---|
+| it asks on the way in | no sign-in is kept yet, so the first start walks you through it |
+| it opens straight to a prompt | one is kept and it is not the account you want — type `/login` |
+| either way | it prints a URL. **The container has no browser**, so open that on the machine you are sitting at, authorise, and paste the code back at the prompt |
+| to leave | `/exit`, or Ctrl-D |
+
+**Leaving the session is not leaving the host.** Step 4's shell is still there, and `codex login` is
+the next line in it.
+
 ### 6. Put Foundry in the host
 
 **A clone is not an install, and step 2 gave you a clone.** `/src` is read-only, and its
@@ -90,8 +103,8 @@ Measured 22 September 2026, in a fresh container:
 | `/src/.claude/settings.json` | names `kernel@the-foundry`, `signal@the-foundry`, `floor@the-foundry` |
 | `~/.claude/plugins/marketplaces` | holds `claude-plugins-official`, and nothing else |
 
-So the checkout asks for three plugins from a marketplace this machine never registered, and
-**nothing in steps 1 to 5 says so.** The host starts and the harness replies with none of them.
+So the checkout asks for three plugins from a marketplace this machine never registered.
+**Nothing in steps 1 to 5 says so.** The host starts and the harness replies with none of them.
 
 **A project setting reaches a session started inside that project.** The shell opens in
 `/home/forge`, so `cd /src` first, or the three stay off whatever else is true.
@@ -108,9 +121,9 @@ claude plugin install floor@the-foundry
 what `plugins.sh` tells an unregistered host to run. Treat them as the thing to try. The next
 section says how to see whether they worked.
 
-**`.claude` is a kept place**, so an install that lands survives the container — the store named in
-step 3, the same one holding the sign-ins. Unset `FOUNDRY_KEYS` and this step is due again every
-container, exactly like the logins.
+**`.claude` is a kept place**, so an install that lands survives the container. That place is the
+store named in step 3, the same one holding the sign-ins. Unset `FOUNDRY_KEYS` and this step is due
+again every container, exactly like the logins.
 
 ## The three are not all of Foundry
 
@@ -164,6 +177,23 @@ FOUNDRY_KEYS=foundry-keys sh bin/host.sh --worker sh -c 'cd /src/plugins/floor &
 
 It ends `joined.`, or names the one thing the machine still owes. It writes nothing.
 
+**Five things it can ask for, and they are not all the machine's to give:**
+
+| It says | Exit | What it wants, and what answering costs |
+|---|---|---|
+| this host is missing: `git` `awk` | 1 | floor declares `sh`, `git` and `awk`, and needs all three. **The image carries them**, so this only fires outside a container |
+| there is no repository here | 3 | you are not standing in one. `cd /src` — the clone from step 2, mounted read-only |
+| this host has no git author | 1 | a git `user.name` and `user.email`. It prints two `--global` lines, and **`~/.gitconfig` is on the container's own layer** — step 3 keeps three directories and that is not one. So set it outside, on the clone, where it arrives at `/src` with the mount |
+| `FOUNDRY_WHO` is not set | 1 | outside as well. `host.sh` sends it in from the machine's `git config user.email`, so empty there is empty inside. **It is a record, never a credential** — [`identity.md`](../../../../.claude/rules/identity.md) says so |
+| not joined. A run here would stop at… | 4 | the **repository's** declarations, not the machine's: `.foundry/gates`, `.foundry/practice`, `.foundry/judged`. No sign-in and no install ends this one. The first two are written by hand, and the refusal prints the command that declares a judge |
+
+**One of those is unverified here.** `host.sh` also sends `GIT_AUTHOR_NAME` and `GIT_AUTHOR_EMAIL`
+into the container, and join reads `git config`. Whether the second sees the first has not been
+driven on this machine. **Setting the identity on the clone answers it either way.**
+
+Everything else it prints is a report, and reports never stop it. They are the home, the authority,
+the work source, what the repository declares, and the skills its rules name.
+
 **`joined.` is not *installed*.** Join reports the plugins a rule names, and refuses on none of
 them. So a host with all three missing ends `joined.` all the same. On a fresh keys store, join's
 own line reads *cannot tell*, because there is no `~/.claude/settings.json` yet to read.
@@ -172,10 +202,47 @@ own line reads *cannot tell*, because there is no `~/.claude/settings.json` yet 
 
 | Exit | What it means |
 |---|---|
-| 2 | Docker is not answering. Start it |
+| 2 | Docker is not answering. **Two causes, and the refusal names one** — read the next section |
 | 3 | the image would not build. Run the same `docker build` without `-q` and read it |
 | 4 | the machine has no home for runs. Set `FOUNDRY_HOME`, or set `HOME` |
-| 5 | the place `FOUNDRY_KEYS` names could not be prepared |
+| 5 | the place `FOUNDRY_KEYS` names could not be prepared. **Two causes as well**, and `host.sh` says which |
+
+### Exit 2 is not always a stopped daemon
+
+`host.sh` asks `docker info` and says *start it*. **That answer is right for one of the two
+faults.** Run the command yourself and read which you have:
+
+```sh
+docker info
+```
+
+| What it says | What it is | What to do |
+|---|---|---|
+| cannot connect to the Docker daemon | it is not running | start it — `sudo systemctl start docker`, or open Docker Desktop |
+| permission denied on `/var/run/docker.sock` | it is running, and this user cannot reach it | the user is not in the `docker` group: `sudo usermod -aG docker "$USER"` |
+
+**On a fresh machine the second is the common one**, and it is the one *start it* sends the wrong
+way. Docker is already up.
+
+**A new shell does not pick the group up.** Membership is read at login, so log out and back in.
+`newgrp docker` covers the shell you are standing in and nothing else.
+
+### Exit 5 is whichever shape step 3 chose
+
+The value picks the mechanism, so it picks the failure too. **`host.sh` prints one line of the two,
+and both hide the output of the command that failed.** Run that command yourself.
+
+| The line | The cause | Run this |
+|---|---|---|
+| the directory named by `FOUNDRY_KEYS` could not be made | a value holding a slash. `mkdir -p` was refused under it — a parent you cannot write, a parent that is not there, or a read-only path | `mkdir -p "$FOUNDRY_KEYS/gh"` and read the error. Then name a path you own, under your home |
+| the volume named by `FOUNDRY_KEYS` could not be prepared | a bare word. Either Docker would not make the volume, or the one-off root container that gives the three directories to `forge` did not run | `docker volume create "$FOUNDRY_KEYS"`, and read the error |
+
+**A volume is prepared by a container**, run as root to hand the three directories to `forge`. So
+this exit can mean Docker answered step 1 and refused a container, and the error is Docker's to
+give.
+
+**`FOUNDRY_KEYS` has no third shape.** A word with no slash is a Docker volume whatever you meant.
+So a relative path is a directory, and `keys` is a volume named `keys`.
 
 ## Where to disagree
 
