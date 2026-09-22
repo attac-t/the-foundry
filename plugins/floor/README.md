@@ -179,7 +179,7 @@ that poisons the ref.
 
 ---
 
-## One skill
+## Two skills
 
 `floor:brief` — the five shapes a human surface takes. Work, change, update, decision, closure.
 
@@ -188,6 +188,14 @@ none.
 
 **A human surface is a decision interface.** It says what becomes true, why it matters, what a
 person must judge, and where the evidence is. The run record holds how the work was done.
+
+`floor:host` — take a machine that has Docker to a host that answers.
+
+The clone, the image, the sign-ins, the plugins and the calls that prove it. **`join.sh` above says
+what a host still owes; this says how it stopped owing it.**
+
+**A host that starts is not a host that carries Foundry.** The skill's step 6 says so, and says
+which half of it nobody has driven.
 
 ## Every verb
 
