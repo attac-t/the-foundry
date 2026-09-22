@@ -71,6 +71,8 @@ Give work a home outside the repo it changes:
 /plugin install floor@the-foundry
 ```
 
+**It ships `floor:host`**, which takes a machine that has Docker to a host that answers.
+
 Have work judged by something that did not write it:
 
 ```

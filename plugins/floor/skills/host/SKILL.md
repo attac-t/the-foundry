@@ -46,6 +46,15 @@ FOUNDRY_KEYS=foundry-keys
 **Unset, nothing is kept.** Every sign-in below is then asked again in the next container, and that
 is the default everywhere.
 
+**What it holds:** three directories and nothing above them — where the forge, the harness and the
+judge each keep their own. The host's own credential stores never cross in. That is the owner's
+decision, in writing, and this switch is the whole of the exception.
+
+**Who can read it, and it is not comfortable:** anyone who can run as this user. **A volume is not
+a vault.** Every process in the container runs as that one user, so a suite, a plugin and a judge
+all reach all three. That is what the grant costs. It stops the machine's stores crossing in; it
+does not stop the person at the keyboard.
+
 ### 4. Start the host that can work
 
 ```sh
