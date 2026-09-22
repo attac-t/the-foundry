@@ -2437,6 +2437,18 @@ wreck_runner "an answer that could not be read passing for silence is caught" \
 wreck_runner "a source that could not be asked reported as empty is caught" \
   unasked 's#exit 20#exit 1#'
 
+#
+# **A refused push is two facts wearing one exit code**, and the ref read back after it is the only
+# thing that tells them apart. So one break per fact: the first makes every refusal a holder, and
+# the second makes every refusal a source nobody could ask. Both were one line before the ref was
+# read twice, and each puts that line back from a different side.
+#
+wreck_runner "a push no credential could make passing for a holder is caught" \
+  ghpush '/the claim could not be pushed/{n;s/return 3/return 4/}' lib/source-github.sh
+
+wreck_runner "a claim another host took passing for a source nobody could ask is caught" \
+  ghrace 's#now=$(claim_tip "$1")#now=#' lib/source-github.sh
+
 
 # Whether `chmod 000` means anything here. Windows records no read bit and root ignores the one it
 # finds, so the break below would report a rule held for a reason that is not the rule.

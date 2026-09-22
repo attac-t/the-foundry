@@ -30,7 +30,8 @@
 #        sh source-github.sh state   <run>
 #        sh source-github.sh land    <run>
 #
-# Exit: 0 answered · 1 nothing there · 2 asked for something this does not do · 3 GitHub refused
+# Exit: 0 answered · 1 nothing there · 2 asked for something this does not do · 3 GitHub refused,
+#       or could not be reached at all
 #       4 this run already sent something else under that name
 #
 
@@ -452,6 +453,22 @@ where_from() {
 }
 
 
+#
+# **A push that could not happen is not an item somebody holds.** 4 is the answer meaning another
+# host got there first, and a container with no git credential fell through to it. The caller then
+# reported a holder nobody was: driven against #979 on 21 September, `git ls-remote` named no claim
+# before that run and none after it.
+#
+# **A refused push is two facts wearing one exit code.** A tip that moved after `claim_tip` read it
+# fails the fast-forward, and so does a push no credential was ever going to make. The server says
+# the same word to both, so nothing in the failure itself tells them apart.
+#
+# So the remote is asked once more. **A tip that is there and is not this host's is 4** — the loser
+# of a real race is told who won. **Anything else is 3**, the door for a source that could not be
+# reached: no tip at all, or the tip this push was built on. What that reader gets is the git line —
+# no credential, no network, a remote that refused — and never a name.
+#
+# One extra `ls-remote` buys both halves, and no reading of the exit code alone can.
 take_claim() {
     at=$(claim_tip "$1")
     [ -n "$at" ] && { holder_at "$at" "$2" || return 4; }
@@ -460,8 +477,11 @@ take_claim() {
 
     why=$(git push origin "$made:refs/heads/$(claim_ref "$1")" 2>&1) && return 0
 
-    printf 'source-github: the claim was refused: %s\n' "$why" >&2
-    return 4
+    now=$(claim_tip "$1")
+    [ -n "$now" ] && [ "$now" != "$at" ] && { holder_at "$now" "$2" || return 4; }
+
+    printf 'source-github: the claim could not be pushed: %s\n' "$why" >&2
+    return 3
 }
 
 # A commit on top of the one there, so the push is a fast-forward the server
