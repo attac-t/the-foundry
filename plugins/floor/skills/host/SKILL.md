@@ -103,6 +103,21 @@ section says how to see whether they worked.
 step 3, the same one holding the sign-ins. Unset `FOUNDRY_KEYS` and this step is due again every
 container, exactly like the logins.
 
+## The three are not all of Foundry
+
+`/src` asks for three. [README.md](../../../../README.md) holds which of the rest need an install
+of their own, and this page does not repeat the list.
+
+**Floor's own code needs none of them.** Measured 22 September 2026: `run.sh charter derive` wrote
+three clauses in a container carrying no plugins at all.
+
+**What goes missing is the half a worker invokes.** `panel:craft-charter` and
+`panel:decide-boundary` are skills, and a worker with no plugins reaches neither. So a charter
+derives and nothing shapes it. **The deriving half works, which is what hides the other.**
+
+Installing them is step 6's command with a different name after it, and **nobody has driven that
+here either.**
+
 ## Prove it answers
 
 A version is not a call. Leave the shell and make three calls, each from outside:
@@ -140,9 +155,9 @@ FOUNDRY_KEYS=foundry-keys sh bin/host.sh --worker sh -c 'cd /src/plugins/floor &
 
 It ends `joined.`, or names the one thing the machine still owes. It writes nothing.
 
-**`joined.` is not *installed*.** Join reports the plugins a rule names and refuses on none of
-them, so a host with the three missing still ends `joined.` — and on a fresh keys store its own
-line reads *cannot tell*, because there is no `~/.claude/settings.json` yet to read.
+**`joined.` is not *installed*.** Join reports the plugins a rule names, and refuses on none of
+them. So a host with all three missing ends `joined.` all the same. On a fresh keys store, join's
+own line reads *cannot tell*, because there is no `~/.claude/settings.json` yet to read.
 
 ## When a step refuses
 
