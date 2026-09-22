@@ -36,9 +36,22 @@
 # history keeps — never something that happens to a machine.
 #
 # Take a new one with `git hash-object --no-filters -- plugins/floor/adapters/<name>/run.sh`.
+#
+# **The second mind is unreachable, and the bar is lower until it returns.** Measured 22 September:
+# the codex adapter answered `you've hit your usage limit ... try again at Sep 27th`. Floor recorded
+# `unavailable`, refused the delivery, and was right to.
+#
+# **So this repository judges on one model for now, by the owner's decision.** That is the weaker
+# bar the paragraph above describes — a different reader, not a second mind. It is named here rather
+# than left for somebody to infer from a silent file.
+#
+# **Both adapters fix their model with `readonly`**, so a second anthropic judge would be a second
+# opus and buy nothing. [#986](https://github.com/attac-t/the-foundry/issues/986) owns that.
+#
+# Put the codex line back when the credits return. It is two lines, and the digest is already here.
 
-reach  codex:adversary  @adapter codex ad39b8d163d8589fba3797d62eca45ac6e2c55f8
+# reach  codex:adversary  @adapter codex ad39b8d163d8589fba3797d62eca45ac6e2c55f8
 reach  anthropic:adversary  @adapter anthropic 344c2f36088c925caa19c3c6a587e18a61d41c81
 
-codex:adversary  a change to what a run may claim is judged by something that did not write it
+# codex:adversary  a change to what a run may claim is judged by something that did not write it
 anthropic:adversary  a change to what a run may claim is judged by something that did not write it
