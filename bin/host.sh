@@ -265,7 +265,21 @@ run_in_the_container() {
         set -- --mount "$(how_that_place_is_kept "${pair%%:*}" "$where")" "$@"
     done
 
+    #
+    # **`gh` is signed in from the volume and git is not**, so a claim, a push and a delivery
+    # all failed with *could not read Username*.
+    #
+    # **`gh auth setup-git` is the documented cure and the wrong one here.** It writes
+    # `~/.gitconfig`, which lives on the container's own layer and dies every run.
+    #
+    # **And it prepends a blank `helper =`, which resets the list.** Harmless in a fresh
+    # container. That line has wiped a credential manager on this project before.
+    #
+    # So git reads the helper from its environment, and nothing on disk changes.
     docker run --rm "$(how_to_attach)" \
+        -e GIT_CONFIG_COUNT=1 \
+        -e 'GIT_CONFIG_KEY_0=credential.https://github.com.helper' \
+        -e 'GIT_CONFIG_VALUE_0=!gh auth git-credential' \
         -v "$root:/src:ro" \
         -v "$kept:/home/forge/.foundry" \
         -e "FOUNDRY_WHO=${FOUNDRY_WHO:-$(git config user.email 2>/dev/null)}" \
