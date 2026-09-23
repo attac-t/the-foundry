@@ -2695,7 +2695,19 @@ wreck_runner "an offer that never asks what is requested is caught" \
   offeropen '/^offer() {/,/^}/s#^    requested=\$(items_with_an_open_request) || exit "\$?"$#    requested=#'
 
 wreck_runner "a directory source that names no item for a request is caught" \
-  diritem 's#^delivered_item() { .*}$#delivered_item() { :; }#' lib/source-dir.sh
+  openitem 's#^delivered_item() { .*}$#delivered_item() { :; }#' lib/source-dir.sh
+
+wreck_runner "a directory source that lists a kept brief as a request is caught" \
+  openbrief 's#^        case \$file in \*\.brief) continue ;; esac$#        :#' lib/source-dir.sh
+
+wreck_runner "an offer that reads a source nobody could ask as nothing open is caught" \
+  offerunasked '/^items_with_an_open_request() {/,/^}/s#^    refuse_unasked "\$code" "list of open requests"$#    :#'
+
+wreck_runner "a GitHub source that reads only gh's first page of requests is caught" \
+  openbound 's#gh pr list --state open --limit "\$OPEN_REQUESTS_READ" --json#gh pr list --state open --json#' lib/source-github.sh
+
+wreck_runner "a GitHub source that trusts a list filled to its bound is caught" \
+  openfull 's#^    fewer_than_the_bound "\$said" || return 3$#    :#' lib/source-github.sh
 
 wreck_runner "a second read that fails and leaves no stop is caught" \
   passreadstop '/^begin_a_run_for() {/,/^}/s#|| stop_at "\$1" read "\$?"$#|| exit "$?"#'

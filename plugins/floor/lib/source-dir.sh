@@ -140,6 +140,8 @@ open_deliveries() {
 
     for file in "$root/deliveries"/*; do
         [ -f "$file" ] || continue
+        # A kept brief sits beside its record, and read as a delivery whose branch was its first word.
+        case $file in *.brief) continue ;; esac
 
         branch=$(awk 'NR == 1 { print $1 }' "$file")
         [ -n "$branch" ] || continue

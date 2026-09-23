@@ -266,8 +266,11 @@ case "$*" in
                             cat "$store/me" 2>/dev/null || printf 'foundry-run\n' ;;
   # The requests open against the repository, each with the item it answers, pre-shaped the way the
   # adapter's `--jq` shapes them. That expression was measured live, since nothing here can run it.
+  # Cut at `--limit` as gh cuts, and at 30 when none is named, because that is where gh stops.
   "pr list --state open"*)  [ -f "$store/reads-fail" ] && { echo "could not resolve host: api.github.com" >&2; exit 1; }
-                            cat "$store/open-prs" 2>/dev/null
+                            limit=30 prev=
+                            for arg in "$@"; do [ "$prev" = --limit ] && limit=$arg; prev=$arg; done
+                            head -n "$limit" "$store/open-prs" 2>/dev/null
                             true ;;
   # A read that cannot answer. GitHub fails this way for a network, a token or a rate limit, and none
   # of them mean "nothing is there yet" — which is what both readers below used to conclude.
@@ -4484,8 +4487,15 @@ an_open_request_keeps_its_item() {
   printf 'req\t2026-09-16T00:00:00Z\tpat\n' > "$src/labels/64"
   printf 'req\t2026-09-17T00:00:00Z\tpat\n' > "$src/labels/65"
   mkdir -p "$src/deliveries"
-  printf 'work/req-64\t64\tRequested item 64\n' > "$src/deliveries/a-request-for-64"
+  # Delivered through the adapter's own `publish`, with a brief, so what it writes is what `open`
+  # reads. A record written by hand here was a record chosen by whoever wrote the reader.
+  printf 'The work for 64.\n' > "$tmp/req-brief"
+  ( FOUNDRY_SOURCE_DIR="$src" sh "$dir_source" publish 64 a-request-for-64 work/req-64 'Requested item 64' \
+      Refs "$tmp/req-brief" ) >/dev/null 2>&1
   bar_and_rule "$tmp/req" 'offer req pat'
+
+  lacks "a kept brief is not listed as a request of its own" \
+        "$(FOUNDRY_SOURCE_DIR="$src" sh "$dir_source" open '')" ".brief"
 
   is  "an item a request is open for is not offered" "$(floor "$tmp/req" offer | cut -f1 | tr '\n' ' ')" "65 "
   has "and it says why" "$(floor_says "$tmp/req" offer)" "[64] is not offered: a request for it is open"
@@ -4499,7 +4509,7 @@ an_open_request_keeps_its_item() {
       "$(PATH="$tmp/reqbin:$PATH" code_of floor "$tmp/req" pass)" "44"
   has "the one no request is open for" "$(floor "$tmp/req" observe)" "item=65"
 
-  rm -f "$src/deliveries/a-request-for-64"
+  rm -f "$src/deliveries/a-request-for-64" "$src/deliveries/a-request-for-64.brief"
   is "once the request is gone, the item is offered again" \
      "$(floor "$tmp/req" offer | cut -f1 | tr '\n' ' ')" "64 65 "
 
@@ -4525,6 +4535,8 @@ a_pass_says_which_step_refused() {
      "$(code_of floor_through "$(a_source_answering find 2)" "$tmp/refused" pass)" "27"
   is "and one that cannot be asked to list ends it at 20" \
      "$(code_of floor_through "$(a_source_answering find 3)" "$tmp/refused" pass)" "20"
+  is "and so does one that cannot be asked what requests are open" \
+     "$(code_of floor_through "$(a_source_answering open 3)" "$tmp/refused" pass)" "20"
   is "a claim nobody could ask ends the pass at 20" \
      "$(code_of floor_through "$(a_source_answering claim 3)" "$tmp/refused" pass)" "20"
   is "a claimed item nobody could read ends the pass at 20, not 1" \
@@ -7835,8 +7847,11 @@ case "$*" in
                             cat "$store/me" 2>/dev/null || printf 'foundry-run\n' ;;
   # The requests open against the repository, each with the item it answers, pre-shaped the way the
   # adapter's `--jq` shapes them. That expression was measured live, since nothing here can run it.
+  # Cut at `--limit` as gh cuts, and at 30 when none is named, because that is where gh stops.
   "pr list --state open"*)  [ -f "$store/reads-fail" ] && { echo "could not resolve host: api.github.com" >&2; exit 1; }
-                            cat "$store/open-prs" 2>/dev/null
+                            limit=30 prev=
+                            for arg in "$@"; do [ "$prev" = --limit ] && limit=$arg; prev=$arg; done
+                            head -n "$limit" "$store/open-prs" 2>/dev/null
                             true ;;
   # A read that cannot answer. GitHub fails this way for a network, a token or a rate limit, and none
   # of them mean "nothing is there yet" — which is what both readers below used to conclude.
@@ -8172,6 +8187,19 @@ the_offer_reads_the_same_from_github() {
   printf 'work/82\thttps://example.invalid/pr/9\t82\n' > "$tmp/ghestore/open-prs"
   is  "an item a request is open for is not offered — GitHub" "$(ghe_floor offer | cut -f1 | tr '\n' ' ')" "81 "
   has "and it says why — GitHub" "$(ghe_says offer)" "[82] is not offered: a request for it is open"
+
+  # **The oldest request, behind thirty-nine newer ones.** gh answers its newest 30 unless told how
+  # many, and the one that falls off is the one whose claim aged out first. Batch four's judge.
+  { awk 'BEGIN { for (n = 1; n <= 39; n++) printf "work/r%d\thttps://example.invalid/pr/%d\t%d\n", n, n, 9000 + n }'
+    printf 'work/82\thttps://example.invalid/pr/82\t82\n'; } > "$tmp/ghestore/open-prs"
+  is "and neither is one whose request is older than gh's first page — GitHub" \
+     "$(ghe_floor offer | cut -f1 | tr '\n' ' ')" "81 "
+
+  # A list as long as the bound may be one gh stopped short, so it answers nothing.
+  awk 'BEGIN { for (n = 1; n <= 500; n++) printf "work/r%d\thttps://example.invalid/pr/%d\t%d\n", n, n, 9000 + n }' \
+    > "$tmp/ghestore/open-prs"
+  is  "a list of open requests that fills the bound is refused — GitHub" "$(code_of ghe_floor offer)" "20"
+  has "and it says the list may be cut short — GitHub" "$(ghe_says offer)" "as many as this reads"
   rm -f "$tmp/ghestore/open-prs"
 }
 
