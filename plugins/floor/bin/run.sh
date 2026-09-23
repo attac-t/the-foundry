@@ -3371,19 +3371,23 @@ renew_this_run_claim() {
     [ "$code" -eq 1 ] && return 0
     [ "$code" -eq 0 ] || return 20
 
-    #
-    # **Somebody else holds it, and this is where that is found out.** Before this the first host
-    # learned at delivery, with the work already done — #859 named that as its own cost.
-    #
-    # **Whatever the claim's age.** Age was once read first, so a claim another host took a minute
-    # ago was marked kept before anyone asked whose it was. #1010 found it.
-    holder=$(claim_holder "$held")
-    [ "$holder" = "$(holder_of "$dir")" ] || { settle_the_loss "$dir" "$item" "$holder"; return 30; }
+    keep_what_this_run_holds "$dir" "$item" "$held"
+}
 
-    age=$(claim_age "$held") || return 0
-    [ "$age" -gt "$(( CLAIM_TTL / CLAIM_FLOOR ))" ] || { mark_kept "$dir"; return 0; }
+#
+# **Somebody else holds it, and this is where that is found out.** Before this the first host learned
+# at delivery, with the work already done — #859 named that as its own cost.
+#
+# **Whatever the claim's age.** Age was once read first, so a claim another host took a minute ago
+# was marked kept before anyone asked whose it was. #1010 found it.
+keep_what_this_run_holds() {
+    holder=$(claim_holder "$3")
+    [ "$holder" = "$(holder_of "$1")" ] || { settle_the_loss "$1" "$2" "$holder"; return 30; }
 
-    renew_the_claim "$dir" "$item" "$age"
+    age=$(claim_age "$3") || return 0
+    [ "$age" -gt "$(( CLAIM_TTL / CLAIM_FLOOR ))" ] || { mark_kept "$1"; return 0; }
+
+    renew_the_claim "$1" "$2" "$age"
 }
 
 #

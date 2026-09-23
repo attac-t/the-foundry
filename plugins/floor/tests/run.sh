@@ -2563,7 +2563,7 @@ wreck_runner "a rule naming no hand that says nothing about it is caught" \
 # so the run records the name it claimed under, and a loss nobody holds says so. #991's judge.
 #
 wreck_runner "a run that loses its own claim to a new host name is caught" \
-  holdname '/^renew_this_run_claim() {/,/^}/s#\[ "\$holder" = "\$(holder_of "\$dir")" \]#[ "$holder" = "$(recording_host)" ]#'
+  holdname '/^keep_what_this_run_holds() {/,/^}/s#\[ "\$holder" = "\$(holder_of "\$1")" \]#[ "$holder" = "$(recording_host)" ]#'
 
 wreck_runner "a run that never records the name it claimed under is caught" \
   holdrecord 's#^remember_the_holder() { .*; }$#remember_the_holder() { :; }#'
