@@ -3375,7 +3375,6 @@ renew_this_run_claim() {
     # ago was marked kept before anyone asked whose it was. #1010 found it.
     holder=$(claim_holder "$held")
     [ "$holder" = "$(holder_of "$dir")" ] || { settle_the_loss "$dir" "$item" "$holder"; return 30; }
-    remember_the_holder "$dir"
 
     age=$(claim_age "$held") || return 0
     [ "$age" -gt "$(( CLAIM_TTL / CLAIM_FLOOR ))" ] || { mark_kept "$dir"; return 0; }
@@ -3420,7 +3419,7 @@ mark_kept_where_held() {
 #
 # **The name a run claims under is the run's, not the machine's.** A container starts under a new
 # host name each time, and a run is meant to move, so the name is kept the first time the run sees
-# its claim: when it takes one, or when a keep finds one a pass took before the run held the item.
+# its claim: when it takes one, or when it binds an item this host already holds.
 remember_the_holder() { [ -s "$1/claim.holder" ] || recording_host > "$1/claim.holder" 2>/dev/null; }
 
 holder_of() {
@@ -6464,7 +6463,20 @@ read_work_item() {
     printf '%s\n' "$item" > "$(source_file "$dir")" 2>/dev/null || die_unwritable "$(source_file "$dir")"
     record_kind "$dir" "$item"
     emit "$dir" item.read item="$item"
+    name_a_claim_taken_first "$dir" "$item"
     printf '%s\n' "$said"
+}
+
+#
+# **A claim taken before the run held its item is named here**, while the host that took it is the
+# one reading. Left to a keep, a run bound and then graded in a new container was refused its own
+# claim. #991's judge found it. The name is kept only when the source says this host holds it.
+name_a_claim_taken_first() {
+    held=$(source_says held "$2" 2>/dev/null) || return 0
+    [ "$(claim_holder "$held")" = "$(recording_host)" ] || return 0
+
+    remember_the_holder "$1"
+    mark_kept "$1"
 }
 
 #

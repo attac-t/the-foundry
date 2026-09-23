@@ -4035,21 +4035,34 @@ a_run_keeps_the_name_it_claimed_under() {
   lacks "and records no loss"                       "$(floor "$tmp/mvd" observe)" "claim.lost"
   has   "and the claim keeps the name it was taken under" "$(cat "$src/claims/74/held")" "$(uname -n)"
 
-  # **Claimed before the run held the item**, which is the order a pass takes. The first keep on the
-  # claiming host names it, so a move after that loses nothing.
+  # **Claimed before the run held the item**, which is the order a pass takes. Binding names it, so
+  # a run bound and moved at once, with no keep between, loses nothing. #991's judge.
   make_repo "$tmp/mvd2" main && set_origin "$tmp/mvd2" 'https://gitlab.com/acme/mvd2.git' \
     || { skip "a run that claimed first — git could not make a repo here"; return; }
   printf 'Claimed first\n' > "$src/items/75"
   floor "$tmp/mvd2" claim 75 >/dev/null 2>&1
   floor "$tmp/mvd2" new "Claimed first" >/dev/null 2>&1
   floor "$tmp/mvd2" source read 75 >/dev/null 2>&1
-  floor "$tmp/mvd2" claim >/dev/null 2>&1
   rm -f "$(floor "$tmp/mvd2" path)/claim.kept"
 
   lacks "a run that claimed before it held the item keeps it after a move" \
         "$(PATH="$tmp/hostbin:$PATH" floor_says "$tmp/mvd2" gates)" "held by"
 
-  rm -rf "$src/claims/74" "$src/claims/75"
+  # **Binding names only what the source confirms.** Bound to another host's item, a run that named
+  # itself and marked the claim kept would work that item unasked for a third of the window.
+  printf 'Held elsewhere\n' > "$src/items/76"
+  mkdir -p "$src/claims/76"
+  printf '2026-01-01T00:00:00Z\tOtherHost\t%s\n' "$(date -u +%s)" > "$src/claims/76/held"
+  make_repo "$tmp/mvd3" main && set_origin "$tmp/mvd3" 'https://gitlab.com/acme/mvd3.git' \
+    || { skip "a run bound to a held item — git could not make a repo here"; return; }
+  floor "$tmp/mvd3" new "Held elsewhere" >/dev/null 2>&1
+  floor "$tmp/mvd3" source read 76 >/dev/null 2>&1
+
+  is "a run bound to another host's item names no holder" \
+     "$(cat "$(floor "$tmp/mvd3" path)/claim.holder" 2>/dev/null)" ""
+  is "and is refused at the work" "$(code_of floor "$tmp/mvd3" gates)" "30"
+
+  rm -rf "$src/claims/74" "$src/claims/75" "$src/claims/76"
 }
 
 # A `uname` that answers `-n` with another name, the way a new container does, and passes the rest on.
@@ -4199,7 +4212,7 @@ a_pass_takes_the_first_item_nobody_holds() {
     || { skip "a whole pass — git could not make a bare repo here"; return; }
   make_repo "$tmp/pss4" main && set_origin "$tmp/pss4" 'https://github.com/acme/pss4.git' \
     || { skip "a whole pass — git could not make a repo here"; return; }
-  bar_and_rule "$tmp/pss4" 'eligible ready
+  bar_and_rule "$tmp/pss4" 'eligible ready pat
 deliver https://github.com/acme/pss4.git'
 
   is  "a pass takes a labelled item to a request" \
@@ -4216,19 +4229,19 @@ deliver https://github.com/acme/pss4.git'
     || { skip "a failing gate — git could not make a repo here"; return; }
   mkdir -p "$tmp/pss5/.foundry"
   commit_file "$tmp/pss5" .foundry/gates 'tests  false'
-  commit_file "$tmp/pss5" .foundry/practice 'eligible ready
-deliver https://gitlab.com/acme/pss.git'
+  commit_file "$tmp/pss5" .foundry/practice 'eligible ready pat
+deliver https://gitlab.com/acme/pss.git' && as_fetched "$tmp/pss5"
 
   is  "a gate that fails stops the pass before the request" \
       "$(FOUNDRY_PASS_COMMAND=$saw_it code_of floor "$tmp/pss5" pass)" "14"
   has "and the run says it was the gates" "$(floor "$tmp/pss5" observe)" "why=gates"
 }
 
-# A bar with one gate that passes, and the practice a pass reads. Both committed, as a person's would be.
+# A bar with one gate that passes, and the practice a pass reads: committed and fetched, as a merge would be.
 bar_and_rule() {
   mkdir -p "$1/.foundry"
   commit_file "$1" .foundry/gates 'tests  true'
-  commit_file "$1" .foundry/practice "${2:-eligible ready}"
+  commit_file "$1" .foundry/practice "${2:-eligible ready pat}" && as_fetched "$1"
 }
 a_pass_takes_the_first_item_nobody_holds
 
@@ -4460,6 +4473,11 @@ HOOK
         "$(gh_claims_says "$work" claim 71)" "could not be asked"
   lacks "and never the host that last held it" \
         "$(gh_claims_says "$work" claim 71)" "OtherHost"
+
+  # **Nor is it an item nobody holds.** Read as 1, a run that had lost its claim was told nobody held
+  # the item, when nobody could say. #991's judge found it.
+  is "a claim nobody could read is not one nobody holds" \
+     "$( cd "$work" && sh "$gh_source" held 71 >/dev/null 2>&1; printf '%s' "$?" )" "3"
 
   # #981: the fault, then the cure — and a cure only where one can work. A path asks no helper and
   # `gh` answers for none, so this origin gets neither line.

@@ -554,8 +554,9 @@ claim_commit() {
     printf 'claimed by %s\n' "$1" | git commit-tree "$tree" -p "$2" 2>/dev/null
 }
 
+# The tip of an item's claim ref, empty when there is none, and 3 when the remote could not be asked.
 claim_tip() {
-    listed=$(git ls-remote origin "refs/heads/$(claim_ref "$1")" 2>/dev/null) || return 0
+    listed=$(git ls-remote origin "refs/heads/$(claim_ref "$1")" 2>/dev/null) || return 3
 
     printf '%s' "${listed%%	*}"
 }
@@ -570,7 +571,9 @@ holder_at() {
 # `%ct` is the commit's own time, so the age travels with the claim and no
 # clock but the holder's wrote it. A reader elsewhere compares to its own.
 read_claim() {
-    at=$(claim_tip "$1")
+    # A remote nobody could ask says nothing about who holds the item. Read as 1, it told a run that
+    # had lost its claim that nobody held it. #991's judge found it.
+    at=$(claim_tip "$1") || return 3
     [ -n "$at" ] || return 1
 
     git fetch origin "refs/heads/$(claim_ref "$1")" >/dev/null 2>&1 || return 3

@@ -1964,15 +1964,17 @@ a source the keep cannot read, because a local grade must never wait on a networ
 nobody holds. A run holding no item says that nothing it does is exclusive.
 
 **A loss stands for a third of the window**, even once the holder lets go. If nobody holds the item
-then, the answer says so and names `claim <item>`.
+then, the answer says so and names `claim <item>`. A remote that cannot be asked is never *nobody*:
+the GitHub adapter answers 3 for it, and the item reads as held by someone the source could not name.
 
 **The name a claim goes under is the run's.** The run keeps the name the first time it sees its
-claim: when it takes one, or when a keep finds one a pass took first. So a run carried to another
-machine, or graded in a container that starts under a new host name, still holds its own claim.
+claim: when it takes one, or when it binds an item this host already holds. So a run carried to
+another machine, or graded in a container that starts under a new host name, still holds its own
+claim. Bound to another host's item, it keeps no name, and the work is refused.
 
 **The name is a record, not a credential.** It is a file in the run, so a worker that writes the
 holder's name there passes the keep, as one that set its host name always could. #156 owns the
-actor.
+actor, and #419 a control the worker cannot rewrite.
 
 **Two clocks, and nothing reconciles them.** The stamp is the holder's; the age is the reader's
 arithmetic. Hosts far out of step will disagree about what is dead, and floor neither detects that

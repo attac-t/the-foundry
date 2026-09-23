@@ -2545,8 +2545,14 @@ wreck_runner "a run that loses its own claim to a new host name is caught" \
 wreck_runner "a run that never records the name it claimed under is caught" \
   holdrecord 's#^remember_the_holder() { .*; }$#remember_the_holder() { :; }#'
 
-wreck_runner "a keep that never records a claim a pass took first is caught" \
-  holdkeep '/^renew_this_run_claim() {/,/^}/s#^    remember_the_holder "\$dir"$#    :#'
+wreck_runner "a run that never names a claim taken before it bound the item is caught" \
+  holdbind '/^read_work_item() {/,/^}/s#^    name_a_claim_taken_first "\$dir" "\$item"$#    :#'
+
+wreck_runner "a run that names itself holder of another host's item is caught" \
+  bindany '/^name_a_claim_taken_first() {/,/^}/s#^    \[ "\$(claim_holder "\$held")" = "\$(recording_host)" \] || return 0$#    :#'
+
+wreck_runner "a GitHub source that reads an unreachable remote as nobody holding is caught" \
+  ghheldgone '/^read_claim() {/,/^}/s#at=\$(claim_tip "\$1") || return 3#at=$(claim_tip "$1")#' lib/source-github.sh
 
 wreck_runner "an item nobody holds described as held is caught" \
   nobodyholds '/^say_why_the_work_waits() {/,/^}/s#^    \[ "\$code" -eq 1 \] || { say_who_holds "\$1"; return 0; }$#    say_who_holds "$1"; return 0#'
