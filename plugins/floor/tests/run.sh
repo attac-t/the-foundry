@@ -2615,14 +2615,14 @@ wreck_runner "a command that is not handed the item is caught" \
 wreck_runner "a command that is not handed its workspace is caught" \
   passplace '/^act_on_it() {/,/^}/s#FOUNDRY_PASS_WORKSPACE="\$tree" ##'
 
-wreck_runner "a command handed the name of who selected the run is caught" \
-  passunwho '/^act_on_it() {/,/^}/s#unset FOUNDRY_WHO FOUNDRY_RUN#unset FOUNDRY_RUN#'
+wreck_runner "a selection exported to everything the pass runs is caught" \
+  passunwho '/^pass() {/,/^}/s#^        unset FOUNDRY_WHO; FOUNDRY_WHO=\$(applier_of "\$item" "\$items")$#        FOUNDRY_WHO=$(applier_of "$item" "$items"); export FOUNDRY_WHO#'
 
-wreck_runner "a command handed the pass's pin on its run is caught" \
-  passcmdrun '/^act_on_it() {/,/^}/s#unset FOUNDRY_WHO FOUNDRY_RUN#unset FOUNDRY_WHO#'
+wreck_runner "a pin exported to every gate and judge is caught" \
+  passexport '/^begin_a_run_for() {/,/^}/s#^    unset FOUNDRY_RUN; FOUNDRY_RUN=\$dir$#    FOUNDRY_RUN=$dir; export FOUNDRY_RUN#'
 
 wreck_runner "a pass whose verbs follow a run begun under it is caught" \
-  passpin '/^begin_a_run_for() {/,/^}/s#^    FOUNDRY_RUN=\$dir; export FOUNDRY_RUN$#    :#'
+  passpin '/^begin_a_run_for() {/,/^}/s#^    unset FOUNDRY_RUN; FOUNDRY_RUN=\$dir$#    :#'
 
 wreck_runner "a pass stopped for good by an item with no words is caught" \
   passblank '/^begin_a_run_for() {/,/^}/s#^    heading=\${heading:-item \$1}$#    :#'

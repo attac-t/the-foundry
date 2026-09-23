@@ -4267,10 +4267,13 @@ deliver https://gitlab.com/acme/pss.git' && as_fetched "$tmp/pss5"
   has "and the run says it was the gates" "$(floor "$tmp/pss5" observe)" "why=gates"
 }
 
-# A bar with one gate that passes, and the practice a pass reads: committed and fetched, as a merge would be.
+#
+# A bar with one gate, and the practice a pass reads: committed and fetched, as a merge would be.
+# **The gate fails if it inherits the pass's run or selector.** A pass runs its gates as they would
+# run outside it; exported, the pin once turned floor's own suite red when it ran as a gate.
 bar_and_rule() {
   mkdir -p "$1/.foundry"
-  commit_file "$1" .foundry/gates 'tests  true'
+  commit_file "$1" .foundry/gates 'tests  test -z "${FOUNDRY_RUN:-}${FOUNDRY_WHO:-}"'
   commit_file "$1" .foundry/practice "${2:-eligible ready pat}" && as_fetched "$1"
 }
 a_pass_takes_the_first_item_nobody_holds
@@ -4434,8 +4437,9 @@ a_blank_item_is_still_an_item
 # its own work. So every kind of `gh` call floor ships is named here, and so is every line that names
 # the directory adapter's labels. **An allowlist**, because a list of known writes misses the next.
 #
-# A new kind of call goes red until a person names it, and so does one whose verb is a variable. A
-# write by a route that names neither `gh` nor `labels`, it cannot see. #884's judge.
+# A new kind of call goes red until a person names it, and so does one it cannot read: a verb that
+# is a variable, or a `gh` in call position with no plain word beside it. What it cannot see is a
+# route naming neither `gh` nor `labels`, or a call inside `eval` or `sh -c`. #884's judge.
 #
 GH_CALLS_FLOOR_MAKES='gh api
 gh api user
@@ -4472,13 +4476,22 @@ floor_never_puts_the_mark_on() {
     '        -X PATCH -f "labels[]=go"')" \
     || { skip "a planted continued write — could not copy floor"; return; }
   has "and a write flag on a continued line is found" "$(gh_api_writes_in "$tmp/planted-write")" "-X PATCH"
+
+  plant_in "$tmp/planted-semi" 'true;gh issue edit "$1" --add-label go' \
+    || { skip "a planted call after a separator — could not copy floor"; return; }
+  has "and one straight after a separator is found" "$(gh_calls_in "$tmp/planted-semi")" "gh issue edit"
+
+  plant_in "$tmp/planted-tick" 'x=`gh issue edit "$1" --add-label go`' \
+    || { skip "a planted call in backticks — could not copy floor"; return; }
+  has "and one in backticks is found" "$(gh_calls_in "$tmp/planted-tick")" "gh issue edit"
 }
 
 # The word after `gh` and the one after that when both are plain, or `gh ?` when the first is not.
+# A line matched as a call that holds no `gh` it can read is `gh ??`, and no list names that.
 gh_calls_in() {
   calls_of "$1" gh | awk '{
-      for (i = 1; i <= NF; i++) if ($i ~ /(^|[(\/"])gh"?$/) break
-      if (i > NF) next
+      for (i = 1; i <= NF; i++) if ($i ~ /(^|[(\/";&|`])gh"?$/) break
+      if (i > NF) { print "gh ??"; next }
       verb = (i < NF && $(i + 1) ~ /^[a-z-]+$/) ? $(i + 1) : "?"
       then_ = (verb != "?" && i + 1 < NF && $(i + 2) ~ /^[a-z-]+$/) ? " " $(i + 2) : ""
       print "gh " verb then_ }' | LC_ALL=C sort -u
@@ -4503,7 +4516,7 @@ plant_in() {
 #
 # A command in call position: first on its line, after a separator or a word that runs one, inside
 # `$(`, behind a path or a quote. Comments go, and a name inside a line a person reads is not a call.
-CALL_POSITION='(^[[:space:]]*|[;&|({][[:space:]]*|\$\([[:space:]]*|(if|while|until|then|do|else|exec|command|env|nohup|nice|time|xargs|!)[[:space:]]+|timeout[[:space:]]+[0-9]+[a-z]?[[:space:]]+)"?([^[:space:];&|()"]*/)?'
+CALL_POSITION='(^[[:space:]]*|[;&|({`][[:space:]]*|\$\([[:space:]]*|(if|while|until|then|do|else|exec|command|env|nohup|nice|time|xargs|!)[[:space:]]+|timeout[[:space:]]+[0-9]+[a-z]?[[:space:]]+)"?([^[:space:];&|()"]*/)?'
 
 # Every shipped line calling one of these commands, joined first where a backslash continues it.
 calls_of() {

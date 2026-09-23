@@ -3618,7 +3618,9 @@ pass() {
         [ "$code" -eq 30 ] && { note "[$item] is held by another host, so this pass passes it over"; continue; }
         [ "$code" -eq 0 ] || continue
 
-        FOUNDRY_WHO=$(applier_of "$item" "$items"); export FOUNDRY_WHO
+        # The selection is floor's to read and nobody's to inherit, so it is never exported: a gate, a
+        # judge and the command each run as they would outside a pass. #884's judge, round three.
+        unset FOUNDRY_WHO; FOUNDRY_WHO=$(applier_of "$item" "$items")
         begin_a_run_for "$item"
         return 0
     done
@@ -3673,7 +3675,10 @@ begin_a_run_for() {
     # **Every verb from here reads this run, whatever the checkout points at by then.** A `new` in
     # the checkout while the command worked moved the pointer, and the verbs after it followed.
     # The door refuses a run that is there at the start; this holds one begun later. #884's judge.
-    FOUNDRY_RUN=$dir; export FOUNDRY_RUN
+    #
+    # **Pinned in this shell, and exported nowhere.** Each verb runs in a subshell, which reads it.
+    # Exported, it reached every gate and judge, and floor's own suite, run as a gate, wrote there.
+    unset FOUNDRY_RUN; FOUNDRY_RUN=$dir
     read_work_item "$dir" "$1" >/dev/null
     emit "$dir" pass.began item="$1"
     note "this pass took [$1]: $dir"
@@ -3723,15 +3728,15 @@ stop_at() { record_the_stop "$1" "$2"; exit "$3"; }
 # worker, handed the item, the workspace and a file holding the item's words. Not who selected the
 # run: that is stamped already, and a worker holding the name could act in that person's place.
 #
-# `FOUNDRY_WORKER` is the host's word for its worker, or `pass` when it names none. The pin on the
-# run stays the pass's too: the command finds its run from the workspace it stands in, and a harness
-# handed the variable would write its own hooks' lines into this run.
+# `FOUNDRY_WORKER` is the host's word for its worker, or `pass` when it names none. The selector and
+# the pin are the pass's and are never exported, so the command receives neither. It finds its run
+# from the workspace it stands in, the way a harness's own hooks do.
 #
 # The pass reads back the command's exit and floor's record, never what the command printed.
 act_on_it() {
     [ -n "${FOUNDRY_PASS_COMMAND:-}" ] || { record_the_stop "$1" no-command; exit 44; }
 
-    ( cd "$tree" && unset FOUNDRY_WHO FOUNDRY_RUN && FOUNDRY_WORKER=${FOUNDRY_WORKER:-pass} FOUNDRY_PASS_ITEM="$1" \
+    ( cd "$tree" && FOUNDRY_WORKER=${FOUNDRY_WORKER:-pass} FOUNDRY_PASS_ITEM="$1" \
         FOUNDRY_PASS_WORKSPACE="$tree" FOUNDRY_PASS_ITEM_FILE="$dir/item.md" sh -c "$FOUNDRY_PASS_COMMAND" ); code=$?
     [ "$code" -eq 0 ] || { record_the_stop "$1" command-failed; exit 45; }
 

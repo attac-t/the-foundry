@@ -2031,6 +2031,10 @@ things and no others:
 names none. Who selected the run is not handed over: it is stamped already, and a worker holding the
 name could act in that person's place.
 
+**Neither the selection nor the pin leaves floor's own shell.** The pass never exports them, so the
+command, each gate and each judge run as they would outside a pass. Exported, the pin once reached
+floor's own suite when it ran as a gate, and the suite wrote into the pass's run.
+
 It reads back the command's exit and the run's record, never what the command printed. No command
 set is exit 44, and a command that fails is 45. Either way the run records why it stopped.
 
