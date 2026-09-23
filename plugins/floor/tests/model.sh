@@ -7377,6 +7377,9 @@ two_deliveries_reconcile_or_say_they_cannot() {
   # prints whichever it was given rather than deciding what a delivery is called.
   has "it says which delivery" \
       "$(floor_says "$tmp/rc" reconcile)" "2026-01-02-item-41-0000"
+  # `open` names each delivery's item in a third column now, and it must not ride in with the name.
+  has "and names it by its record alone, not with its item" \
+      "$(floor_says "$tmp/rc" reconcile)" "2026-01-02-item-41-0000] and this one both change"
   has "and names the file rather than the fact" \
       "$(floor_says "$tmp/rc" reconcile)" "both change: a"
 
