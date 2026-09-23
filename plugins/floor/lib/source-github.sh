@@ -475,7 +475,10 @@ take_claim() {
 
     made=$(claim_commit "$2" "$at") || return 3
 
-    why=$(LC_ALL=C git push origin "$made:refs/heads/$(claim_ref "$1")" 2>&1) && return 0
+    # Leased on the tip it read, empty for a first claim. A plain push made a ref a release had just
+    # deleted, so a renewal that landed late brought the released claim back — #1017.
+    ref=refs/heads/$(claim_ref "$1")
+    why=$(LC_ALL=C git push origin "$made:$ref" --force-with-lease="$ref:$at" 2>&1) && return 0
 
     now=$(claim_tip "$1")
     [ -n "$now" ] && [ "$now" != "$at" ] && { holder_at "$now" "$2" || return 4; }

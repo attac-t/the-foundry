@@ -2471,6 +2471,10 @@ wreck_runner "a cure that reads the fetch URL instead of the push is caught" \
 wreck_runner "a cure that prints the token in its origin is caught" \
   ghsecret 's|\${authority##\*@}|${authority}|' lib/source-github.sh
 
+# #1017: a renewal that lands after a release must not make the ref again. The lease is the rule.
+wreck_runner "a claim pushed without a lease on the tip it read is caught" \
+  ghlease '/^take_claim() {/,/^}/s# --force-with-lease="\$ref:\$at"##' lib/source-github.sh
+
 #
 # **A keep reads whose claim it is before how old it is.** The first break puts the old order back
 # exactly, so a claim another host took a minute ago is kept as this host's own. #1010 found it.
