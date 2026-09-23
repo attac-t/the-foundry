@@ -18,6 +18,10 @@ export LC_ALL
 FOUNDRY_WORKER=
 export FOUNDRY_WORKER
 
+# A host that exports its pass command ran it in every fixture pass here, whenever it ran the gates by
+# hand. Each case that wants a command names its own. #884's judge, round five.
+unset FOUNDRY_PASS_COMMAND
+
 here="$(cd "$(dirname "$0")/.." && pwd)"
 . "$here/tests/lib.sh"
 
@@ -4176,9 +4180,9 @@ label_lines_in() {
 the_directory_adapter_only_reads_its_labels
 
 #
-# **A pass takes the first item offered that nobody holds, and begins its run.** It never chooses: the
-# order is the rule's, and an item another host holds is passed over. #884 asked that whatever picks
-# an item claims it before anything else happens.
+# **A pass takes the first item offered that nobody holds, and carries it to a request.** It never
+# chooses: the order is the rule's, and an item another host holds is passed over. #884 asked that
+# whatever picks an item claims it before anything else happens.
 #
 a_pass_takes_the_first_item_nobody_holds() {
   make_repo "$tmp/pss" main && set_origin "$tmp/pss" 'https://gitlab.com/acme/pss.git' \
@@ -4461,6 +4465,56 @@ a_blank_item_is_still_an_item() {
   rm -rf "$src/claims/79" "$src/labels/79" "$src/items/79"
 }
 a_blank_item_is_still_an_item
+
+#
+# **A pass leaves by the code of the step that refused.** Four exits had no case: a source that cannot
+# list what is marked, a claim nobody could ask, a claimed item nobody could read, and every item
+# passed over. Two of them answered wrongly. #884's judge, round five.
+#
+a_pass_says_which_step_refused() {
+  make_repo "$tmp/refused" main && set_origin "$tmp/refused" 'https://gitlab.com/acme/refused.git' \
+    || { skip "a refused pass — git could not make a repo here"; return; }
+
+  printf 'Refused item\n' > "$src/items/78"
+  printf 'refused\t2026-09-14T00:00:00Z\tpat\n' > "$src/labels/78"
+  bar_and_rule "$tmp/refused" 'offer refused pat'
+
+  is "a source that cannot list what is marked ends the pass with its code" \
+     "$(code_of floor_through "$(a_source_answering find 2)" "$tmp/refused" pass)" "27"
+  is "a claim nobody could ask ends the pass at 20" \
+     "$(code_of floor_through "$(a_source_answering claim 3)" "$tmp/refused" pass)" "20"
+  is "a claimed item nobody could read ends the pass at 20, not 1" \
+     "$(code_of floor_through "$(a_source_answering read 3)" "$tmp/refused" pass)" "20"
+  is "a claimed item the source does not hold ends it at 1" \
+     "$(code_of floor_through "$(a_source_answering read 1)" "$tmp/refused" pass)" "1"
+  is "and none of them begins a run" "$(floor "$tmp/refused" path)" ""
+
+  mkdir -p "$src/claims/78"
+  printf '2026-01-01T00:00:00Z\tOtherHost\t%s\n' "$(date -u +%s)" > "$src/claims/78/held"
+  is  "every item passed over ends the pass at 30" "$(code_of floor "$tmp/refused" pass)" "30"
+  has "and says why" "$(floor_says "$tmp/refused" pass)" "held by another host or underway here"
+
+  rm -rf "$src/claims/78" "$src/labels/78" "$src/items/78"
+}
+
+# A work source that answers one verb with one code, and hands every other to the directory adapter.
+a_source_answering() {
+  cat > "$tmp/answers-$1-$2.sh" <<STUB
+#!/bin/sh
+[ "\$1" = $1 ] && exit $2
+exec sh '$dir_source' "\$@"
+STUB
+  printf '%s' "$tmp/answers-$1-$2.sh"
+}
+
+# `floor`, through a work source the case names rather than the directory adapter.
+floor_through() {
+  through=$1 dir=$2
+  shift 2
+  ( cd "$dir" 2>/dev/null || exit 9
+    FOUNDRY_HOME="$home" FOUNDRY_RUN="" FOUNDRY_WHO="" FOUNDRY_SOURCE="$through" sh "$runner" "$@" 2>&1 )
+}
+a_pass_says_which_step_refused
 
 #
 # **Floor never puts the mark on, through any adapter.** A worker that could label its own issue would
@@ -8066,6 +8120,24 @@ gh_api_writes_in() {
   calls_of "$1" gh | grep -E 'gh[[:space:]]+api' | grep -E -- '(-X|--method|-f|-F|--field|--raw-field|--input)([[:space:]]|=)'
 }
 the_github_adapter_calls_only_these
+
+#
+# **Only the adapter calls the forge.** Core reaches it through the work source, never by name. Three
+# rounds of review judged this scan by hand. A file is known by its name, so a second `source.sh`
+# elsewhere would pass. #884's judge, round five.
+#
+the_forge_is_called_only_by_its_adapter() {
+  is "gh is called only by the resolver and the GitHub adapter" \
+     "$(files_calling_gh_in "$(dirname "$runner")/..")" "source-github.sh
+source.sh"
+
+  plant_in "$tmp/planted-core-gh" 'gh issue list --label go' \
+    || { skip "a planted forge call in core — could not copy floor"; return; }
+  has "and a planted call in core is found" "$(files_calling_gh_in "$tmp/planted-core-gh")" "run.sh"
+}
+
+files_calling_gh_in() { calls_of "$1" gh | cut -d: -f1 | LC_ALL=C sort -u; }
+the_forge_is_called_only_by_its_adapter
 
 #
 # An item filed in a repository, advising that same repository. The bootstrap authorises it because

@@ -2522,26 +2522,26 @@ wreck_runner "a keep hook that reports a lost claim as a failure is caught" \
 # **What a pass may take is a mark a person put on, oldest first.** One break per rule, so a rule
 # nothing holds shows as the break that is missing. #833.
 #
-wreck_runner "eligible items in the order the source listed them is caught" \
-  eligsort 's#^oldest_first() { sort -t .*-k2,2; }$#oldest_first() { cat; }#'
+wreck_runner "items offered in the order the source listed them is caught" \
+  offersort 's#^oldest_first() { sort -t .*-k2,2; }$#oldest_first() { cat; }#'
 
-wreck_runner "eligible items newest first is caught" \
-  eligreverse '/^oldest_first() {/s#-k2,2; }#-k2,2 -r; }#'
+wreck_runner "items offered newest first is caught" \
+  offerreverse '/^oldest_first() {/s#-k2,2; }#-k2,2 -r; }#'
 
-wreck_runner "a label nobody is named for passing as eligible is caught" \
-  eligwho '/^kept_by_who_put_it_on() {/,/^}/s#^        \$3 == ""  *{#        0 {#'
+wreck_runner "a label nobody is named for, offered anyway, is caught" \
+  offerwho '/^kept_by_who_put_it_on() {/,/^}/s#^        \$3 == ""  *{#        0 {#'
 
-wreck_runner "a hand the rule does not name passing as eligible is caught" \
-  elighand '/^kept_by_who_put_it_on() {/,/^}/s#^        index(allowed, " " \$3 " ") == 0 {#        0 {#'
+wreck_runner "a hand the rule does not name, offered anyway, is caught" \
+  offerhand '/^kept_by_who_put_it_on() {/,/^}/s#^        index(allowed, " " \$3 " ") == 0 {#        0 {#'
 
 wreck_runner "a practice line that is never read is caught" \
-  eligrule '/^offer_rule() {/,/^}/s#\$1 == "offer"#$1 == "never"#'
+  offerrule '/^offer_rule() {/,/^}/s#\$1 == "offer"#$1 == "never"#'
 
 wreck_runner "a rule read where a worker commits is caught" \
-  eligtip '/^the_offer_line() {/,/^}/s#tip=\$(fetched_default_tip) ||#tip=$(git rev-parse HEAD) ||#'
+  offertip '/^the_offer_line() {/,/^}/s#tip=\$(fetched_default_tip) ||#tip=$(git rev-parse HEAD) ||#'
 
 wreck_runner "a rule naming no hand that says nothing about it is caught" \
-  elignohand '/^the_offer_line() {/,/^}/s#^    \[ "\$\#" -ge 2 \] || { note .*; return 0; }$#    :#'
+  offernohand '/^the_offer_line() {/,/^}/s#^    \[ "\$\#" -ge 2 \] || { note .*; return 0; }$#    :#'
 
 #
 # **The name a run claims under is the run's.** A container starts under a new host name each time,
@@ -2566,12 +2566,12 @@ wreck_runner "an item nobody holds described as held is caught" \
   nobodyholds '/^say_why_the_work_waits() {/,/^}/s#^    \[ "\$code" -eq 1 \] || { say_who_holds "\$1"; return 0; }$#    say_who_holds "$1"; return 0#'
 
 wreck_runner "a directory source that lists every label is caught" \
-  eliglabel '/^find_marked() {/,/^}/s#\$1 == label {#1 {#' lib/source-dir.sh
+  offerlabel '/^find_marked() {/,/^}/s#\$1 == label {#1 {#' lib/source-dir.sh
 
 wreck_runner "a GitHub source that drops an issue no event names is caught" \
   ghunnamed '/^label_put_on() {/,/^}/s#END { printf#END { if (at != "") printf#' lib/source-github.sh
 #
-# **A pass takes the first eligible item nobody holds, and works only in the run it begins.** One
+# **A pass takes the first item offered that nobody holds, and works only in the run it begins.** One
 # break per rule. #884, #997.
 #
 wreck_runner "a pass that begins a run without claiming the item is caught" \
@@ -2586,8 +2586,33 @@ wreck_runner "a pass that takes a second item beside a run in progress is caught
 wreck_runner "a pass that works beside a run holding no item is caught" \
   passany '/^leave_a_run_in_progress_alone() {/,/^}/s#^    here=\$(active_run 2>/dev/null) || return 0$#    here=$(active_run 2>/dev/null) \&\& [ -n "$(item_id "$here")" ] || return 0#'
 
-wreck_runner "a pass that finds nothing eligible and says something else is caught" \
-  passnone '/^pass() {/,/^}/s#^    \[ -n "\$items" \] || { note .*; exit 42; }$#    :#'
+wreck_runner "a pass offered nothing that says something else is caught" \
+  passnone '/^what_is_offered() {/,/^}/s#^    \[ -n "\$items" \] || { note .*; exit 42; }$#    :#'
+
+#
+# **A pass leaves by the code of the step that refused.** One break per exit, and one for each line
+# that carries a code up to `pass`. #884's judge, round five.
+#
+wreck_runner "a source that cannot list what is marked, read as nothing offered, is caught" \
+  offercode '/^what_is_offered() {/,/^}/s#^    items=\$(offer) || exit "\$?"$#    items=$(offer)#'
+
+wreck_runner "a pass that drops the code of what it was offered is caught" \
+  passcode '/^pass() {/,/^}/s#^    items=\$(what_is_offered) || exit "\$?"$#    items=$(what_is_offered)#'
+
+wreck_runner "a pass that drops the code of its claim is caught" \
+  passtaken '/^pass() {/,/^}/s#^    taken=\$(claim_the_first_offered "\$items") || exit "\$?"$#    taken=$(claim_the_first_offered "$items")#'
+
+wreck_runner "a pass that passes over every item and carries on is caught" \
+  passover '/^claim_the_first_offered() {/,/^}/s#^    exit 30$#    exit 0#'
+
+wreck_runner "a claim nobody could ask, passed over as held, is caught" \
+  passask '/^this_pass_claims() {/,/^}/s#could not be asked to claim \[\$1\]"; exit 20; }#could not be asked to claim [$1]"; return 1; }#'
+
+wreck_runner "an item nobody could ask for, read as one the source does not hold, is caught" \
+  passread '/^words_of_item() {/,/^}/s#^    refuse_unasked "\$code" "item \[\$1\]"$#    :#'
+
+wreck_runner "an item the source does not hold, read as one with no words, is caught" \
+  passheld '/^words_of_item() {/,/^}/s#^    \[ "\$code" -eq 0 \] || { note .*; exit 1; }$#    :#'
 
 #
 # **The host's command does the work, and floor hands it only its own words.** One break per rule: a

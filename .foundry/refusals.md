@@ -26,7 +26,7 @@ yet.
 file defines it as a function, and the enclosing function otherwise — so `[`, `mkdir` and `cd` are
 never heads.
 
-**Two hundred and twenty-one exit sites, one hundred and ninety-one decisions.** `sh bin/refusals.sh
+**Two hundred and twenty exit sites, one hundred and ninety decisions.** `sh bin/refusals.sh
 plugins/floor/bin/run.sh` prints the sites, and `sh bin/unnamed.sh` compares them to this
 page.
 
@@ -177,12 +177,11 @@ where it is — a key for a one-off buys indirection and saves nothing.
 | `derive_charter` | 1 | default |   one is written from an origin remote and a first commit. Add whichever is missing | `nothing-held` |
 | `the_offer_line` | 1 | default | — | `nothing-held` |
 | `print_bootstrap` | 1 | default | — | `nothing-held` |
-| `read_work_item` | 1 | default | the work source holds no item [$item] | `nothing-held` |
+| `words_of_item` | 1 | default | the work source holds no item [$1] | `nothing-held` |
 | `receive_answer` | 1 | default | — | `nothing-held` |
 | `refuse_unaddressed` | 1 | default | this run has read no item, so there is nowhere to address that | `nothing-held` |
 | `refuse_unheld_clause` | 1 | default | this run's charter holds no clause [$2], so nothing would ever read an answer about it | `nothing-held` |
 | `satisfied` | 1 | default | — | `nothing-held` |
-| `source_says` | 1 | answer | claimed [$1] and could not read it | `source` |
 | `accept_ancestry` | 2 | default | [$sha] is not a commit in [$tree] | `no-field` — a sha that is not one |
 | `accept_ancestry` | 2 | default | accept names why [$sha] belongs here | `no-field` |
 | `accept_ancestry` | 2 | default | accept names a commit | `no-field` |
@@ -324,7 +323,7 @@ where it is — a key for a one-off buys indirection and saves nothing.
 | `refuse_unless_answered` | 27 | answer | this work source can only be read, so nothing here can carry a $2 | `source` |
 | `refuse_the_source_as_advice` | 28 | invariant | a human naming it with \`targets add\` still can | `refusal` |
 | `claim` | 30 | answer | — | `header` |
-| `take_the_first_claimable` | 30 | answer | every item offered is held by another host, so this pass takes nothing | `header` |
+| `claim_the_first_offered` | 30 | answer | every item offered is held by another host or underway here, so this pass takes nothing | `header` |
 | `refuse_an_item_another_host_holds` | 30 | answer | — | `header` |
 | `release` | 30 | answer | [$item] is not this host's to release | `header` |
 | `refuse_two_kinds` | 31 | default | an item is one kind — the inventory is short on purpose | nobody yet — the person who could want it otherwise is a repository whose work item is two kinds at once, and then a reader picking one of them answers differently each time it is asked |
@@ -357,7 +356,7 @@ where it is — a key for a one-off buys indirection and saves nothing.
 | `refuse_an_adapter_nobody_authorised` | 40 | invariant |   or declare a command of your own with \`@custom\` | `refusal` |
 | `refuse_an_adapter_that_moved` | 40 | invariant | $1 authorises adapter [$pin] and [$ran] is what answered | `refusal` |
 | `say_nothing_here_can_find_it_again` | 41 | answer | so tell every later command which run: export FOUNDRY_RUN=$dir | `header` |
-| `pass` | 42 | answer | nothing is offered, so this pass takes nothing | `header` |
+| `what_is_offered` | 42 | answer | nothing is offered, so this pass takes nothing | `header` |
 | `leave_a_run_in_progress_alone` | 43 | answer | a run is active here already, so this pass leaves it alone: $here | `header` |
 | `act_on_it` | 44 | answer | — | `header` |
 | `run_the_host_command` | 45 | answer | — | `header` |

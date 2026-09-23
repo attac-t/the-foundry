@@ -59,8 +59,9 @@
 #      the one path no human typed
 #  29  a run here holds a workspace, so this host is not settled. An answer about the host, and
 #      never a fault in any run
-#  30  another host holds that item, or this one does not. A claim is not authority, so this is
-#      never a refusal about what a run may touch
+#  30  another host holds that item, or this one does not. To a pass, every item offered is held
+#      elsewhere or underway here. A claim is not authority, so this is never a refusal about what
+#      a run may touch
 #  31  the source says one item is more than one kind. The inventory is short so a reader never
 #      has to choose, and two answers is that choice arriving anyway
 #  32  the delivery carries a commit this run has no record of making, and nobody accounted for it
@@ -211,7 +212,7 @@ floor — where work happens.
   run.sh claim [item]             take it, or keep the one this run holds; 30 if another host has it
   run.sh release <item>           let it go, if this host took it
   run.sh offer                    what a pass may take, oldest mark first
-  run.sh pass                     take the first item offered that nobody holds, and begin its run
+  run.sh pass                     take the first offered item nobody holds to a request — exit 42 to 45
   run.sh observe [event] [k=v...] record that something happened, or print what did
   run.sh observed [event]         every run's observations, with the run named
   run.sh merge                    land what was graded, or say why it may not be
@@ -3608,8 +3609,8 @@ kept_by_who_put_it_on() {
 }
 
 #
-# One pass: the first item offered that this host can claim, and a run begun for it. A trigger wakes
-# this (#997), and what a pass does once its run has begun is the next piece of that work.
+# One pass carries the first item offered that this host can claim to a request: a run, the host's
+# command in it, the bar, and a push. A trigger wakes it, #997.
 #
 # **It never chooses.** The order is the rule's, and an item another host holds is passed over,
 # never taken. Any run already active here is left alone, because one pass takes one item.
@@ -3622,11 +3623,14 @@ pass() {
     leave_a_run_in_progress_alone
     keep_the_host_command_to_itself
 
-    items=$(offer); code=$?
-    [ "$code" -eq 0 ] || exit "$code"
-    [ -n "$items" ] || { note "nothing is offered, so this pass takes nothing"; exit 42; }
+    items=$(what_is_offered) || exit "$?"
+    taken=$(claim_the_first_offered "$items") || exit "$?"
+    answer_to_the_applier "$taken" "$items"
+    begin_a_run_for "$taken"
 
-    take_the_first_claimable "$items"
+    open_the_work "$taken"
+    act_on_it "$taken"
+    carry_it_to_a_request "$taken" "$heading"
 }
 
 #
@@ -3638,16 +3642,21 @@ keep_the_host_command_to_itself() {
     unset FOUNDRY_PASS_COMMAND
 }
 
-take_the_first_claimable() {
-    for item in $(printf '%s\n' "$1" | cut -f1); do
-        this_pass_claims "$item" || continue
+# What `offer` lists. An empty list is an answer, and a pass has nothing to act on.
+what_is_offered() {
+    items=$(offer) || exit "$?"
+    [ -n "$items" ] || { note "nothing is offered, so this pass takes nothing"; exit 42; }
 
-        answer_to_the_applier "$item" "$1"
-        begin_a_run_for "$item"
-        return 0
+    printf '%s\n' "$items"
+}
+
+# The first item offered that this pass could claim, printed once it holds it.
+claim_the_first_offered() {
+    for item in $(printf '%s\n' "$1" | cut -f1); do
+        this_pass_claims "$item" && { printf '%s\n' "$item"; return 0; }
     done
 
-    note "every item offered is held by another host, so this pass takes nothing"
+    note "every item offered is held by another host or underway here, so this pass takes nothing"
     exit 30
 }
 
@@ -3701,9 +3710,9 @@ leave_a_run_in_progress_alone() {
 }
 
 # The run, named for the item's own first line, holding the item. `claim` came first, so a second
-# host is already refused.
+# host is already refused. The heading titles the request too.
 begin_a_run_for() {
-    words=$(source_says read "$1") || { note "claimed [$1] and could not read it"; exit 1; }
+    words=$(words_of_item "$1") || exit "$?"
     heading=$(title_for "$1" "$words")
 
     make_run "$heading" >/dev/null
@@ -3711,10 +3720,6 @@ begin_a_run_for() {
     read_work_item "$dir" "$1" >/dev/null
     emit "$dir" pass.began item="$1"
     note "this pass took [$1]: $dir"
-
-    open_the_work "$1"
-    act_on_it "$1"
-    carry_it_to_a_request "$1" "$heading"
 }
 
 # An item's first line with words, or its id. Titled by nothing, `make_run` refused an item with no
@@ -6538,9 +6543,7 @@ read_work_item() {
     [ -n "$item" ]  || { note "read needs an item to read"; exit 2; }
     refuse_another_item "$dir" "$item"
 
-    said=$(source_says read "$item"); code=$?
-    refuse_unasked "$code" "item [$item]"
-    [ "$code" -eq 0 ] || { note "the work source holds no item [$item]"; exit 1; }
+    said=$(words_of_item "$item") || exit "$?"
 
     printf '%s\n' "$said" > "$dir/item.md" 2>/dev/null || die_unwritable "$dir/item.md"
     printf '%s\n' "$item" > "$(source_file "$dir")" 2>/dev/null || die_unwritable "$(source_file "$dir")"
@@ -6548,6 +6551,15 @@ read_work_item() {
     emit "$dir" item.read item="$item"
     name_a_claim_taken_first "$dir" "$item"
     printf '%s\n' "$said"
+}
+
+#
+# What the source holds for an item. A source nobody could ask is 20 and an item it does not hold is
+# 1. A pass read both as 1, and sent a person to the item when the fault was the host. #884's judge.
+words_of_item() {
+    source_says read "$1"; code=$?
+    refuse_unasked "$code" "item [$1]"
+    [ "$code" -eq 0 ] || { note "the work source holds no item [$1]"; exit 1; }
 }
 
 #

@@ -2008,12 +2008,12 @@ A label no event names is dropped and said, and so is one put on by a hand the r
 With one shared account, the name an event gives is the account's, not a person's. So the mark is a
 record, not a control, until a worker has its own identity.
 
-**`run.sh pass` takes the first of them this host can claim, and begins its run.** An item another
-host holds is passed over and said, and so is one a run here already works on. Any run active in
-this checkout is left alone, exit 43, one holding no item included: every verb a pass calls reads
-the active run first. Nothing offered is exit 42, with the reason. **Once a pass begins its run,
-every verb it calls reads that run**, whatever the checkout points at by then, and an item with no
-words is titled by its id.
+**`run.sh pass` takes the first of them this host can claim, and carries it to a request.** An item
+another host holds is passed over and said, and so is one a run here already works on. When every
+item is, that is exit 30. Any run active in this checkout is left alone, exit 43, one holding no item
+included: every verb a pass calls reads the active run first. Nothing offered is exit 42, with the
+reason. **Once a pass begins its run, every verb it calls reads that run**, whatever the checkout
+points at by then, and an item with no words is titled by its id.
 
 **Exclusive between hosts, not within one.** A claim from the same host renews, so two passes in two
 checkouts on one host could both take one item. One live pass per host is the trigger's to keep,
