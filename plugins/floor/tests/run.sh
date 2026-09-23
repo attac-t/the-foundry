@@ -1625,14 +1625,20 @@ a_moot_read_from_a_file_is_counted
 # seeded and came back empty. Both look the same from here, and both are the same finding.
 #
 a_slot_that_says_nothing_is_named_not_failed() {
-  local was=$never_ran keep_failed=$failed said=''
+  local was=$never_ran keep_failed=$failed said='' counted
 
   : > "$tmp/verdict/selftest"
 
   # **Through a file, never a command substitution.** `$(...)` is a subshell: `report_verdict` raised
   # `never_ran` inside it and the rise died there, so the count below could never hold and this check
   # failed on every run since it shipped.
+  #
+  # **From zero, and put back at once.** `report_verdict` raises `failed` only from 0, so a check that
+  # failed earlier left 1 here, and this one read it as its own. One fault read as two. #1021.
+  failed=0
   report_verdict selftest > "$tmp/selftest.said"
+  counted=$failed
+  failed=$keep_failed
   said=$(cat "$tmp/selftest.said")
 
   case $said in
@@ -1640,13 +1646,12 @@ a_slot_that_says_nothing_is_named_not_failed() {
     *) bad "an empty verdict slot was not named" ;;
   esac
 
-  [ "$never_ran" -eq $((was + 1)) ] && [ "$failed" -ne 1 ] \
+  [ "$never_ran" -eq $((was + 1)) ] && [ "$counted" -ne 1 ] \
     && printf '  ok    a slot that says nothing is a MOOT, never a failed break\n' \
     || bad "an empty verdict slot was counted as a failed break"
 
   rm -f "$tmp/selftest.said" "$tmp/verdict/selftest"
   never_ran=$was
-  restore_what_report_verdict_set
 }
 a_slot_that_says_nothing_is_named_not_failed
 
