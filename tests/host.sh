@@ -55,6 +55,7 @@ asked() { cat "$tmp/asked" 2>/dev/null; }
 # Whether docker was handed `-it` as an argument of its own. `asked` joins every argument into one
 # line, so a checkout whose path held `-it` read as a terminal nobody asked for — #995.
 asked_for_a_terminal() { grep -qx -- '-it' "$tmp/argv"; }
+asked_for_stdin_alone() { grep -qx -- '-i' "$tmp/argv"; }
 
 # `FOUNDRY_HOME` decides where runs go, so the suite names one rather than reading the machine's.
 # **Stdin is closed, and that is the point.** `host.sh` decides `-it` from `[ -t 0 ]`, and this
@@ -149,6 +150,13 @@ if asked_for_a_terminal; then
   bad "and no terminal is asked for there either — it asked"
 else
   ok  "and no terminal is asked for there either"
+fi
+
+# Absent `-it` could mean nothing was asked at all. The flag it should be is `-i`, alone.
+if asked_for_stdin_alone; then
+  ok  "and it asks for stdin alone, -i"
+else
+  bad "and it asks for stdin alone, -i — it did not"
 fi
 
 # --- the volume ---
