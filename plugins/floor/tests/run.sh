@@ -2577,6 +2577,9 @@ wreck_runner "a GitHub source that drops an issue no event names is caught" \
 wreck_runner "a pass that begins a run without claiming the item is caught" \
   passclaim '/^pass() {/,/^}/s#( claim "\$item" ) >/dev/null 2>&1; code=\$?#code=0#'
 
+wreck_runner "a pass that stops when another host takes its item is caught" \
+  passnext '/^pass() {/,/^}/s#is held by another host, so this pass passes it over"; continue; }#is held by another host, so this pass passes it over"; exit 30; }#'
+
 wreck_runner "a pass that takes a second item beside a run in progress is caught" \
   passleave '/^pass() {/,/^}/s#^    leave_a_run_in_progress_alone$#    :#'
 

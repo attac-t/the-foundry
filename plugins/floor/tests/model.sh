@@ -4161,6 +4161,11 @@ a_pass_takes_the_first_item_nobody_holds() {
   printf 'ready\t2026-09-05T00:00:00Z\tpat\n' > "$src/labels/95"
   printf '2026-01-01T00:00:00Z\tOtherHost\t%s\n' "$(date -u +%s)" > "$src/claims/91/held"
 
+  # No work source, and the pass refuses, rather than reading nothing as nothing eligible. #884.
+  is "a pass with no work source refuses" \
+     "$( cd "$tmp/pss" && FOUNDRY_HOME="$home" FOUNDRY_RUN="" FOUNDRY_WHO="" FOUNDRY_SOURCE="$tmp/no-such" \
+         sh "$runner" pass >/dev/null 2>&1; printf '%s' "$?" )" "3"
+
   is "a pass with no rule takes nothing" "$(code_of floor "$tmp/pss" pass)" "42"
 
   bar_and_rule "$tmp/pss"
@@ -4248,6 +4253,37 @@ bar_and_rule() {
   commit_file "$1" .foundry/practice "${2:-eligible ready pat}" && as_fetched "$1"
 }
 a_pass_takes_the_first_item_nobody_holds
+
+#
+# **Two hosts pass at once, and each takes a different item.** The claim is the one step both go
+# through, so the host that loses an item is refused it and takes the next. #884 asked for this.
+#
+# Every order the two can run in ends the same way, which is why a race can be a case here.
+two_hosts_pass_at_once() {
+  make_repo "$tmp/twa" main && set_origin "$tmp/twa" 'https://gitlab.com/acme/tw.git' \
+    && make_repo "$tmp/twb" main && set_origin "$tmp/twb" 'https://gitlab.com/acme/tw.git' \
+    || { skip "two hosts at once — git could not make a repo here"; return; }
+  a_host_named SecondHost "$tmp/twbin" \
+    || { skip "two hosts at once — could not put a uname on the path"; return; }
+
+  for n in 97 98; do printf 'Race item %s\n' "$n" > "$src/items/$n"; done
+  printf 'race\t2026-09-07T00:00:00Z\tpat\n' > "$src/labels/97"
+  printf 'race\t2026-09-08T00:00:00Z\tpat\n' > "$src/labels/98"
+  bar_and_rule "$tmp/twa" 'eligible race pat'
+  bar_and_rule "$tmp/twb" 'eligible race pat'
+
+  floor "$tmp/twa" pass >/dev/null 2>&1 &
+  PATH="$tmp/twbin:$PATH" floor "$tmp/twb" pass >/dev/null 2>&1 &
+  wait
+
+  is "two hosts passing at once take two items" \
+     "$(cut -f2 "$src/claims/97/held" "$src/claims/98/held" 2>/dev/null | sort -u | grep -c .)" "2"
+  differs "and each run holds a different one" \
+     "$(cat "$(floor "$tmp/twa" path)/source")" "$(cat "$(floor "$tmp/twb" path)/source")"
+
+  rm -rf "$src/claims/97" "$src/claims/98" "$src/labels/97" "$src/labels/98"
+}
+two_hosts_pass_at_once
 
 #
 # **Floor never puts the eligibility mark on.** A worker that could label its own issue would choose
