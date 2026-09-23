@@ -2684,6 +2684,34 @@ wreck_runner "a pass that calls a refused delivery delivered is caught" \
 wreck_runner "a pass whose run answers to nobody is caught" \
   passwho 's#^answer_to_the_applier() { .*}$#answer_to_the_applier() { :; }#'
 
+#
+# **An item a request is open for is not offered, and every run a pass makes holds a line.** One
+# break per rule. #1025, #1026.
+#
+wreck_runner "an item a request is open for, offered anyway, is caught" \
+  offerrequested '/^not_yet_requested() {/,/^}/s#^        index(requested, " " \$1 " ") { say(\$1); next }$#        0 { next }#'
+
+wreck_runner "an offer that never asks what is requested is caught" \
+  offeropen '/^offer() {/,/^}/s#^    requested=\$(items_with_an_open_request) || exit "\$?"$#    requested=#'
+
+wreck_runner "a directory source that names no item for a request is caught" \
+  diritem 's#^delivered_item() { .*}$#delivered_item() { :; }#' lib/source-dir.sh
+
+wreck_runner "a second read that fails and leaves no stop is caught" \
+  passreadstop '/^begin_a_run_for() {/,/^}/s#|| stop_at "\$1" read "\$?"$#|| exit "$?"#'
+
+wreck_runner "a run that never says the pass began is caught" \
+  passbegan '/^begin_a_run_for() {/,/^}/s#^    emit "\$dir" pass.began item="\$1"$#    :#'
+
+wreck_runner "a pass that takes an argument is caught" \
+  passargs '/^pass() {/,/^}/s#^    \[ "\$\#" -eq 0 \] || { usage; exit 2; }$#    :#'
+
+wreck_runner "a source that cannot be asked to list, read as nothing marked, is caught" \
+  offerask '/^marked_by_the_rule() {/,/^}/s#^    refuse_unasked "\$code" "items labelled \[\$1\]"$#    :#'
+
+wreck_runner "a reconcile that reads the item as part of where is caught" \
+  reconcilecols '/^report_clashes() {/,/^}/s#read -r branch identity _; do#read -r branch identity; do#'
+
 
 # Whether `chmod 000` means anything here. Windows records no read bit and root ignores the one it
 # finds, so the break below would report a rule held for a reason that is not the rule.

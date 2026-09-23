@@ -2005,6 +2005,10 @@ offered, and it says which.
 A label no event names is dropped and said, and so is one put on by a hand the rule does not name.
 **Floor never puts the label on.**
 
+**An item a request is open for is not offered**, and that is said too. The request is its work,
+waiting on review. Its claim ages out while it waits, and a second host took the item again, #1025.
+The source says which item each open request answers.
+
 With one shared account, the name an event gives is the account's, not a person's. So the mark is a
 record, not a control, until a worker has its own identity.
 
@@ -2040,6 +2044,9 @@ floor's own suite when it ran as a gate, and the suite wrote into the pass's run
 
 It reads back the command's exit and the run's record, never what the command printed. No command
 set is exit 44, and a command that fails is 45. Either way the run records why it stopped.
+
+**Every run a pass makes holds a line a later pass can read.** It writes `pass.began` before it
+reads the item a second time, and a read that fails then is a stop, `why=read`. #1026.
 
 **Nothing keeps the claim while the command runs.** The keep fires from floor's own verbs and from
 the harness hook. A command that runs past a third of `FOUNDRY_CLAIM_TTL` should run `run.sh claim`

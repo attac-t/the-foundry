@@ -133,8 +133,8 @@ kind_of_item() {
 
 
 #
-# Every delivery this directory holds but this run's. Nothing here merges, so
-# it holds no notion of open and reports every delivery it recorded.
+# Every delivery this directory holds but this run's: its branch, its record and its item. Nothing
+# here merges, so it holds no notion of open and reports every delivery it recorded.
 open_deliveries() {
     [ -d "$root/deliveries" ] || return 0
 
@@ -145,9 +145,12 @@ open_deliveries() {
         [ -n "$branch" ] || continue
         [ "$branch" = "$1" ] && continue
 
-        printf '%s\t%s\n' "$branch" "$file"
+        printf '%s\t%s\t%s\n' "$branch" "$file" "$(delivered_item "$file")"
     done
 }
+
+# The item a delivery answers: the record's second field. `offer` passes it over while it is open.
+delivered_item() { awk -F'\t' 'NR == 1 { print $2 }' "$1"; }
 
 
 # A fresh claim is linked into place whole. Failing that, the holder rewriting its own stamp is
