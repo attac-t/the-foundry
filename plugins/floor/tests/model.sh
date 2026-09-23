@@ -3968,15 +3968,14 @@ exactly_one_host_takes_an_item
 # so a copy holding no claim graded and judged an item another host held. #991 saw two at once.
 #
 another_hosts_item_is_refused_at_the_work() {
-  make_repo "$tmp/wrk" main && set_origin "$tmp/wrk" 'https://gitlab.com/acme/wrk.git'     || { skip "working a held item — git could not make a repo here"; return; }
+  make_repo "$tmp/wrk" main && set_origin "$tmp/wrk" 'https://gitlab.com/acme/wrk.git' \
+    || { skip "working a held item — git could not make a repo here"; return; }
 
   mkdir -p "$src/items" "$src/claims/73"
-  printf 'Worked by two
-' > "$src/items/73"
+  printf 'Worked by two\n' > "$src/items/73"
   floor "$tmp/wrk" new "Worked by two" >/dev/null 2>&1
   floor "$tmp/wrk" source read 73 >/dev/null 2>&1
-  printf '2026-01-01T00:00:00Z	OtherHost	%s
-' "$(date -u +%s)" > "$src/claims/73/held"
+  printf '2026-01-01T00:00:00Z\tOtherHost\t%s\n' "$(date -u +%s)" > "$src/claims/73/held"
 
   is  "a grade of an item another host holds is refused" "$(code_of floor "$tmp/wrk" gates)" "30"
   has "and it names who holds it" "$(floor_says "$tmp/wrk" gates)" "held by OtherHost"
@@ -3984,9 +3983,11 @@ another_hosts_item_is_refused_at_the_work() {
   is  "and a delivery"     "$(code_of floor "$tmp/wrk" deliver 'A title')" "30"
 
   # A run holding no item cannot be exclusive, and says so rather than grading as though it were.
-  make_repo "$tmp/wrk2" main && set_origin "$tmp/wrk2" 'https://gitlab.com/acme/wrk2.git'     || { skip "a run with no item — git could not make a repo here"; return; }
+  make_repo "$tmp/wrk2" main && set_origin "$tmp/wrk2" 'https://gitlab.com/acme/wrk2.git' \
+    || { skip "a run with no item — git could not make a repo here"; return; }
   floor "$tmp/wrk2" new "Nothing held" >/dev/null 2>&1
-  has "a run holding no item says nothing is exclusive"       "$(floor_says "$tmp/wrk2" gates)" "holds no item"
+  has "a run holding no item says nothing is exclusive" \
+      "$(floor_says "$tmp/wrk2" gates)" "holds no item"
 }
 another_hosts_item_is_refused_at_the_work
 
@@ -4186,23 +4187,21 @@ HOOK
   # **A renewal that lands after a release brings nothing back.** The holder reads its own tip, and
   # its release lands before the renewal's push connects. #1017 watched a plain push make the ref
   # again. This shim deletes the ref between the read and the push, which is where that release was.
-  mine=$(printf 'claimed by %s
-' "$(uname -n)" | git -C "$work" commit-tree "$tree")
+  mine=$(printf 'claimed by %s\n' "$(uname -n)" | git -C "$work" commit-tree "$tree")
   git -C "$work" push -q -f origin "$mine:refs/heads/foundry/claim/71" 2>/dev/null
 
   late="$tmp/gitshim-late"
   mkdir -p "$late"
-  { printf '#!/bin/sh
-'
-    printf 'case "$1" in push) "%s" --git-dir="%s" update-ref -d refs/heads/foundry/claim/71 ;; esac
-'       "$(command -v git)" "$bare"
-    printf 'exec "%s" "$@"
-' "$(command -v git)"
+  { printf '#!/bin/sh\n'
+    printf 'case "$1" in push) "%s" --git-dir="%s" update-ref -d refs/heads/foundry/claim/71 ;; esac\n' \
+      "$(command -v git)" "$bare"
+    printf 'exec "%s" "$@"\n' "$(command -v git)"
   } > "$late/git"
   chmod +x "$late/git"
 
   ( PATH="$late:$PATH" gh_claims "$work" claim 71 ) >/dev/null 2>&1
-  is "a renewal that lands after a release brings nothing back"      "$(git -C "$work" ls-remote origin refs/heads/foundry/claim/71 | grep -c .)" "0"
+  is "a renewal that lands after a release brings nothing back" \
+     "$(git -C "$work" ls-remote origin refs/heads/foundry/claim/71 | grep -c .)" "0"
 
   #
   # **#979: a container signed in to `gh` and not to git.** Every call to the remote fails, so there
