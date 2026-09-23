@@ -72,8 +72,8 @@
 #   3   the image would not build
 #   4   this machine has no home to keep runs in
 #   5   FOUNDRY_KEYS names a volume that could not be prepared
-#   6   a worker could not be given Foundry: this checkout names no origin, marketplace or plugin,
-#       or the install failed
+#   6   a worker could not be given Foundry: this checkout names no marketplace, reachable source
+#       or plugin, or the install failed
 
 set -u
 
@@ -215,8 +215,8 @@ make_them_here() {
 ensure_the_worker_carries_foundry() {
     the_worker_keeps_what_it_installs || return 0
 
-    from=$(the_origin_here) || fail "this checkout has no origin, so a worker has nothing to install Foundry from." 6
     market=$(the_marketplace_here) || fail "this checkout names no marketplace in .claude-plugin/marketplace.json." 6
+    from=$(the_source_declared_for "$market") || fail "this checkout declares no source for $market a container can reach, in .claude/settings.json." 6
     plugins=$(the_plugins_to_install "$market") || fail "this checkout enables no plugin from $market, and FOUNDRY_PLUGINS names none." 6
 
     run_in_the_container sh /src/bin/install.sh "$from" "$market" $plugins \
@@ -227,12 +227,27 @@ ensure_the_worker_carries_foundry() {
 the_worker_keeps_what_it_installs() { [ "$image" = foundry:worker ] && [ -n "${FOUNDRY_KEYS:-}" ]; }
 
 #
-# **The origin, as the container can clone it: over HTTPS, and with no name or token before its
-# host.** The container holds no SSH key, and a kept token would reach the volume and the terminal.
-the_origin_here() {
-    origin=$(git -C "$root" remote get-url origin 2>/dev/null) || return 1
+# **Where this checkout declares its marketplace lives**: a GitHub repository or a URL, as the add
+# takes it. The harness records the kind it was added as, and `plugins.sh declared` compares that
+# with this file. Added from the origin's URL, it read `git` where the checkout says `github`.
+#
+# Walked the way `plugins.sh` walks it: one key a line, and a brace count for the depth. A `path` is
+# the host's own disk, which no container reaches, so it answers nothing.
+the_source_declared_for() {
+    from=$(awk -F'"' -v want="$1" '
+        !block && /"extraKnownMarketplaces"/ { block = 1; next }
+        !block                               { next }
 
-    printf '%s' "$origin" | sed -f "$root/bin/origin.sed"
+        { copy = $0; opens = gsub(/\{/, "", copy); copy = $0; shuts = gsub(/\}/, "", copy) }
+
+        depth == 0 && opens                                 { mine = ($2 == want) }
+        mine && ($2 == "repo" || $2 == "url") && NF >= 4 { print $4; exit }
+
+        { depth += opens - shuts }
+        depth < 0 { exit }
+    ' "$root/.claude/settings.json" 2>/dev/null)
+
+    [ -n "$from" ] && printf '%s' "$from"
 }
 
 # The marketplace's own name is the first field two spaces in. A plugin's name sits deeper.

@@ -4,7 +4,11 @@
 # harness keeps its config on the keys volume, so what it installs is there at every later start.
 #
 # **The harness's own lists are the oracle, never a marker file.** A plugin removed by hand would
-# leave a marker saying it is there. A start that finds everything installed asks the network nothing.
+# leave a marker saying it is there.
+#
+# **Only adding the marketplace reaches the network.** Driven 23 September with the network off: a
+# start with everything installed exits 0 and asks nothing, and a missing plugin installs from the
+# marketplace the volume already holds.
 #
 # Usage: sh bin/install.sh <source> <marketplace> <plugin...>
 #

@@ -110,9 +110,10 @@ Measured 22 September 2026, in a fresh container:
 So the checkout asks for three plugins from a marketplace this machine never registered.
 
 **With `FOUNDRY_KEYS` set, the host installs them itself, at a worker's first start.** It reads
-three things from the checkout it was started in: its origin, the marketplace in
-`.claude-plugin/marketplace.json`, and the plugins `.claude/settings.json` enables.
-`FOUNDRY_PLUGINS` names the plugins instead. No name is written in the code.
+three things from the checkout it was started in: the marketplace in
+`.claude-plugin/marketplace.json`, the source `.claude/settings.json` declares for it, and the
+plugins that file enables. `FOUNDRY_PLUGINS` names the plugins instead. No name is written in the
+code.
 
 Measured 23 September 2026, on a fresh volume:
 
@@ -122,12 +123,16 @@ Measured 23 September 2026, on a fresh volume:
 | the second | installed nothing, in 10 |
 | floor's `run.sh`, from the installed plugin | answered |
 
-**A failed install starts nothing.** The host exits 6 and says which of four it was: no origin, no
-marketplace, no plugin named, or the install itself.
+**A failed install starts nothing.** The host exits 6 and says which of four it was: no
+marketplace, no source a container can reach, no plugin named, or the install itself.
 
-**The origin is cloned over HTTPS, with nothing before its host.** The container holds no SSH key,
-so an SSH address becomes the same path over HTTPS. A token kept in the origin would reach the
-volume's config and the terminal.
+**The source is the one the checkout declares, never its origin.** Added from the origin's URL,
+the harness recorded `git` where the checkout says `github`, and `plugins.sh declared` below then
+called a sound host faulty. A `path` source is this machine's own disk, which no container reaches.
+
+**A worker can still rewrite what a later start carries.** The volume is writable by every process
+in the container, and the host knows a marketplace and a plugin by name. It never re-adds a
+marketplace that is there, and the harness refuses one whose source changed under the same name.
 
 **Without `FOUNDRY_KEYS` nothing would keep an install, so the host makes none.** Run these in each
 container instead. A project setting reaches a session started inside that project, so `cd /src`
@@ -222,7 +227,7 @@ own line reads *cannot tell*, because there is no `~/.claude/settings.json` yet 
 | 3 | the image would not build. Run the same `docker build` without `-q` and read it |
 | 4 | the machine has no home for runs. Set `FOUNDRY_HOME`, or set `HOME` |
 | 5 | the place `FOUNDRY_KEYS` names could not be prepared. **Two causes as well**, and `host.sh` says which |
-| 6 | a worker could not be given Foundry. The checkout names no origin, marketplace or plugin, or the install failed, and `host.sh` says which |
+| 6 | a worker could not be given Foundry. The checkout names no marketplace, no source a container can reach, or no plugin, or the install failed, and `host.sh` says which |
 
 ### Exit 2 is not always a stopped daemon
 

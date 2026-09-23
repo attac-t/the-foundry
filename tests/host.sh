@@ -402,13 +402,20 @@ grep -v '^[[:space:]]*#' "$root/bin/host.sh" | grep -q 'FOUNDRY_EPHEMERAL' \
 #
 a_checkout() {
   rm -rf "$tmp/co" && mkdir -p "$tmp/co/bin" "$tmp/co/.claude-plugin" "$tmp/co/.claude" "$tmp/co/plugins/floor/bin"
-  cp "$root/bin/host.sh" "$root/bin/install.sh" "$root/bin/origin.sed" "$tmp/co/bin/"
+  cp "$root/bin/host.sh" "$root/bin/install.sh" "$tmp/co/bin/"
   printf '#!/bin/sh\nprintf "%%s\\n" "$FOUNDRY_HOME"\n' > "$tmp/co/plugins/floor/bin/run.sh"
   printf '{\n  "name": "fixture-market",\n  "plugins": [\n    {\n      "name": "one"\n    }\n  ]\n}\n' \
     > "$tmp/co/.claude-plugin/marketplace.json"
-  printf '{\n  "enabledPlugins": {\n    "one@fixture-market": true,\n    "off@fixture-market": false,\n    "else@elsewhere": true,\n    "two@fixture-market": true\n  }\n}\n' \
+  declared_as github '"repo": "acme/fixture"'
+  git -C "$tmp/co" init -q && git -C "$tmp/co" remote add origin https://example.invalid/acme/elsewhere.git
+}
+
+# The checkout's settings: its marketplace declared as one kind of source, and four plugins named.
+declared_as() {
+  printf '{\n  "extraKnownMarketplaces": {\n    "fixture-market": {\n      "source": {\n        "source": "%s",\n        %s\n      }\n    }\n  },\n' "$1" "$2" \
     > "$tmp/co/.claude/settings.json"
-  git -C "$tmp/co" init -q && git -C "$tmp/co" remote add origin "${1:-https://example.invalid/acme/fixture.git}"
+  printf '  "enabledPlugins": {\n    "one@fixture-market": true,\n    "off@fixture-market": false,\n    "else@elsewhere": true,\n    "two@fixture-market": true\n  }\n}\n' \
+    >> "$tmp/co/.claude/settings.json"
 }
 
 # The host, started in that checkout, with a volume or without.
@@ -425,9 +432,12 @@ FOUNDRY_KEYS=akeyvolume hosted_there --worker true
 handed /src/bin/install.sh \
   && ok  "a worker with a volume installs Foundry" \
   || bad "a worker with a volume installs Foundry — nothing was installed"
-handed https://example.invalid/acme/fixture.git \
-  && ok  "from the origin of the checkout it started in" \
-  || bad "from the origin of the checkout it started in — it named another"
+handed acme/fixture \
+  && ok  "from the source the checkout declares for its marketplace" \
+  || bad "from the source the checkout declares for its marketplace — it named another"
+handed https://example.invalid/acme/elsewhere.git \
+  && bad "and never from its origin — it did" \
+  || ok  "and never from its origin"
 handed fixture-market \
   && ok  "and the marketplace that checkout names" \
   || bad "and the marketplace that checkout names — it named another"
@@ -481,54 +491,58 @@ is_six=$?
   && ok  "a failed install stops the host at 6, and no worker starts" \
   || bad "a failed install stops the host at 6, and no worker starts — exit $is_six"
 
-#
-# **The container clones over HTTPS, with nothing before the host.** It holds no SSH key, and a name
-# or token kept in the origin would reach the volume's config. Found by driving the real thing: this
-# repository's own origin carries a name.
-for form in https://someone:secret@example.invalid/acme/fixture.git \
-            git@example.invalid:acme/fixture.git ssh://git@example.invalid/acme/fixture.git; do
-  a_checkout "$form"
-  stub_docker
-  FOUNDRY_KEYS=akeyvolume hosted_there --worker true
-  handed https://example.invalid/acme/fixture.git && ! grep -q -e secret -e someone "$tmp/argv" \
-    && ok  "an origin like ${form%%example*}… reaches the container as HTTPS, with nothing before the host" \
-    || bad "an origin like ${form%%example*}… reaches the container as HTTPS — it did not"
-done
+# A git URL is a source a container can clone too.
+declared_as git '"url": "https://example.invalid/acme/fixture.git"'
+stub_docker
+FOUNDRY_KEYS=akeyvolume hosted_there --worker true
+handed https://example.invalid/acme/fixture.git \
+  && ok  "a marketplace declared by URL is installed from that URL" \
+  || bad "a marketplace declared by URL is installed from that URL — it was not"
 
-git -C "$tmp/co" remote remove origin
+#
+# **A source no container can reach installs nothing, and says 6.** A `path` is the host's own disk.
+# The origin is not a fallback: added from its URL, the harness recorded `git` where the checkout
+# said `github`, and `plugins.sh declared` then called a sound host faulty. Found by driving it.
+declared_as directory '"path": "/somewhere/on/this/host"'
 stub_docker
 FOUNDRY_KEYS=akeyvolume hosted_there --worker true
 is_six=$?
 [ "$is_six" = 6 ] && ! handed /src/bin/install.sh \
-  && ok  "a checkout with no origin has nothing to install from, and says 6" \
-  || bad "a checkout with no origin has nothing to install from, and says 6 — exit $is_six"
+  && ok  "a checkout declaring a source no container can reach installs nothing, and says 6" \
+  || bad "a checkout declaring a source no container can reach installs nothing, and says 6 — exit $is_six"
 
 said=$( PATH="$tmp/bin:$PATH" FOUNDRY_HOME="$tmp/home" FOUNDRY_KEYS=akeyvolume sh "$tmp/co/bin/host.sh" \
           --worker true 2>&1 </dev/null )
-printf '%s' "$said" | grep -q 'has no origin' \
+printf '%s' "$said" | grep -q 'declares no source' \
   && ok  "and says why, rather than exiting in silence" \
   || bad "and says why, rather than exiting in silence — it said nothing a person could act on"
 
 #
 # **No name is written in the code.** Both scripts read every name from the checkout, so neither may
-# hold this repository's marketplace or its origin. A planted line proves the check can see one.
+# hold this repository's marketplace or its owner. A planted line proves each half can see one.
 #
 names_in_code() {
-  market=$(grep -m 1 '^  "name"' "$root/.claude-plugin/marketplace.json" | cut -d'"' -f4)
-  origin=$(git -C "$root" remote get-url origin 2>/dev/null | sed -E 's#\.git$##; s#^.*[:/]([^/]+/[^/]+)$#\1#')
-
-  grep -v '^[[:space:]]*#' "$@" | grep -F -e "${market:-no-market-read}" -e "${origin:-no-origin-read}"
+  grep -v '^[[:space:]]*#' "$@" | grep -F -e "${market:-no-market-read}" -e "${owner:-no-owner-read}"
 }
 
-[ -z "$(names_in_code "$root/bin/host.sh" "$root/bin/install.sh" "$root/bin/origin.sed")" ] \
-  && ok  "no script names this repository's marketplace or origin" \
-  || bad "no script names this repository's marketplace or origin — one does"
+market=$(grep -m 1 '^  "name"' "$root/.claude-plugin/marketplace.json" | cut -d'"' -f4)
+owner=$(git -C "$root" remote get-url origin 2>/dev/null | sed -E 's#\.git$##; s#^.*[:/]([^/]+)/[^/]+$#\1#')
 
-{ cat "$root/bin/host.sh"; printf 'market=%s\n' "$(grep -m 1 '^  "name"' "$root/.claude-plugin/marketplace.json" | cut -d'"' -f4)"; } \
-  > "$tmp/planted-host.sh"
+[ -z "$(names_in_code "$root/bin/host.sh" "$root/bin/install.sh")" ] \
+  && ok  "no script names this repository's marketplace or owner" \
+  || bad "no script names this repository's marketplace or owner — one does"
+
+{ cat "$root/bin/host.sh"; printf 'market=%s\n' "$market"; } > "$tmp/planted-host.sh"
 [ -n "$(names_in_code "$tmp/planted-host.sh")" ] \
-  && ok  "and a planted name is found" \
-  || bad "and a planted name is found — the check cannot see one"
+  && ok  "and a planted marketplace is found" \
+  || bad "and a planted marketplace is found — the check cannot see one"
+
+# The owner alone, because the repository's path holds the marketplace's name too, and a plant of
+# the path would be found by that half. With no origin there is no owner to plant.
+{ cat "$root/bin/install.sh"; printf 'from=%s/elsewhere\n' "$owner"; } > "$tmp/planted-install.sh"
+[ -z "$owner" ] || [ -n "$(names_in_code "$tmp/planted-install.sh")" ] \
+  && ok  "and a planted owner is found, on its own" \
+  || bad "and a planted owner is found, on its own — the check cannot see one"
 
 #
 # --- the install, inside a worker ---
