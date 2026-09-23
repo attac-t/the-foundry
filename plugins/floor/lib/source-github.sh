@@ -29,6 +29,7 @@
 #        sh source-github.sh receive <issue> <question>
 #        sh source-github.sh state   <run>
 #        sh source-github.sh land    <run>
+#        sh source-github.sh eligible <label>
 #
 # Exit: 0 answered · 1 nothing there · 2 asked for something this does not do · 3 GitHub refused,
 #       or could not be reached at all
@@ -611,6 +612,33 @@ drop_claim() {
 # One name, derived. A host choosing it could claim an item nobody filed.
 claim_ref() { printf 'foundry/claim/%s' "$1"; }
 
+#
+# The open issues carrying one label, with when it last went on and who put it on, from each issue's
+# own events. Floor orders them and decides; this only reads what the forge recorded.
+#
+list_eligible() {
+    [ -n "$1" ] || return 2
+
+    numbers=$(gh issue list --label "$1" --state open --limit 500 --json number --jq '.[].number') || {
+        repository_answers || return 3
+        return 1
+    }
+
+    for n in $numbers; do label_put_on "$n" "$1" || return 3; done
+}
+
+# The label's last `labeled` event, read as data. The name is matched in awk and never spliced into a
+# query, because a label is text somebody else chose.
+label_put_on() {
+    events=$(gh api "repos/{owner}/{repo}/issues/$1/events" --paginate \
+        --jq '.[] | select(.event == "labeled") | [.label.name, .created_at, (.actor.login // "")] | @tsv' \
+        2>/dev/null) || return 3
+
+    printf '%s\n' "$events" | awk -F'\t' -v label="$2" -v item="$1" '
+        $1 == label { at = $2; who = $3 }
+        END { if (at != "") printf "%s\t%s\t%s\n", item, at, who }'
+}
+
 case "${1:-}" in
     read)    shift; read_item        "${1:-}" ;;
     kind)    shift; kind_of_item     "${1:-}" ;;
@@ -624,6 +652,7 @@ case "${1:-}" in
     receive) shift; read_answer      "${1:-}" "${2:-}" ;;
     state)   shift; delivery_state   "${1:-}" ;;
     land)    shift; land_delivery    "${1:-}" ;;
-    *)       echo "source-github: read <issue> | kind <issue> | claim <issue> <host> | held <issue> | release <issue> <host> | publish <issue> <run> <branch> <title> [word] [brief] | ask <issue> <question> <text> | receive <issue> <question> | state <run> | land <run>" >&2
+    eligible) shift; list_eligible   "${1:-}" ;;
+    *)       echo "source-github: read <issue> | kind <issue> | eligible <label> | claim <issue> <host> | held <issue> | release <issue> <host> | publish <issue> <run> <branch> <title> [word] [brief] | ask <issue> <question> <text> | receive <issue> <question> | state <run> | land <run>" >&2
              exit 2 ;;
 esac

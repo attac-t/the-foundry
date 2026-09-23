@@ -3992,6 +3992,44 @@ another_hosts_item_is_refused_at_the_work() {
 another_hosts_item_is_refused_at_the_work
 
 #
+# **What a pass may take is a mark a person put on, named in a person's commit.** #833: anyone who
+# could open an issue could put work in front of a worker. The rule is a line of the practice, and
+# who put the label on is read from the source, never assumed.
+#
+# The times run against the file order on purpose, so an order nobody sorted cannot pass.
+eligibility_is_a_named_mark_oldest_first() {
+  make_repo "$tmp/elg" main && set_origin "$tmp/elg" 'https://gitlab.com/acme/elg.git' \
+    || { skip "eligibility — git could not make a repo here"; return; }
+
+  mkdir -p "$src/items" "$src/labels"
+  for n in 81 82 83 84 85; do printf 'Item %s\n' "$n" > "$src/items/$n"; done
+  printf 'go\t2026-09-02T00:00:00Z\tpat\n'   > "$src/labels/81"
+  printf 'go\t2026-09-01T00:00:00Z\tpat\n'   > "$src/labels/82"
+  printf 'go\t2026-08-01T00:00:00Z\t\n'      > "$src/labels/83"
+  printf 'go\t2026-08-02T00:00:00Z\tsam\n'   > "$src/labels/84"
+  printf 'other\t2026-07-01T00:00:00Z\tpat\n' > "$src/labels/85"
+
+  is  "with no rule nothing is eligible" "$(floor "$tmp/elg" eligible)" ""
+  has "and it says why"                  "$(floor_says "$tmp/elg" eligible)" "so nothing is"
+
+  mkdir -p "$tmp/elg/.foundry"
+  commit_file "$tmp/elg" .foundry/practice 'eligible go pat'
+
+  is  "the oldest label goes first, and only the label named" \
+      "$(floor "$tmp/elg" eligible | cut -f1 | tr '\n' ' ')" "82 81 "
+  has "a label nobody is named for is dropped, and said" \
+      "$(floor_says "$tmp/elg" eligible)" "[83] is not eligible: nothing names who put [go] on it"
+  has "a hand the rule does not name is dropped, and said" \
+      "$(floor_says "$tmp/elg" eligible)" "[84] is not eligible: [go] was put on by sam"
+
+  # A rule naming no hand takes any named one. Still never an unnamed one.
+  commit_file "$tmp/elg" .foundry/practice 'eligible go'
+  is "a rule that names no hand takes any named one" \
+     "$(floor "$tmp/elg" eligible | cut -f1 | tr '\n' ' ')" "84 82 81 "
+}
+eligibility_is_a_named_mark_oldest_first
+
+#
 # **A release that races a renewal deleted the claim that replaced the one it read.**
 #
 # The shape: a host's lease runs out, a second host claims, and the first host's late release takes

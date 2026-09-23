@@ -1968,6 +1968,19 @@ nor claims to.
 and unknown is not stale — so it blocks until a person clears it. That is the one case the expiry
 does not cover, and it is the safe half.
 
+### What a pass may take
+
+**A line of the practice and a mark a person put on.** `run.sh eligible` reads
+`eligible <label> [who may put it on ...]` from `.foundry/practice` at the checkout's head. It asks
+the source which open items carry that label, and who put it on each, and when. It prints them oldest
+label first.
+
+**No line, nothing is eligible**, and it says so. A label no event names is dropped and said, and so
+is one put on by a hand the rule does not name. **Floor never puts the label on.**
+
+With one shared account, the name an event gives is the account's, not a person's. So the mark is a
+record, not a control, until a worker has its own identity.
+
 ### Two adapters, because one proves nothing
 
 | Adapter | Needs | Holds |

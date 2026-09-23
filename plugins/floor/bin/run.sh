@@ -156,6 +156,7 @@ main() {
         aside)     aside "$@" ;;
         claim)     claim "$@" ;;
         release)   release "$@" ;;
+        eligible)  eligible "$@" ;;
         observe)   observe "$@" ;;
         observed)  observed "$@" ;;
         merge)     merge_delivery "$@" ;;
@@ -203,6 +204,7 @@ floor — where work happens.
   run.sh aside [text]             record what this run cannot act on, or print what it has
   run.sh claim [item]             take it, or keep the one this run holds; 30 if another host has it
   run.sh release <item>           let it go, if this host took it
+  run.sh eligible                 what a pass may take, oldest label first
   run.sh observe [event] [k=v...] record that something happened, or print what did
   run.sh observed [event]         every run's observations, with the run named
   run.sh merge                    land what was graded, or say why it may not be
@@ -3496,6 +3498,48 @@ release() {
 
     note "[$item] is not this host's to release"
     exit 30
+}
+
+#
+# What a pass may take, oldest label first. The rule is one line of `.foundry/practice` as committed
+# at this checkout's head: `eligible <label> [who may put it on ...]`. No line, nothing is eligible.
+#
+# **A mark nobody put on is not eligibility.** An item whose label no event names is dropped, and
+# said. Floor never puts the label on; a person does, and a person's commit names it.
+eligible() {
+    [ "$#" -eq 0 ] || { usage; exit 2; }
+    refuse_missing_source
+
+    rule=$(eligibility_rule) || exit 1
+    [ -n "$rule" ] || { note "no line in .foundry/practice says what is eligible, so nothing is"; return 0; }
+
+    set -- $rule
+    listed=$(source_says eligible "$1"); code=$?
+    refuse_unasked "$code" "items labelled [$1]"
+    [ "$code" -eq 2 ] && { note "this work source cannot say which items carry a label"; exit 27; }
+
+    label=$1; shift
+    printf '%s\n' "$listed" | kept_by_who_put_it_on "$label" "$*" | sort -t "$(printf '\t')" -k2,2
+}
+
+# The rule, and only the rule: what follows `eligible` on its line, read at head.
+eligibility_rule() {
+    practice=$(practice_at_base "$(git rev-parse HEAD 2>/dev/null)") || return 1
+
+    printf '%s\n' "$practice" | awk '$1 == "eligible" { $1 = ""; sub(/^ +/, ""); print; exit }'
+}
+
+#
+# Each item the source listed, kept when a name put its label on and the rule allows that name.
+# What is dropped is said, with what would make it eligible.
+kept_by_who_put_it_on() {
+    awk -F'\t' -v label="$1" -v allowed=" $2 " '
+        function say(item, why) { printf "floor: [%s] is not eligible: %s\n", item, why | "cat 1>&2" }
+        NF < 3 || $1 == "" { next }
+        $3 == ""           { say($1, "nothing names who put [" label "] on it"); next }
+        allowed != "  " && index(allowed, " " $3 " ") == 0 {
+            say($1, "[" label "] was put on by " $3 ", and the rule names only" allowed); next }
+        { print }'
 }
 
 say_who_holds() {

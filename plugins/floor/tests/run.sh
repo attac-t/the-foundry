@@ -2510,6 +2510,25 @@ wreck_runner "a guard that lets every item through is caught" \
 wreck_runner "a run holding no item that keeps quiet about it is caught" \
   workalone 's#{ note "this run holds no item, so nothing here is exclusive"; return 0; }#{ return 0; }#'
 
+#
+# **What a pass may take is a mark a person put on, oldest first.** One break per rule: the order,
+# the unnamed hand, the hand the rule does not name, the rule itself, and the label it matches. #833.
+#
+wreck_runner "eligible items in the order the source listed them is caught" \
+  eligsort '/^eligible() {/,/^}/s# | sort -t .*-k2,2$##'
+
+wreck_runner "a label nobody is named for passing as eligible is caught" \
+  eligwho '/^kept_by_who_put_it_on() {/,/^}/s#^        \$3 == ""  *{#        0 {#'
+
+wreck_runner "a hand the rule does not name passing as eligible is caught" \
+  elighand '/^kept_by_who_put_it_on() {/,/^}/s#^        allowed != .*== 0 {#        0 {#'
+
+wreck_runner "a practice line that is never read is caught" \
+  eligrule '/^eligibility_rule() {/,/^}/s#\$1 == "eligible"#$1 == "never"#'
+
+wreck_runner "a directory source that lists every label is caught" \
+  eliglabel '/^list_eligible() {/,/^}/s#\$1 == label {#1 {#' lib/source-dir.sh
+
 
 # Whether `chmod 000` means anything here. Windows records no read bit and root ignores the one it
 # finds, so the break below would report a rule held for a reason that is not the rule.
