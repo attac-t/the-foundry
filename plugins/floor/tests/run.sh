@@ -2525,6 +2525,9 @@ wreck_runner "a keep hook that reports a lost claim as a failure is caught" \
 wreck_runner "eligible items in the order the source listed them is caught" \
   eligsort '/^eligible() {/,/^}/s# | sort -t .*-k2,2$##'
 
+wreck_runner "eligible items newest first is caught" \
+  eligreverse '/^eligible() {/,/^}/s#-k2,2$#-k2,2 -r#'
+
 wreck_runner "a label nobody is named for passing as eligible is caught" \
   eligwho '/^kept_by_who_put_it_on() {/,/^}/s#^        \$3 == ""  *{#        0 {#'
 

@@ -4246,6 +4246,52 @@ bar_and_rule() {
 a_pass_takes_the_first_item_nobody_holds
 
 #
+# **Floor never puts the eligibility mark on.** A worker that could label its own issue would choose
+# its own work, so no shipped line writes a label, and a planted one is found. The one-pass charter.
+#
+# It knows `gh`'s own flags, a write to an issue's labels through the API, and the directory
+# adapter's label files. A route it does not know, it cannot see.
+floor_never_puts_the_mark_on() {
+  is "no shipped line puts a label on" "$(label_writes_in "$(dirname "$runner")/..")" ""
+
+  plant_in "$tmp/planted-label" 'gh issue edit "$1" --add-label "$2"' \
+    || { skip "a planted label write — could not copy floor"; return; }
+  has "and a planted one is found" "$(label_writes_in "$tmp/planted-label")" "add-label"
+}
+
+label_writes_in() {
+  grep -rnE -- '--(add|remove)-label|gh label (create|edit|clone|delete)|/labels.*( -[fF] | --field | --raw-field | --input | -X | --method )|>>? *"?\$root/labels' \
+    "$1/bin" "$1/lib" "$1/hooks" 2>/dev/null
+}
+
+# Floor's shipped code, copied, with one line added to its runner.
+plant_in() {
+  mkdir -p "$1" && cp -R "$(dirname "$runner")/../bin" "$(dirname "$runner")/../lib" \
+    "$(dirname "$runner")/../hooks" "$1/" 2>/dev/null || return 1
+  printf '    %s\n' "$2" >> "$1/bin/run.sh"
+}
+floor_never_puts_the_mark_on
+
+#
+# **Core runs no harness.** A pass runs the command the host names, so nothing in floor may call the
+# program behind it. A name a person is told to type is not a call. The one-pass charter.
+#
+floor_runs_no_harness() {
+  is "no shipped line runs a harness" "$(harness_calls_in "$(dirname "$runner")/..")" ""
+
+  plant_in "$tmp/planted-harness" 'claude -p "$brief"' \
+    || { skip "a planted harness call — could not copy floor"; return; }
+  has "and a planted one is found" "$(harness_calls_in "$tmp/planted-harness")" 'claude -p'
+}
+
+# A command in call position: first on its line, after a separator, or inside `$(`. Comments go.
+harness_calls_in() {
+  grep -rnE '(^[[:space:]]*|[;&|][[:space:]]*|\$\([[:space:]]*|(exec|command|nohup|env)[[:space:]]+)(claude|codex|gemini|aider)([[:space:]]|$)' \
+    "$1/bin" "$1/lib" "$1/hooks" 2>/dev/null | grep -vE '^[^:]*:[0-9]+:[[:space:]]*#'
+}
+floor_runs_no_harness
+
+#
 # **A release that races a renewal deleted the claim that replaced the one it read.**
 #
 # The shape: a host's lease runs out, a second host claims, and the first host's late release takes
