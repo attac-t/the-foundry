@@ -475,13 +475,70 @@ take_claim() {
 
     made=$(claim_commit "$2" "$at") || return 3
 
-    why=$(git push origin "$made:refs/heads/$(claim_ref "$1")" 2>&1) && return 0
+    why=$(LC_ALL=C git push origin "$made:refs/heads/$(claim_ref "$1")" 2>&1) && return 0
 
     now=$(claim_tip "$1")
     [ -n "$now" ] && [ "$now" != "$at" ] && { holder_at "$now" "$2" || return 4; }
 
     printf 'source-github: the claim could not be pushed: %s\n' "$why" >&2
+    [ "$now" = "$at" ] && say_the_cure "$why"
     return 3
+}
+
+#
+# The fault, then what to do about it, the way `join.sh` answers a checkout with no identity — but
+# only when git's own words name the cause, and never after a race, which no credential explains.
+#
+# **Two causes have a cure: git held no credential, or the forge refused the one it held.** Any other
+# failure is named and left, because a cure for a cause nobody saw sends the reader the wrong way.
+#
+# **Never `gh auth setup-git`.** Its blank helper discards every helper set before its own.
+say_the_cure() {
+    forge=$(https_forge_pushed_to)
+    [ -n "$forge" ] || return 0
+
+    held_no_credential "$1" && { say_how_to_hand_git_a_credential "$forge"; return 0; }
+    was_refused "$1" && say_how_to_see_the_account
+    return 0
+}
+
+# Git's words, in the C locale the push ran under, for a push that had no credential to offer.
+held_no_credential() {
+    case $1 in *'could not read Username'*|*'terminal prompts disabled'*) return 0 ;; esac
+    return 1
+}
+
+# Git's words for a forge that answered, and refused what git offered.
+was_refused() {
+    case $1 in *'Authentication failed'*|*'returned error: 403'*) return 0 ;; esac
+    return 1
+}
+
+say_how_to_hand_git_a_credential() {
+    printf '%s\n' \
+        'source-github: git holds no credential for the forge. Hand it the one gh holds:' \
+        "source-github:   git config --global --add credential.$1.helper '!gh auth git-credential'" >&2
+}
+
+say_how_to_see_the_account() {
+    printf '%s\n' \
+        'source-github: the forge refused the credential git offered. See which account gh signs in as:' \
+        'source-github:   gh auth status' >&2
+}
+
+#
+# Scheme and host of where the push went. `--push` reads a push URL and a rewrite the way git reads
+# them, so a fetch URL that says https never names a push that went over ssh or to a path.
+#
+# **Never the userinfo.** A token rides there, and this line is printed and then run with `--global`.
+# Everything to the last `@` goes, the way `strip_userinfo` in the runner reads a remote.
+https_forge_pushed_to() {
+    pushed_to=$(git remote get-url --push origin 2>/dev/null) || return 0
+    case $pushed_to in https://*) ;; *) return 0 ;; esac
+
+    authority=${pushed_to#https://}
+    authority=${authority%%/*}
+    printf 'https://%s\n' "${authority##*@}"
 }
 
 # A commit on top of the one there, so the push is a fast-forward the server

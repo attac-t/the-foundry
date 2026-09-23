@@ -1897,6 +1897,23 @@ who holds it; `release` gives it back, and only to the host that took it.
 in to `gh` and not to git cannot push the ref, and that used to leave by 30 — *held*, with no holder
 to print. A worker reading that stands down from work nothing was doing.
 
+**It names the cure as well, the way `join.sh` does — when git's own words name the cause.** For a
+push that went over https, *could not read Username* gets the helper to add, and *Authentication
+failed* or a 403 gets `gh auth status`. **Any other failure is named and left without a cure**,
+because a cure for a cause nobody saw sends the reader the wrong way. So is a claim that lost a
+race.
+
+The forge is where the push went, read with `--push`, so a push URL or a rewrite counts and the
+fetch URL never stands in. Its userinfo never appears. It never prints `gh auth setup-git`, which
+discards every helper set before its own.
+
+**Three limits.** The push runs in the C locale so its words can be read, and so the fault line is
+English on every host. `--add` cannot displace a helper earlier in the list that answers with a
+stale credential. And `gh auth status` speaks for `gh`, not for a helper git used instead.
+
+**In a container the printed `--global` lasts as long as the container.** `floor:host` hands git
+its credential without writing that file.
+
 **`release` does not make that distinction yet.** `source-github.sh` returns 4 when the fetch could
 not run, when the delete had no credential, and when the claim is genuinely another host's;
 `run.sh` reads every one of them as *not this host's to release*, exit **30**. So on this verb an

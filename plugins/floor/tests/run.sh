@@ -2444,10 +2444,30 @@ wreck_runner "a source that could not be asked reported as empty is caught" \
 # read twice, and each puts that line back from a different side.
 #
 wreck_runner "a push no credential could make passing for a holder is caught" \
-  ghpush '/the claim could not be pushed/{n;s/return 3/return 4/}' lib/source-github.sh
+  ghpush '/the claim could not be pushed/,/return 3/s/return 3/return 4/' lib/source-github.sh
 
 wreck_runner "a claim another host took passing for a source nobody could ask is caught" \
   ghrace 's#now=$(claim_tip "$1")#now=#' lib/source-github.sh
+
+# #981: the refusal names its cure when git's words name the cause. One break per rule: the cure
+# goes, the https guard goes, each cause reads wrong, the fetch URL stands in, the userinfo stays.
+wreck_runner "a refused claim that says nothing about what to do is caught" \
+  ghcure 's#^    \[ "\$now" = "\$at" \] && say_the_cure "\$why"$#    :#' lib/source-github.sh
+
+wreck_runner "a cure printed for a push no helper serves is caught" \
+  ghhelper 's#\[ -n "\$forge" \] || return 0#:#' lib/source-github.sh
+
+wreck_runner "a failure that named no cause read as a missing credential is caught" \
+  ghcause 's#^held_no_credential() {#held_no_credential() { return 0#' lib/source-github.sh
+
+wreck_runner "a refused credential that goes unanswered is caught" \
+  ghrefused 's#^was_refused() {#was_refused() { return 1#' lib/source-github.sh
+
+wreck_runner "a cure that reads the fetch URL instead of the push is caught" \
+  ghpushurl 's#get-url --push origin#get-url origin#' lib/source-github.sh
+
+wreck_runner "a cure that prints the token in its origin is caught" \
+  ghsecret 's|\${authority##\*@}|${authority}|' lib/source-github.sh
 
 
 # Whether `chmod 000` means anything here. Windows records no read bit and root ignores the one it
