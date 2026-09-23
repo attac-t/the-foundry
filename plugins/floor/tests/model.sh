@@ -4153,6 +4153,20 @@ HOOK
         "$(gh_claims_says "$work" claim 71)" "could not be asked"
   lacks "and never the host that last held it" \
         "$(gh_claims_says "$work" claim 71)" "OtherHost"
+
+  # #981: the fault, then the cure — the way `join.sh` answers a checkout with no identity.
+  has   "and it says what to do when the forge refused" \
+        "$(gh_claims_says "$work" claim 71)" "gh auth status"
+  lacks "and names no helper where git would never ask one" \
+        "$(gh_claims_says "$work" claim 71)" "credential."
+
+  # An https remote on a closed port: refused before any credential is read, the same three calls.
+  git -C "$work" remote set-url origin 'https://127.0.0.1:9/gone.git'
+
+  has   "an https forge is told which helper to add" \
+        "$(gh_claims_says "$work" claim 71)" "--add credential.https://127.0.0.1:9.helper"
+  lacks "and never the command that discards the others" \
+        "$(gh_claims_says "$work" claim 71)" "setup-git"
 }
 a_refused_push_says_which_refusal_it_was
 

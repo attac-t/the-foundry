@@ -2444,10 +2444,17 @@ wreck_runner "a source that could not be asked reported as empty is caught" \
 # read twice, and each puts that line back from a different side.
 #
 wreck_runner "a push no credential could make passing for a holder is caught" \
-  ghpush '/the claim could not be pushed/{n;s/return 3/return 4/}' lib/source-github.sh
+  ghpush '/the claim could not be pushed/,/return 3/s/return 3/return 4/' lib/source-github.sh
 
 wreck_runner "a claim another host took passing for a source nobody could ask is caught" \
   ghrace 's#now=$(claim_tip "$1")#now=#' lib/source-github.sh
+
+# #981: the refusal names its cure. One break drops the cure, the other turns its https guard over.
+wreck_runner "a refused claim that says nothing about what to do is caught" \
+  ghcure 's#^    say_the_cure$#    :#' lib/source-github.sh
+
+wreck_runner "a cure naming a helper where git asks for none is caught" \
+  ghhelper 's#\[ -z "\$forge" \] ||#[ -n "$forge" ] ||#' lib/source-github.sh
 
 
 # Whether `chmod 000` means anything here. Windows records no read bit and root ignores the one it

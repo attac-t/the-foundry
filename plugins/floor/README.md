@@ -1897,6 +1897,10 @@ who holds it; `release` gives it back, and only to the host that took it.
 in to `gh` and not to git cannot push the ref, and that used to leave by 30 — *held*, with no holder
 to print. A worker reading that stands down from work nothing was doing.
 
+**It names the cure as well, the way `join.sh` does.** The GitHub adapter prints the helper to add
+when git holds no credential, and `gh auth status` when the forge refused the one git holds. It
+never prints `gh auth setup-git`, which discards every helper set before its own.
+
 **`release` does not make that distinction yet.** `source-github.sh` returns 4 when the fetch could
 not run, when the delete had no credential, and when the claim is genuinely another host's;
 `run.sh` reads every one of them as *not this host's to release*, exit **30**. So on this verb an

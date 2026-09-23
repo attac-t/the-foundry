@@ -481,7 +481,38 @@ take_claim() {
     [ -n "$now" ] && [ "$now" != "$at" ] && { holder_at "$now" "$2" || return 4; }
 
     printf 'source-github: the claim could not be pushed: %s\n' "$why" >&2
+    say_the_cure
     return 3
+}
+
+#
+# The fault, then what to do about it, the way `join.sh` answers a checkout with no identity.
+#
+# **Two causes, and nothing in the failure tells them apart:** git holds no credential for the
+# forge, or the forge refused the one git holds. So each cure is printed under the case it answers.
+#
+# **Never `gh auth setup-git`.** It writes a blank helper first, and a blank helper discards every
+# helper set before it — a credential manager included, and silently. `--add` keeps them.
+say_the_cure() {
+    forge=$(https_forge_of_origin)
+
+    [ -z "$forge" ] || printf '%s\n' \
+        'source-github: if git holds no credential for the forge, hand it the one gh holds:' \
+        "source-github:   git config --global --add credential.$forge.helper '!gh auth git-credential'" >&2
+
+    printf '%s\n' \
+        'source-github: if the forge refused the one git holds, see which account gh signs in as:' \
+        'source-github:   gh auth status' >&2
+}
+
+# Scheme and host, the way a credential key names a forge. Nothing for a remote that is not https,
+# because a helper is never asked there and a cure naming one would send the reader nowhere.
+https_forge_of_origin() {
+    url=$(git remote get-url origin 2>/dev/null) || return 0
+    case $url in https://*) ;; *) return 0 ;; esac
+
+    rest=${url#https://}
+    printf 'https://%s\n' "${rest%%/*}"
 }
 
 # A commit on top of the one there, so the push is a fast-forward the server
