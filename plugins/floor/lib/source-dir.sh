@@ -14,6 +14,7 @@
 #     deliveries/<run>               what one run published
 #     questions/<item>/<question>    what a run asked
 #     answers/<item>/<question>      what a human answered
+#     labels/<item>                  one line per label: the label, when it went on, who put it on
 #
 # Usage: sh source-dir.sh read    <item>
 #        sh source-dir.sh kind    <item>
@@ -24,6 +25,7 @@
 #        sh source-dir.sh publish <item> <run> <branch> <title> [word] [brief]
 #        sh source-dir.sh ask     <item> <question> <text>
 #        sh source-dir.sh receive <item> <question>
+#        sh source-dir.sh eligible <label>
 #
 # Exit: 0 answered · 1 nothing there · 2 asked for something this does not do · 3 it could not
 #       read or write what it needs · 4 this run already sent something else under that name
@@ -207,6 +209,25 @@ drop_claim() {
     rm -rf "$root/claims/$1"
 }
 
+#
+# The items carrying one label, with when it went on and who put it on, as the file records them.
+# Floor orders them and decides. A label is a line, not a file name, because a name holding a
+# colon is one Windows will not write.
+#
+list_eligible() {
+    [ -n "$1" ] || return 2
+    [ -d "$root/labels" ] || return 0
+
+    for file in "$root"/labels/*; do
+        [ -f "$file" ] || continue
+        [ -f "$root/items/${file##*/}" ] || continue
+
+        awk -F'\t' -v label="$1" -v item="${file##*/}" '
+            $1 == label { at = $2; who = $3 }
+            END { if (at != "") printf "%s\t%s\t%s\n", item, at, who }' "$file"
+    done
+}
+
 case "${1:-}" in
     read)    shift; read_item        "${1:-}" ;;
     kind)    shift; kind_of_item     "${1:-}" ;;
@@ -217,6 +238,7 @@ case "${1:-}" in
     publish) shift; publish_delivery "${1:-}" "${2:-}" "${3:-}" "${4:-}" "${5:-}" "${6:-}" ;;
     ask)     shift; put_question     "${1:-}" "${2:-}" "${3:-}" ;;
     receive) shift; read_answer      "${1:-}" "${2:-}" ;;
-    *)       echo "source-dir: read <item> | claim <item> <host> | held <item> | release <item> <host> | publish <item> <run> <branch> <title> [word] [brief] | ask <item> <question> <text> | receive <item> <question>" >&2
+    eligible) shift; list_eligible   "${1:-}" ;;
+    *)       echo "source-dir: read <item> | eligible <label> | claim <item> <host> | held <item> | release <item> <host> | publish <item> <run> <branch> <title> [word] [brief] | ask <item> <question> <text> | receive <item> <question>" >&2
              exit 2 ;;
 esac

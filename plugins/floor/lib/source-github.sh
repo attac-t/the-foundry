@@ -29,6 +29,7 @@
 #        sh source-github.sh receive <issue> <question>
 #        sh source-github.sh state   <run>
 #        sh source-github.sh land    <run>
+#        sh source-github.sh eligible <label>
 #
 # Exit: 0 answered · 1 nothing there · 2 asked for something this does not do · 3 GitHub refused,
 #       or could not be reached at all
@@ -460,8 +461,8 @@ where_from() {
 # before that run and none after it.
 #
 # **A refused push is two facts wearing one exit code.** A tip that moved after `claim_tip` read it
-# fails the fast-forward, and so does a push no credential was ever going to make. The server says
-# the same word to both, so nothing in the failure itself tells them apart.
+# fails the lease, and so does a push no credential was ever going to make. Git exits 1 for both,
+# so the code alone never tells them apart.
 #
 # So the remote is asked once more. **A tip that is there and is not this host's is 4** — the loser
 # of a real race is told who won. **Anything else is 3**, the door for a source that could not be
@@ -475,7 +476,10 @@ take_claim() {
 
     made=$(claim_commit "$2" "$at") || return 3
 
-    why=$(LC_ALL=C git push origin "$made:refs/heads/$(claim_ref "$1")" 2>&1) && return 0
+    # Leased on the tip it read, empty for a first claim. A plain push made a ref a release had just
+    # deleted, so a renewal that landed late brought the released claim back — #1017.
+    ref=refs/heads/$(claim_ref "$1")
+    why=$(LC_ALL=C git push origin "$made:$ref" --force-with-lease="$ref:$at" 2>&1) && return 0
 
     now=$(claim_tip "$1")
     [ -n "$now" ] && [ "$now" != "$at" ] && { holder_at "$now" "$2" || return 4; }
@@ -541,8 +545,8 @@ https_forge_pushed_to() {
     printf 'https://%s\n' "${authority##*@}"
 }
 
-# A commit on top of the one there, so the push is a fast-forward the server
-# refuses if the tip moved. Creating the ref and renewing it are one step.
+# A commit on top of the one there. Creating the ref and renewing it are one step,
+# and the lease `take_claim` pushes under is what refuses a tip that moved.
 claim_commit() {
     tree=$(git hash-object -t tree /dev/null) || return 3
 
@@ -598,8 +602,8 @@ drop_claim() {
     # 21 September against a real remote: at the read value it deletes and leaves nothing; after a
     # push moves the ref it refuses with *(delete) -> claim (stale info)*.
     #
-    # **`take_claim` never needed this.** Its push must fast-forward, so the server already refuses
-    # a claim that raced. Only the delete had no such rule.
+    # **`take_claim` pushes under the same lease.** A fast-forward rule said nothing once a release
+    # had deleted the ref, so a renewal that landed late made it again. #1017.
     ref="refs/heads/$(claim_ref "$1")"
 
     git push origin --delete "$ref" --force-with-lease="$ref:$at" >/dev/null 2>&1 || return 4
@@ -607,6 +611,36 @@ drop_claim() {
 
 # One name, derived. A host choosing it could claim an item nobody filed.
 claim_ref() { printf 'foundry/claim/%s' "$1"; }
+
+#
+# The open issues carrying one label, with when it last went on and who put it on, from each issue's
+# own events. Floor orders them and decides; this only reads what the forge recorded.
+#
+list_eligible() {
+    [ -n "$1" ] || return 2
+
+    numbers=$(gh issue list --label "$1" --state open --limit 500 --json number --jq '.[].number') || {
+        repository_answers || return 3
+        return 1
+    }
+
+    for n in $numbers; do label_put_on "$n" "$1" || return 3; done
+}
+
+# The label's last `labeled` event, read as data. The name is matched in awk and never spliced into a
+# query, because a label is text somebody else chose.
+#
+# **The listing already said the issue carries the label**, so one no event names is still printed,
+# unnamed. Floor drops it and says so; dropping it here would say nothing to anybody.
+label_put_on() {
+    events=$(gh api "repos/{owner}/{repo}/issues/$1/events" --paginate \
+        --jq '.[] | select(.event == "labeled") | [.label.name, .created_at, (.actor.login // "")] | @tsv' \
+        2>/dev/null) || return 3
+
+    printf '%s\n' "$events" | awk -F'\t' -v label="$2" -v item="$1" '
+        $1 == label { at = $2; who = $3 }
+        END { printf "%s\t%s\t%s\n", item, at, who }'
+}
 
 case "${1:-}" in
     read)    shift; read_item        "${1:-}" ;;
@@ -621,6 +655,7 @@ case "${1:-}" in
     receive) shift; read_answer      "${1:-}" "${2:-}" ;;
     state)   shift; delivery_state   "${1:-}" ;;
     land)    shift; land_delivery    "${1:-}" ;;
-    *)       echo "source-github: read <issue> | kind <issue> | claim <issue> <host> | held <issue> | release <issue> <host> | publish <issue> <run> <branch> <title> [word] [brief] | ask <issue> <question> <text> | receive <issue> <question> | state <run> | land <run>" >&2
+    eligible) shift; list_eligible   "${1:-}" ;;
+    *)       echo "source-github: read <issue> | kind <issue> | eligible <label> | claim <issue> <host> | held <issue> | release <issue> <host> | publish <issue> <run> <branch> <title> [word] [brief] | ask <issue> <question> <text> | receive <issue> <question> | state <run> | land <run>" >&2
              exit 2 ;;
 esac
