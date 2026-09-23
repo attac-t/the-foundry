@@ -32,7 +32,8 @@ cd the-foundry
 ```
 
 **The image carries no Foundry.** `bin/host.sh` is in this clone, and every container mounts the
-clone at `/src`, read-only. **That mount is how the scripts get in. Step 6 is how the plugins do.**
+clone at `/src`, read-only. **That mount is how the scripts get in.** The plugins come in at step
+4's first start when `FOUNDRY_KEYS` is set, and step 6 says how, and what to do without it.
 
 ### 3. Name a place for the sign-ins
 
@@ -66,6 +67,9 @@ both harnesses sit on it. The build is once, and a later container costs about f
 
 **`--worker` is what puts the harnesses in.** The plain host answers *not found* for both — it
 carries `git`, `gh` and certificates, and it grades.
+
+**With `FOUNDRY_KEYS` set, its first start also installs Foundry's plugins**, before the shell
+opens. It exits 6 if that fails, and starts nothing. Step 6 says what it reads.
 
 ### 5. Sign in, inside, once
 
@@ -108,7 +112,7 @@ So the checkout asks for three plugins from a marketplace this machine never reg
 **With `FOUNDRY_KEYS` set, the host installs them itself, at a worker's first start.** It reads
 three things from the checkout it was started in: its origin, the marketplace in
 `.claude-plugin/marketplace.json`, and the plugins `.claude/settings.json` enables.
-`FOUNDRY_PLUGINS` names others. No name is written in the code.
+`FOUNDRY_PLUGINS` names the plugins instead. No name is written in the code.
 
 Measured 23 September 2026, on a fresh volume:
 
@@ -218,6 +222,7 @@ own line reads *cannot tell*, because there is no `~/.claude/settings.json` yet 
 | 3 | the image would not build. Run the same `docker build` without `-q` and read it |
 | 4 | the machine has no home for runs. Set `FOUNDRY_HOME`, or set `HOME` |
 | 5 | the place `FOUNDRY_KEYS` names could not be prepared. **Two causes as well**, and `host.sh` says which |
+| 6 | a worker could not be given Foundry. The checkout names no origin, marketplace or plugin, or the install failed, and `host.sh` says which |
 
 ### Exit 2 is not always a stopped daemon
 

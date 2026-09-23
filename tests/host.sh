@@ -462,6 +462,16 @@ handed /src/bin/install.sh \
   && bad "and the grading image installs nothing — it did" \
   || ok  "and the grading image installs nothing"
 
+# **A machine with no home for runs is refused at 4, before any install.** Found by a judge: the
+# install read the home first, and its own failure turned that 4 into a 6.
+stub_docker
+( PATH="$tmp/bin:$PATH" FOUNDRY_HOME= FOUNDRY_KEYS=akeyvolume sh "$tmp/co/bin/host.sh" --worker true \
+    >/dev/null 2>&1 </dev/null )
+is_four=$?
+[ "$is_four" = 4 ] && ! handed /src/bin/install.sh \
+  && ok  "a machine with no home for runs is refused at 4, before any install" \
+  || bad "a machine with no home for runs is refused at 4, before any install — exit $is_four"
+
 # **A failed install starts nothing.** A worker without Foundry is the gap this closes, so starting
 # one anyway would hide it.
 stub_docker 0 0 1
@@ -492,6 +502,12 @@ is_six=$?
 [ "$is_six" = 6 ] && ! handed /src/bin/install.sh \
   && ok  "a checkout with no origin has nothing to install from, and says 6" \
   || bad "a checkout with no origin has nothing to install from, and says 6 — exit $is_six"
+
+said=$( PATH="$tmp/bin:$PATH" FOUNDRY_HOME="$tmp/home" FOUNDRY_KEYS=akeyvolume sh "$tmp/co/bin/host.sh" \
+          --worker true 2>&1 </dev/null )
+printf '%s' "$said" | grep -q 'has no origin' \
+  && ok  "and says why, rather than exiting in silence" \
+  || bad "and says why, rather than exiting in silence — it said nothing a person could act on"
 
 #
 # **No name is written in the code.** Both scripts read every name from the checkout, so neither may
@@ -530,6 +546,7 @@ case "\$*" in
   "plugin marketplace list --json") cat "$tmp/markets" ;;
   "plugin list --json")             cat "$tmp/installed" ;;
   "plugin marketplace add "*)       [ "${1:-ok}" = ok ] || exit 1; printf '"name": "%s"\n' "${2:-fixture-market}" >> "$tmp/markets" ;;
+  "plugin install ${3:-no-such-plugin}@"*) exit 1 ;;
   "plugin install "*)               printf '"%s"\n' "\$3" >> "$tmp/installed" ;;
 esac
 EOF
@@ -574,6 +591,15 @@ is_one=$?
 [ "$is_one" = 1 ] \
   && ok  "and so does one that arrives under another name" \
   || bad "and so does one that arrives under another name — exit $is_one"
+
+# A plugin the harness will not install fails the install, and the worker never starts on half.
+stub_harness ok fixture-market two
+said=$( PATH="$tmp/harness:$PATH" sh "$root/bin/install.sh" https://example.invalid/acme/fixture.git \
+          fixture-market one two 2>&1 )
+is_one=$?
+[ "$is_one" = 1 ] && printf '%s' "$said" | grep -q 'two@fixture-market could not be installed' \
+  && ok  "a plugin that cannot be installed fails the install, and says which" \
+  || bad "a plugin that cannot be installed fails the install, and says which — exit $is_one"
 
 printf '\nhost — %d passed, %d failed\n' "$passed" "$failed"
 [ "$failed" -eq 0 ]

@@ -93,6 +93,7 @@ main() {
     ensure_docker_answers
     ensure_the_image_is_built
     ensure_the_keys_are_there
+    kept=$(where_runs_are_kept) || exit $?
     ensure_the_worker_carries_foundry
 
     run_in_the_container "$@"
@@ -209,8 +210,8 @@ make_them_here() {
 # **A worker carries Foundry from its first start.** Its plugins go into the keys volume, from the
 # repository this host started from, so a clean host needs no clone. #736's box 1, 23 September.
 #
-# **Every name comes from this checkout**, and `FOUNDRY_PLUGINS` names others. A failed install
-# starts nothing: a worker without Foundry is the gap this closes.
+# **Every name comes from this checkout**, or `FOUNDRY_PLUGINS` names the plugins instead. A failed
+# install starts nothing: a worker without Foundry is the gap this closes.
 ensure_the_worker_carries_foundry() {
     the_worker_keeps_what_it_installs || return 0
 
@@ -293,8 +294,6 @@ how_to_attach() {
 # split on every space, so a host whose git name is two words started no container at all — Docker
 # read the second word as the image name. A shell has one list of arguments, and this is it.
 run_in_the_container() {
-    kept=$(where_runs_are_kept) || return $?
-
     [ $# -eq 0 ] && set -- sh
 
     set -- "$image" "$@"
