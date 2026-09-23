@@ -3524,7 +3524,8 @@ eligible() {
 
 # The rule, and only the rule: what follows `eligible` on its line, read at head.
 eligibility_rule() {
-    practice=$(practice_at_base "$(git rev-parse HEAD 2>/dev/null)") || return 1
+    head=$(git rev-parse -q --verify HEAD 2>/dev/null) || return 0
+    practice=$(practice_at_base "$head") || return 1
 
     printf '%s\n' "$practice" | awk '$1 == "eligible" { $1 = ""; sub(/^ +/, ""); print; exit }'
 }

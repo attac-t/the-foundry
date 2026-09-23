@@ -211,8 +211,8 @@ drop_claim() {
 
 #
 # The items carrying one label, with when it went on and who put it on, as the file records them.
-# Floor orders them and decides. A label is a line, not a file name, because a name like
-# `foundry:go` is one Windows will not write.
+# Floor orders them and decides. A label is a line, not a file name, because a name holding a
+# colon is one Windows will not write.
 #
 list_eligible() {
     [ -n "$1" ] || return 2
