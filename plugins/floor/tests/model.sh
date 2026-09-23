@@ -4180,16 +4180,20 @@ a_pass_takes_the_first_item_nobody_holds() {
     || { skip "a pass with a command — git could not make a repo here"; return; }
   bar_and_rule "$tmp/pss2"
 
-  # The command writes what it was handed and commits it through floor, the way a worker would.
-  saw_it="printf '%s\\n' \"\$FOUNDRY_PASS_ITEM\" > saw && cat \"\$FOUNDRY_PASS_TEXT\" >> saw"
-  saw_it="$saw_it && git add saw && sh '$runner' commit 'saw it'"
+  # The command writes what it was handed and commits it through floor, the way a worker would. One
+  # line each, because the item's words hold its number too, and one check once read them for both.
+  saw_it="printf '%s\\n' \"\$FOUNDRY_PASS_ITEM\" \"\$FOUNDRY_PASS_WORKSPACE\" > saw"
+  saw_it="$saw_it && cat \"\$FOUNDRY_PASS_TEXT\" >> saw && git add saw && sh '$runner' commit 'saw it'"
 
   is "a pass with no grant to deliver stops at the request" \
      "$(FOUNDRY_PASS_COMMAND=$saw_it code_of floor "$tmp/pss2" pass)" "18"
-  has "the command ran in the workspace, with the item it took" \
-      "$(cat "$(floor "$tmp/pss2" path)"/units/01/workspace/*/saw)" "93"
-  has "and the item's own words" \
-      "$(cat "$(floor "$tmp/pss2" path)"/units/01/workspace/*/saw)" "Pass item 93"
+
+  said_back=$(cat "$(floor "$tmp/pss2" path)"/units/01/workspace/*/saw)
+  is  "the command ran in the workspace, handed the item it took" \
+      "$(printf '%s\n' "$said_back" | sed -n 1p)" "93"
+  has "and the workspace it runs in" \
+      "$(printf '%s\n' "$said_back" | sed -n 2p)" "/units/01/workspace/"
+  has "and the item's own words" "$said_back" "Pass item 93"
   has "and the run records that it acted" "$(floor "$tmp/pss2" observe)" "pass.acted"
   has "and why it stopped"                "$(floor "$tmp/pss2" observe)" "why=deliver"
 

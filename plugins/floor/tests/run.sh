@@ -2600,6 +2600,9 @@ wreck_runner "a pass that carries on after its command failed is caught" \
 wreck_runner "a command that is not handed the item is caught" \
   passhand '/^act_on_it() {/,/^}/s#FOUNDRY_PASS_ITEM="\$1" ##'
 
+wreck_runner "a command that is not handed its workspace is caught" \
+  passplace '/^act_on_it() {/,/^}/s#FOUNDRY_PASS_WORKSPACE="\$tree" ##'
+
 #
 # **From a label to a request.** One break per rule: a failed bar stops it, a charter naming no judge
 # does not, a refused delivery stops it, and the run answers to who put the label on. #997, #736.
