@@ -4159,30 +4159,46 @@ HOOK
   lacks "and no cure for a remote that is not https" \
         "$(gh_claims_says "$work" claim 71)" "gh auth"
 
-  # An https forge never reached. This suite lets git use `file` alone, so nothing was ever sent.
-  git -C "$work" remote set-url origin 'https://gone.invalid/acme/claimed.git'
-
-  lacks "and none for a forge never reached" \
-        "$(gh_claims_says "$work" claim 71)" "gh auth"
-
   #
-  # An https forge that refused, with a token in its userinfo. `pushInsteadOf` sends the push to the
-  # refusing bare repository, so the refusal is the server's own and the cure is printed.
+  # **A cure only when git's own words name the cause.** This suite lets git use `file` alone, so no
+  # https push can happen here. A shim answers `push` with the words a case needs, and hands every
+  # other git call to the real one — so the adapter reads each cause the way it reads a forge's.
   #
-  # **The token must not appear.** The cure is run with `--global`, and it would stay there.
+  # The origin carries a token, and it must never appear: the cure is run with `--global`.
+  shim="$tmp/gitshim"
+  mkdir -p "$shim"
+  { printf '#!/bin/sh\n'
+    printf 'case "$1" in push) cat "%s/says" >&2; exit 128 ;; esac\n' "$shim"
+    printf 'exec "%s" "$@"\n' "$(command -v git)"
+  } > "$shim/git"
+  chmod +x "$shim/git"
+  pushed_saying() { printf '%s\n' "$1" > "$shim/says"; }
+  claims_through_the_shim() { PATH="$shim:$PATH" gh_claims_says "$work" claim 71; }
+
   secret='https://x-access-token:s3cr3t@forge.test/acme/claimed.git'
   git -C "$work" remote set-url origin "$secret"
-  git -C "$work" config "url.$bare.pushInsteadOf" "$secret"
-  : > "$bare/refuse"
 
-  has   "a forge that refused is told which helper to add" \
-        "$(gh_claims_says "$work" claim 71)" "--add credential.https://forge.test.helper"
+  pushed_saying "fatal: could not read Username for 'https://forge.test': terminal prompts disabled"
+  has   "a push with no credential is told which helper to add" \
+        "$(claims_through_the_shim)" "--add credential.https://forge.test.helper"
   lacks "and never the token its origin carries" \
-        "$(gh_claims_says "$work" claim 71)" "s3cr3t"
+        "$(claims_through_the_shim)" "s3cr3t"
   lacks "and never the command that discards the others" \
-        "$(gh_claims_says "$work" claim 71)" "setup-git"
+        "$(claims_through_the_shim)" "setup-git"
 
-  rm -f "$bare/refuse"
+  pushed_saying "fatal: Authentication failed for 'https://forge.test/acme/claimed.git/'"
+  has   "a refused credential is told to see which account signs in" \
+        "$(claims_through_the_shim)" "gh auth status"
+
+  pushed_saying "fatal: unable to access 'https://forge.test/': Could not resolve host: forge.test"
+  lacks "a forge never reached gets no cure" \
+        "$(claims_through_the_shim)" "gh auth"
+
+  # The fetch URL says https and the push goes to a path, so the words name a cause no helper serves.
+  pushed_saying "fatal: could not read Username for 'https://forge.test': terminal prompts disabled"
+  git -C "$work" config "url.$bare.pushInsteadOf" "$secret"
+  lacks "a push that went to a path gets none, whatever origin says" \
+        "$(claims_through_the_shim)" "gh auth"
 }
 a_refused_push_says_which_refusal_it_was
 
