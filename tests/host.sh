@@ -52,6 +52,10 @@ stub_docker() {
 
 asked() { cat "$tmp/asked" 2>/dev/null; }
 
+# Whether docker was handed `-it` as an argument of its own. `asked` joins every argument into one
+# line, so a checkout whose path held `-it` read as a terminal nobody asked for — #995.
+asked_for_a_terminal() { grep -qx -- '-it' "$tmp/argv"; }
+
 # `FOUNDRY_HOME` decides where runs go, so the suite names one rather than reading the machine's.
 # **Stdin is closed, and that is the point.** `host.sh` decides `-it` from `[ -t 0 ]`, and this
 # redirected only stdout and stderr — so every case below answered about the shell that ran the
@@ -101,22 +105,50 @@ esac
 #
 # **Two cases, because one proves nothing.** A single reading with stdin left alone answers about the
 # caller's shell: green under a pipe, red on a terminal, and the code the same either way.
-case $(asked) in
-  *-it*) bad "with no terminal, none is asked for — it asked anyway" ;;
-  *)     ok  "with no terminal, none is asked for" ;;
-esac
+if asked_for_a_terminal; then
+  bad "with no terminal, none is asked for — it asked anyway"
+else
+  ok  "with no terminal, none is asked for"
+fi
 
 if a_terminal_can_be_made; then
   stub_docker
   hosted_on_a_terminal true
 
-  case $(asked) in
-    *-it*) ok  "with a terminal, one is asked for" ;;
-    *)     bad "with a terminal, one is asked for — it did not" ;;
-  esac
+  if asked_for_a_terminal; then
+    ok  "with a terminal, one is asked for"
+  else
+    bad "with a terminal, one is asked for — it did not"
+  fi
 else
   printf '  skip  with a terminal, one is asked for — script is not on this machine
 '
+fi
+
+# --- a checkout whose path holds `-it` ---
+#
+# **#995: the path is an argument too.** A run named `...-when-its-push` graded its own workspace, and
+# this said a terminal was asked for. Nothing had asked. So the copy below runs from `my-items`.
+#
+# Two files make a root `host.sh` can run from: itself, and the one command it asks for the home.
+odd="$tmp/my-items"
+mkdir -p "$odd/bin" "$odd/plugins/floor/bin"
+cp "$root/bin/host.sh" "$odd/bin/host.sh"
+printf 'printf "%%s\n" "$FOUNDRY_HOME"
+' > "$odd/plugins/floor/bin/run.sh"
+
+stub_docker
+( PATH="$tmp/bin:$PATH" FOUNDRY_HOME="$tmp/home" sh "$odd/bin/host.sh" true >/dev/null 2>&1 </dev/null )
+
+case $(asked) in
+  *"my-items:/src:ro"*) ok  "a checkout under a path holding -it is mounted" ;;
+  *)                    bad "a checkout under a path holding -it is mounted — it was not" ;;
+esac
+
+if asked_for_a_terminal; then
+  bad "and no terminal is asked for there either — it asked"
+else
+  ok  "and no terminal is asked for there either"
 fi
 
 # --- the volume ---
