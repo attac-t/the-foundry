@@ -2234,8 +2234,8 @@ Needs: Claude Code CLI, `sh`, `awk`, `git`. No Python, no Node, no `jq`.
 **A worker has no slash commands.** The same two are `claude plugin marketplace add attac-t/the-foundry` and
 `claude plugin install floor@the-foundry`.
 
-**A host started with `bin/host.sh --worker` and `FOUNDRY_KEYS` needs neither.** Its first start
-installs floor, and whatever else the checkout enables, into the kept volume. `floor:host` says how.
+**A host started with `bin/host.sh --worker` and a keys volume needs neither.** Its first start
+installs floor, and whatever else the checkout enables, into that volume. `floor:host` says how.
 
 Standalone. Pairs with kernel, which is where the memory rung lives.
 
