@@ -2616,7 +2616,16 @@ wreck_runner "a command that is not handed its workspace is caught" \
   passplace '/^act_on_it() {/,/^}/s#FOUNDRY_PASS_WORKSPACE="\$tree" ##'
 
 wreck_runner "a command handed the name of who selected the run is caught" \
-  passunwho '/^act_on_it() {/,/^}/s#unset FOUNDRY_WHO \&\& ##'
+  passunwho '/^act_on_it() {/,/^}/s#unset FOUNDRY_WHO FOUNDRY_RUN#unset FOUNDRY_RUN#'
+
+wreck_runner "a command handed the pass's pin on its run is caught" \
+  passcmdrun '/^act_on_it() {/,/^}/s#unset FOUNDRY_WHO FOUNDRY_RUN#unset FOUNDRY_WHO#'
+
+wreck_runner "a pass whose verbs follow a run begun under it is caught" \
+  passpin '/^begin_a_run_for() {/,/^}/s#^    FOUNDRY_RUN=\$dir; export FOUNDRY_RUN$#    :#'
+
+wreck_runner "a pass stopped for good by an item with no words is caught" \
+  passblank '/^begin_a_run_for() {/,/^}/s#^    heading=\${heading:-item \$1}$#    :#'
 
 wreck_runner "a command that does not run as a worker is caught" \
   passworker '/^act_on_it() {/,/^}/s#FOUNDRY_WORKER=\${FOUNDRY_WORKER:-pass} ##'

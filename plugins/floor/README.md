@@ -2008,10 +2008,13 @@ record, not a control, until a worker has its own identity.
 **`run.sh pass` takes the first of them this host can claim, and begins its run.** An item another
 host holds is passed over and said, and so is one a run here already works on. Any run active in
 this checkout is left alone, exit 43, one holding no item included: every verb a pass calls reads
-the active run first. Nothing eligible is exit 42, with the reason.
+the active run first. Nothing eligible is exit 42, with the reason. **Once a pass begins its run,
+every verb it calls reads that run**, whatever the checkout points at by then, and an item with no
+words is titled by its id.
 
-**Exclusive between hosts, not within one.** A claim from the same host renews, so two passes started
-at once on one host could both take one item. One live pass per host is the trigger's to keep, #997.
+**Exclusive between hosts, not within one.** A claim from the same host renews, so two passes in two
+checkouts on one host could both take one item. One live pass per host is the trigger's to keep,
+#997.
 
 **The host names the command that does the work, in `FOUNDRY_PASS_COMMAND`.** Floor names no
 harness. The pass opens the run's workspace on this checkout's own target, which needs nobody's

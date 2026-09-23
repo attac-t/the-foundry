@@ -4201,7 +4201,7 @@ a_pass_takes_the_first_item_nobody_holds() {
   # The command writes what it was handed and commits it through floor, the way a worker would. One
   # line each, because the item's words hold its number too, and one check once read them for both.
   saw_it="printf '%s\\n' \"\$FOUNDRY_PASS_ITEM\" \"\$FOUNDRY_PASS_WORKSPACE\""
-  saw_it="$saw_it \"\${FOUNDRY_WHO:-nobody}\" \"\${FOUNDRY_WORKER:-none}\" > saw"
+  saw_it="$saw_it \"\${FOUNDRY_WHO:-nobody}\" \"\${FOUNDRY_WORKER:-none}\" \"\${FOUNDRY_RUN:-unpinned}\" > saw"
   saw_it="$saw_it && cat \"\$FOUNDRY_PASS_ITEM_FILE\" >> saw && git add saw && sh '$runner' commit 'saw it'"
 
   # The host names no worker here, and says so with an empty one rather than leaving it unset.
@@ -4217,6 +4217,8 @@ a_pass_takes_the_first_item_nobody_holds() {
       "$(printf '%s\n' "$said_back" | sed -n 3p)" "nobody"
   is  "and it runs as a worker, named pass when the host names none" \
       "$(printf '%s\n' "$said_back" | sed -n 4p)" "pass"
+  is  "and without the pass's pin on its run" \
+      "$(printf '%s\n' "$said_back" | sed -n 5p)" "unpinned"
   has "and the item's own words" "$said_back" "Pass item 93"
   has "and the run records that it acted" "$(floor "$tmp/pss2" observe)" "pass.acted"
   has "and why it stopped"                "$(floor "$tmp/pss2" observe)" "why=deliver"
@@ -4377,10 +4379,63 @@ a_refused_step_is_a_stop() {
 a_refused_step_is_a_stop
 
 #
+# **A run begun while the command works does not take the pass's verbs.** The door refuses a run that
+# is there at the start. This one arrives later: the command runs `new` in the pass's own checkout,
+# the way the running rule tells an agent to, and the pass still delivers from its own run. #884's
+# judge, round two.
+#
+a_pass_keeps_its_own_run() {
+  git init -q --bare "$tmp/remotes/acme/pinx.git" 2>/dev/null \
+    || { skip "a run begun under a pass — git could not make a bare repo here"; return; }
+  make_repo "$tmp/pinx" main && set_origin "$tmp/pinx" 'https://github.com/acme/pinx.git' \
+    || { skip "a run begun under a pass — git could not make a repo here"; return; }
+
+  printf 'Pinned across a new run\n' > "$src/items/87"
+  printf 'pinx\t2026-09-12T00:00:00Z\tpat\n' > "$src/labels/87"
+  bar_and_rule "$tmp/pinx" 'eligible pinx pat
+deliver https://github.com/acme/pinx.git'
+
+  interlope="( cd '$tmp/pinx' && sh '$runner' new 'Interloper' ) >/dev/null 2>&1"
+  interlope="$interlope; printf 'x\\n' > saw && git add saw && sh '$runner' commit 'saw it'"
+
+  is "a pass whose command begins another run here still delivers" \
+     "$(FOUNDRY_WORKER='' FOUNDRY_PASS_COMMAND=$interlope code_of floor "$tmp/pinx" pass)" "0"
+
+  own=$(ls -d "$home"/runs/*-pinned-across-a-new-run-* 2>/dev/null | head -1)
+  has   "and the delivery is from the pass's own run" "$(ls "$src/deliveries")" "$(basename "$own")"
+  lacks "and none from the run begun under it" "$(ls "$src/deliveries")" "interloper"
+
+  rm -f "$src/deliveries/$(basename "$own")"
+  rm -rf "$src/claims/87" "$src/labels/87" "$src/items/87"
+}
+a_pass_keeps_its_own_run
+
+#
+# **An item with no words is titled by its id.** `make_run` refused an empty title after the claim,
+# so every pass that reached such an item stopped there, and wrote no line. #884's judge.
+#
+a_blank_item_is_still_an_item() {
+  make_repo "$tmp/blank" main && set_origin "$tmp/blank" 'https://gitlab.com/acme/blank.git' \
+    || { skip "a blank item — git could not make a repo here"; return; }
+
+  printf '\n\n' > "$src/items/79"
+  printf 'blank\t2026-09-13T00:00:00Z\tpat\n' > "$src/labels/79"
+  bar_and_rule "$tmp/blank" 'eligible blank pat'
+
+  is  "a pass that takes an item with no words begins its run" "$(code_of floor "$tmp/blank" pass)" "44"
+  has "titled by the item's id" "$(floor "$tmp/blank" path)" "item-79"
+
+  rm -rf "$src/claims/79" "$src/labels/79" "$src/items/79"
+}
+a_blank_item_is_still_an_item
+
+#
 # **Floor never puts the eligibility mark on.** A worker that could label its own issue would choose
-# its own work. So every kind of `gh` call floor ships is named here, and so is every line that
-# touches the directory adapter's labels. **An allowlist**, because a list of known writes misses the
-# next one: a new call or a new line goes red until a person names it. #884's judge.
+# its own work. So every kind of `gh` call floor ships is named here, and so is every line that names
+# the directory adapter's labels. **An allowlist**, because a list of known writes misses the next.
+#
+# A new kind of call goes red until a person names it, and so does one whose verb is a variable. A
+# write by a route that names neither `gh` nor `labels`, it cannot see. #884's judge.
 #
 GH_CALLS_FLOOR_MAKES='gh api
 gh api user
@@ -4408,11 +4463,25 @@ floor_never_puts_the_mark_on() {
   plant_in "$tmp/planted-label" 'gh issue edit "$1" --add-label "$2"' \
     || { skip "a planted label write — could not copy floor"; return; }
   has "and a planted call is found" "$(gh_calls_in "$tmp/planted-label")" "gh issue edit"
+
+  plant_in "$tmp/planted-verb" 'gh "$verb" "$1"' \
+    || { skip "a planted call by variable — could not copy floor"; return; }
+  has "and one whose verb is a variable reads as unknown" "$(gh_calls_in "$tmp/planted-verb")" "gh ?"
+
+  plant_in "$tmp/planted-write" "$(printf '%s\n%s' 'gh api "repos/{owner}/{repo}/issues/$1" \' \
+    '        -X PATCH -f "labels[]=go"')" \
+    || { skip "a planted continued write — could not copy floor"; return; }
+  has "and a write flag on a continued line is found" "$(gh_api_writes_in "$tmp/planted-write")" "-X PATCH"
 }
 
+# The word after `gh` and the one after that when both are plain, or `gh ?` when the first is not.
 gh_calls_in() {
-  calls_of "$1" gh | grep -oE 'gh[[:space:]]+[a-z-]+([[:space:]]+[a-z-]+)?' \
-    | sed -E 's/[[:space:]]+/ /g' | LC_ALL=C sort -u
+  calls_of "$1" gh | awk '{
+      for (i = 1; i <= NF; i++) if ($i ~ /(^|[(\/"])gh"?$/) break
+      if (i > NF) next
+      verb = (i < NF && $(i + 1) ~ /^[a-z-]+$/) ? $(i + 1) : "?"
+      then_ = (verb != "?" && i + 1 < NF && $(i + 2) ~ /^[a-z-]+$/) ? " " $(i + 2) : ""
+      print "gh " verb then_ }' | LC_ALL=C sort -u
 }
 
 gh_api_writes_in() {
@@ -4436,18 +4505,23 @@ plant_in() {
 # `$(`, behind a path or a quote. Comments go, and a name inside a line a person reads is not a call.
 CALL_POSITION='(^[[:space:]]*|[;&|({][[:space:]]*|\$\([[:space:]]*|(if|while|until|then|do|else|exec|command|env|nohup|nice|time|xargs|!)[[:space:]]+|timeout[[:space:]]+[0-9]+[a-z]?[[:space:]]+)"?([^[:space:];&|()"]*/)?'
 
+# Every shipped line calling one of these commands, joined first where a backslash continues it.
 calls_of() {
-  grep -rnE "$CALL_POSITION($2)\"?([[:space:]]|\$)" "$1/bin" "$1/lib" "$1/hooks" 2>/dev/null \
-    | grep -vE '^[^:]*:[0-9]+:[[:space:]]*#'
+  find "$1/bin" "$1/lib" "$1/hooks" -type f 2>/dev/null | while IFS= read -r file; do
+    joined_lines_of "$file" | grep -E "$CALL_POSITION($2)\"?([[:space:]]|\$)" \
+      | grep -vE '^[[:space:]]*#' | sed "s|^|${file##*/}: |"
+  done
 }
+
+joined_lines_of() { sed -e ':a' -e '/\\$/N' -e 's/\\\n[[:space:]]*/ /' -e 'ta' "$1"; }
 floor_never_puts_the_mark_on
 
 #
 # **Core runs no harness.** A pass runs the command the host names, so nothing in floor may call the
 # program behind it. The one-pass charter.
 #
-# It knows harnesses by name, in any position a shell gives a command. **A harness it does not name,
-# it cannot see**, so the list is the limit of the proof, and a new name belongs in it.
+# It knows harnesses by name, in the call positions above. `eval` and `sh -c` are not read, and **a
+# harness it does not name, it cannot see**: the list is the limit of the proof.
 floor_runs_no_harness() {
   is "no shipped line runs a harness" "$(harness_calls_in "$(dirname "$runner")/..")" ""
 

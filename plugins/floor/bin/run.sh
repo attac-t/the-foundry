@@ -3664,8 +3664,16 @@ leave_a_run_in_progress_alone() {
 begin_a_run_for() {
     words=$(source_says read "$1") || { note "claimed [$1] and could not read it"; exit 1; }
 
+    # An item with no words is still an item. Titled by nothing, `make_run` refused it after the
+    # claim, and every pass that reached it stopped there, with no line written. #884's judge.
     heading=$(printf '%s\n' "$words" | awk 'NF { print; exit }')
+    heading=${heading:-item $1}
     make_run "$heading" >/dev/null
+
+    # **Every verb from here reads this run, whatever the checkout points at by then.** A `new` in
+    # the checkout while the command worked moved the pointer, and the verbs after it followed.
+    # The door refuses a run that is there at the start; this holds one begun later. #884's judge.
+    FOUNDRY_RUN=$dir; export FOUNDRY_RUN
     read_work_item "$dir" "$1" >/dev/null
     emit "$dir" pass.began item="$1"
     note "this pass took [$1]: $dir"
@@ -3715,12 +3723,15 @@ stop_at() { record_the_stop "$1" "$2"; exit "$3"; }
 # worker, handed the item, the workspace and a file holding the item's words. Not who selected the
 # run: that is stamped already, and a worker holding the name could act in that person's place.
 #
-# `FOUNDRY_WORKER` is the host's word for its worker, or `pass` when it names none. The pass reads
-# back the command's exit and floor's record, never what the command printed.
+# `FOUNDRY_WORKER` is the host's word for its worker, or `pass` when it names none. The pin on the
+# run stays the pass's too: the command finds its run from the workspace it stands in, and a harness
+# handed the variable would write its own hooks' lines into this run.
+#
+# The pass reads back the command's exit and floor's record, never what the command printed.
 act_on_it() {
     [ -n "${FOUNDRY_PASS_COMMAND:-}" ] || { record_the_stop "$1" no-command; exit 44; }
 
-    ( cd "$tree" && unset FOUNDRY_WHO && FOUNDRY_WORKER=${FOUNDRY_WORKER:-pass} FOUNDRY_PASS_ITEM="$1" \
+    ( cd "$tree" && unset FOUNDRY_WHO FOUNDRY_RUN && FOUNDRY_WORKER=${FOUNDRY_WORKER:-pass} FOUNDRY_PASS_ITEM="$1" \
         FOUNDRY_PASS_WORKSPACE="$tree" FOUNDRY_PASS_ITEM_FILE="$dir/item.md" sh -c "$FOUNDRY_PASS_COMMAND" ); code=$?
     [ "$code" -eq 0 ] || { record_the_stop "$1" command-failed; exit 45; }
 
