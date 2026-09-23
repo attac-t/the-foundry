@@ -5768,6 +5768,39 @@ a-reviewer  a stranger can read it
 the_runner_asks_the_judge
 
 #
+# **A pass asks the judges its charter names, and only an approval goes on.** Every pass case named
+# none, so the judged step only ever answered 8. #884's judge, rounds four and five.
+#
+a_pass_asks_the_judges() {
+  a_judged_pass "$tmp/pjudge" pjudge reject 70 \
+    || { skip "a judged pass — git could not make a repo here"; return; }
+
+  is  "a judge that refuses stops the pass before the request" \
+      "$(FOUNDRY_PASS_COMMAND=true code_of floor "$tmp/pjudge" pass)" "39"
+  has "and the run says it was the judges" "$(floor "$tmp/pjudge" observe)" "why=judged"
+
+  a_judged_pass "$tmp/pjudge2" pjudge2 approve 69 \
+    || { skip "an approved pass — git could not make a repo here"; return; }
+
+  is  "a judge that approves lets the pass go on to the request" \
+      "$(FOUNDRY_PASS_COMMAND=true code_of floor "$tmp/pjudge2" pass)" "18"
+  has "and it stops there, with no grant to deliver" "$(floor "$tmp/pjudge2" observe)" "why=deliver"
+
+  rm -rf "$src/claims/69" "$src/claims/70" "$src/labels/69" "$src/labels/70" "$src/items/69" "$src/items/70"
+}
+
+# A repository whose one judge answers one verdict, and an item under a label named for it.
+a_judged_pass() {
+  a_judged_repo "$1" "$2" "$(a_judge_that_approves "$3")" 'reach  a-reviewer  sh bin/fake-judge.sh
+a-reviewer  a stranger can read it
+' && commit_file "$1" .foundry/practice "offer $2 pat" && as_fetched "$1" || return 1
+
+  printf 'Judged item %s\n' "$4" > "$src/items/$4"
+  printf '%s\t2026-09-15T00:00:00Z\tpat\n' "$2" > "$src/labels/$4"
+}
+a_pass_asks_the_judges
+
+#
 # **Two judges on one clause, and every fixture before this had one.** A rule with a single instance
 # is a description of that instance: every refusal floor made was both the rule and its only example.
 #

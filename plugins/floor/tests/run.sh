@@ -2662,14 +2662,21 @@ wreck_runner "a claim bound late and marked kept is caught" \
   bindmark '/^name_a_claim_taken_first() {/,/^}/s#^    remember_the_holder "\$1"$#    remember_the_holder "$1"; mark_kept "$1"#'
 
 #
-# **From a label to a request.** One break per rule: a failed bar stops it, a charter naming no judge
-# does not, a refused delivery stops it, and the run answers to who put the label on. #997, #736.
+# **From a label to a request.** One break per rule: a failed bar or a refusing judge stops it, an
+# approving judge or none does not, a refused delivery stops it, and the run answers to who put the
+# label on. #997, #736.
 #
 wreck_runner "a pass that carries on past a failed gate is caught" \
   passgates '/^carry_it_to_a_request() {/,/^}/s#^    ( gates ) >/dev/null || stop_at "\$1" gates "\$?"$#    ( gates ) >/dev/null#'
 
 wreck_runner "a pass that stops on a charter naming no judge is caught" \
   passunjudged 's#^approved_or_unjudged() { \[ "\$1" -eq 0 \] || \[ "\$1" -eq 8 \]; }$#approved_or_unjudged() { [ "$1" -eq 0 ]; }#'
+
+wreck_runner "a pass that carries on past a judge that refused is caught" \
+  passjudged '/^carry_it_to_a_request() {/,/^}/s#^    approved_or_unjudged "\$code" || stop_at "\$1" judged "\$code"$#    :#'
+
+wreck_runner "a pass that stops on a judge that approved is caught" \
+  passapproved 's#^approved_or_unjudged() { \[ "\$1" -eq 0 \] || \[ "\$1" -eq 8 \]; }$#approved_or_unjudged() { [ "$1" -eq 8 ]; }#'
 
 wreck_runner "a pass that calls a refused delivery delivered is caught" \
   passdeliver '/^carry_it_to_a_request() {/,/^}/s#^    ( deliver "\$2" ) >/dev/null || stop_at "\$1" deliver "\$?"$#    ( deliver "$2" ) >/dev/null#'
