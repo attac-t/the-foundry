@@ -7,8 +7,8 @@
 # **No network, ever.** A gate that needs one goes red on a train.
 #
 # **This harness hands its reply back on stdout**, where the other one writes it to a file it was
-# given. So the stub differs from codex's, and so does what is checked: there is no handle here, and
-# two receipt keys are absent because nothing opened a thread.
+# given. So the stub differs from codex's, and so does what is checked: the adapter chooses the
+# session, so the stub keeps its arguments and the receipt's handle is read against them.
 
 set -u
 adapter="$(cd "$(dirname "$0")/.." && pwd)/run.sh"
@@ -29,14 +29,19 @@ tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
 mkdir -p "$tmp/bin" "$tmp/noclaude"
 
-# It reads the prompt and prints what it was told to say. Nothing else: a reply on stdout is the
-# whole of this harness's contract, and a stub doing more would prove a reader nothing calls.
+# It reads the prompt and prints what it was told to say, and keeps the arguments it was handed.
+# `$TMP/stderr` is what a case wants on stderr — a line shaped like a command, for one of them.
 cat > "$tmp/bin/claude" <<'STUB'
 #!/bin/sh
+printf '%s\n' "$@" > "$TMP/argv"
 cat > /dev/null
+[ -f "$TMP/stderr" ] && cat "$TMP/stderr" >&2
 cat "$TMP/reply"
 STUB
 chmod +x "$tmp/bin/claude"
+
+# The session the adapter handed the harness, read from the harness's own arguments.
+session_handed() { awk 'prev == "--session-id" { print; exit } { prev = $0 }' "$tmp/argv" 2>/dev/null; }
 
 # **Silence is an empty file, not an empty line.** A reply of one newline is a harness that spoke
 # and named nothing, which the adapter treats differently and should.
@@ -113,6 +118,8 @@ else
 
   has "a harness that is not here is unavailable" "$(cat "$d/r.receipt")" "verdict unavailable"
   hasnt "and no verdict is invented for it"       "$(cat "$d/r.receipt")" "verdict approve"
+  hasnt "and no command count either"             "$(cat "$d/r.receipt")" "commands "
+  hasnt "and no session, because none was asked"  "$(cat "$d/r.receipt")" "context "
 fi
 
 # --- what came back ---
@@ -134,10 +141,23 @@ hasnt "and no bare model is claimed"        "$(cat "$d/r.receipt")" "
 model "
 hasnt "and no provider is claimed"          "$(cat "$d/r.receipt")" "provider "
 
-# **Two keys the other adapter carries and this one cannot.** Nothing opened a thread, so a receipt
-# claiming one would be a claim about nothing.
-hasnt "and no handle is claimed"            "$(cat "$d/r.receipt")" "context "
-hasnt "and freshness is not claimed either" "$(cat "$d/r.receipt")" "fresh "
+# **The session is the adapter's to choose, so the receipt names it** — the one the harness was
+# handed, read from its own arguments rather than from anything the adapter says about itself. #993.
+has "a round names the session it opened"   "$(cat "$d/r.receipt")" "context $(session_handed)"
+has "and says it was a new one"             "$(cat "$d/r.receipt")" "fresh yes"
+
+case $(session_handed) in
+  ????????-????-4???-[89ab]???-????????????) ok  "and the session is a version-4 uuid" ;;
+  *)                                          bad "and the session is a version-4 uuid — got [$(session_handed)]" ;;
+esac
+
+# **No command count, ever.** Text mode keeps no stream, and a line shaped like a command on stderr
+# once read as one: every receipt said `commands 0`, a round refused two shells included. #993.
+printf '{"type":"tool_use","input":{"command":"ls"}}\n' > "$tmp/stderr"
+d=$(handed counted); judged "$d"
+rm -f "$tmp/stderr"
+
+hasnt "a command on stderr is never counted"   "$(cat "$d/r.receipt")" "commands "
 
 # --- a verdict that is not the last word ---
 #
@@ -161,6 +181,7 @@ a_claude_that_says ''
 d=$(handed quiet); judged "$d"
 
 has "a harness that said nothing is unavailable" "$(cat "$d/r.receipt")" "verdict unavailable"
+hasnt "and it names no session it cannot vouch for" "$(cat "$d/r.receipt")" "context "
 
 printf '
 anthropic — %d passed, %d failed

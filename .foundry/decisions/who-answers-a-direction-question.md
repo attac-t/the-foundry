@@ -88,3 +88,59 @@ reading a convenience into a record that does not carry one.
 
 **Nothing enforces this either.** No exit code reads it. What holds it is the record and whoever
 reads it next.
+
+## Deciding is delegated to the worker, 23 September 2026
+
+**The owner stopped taking the questions a worker had put to them.** Their words, exact and unedited.
+
+> Btw feel free to merge. Be autonomous
+
+> Do not put it on me. You decide towards our mission and goals. You charter and should be able to
+> take a week informed decision
+
+And, minutes later, how:
+
+> Charter using opus then decide. Also, let's be selective on when to run the audit / grade.
+>
+> When you see required, charter with fable for direction related charters.
+>
+> But make the decision and continue moving
+
+**Sol could not be reached that day.** Its credits return on 27 September.
+
+### What it settles
+
+**The worker decides the questions it had put to the owner**, toward the mission and the accepted
+goals. It merges a candidate once its gates are green and its judge approves. Each decision is
+written on its issue with its reason and the strongest case against it.
+
+**A decision is chartered first, and Opus reads the charter.** One about direction goes to Fable
+when it needs one. **A grade is spent where it can change the answer**, never by habit.
+
+### What it does not settle
+
+**Whether Sol must still be asked.** The owner did not say. So each decision says it was made
+without Sol, and Sol reviews them when it can be reached. A decision Sol would reverse is reversed
+then.
+
+**Goals and doctrine.** Only a named person accepts either, and this names no new one.
+
+**Standing.** A worker still grants itself nothing. Where a decision is about who may act, it keeps
+the act with a person.
+
+**Nothing enforces this either**, for the reason the delegation of 20 September gives.
+
+## One model judges while the second has no credits, 22 September 2026
+
+`.foundry/judged` cites *the owner's decision* for judging on one model. These are the words.
+
+> Let's use opus as a judge or fable when merited. Codex is out of credit.
+
+> Codex is out of credit. Use opus instead
+
+**What it settles:** the panel is one model until the second one can answer. `.foundry/judged`
+keeps the second line commented, and says to restore it when the credits return.
+
+**What it does not settle:** #529's bar for another machine — *"Both providers must participate in
+at least one real, attributable, mixed-provider decision."* One model cannot meet that, and nothing
+here says it does.

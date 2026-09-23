@@ -7,7 +7,7 @@ dated, and says who. A merge never accepts a goal. It lands a file.
 
 | Goal | State | Accepted |
 |---|---|---|
-| [Foundry uses Foundry](goals/foundry-uses-foundry.md) | in force, one week | 7 September 2026, [recorded](decisions/foundry-uses-foundry-is-the-week-goal.md) |
+| [Foundry uses Foundry](goals/foundry-uses-foundry.md) | in force, renewed to 28 September | 7 September 2026, [recorded](decisions/foundry-uses-foundry-is-the-week-goal.md) |
 | [Foundry runs itself](goals/foundry-runs-itself.md) | partly | 27 August 2026, [recorded](decisions/foundry-runs-itself-is-critical.md) |
 | [A person can run it without being told how](goals/a-person-can-run-it.md) | proposed | Not yet |
 | [A repository states its bar](goals/a-repository-states-its-bar.md) | partly | Not yet |

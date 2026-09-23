@@ -43,8 +43,9 @@ directory exists, so the suite phase is silent for minutes. **Read the file's mo
 `join.sh` refuses and names the file that would have answered — a missing gate list, practice or
 judged declaration. Three absences refuse. The other three print and stop nothing, by decision.
 
-**A grade must not point at the live home.** Floor counts the runs it can see, not the ones it made,
-so opening a run while a grade watches that home reads as a leak.
+**A grade must not point at the live home.** Floor compares the runs it can see, not the ones it
+made, so opening a run while a grade watches that home fails it. The failure names each run it saw
+appear, so a reader can tell whose it was.
 
 ## A comment is refused
 
