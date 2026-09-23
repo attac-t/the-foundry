@@ -4139,23 +4139,53 @@ a_pass_takes_the_first_item_nobody_holds() {
     || { skip "a pass — git could not make a repo here"; return; }
 
   mkdir -p "$src/items" "$src/labels" "$src/claims/91"
-  for n in 91 92 93; do printf 'Pass item %s\n' "$n" > "$src/items/$n"; done
+  for n in 91 92 93 94; do printf 'Pass item %s\n' "$n" > "$src/items/$n"; done
   printf 'ready\t2026-09-01T00:00:00Z\tpat\n' > "$src/labels/91"
   printf 'ready\t2026-09-02T00:00:00Z\tpat\n' > "$src/labels/92"
   printf 'ready\t2026-09-03T00:00:00Z\tpat\n' > "$src/labels/93"
+  printf 'ready\t2026-09-04T00:00:00Z\tpat\n' > "$src/labels/94"
   printf '2026-01-01T00:00:00Z\tOtherHost\t%s\n' "$(date -u +%s)" > "$src/claims/91/held"
 
   is "a pass with no rule takes nothing" "$(code_of floor "$tmp/pss" pass)" "42"
 
-  mkdir -p "$tmp/pss/.foundry"
-  commit_file "$tmp/pss" .foundry/practice 'eligible ready'
+  bar_and_rule "$tmp/pss"
 
-  is  "a pass passes over the item another host holds" "$(code_of floor "$tmp/pss" pass)" "0"
-  has "and claims the next one"      "$(cat "$src/claims/92/held")" "$(uname -n)"
-  has "and begins a run holding it"  "$(floor "$tmp/pss" observe)" "item=92"
-  has "and says which pass took it"  "$(floor "$tmp/pss" observe)" "pass.began"
+  is  "a pass with no command begins the run and waits" "$(code_of floor "$tmp/pss" pass)" "44"
+  has "it passed over the item another host holds, and claimed the next" \
+      "$(cat "$src/claims/92/held")" "$(uname -n)"
+  has "and its run holds that item"  "$(floor "$tmp/pss" observe)" "item=92"
+  has "and says why it stopped"      "$(floor "$tmp/pss" observe)" "why=no-command"
 
   is "a second pass leaves that run alone" "$(code_of floor "$tmp/pss" pass)" "43"
+
+  #
+  # **The host names the command, and floor hands it only its own words.** A second checkout: 92 is
+  # this host's already, so the pass passes it over too, rather than start that work twice.
+  make_repo "$tmp/pss2" main && set_origin "$tmp/pss2" 'https://gitlab.com/acme/pss.git' \
+    || { skip "a pass with a command — git could not make a repo here"; return; }
+  bar_and_rule "$tmp/pss2"
+
+  is "a pass runs the command the host names" \
+     "$(FOUNDRY_PASS_COMMAND='printf "%s\n" "$FOUNDRY_PASS_ITEM" > saw && cat "$FOUNDRY_PASS_TEXT" >> saw' \
+        code_of floor "$tmp/pss2" pass)" "0"
+  has "in the workspace, with the item it took" "$(cat "$(floor "$tmp/pss2" path)"/units/01/workspace/*/saw)" "93"
+  has "and the item's own words"                "$(cat "$(floor "$tmp/pss2" path)"/units/01/workspace/*/saw)" "Pass item 93"
+  has "and the run records that it acted"       "$(floor "$tmp/pss2" observe)" "pass.acted"
+
+  make_repo "$tmp/pss3" main && set_origin "$tmp/pss3" 'https://gitlab.com/acme/pss.git' \
+    || { skip "a failing command — git could not make a repo here"; return; }
+  bar_and_rule "$tmp/pss3"
+
+  is  "a command that fails stops the pass" \
+      "$(FOUNDRY_PASS_COMMAND='exit 7' code_of floor "$tmp/pss3" pass)" "45"
+  has "and the run says why" "$(floor "$tmp/pss3" observe)" "why=command-failed"
+}
+
+# A bar with one gate that passes, and the rule a pass reads. Both committed, as a person's would be.
+bar_and_rule() {
+  mkdir -p "$1/.foundry"
+  commit_file "$1" .foundry/gates 'tests  true'
+  commit_file "$1" .foundry/practice 'eligible ready'
 }
 a_pass_takes_the_first_item_nobody_holds
 

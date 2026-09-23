@@ -2569,6 +2569,23 @@ wreck_runner "a pass that takes a second item beside a run in progress is caught
 wreck_runner "a pass that finds nothing eligible and says something else is caught" \
   passnone '/^pass() {/,/^}/s#^    \[ -n "\$items" \] || { note .*; exit 42; }$#    :#'
 
+#
+# **The host's command does the work, and floor hands it only its own words.** One break per rule: a
+# pass passes over this host's own items, stops without a command, stops when the command fails,
+# and hands the command the item it took. #997, #371.
+#
+wreck_runner "a pass that takes an item another run here already has is caught" \
+  passown '/^pass() {/,/^}/s#^        this_host_holds "\$item" \&\& {.*continue; }$#        :#'
+
+wreck_runner "a pass that acts with no command set is caught" \
+  passnocmd '/^act_on_it() {/,/^}/s#^    \[ -n "\${FOUNDRY_PASS_COMMAND:-}" \] || { record_the_stop "\$1" no-command; exit 44; }$#    :#'
+
+wreck_runner "a pass that carries on after its command failed is caught" \
+  passfail '/^act_on_it() {/,/^}/s#^    \[ "\$code" -eq 0 \] || { record_the_stop "\$1" command-failed; exit 45; }$#    :#'
+
+wreck_runner "a command that is not handed the item is caught" \
+  passhand '/^act_on_it() {/,/^}/s#FOUNDRY_PASS_ITEM="\$1" ##'
+
 
 # Whether `chmod 000` means anything here. Windows records no read bit and root ignores the one it
 # finds, so the break below would report a rule held for a reason that is not the rule.

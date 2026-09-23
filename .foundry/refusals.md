@@ -26,7 +26,7 @@ yet.
 file defines it as a function, and the enclosing function otherwise — so `[`, `mkdir` and `cd` are
 never heads.
 
-**Two hundred and eighteen exit sites, one hundred and eighty-nine decisions.** `sh bin/refusals.sh
+**Two hundred and twenty-one exit sites, one hundred and ninety-one decisions.** `sh bin/refusals.sh
 plugins/floor/bin/run.sh` prints the sites, and `sh bin/unnamed.sh` compares them to this
 page.
 
@@ -359,3 +359,5 @@ where it is — a key for a one-off buys indirection and saves nothing.
 | `say_nothing_here_can_find_it_again` | 41 | answer | so tell every later command which run: export FOUNDRY_RUN=$dir | `header` |
 | `pass` | 42 | answer | nothing is eligible, so this pass takes nothing | `header` |
 | `leave_a_run_in_progress_alone` | 43 | answer | a run here already holds [$holding], so this pass leaves it alone: $here | `header` |
+| `act_on_it` | 44 | answer | — | `header` |
+| `act_on_it` | 45 | answer | — | `header` |

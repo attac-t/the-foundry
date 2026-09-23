@@ -2004,8 +2004,22 @@ With one shared account, the name an event gives is the account's, not a person'
 record, not a control, until a worker has its own identity.
 
 **`run.sh pass` takes the first of them this host can claim, and begins its run.** An item another
-host holds is passed over and said. A run already in progress here is left alone, exit 43, because
-one pass takes one item. Nothing eligible is exit 42, with the reason.
+host holds is passed over and said, and so is one another run here already has. A run already in
+progress in this checkout is left alone, exit 43, because one pass takes one item. Nothing eligible
+is exit 42, with the reason.
+
+**The host names the command that does the work, in `FOUNDRY_PASS_COMMAND`.** Floor names no
+harness. The pass opens the run's workspace on this checkout's own target, which needs nobody's
+grant, and runs the command there. It hands over three things and no others:
+
+| | |
+|---|---|
+| `FOUNDRY_PASS_ITEM` | the item it took |
+| `FOUNDRY_PASS_WORKSPACE` | the checkout to work in |
+| `FOUNDRY_PASS_TEXT` | the item's own words, as the run read them |
+
+It reads back only the run's record, never what the command printed. No command set is exit 44,
+and a command that fails is 45. Either way the run records why it stopped.
 
 ### Two adapters, because one proves nothing
 

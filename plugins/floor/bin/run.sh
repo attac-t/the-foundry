@@ -90,6 +90,8 @@
 #  42  a pass found nothing eligible. An answer, and it says why: no rule, or no item the rule takes
 #  43  a pass left a run in progress alone. This checkout already holds an item, and one pass
 #      takes one
+#  44  a pass began a run and no pass command is set, so the work waits. An answer about the host
+#  45  the pass command failed. The run records the stop, and the next pass reads it
 #
 # Eight through twelve are one stage and five remedies: write a requirement down, select a target it
 # governs, or start again. Collapsing them would make the exit code say *authorisation refused* and
@@ -3606,6 +3608,8 @@ pass() {
     [ -n "$items" ] || { note "nothing is eligible, so this pass takes nothing"; exit 42; }
 
     for item in $(printf '%s\n' "$items" | cut -f1); do
+        this_host_holds "$item" && { note "[$item] is this host's already, in another run, so this pass passes it over"; continue; }
+
         ( claim "$item" ) >/dev/null 2>&1; code=$?
         [ "$code" -eq 20 ] && { note "the work source could not be asked to claim [$item]"; exit 20; }
         [ "$code" -eq 30 ] && { note "[$item] is held by another host, so this pass passes it over"; continue; }
@@ -3617,6 +3621,13 @@ pass() {
 
     note "every eligible item is held by another host, so this pass takes nothing"
     exit 30
+}
+
+# To `claim`, this host's own claim is a renewal and succeeds. To a pass it is work another run here
+# already has, and taking it again would start that work twice.
+this_host_holds() {
+    record=$(source_says held "$1") || return 1
+    [ "$(claim_holder "$record")" = "$(recording_host)" ]
 }
 
 leave_a_run_in_progress_alone() {
@@ -3637,6 +3648,39 @@ begin_a_run_for() {
     read_work_item "$dir" "$1" >/dev/null
     emit "$dir" pass.began item="$1"
     note "this pass took [$1]: $dir"
+
+    open_the_work "$1"
+    act_on_it "$1"
+}
+
+#
+# The run's workspace: this checkout's own target, at the ref the host stood on. A target Foundry was
+# invoked in needs nobody's grant, so nothing here waits on a person.
+open_the_work() {
+    targets add "$(bootstrap_identity "$dir")" "$(bootstrap_ref "$dir")" >/dev/null
+    charter derive >/dev/null
+    open_workspace >/dev/null
+    tree=$(unit_work_tree "$dir" "$(this_repository)") || exit 16
+}
+
+#
+# **The host's command does the work, and floor names no harness.** It runs in the workspace and is
+# handed floor's own words: the item, the workspace and the item's text. The pass reads back only
+# floor's record, never what the command printed.
+act_on_it() {
+    [ -n "${FOUNDRY_PASS_COMMAND:-}" ] || { record_the_stop "$1" no-command; exit 44; }
+
+    ( cd "$tree" && FOUNDRY_PASS_ITEM="$1" FOUNDRY_PASS_WORKSPACE="$tree" FOUNDRY_PASS_TEXT="$dir/item.md" \
+        sh -c "$FOUNDRY_PASS_COMMAND" ); code=$?
+    [ "$code" -eq 0 ] || { record_the_stop "$1" command-failed; exit 45; }
+
+    emit "$dir" pass.acted item="$1"
+}
+
+# A stop is a line in the run before it is an answer. The next pass reads the line, never the chat.
+record_the_stop() {
+    emit "$dir" pass.stopped item="$1" why="$2"
+    note "this pass stopped on [$1], $2: $dir"
 }
 
 say_who_holds() {
