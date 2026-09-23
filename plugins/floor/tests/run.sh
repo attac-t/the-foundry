@@ -24,15 +24,17 @@
 #
 # **Guarded the way `run.sh:255` guards it.** `set -u` is on, so a bare `$HOME` aborts the whole
 # suite on a host that has none — a container, or a CI runner. Saying nothing there is right: no
-# home means nothing to protect, and both counts read zero.
+# home means nothing to protect, and both lists read empty.
 live_home() {
     [ -n "${FOUNDRY_HOME:-}" ] && { printf '%s/runs' "$FOUNDRY_HOME"; return; }
     [ -n "${HOME:-}" ]         && { printf '%s/.foundry/runs' "$HOME"; return; }
 }
 
-live_runs() { ls -1 "$(live_home)" 2>/dev/null | wc -l; }
+# Names, never a count. One run appearing and one going read as no change to a count, and a count
+# that did move could say how many and never which.
+live_names() { ls -1 "$(live_home)" 2>/dev/null; }
 
-live_before=$(live_runs)
+live_before=$(live_names)
 
 sleep 1 &
 counted=$(jobs -pr 2>/dev/null | wc -l)
@@ -3849,15 +3851,27 @@ say_when_the_clock_took_them() {
 say_when_the_clock_took_them
 
 #
-# A count that grew means a fixture wrote where a person reads. **It says how many and where**, so
-# the next reader does not have to find the home themselves.
+# A run that appeared means a fixture wrote where a person reads, and one that went means worse.
+# **It names each one and the home**, so the next reader does not have to find either.
 #
-# It cannot tell a fixture's run from one a person opened in the same minute. That is the honest
-# limit, and on the gate it does not arise — the audit runs in a clone whose home nothing else uses.
-live_after=$(live_runs)
-[ "$live_after" -eq "$live_before" ] || {
-  printf 'FAIL  this suite left %s run(s) in the live home at [%s]\n' \
-         "$((live_after - live_before))" "$(live_home)"
+# **It cannot tell a fixture's run from one a person opened in the same minute, so it names them and
+# the reader can.** A grade inside a run's workspace shares the host's home. On 22 September one went
+# red on this line for a run opened on the host mid-grade, and a count could not say whose — #994.
+only_in() {
+  printf '%s\n' "$1" | while IFS= read -r name; do
+    [ -n "$name" ] || continue
+    printf '%s\n' "$2" | grep -qxF -- "$name" || printf '%s\n' "$name"
+  done
+}
+
+live_after=$(live_names)
+appeared=$(only_in "$live_after" "$live_before")
+went=$(only_in "$live_before" "$live_after")
+
+[ -z "$appeared$went" ] || {
+  printf 'FAIL  the live home at [%s] changed while this suite ran\n' "$(live_home)"
+  for name in $appeared; do printf '      appeared  %s\n' "$name"; done
+  for name in $went;     do printf '      went      %s\n' "$name"; done
   failed=1
 }
 

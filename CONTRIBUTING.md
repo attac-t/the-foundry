@@ -39,7 +39,7 @@ outlives `--rm`, a killed client, and a machine short of memory. The runner keep
 
 `bin/host.sh` mounts the host's own home on purpose, and floor's suite refuses to leave a run in the
 live home. Inside this lane those are the same place. **Two grades went red on that check.** A run
-opened on the host during a grade looks exactly like one the suite leaked.
+opened on the host during a grade still turns it red, and the failure now names that run.
 
 **And a red gate's reason is kept under `$HOME/.foundry-runs`, which nothing mounts.** One grade
 reported `FAIL floor` and `--rm` destroyed the directory that said why. Setting `HOME` under the
