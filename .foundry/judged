@@ -51,7 +51,7 @@
 # Put the codex line back when the credits return. It is two lines, and the digest is already here.
 
 # reach  codex:adversary  @adapter codex ad39b8d163d8589fba3797d62eca45ac6e2c55f8
-reach  anthropic:adversary  @adapter anthropic 344c2f36088c925caa19c3c6a587e18a61d41c81
+reach  anthropic:adversary  @adapter anthropic e73d1c0105b0597b578664e5dcd9920023c6b55f
 
 # codex:adversary  a change to what a run may claim is judged by something that did not write it
 anthropic:adversary  a change to what a run may claim is judged by something that did not write it

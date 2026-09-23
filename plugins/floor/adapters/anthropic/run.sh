@@ -105,16 +105,31 @@ forget_the_last_round() {
 }
 
 #
-# Ask, and keep both halves of the answer.
+# Ask, and keep both halves of the answer: the reply on stdout is the report, and stderr is kept
+# beside it. Text mode writes no stream, so nothing here parses one.
 #
-# `--output-last-message` writes the reply straight to a file, so nothing here parses JSON for the
-# part that matters. The stream is kept only for the thread handle, which is one quoted field on its
-# first line and the one thing a receipt may say it watched.
+# **The session is this adapter's to choose.** `--session-id` takes one, so the receipt names the
+# session it opened without reading anything back — #993.
 #
 # The prompt goes over stdin. Argv has a length nobody agrees on, and a bar is as long as it is.
 ask() {
+    session=$(new_session_id) || { note "no session could be chosen, so nothing was asked"; return 1; }
+
     prompt_from "$FOUNDRY_BRIEF" |
-        claude -p --model "$MODEL" > "$1" 2> "$2"
+        claude -p --model "$MODEL" --session-id "$session" > "$1" 2> "$2"
+}
+
+# A version-4 UUID from sixteen random bytes. `set --` splits them on purpose: one word a byte.
+new_session_id() {
+    bytes=$(od -An -tx1 -N16 /dev/urandom 2>/dev/null) || return 1
+    set -- $bytes
+    [ "$#" -eq 16 ] || return 1
+
+    awk -v h="$(printf '%s' "$@")" 'BEGIN {
+        n = index("0123456789abcdef", substr(h, 17, 1)) - 1
+        printf "%s-%s-4%s-%x%s-%s\n", substr(h, 1, 8), substr(h, 9, 4), substr(h, 14, 3),
+            8 + n % 4, substr(h, 18, 3), substr(h, 21, 12)
+    }'
 }
 
 #
@@ -165,8 +180,6 @@ record_unreachable() {
 
     say_the_report "$1" ''
 
-    # Nothing was asked, so nothing was spent. Said rather than counted: there is no stream.
-    printf 'commands 0\n' >> "$FOUNDRY_RECEIPT"
     printf 'verdict unavailable\n' >> "$FOUNDRY_RECEIPT"
     note "claude is not on this host — recorded unavailable, and nothing else was asked"
 }
@@ -185,15 +198,17 @@ record_what_came_back() {
 
     [ -n "$said" ] || { note "the judge named no verdict, so this receipt claims none"; return 1; }
 
-    say_what_it_spent "$2"
     printf 'verdict %s\n' "$said" >> "$FOUNDRY_RECEIPT"
 }
 
+#
 # The harness ran and said nothing. Its own output is the report, because that is what came back.
+#
+# **No session is named.** One was handed over, and nothing says the harness opened it.
 record_silence() {
     cp "$2" "$1" 2>/dev/null || printf 'the harness returned nothing at all.\n' > "$1"
 
-    say_the_report "$1" "$(thread_in "$2")"
+    say_the_report "$1" ''
     printf 'verdict unavailable\n' >> "$FOUNDRY_RECEIPT"
     note "the harness returned no message — recorded unavailable"
 }
@@ -201,26 +216,13 @@ record_silence() {
 #
 # Everything but the verdict, and only what this watched.
 #
-# No `model`, no `provider`, no `effort`. The stream names none of the three, and asked outright this
-# harness gave a name other than the one requested — so what is written is what was asked for, said
-# as such. Floor refuses the bare keys by name.
+# No `model`, no `provider`, no `effort`. The harness names none of the three, and asked outright it
+# gave a name other than the one requested — so what is written is what was asked for, said as such.
+# Floor refuses the bare keys by name.
 #
-# **What the round spent, counted from the stream the harness wrote.**
-#
-# On 14 September one judge ran 169 commands through 163 shells and the other ran none. Nine of the
-# 169 failed, one with the Windows code for *the process could not be started*. **No receipt said
-# any of it**, so the asymmetry was only visible once a machine fell over.
-#
-# A judge that reads is not worse than one that runs. What is wrong is that nobody could tell.
-say_what_it_spent() {
-    printf 'commands %s\n' "$(commands_in "$1")" >> "$FOUNDRY_RECEIPT"
-}
-
-# Zero is an answer, so this always prints a number. A stream that is not there spent nothing here.
-commands_in() {
-    grep -o '"command":' "$1" 2>/dev/null | wc -l | tr -d ' '
-}
-
+# **No `commands` line either.** Text mode keeps no stream, so there is nothing to count, and floor's
+# contract says a zero invented there reads like one somebody took. Every receipt this wrote said
+# `commands 0`, including a round whose judge was refused two shells — #993.
 say_the_report() {
     printf 'adapter %s\nrequested_model %s\nrequested_effort %s\n' "$ADAPTER" "$MODEL" "$EFFORT" \
         >> "$FOUNDRY_RECEIPT"
@@ -255,10 +257,9 @@ verdict_in() {
                sub(/^[ \t]*VERDICT:[ \t]*/, "", last); sub(/[ \t]*$/, "", last); print last }' "$1"
 }
 
-# **This harness hands back no handle, so a receipt through it names none.** `context` and `fresh`
-# are the two keys the other adapter carries and this one cannot, and that absence is a fact rather
-# than a gap: `fresh` about nothing is a claim about nothing.
-thread_in() { :; }
+# The session this adapter chose for the round. Nothing is read back: it was handed to the harness
+# by name, and a reply came back from it.
+thread_in() { printf '%s' "${session:-}"; }
 
 # --- one voice ---
 
