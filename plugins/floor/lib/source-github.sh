@@ -461,8 +461,8 @@ where_from() {
 # before that run and none after it.
 #
 # **A refused push is two facts wearing one exit code.** A tip that moved after `claim_tip` read it
-# fails the fast-forward, and so does a push no credential was ever going to make. The server says
-# the same word to both, so nothing in the failure itself tells them apart.
+# fails the lease, and so does a push no credential was ever going to make. Git exits 1 for both,
+# so the code alone never tells them apart.
 #
 # So the remote is asked once more. **A tip that is there and is not this host's is 4** — the loser
 # of a real race is told who won. **Anything else is 3**, the door for a source that could not be
@@ -545,8 +545,8 @@ https_forge_pushed_to() {
     printf 'https://%s\n' "${authority##*@}"
 }
 
-# A commit on top of the one there, so the push is a fast-forward the server
-# refuses if the tip moved. Creating the ref and renewing it are one step.
+# A commit on top of the one there. Creating the ref and renewing it are one step,
+# and the lease `take_claim` pushes under is what refuses a tip that moved.
 claim_commit() {
     tree=$(git hash-object -t tree /dev/null) || return 3
 
@@ -602,8 +602,8 @@ drop_claim() {
     # 21 September against a real remote: at the read value it deletes and leaves nothing; after a
     # push moves the ref it refuses with *(delete) -> claim (stale info)*.
     #
-    # **`take_claim` never needed this.** Its push must fast-forward, so the server already refuses
-    # a claim that raced. Only the delete had no such rule.
+    # **`take_claim` pushes under the same lease.** A fast-forward rule said nothing once a release
+    # had deleted the ref, so a renewal that landed late made it again. #1017.
     ref="refs/heads/$(claim_ref "$1")"
 
     git push origin --delete "$ref" --force-with-lease="$ref:$at" >/dev/null 2>&1 || return 4
@@ -629,6 +629,9 @@ list_eligible() {
 
 # The label's last `labeled` event, read as data. The name is matched in awk and never spliced into a
 # query, because a label is text somebody else chose.
+#
+# **The listing already said the issue carries the label**, so one no event names is still printed,
+# unnamed. Floor drops it and says so; dropping it here would say nothing to anybody.
 label_put_on() {
     events=$(gh api "repos/{owner}/{repo}/issues/$1/events" --paginate \
         --jq '.[] | select(.event == "labeled") | [.label.name, .created_at, (.actor.login // "")] | @tsv' \
@@ -636,7 +639,7 @@ label_put_on() {
 
     printf '%s\n' "$events" | awk -F'\t' -v label="$2" -v item="$1" '
         $1 == label { at = $2; who = $3 }
-        END { if (at != "") printf "%s\t%s\t%s\n", item, at, who }'
+        END { printf "%s\t%s\t%s\n", item, at, who }'
 }
 
 case "${1:-}" in

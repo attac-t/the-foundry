@@ -3367,7 +3367,8 @@ renew_this_run_claim() {
     # **Whatever the claim's age.** Age was once read first, so a claim another host took a minute
     # ago was marked kept before anyone asked whose it was. #1010 found it.
     holder=$(claim_holder "$held")
-    [ "$holder" = "$(recording_host)" ] || { settle_the_loss "$dir" "$item" "$holder"; return 30; }
+    [ "$holder" = "$(holder_of "$dir")" ] || { settle_the_loss "$dir" "$item" "$holder"; return 30; }
+    remember_the_holder "$dir"
 
     age=$(claim_age "$held") || return 0
     [ "$age" -gt "$(( CLAIM_TTL / CLAIM_FLOOR ))" ] || { mark_kept "$dir"; return 0; }
@@ -3382,7 +3383,7 @@ renew_this_run_claim() {
     # **It certifies that the host is alive and nothing more.** The hour already trusts exactly
     # that — a claim nobody renews is broken after it. This never claims work happened, and a
     # renewal that did would be the worker marking its own paper.
-    source_says claim "$item" "$(recording_host)" >/dev/null 2>&1 \
+    source_says claim "$item" "$(holder_of "$dir")" >/dev/null 2>&1 \
         && { mark_kept "$dir"; emit "$dir" claim.renewed item="$item" age="$age"; }
 
     return 0
@@ -3405,7 +3406,25 @@ mark_kept_where_held() {
     dir=$(active_run 2>/dev/null) || return 0
     [ "$(item_id "$dir")" = "$1" ] || return 0
 
+    remember_the_holder "$dir"
     mark_kept "$dir"
+}
+
+#
+# **The name a run claims under is the run's, not the machine's.** A container starts under a new
+# host name each time, and a run is meant to move, so the name is kept the first time the run sees
+# its claim: when it takes one, or when a keep finds one a pass took before the run held the item.
+remember_the_holder() { [ -s "$1/claim.holder" ] || recording_host > "$1/claim.holder" 2>/dev/null; }
+
+holder_of() {
+    [ -s "$1/claim.holder" ] && { cat "$1/claim.holder"; return 0; }
+    recording_host
+}
+
+# Whose name a claim on this item goes under: the active run's own when it holds the item.
+claimant_for() {
+    here=$(active_run 2>/dev/null) && [ "$(item_id "$here")" = "$1" ] && { holder_of "$here"; return 0; }
+    recording_host
 }
 
 #
@@ -3420,8 +3439,17 @@ refuse_an_item_another_host_holds() {
 
     renew_this_run_claim && return 0
 
-    say_who_holds "$item"
+    say_why_the_work_waits "$item"
     exit 30
+}
+
+# A loss is marked for a third of the window, and the holder may have let go since. Then nobody holds
+# it, and the remedy is to take it again, not to wait for a host that is gone.
+say_why_the_work_waits() {
+    source_says held "$1" >/dev/null 2>&1; code=$?
+    [ "$code" -eq 1 ] || { say_who_holds "$1"; return 0; }
+
+    note "nobody holds [$1] now — take it with \`claim $1\` before working it"
 }
 
 claim() {
@@ -3431,7 +3459,7 @@ claim() {
     item=${1:-}
     [ -n "$item" ] || { renew_this_run_claim; return; }
 
-    source_says claim "$item" "$(recording_host)"; code=$?
+    source_says claim "$item" "$(claimant_for "$item")"; code=$?
     [ "$code" -eq 0 ] && { note "claimed [$item]"; mark_kept_where_held "$item"; return 0; }
 
     # **A source that could not be asked is not a host holding the item.** Every refusal used to
@@ -3464,7 +3492,7 @@ break_a_dead_claim() {
     source_says release "$1" "$(claim_holder "$held")" || return 1
     note "[$1] went $age seconds without a word from $(claim_holder "$held") — taking it"
 
-    source_says claim "$1" "$(recording_host)"
+    source_says claim "$1" "$(claimant_for "$1")"
 }
 
 # Seconds since the claim was stamped. A record written before floor kept an
@@ -3494,26 +3522,33 @@ release() {
     item=${1:-}
     [ -n "$item" ] || { note "release names an item"; exit 2; }
 
-    source_says release "$item" "$(recording_host)" && { note "released [$item]"; return 0; }
+    source_says release "$item" "$(claimant_for "$item")" && { note "released [$item]"; return 0; }
 
     note "[$item] is not this host's to release"
     exit 30
 }
 
 #
-# What a pass may take, oldest label first. The rule is one line of `.foundry/practice` as committed
-# at this checkout's head: `eligible <label> [who may put it on ...]`. No line, nothing is eligible.
+# What a pass may take, oldest label first. The rule is one line of `.foundry/practice`:
+# `eligible <label> <who may put it on> ...`. Nothing is eligible without one that names a hand.
 #
 # **A mark nobody put on is not eligibility.** An item whose label no event names is dropped, and
-# said. Floor never puts the label on; a person does, and a person's commit names it.
+# said, and so is one put on by a hand the rule does not name. Floor never puts the label on.
 eligible() {
     [ "$#" -eq 0 ] || { usage; exit 2; }
     refuse_missing_source
 
-    rule=$(eligibility_rule) || exit 1
+    tip=$(fetched_default_tip) || {
+        note "the rule is read at \`origin/HEAD\`, and this checkout has none, so nothing is eligible"
+        return 0
+    }
+
+    rule=$(eligibility_rule "$tip") || exit 1
     [ -n "$rule" ] || { note "no line in .foundry/practice says what is eligible, so nothing is"; return 0; }
 
-    set -- $rule
+    set -f; set -- $rule; set +f
+    [ "$#" -ge 2 ] || { note "the eligible line names no hand, so nothing is eligible"; return 0; }
+
     listed=$(source_says eligible "$1"); code=$?
     refuse_unasked "$code" "items labelled [$1]"
     [ "$code" -eq 2 ] && { note "this work source cannot say which items carry a label"; exit 27; }
@@ -3522,12 +3557,19 @@ eligible() {
     printf '%s\n' "$listed" | kept_by_who_put_it_on "$label" "$*" | sort -t "$(printf '\t')" -k2,2
 }
 
-# The rule, and only the rule: what follows `eligible` on its line, read at head.
 eligibility_rule() {
-    head=$(git rev-parse -q --verify HEAD 2>/dev/null) || return 0
-    practice=$(practice_at_base "$head") || return 1
+    practice=$(practice_at_base "$1") || return 1
 
     printf '%s\n' "$practice" | awk '$1 == "eligible" { $1 = ""; sub(/^ +/, ""); print; exit }'
+}
+
+#
+# **The rule is read where a worker's commit cannot reach**: the commit `origin/HEAD` names, which a
+# clone sets and a fetch moves. A commit moves `HEAD` and never that, which is why `standing` reads
+# the base. A hand rewriting the ref reaches it, and that is the actor question #156 owns.
+fetched_default_tip() {
+    ref=$(git symbolic-ref -q refs/remotes/origin/HEAD 2>/dev/null) || return 1
+    git rev-parse -q --verify "$ref" 2>/dev/null
 }
 
 #
@@ -3538,7 +3580,7 @@ kept_by_who_put_it_on() {
         function say(item, why) { printf "floor: [%s] is not eligible: %s\n", item, why | "cat 1>&2" }
         NF < 3 || $1 == "" { next }
         $3 == ""           { say($1, "nothing names who put [" label "] on it"); next }
-        allowed != "  " && index(allowed, " " $3 " ") == 0 {
+        index(allowed, " " $3 " ") == 0 {
             say($1, "[" label "] was put on by " $3 ", and the rule names only" allowed); next }
         { print }'
 }

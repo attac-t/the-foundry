@@ -1924,10 +1924,10 @@ unreachable source still wears another host's claim, which is the fault the 20 d
 **Bare `claim` lacks that door too.** A keep that cannot read the source, or whose renewal push is
 refused, answers 0, so a claim may be lost and nothing says so. #1018 owns it.
 
-**Which of the two a refused push is, the remote decides.** The server refuses a fast-forward that
-lost a race and a push with no credential in the same words, so the ref is read back before either
-name is used: a claim that is there and is another host's is **30**, and a remote that answers
-nothing is **20**. Losing a race still names the winner.
+**Which of the two a refused push is, the remote decides.** A push that lost a race and a push with
+no credential exit alike, so the ref is read back before either name is used: a claim that is there
+and is another host's is **30**, and a remote that answers nothing is **20**. Losing a race still
+names the winner.
 
 | Adapter | Compare-and-swap |
 |---|---|
@@ -1957,9 +1957,17 @@ lease on the tip it read. So a renewal that lands after a release makes nothing.
 holds. If another host took it, the answer is 30 and a `claim.lost` line, however young the claim.
 Either answer is marked in the run, so the hook asks the source once a window, never once a tool use.
 
-**Working is as exclusive as claiming.** `gates`, `judged` and `deliver` ask the keep before they
-start. An item another host holds answers 30 and names the holder. A run holding no item says that
-nothing it does is exclusive.
+**Working is as exclusive as the keep, and no more.** `gates`, `judged` and `deliver` ask the keep
+before they start. An item another host holds answers 30 and names the holder. **Two cases go on:**
+a source the keep cannot read, because a local grade must never wait on a network, and an item
+nobody holds. A run holding no item says that nothing it does is exclusive.
+
+**A loss stands for a third of the window**, even once the holder lets go. If nobody holds the item
+then, the answer says so and names `claim <item>`.
+
+**The name a claim goes under is the run's.** The run keeps the name the first time it sees its
+claim: when it takes one, or when a keep finds one a pass took first. So a run carried to another
+machine, or graded in a container that starts under a new host name, still holds its own claim.
 
 **Two clocks, and nothing reconciles them.** The stamp is the holder's; the age is the reader's
 arithmetic. Hosts far out of step will disagree about what is dead, and floor neither detects that
@@ -1972,12 +1980,19 @@ does not cover, and it is the safe half.
 ### What a pass may take
 
 **A line of the practice and a mark a person put on.** `run.sh eligible` reads
-`eligible <label> [who may put it on ...]` from `.foundry/practice` at the checkout's head. It asks
-the source which open items carry that label, and who put it on each, and when. It prints them oldest
-label first.
+`eligible <label> <who may put it on> ...` from `.foundry/practice`. It asks the source which open
+items carry that label, and who put it on each, and when. It prints them oldest label first.
 
-**No line, nothing is eligible**, and it says so. A label no event names is dropped and said, and so
-is one put on by a hand the rule does not name. **Floor never puts the label on.**
+**The line is read at `origin/HEAD`**, where the default branch stood at the last fetch. A worker's
+commit moves `HEAD` and never that, so it grants nothing. A hand that rewrites the ref does reach it,
+and that is the actor question #156 owns.
+
+**A line must name a hand.** One naming none would take a label anyone put on, and an issue form can
+put a label on every issue it opens. No fetched default branch, no line, or no hand, and nothing is
+eligible, and it says which.
+
+A label no event names is dropped and said, and so is one put on by a hand the rule does not name.
+**Floor never puts the label on.**
 
 With one shared account, the name an event gives is the account's, not a person's. So the mark is a
 record, not a control, until a worker has its own identity.

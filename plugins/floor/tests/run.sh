@@ -2510,9 +2510,12 @@ wreck_runner "a guard that lets every item through is caught" \
 wreck_runner "a run holding no item that keeps quiet about it is caught" \
   workalone 's#{ note "this run holds no item, so nothing here is exclusive"; return 0; }#{ return 0; }#'
 
+wreck_runner "a keep hook that reports a lost claim as a failure is caught" \
+  keptexit 's#^exit 0$##' hooks/kept.sh
+
 #
-# **What a pass may take is a mark a person put on, oldest first.** One break per rule: the order,
-# the unnamed hand, the hand the rule does not name, the rule itself, and the label it matches. #833.
+# **What a pass may take is a mark a person put on, oldest first.** One break per rule, so a rule
+# nothing holds shows as the break that is missing. #833.
 #
 wreck_runner "eligible items in the order the source listed them is caught" \
   eligsort '/^eligible() {/,/^}/s# | sort -t .*-k2,2$##'
@@ -2521,13 +2524,38 @@ wreck_runner "a label nobody is named for passing as eligible is caught" \
   eligwho '/^kept_by_who_put_it_on() {/,/^}/s#^        \$3 == ""  *{#        0 {#'
 
 wreck_runner "a hand the rule does not name passing as eligible is caught" \
-  elighand '/^kept_by_who_put_it_on() {/,/^}/s#^        allowed != .*== 0 {#        0 {#'
+  elighand '/^kept_by_who_put_it_on() {/,/^}/s#^        index(allowed, " " \$3 " ") == 0 {#        0 {#'
 
 wreck_runner "a practice line that is never read is caught" \
   eligrule '/^eligibility_rule() {/,/^}/s#\$1 == "eligible"#$1 == "never"#'
 
+wreck_runner "a rule read where a worker commits is caught" \
+  eligtip '/^eligible() {/,/^}/s#tip=\$(fetched_default_tip) ||#tip=$(git rev-parse HEAD) ||#'
+
+wreck_runner "a rule naming no hand that says nothing about it is caught" \
+  elignohand '/^eligible() {/,/^}/s#^    \[ "\$\#" -ge 2 \] || { note .*; return 0; }$#    :#'
+
+#
+# **The name a run claims under is the run's.** A container starts under a new host name each time,
+# so the run records the name it claimed under, and a loss nobody holds says so. #991's judge.
+#
+wreck_runner "a run that loses its own claim to a new host name is caught" \
+  holdname '/^renew_this_run_claim() {/,/^}/s#\[ "\$holder" = "\$(holder_of "\$dir")" \]#[ "$holder" = "$(recording_host)" ]#'
+
+wreck_runner "a run that never records the name it claimed under is caught" \
+  holdrecord 's#^remember_the_holder() { .*; }$#remember_the_holder() { :; }#'
+
+wreck_runner "a keep that never records a claim a pass took first is caught" \
+  holdkeep '/^renew_this_run_claim() {/,/^}/s#^    remember_the_holder "\$dir"$#    :#'
+
+wreck_runner "an item nobody holds described as held is caught" \
+  nobodyholds '/^say_why_the_work_waits() {/,/^}/s#^    \[ "\$code" -eq 1 \] || { say_who_holds "\$1"; return 0; }$#    say_who_holds "$1"; return 0#'
+
 wreck_runner "a directory source that lists every label is caught" \
   eliglabel '/^list_eligible() {/,/^}/s#\$1 == label {#1 {#' lib/source-dir.sh
+
+wreck_runner "a GitHub source that drops an issue no event names is caught" \
+  ghunnamed '/^label_put_on() {/,/^}/s#END { printf#END { if (at != "") printf#' lib/source-github.sh
 
 
 # Whether `chmod 000` means anything here. Windows records no read bit and root ignores the one it

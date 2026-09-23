@@ -3982,6 +3982,18 @@ another_hosts_item_is_refused_at_the_work() {
   is  "so is a judgement"  "$(code_of floor "$tmp/wrk" judged)"            "30"
   is  "and a delivery"     "$(code_of floor "$tmp/wrk" deliver 'A title')" "30"
 
+  # **The hook that keeps a claim says nothing and exits 0, lost or not.** Its last line is all that
+  # stops a lost claim reporting a failure on every edit and command. #1018.
+  is "the keep hook says nothing on a lost claim" "$(keep_hook "$tmp/wrk")"           ""
+  is "and exits 0"                               "$(code_of keep_hook "$tmp/wrk")" "0"
+
+  # **A loss outlives the holder letting go**, for a third of the window. Then nobody holds the item,
+  # and the remedy is to take it, not to wait on a host that is gone.
+  rm -f "$src/claims/73/held"
+  is  "an item let go since the loss is still refused" "$(code_of floor "$tmp/wrk" gates)" "30"
+  has "and it says nobody holds it, and how to take it" \
+      "$(floor_says "$tmp/wrk" gates)" "nobody holds [73] now"
+
   # A run holding no item cannot be exclusive, and says so rather than grading as though it were.
   make_repo "$tmp/wrk2" main && set_origin "$tmp/wrk2" 'https://gitlab.com/acme/wrk2.git' \
     || { skip "a run with no item — git could not make a repo here"; return; }
@@ -3989,7 +4001,65 @@ another_hosts_item_is_refused_at_the_work() {
   has "a run holding no item says nothing is exclusive" \
       "$(floor_says "$tmp/wrk2" gates)" "holds no item"
 }
+
+# The keep hook as the harness runs it: from the checkout, after a tool use, with its output kept.
+keep_hook() {
+  ( cd "$1" 2>/dev/null || exit 9
+    FOUNDRY_HOME="$home" FOUNDRY_RUN="" FOUNDRY_WHO="" FOUNDRY_SOURCE="$dir_source" \
+      sh "$(dirname "$runner")/../hooks/kept.sh" 2>&1 )
+}
 another_hosts_item_is_refused_at_the_work
+
+#
+# **The name a run claims under is the run's.** `host.sh` starts every container under a new host
+# name, and a run is meant to move. A claim taken under one name and worked under the next read as
+# another host's: refused at 30, and marked lost. #991's judge.
+#
+a_run_keeps_the_name_it_claimed_under() {
+  make_repo "$tmp/mvd" main && set_origin "$tmp/mvd" 'https://gitlab.com/acme/mvd.git' \
+    || { skip "a moved run — git could not make a repo here"; return; }
+  a_host_named MovedHost "$tmp/hostbin" \
+    || { skip "a moved run — could not put a uname on the path"; return; }
+
+  mkdir -p "$src/items"
+  printf 'Moved\n' > "$src/items/74"
+  floor "$tmp/mvd" new "Moved" >/dev/null 2>&1
+  floor "$tmp/mvd" source read 74 >/dev/null 2>&1
+  floor "$tmp/mvd" claim 74 >/dev/null 2>&1
+
+  # The mark would answer before the name is asked, so it goes, and the keep has to read the source.
+  rm -f "$(floor "$tmp/mvd" path)/claim.kept"
+
+  lacks "a run worked under a new host name keeps its own claim" \
+        "$(PATH="$tmp/hostbin:$PATH" floor_says "$tmp/mvd" gates)" "held by"
+  lacks "and records no loss"                       "$(floor "$tmp/mvd" observe)" "claim.lost"
+  has   "and the claim keeps the name it was taken under" "$(cat "$src/claims/74/held")" "$(uname -n)"
+
+  # **Claimed before the run held the item**, which is the order a pass takes. The first keep on the
+  # claiming host names it, so a move after that loses nothing.
+  make_repo "$tmp/mvd2" main && set_origin "$tmp/mvd2" 'https://gitlab.com/acme/mvd2.git' \
+    || { skip "a run that claimed first — git could not make a repo here"; return; }
+  printf 'Claimed first\n' > "$src/items/75"
+  floor "$tmp/mvd2" claim 75 >/dev/null 2>&1
+  floor "$tmp/mvd2" new "Claimed first" >/dev/null 2>&1
+  floor "$tmp/mvd2" source read 75 >/dev/null 2>&1
+  floor "$tmp/mvd2" claim >/dev/null 2>&1
+  rm -f "$(floor "$tmp/mvd2" path)/claim.kept"
+
+  lacks "a run that claimed before it held the item keeps it after a move" \
+        "$(PATH="$tmp/hostbin:$PATH" floor_says "$tmp/mvd2" gates)" "held by"
+
+  rm -rf "$src/claims/74" "$src/claims/75"
+}
+
+# A `uname` that answers `-n` with another name, the way a new container does, and passes the rest on.
+a_host_named() {
+  mkdir -p "$2" && real=$(command -v uname) || return 1
+
+  printf '#!/bin/sh\n[ "${1:-}" = -n ] && { echo %s; exit 0; }\nexec %s "$@"\n' "$1" "$real" > "$2/uname" \
+    && chmod +x "$2/uname"
+}
+a_run_keeps_the_name_it_claimed_under
 
 #
 # **What a pass may take is a mark a person put on, named in a person's commit.** #833: anyone who
@@ -4009,23 +4079,53 @@ eligibility_is_a_named_mark_oldest_first() {
   printf 'go\t2026-08-02T00:00:00Z\tsam\n'   > "$src/labels/84"
   printf 'other\t2026-07-01T00:00:00Z\tpat\n' > "$src/labels/85"
 
-  is  "with no rule nothing is eligible" "$(floor "$tmp/elg" eligible)" ""
-  has "and it says why"                  "$(floor_says "$tmp/elg" eligible)" "so nothing is"
+  is  "with no default branch fetched nothing is eligible" "$(floor "$tmp/elg" eligible)" ""
+  has "and it says where the rule is read" "$(floor_says "$tmp/elg" eligible)" "this checkout has none"
 
+  commit_file "$tmp/elg" README 'elg' && as_fetched "$tmp/elg"
+  is  "with no rule nothing is eligible" "$(floor "$tmp/elg" eligible)" ""
+  has "and it says why" "$(floor_says "$tmp/elg" eligible)" "no line in .foundry/practice"
+
+  #
+  # **A worker's own commit grants nothing.** The rule is read where the default branch stood at the
+  # last fetch, and a commit moves `HEAD` and never that. #991's judge committed one and was obeyed.
+  #
   mkdir -p "$tmp/elg/.foundry"
   commit_file "$tmp/elg" .foundry/practice 'eligible go pat'
+  is "a rule the worker committed grants nothing" "$(floor "$tmp/elg" eligible)" ""
 
-  is  "the oldest label goes first, and only the label named" \
-      "$(floor "$tmp/elg" eligible | cut -f1 | tr '\n' ' ')" "82 81 "
-  has "a label nobody is named for is dropped, and said" \
-      "$(floor_says "$tmp/elg" eligible)" "[83] is not eligible: nothing names who put [go] on it"
-  has "a hand the rule does not name is dropped, and said" \
-      "$(floor_says "$tmp/elg" eligible)" "[84] is not eligible: [go] was put on by sam"
+  as_fetched "$tmp/elg"
+  kept_oldest_named_first elg_floor elg_says "a directory"
 
-  # A rule naming no hand takes any named one. Still never an unnamed one.
-  commit_file "$tmp/elg" .foundry/practice 'eligible go'
-  is "a rule that names no hand takes any named one" \
-     "$(floor "$tmp/elg" eligible | cut -f1 | tr '\n' ' ')" "84 82 81 "
+  commit_file "$tmp/elg" .foundry/practice 'eligible go pat sam'
+  is "a worker widening the rule it was handed widens nothing" \
+     "$(floor "$tmp/elg" eligible | cut -f1 | tr '\n' ' ')" "82 81 "
+
+  # **A rule names a hand, or nothing is eligible.** One naming none took a label anyone put on, and
+  # an issue form can put one on every issue it opens.
+  commit_file "$tmp/elg" .foundry/practice 'eligible go' && as_fetched "$tmp/elg"
+  is  "a rule naming no hand makes nothing eligible" "$(floor "$tmp/elg" eligible)" ""
+  has "and it says so" "$(floor_says "$tmp/elg" eligible)" "names no hand"
+}
+
+# The fixture's own commit, held the way a clone that had just fetched it would hold it.
+as_fetched() {
+  git -C "$1" update-ref refs/remotes/origin/main HEAD >/dev/null 2>&1 \
+    && git -C "$1" symbolic-ref refs/remotes/origin/HEAD refs/remotes/origin/main >/dev/null 2>&1
+}
+
+elg_floor() { floor "$tmp/elg" "$@"; }
+elg_says()  { floor_says "$tmp/elg" "$@"; }
+
+# The same five items and the same rule, whichever adapter listed them. What floor keeps must not
+# depend on which one answered.
+kept_oldest_named_first() {
+  is  "the oldest label goes first, and only the label named — $3" \
+      "$($1 eligible | cut -f1 | tr '\n' ' ')" "82 81 "
+  has "a label nobody is named for is dropped, and said — $3" \
+      "$($2 eligible)" "[83] is not eligible: nothing names who put [go] on it"
+  has "a hand the rule does not name is dropped, and said — $3" \
+      "$($2 eligible)" "[84] is not eligible: [go] was put on by sam"
 }
 eligibility_is_a_named_mark_oldest_first
 
@@ -7184,6 +7284,20 @@ case "$*" in
                             printf '%s' "$8" > "$store/lastbody"
                             printf '%s %s %s\n' "$4" "$url" "$run" >> "$store/prs"
                             printf '%s\n' "$url" ;;
+  # The open issues carrying a label, one number a line, the shape the adapter's `--jq` asks for.
+  # What an issue carries now is its own file, apart from the events that say who put it on.
+  "issue list"*"--label"*)  [ -f "$store/reads-fail" ] && { echo "HTTP 401: Bad credentials" >&2; exit 1; }
+                            for carried in "$store/open"/*; do
+                                [ -f "$carried" ] && grep -qx -- "$4" "$carried" && printf '%s\n' "${carried##*/}"
+                            done
+                            true ;;
+  # Each issue's `labeled` events, pre-shaped the way the adapter's `--jq` shapes them. No file is no
+  # event: a label that arrived with nothing naming who put it on.
+  "api repos/"*"/issues/"*"/events"*)
+                            [ -f "$store/reads-fail" ] && { echo "HTTP 502: Bad gateway" >&2; exit 1; }
+                            issue=${2%/events}
+                            cat "$store/events/${issue##*/}" 2>/dev/null
+                            true ;;
   *) exit 2 ;;
 esac
 STUB
@@ -7451,6 +7565,36 @@ The answer is 9876543210.'
   unset GH_STORE
 }
 the_other_adapter
+
+#
+# **The same list, from the forge.** Which issues carry the label comes from one call and who put it
+# on from each issue's events, so an issue the listing named and no event did is still said.
+#
+eligibility_reads_the_same_from_github() {
+  make_repo "$tmp/ghe" main && set_origin "$tmp/ghe" 'https://github.com/acme/ghe.git' \
+    && mkdir -p "$tmp/ghe/.foundry" && commit_file "$tmp/ghe" .foundry/practice 'eligible go pat' \
+    && as_fetched "$tmp/ghe" \
+    || { skip "eligibility on GitHub — git could not make a repo here"; return; }
+  fake_gh "$tmp/ghebin" || { skip "eligibility on GitHub — could not put a gh on the path"; return; }
+
+  mkdir -p "$tmp/ghestore/open" "$tmp/ghestore/events"
+  for n in 81 82 83 84; do printf 'go\n' > "$tmp/ghestore/open/$n"; done
+  printf 'other\n' > "$tmp/ghestore/open/85"
+  printf 'go\t2026-09-02T00:00:00Z\tpat\n'    > "$tmp/ghestore/events/81"
+  printf 'go\t2026-09-01T00:00:00Z\tpat\n'    > "$tmp/ghestore/events/82"
+  printf 'go\t2026-08-02T00:00:00Z\tsam\n'    > "$tmp/ghestore/events/84"
+  printf 'other\t2026-07-01T00:00:00Z\tpat\n' > "$tmp/ghestore/events/85"
+
+  kept_oldest_named_first ghe_floor ghe_says "GitHub"
+}
+
+ghe_floor() { ghe_run "$@" 2>/dev/null; }
+ghe_says()  { ghe_run "$@" 2>&1; }
+ghe_run() {
+  ( cd "$tmp/ghe" && PATH="$tmp/ghebin:$PATH" GH_STORE="$tmp/ghestore" FOUNDRY_HOME="$home" \
+      FOUNDRY_RUN="" FOUNDRY_WHO="" FOUNDRY_SOURCE="" sh "$runner" "$@" )
+}
+eligibility_reads_the_same_from_github
 
 #
 # An item filed in a repository, advising that same repository. The bootstrap authorises it because
