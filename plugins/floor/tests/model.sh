@@ -4156,6 +4156,28 @@ HOOK
   rm -f "$bare/racer"
 
   #
+  # **A renewal that lands after a release brings nothing back.** The holder reads its own tip, and
+  # its release lands before the renewal's push connects. #1017 watched a plain push make the ref
+  # again. This shim deletes the ref between the read and the push, which is where that release was.
+  mine=$(printf 'claimed by %s
+' "$(uname -n)" | git -C "$work" commit-tree "$tree")
+  git -C "$work" push -q -f origin "$mine:refs/heads/foundry/claim/71" 2>/dev/null
+
+  late="$tmp/gitshim-late"
+  mkdir -p "$late"
+  { printf '#!/bin/sh
+'
+    printf 'case "$1" in push) "%s" --git-dir="%s" update-ref -d refs/heads/foundry/claim/71 ;; esac
+'       "$(command -v git)" "$bare"
+    printf 'exec "%s" "$@"
+' "$(command -v git)"
+  } > "$late/git"
+  chmod +x "$late/git"
+
+  ( PATH="$late:$PATH" gh_claims "$work" claim 71 ) >/dev/null 2>&1
+  is "a renewal that lands after a release brings nothing back"      "$(git -C "$work" ls-remote origin refs/heads/foundry/claim/71 | grep -c .)" "0"
+
+  #
   # **#979: a container signed in to `gh` and not to git.** Every call to the remote fails, so there
   # is no tip to read before the push and none after it. The item came back *held* with no holder to
   # print, and `git ls-remote` named no claim before that run or after it — the one case where the

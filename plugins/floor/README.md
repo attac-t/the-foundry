@@ -1946,8 +1946,8 @@ it was and how long it went quiet.
 
 **The holder claiming again is the renewal.** No heartbeat, and so no daemon: a run that keeps working
 keeps its claim, and every verb is a natural place to say so. Each adapter renews through its own
-compare-and-swap — `mkdir` fails and the owner rewrites in place, and a ref moves only by a
-fast-forward the server refuses if the tip moved.
+compare-and-swap — `mkdir` fails and the owner rewrites in place, and a ref moves only under a
+lease on the tip it read. So a renewal that lands after a release makes nothing.
 
 **A keep asks whose claim it is before anything else.** `claim` with no item keeps the one this run
 holds. If another host took it, the answer is 30 and a `claim.lost` line, however young the claim.
