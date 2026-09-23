@@ -4011,6 +4011,58 @@ keep_hook() {
 another_hosts_item_is_refused_at_the_work
 
 #
+# **A keep that cannot ask the source says so, at 20.** It answered 0, so a claim could be lost and
+# nothing said it. The work still goes on, because a local grade never waits on a network. #1018.
+#
+a_keep_that_cannot_ask_says_so() {
+  make_repo "$tmp/deaf" main && set_origin "$tmp/deaf" 'https://gitlab.com/acme/deaf.git' \
+    || { skip "a keep that cannot ask — git could not make a repo here"; return; }
+
+  printf 'Deaf item\n' > "$src/items/86"
+  floor "$tmp/deaf" new "Deaf" >/dev/null 2>&1
+  floor "$tmp/deaf" source read 86 >/dev/null 2>&1
+
+  # A source that answers everything but who holds the item.
+  cat > "$tmp/deaf-held.sh" <<STUB
+#!/bin/sh
+case "\$1" in
+  held) exit 3 ;;
+esac
+exec sh '$dir_source' "\$@"
+STUB
+
+  is  "a keep that cannot ask the source exits 20" \
+      "$(code_of floor_through "$tmp/deaf-held.sh" "$tmp/deaf" claim)" "20"
+  has "and says so" "$(floor_through "$tmp/deaf-held.sh" "$tmp/deaf" claim)" "could not be asked"
+  differs "and the work goes on" "$(code_of floor_through "$tmp/deaf-held.sh" "$tmp/deaf" gates)" "30"
+
+  # A source that says this host has held the item long enough to renew, and refuses the renewal.
+  old=$(( $(date -u +%s) - 1500 ))
+  cat > "$tmp/deaf-push.sh" <<STUB
+#!/bin/sh
+case "\$1" in
+  held)  printf '2026-01-01T00:00:00Z\t%s\t%s\n' '$(uname -n)' '$old'; exit 0 ;;
+  claim) exit 3 ;;
+esac
+exec sh '$dir_source' "\$@"
+STUB
+
+  is "a renewal the source refuses exits 20" \
+     "$(code_of floor_through "$tmp/deaf-push.sh" "$tmp/deaf" claim)" "20"
+
+  rm -f "$src/items/86"
+}
+
+# `floor`, through a work source the case names rather than the directory adapter.
+floor_through() {
+  through=$1 dir=$2
+  shift 2
+  ( cd "$dir" 2>/dev/null || exit 9
+    FOUNDRY_HOME="$home" FOUNDRY_RUN="" FOUNDRY_WHO="" FOUNDRY_SOURCE="$through" sh "$runner" "$@" 2>&1 )
+}
+a_keep_that_cannot_ask_says_so
+
+#
 # **The name a run claims under is the run's.** `host.sh` starts every container under a new host
 # name, and a run is meant to move. A claim taken under one name and worked under the next read as
 # another host's: refused at 30, and marked lost. #991's judge.

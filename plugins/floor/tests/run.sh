@@ -2519,6 +2519,21 @@ wreck_runner "a keep hook that reports a lost claim as a failure is caught" \
   keptexit 's#^exit 0$##' hooks/kept.sh
 
 #
+# **A keep that cannot ask says so, and the work goes on.** One break per rule. #1018.
+#
+wreck_runner "a keep that reads a source nobody could ask as kept is caught" \
+  keepask '/^renew_this_run_claim() {/,/^}/s#^    \[ "\$code" -eq 0 \] || return 20$#    [ "$code" -eq 0 ] || return 0#'
+
+wreck_runner "a renewal the source refused, read as kept, is caught" \
+  keeppush '/^renew_the_claim() {/,/^}/s#^    \[ "\$code" -eq 0 \] || return 20$#    [ "$code" -eq 0 ] || return 0#'
+
+wreck_runner "a work guard that stops when the source cannot be asked is caught" \
+  keepgoes '/^refuse_an_item_another_host_holds() {/,/^}/s#^    \[ "\$code" -eq 30 \] || return 0$#    [ "$code" -eq 0 ] \&\& return 0#'
+
+wreck_runner "a keep that exits 20 and says nothing is caught" \
+  keepsays '/^keep_this_run_claim() {/,/^}/s#^    \[ "\$code" -eq 20 \] \&\& note .*$#    :#'
+
+#
 # **What a pass may take is a mark a person put on, oldest first.** One break per rule, so a rule
 # nothing holds shows as the break that is missing. #833.
 #

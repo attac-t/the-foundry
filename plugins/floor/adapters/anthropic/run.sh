@@ -68,7 +68,7 @@ main() {
     ensure_floor_handed_both
 
     report="${FOUNDRY_RECEIPT%.receipt}.report"
-    trail="${FOUNDRY_RECEIPT%.receipt}.jsonl"
+    trail="${FOUNDRY_RECEIPT%.receipt}.stderr"
 
     reachable || { record_unreachable "$report"; return 1; }
 
@@ -99,7 +99,7 @@ reachable() { command -v claude >/dev/null 2>&1; }
 # this brief. Emptying first is what makes *holds anything* mean *this round wrote it*.
 #
 # Found by the adversary reading its own round-two receipt, which is the state that proves it: the
-# brief and the stream were round two's while the report was still round one's.
+# brief and its stderr were round two's while the report was still round one's.
 forget_the_last_round() {
     : > "$1" && : > "$2" || fail "cannot write beside [$FOUNDRY_RECEIPT]"
 }

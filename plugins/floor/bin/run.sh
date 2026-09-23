@@ -3365,7 +3365,11 @@ renew_this_run_claim() {
     kept_recently "$dir" && return 0
     lost_recently "$dir" && return 30
 
-    held=$(source_says held "$item") || return 0
+    # **A source nobody could ask is 20, never a keep.** It answered 0, so a claim could be lost and
+    # nothing said so. Nobody holding the item is still no claim to keep. #1018.
+    held=$(source_says held "$item"); code=$?
+    [ "$code" -eq 1 ] && return 0
+    [ "$code" -eq 0 ] || return 20
 
     #
     # **Somebody else holds it, and this is where that is found out.** Before this the first host
@@ -3379,20 +3383,28 @@ renew_this_run_claim() {
     age=$(claim_age "$held") || return 0
     [ "$age" -gt "$(( CLAIM_TTL / CLAIM_FLOOR ))" ] || { mark_kept "$dir"; return 0; }
 
-    #
-    # **A renewal leaves a line, and that line is the whole bound.**
-    #
-    # An open issue refuses a live but non-progressing worker renewing for ever merely by existing,
-    # and this renews on an edit. **An edit is not progress.** So the count goes in the record and
-    # nobody has to name a limit: a person reads how many times one host renewed and decides.
-    #
-    # **It certifies that the host is alive and nothing more.** The hour already trusts exactly
-    # that — a claim nobody renews is broken after it. This never claims work happened, and a
-    # renewal that did would be the worker marking its own paper.
-    source_says claim "$item" "$(holder_of "$dir")" >/dev/null 2>&1 \
-        && { mark_kept "$dir"; emit "$dir" claim.renewed item="$item" age="$age"; }
+    renew_the_claim "$dir" "$item" "$age"
+}
 
-    return 0
+#
+# **A renewal leaves a line, and that line is the whole bound.**
+#
+# An open issue refuses a live but non-progressing worker renewing for ever merely by existing,
+# and this renews on an edit. **An edit is not progress.** So the count goes in the record and
+# nobody has to name a limit: a person reads how many times one host renewed and decides.
+#
+# **It certifies that the host is alive and nothing more.** The hour already trusts exactly
+# that — a claim nobody renews is broken after it. This never claims work happened, and a
+# renewal that did would be the worker marking its own paper.
+#
+# **A renewal the source refused is 20**, and one another host beat is 30. Both were silent. #1018.
+renew_the_claim() {
+    source_says claim "$2" "$(holder_of "$1")" >/dev/null 2>&1; code=$?
+    [ "$code" -eq 4 ] && return 30
+    [ "$code" -eq 0 ] || return 20
+
+    mark_kept "$1"
+    emit "$1" claim.renewed item="$2" age="$3"
 }
 
 #
@@ -3443,7 +3455,11 @@ refuse_an_item_another_host_holds() {
     item=$(item_id "$1")
     [ -n "$item" ] || { note "this run holds no item, so nothing here is exclusive"; return 0; }
 
-    renew_this_run_claim && return 0
+    # **A source nobody could ask lets the work go on**, and says so. A local grade never waits on a
+    # network. Only another host's claim stops it.
+    renew_this_run_claim; code=$?
+    [ "$code" -eq 20 ] && note "the work source could not be asked about [$item], so nothing here is exclusive"
+    [ "$code" -eq 30 ] || return 0
 
     say_why_the_work_waits "$item"
     exit 30
@@ -3458,12 +3474,21 @@ say_why_the_work_waits() {
     note "nobody holds [$1] now — take it with \`claim $1\` before working it"
 }
 
+# The keep, asked for by name. It answers with the keep's own code, and says so at 20, the way
+# `claim <item>` does when the source cannot be asked.
+keep_this_run_claim() {
+    renew_this_run_claim; code=$?
+    [ "$code" -eq 20 ] && note "the work source could not be asked to keep this run's claim"
+
+    return "$code"
+}
+
 claim() {
     [ "$#" -le 1 ] || { usage; exit 2; }
     refuse_missing_source
 
     item=${1:-}
-    [ -n "$item" ] || { renew_this_run_claim; return; }
+    [ -n "$item" ] || { keep_this_run_claim; return; }
 
     source_says claim "$item" "$(claimant_for "$item")"; code=$?
     [ "$code" -eq 0 ] && { note "claimed [$item]"; mark_kept_where_held "$item"; return 0; }

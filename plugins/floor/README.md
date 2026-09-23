@@ -1922,8 +1922,9 @@ not run, when the delete had no credential, and when the claim is genuinely anot
 unreachable source still wears another host's claim, which is the fault the 20 door closed on
 `claim`. Fixing it is its own change.
 
-**Bare `claim` lacks that door too.** A keep that cannot read the source, or whose renewal push is
-refused, answers 0, so a claim may be lost and nothing says so. #1018 owns it.
+**Bare `claim` has that door too.** A keep that cannot ask the source, or whose renewal the source
+refuses, exits 20 and says so. One that another host beat to the renewal is 30. **The work guard
+goes on at 20**, saying nothing here is exclusive, because a local grade never waits on a network.
 
 **Which of the two a refused push is, the remote decides.** A push that lost a race and a push with
 no credential exit alike, so the ref is read back before either name is used: a claim that is there
