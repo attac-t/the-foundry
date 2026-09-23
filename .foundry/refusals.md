@@ -26,7 +26,7 @@ yet.
 file defines it as a function, and the enclosing function otherwise — so `[`, `mkdir` and `cd` are
 never heads.
 
-**Two hundred and twelve exit sites, one hundred and eighty-three decisions.** `sh bin/refusals.sh
+**Two hundred and eighteen exit sites, one hundred and eighty-nine decisions.** `sh bin/refusals.sh
 plugins/floor/bin/run.sh` prints the sites, and `sh bin/unnamed.sh` compares them to this
 page.
 
@@ -182,6 +182,7 @@ where it is — a key for a one-off buys indirection and saves nothing.
 | `refuse_unaddressed` | 1 | default | this run has read no item, so there is nowhere to address that | `nothing-held` |
 | `refuse_unheld_clause` | 1 | default | this run's charter holds no clause [$2], so nothing would ever read an answer about it | `nothing-held` |
 | `satisfied` | 1 | default | — | `nothing-held` |
+| `source_says` | 1 | answer | claimed [$1] and could not read it | `source` |
 | `accept_ancestry` | 2 | default | [$sha] is not a commit in [$tree] | `no-field` — a sha that is not one |
 | `accept_ancestry` | 2 | default | accept names why [$sha] belongs here | `no-field` |
 | `accept_ancestry` | 2 | default | accept names a commit | `no-field` |
@@ -220,6 +221,7 @@ where it is — a key for a one-off buys indirection and saves nothing.
 | `merge_delivery` | 2 | default | — | `usage` |
 | `observed` | 2 | default | — | `usage` |
 | `open_workspace` | 2 | default | — | `usage` |
+| `pass` | 2 | default | — | `usage` |
 | `policy` | 2 | default | — | `usage` |
 | `publish_delivery` | 2 | default | publish needs a branch and a title | `no-field` |
 | `publish_delivery` | 2 | default | — | `usage` |
@@ -300,6 +302,7 @@ where it is — a key for a one-off buys indirection and saves nothing.
 | `refuse_unless_answered` | 17 | invariant | send the one it sent, or start a new run | `refusal` |
 | `refuse_ungranted_delivery` | 18 | invariant | nobody said this run may deliver to [$2] — \`policy deliver-to\` is what says so | `refusal` |
 | `push_workspace` | 19 | answer | could not deliver [$3] to [$2]: $why | `source` |
+| `pass` | 20 | answer | the work source could not be asked to claim [$item] | `source` |
 | `refuse_unasked` | 20 | answer | the work source could not be asked for that $2 | `source` |
 | `ask_the_judge` | 21 | invariant | the judge could not run on this host: $said | `evidence` |
 | `ask_the_judge` | 21 | invariant | the judge was killed by signal $((answered - 128)) | `evidence` |
@@ -321,6 +324,7 @@ where it is — a key for a one-off buys indirection and saves nothing.
 | `refuse_unless_answered` | 27 | answer | this work source can only be read, so nothing here can carry a $2 | `source` |
 | `refuse_the_source_as_advice` | 28 | invariant | a human naming it with \`targets add\` still can | `refusal` |
 | `claim` | 30 | answer | — | `header` |
+| `pass` | 30 | answer | every eligible item is held by another host, so this pass takes nothing | `header` |
 | `refuse_an_item_another_host_holds` | 30 | answer | — | `header` |
 | `release` | 30 | answer | [$item] is not this host's to release | `header` |
 | `refuse_two_kinds` | 31 | default | an item is one kind — the inventory is short on purpose | nobody yet — the person who could want it otherwise is a repository whose work item is two kinds at once, and then a reader picking one of them answers differently each time it is asked |
@@ -353,3 +357,5 @@ where it is — a key for a one-off buys indirection and saves nothing.
 | `refuse_an_adapter_nobody_authorised` | 40 | invariant |   or declare a command of your own with \`@custom\` | `refusal` |
 | `refuse_an_adapter_that_moved` | 40 | invariant | $1 authorises adapter [$pin] and [$ran] is what answered | `refusal` |
 | `say_nothing_here_can_find_it_again` | 41 | answer | so tell every later command which run: export FOUNDRY_RUN=$dir | `header` |
+| `pass` | 42 | answer | nothing is eligible, so this pass takes nothing | `header` |
+| `leave_a_run_in_progress_alone` | 43 | answer | a run here already holds [$holding], so this pass leaves it alone: $here | `header` |

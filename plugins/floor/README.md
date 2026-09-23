@@ -224,6 +224,7 @@ sh bin/run.sh source read 7
 sh bin/run.sh claim 7
 sh bin/run.sh release 7
 sh bin/run.sh eligible
+sh bin/run.sh pass
 sh bin/run.sh source publish work/gift-cards "Gift card flow"
 sh bin/run.sh source ask authorisation tests "May this clause exist? …"
 sh bin/run.sh source receive authorisation tests
@@ -2001,6 +2002,10 @@ A label no event names is dropped and said, and so is one put on by a hand the r
 
 With one shared account, the name an event gives is the account's, not a person's. So the mark is a
 record, not a control, until a worker has its own identity.
+
+**`run.sh pass` takes the first of them this host can claim, and begins its run.** An item another
+host holds is passed over and said. A run already in progress here is left alone, exit 43, because
+one pass takes one item. Nothing eligible is exit 42, with the reason.
 
 ### Two adapters, because one proves nothing
 

@@ -2556,6 +2556,18 @@ wreck_runner "a directory source that lists every label is caught" \
 
 wreck_runner "a GitHub source that drops an issue no event names is caught" \
   ghunnamed '/^label_put_on() {/,/^}/s#END { printf#END { if (at != "") printf#' lib/source-github.sh
+#
+# **A pass takes the first eligible item nobody holds.** One break per rule: it claims before it
+# begins, it leaves a run in progress alone, and it says so when nothing is eligible. #884, #997.
+#
+wreck_runner "a pass that begins a run without claiming the item is caught" \
+  passclaim '/^pass() {/,/^}/s#( claim "\$item" ) >/dev/null 2>&1; code=\$?#code=0#'
+
+wreck_runner "a pass that takes a second item beside a run in progress is caught" \
+  passleave '/^pass() {/,/^}/s#^    leave_a_run_in_progress_alone$#    :#'
+
+wreck_runner "a pass that finds nothing eligible and says something else is caught" \
+  passnone '/^pass() {/,/^}/s#^    \[ -n "\$items" \] || { note .*; exit 42; }$#    :#'
 
 
 # Whether `chmod 000` means anything here. Windows records no read bit and root ignores the one it

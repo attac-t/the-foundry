@@ -4130,6 +4130,36 @@ kept_oldest_named_first() {
 eligibility_is_a_named_mark_oldest_first
 
 #
+# **A pass takes the first eligible item nobody holds, and begins its run.** It never chooses: the
+# order is the rule's, and an item another host holds is passed over. #884 asked that whatever picks
+# an item claims it before anything else happens.
+#
+a_pass_takes_the_first_item_nobody_holds() {
+  make_repo "$tmp/pss" main && set_origin "$tmp/pss" 'https://gitlab.com/acme/pss.git' \
+    || { skip "a pass — git could not make a repo here"; return; }
+
+  mkdir -p "$src/items" "$src/labels" "$src/claims/91"
+  for n in 91 92 93; do printf 'Pass item %s\n' "$n" > "$src/items/$n"; done
+  printf 'ready\t2026-09-01T00:00:00Z\tpat\n' > "$src/labels/91"
+  printf 'ready\t2026-09-02T00:00:00Z\tpat\n' > "$src/labels/92"
+  printf 'ready\t2026-09-03T00:00:00Z\tpat\n' > "$src/labels/93"
+  printf '2026-01-01T00:00:00Z\tOtherHost\t%s\n' "$(date -u +%s)" > "$src/claims/91/held"
+
+  is "a pass with no rule takes nothing" "$(code_of floor "$tmp/pss" pass)" "42"
+
+  mkdir -p "$tmp/pss/.foundry"
+  commit_file "$tmp/pss" .foundry/practice 'eligible ready'
+
+  is  "a pass passes over the item another host holds" "$(code_of floor "$tmp/pss" pass)" "0"
+  has "and claims the next one"      "$(cat "$src/claims/92/held")" "$(uname -n)"
+  has "and begins a run holding it"  "$(floor "$tmp/pss" observe)" "item=92"
+  has "and says which pass took it"  "$(floor "$tmp/pss" observe)" "pass.began"
+
+  is "a second pass leaves that run alone" "$(code_of floor "$tmp/pss" pass)" "43"
+}
+a_pass_takes_the_first_item_nobody_holds
+
+#
 # **A release that races a renewal deleted the claim that replaced the one it read.**
 #
 # The shape: a host's lease runs out, a second host claims, and the first host's late release takes

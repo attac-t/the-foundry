@@ -87,6 +87,9 @@
 #      nobody could find, and the remedy is an install. This one is here and it is the wrong one
 #  41  the run is made and this checkout cannot point at it. The record is there and complete, so
 #      this is an answer about the checkout: tell every later command the id, or work elsewhere
+#  42  a pass found nothing eligible. An answer, and it says why: no rule, or no item the rule takes
+#  43  a pass left a run in progress alone. This checkout already holds an item, and one pass
+#      takes one
 #
 # Eight through twelve are one stage and five remedies: write a requirement down, select a target it
 # governs, or start again. Collapsing them would make the exit code say *authorisation refused* and
@@ -157,6 +160,7 @@ main() {
         claim)     claim "$@" ;;
         release)   release "$@" ;;
         eligible)  eligible "$@" ;;
+        pass)      pass "$@" ;;
         observe)   observe "$@" ;;
         observed)  observed "$@" ;;
         merge)     merge_delivery "$@" ;;
@@ -205,6 +209,7 @@ floor — where work happens.
   run.sh claim [item]             take it, or keep the one this run holds; 30 if another host has it
   run.sh release <item>           let it go, if this host took it
   run.sh eligible                 what a pass may take, oldest label first
+  run.sh pass                     take the first eligible item nobody holds, and begin its run
   run.sh observe [event] [k=v...] record that something happened, or print what did
   run.sh observed [event]         every run's observations, with the run named
   run.sh merge                    land what was graded, or say why it may not be
@@ -3583,6 +3588,55 @@ kept_by_who_put_it_on() {
         index(allowed, " " $3 " ") == 0 {
             say($1, "[" label "] was put on by " $3 ", and the rule names only" allowed); next }
         { print }'
+}
+
+#
+# One pass: the first eligible item this host can claim, and a run begun for it. A trigger wakes
+# this (#997), and what a pass does once its run has begun is the next piece of that work.
+#
+# **It never chooses.** The order is the rule's, and an item another host holds is passed over,
+# never taken. A run already in progress here is left alone, because one pass takes one item.
+pass() {
+    [ "$#" -eq 0 ] || { usage; exit 2; }
+    refuse_missing_source
+    leave_a_run_in_progress_alone
+
+    items=$(eligible); code=$?
+    [ "$code" -eq 0 ] || exit "$code"
+    [ -n "$items" ] || { note "nothing is eligible, so this pass takes nothing"; exit 42; }
+
+    for item in $(printf '%s\n' "$items" | cut -f1); do
+        ( claim "$item" ) >/dev/null 2>&1; code=$?
+        [ "$code" -eq 20 ] && { note "the work source could not be asked to claim [$item]"; exit 20; }
+        [ "$code" -eq 30 ] && { note "[$item] is held by another host, so this pass passes it over"; continue; }
+        [ "$code" -eq 0 ] || continue
+
+        begin_a_run_for "$item"
+        return 0
+    done
+
+    note "every eligible item is held by another host, so this pass takes nothing"
+    exit 30
+}
+
+leave_a_run_in_progress_alone() {
+    here=$(active_run 2>/dev/null) || return 0
+    holding=$(item_id "$here")
+    [ -n "$holding" ] || return 0
+
+    note "a run here already holds [$holding], so this pass leaves it alone: $here"
+    exit 43
+}
+
+# The run, named for the item's own first line, holding the item. `claim` came first, so a second
+# host is already refused.
+begin_a_run_for() {
+    words=$(source_says read "$1") || { note "claimed [$1] and could not read it"; exit 1; }
+
+    make_run "$(printf '%s\n' "$words" | awk 'NF { print; exit }')" >/dev/null
+    read_work_item "$dir" "$1" >/dev/null
+    emit "$dir" pass.began item="$1"
+    note "this pass took [$1]: $dir"
 }
 
 say_who_holds() {
