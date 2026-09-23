@@ -1920,6 +1920,9 @@ not run, when the delete had no credential, and when the claim is genuinely anot
 unreachable source still wears another host's claim, which is the fault the 20 door closed on
 `claim`. Fixing it is its own change.
 
+**Bare `claim` lacks that door too.** A keep that cannot read the source, or whose renewal push is
+refused, answers 0, so a claim may be lost and nothing says so. #1018 owns it.
+
 **Which of the two a refused push is, the remote decides.** The server refuses a fast-forward that
 lost a race and a push with no credential in the same words, so the ref is read back before either
 name is used: a claim that is there and is another host's is **30**, and a remote that answers
@@ -1949,7 +1952,7 @@ keeps its claim, and every verb is a natural place to say so. Each adapter renew
 compare-and-swap — `mkdir` fails and the owner rewrites in place, and a ref moves only under a
 lease on the tip it read. So a renewal that lands after a release makes nothing.
 
-**A keep asks whose claim it is before anything else.** `claim` with no item keeps the one this run
+**A keep asks whose claim it is before its age.** `claim` with no item keeps the one this run
 holds. If another host took it, the answer is 30 and a `claim.lost` line, however young the claim.
 Either answer is marked in the run, so the hook asks the source once a window, never once a tool use.
 

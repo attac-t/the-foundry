@@ -20,7 +20,7 @@
 # 1,570 stray runs sat there from August before anyone counted them.
 #
 # Read at the top and again at the end, because a suite cannot prove it wrote nothing by looking
-# once. `ls` and `wc`, so it needs nothing this plugin does not already declare.
+# once. `ls` and `grep`, so it needs nothing this plugin does not already declare.
 #
 # **Guarded the way `run.sh:255` guards it.** `set -u` is on, so a bare `$HOME` aborts the whole
 # suite on a host that has none — a container, or a CI runner. Saying nothing there is right: no
