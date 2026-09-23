@@ -402,7 +402,7 @@ grep -v '^[[:space:]]*#' "$root/bin/host.sh" | grep -q 'FOUNDRY_EPHEMERAL' \
 #
 a_checkout() {
   rm -rf "$tmp/co" && mkdir -p "$tmp/co/bin" "$tmp/co/.claude-plugin" "$tmp/co/.claude" "$tmp/co/plugins/floor/bin"
-  cp "$root/bin/host.sh" "$root/bin/install.sh" "$tmp/co/bin/"
+  cp "$root/bin/host.sh" "$root/bin/install.sh" "$root/bin/origin.sed" "$tmp/co/bin/"
   printf '#!/bin/sh\nprintf "%%s\\n" "$FOUNDRY_HOME"\n' > "$tmp/co/plugins/floor/bin/run.sh"
   printf '{\n  "name": "fixture-market",\n  "plugins": [\n    {\n      "name": "one"\n    }\n  ]\n}\n' \
     > "$tmp/co/.claude-plugin/marketplace.json"
@@ -471,14 +471,19 @@ is_six=$?
   && ok  "a failed install stops the host at 6, and no worker starts" \
   || bad "a failed install stops the host at 6, and no worker starts — exit $is_six"
 
-# **An origin may carry a name, or a token, before its host.** Either would reach the volume's config
-# and the terminal. Found by driving the real thing: this repository's own origin carries a name.
-a_checkout https://someone:secret@example.invalid/acme/fixture.git
-stub_docker
-FOUNDRY_KEYS=akeyvolume hosted_there --worker true
-handed https://example.invalid/acme/fixture.git && ! grep -q -e secret -e someone "$tmp/argv" \
-  && ok  "an origin's name and token never reach the container" \
-  || bad "an origin's name and token never reach the container — one did"
+#
+# **The container clones over HTTPS, with nothing before the host.** It holds no SSH key, and a name
+# or token kept in the origin would reach the volume's config. Found by driving the real thing: this
+# repository's own origin carries a name.
+for form in https://someone:secret@example.invalid/acme/fixture.git \
+            git@example.invalid:acme/fixture.git ssh://git@example.invalid/acme/fixture.git; do
+  a_checkout "$form"
+  stub_docker
+  FOUNDRY_KEYS=akeyvolume hosted_there --worker true
+  handed https://example.invalid/acme/fixture.git && ! grep -q -e secret -e someone "$tmp/argv" \
+    && ok  "an origin like ${form%%example*}… reaches the container as HTTPS, with nothing before the host" \
+    || bad "an origin like ${form%%example*}… reaches the container as HTTPS — it did not"
+done
 
 git -C "$tmp/co" remote remove origin
 stub_docker
@@ -499,9 +504,9 @@ names_in_code() {
   grep -v '^[[:space:]]*#' "$@" | grep -F -e "${market:-no-market-read}" -e "${origin:-no-origin-read}"
 }
 
-[ -z "$(names_in_code "$root/bin/host.sh" "$root/bin/install.sh")" ] \
-  && ok  "neither script names this repository's marketplace or origin" \
-  || bad "neither script names this repository's marketplace or origin — one does"
+[ -z "$(names_in_code "$root/bin/host.sh" "$root/bin/install.sh" "$root/bin/origin.sed")" ] \
+  && ok  "no script names this repository's marketplace or origin" \
+  || bad "no script names this repository's marketplace or origin — one does"
 
 { cat "$root/bin/host.sh"; printf 'market=%s\n' "$(grep -m 1 '^  "name"' "$root/.claude-plugin/marketplace.json" | cut -d'"' -f4)"; } \
   > "$tmp/planted-host.sh"

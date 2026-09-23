@@ -121,8 +121,9 @@ Measured 23 September 2026, on a fresh volume:
 **A failed install starts nothing.** The host exits 6 and says which of four it was: no origin, no
 marketplace, no plugin named, or the install itself.
 
-**The origin loses any name or token before its host.** A token kept there would reach the volume's
-config and the terminal.
+**The origin is cloned over HTTPS, with nothing before its host.** The container holds no SSH key,
+so an SSH address becomes the same path over HTTPS. A token kept in the origin would reach the
+volume's config and the terminal.
 
 **Without `FOUNDRY_KEYS` nothing would keep an install, so the host makes none.** Run these in each
 container instead. A project setting reaches a session started inside that project, so `cd /src`

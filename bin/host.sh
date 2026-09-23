@@ -225,12 +225,13 @@ ensure_the_worker_carries_foundry() {
 # Only the worker has a harness, and only a volume outlives the container.
 the_worker_keeps_what_it_installs() { [ "$image" = foundry:worker ] && [ -n "${FOUNDRY_KEYS:-}" ]; }
 
-# The origin, less any name or token before its host. Kept, a token would reach the keys volume's
-# config and the terminal both. Found by driving it: this checkout's origin carries a name.
+#
+# **The origin, as the container can clone it: over HTTPS, and with no name or token before its
+# host.** The container holds no SSH key, and a kept token would reach the volume and the terminal.
 the_origin_here() {
     origin=$(git -C "$root" remote get-url origin 2>/dev/null) || return 1
 
-    printf '%s' "$origin" | sed 's#^\([a-z+]*://\)[^/@]*@#\1#'
+    printf '%s' "$origin" | sed -f "$root/bin/origin.sed"
 }
 
 # The marketplace's own name is the first field two spaces in. A plugin's name sits deeper.
