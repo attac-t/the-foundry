@@ -128,7 +128,7 @@ then.
 **Standing.** A worker still grants itself nothing. Where a decision is about who may act, it keeps
 the act with a person.
 
-**Nothing enforces this either.** What holds it is the record and whoever reads it next.
+**Nothing enforces this either**, for the reason the delegation of 20 September gives.
 
 ## One model judges while the second has no credits, 22 September 2026
 
