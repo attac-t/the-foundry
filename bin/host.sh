@@ -208,7 +208,7 @@ make_them_here() {
 
 #
 # **A worker carries Foundry from its first start.** Its plugins go into the keys volume, from the
-# repository this host started from, so a clean host needs no clone. #736's box 1, 23 September.
+# source this checkout declares, so a clean host needs no clone. #736's box 1, 23 September.
 #
 # **Every name comes from this checkout**, or `FOUNDRY_PLUGINS` names the plugins instead. A failed
 # install starts nothing: a worker without Foundry is the gap this closes.

@@ -519,30 +519,40 @@ printf '%s' "$said" | grep -q 'declares no source' \
 
 #
 # **No name is written in the code.** Both scripts read every name from the checkout, so neither may
-# hold this repository's marketplace or its owner. A planted line proves each half can see one.
+# hold this repository's marketplace or its `owner/repo`. A planted line proves each half can see one.
 #
+# **Read through `cat`, never as grep's own files.** Given two, grep writes each file's path before
+# every line it passes on, and a checkout named for the marketplace holds its name. #299's judge.
 names_in_code() {
-  grep -v '^[[:space:]]*#' "$@" | grep -F -e "${market:-no-market-read}" -e "${owner:-no-owner-read}"
+  cat "$@" | grep -v '^[[:space:]]*#' | grep -F -e "${market:-no-market-read}" -e "${repo:-no-repo-read}"
 }
 
 market=$(grep -m 1 '^  "name"' "$root/.claude-plugin/marketplace.json" | cut -d'"' -f4)
-owner=$(git -C "$root" remote get-url origin 2>/dev/null | sed -E 's#\.git$##; s#^.*[:/]([^/]+)/[^/]+$#\1#')
+repo=$(git -C "$root" remote get-url origin 2>/dev/null | sed -E 's#\.git$##; s#^.*[:/]([^/]+/[^/]+)$#\1#')
 
 [ -z "$(names_in_code "$root/bin/host.sh" "$root/bin/install.sh")" ] \
-  && ok  "no script names this repository's marketplace or owner" \
-  || bad "no script names this repository's marketplace or owner — one does"
+  && ok  "no script names this repository's marketplace or path" \
+  || bad "no script names this repository's marketplace or path — one does"
+
+mkdir -p "$tmp/named/${market:-market}/bin" && cp "$root/bin/host.sh" "$root/bin/install.sh" "$tmp/named/${market:-market}/bin/"
+[ -z "$(names_in_code "$tmp/named/${market:-market}/bin/host.sh" "$tmp/named/${market:-market}/bin/install.sh")" ] \
+  && ok  "and a checkout in a directory named for the marketplace names nothing either" \
+  || bad "and a checkout in a directory named for the marketplace names nothing either — the path was read"
 
 { cat "$root/bin/host.sh"; printf 'market=%s\n' "$market"; } > "$tmp/planted-host.sh"
 [ -n "$(names_in_code "$tmp/planted-host.sh")" ] \
   && ok  "and a planted marketplace is found" \
   || bad "and a planted marketplace is found — the check cannot see one"
 
-# The owner alone, because the repository's path holds the marketplace's name too, and a plant of
-# the path would be found by that half. With no origin there is no owner to plant.
-{ cat "$root/bin/install.sh"; printf 'from=%s/elsewhere\n' "$owner"; } > "$tmp/planted-install.sh"
-[ -z "$owner" ] || [ -n "$(names_in_code "$tmp/planted-install.sh")" ] \
-  && ok  "and a planted owner is found, on its own" \
-  || bad "and a planted owner is found, on its own — the check cannot see one"
+# The path alone. It holds the marketplace's name too, so that half is emptied for the plant.
+{ cat "$root/bin/install.sh"; printf 'from=%s\n' "$repo"; } > "$tmp/planted-install.sh"
+if [ -z "$repo" ]; then
+  printf '  skip  a planted path — this checkout has no origin to plant\n'
+elif [ -n "$(market= names_in_code "$tmp/planted-install.sh")" ]; then
+  ok  "and a planted path is found, on its own"
+else
+  bad "and a planted path is found, on its own — the check cannot see one"
+fi
 
 #
 # --- the install, inside a worker ---
