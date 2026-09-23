@@ -3899,12 +3899,27 @@ exactly_one_host_takes_an_item() {
   rm -f "$(floor "$tmp/clm" path)/claim.kept"
   printf '2026-01-01T00:00:00Z\tOtherHost\t1767225600\n' > "$src/claims/71/held"
 
-  is  "another host's claim is not kept" "$(code_of floor "$tmp/clm" claim)" "0"
+  is  "another host's claim is not kept" "$(code_of floor "$tmp/clm" claim)" "30"
   has "and its stamp is untouched"       "$(cat "$src/claims/71/held")"      "1767225600"
   # **And this is where it is found out.** Before this a host learned its claim was taken at
   # delivery, with the work already done. Recorded, never said — the caller is a hook after an edit.
   has "a host whose claim was taken records it" \
       "$(floor "$tmp/clm" observe)" "claim.lost	item=71 holder=OtherHost"
+
+  #
+  # **Whatever its age.** Age was once read first, so a claim another host took a minute ago was
+  # marked kept before anyone asked whose it was. #1010 found it.
+  rm -f "$(floor "$tmp/clm" path)/claim.lost"
+  printf '2026-01-01T00:00:00Z\tYoungHost\t%s\n' "$(date -u +%s)" > "$src/claims/71/held"
+
+  is  "another host's young claim is not kept either" "$(code_of floor "$tmp/clm" claim)" "30"
+  has "and that loss is recorded too" "$(floor "$tmp/clm" observe)" "item=71 holder=YoungHost"
+
+  # **Once a window, never once a fire.** The mark answers the next keep, and no second line lands.
+  is "a keep inside the window says the same" "$(code_of floor "$tmp/clm" claim)" "30"
+  is "and the loss is recorded once" \
+     "$(floor "$tmp/clm" observe | grep -c 'holder=YoungHost')" "1"
+
   printf '2026-01-01T00:00:00Z\tOtherHost\t%s\n' "$(date -u +%s)" > "$src/claims/71/held"
 
   is  "another host's claim is refused" "$(code_of floor "$tmp/clm" claim 71)" "30"
@@ -3918,6 +3933,9 @@ exactly_one_host_takes_an_item() {
   has "a claim past the window says what it broke" \
       "$(floor_says "$tmp/clm" claim 71)" "without a word from OtherHost"
   has "and this host holds it after" "$(cat "$src/claims/71/held")" "$(uname -n)"
+
+  # A claim taken by hand settles the question too, so the loss marked above stops answering.
+  is "and a keep after it is no longer a loss" "$(code_of floor "$tmp/clm" claim)" "0"
 
   # An age nobody can compute is not an age past the window. Unknown is not stale.
   printf '2026-01-01T00:00:00Z\tOtherHost\n' > "$src/claims/71/held"

@@ -1949,6 +1949,10 @@ keeps its claim, and every verb is a natural place to say so. Each adapter renew
 compare-and-swap — `mkdir` fails and the owner rewrites in place, and a ref moves only by a
 fast-forward the server refuses if the tip moved.
 
+**A keep asks whose claim it is before anything else.** `claim` with no item keeps the one this run
+holds. If another host took it, the answer is 30 and a `claim.lost` line, however young the claim.
+Either answer is marked in the run, so the hook asks the source once a window, never once a tool use.
+
 **Two clocks, and nothing reconciles them.** The stamp is the holder's; the age is the reader's
 arithmetic. Hosts far out of step will disagree about what is dead, and floor neither detects that
 nor claims to.

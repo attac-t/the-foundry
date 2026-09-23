@@ -2471,6 +2471,22 @@ wreck_runner "a cure that reads the fetch URL instead of the push is caught" \
 wreck_runner "a cure that prints the token in its origin is caught" \
   ghsecret 's|\${authority##\*@}|${authority}|' lib/source-github.sh
 
+#
+# **A keep reads whose claim it is before how old it is.** The first break puts the old order back
+# exactly, so a claim another host took a minute ago is kept as this host's own. #1010 found it.
+#
+wreck_runner "a young claim another host took passing for this host's own is caught" \
+  keepyoung 's#^    held=$(source_says held "$item") || return 0$#&; age=$(claim_age "$held") || return 0; [ "$age" -gt "$(( CLAIM_TTL / CLAIM_FLOOR ))" ] || { mark_kept "$dir"; return 0; }#'
+
+wreck_runner "a keep that answers 0 whoever holds the item is caught" \
+  keepcode 's#{ renew_this_run_claim; return; }#{ renew_this_run_claim; return 0; }#'
+
+wreck_runner "a loss read afresh on every fire is caught" \
+  lostonce 's#^    mark_lost "$1"$#    :#'
+
+wreck_runner "a loss that outlives a claim taken by hand is caught" \
+  handkept '/^mark_kept_where_held()/,/^}/s#^    mark_kept "$dir"$#    :#'
+
 
 # Whether `chmod 000` means anything here. Windows records no read bit and root ignores the one it
 # finds, so the break below would report a rule held for a reason that is not the rule.

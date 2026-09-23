@@ -201,7 +201,7 @@ floor — where work happens.
   run.sh complete                 may this run deliver? exit 15 names what is missing
   run.sh deliver <title> [brief]  push the work, with a file the source carries as the body
   run.sh aside [text]             record what this run cannot act on, or print what it has
-  run.sh claim [item]             take it for this host, or keep the one this run holds
+  run.sh claim [item]             take it, or keep the one this run holds; 30 if another host has it
   run.sh release <item>           let it go, if this host took it
   run.sh observe [event] [k=v...] record that something happened, or print what did
   run.sh observed [event]         every run's observations, with the run named
@@ -3317,8 +3317,8 @@ CLAIM_FLOOR=${FOUNDRY_CLAIM_FLOOR:-3}
 # path a working host repeats — #859 measured that, and until then age said when an item was taken
 # and never whether anyone was still on it.
 #
-# Silent and exit 0 whatever happens. The caller is a hook firing after an edit, and a claim that
-# could not be re-stamped must never be the reason an edit reports a failure.
+# Silent, and 0 unless another host holds the item, which is 30. The caller is a hook that throws
+# the code away, so a claim that could not be kept is never the reason an edit reports a failure.
 #
 # **The throttle was in the source, and the source is a network away.** Every fire asked
 # `source_says held` before deciding it was too early, so a run holding an item paid a
@@ -3329,20 +3329,22 @@ CLAIM_FLOOR=${FOUNDRY_CLAIM_FLOOR:-3}
 #
 # **It is a floor, never a ceiling.** Losing the mark costs one extra source read, and the source
 # still decides whether the claim is really due.
-kept_recently() {
-    mark="$1/claim.kept"
+settled_recently() {
+    [ -f "$1" ] || return 1
 
-    [ -f "$mark" ] || return 1
-
-    now=$(date +%s 2>/dev/null)            || return 1
-    was=$(date -r "$mark" +%s 2>/dev/null) || return 1
+    now=$(date +%s 2>/dev/null)         || return 1
+    was=$(date -r "$1" +%s 2>/dev/null) || return 1
 
     [ "$(( now - was ))" -lt "$(( CLAIM_TTL / CLAIM_FLOOR ))" ]
 }
 
+kept_recently() { settled_recently "$1/claim.kept"; }
+lost_recently() { settled_recently "$1/claim.lost"; }
+
 # Written on every path that settled the question, so a decision of *not yet* costs as little as a
-# renewal does.
-mark_kept() { : > "$1/claim.kept" 2>/dev/null || true; }
+# renewal does. Each clears the other, so the mark left is always the last answer.
+mark_kept() { rm -f "$1/claim.lost"; : > "$1/claim.kept" 2>/dev/null || true; }
+mark_lost() { rm -f "$1/claim.kept"; : > "$1/claim.lost" 2>/dev/null || true; }
 
 renew_this_run_claim() {
     dir=$(active_run) || return 0
@@ -3350,23 +3352,21 @@ renew_this_run_claim() {
     [ -n "$item" ] || return 0
 
     kept_recently "$dir" && return 0
+    lost_recently "$dir" && return 30
 
     held=$(source_says held "$item") || return 0
-    age=$(claim_age "$held")         || return 0
-
-    [ "$age" -gt "$(( CLAIM_TTL / CLAIM_FLOOR ))" ] || { mark_kept "$dir"; return 0; }
 
     #
     # **Somebody else holds it, and this is where that is found out.** Before this the first host
     # learned at delivery, with the work already done — #859 named that as its own cost.
     #
-    # Recorded, never said. The caller is a hook after an edit and an edit is not the place to
-    # argue about a claim. A line in the run survives the session; a message would not.
+    # **Whatever the claim's age.** Age was once read first, so a claim another host took a minute
+    # ago was marked kept before anyone asked whose it was. #1010 found it.
     holder=$(claim_holder "$held")
-    [ "$holder" = "$(recording_host)" ] || {
-        emit "$dir" claim.lost item="$item" holder="$(one_token "$holder")"
-        return 0
-    }
+    [ "$holder" = "$(recording_host)" ] || { settle_the_loss "$dir" "$item" "$holder"; return 30; }
+
+    age=$(claim_age "$held") || return 0
+    [ "$age" -gt "$(( CLAIM_TTL / CLAIM_FLOOR ))" ] || { mark_kept "$dir"; return 0; }
 
     #
     # **A renewal leaves a line, and that line is the whole bound.**
@@ -3384,22 +3384,42 @@ renew_this_run_claim() {
     return 0
 }
 
+#
+# Recorded, never said. The caller is a hook after an edit and an edit is not the place to
+# argue about a claim. A line in the run survives the session; a message would not.
+#
+# **Once a window, never once a fire.** The hook fires on every tool use, and a loss read afresh
+# each time cost a read across the network and another line in the record.
+settle_the_loss() {
+    mark_lost "$1"
+    emit "$1" claim.lost item="$2" holder="$(one_token "$3")"
+}
+
+# A claim taken by hand settles the question too. Without this, a loss marked before it went on
+# answering for it until the window moved.
+mark_kept_where_held() {
+    dir=$(active_run 2>/dev/null) || return 0
+    [ "$(item_id "$dir")" = "$1" ] || return 0
+
+    mark_kept "$dir"
+}
+
 claim() {
     [ "$#" -le 1 ] || { usage; exit 2; }
     refuse_missing_source
 
     item=${1:-}
-    [ -n "$item" ] || { renew_this_run_claim; return 0; }
+    [ -n "$item" ] || { renew_this_run_claim; return; }
 
     source_says claim "$item" "$(recording_host)"; code=$?
-    [ "$code" -eq 0 ] && { note "claimed [$item]"; return 0; }
+    [ "$code" -eq 0 ] && { note "claimed [$item]"; mark_kept_where_held "$item"; return 0; }
 
     # **A source that could not be asked is not a host holding the item.** Every refusal used to
     # leave by the same door, so a container with no git credential was told [979] was held — and
     # a worker reading that stands down from work nobody is doing.
     refuse_unasked "$code" "claim on [$item]"
 
-    break_a_dead_claim "$item" && return 0
+    break_a_dead_claim "$item" && { mark_kept_where_held "$item"; return 0; }
 
     say_who_holds "$item"
     record_the_refusal "$item"
