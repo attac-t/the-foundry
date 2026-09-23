@@ -2586,6 +2586,22 @@ wreck_runner "a pass that carries on after its command failed is caught" \
 wreck_runner "a command that is not handed the item is caught" \
   passhand '/^act_on_it() {/,/^}/s#FOUNDRY_PASS_ITEM="\$1" ##'
 
+#
+# **From a label to a request.** One break per rule: a failed bar stops it, a charter naming no judge
+# does not, a refused delivery stops it, and the run answers to who put the label on. #997, #736.
+#
+wreck_runner "a pass that carries on past a failed gate is caught" \
+  passgates '/^carry_it_to_a_request() {/,/^}/s#^    \[ "\$code" -eq 0 \] || { record_the_stop "\$1" gates; exit "\$code"; }$#    :#'
+
+wreck_runner "a pass that stops on a charter naming no judge is caught" \
+  passunjudged 's#^approved_or_unjudged() { \[ "\$1" -eq 0 \] || \[ "\$1" -eq 8 \]; }$#approved_or_unjudged() { [ "$1" -eq 0 ]; }#'
+
+wreck_runner "a pass that calls a refused delivery delivered is caught" \
+  passdeliver '/^carry_it_to_a_request() {/,/^}/s#^    \[ "\$code" -eq 0 \] || { record_the_stop "\$1" deliver; exit "\$code"; }$#    :#'
+
+wreck_runner "a pass whose run answers to nobody is caught" \
+  passwho '/^pass() {/,/^}/s#^        FOUNDRY_WHO=\$(applier_of "\$item" "\$items"); export FOUNDRY_WHO$#        :#'
+
 
 # Whether `chmod 000` means anything here. Windows records no read bit and root ignores the one it
 # finds, so the break below would report a rule held for a reason that is not the rule.

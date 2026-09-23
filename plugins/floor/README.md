@@ -2021,6 +2021,13 @@ grant, and runs the command there. It hands over three things and no others:
 It reads back only the run's record, never what the command printed. No command set is exit 44,
 and a command that fails is 45. Either way the run records why it stopped.
 
+**Then the bar, the judges, and the request.** The pass runs `gates`, then `judged` when the charter
+names a judge, then `deliver`. It stops at the first that does not pass, with that verb's own code,
+and the run records which. Delivery needs the practice's standing `deliver` line, as it always has.
+
+**The run answers to the person who put the label on.** A container names nobody, and a run nobody
+selected may never deliver. So the pass records the label's applier as the run's selector.
+
 ### Two adapters, because one proves nothing
 
 | Adapter | Needs | Holds |

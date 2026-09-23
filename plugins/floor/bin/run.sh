@@ -3615,6 +3615,7 @@ pass() {
         [ "$code" -eq 30 ] && { note "[$item] is held by another host, so this pass passes it over"; continue; }
         [ "$code" -eq 0 ] || continue
 
+        FOUNDRY_WHO=$(applier_of "$item" "$items"); export FOUNDRY_WHO
         begin_a_run_for "$item"
         return 0
     done
@@ -3622,6 +3623,10 @@ pass() {
     note "every eligible item is held by another host, so this pass takes nothing"
     exit 30
 }
+
+# **The person who put the label on selected this item**, so the run answers to them. A container
+# names nobody, and a run nobody selected may never deliver — invariant 4.
+applier_of() { printf '%s\n' "$2" | awk -F'\t' -v item="$1" '$1 == item { print $3; exit }'; }
 
 # To `claim`, this host's own claim is a renewal and succeeds. To a pass it is work another run here
 # already has, and taking it again would start that work twice.
@@ -3644,14 +3649,36 @@ leave_a_run_in_progress_alone() {
 begin_a_run_for() {
     words=$(source_says read "$1") || { note "claimed [$1] and could not read it"; exit 1; }
 
-    make_run "$(printf '%s\n' "$words" | awk 'NF { print; exit }')" >/dev/null
+    heading=$(printf '%s\n' "$words" | awk 'NF { print; exit }')
+    make_run "$heading" >/dev/null
     read_work_item "$dir" "$1" >/dev/null
     emit "$dir" pass.began item="$1"
     note "this pass took [$1]: $dir"
 
     open_the_work "$1"
     act_on_it "$1"
+    carry_it_to_a_request "$1" "$heading"
 }
+
+#
+# After the command: the bar, the judges the charter names, and the request. The pass stops at the
+# first that does not pass, and that verb's own words and code say why.
+carry_it_to_a_request() {
+    ( gates ) >/dev/null; code=$?
+    [ "$code" -eq 0 ] || { record_the_stop "$1" gates; exit "$code"; }
+
+    ( judged ) >/dev/null; code=$?
+    approved_or_unjudged "$code" || { record_the_stop "$1" judged; exit "$code"; }
+
+    ( deliver "$2" ) >/dev/null; code=$?
+    [ "$code" -eq 0 ] || { record_the_stop "$1" deliver; exit "$code"; }
+
+    emit "$dir" pass.delivered item="$1"
+    note "this pass delivered [$1]: $dir"
+}
+
+# Eight is a charter that names no judge, so there is nothing to wait for.
+approved_or_unjudged() { [ "$1" -eq 0 ] || [ "$1" -eq 8 ]; }
 
 #
 # The run's workspace: this checkout's own target, at the ref the host stood on. A target Foundry was

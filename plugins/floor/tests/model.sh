@@ -4139,11 +4139,13 @@ a_pass_takes_the_first_item_nobody_holds() {
     || { skip "a pass — git could not make a repo here"; return; }
 
   mkdir -p "$src/items" "$src/labels" "$src/claims/91"
-  for n in 91 92 93 94; do printf 'Pass item %s\n' "$n" > "$src/items/$n"; done
+  for n in 91 92 93 94 95 96; do printf 'Pass item %s\n' "$n" > "$src/items/$n"; done
+  printf 'ready\t2026-09-06T00:00:00Z\tpat\n' > "$src/labels/96"
   printf 'ready\t2026-09-01T00:00:00Z\tpat\n' > "$src/labels/91"
   printf 'ready\t2026-09-02T00:00:00Z\tpat\n' > "$src/labels/92"
   printf 'ready\t2026-09-03T00:00:00Z\tpat\n' > "$src/labels/93"
   printf 'ready\t2026-09-04T00:00:00Z\tpat\n' > "$src/labels/94"
+  printf 'ready\t2026-09-05T00:00:00Z\tpat\n' > "$src/labels/95"
   printf '2026-01-01T00:00:00Z\tOtherHost\t%s\n' "$(date -u +%s)" > "$src/claims/91/held"
 
   is "a pass with no rule takes nothing" "$(code_of floor "$tmp/pss" pass)" "42"
@@ -4165,12 +4167,18 @@ a_pass_takes_the_first_item_nobody_holds() {
     || { skip "a pass with a command — git could not make a repo here"; return; }
   bar_and_rule "$tmp/pss2"
 
-  is "a pass runs the command the host names" \
-     "$(FOUNDRY_PASS_COMMAND='printf "%s\n" "$FOUNDRY_PASS_ITEM" > saw && cat "$FOUNDRY_PASS_TEXT" >> saw' \
-        code_of floor "$tmp/pss2" pass)" "0"
-  has "in the workspace, with the item it took" "$(cat "$(floor "$tmp/pss2" path)"/units/01/workspace/*/saw)" "93"
-  has "and the item's own words"                "$(cat "$(floor "$tmp/pss2" path)"/units/01/workspace/*/saw)" "Pass item 93"
-  has "and the run records that it acted"       "$(floor "$tmp/pss2" observe)" "pass.acted"
+  # The command writes what it was handed and commits it through floor, the way a worker would.
+  saw_it="printf '%s\\n' \"\$FOUNDRY_PASS_ITEM\" > saw && cat \"\$FOUNDRY_PASS_TEXT\" >> saw"
+  saw_it="$saw_it && git add saw && sh '$runner' commit 'saw it'"
+
+  is "a pass with no grant to deliver stops at the request" \
+     "$(FOUNDRY_PASS_COMMAND=$saw_it code_of floor "$tmp/pss2" pass)" "18"
+  has "the command ran in the workspace, with the item it took" \
+      "$(cat "$(floor "$tmp/pss2" path)"/units/01/workspace/*/saw)" "93"
+  has "and the item's own words" \
+      "$(cat "$(floor "$tmp/pss2" path)"/units/01/workspace/*/saw)" "Pass item 93"
+  has "and the run records that it acted" "$(floor "$tmp/pss2" observe)" "pass.acted"
+  has "and why it stopped"                "$(floor "$tmp/pss2" observe)" "why=deliver"
 
   make_repo "$tmp/pss3" main && set_origin "$tmp/pss3" 'https://gitlab.com/acme/pss.git' \
     || { skip "a failing command — git could not make a repo here"; return; }
@@ -4179,13 +4187,48 @@ a_pass_takes_the_first_item_nobody_holds() {
   is  "a command that fails stops the pass" \
       "$(FOUNDRY_PASS_COMMAND='exit 7' code_of floor "$tmp/pss3" pass)" "45"
   has "and the run says why" "$(floor "$tmp/pss3" observe)" "why=command-failed"
+
+  #
+  # **One pass, from a label to a request, with no command typed.** The practice grants delivery here,
+  # and the person who put the label on is who the run answers to — invariant 4 holds without a
+  # person present.
+  #
+  # The push lands in a bare repository here: `isolate.sh` rewrites a push to github.com into this
+  # suite's own `remotes/`, so a delivery is driven without leaving the machine.
+  git init -q --bare "$tmp/remotes/acme/pss4.git" 2>/dev/null \
+    || { skip "a whole pass — git could not make a bare repo here"; return; }
+  make_repo "$tmp/pss4" main && set_origin "$tmp/pss4" 'https://github.com/acme/pss4.git' \
+    || { skip "a whole pass — git could not make a repo here"; return; }
+  bar_and_rule "$tmp/pss4" 'eligible ready
+deliver https://github.com/acme/pss4.git'
+
+  is  "a pass takes a labelled item to a request" \
+      "$(FOUNDRY_PASS_COMMAND=$saw_it code_of floor "$tmp/pss4" pass)" "0"
+  has "and the source holds the delivery" "$(ls "$src/deliveries")" "$(basename "$(floor "$tmp/pss4" path)")"
+  has "and the run records it"            "$(floor "$tmp/pss4" observe)" "pass.delivered"
+  has "and answers to who put the label on" "$(cat "$(floor "$tmp/pss4" path)/authority")" "pat"
+
+  # The source is shared, and a delivery left open reads as work to reconcile in every later case.
+  rm -f "$src/deliveries/$(basename "$(floor "$tmp/pss4" path)")"
+
+  # A bar that does not pass stops the pass before any request, and the run says so.
+  make_repo "$tmp/pss5" main && set_origin "$tmp/pss5" 'https://gitlab.com/acme/pss.git' \
+    || { skip "a failing gate — git could not make a repo here"; return; }
+  mkdir -p "$tmp/pss5/.foundry"
+  commit_file "$tmp/pss5" .foundry/gates 'tests  false'
+  commit_file "$tmp/pss5" .foundry/practice 'eligible ready
+deliver https://gitlab.com/acme/pss.git'
+
+  is  "a gate that fails stops the pass before the request" \
+      "$(FOUNDRY_PASS_COMMAND=$saw_it code_of floor "$tmp/pss5" pass)" "14"
+  has "and the run says it was the gates" "$(floor "$tmp/pss5" observe)" "why=gates"
 }
 
-# A bar with one gate that passes, and the rule a pass reads. Both committed, as a person's would be.
+# A bar with one gate that passes, and the practice a pass reads. Both committed, as a person's would be.
 bar_and_rule() {
   mkdir -p "$1/.foundry"
   commit_file "$1" .foundry/gates 'tests  true'
-  commit_file "$1" .foundry/practice 'eligible ready'
+  commit_file "$1" .foundry/practice "${2:-eligible ready}"
 }
 a_pass_takes_the_first_item_nobody_holds
 
