@@ -2523,10 +2523,10 @@ wreck_runner "a keep hook that reports a lost claim as a failure is caught" \
 # nothing holds shows as the break that is missing. #833.
 #
 wreck_runner "eligible items in the order the source listed them is caught" \
-  eligsort '/^eligible() {/,/^}/s# | sort -t .*-k2,2$##'
+  eligsort 's#^oldest_first() { sort -t .*-k2,2; }$#oldest_first() { cat; }#'
 
 wreck_runner "eligible items newest first is caught" \
-  eligreverse '/^eligible() {/,/^}/s#-k2,2$#-k2,2 -r#'
+  eligreverse '/^oldest_first() {/s#-k2,2; }#-k2,2 -r; }#'
 
 wreck_runner "a label nobody is named for passing as eligible is caught" \
   eligwho '/^kept_by_who_put_it_on() {/,/^}/s#^        \$3 == ""  *{#        0 {#'
@@ -2535,13 +2535,13 @@ wreck_runner "a hand the rule does not name passing as eligible is caught" \
   elighand '/^kept_by_who_put_it_on() {/,/^}/s#^        index(allowed, " " \$3 " ") == 0 {#        0 {#'
 
 wreck_runner "a practice line that is never read is caught" \
-  eligrule '/^eligibility_rule() {/,/^}/s#\$1 == "eligible"#$1 == "never"#'
+  eligrule '/^offer_rule() {/,/^}/s#\$1 == "offer"#$1 == "never"#'
 
 wreck_runner "a rule read where a worker commits is caught" \
-  eligtip '/^eligible() {/,/^}/s#tip=\$(fetched_default_tip) ||#tip=$(git rev-parse HEAD) ||#'
+  eligtip '/^the_offer_line() {/,/^}/s#tip=\$(fetched_default_tip) ||#tip=$(git rev-parse HEAD) ||#'
 
 wreck_runner "a rule naming no hand that says nothing about it is caught" \
-  elignohand '/^eligible() {/,/^}/s#^    \[ "\$\#" -ge 2 \] || { note .*; return 0; }$#    :#'
+  elignohand '/^the_offer_line() {/,/^}/s#^    \[ "\$\#" -ge 2 \] || { note .*; return 0; }$#    :#'
 
 #
 # **The name a run claims under is the run's.** A container starts under a new host name each time,
@@ -2566,7 +2566,7 @@ wreck_runner "an item nobody holds described as held is caught" \
   nobodyholds '/^say_why_the_work_waits() {/,/^}/s#^    \[ "\$code" -eq 1 \] || { say_who_holds "\$1"; return 0; }$#    say_who_holds "$1"; return 0#'
 
 wreck_runner "a directory source that lists every label is caught" \
-  eliglabel '/^list_eligible() {/,/^}/s#\$1 == label {#1 {#' lib/source-dir.sh
+  eliglabel '/^find_marked() {/,/^}/s#\$1 == label {#1 {#' lib/source-dir.sh
 
 wreck_runner "a GitHub source that drops an issue no event names is caught" \
   ghunnamed '/^label_put_on() {/,/^}/s#END { printf#END { if (at != "") printf#' lib/source-github.sh
@@ -2575,10 +2575,10 @@ wreck_runner "a GitHub source that drops an issue no event names is caught" \
 # break per rule. #884, #997.
 #
 wreck_runner "a pass that begins a run without claiming the item is caught" \
-  passclaim '/^pass() {/,/^}/s#( claim "\$item" ) >/dev/null 2>&1; code=\$?#code=0#'
+  passclaim '/^this_pass_claims() {/,/^}/s#( claim "\$1" ) >/dev/null 2>&1; code=\$?#code=0#'
 
 wreck_runner "a pass that stops when another host takes its item is caught" \
-  passnext '/^pass() {/,/^}/s#is held by another host, so this pass passes it over"; continue; }#is held by another host, so this pass passes it over"; exit 30; }#'
+  passnext '/^this_pass_claims() {/,/^}/s#is held by another host, so this pass passes it over"; return 1; }#is held by another host, so this pass passes it over"; exit 30; }#'
 
 wreck_runner "a pass that takes a second item beside a run in progress is caught" \
   passleave '/^pass() {/,/^}/s#^    leave_a_run_in_progress_alone$#    :#'
@@ -2595,7 +2595,7 @@ wreck_runner "a pass that finds nothing eligible and says something else is caug
 # and hands the command the item it took. #997, #371.
 #
 wreck_runner "a pass that takes an item another run here already has is caught" \
-  passown '/^pass() {/,/^}/s#^        already_underway_here "\$item" \&\& {.*continue; }$#        :#'
+  passown '/^this_pass_claims() {/,/^}/s#^    already_underway_here "\$1" \&\& {.*return 1; }$#    :#'
 
 wreck_runner "a claim nothing here works on, passed over for good, is caught" \
   passstale '/^already_underway_here() {/,/^}/s#^    a_run_here_holds "\$1"$#    :#'
@@ -2604,31 +2604,34 @@ wreck_runner "a pass that cannot open its work and leaves no stop is caught" \
   passopen '/^open_the_work() {/,/^}/s#) >/dev/null || stop_at "\$1" open "\$?"#) >/dev/null || exit 1#'
 
 wreck_runner "a pass that acts with no command set is caught" \
-  passnocmd '/^act_on_it() {/,/^}/s#^    \[ -n "\${FOUNDRY_PASS_COMMAND:-}" \] || { record_the_stop "\$1" no-command; exit 44; }$#    :#'
+  passnocmd '/^act_on_it() {/,/^}/s#^    \[ -n "\$host_command" \] || { record_the_stop "\$1" no-command; exit 44; }$#    :#'
+
+wreck_runner "a host command left for every gate and judge to inherit is caught" \
+  passcommand '/^keep_the_host_command_to_itself() {/,/^}/s#^    unset FOUNDRY_PASS_COMMAND$#    export FOUNDRY_PASS_COMMAND#'
 
 wreck_runner "a pass that carries on after its command failed is caught" \
-  passfail '/^act_on_it() {/,/^}/s#^    \[ "\$code" -eq 0 \] || { record_the_stop "\$1" command-failed; exit 45; }$#    :#'
+  passfail '/^act_on_it() {/,/^}/s#^    run_the_host_command "\$1" || { record_the_stop "\$1" command-failed; exit 45; }$#    run_the_host_command "$1"#'
 
 wreck_runner "a command that is not handed the item is caught" \
-  passhand '/^act_on_it() {/,/^}/s#FOUNDRY_PASS_ITEM="\$1" ##'
+  passhand '/^run_the_host_command() {/,/^}/s#FOUNDRY_PASS_ITEM="\$1" ##'
 
 wreck_runner "a command that is not handed its workspace is caught" \
-  passplace '/^act_on_it() {/,/^}/s#FOUNDRY_PASS_WORKSPACE="\$tree" ##'
+  passplace '/^run_the_host_command() {/,/^}/s#FOUNDRY_PASS_WORKSPACE="\$tree" ##'
 
 wreck_runner "a selection exported to everything the pass runs is caught" \
-  passunwho '/^pass() {/,/^}/s#^        unset FOUNDRY_WHO; FOUNDRY_WHO=\$(applier_of "\$item" "\$items")$#        FOUNDRY_WHO=$(applier_of "$item" "$items"); export FOUNDRY_WHO#'
+  passunwho 's#^answer_to_the_applier() { unset FOUNDRY_WHO; FOUNDRY_WHO=\$(applier_of "\$1" "\$2"); }$#answer_to_the_applier() { FOUNDRY_WHO=$(applier_of "$1" "$2"); export FOUNDRY_WHO; }#'
 
 wreck_runner "a pin exported to every gate and judge is caught" \
-  passexport '/^begin_a_run_for() {/,/^}/s#^    unset FOUNDRY_RUN; FOUNDRY_RUN=\$dir$#    FOUNDRY_RUN=$dir; export FOUNDRY_RUN#'
+  passexport 's#^pin_this_run() { unset FOUNDRY_RUN; FOUNDRY_RUN=\$dir; }$#pin_this_run() { FOUNDRY_RUN=$dir; export FOUNDRY_RUN; }#'
 
 wreck_runner "a pass whose verbs follow a run begun under it is caught" \
-  passpin '/^begin_a_run_for() {/,/^}/s#^    unset FOUNDRY_RUN; FOUNDRY_RUN=\$dir$#    :#'
+  passpin 's#^pin_this_run() { .*}$#pin_this_run() { :; }#'
 
 wreck_runner "a pass stopped for good by an item with no words is caught" \
-  passblank '/^begin_a_run_for() {/,/^}/s#^    heading=\${heading:-item \$1}$#    :#'
+  passblank '/^title_for() {/,/^}/s#"\${title:-item \$1}"#"$title"#'
 
 wreck_runner "a command that does not run as a worker is caught" \
-  passworker '/^act_on_it() {/,/^}/s#FOUNDRY_WORKER=\${FOUNDRY_WORKER:-pass} ##'
+  passworker '/^run_the_host_command() {/,/^}/s#FOUNDRY_WORKER=\${FOUNDRY_WORKER:-pass} ##'
 
 wreck_runner "a claim bound late and marked kept is caught" \
   bindmark '/^name_a_claim_taken_first() {/,/^}/s#^    remember_the_holder "\$1"$#    remember_the_holder "$1"; mark_kept "$1"#'
@@ -2638,16 +2641,16 @@ wreck_runner "a claim bound late and marked kept is caught" \
 # does not, a refused delivery stops it, and the run answers to who put the label on. #997, #736.
 #
 wreck_runner "a pass that carries on past a failed gate is caught" \
-  passgates '/^carry_it_to_a_request() {/,/^}/s#^    \[ "\$code" -eq 0 \] || { record_the_stop "\$1" gates; exit "\$code"; }$#    :#'
+  passgates '/^carry_it_to_a_request() {/,/^}/s#^    ( gates ) >/dev/null || stop_at "\$1" gates "\$?"$#    ( gates ) >/dev/null#'
 
 wreck_runner "a pass that stops on a charter naming no judge is caught" \
   passunjudged 's#^approved_or_unjudged() { \[ "\$1" -eq 0 \] || \[ "\$1" -eq 8 \]; }$#approved_or_unjudged() { [ "$1" -eq 0 ]; }#'
 
 wreck_runner "a pass that calls a refused delivery delivered is caught" \
-  passdeliver '/^carry_it_to_a_request() {/,/^}/s#^    \[ "\$code" -eq 0 \] || { record_the_stop "\$1" deliver; exit "\$code"; }$#    :#'
+  passdeliver '/^carry_it_to_a_request() {/,/^}/s#^    ( deliver "\$2" ) >/dev/null || stop_at "\$1" deliver "\$?"$#    ( deliver "$2" ) >/dev/null#'
 
 wreck_runner "a pass whose run answers to nobody is caught" \
-  passwho '/^pass() {/,/^}/s#^        unset FOUNDRY_WHO; FOUNDRY_WHO=\$(applier_of "\$item" "\$items")$#        :#'
+  passwho 's#^answer_to_the_applier() { .*}$#answer_to_the_applier() { :; }#'
 
 
 # Whether `chmod 000` means anything here. Windows records no read bit and root ignores the one it

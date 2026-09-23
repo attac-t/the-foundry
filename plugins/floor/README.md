@@ -223,7 +223,7 @@ sh bin/run.sh judged
 sh bin/run.sh source read 7
 sh bin/run.sh claim 7
 sh bin/run.sh release 7
-sh bin/run.sh eligible
+sh bin/run.sh offer
 sh bin/run.sh pass
 sh bin/run.sh source publish work/gift-cards "Gift card flow"
 sh bin/run.sh source ask authorisation tests "May this clause exist? …"
@@ -1986,9 +1986,12 @@ does not cover, and it is the safe half.
 
 ### What a pass may take
 
-**A line of the practice and a mark a person put on.** `run.sh eligible` reads
-`eligible <label> <who may put it on> ...` from `.foundry/practice`. It asks the source which open
-items carry that label, and who put it on each, and when. It prints them oldest label first.
+**A line of the practice and a mark a person put on.** `run.sh offer` reads
+`offer <label> <who may put it on> ...` from `.foundry/practice`. It asks the source to `find` the open
+items carrying that label, and who put it on each, and when. It prints them oldest mark first.
+
+**The repository offers, and a pass takes.** Practice lines grant verbs — `deliver`, `merge`, and now
+`offer` — and the verb a person reaches for is the line's own word.
 
 **The line is read at `origin/HEAD`**, where the default branch stood at the last fetch. A worker's
 commit moves `HEAD` and never that, so it grants nothing. A hand that rewrites the ref does reach it,
@@ -1997,7 +2000,7 @@ line reads the old one.
 
 **A line must name a hand.** One naming none would take a label anyone put on, and an issue form can
 put a label on every issue it opens. No fetched default branch, no line, or no hand, and nothing is
-eligible, and it says which.
+offered, and it says which.
 
 A label no event names is dropped and said, and so is one put on by a hand the rule does not name.
 **Floor never puts the label on.**
@@ -2008,7 +2011,7 @@ record, not a control, until a worker has its own identity.
 **`run.sh pass` takes the first of them this host can claim, and begins its run.** An item another
 host holds is passed over and said, and so is one a run here already works on. Any run active in
 this checkout is left alone, exit 43, one holding no item included: every verb a pass calls reads
-the active run first. Nothing eligible is exit 42, with the reason. **Once a pass begins its run,
+the active run first. Nothing offered is exit 42, with the reason. **Once a pass begins its run,
 every verb it calls reads that run**, whatever the checkout points at by then, and an item with no
 words is titled by its id.
 

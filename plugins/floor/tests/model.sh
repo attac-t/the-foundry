@@ -4093,9 +4093,9 @@ a_run_keeps_the_name_it_claimed_under
 # who put the label on is read from the source, never assumed.
 #
 # The times run against the file order on purpose, so an order nobody sorted cannot pass.
-eligibility_is_a_named_mark_oldest_first() {
+an_offer_is_a_named_mark_oldest_first() {
   make_repo "$tmp/elg" main && set_origin "$tmp/elg" 'https://gitlab.com/acme/elg.git' \
-    || { skip "eligibility — git could not make a repo here"; return; }
+    || { skip "the offer — git could not make a repo here"; return; }
 
   mkdir -p "$src/items" "$src/labels"
   for n in 81 82 83 84 85; do printf 'Item %s\n' "$n" > "$src/items/$n"; done
@@ -4105,33 +4105,33 @@ eligibility_is_a_named_mark_oldest_first() {
   printf 'go\t2026-08-02T00:00:00Z\tsam\n'   > "$src/labels/84"
   printf 'other\t2026-07-01T00:00:00Z\tpat\n' > "$src/labels/85"
 
-  is  "with no default branch fetched nothing is eligible" "$(floor "$tmp/elg" eligible)" ""
-  has "and it says where the rule is read" "$(floor_says "$tmp/elg" eligible)" "this checkout has none"
+  is  "with no default branch fetched nothing is offered" "$(floor "$tmp/elg" offer)" ""
+  has "and it says where the rule is read" "$(floor_says "$tmp/elg" offer)" "this checkout has none"
 
   commit_file "$tmp/elg" README 'elg' && as_fetched "$tmp/elg"
-  is  "with no rule nothing is eligible" "$(floor "$tmp/elg" eligible)" ""
-  has "and it says why" "$(floor_says "$tmp/elg" eligible)" "no line in .foundry/practice"
+  is  "with no rule nothing is offered" "$(floor "$tmp/elg" offer)" ""
+  has "and it says why" "$(floor_says "$tmp/elg" offer)" "line in .foundry/practice, so nothing is offered"
 
   #
   # **A worker's own commit grants nothing.** The rule is read where the default branch stood at the
   # last fetch, and a commit moves `HEAD` and never that. #991's judge committed one and was obeyed.
   #
   mkdir -p "$tmp/elg/.foundry"
-  commit_file "$tmp/elg" .foundry/practice 'eligible go pat'
-  is "a rule the worker committed grants nothing" "$(floor "$tmp/elg" eligible)" ""
+  commit_file "$tmp/elg" .foundry/practice 'offer go pat'
+  is "a rule the worker committed grants nothing" "$(floor "$tmp/elg" offer)" ""
 
   as_fetched "$tmp/elg"
   kept_oldest_named_first elg_floor elg_says "a directory"
 
-  commit_file "$tmp/elg" .foundry/practice 'eligible go pat sam'
+  commit_file "$tmp/elg" .foundry/practice 'offer go pat sam'
   is "a worker widening the rule it was handed widens nothing" \
-     "$(floor "$tmp/elg" eligible | cut -f1 | tr '\n' ' ')" "82 81 "
+     "$(floor "$tmp/elg" offer | cut -f1 | tr '\n' ' ')" "82 81 "
 
-  # **A rule names a hand, or nothing is eligible.** One naming none took a label anyone put on, and
+  # **A rule names a hand, or nothing is offered.** One naming none took a label anyone put on, and
   # an issue form can put one on every issue it opens.
-  commit_file "$tmp/elg" .foundry/practice 'eligible go' && as_fetched "$tmp/elg"
-  is  "a rule naming no hand makes nothing eligible" "$(floor "$tmp/elg" eligible)" ""
-  has "and it says so" "$(floor_says "$tmp/elg" eligible)" "names no hand"
+  commit_file "$tmp/elg" .foundry/practice 'offer go' && as_fetched "$tmp/elg"
+  is  "a rule naming no hand offers nothing" "$(floor "$tmp/elg" offer)" ""
+  has "and it says so" "$(floor_says "$tmp/elg" offer)" "names no hand"
 }
 
 # The fixture's own commit, held the way a clone that had just fetched it would hold it.
@@ -4147,16 +4147,36 @@ elg_says()  { floor_says "$tmp/elg" "$@"; }
 # depend on which one answered.
 kept_oldest_named_first() {
   is  "the oldest label goes first, and only the label named — $3" \
-      "$($1 eligible | cut -f1 | tr '\n' ' ')" "82 81 "
+      "$($1 offer | cut -f1 | tr '\n' ' ')" "82 81 "
   has "a label nobody is named for is dropped, and said — $3" \
-      "$($2 eligible)" "[83] is not eligible: nothing names who put [go] on it"
+      "$($2 offer)" "[83] is not offered: nothing names who put [go] on it"
   has "a hand the rule does not name is dropped, and said — $3" \
-      "$($2 eligible)" "[84] is not eligible: [go] was put on by sam"
+      "$($2 offer)" "[84] is not offered: [go] was put on by sam"
 }
-eligibility_is_a_named_mark_oldest_first
+an_offer_is_a_named_mark_oldest_first
 
 #
-# **A pass takes the first eligible item nobody holds, and begins its run.** It never chooses: the
+# **The directory adapter only reads its labels.** Its own proof, beside its own cases: every code
+# line naming them is listed here, so a line that writes one goes red until a person names it.
+#
+LABEL_LINES_THE_DIRECTORY_HOLDS='[ -d "$root/labels" ] || return 0
+for file in "$root"/labels/*; do'
+
+the_directory_adapter_only_reads_its_labels() {
+  is "every line of the directory adapter naming its labels is named here" \
+     "$(label_lines_in "$dir_source")" "$LABEL_LINES_THE_DIRECTORY_HOLDS"
+
+  { cat "$dir_source"; printf '    printf "go\\n" > "$root/labels/$1"\n'; } > "$tmp/planted-label-line.sh"
+  has "and a planted write is found" "$(label_lines_in "$tmp/planted-label-line.sh")" 'labels/$1'
+}
+
+label_lines_in() {
+  grep -h 'labels' "$1" 2>/dev/null | grep -vE '^[[:space:]]*#' | sed -E 's/^[[:space:]]+//' | LC_ALL=C sort
+}
+the_directory_adapter_only_reads_its_labels
+
+#
+# **A pass takes the first item offered that nobody holds, and begins its run.** It never chooses: the
 # order is the rule's, and an item another host holds is passed over. #884 asked that whatever picks
 # an item claims it before anything else happens.
 #
@@ -4174,7 +4194,7 @@ a_pass_takes_the_first_item_nobody_holds() {
   printf 'ready\t2026-09-05T00:00:00Z\tpat\n' > "$src/labels/95"
   printf '2026-01-01T00:00:00Z\tOtherHost\t%s\n' "$(date -u +%s)" > "$src/claims/91/held"
 
-  # No work source, and the pass refuses, rather than reading nothing as nothing eligible. #884.
+  # No work source, and the pass refuses, rather than reading nothing as nothing offered. #884.
   is "a pass with no work source refuses" \
      "$( cd "$tmp/pss" && FOUNDRY_HOME="$home" FOUNDRY_RUN="" FOUNDRY_WHO="" FOUNDRY_SOURCE="$tmp/no-such" \
          sh "$runner" pass >/dev/null 2>&1; printf '%s' "$?" )" "3"
@@ -4242,7 +4262,7 @@ a_pass_takes_the_first_item_nobody_holds() {
     || { skip "a whole pass — git could not make a bare repo here"; return; }
   make_repo "$tmp/pss4" main && set_origin "$tmp/pss4" 'https://github.com/acme/pss4.git' \
     || { skip "a whole pass — git could not make a repo here"; return; }
-  bar_and_rule "$tmp/pss4" 'eligible ready pat
+  bar_and_rule "$tmp/pss4" 'offer ready pat
 deliver https://github.com/acme/pss4.git'
 
   is  "a pass takes a labelled item to a request" \
@@ -4250,6 +4270,16 @@ deliver https://github.com/acme/pss4.git'
   has "and the source holds the delivery" "$(ls "$src/deliveries")" "$(basename "$(floor "$tmp/pss4" path)")"
   has "and the run records it"            "$(floor "$tmp/pss4" observe)" "pass.delivered"
   has "and answers to who put the label on" "$(cat "$(floor "$tmp/pss4" path)/authority")" "pat"
+
+  #
+  # **A pass runs its gates with what they have outside one, and no more.** Four rounds of review
+  # found one leak each: the run, the selector, the host's command. So the gate writes down every
+  # `FOUNDRY_` name it sees, and the same gate run by hand must see the same. #884's judge.
+  inside=$(cat "$tmp/pss4.gate-saw" 2>/dev/null)
+  rm -f "$tmp/pss4.gate-saw"
+  floor "$tmp/pss4" gates >/dev/null 2>&1
+  has "a gate inside the pass ran, and saw the host's own names" "$inside" "FOUNDRY_HOME"
+  is  "and saw the same names as one run outside a pass" "$inside" "$(cat "$tmp/pss4.gate-saw" 2>/dev/null)"
 
   # The source is shared, and a delivery left open reads as work to reconcile in every later case.
   rm -f "$src/deliveries/$(basename "$(floor "$tmp/pss4" path)")"
@@ -4259,7 +4289,7 @@ deliver https://github.com/acme/pss4.git'
     || { skip "a failing gate — git could not make a repo here"; return; }
   mkdir -p "$tmp/pss5/.foundry"
   commit_file "$tmp/pss5" .foundry/gates 'tests  false'
-  commit_file "$tmp/pss5" .foundry/practice 'eligible ready pat
+  commit_file "$tmp/pss5" .foundry/practice 'offer ready pat
 deliver https://gitlab.com/acme/pss.git' && as_fetched "$tmp/pss5"
 
   is  "a gate that fails stops the pass before the request" \
@@ -4269,12 +4299,12 @@ deliver https://gitlab.com/acme/pss.git' && as_fetched "$tmp/pss5"
 
 #
 # A bar with one gate, and the practice a pass reads: committed and fetched, as a merge would be.
-# **The gate fails if it inherits the pass's run or selector.** A pass runs its gates as they would
-# run outside it; exported, the pin once turned floor's own suite red when it ran as a gate.
+# **The gate writes down every `FOUNDRY_` name it was handed**, beside the checkout, so a case can
+# compare what a gate sees inside a pass with what it sees outside one.
 bar_and_rule() {
   mkdir -p "$1/.foundry"
-  commit_file "$1" .foundry/gates 'tests  test -z "${FOUNDRY_RUN:-}${FOUNDRY_WHO:-}"'
-  commit_file "$1" .foundry/practice "${2:-eligible ready pat}" && as_fetched "$1"
+  commit_file "$1" .foundry/gates "tests  env | sed -n 's/^\\(FOUNDRY_[A-Z_]*\\)=..*/\\1/p' | LC_ALL=C sort > '$1.gate-saw'"
+  commit_file "$1" .foundry/practice "${2:-offer ready pat}" && as_fetched "$1"
 }
 a_pass_takes_the_first_item_nobody_holds
 
@@ -4293,8 +4323,8 @@ two_hosts_pass_at_once() {
   for n in 97 98; do printf 'Race item %s\n' "$n" > "$src/items/$n"; done
   printf 'race\t2026-09-07T00:00:00Z\tpat\n' > "$src/labels/97"
   printf 'race\t2026-09-08T00:00:00Z\tpat\n' > "$src/labels/98"
-  bar_and_rule "$tmp/twa" 'eligible race pat'
-  bar_and_rule "$tmp/twb" 'eligible race pat'
+  bar_and_rule "$tmp/twa" 'offer race pat'
+  bar_and_rule "$tmp/twb" 'offer race pat'
 
   floor "$tmp/twa" pass >/dev/null 2>&1 &
   PATH="$tmp/twbin:$PATH" floor "$tmp/twb" pass >/dev/null 2>&1 &
@@ -4321,8 +4351,8 @@ a_pass_leaves_any_active_run_alone() {
 
   printf 'Pinned item\n' > "$src/items/90"
   printf 'pin\t2026-09-09T00:00:00Z\tpat\n' > "$src/labels/90"
-  bar_and_rule "$tmp/pin" 'eligible pin pat'
-  bar_and_rule "$tmp/pin2" 'eligible pin pat'
+  bar_and_rule "$tmp/pin" 'offer pin pat'
+  bar_and_rule "$tmp/pin2" 'offer pin pat'
 
   other=$(floor "$tmp/pin" new "A person's run")
   lines=$(floor_as "$tmp/pin" "$home" "$other" observe | grep -c .)
@@ -4353,7 +4383,7 @@ a_pass_takes_back_a_claim_no_run_holds() {
   printf 'stale\t2026-09-10T00:00:00Z\tpat\n' > "$src/labels/89"
   mkdir -p "$src/claims/89"
   printf '%s\t%s\t%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$(uname -n)" "$(date -u +%s)" > "$src/claims/89/held"
-  bar_and_rule "$tmp/stale-claim" 'eligible stale pat'
+  bar_and_rule "$tmp/stale-claim" 'offer stale pat'
 
   is  "a claim of this host's that no run holds is taken again" \
       "$(code_of floor "$tmp/stale-claim" pass)" "44"
@@ -4372,7 +4402,7 @@ a_refused_step_is_a_stop() {
 
   printf 'Unopened item\n' > "$src/items/88"
   printf 'unopened\t2026-09-11T00:00:00Z\tpat\n' > "$src/labels/88"
-  bar_and_rule "$tmp/noorigin" 'eligible unopened pat'
+  bar_and_rule "$tmp/noorigin" 'offer unopened pat'
 
   differs "a pass that cannot open its work stops" "$(code_of floor "$tmp/noorigin" pass)" "0"
   has "and the run says where" "$(floor "$tmp/noorigin" observe)" "why=open"
@@ -4395,7 +4425,7 @@ a_pass_keeps_its_own_run() {
 
   printf 'Pinned across a new run\n' > "$src/items/87"
   printf 'pinx\t2026-09-12T00:00:00Z\tpat\n' > "$src/labels/87"
-  bar_and_rule "$tmp/pinx" 'eligible pinx pat
+  bar_and_rule "$tmp/pinx" 'offer pinx pat
 deliver https://github.com/acme/pinx.git'
 
   interlope="( cd '$tmp/pinx' && sh '$runner' new 'Interloper' ) >/dev/null 2>&1"
@@ -4423,7 +4453,7 @@ a_blank_item_is_still_an_item() {
 
   printf '\n\n' > "$src/items/79"
   printf 'blank\t2026-09-13T00:00:00Z\tpat\n' > "$src/labels/79"
-  bar_and_rule "$tmp/blank" 'eligible blank pat'
+  bar_and_rule "$tmp/blank" 'offer blank pat'
 
   is  "a pass that takes an item with no words begins its run" "$(code_of floor "$tmp/blank" pass)" "44"
   has "titled by the item's id" "$(floor "$tmp/blank" path)" "item-79"
@@ -4433,78 +4463,33 @@ a_blank_item_is_still_an_item() {
 a_blank_item_is_still_an_item
 
 #
-# **Floor never puts the eligibility mark on.** A worker that could label its own issue would choose
-# its own work. So every kind of `gh` call floor ships is named here, and so is every line that names
-# the directory adapter's labels. **An allowlist**, because a list of known writes misses the next.
+# **Floor never puts the mark on, through any adapter.** A worker that could label its own issue would
+# choose its own work. Core holds the part every adapter owes: an adapter answers only the verbs core
+# calls, and none of those writes a mark. What an adapter does inside its own verbs, its own section
+# proves: the GitHub adapter's forge calls, and the directory adapter's label lines. #884's judge.
 #
-# A new kind of call goes red until a person names it, and so does one it cannot read: a verb that
-# is a variable, or a `gh` in call position with no plain word beside it. What it cannot see is a
-# route naming neither `gh` nor `labels`, or a call inside `eval` or `sh -c`. #884's judge.
-#
-GH_CALLS_FLOOR_MAKES='gh api
-gh api user
-gh auth status
-gh issue comment
-gh issue list
-gh issue view
-gh pr create
-gh pr list
-gh pr merge
-gh pr view
-gh repo view'
+every_adapter_answers_only_what_core_calls() {
+  core_calls=$(verbs_core_calls "$(dirname "$runner")/..")
 
-LABEL_LINES_FLOOR_HOLDS='[ -d "$root/labels" ] || return 0
-for file in "$root"/labels/*; do
-said=$(gh issue view "$1" --json labels --jq '"'"'.labels[].name'"'"' 2>&1) || {'
+  for adapter in "$(dirname "$runner")"/../lib/source-*.sh; do
+    is "the ${adapter##*/} adapter answers only verbs core calls" \
+       "$(verbs_answered_by "$adapter" | grep -vxF "$core_calls")" ""
+  done
 
-floor_never_puts_the_mark_on() {
-  is "every kind of gh call floor ships is named here" \
-     "$(gh_calls_in "$(dirname "$runner")/..")" "$GH_CALLS_FLOOR_MAKES"
-  is "and no gh api call writes" "$(gh_api_writes_in "$(dirname "$runner")/..")" ""
-  is "and every line touching the labels is named here" \
-     "$(label_lines_in "$(dirname "$runner")/..")" "$LABEL_LINES_FLOOR_HOLDS"
-
-  plant_in "$tmp/planted-label" 'gh issue edit "$1" --add-label "$2"' \
-    || { skip "a planted label write — could not copy floor"; return; }
-  has "and a planted call is found" "$(gh_calls_in "$tmp/planted-label")" "gh issue edit"
-
-  plant_in "$tmp/planted-verb" 'gh "$verb" "$1"' \
-    || { skip "a planted call by variable — could not copy floor"; return; }
-  has "and one whose verb is a variable reads as unknown" "$(gh_calls_in "$tmp/planted-verb")" "gh ?"
-
-  plant_in "$tmp/planted-write" "$(printf '%s\n%s' 'gh api "repos/{owner}/{repo}/issues/$1" \' \
-    '        -X PATCH -f "labels[]=go"')" \
-    || { skip "a planted continued write — could not copy floor"; return; }
-  has "and a write flag on a continued line is found" "$(gh_api_writes_in "$tmp/planted-write")" "-X PATCH"
-
-  plant_in "$tmp/planted-semi" 'true;gh issue edit "$1" --add-label go' \
-    || { skip "a planted call after a separator — could not copy floor"; return; }
-  has "and one straight after a separator is found" "$(gh_calls_in "$tmp/planted-semi")" "gh issue edit"
-
-  plant_in "$tmp/planted-tick" 'x=`gh issue edit "$1" --add-label go`' \
-    || { skip "a planted call in backticks — could not copy floor"; return; }
-  has "and one in backticks is found" "$(gh_calls_in "$tmp/planted-tick")" "gh issue edit"
+  mkdir -p "$tmp/planted-verb-adapter" || { skip "a planted adapter verb — no room"; return; }
+  awk '{ print } /^case "\$\{1:-\}" in$/ { print "    label)   shift; put_label \"$@\" ;;" }' \
+    "$dir_source" > "$tmp/planted-verb-adapter/source-dir.sh"
+  has "and one answering a verb core never calls is found" \
+      "$(verbs_answered_by "$tmp/planted-verb-adapter/source-dir.sh" | grep -vxF "$core_calls")" "label"
 }
 
-# The word after `gh` and the one after that when both are plain, or `gh ?` when the first is not.
-# A line matched as a call that holds no `gh` it can read is `gh ??`, and no list names that.
-gh_calls_in() {
-  calls_of "$1" gh | awk '{
-      for (i = 1; i <= NF; i++) if ($i ~ /(^|[(\/";&|`])gh"?$/) break
-      if (i > NF) { print "gh ??"; next }
-      verb = (i < NF && $(i + 1) ~ /^[a-z-]+$/) ? $(i + 1) : "?"
-      then_ = (verb != "?" && i + 1 < NF && $(i + 2) ~ /^[a-z-]+$/) ? " " $(i + 2) : ""
-      print "gh " verb then_ }' | LC_ALL=C sort -u
+# Every verb core asks a work source for, wherever in floor's shipped code it asks.
+verbs_core_calls() {
+  grep -rhoE 'source_says [a-z]+' "$1/bin" "$1/hooks" "$1/lib/source.sh" 2>/dev/null | cut -d' ' -f2 | LC_ALL=C sort -u
 }
 
-gh_api_writes_in() {
-  calls_of "$1" gh | grep -E 'gh[[:space:]]+api' | grep -E -- '(-X|--method|-f|-F|--field|--raw-field|--input)([[:space:]]|=)'
-}
-
-label_lines_in() {
-  grep -rh 'labels' "$1/bin" "$1/lib" "$1/hooks" 2>/dev/null | grep -vE '^[[:space:]]*#' \
-    | sed -E 's/^[[:space:]]+//' | LC_ALL=C sort
-}
+# The verbs an adapter's own dispatch answers.
+verbs_answered_by() { awk '/^case "\$\{1:-\}" in$/,/^esac$/' "$1" | sed -n 's/^    \([a-z]*\)).*/\1/p'; }
 
 # Floor's shipped code, copied, with one line added to its runner.
 plant_in() {
@@ -4527,7 +4512,7 @@ calls_of() {
 }
 
 joined_lines_of() { sed -e ':a' -e '/\\$/N' -e 's/\\\n[[:space:]]*/ /' -e 'ta' "$1"; }
-floor_never_puts_the_mark_on
+every_adapter_answers_only_what_core_calls
 
 #
 # **Core runs no harness.** A pass runs the command the host names, so nothing in floor may call the
@@ -7993,12 +7978,12 @@ the_other_adapter
 # **The same list, from the forge.** Which issues carry the label comes from one call and who put it
 # on from each issue's events, so an issue the listing named and no event did is still said.
 #
-eligibility_reads_the_same_from_github() {
+the_offer_reads_the_same_from_github() {
   make_repo "$tmp/ghe" main && set_origin "$tmp/ghe" 'https://github.com/acme/ghe.git' \
-    && mkdir -p "$tmp/ghe/.foundry" && commit_file "$tmp/ghe" .foundry/practice 'eligible go pat' \
+    && mkdir -p "$tmp/ghe/.foundry" && commit_file "$tmp/ghe" .foundry/practice 'offer go pat' \
     && as_fetched "$tmp/ghe" \
-    || { skip "eligibility on GitHub — git could not make a repo here"; return; }
-  fake_gh "$tmp/ghebin" || { skip "eligibility on GitHub — could not put a gh on the path"; return; }
+    || { skip "the offer on GitHub — git could not make a repo here"; return; }
+  fake_gh "$tmp/ghebin" || { skip "the offer on GitHub — could not put a gh on the path"; return; }
 
   mkdir -p "$tmp/ghestore/open" "$tmp/ghestore/events"
   for n in 81 82 83 84; do printf 'go\n' > "$tmp/ghestore/open/$n"; done
@@ -8017,7 +8002,70 @@ ghe_run() {
   ( cd "$tmp/ghe" && PATH="$tmp/ghebin:$PATH" GH_STORE="$tmp/ghestore" FOUNDRY_HOME="$home" \
       FOUNDRY_RUN="" FOUNDRY_WHO="" FOUNDRY_SOURCE="" sh "$runner" "$@" )
 }
-eligibility_reads_the_same_from_github
+the_offer_reads_the_same_from_github
+
+#
+# **The GitHub adapter's calls to its forge, named.** It never puts the mark on, and this is its own
+# proof, beside its own cases: every kind of `gh` call floor ships is listed, and a new kind goes red
+# until a person names it. An allowlist, because a list of known writes misses the next. #884's judge.
+#
+# A call straight after a separator or in backticks is read, and one whose verb is a variable reads
+# as `gh ?`. What it cannot see is a route that names no `gh`, or a call inside `eval` or `sh -c`.
+#
+GH_CALLS_FLOOR_MAKES='gh api
+gh api user
+gh auth status
+gh issue comment
+gh issue list
+gh issue view
+gh pr create
+gh pr list
+gh pr merge
+gh pr view
+gh repo view'
+
+the_github_adapter_calls_only_these() {
+  is "every kind of gh call floor ships is named here" \
+     "$(gh_calls_in "$(dirname "$runner")/..")" "$GH_CALLS_FLOOR_MAKES"
+  is "and no gh api call writes" "$(gh_api_writes_in "$(dirname "$runner")/..")" ""
+
+  plant_in "$tmp/planted-label" 'gh issue edit "$1" --add-label "$2"' \
+    || { skip "a planted label write — could not copy floor"; return; }
+  has "and a planted call is found" "$(gh_calls_in "$tmp/planted-label")" "gh issue edit"
+
+  plant_in "$tmp/planted-verb" 'gh "$verb" "$1"' \
+    || { skip "a planted call by variable — could not copy floor"; return; }
+  has "and one whose verb is a variable reads as unknown" "$(gh_calls_in "$tmp/planted-verb")" "gh ?"
+
+  plant_in "$tmp/planted-write" "$(printf '%s\n%s' 'gh api "repos/{owner}/{repo}/issues/$1" \' \
+    '        -X PATCH -f "labels[]=go"')" \
+    || { skip "a planted continued write — could not copy floor"; return; }
+  has "and a write flag on a continued line is found" "$(gh_api_writes_in "$tmp/planted-write")" "-X PATCH"
+
+  plant_in "$tmp/planted-semi" 'true;gh issue edit "$1" --add-label go' \
+    || { skip "a planted call after a separator — could not copy floor"; return; }
+  has "and one straight after a separator is found" "$(gh_calls_in "$tmp/planted-semi")" "gh issue edit"
+
+  plant_in "$tmp/planted-tick" 'x=`gh issue edit "$1" --add-label go`' \
+    || { skip "a planted call in backticks — could not copy floor"; return; }
+  has "and one in backticks is found" "$(gh_calls_in "$tmp/planted-tick")" "gh issue edit"
+}
+
+# The word after `gh` and the one after that when both are plain, or `gh ?` when the first is not.
+# A line matched as a call that holds no `gh` it can read is `gh ??`, and no list names that.
+gh_calls_in() {
+  calls_of "$1" gh | awk '{
+      for (i = 1; i <= NF; i++) if ($i ~ /(^|[(\/";&|`])gh"?$/) break
+      if (i > NF) { print "gh ??"; next }
+      verb = (i < NF && $(i + 1) ~ /^[a-z-]+$/) ? $(i + 1) : "?"
+      then_ = (verb != "?" && i + 1 < NF && $(i + 2) ~ /^[a-z-]+$/) ? " " $(i + 2) : ""
+      print "gh " verb then_ }' | LC_ALL=C sort -u
+}
+
+gh_api_writes_in() {
+  calls_of "$1" gh | grep -E 'gh[[:space:]]+api' | grep -E -- '(-X|--method|-f|-F|--field|--raw-field|--input)([[:space:]]|=)'
+}
+the_github_adapter_calls_only_these
 
 #
 # An item filed in a repository, advising that same repository. The bootstrap authorises it because

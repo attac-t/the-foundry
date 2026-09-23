@@ -87,8 +87,8 @@
 #      nobody could find, and the remedy is an install. This one is here and it is the wrong one
 #  41  the run is made and this checkout cannot point at it. The record is there and complete, so
 #      this is an answer about the checkout: tell every later command the id, or work elsewhere
-#  42  a pass found nothing eligible. An answer, and it says why: no rule, or no item the rule takes
-#  43  a pass left a run in progress alone. This checkout already holds an item, and one pass
+#  42  a pass was offered nothing. An answer, and it says why: no rule, or no item the rule offers
+#  43  a pass left a run in progress alone. A run is already active in this checkout, and one pass
 #      takes one
 #  44  a pass began a run and no pass command is set, so the work waits. An answer about the host
 #  45  the pass command failed. The run records the stop, and the next pass reads it
@@ -161,7 +161,7 @@ main() {
         aside)     aside "$@" ;;
         claim)     claim "$@" ;;
         release)   release "$@" ;;
-        eligible)  eligible "$@" ;;
+        offer)     offer "$@" ;;
         pass)      pass "$@" ;;
         observe)   observe "$@" ;;
         observed)  observed "$@" ;;
@@ -210,8 +210,8 @@ floor — where work happens.
   run.sh aside [text]             record what this run cannot act on, or print what it has
   run.sh claim [item]             take it, or keep the one this run holds; 30 if another host has it
   run.sh release <item>           let it go, if this host took it
-  run.sh eligible                 what a pass may take, oldest label first
-  run.sh pass                     take the first eligible item nobody holds, and begin its run
+  run.sh offer                    what a pass may take, oldest mark first
+  run.sh pass                     take the first item offered that nobody holds, and begin its run
   run.sh observe [event] [k=v...] record that something happened, or print what did
   run.sh observed [event]         every run's observations, with the run named
   run.sh merge                    land what was graded, or say why it may not be
@@ -3535,39 +3535,55 @@ release() {
 }
 
 #
-# What a pass may take, oldest label first. The rule is one line of `.foundry/practice`:
-# `eligible <label> <who may put it on> ...`. Nothing is eligible without one that names a hand.
+# What the repository offers a pass, oldest mark first. The rule is one line of `.foundry/practice`:
+# `offer <label> <who may put it on> ...`. Nothing is offered without one that names a hand.
 #
-# **A mark nobody put on is not eligibility.** An item whose label no event names is dropped, and
-# said, and so is one put on by a hand the rule does not name. Floor never puts the label on.
-eligible() {
+# **A mark nobody put on is not an offer.** An item whose label no event names is dropped, and said,
+# and so is one put on by a hand the rule does not name. Floor never puts the label on.
+offer() {
     [ "$#" -eq 0 ] || { usage; exit 2; }
     refuse_missing_source
 
-    tip=$(fetched_default_tip) || {
-        note "the rule is read at \`origin/HEAD\`, and this checkout has none, so nothing is eligible"
-        return 0
-    }
-
-    rule=$(eligibility_rule "$tip") || exit 1
-    [ -n "$rule" ] || { note "no line in .foundry/practice says what is eligible, so nothing is"; return 0; }
+    rule=$(the_offer_line) || exit 1
+    [ -n "$rule" ] || return 0
 
     set -f; set -- $rule; set +f
-    [ "$#" -ge 2 ] || { note "the eligible line names no hand, so nothing is eligible"; return 0; }
+    marked_by_the_rule "$@"
+}
 
-    listed=$(source_says eligible "$1"); code=$?
+#
+# The `offer` line, read where no worker commits, when it names a hand. Nothing, and said why, when
+# there is none to follow; 1 when the practice itself cannot be read.
+the_offer_line() {
+    tip=$(fetched_default_tip) || {
+        note "the rule is read at \`origin/HEAD\`, and this checkout has none, so nothing is offered"
+        return 0
+    }
+    line=$(offer_rule "$tip") || return 1
+    [ -n "$line" ] || { note "no \`offer\` line in .foundry/practice, so nothing is offered"; return 0; }
+
+    set -f; set -- $line; set +f
+    [ "$#" -ge 2 ] || { note "the \`offer\` line names no hand, so nothing is offered"; return 0; }
+    printf '%s\n' "$line"
+}
+
+offer_rule() {
+    practice=$(practice_at_base "$1") || return 1
+
+    printf '%s\n' "$practice" | awk '$1 == "offer" { $1 = ""; sub(/^ +/, ""); print; exit }'
+}
+
+# What the source finds carrying the label, kept when a hand the rule names put it on.
+marked_by_the_rule() {
+    listed=$(source_says find "$1"); code=$?
     refuse_unasked "$code" "items labelled [$1]"
     [ "$code" -eq 2 ] && { note "this work source cannot say which items carry a label"; exit 27; }
 
     label=$1; shift
-    printf '%s\n' "$listed" | kept_by_who_put_it_on "$label" "$*" | sort -t "$(printf '\t')" -k2,2
+    printf '%s\n' "$listed" | kept_by_who_put_it_on "$label" "$*" | oldest_first
 }
 
-eligibility_rule() {
-    practice=$(practice_at_base "$1") || return 1
-
-    printf '%s\n' "$practice" | awk '$1 == "eligible" { $1 = ""; sub(/^ +/, ""); print; exit }'
-}
+oldest_first() { sort -t "$(printf '\t')" -k2,2; }
 
 #
 # **The rule is read where a worker's commit cannot reach**: the commit `origin/HEAD` names, which a
@@ -3580,10 +3596,10 @@ fetched_default_tip() {
 
 #
 # Each item the source listed, kept when a name put its label on and the rule allows that name.
-# What is dropped is said, with what would make it eligible.
+# What is dropped is said, with what would make it offered.
 kept_by_who_put_it_on() {
     awk -F'\t' -v label="$1" -v allowed=" $2 " '
-        function say(item, why) { printf "floor: [%s] is not eligible: %s\n", item, why | "cat 1>&2" }
+        function say(item, why) { printf "floor: [%s] is not offered: %s\n", item, why | "cat 1>&2" }
         NF < 3 || $1 == "" { next }
         $3 == ""           { say($1, "nothing names who put [" label "] on it"); next }
         index(allowed, " " $3 " ") == 0 {
@@ -3592,45 +3608,68 @@ kept_by_who_put_it_on() {
 }
 
 #
-# One pass: the first eligible item this host can claim, and a run begun for it. A trigger wakes
+# One pass: the first item offered that this host can claim, and a run begun for it. A trigger wakes
 # this (#997), and what a pass does once its run has begun is the next piece of that work.
 #
 # **It never chooses.** The order is the rule's, and an item another host holds is passed over,
 # never taken. Any run already active here is left alone, because one pass takes one item.
 #
-# **Exclusive between hosts, not within one.** A claim from the same host renews, so two passes
-# started at once on one host could both take one item. One live pass per host is the trigger's
-# to keep, #997.
+# **Exclusive between hosts, not within one.** A claim from the same host renews, so two passes in two
+# checkouts on one host could both take one item. One live pass per host is the trigger's, #997.
 pass() {
     [ "$#" -eq 0 ] || { usage; exit 2; }
     refuse_missing_source
     leave_a_run_in_progress_alone
+    keep_the_host_command_to_itself
 
-    items=$(eligible); code=$?
+    items=$(offer); code=$?
     [ "$code" -eq 0 ] || exit "$code"
-    [ -n "$items" ] || { note "nothing is eligible, so this pass takes nothing"; exit 42; }
+    [ -n "$items" ] || { note "nothing is offered, so this pass takes nothing"; exit 42; }
 
-    for item in $(printf '%s\n' "$items" | cut -f1); do
-        already_underway_here "$item" && { note "[$item] is underway in a run here already, so this pass passes it over"; continue; }
+    take_the_first_claimable "$items"
+}
 
-        ( claim "$item" ) >/dev/null 2>&1; code=$?
-        [ "$code" -eq 20 ] && { note "the work source could not be asked to claim [$item]"; exit 20; }
-        [ "$code" -eq 30 ] && { note "[$item] is held by another host, so this pass passes it over"; continue; }
-        [ "$code" -eq 0 ] || continue
+#
+# **The host's command is the pass's to run, and nothing else's to inherit.** Read once and unset, so
+# no gate and no judge the pass runs sees it. Left in the environment, floor's own suite, run as a
+# gate, ran it in its fixtures. #884's judge, round four.
+keep_the_host_command_to_itself() {
+    host_command=${FOUNDRY_PASS_COMMAND:-}
+    unset FOUNDRY_PASS_COMMAND
+}
 
-        # The selection is floor's to read and nobody's to inherit, so it is never exported: a gate, a
-        # judge and the command each run as they would outside a pass. #884's judge, round three.
-        unset FOUNDRY_WHO; FOUNDRY_WHO=$(applier_of "$item" "$items")
+take_the_first_claimable() {
+    for item in $(printf '%s\n' "$1" | cut -f1); do
+        this_pass_claims "$item" || continue
+
+        answer_to_the_applier "$item" "$1"
         begin_a_run_for "$item"
         return 0
     done
 
-    note "every eligible item is held by another host, so this pass takes nothing"
+    note "every item offered is held by another host, so this pass takes nothing"
     exit 30
 }
 
+# Passes over an item underway here or held elsewhere, and claims the rest. A source nobody could ask
+# ends the pass, since every item after this one would ask it the same.
+this_pass_claims() {
+    already_underway_here "$1" && { note "[$1] is underway in a run here already, so this pass passes it over"; return 1; }
+
+    ( claim "$1" ) >/dev/null 2>&1; code=$?
+    [ "$code" -eq 20 ] && { note "the work source could not be asked to claim [$1]"; exit 20; }
+    [ "$code" -eq 30 ] && { note "[$1] is held by another host, so this pass passes it over"; return 1; }
+    [ "$code" -eq 0 ]
+}
+
+#
 # **The person who put the label on selected this item**, so the run answers to them. A container
 # names nobody, and a run nobody selected may never deliver — invariant 4.
+#
+# The selection is floor's to read and nobody's to inherit, so it is never exported: a gate, a judge
+# and the command each run as they would outside a pass. #884's judge, round three.
+answer_to_the_applier() { unset FOUNDRY_WHO; FOUNDRY_WHO=$(applier_of "$1" "$2"); }
+
 applier_of() { printf '%s\n' "$2" | awk -F'\t' -v item="$1" '$1 == item { print $3; exit }'; }
 
 #
@@ -3665,20 +3704,10 @@ leave_a_run_in_progress_alone() {
 # host is already refused.
 begin_a_run_for() {
     words=$(source_says read "$1") || { note "claimed [$1] and could not read it"; exit 1; }
+    heading=$(title_for "$1" "$words")
 
-    # An item with no words is still an item. Titled by nothing, `make_run` refused it after the
-    # claim, and every pass that reached it stopped there, with no line written. #884's judge.
-    heading=$(printf '%s\n' "$words" | awk 'NF { print; exit }')
-    heading=${heading:-item $1}
     make_run "$heading" >/dev/null
-
-    # **Every verb from here reads this run, whatever the checkout points at by then.** A `new` in
-    # the checkout while the command worked moved the pointer, and the verbs after it followed.
-    # The door refuses a run that is there at the start; this holds one begun later. #884's judge.
-    #
-    # **Pinned in this shell, and exported nowhere.** Each verb runs in a subshell, which reads it.
-    # Exported, it reached every gate and judge, and floor's own suite, run as a gate, wrote there.
-    unset FOUNDRY_RUN; FOUNDRY_RUN=$dir
+    pin_this_run
     read_work_item "$dir" "$1" >/dev/null
     emit "$dir" pass.began item="$1"
     note "this pass took [$1]: $dir"
@@ -3688,18 +3717,30 @@ begin_a_run_for() {
     carry_it_to_a_request "$1" "$heading"
 }
 
+# An item's first line with words, or its id. Titled by nothing, `make_run` refused an item with no
+# words after the claim, and every pass that reached it stopped there, with no line. #884's judge.
+title_for() {
+    title=$(printf '%s\n' "$2" | awk 'NF { print; exit }')
+    printf '%s' "${title:-item $1}"
+}
+
+#
+# **Every verb from here reads this run, whatever the checkout points at by then.** A `new` in the
+# checkout while the command worked moved the pointer, and the verbs after it followed. The door
+# refuses a run that is there at the start; this holds one begun later. #884's judge.
+#
+# **Pinned in this shell, and exported nowhere.** Each verb runs in a subshell, which reads it.
+# Exported, it reached every gate and judge, and floor's own suite, run as a gate, wrote there.
+pin_this_run() { unset FOUNDRY_RUN; FOUNDRY_RUN=$dir; }
+
 #
 # After the command: the bar, the judges the charter names, and the request. The pass stops at the
 # first that does not pass, and that verb's own words and code say why.
 carry_it_to_a_request() {
-    ( gates ) >/dev/null; code=$?
-    [ "$code" -eq 0 ] || { record_the_stop "$1" gates; exit "$code"; }
-
+    ( gates ) >/dev/null || stop_at "$1" gates "$?"
     ( judged ) >/dev/null; code=$?
-    approved_or_unjudged "$code" || { record_the_stop "$1" judged; exit "$code"; }
-
-    ( deliver "$2" ) >/dev/null; code=$?
-    [ "$code" -eq 0 ] || { record_the_stop "$1" deliver; exit "$code"; }
+    approved_or_unjudged "$code" || stop_at "$1" judged "$code"
+    ( deliver "$2" ) >/dev/null || stop_at "$1" deliver "$?"
 
     emit "$dir" pass.delivered item="$1"
     note "this pass delivered [$1]: $dir"
@@ -3734,13 +3775,15 @@ stop_at() { record_the_stop "$1" "$2"; exit "$3"; }
 #
 # The pass reads back the command's exit and floor's record, never what the command printed.
 act_on_it() {
-    [ -n "${FOUNDRY_PASS_COMMAND:-}" ] || { record_the_stop "$1" no-command; exit 44; }
+    [ -n "$host_command" ] || { record_the_stop "$1" no-command; exit 44; }
 
-    ( cd "$tree" && FOUNDRY_WORKER=${FOUNDRY_WORKER:-pass} FOUNDRY_PASS_ITEM="$1" \
-        FOUNDRY_PASS_WORKSPACE="$tree" FOUNDRY_PASS_ITEM_FILE="$dir/item.md" sh -c "$FOUNDRY_PASS_COMMAND" ); code=$?
-    [ "$code" -eq 0 ] || { record_the_stop "$1" command-failed; exit 45; }
-
+    run_the_host_command "$1" || { record_the_stop "$1" command-failed; exit 45; }
     emit "$dir" pass.acted item="$1"
+}
+
+run_the_host_command() {
+    ( cd "$tree" && FOUNDRY_WORKER=${FOUNDRY_WORKER:-pass} FOUNDRY_PASS_ITEM="$1" \
+        FOUNDRY_PASS_WORKSPACE="$tree" FOUNDRY_PASS_ITEM_FILE="$dir/item.md" sh -c "$host_command" )
 }
 
 # A stop is a line in the run before it is an answer. The next pass reads the line, never the chat.

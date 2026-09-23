@@ -29,7 +29,7 @@
 #        sh source-github.sh receive <issue> <question>
 #        sh source-github.sh state   <run>
 #        sh source-github.sh land    <run>
-#        sh source-github.sh eligible <label>
+#        sh source-github.sh find    <label>
 #
 # Exit: 0 answered · 1 nothing there · 2 asked for something this does not do · 3 GitHub refused,
 #       or could not be reached at all
@@ -619,7 +619,7 @@ claim_ref() { printf 'foundry/claim/%s' "$1"; }
 # The open issues carrying one label, with when it last went on and who put it on, from each issue's
 # own events. Floor orders them and decides; this only reads what the forge recorded.
 #
-list_eligible() {
+find_marked() {
     [ -n "$1" ] || return 2
 
     numbers=$(gh issue list --label "$1" --state open --limit 500 --json number --jq '.[].number') || {
@@ -658,7 +658,7 @@ case "${1:-}" in
     receive) shift; read_answer      "${1:-}" "${2:-}" ;;
     state)   shift; delivery_state   "${1:-}" ;;
     land)    shift; land_delivery    "${1:-}" ;;
-    eligible) shift; list_eligible   "${1:-}" ;;
-    *)       echo "source-github: read <issue> | kind <issue> | eligible <label> | claim <issue> <host> | held <issue> | release <issue> <host> | publish <issue> <run> <branch> <title> [word] [brief] | ask <issue> <question> <text> | receive <issue> <question> | state <run> | land <run>" >&2
+    find)    shift; find_marked      "${1:-}" ;;
+    *)       echo "source-github: read <issue> | kind <issue> | find <label> | claim <issue> <host> | held <issue> | release <issue> <host> | publish <issue> <run> <branch> <title> [word] [brief] | ask <issue> <question> <text> | receive <issue> <question> | state <run> | land <run>" >&2
              exit 2 ;;
 esac
