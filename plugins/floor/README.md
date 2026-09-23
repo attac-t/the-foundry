@@ -1897,9 +1897,15 @@ who holds it; `release` gives it back, and only to the host that took it.
 in to `gh` and not to git cannot push the ref, and that used to leave by 30 — *held*, with no holder
 to print. A worker reading that stands down from work nothing was doing.
 
-**It names the cure as well, the way `join.sh` does.** The GitHub adapter prints the helper to add
-when git holds no credential, and `gh auth status` when the forge refused the one git holds. It
-never prints `gh auth setup-git`, which discards every helper set before its own.
+**It names the cure as well, the way `join.sh` does, and only where one can work.** For an https
+forge that answered, the GitHub adapter prints two, each under an *if*: the helper to add, in case
+git holds no credential, and `gh auth status`, in case the forge refused the one it holds. The
+failure does not say which. **A forge never reached, an ssh remote and a path get no cure**, and
+the userinfo in a remote never appears in one. It never prints `gh auth setup-git`, which discards
+every helper set before its own.
+
+**In a container the printed `--global` lasts as long as the container.** `floor:host` hands git
+its credential without writing that file.
 
 **`release` does not make that distinction yet.** `source-github.sh` returns 4 when the fetch could
 not run, when the delete had no credential, and when the claim is genuinely another host's;

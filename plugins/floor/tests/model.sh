@@ -4154,19 +4154,35 @@ HOOK
   lacks "and never the host that last held it" \
         "$(gh_claims_says "$work" claim 71)" "OtherHost"
 
-  # #981: the fault, then the cure — the way `join.sh` answers a checkout with no identity.
-  has   "and it says what to do when the forge refused" \
-        "$(gh_claims_says "$work" claim 71)" "gh auth status"
-  lacks "and names no helper where git would never ask one" \
-        "$(gh_claims_says "$work" claim 71)" "credential."
+  # #981: the fault, then the cure — and a cure only where one can work. A path asks no helper and
+  # `gh` answers for none, so this origin gets neither line.
+  lacks "and no cure for a remote that is not https" \
+        "$(gh_claims_says "$work" claim 71)" "gh auth"
 
-  # An https remote on a closed port: refused before any credential is read, the same three calls.
-  git -C "$work" remote set-url origin 'https://127.0.0.1:9/gone.git'
+  # An https forge never reached. This suite lets git use `file` alone, so nothing was ever sent.
+  git -C "$work" remote set-url origin 'https://gone.invalid/acme/claimed.git'
 
-  has   "an https forge is told which helper to add" \
-        "$(gh_claims_says "$work" claim 71)" "--add credential.https://127.0.0.1:9.helper"
+  lacks "and none for a forge never reached" \
+        "$(gh_claims_says "$work" claim 71)" "gh auth"
+
+  #
+  # An https forge that refused, with a token in its userinfo. `pushInsteadOf` sends the push to the
+  # refusing bare repository, so the refusal is the server's own and the cure is printed.
+  #
+  # **The token must not appear.** The cure is run with `--global`, and it would stay there.
+  secret='https://x-access-token:s3cr3t@forge.test/acme/claimed.git'
+  git -C "$work" remote set-url origin "$secret"
+  git -C "$work" config "url.$bare.pushInsteadOf" "$secret"
+  : > "$bare/refuse"
+
+  has   "a forge that refused is told which helper to add" \
+        "$(gh_claims_says "$work" claim 71)" "--add credential.https://forge.test.helper"
+  lacks "and never the token its origin carries" \
+        "$(gh_claims_says "$work" claim 71)" "s3cr3t"
   lacks "and never the command that discards the others" \
         "$(gh_claims_says "$work" claim 71)" "setup-git"
+
+  rm -f "$bare/refuse"
 }
 a_refused_push_says_which_refusal_it_was
 

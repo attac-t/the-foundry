@@ -2449,12 +2449,19 @@ wreck_runner "a push no credential could make passing for a holder is caught" \
 wreck_runner "a claim another host took passing for a source nobody could ask is caught" \
   ghrace 's#now=$(claim_tip "$1")#now=#' lib/source-github.sh
 
-# #981: the refusal names its cure. One break drops the cure, the other turns its https guard over.
+# #981: the refusal names its cure, and only where one can work. One break per rule: the cure goes,
+# the https guard goes, an unreached forge reads as reached, and the userinfo stays in.
 wreck_runner "a refused claim that says nothing about what to do is caught" \
-  ghcure 's#^    say_the_cure$#    :#' lib/source-github.sh
+  ghcure 's#^    say_the_cure "\$why"$#    :#' lib/source-github.sh
 
-wreck_runner "a cure naming a helper where git asks for none is caught" \
-  ghhelper 's#\[ -z "\$forge" \] ||#[ -n "$forge" ] ||#' lib/source-github.sh
+wreck_runner "a cure printed where git asks for no helper is caught" \
+  ghhelper 's#\[ -n "\$forge" \] || return 0#:#' lib/source-github.sh
+
+wreck_runner "a cure printed for a forge never reached is caught" \
+  ghreach 's#^was_not_reached() {#was_not_reached() { return 1#' lib/source-github.sh
+
+wreck_runner "a cure that prints the token in its origin is caught" \
+  ghsecret 's|\${authority##\*@}|${authority}|' lib/source-github.sh
 
 
 # Whether `chmod 000` means anything here. Windows records no read bit and root ignores the one it

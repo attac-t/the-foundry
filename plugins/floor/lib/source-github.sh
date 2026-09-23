@@ -475,44 +475,58 @@ take_claim() {
 
     made=$(claim_commit "$2" "$at") || return 3
 
-    why=$(git push origin "$made:refs/heads/$(claim_ref "$1")" 2>&1) && return 0
+    why=$(LC_ALL=C git push origin "$made:refs/heads/$(claim_ref "$1")" 2>&1) && return 0
 
     now=$(claim_tip "$1")
     [ -n "$now" ] && [ "$now" != "$at" ] && { holder_at "$now" "$2" || return 4; }
 
     printf 'source-github: the claim could not be pushed: %s\n' "$why" >&2
-    say_the_cure
+    say_the_cure "$why"
     return 3
 }
 
 #
 # The fault, then what to do about it, the way `join.sh` answers a checkout with no identity.
 #
-# **Two causes, and nothing in the failure tells them apart:** git holds no credential for the
-# forge, or the forge refused the one git holds. So each cure is printed under the case it answers.
+# **Three causes reach here: no credential, a forge that refused one, and a forge never reached.**
+# Only the first two have a cure a person can run, and only over https — a helper is never asked over
+# ssh or a path, and `gh` answers for neither. So a forge never reached, or not https, gets none.
 #
-# **Never `gh auth setup-git`.** It writes a blank helper first, and a blank helper discards every
-# helper set before it — a credential manager included, and silently. `--add` keeps them.
+# **Never `gh auth setup-git`.** Its blank helper discards every helper set before its own.
 say_the_cure() {
     forge=$(https_forge_of_origin)
-
-    [ -z "$forge" ] || printf '%s\n' \
-        'source-github: if git holds no credential for the forge, hand it the one gh holds:' \
-        "source-github:   git config --global --add credential.$forge.helper '!gh auth git-credential'" >&2
+    [ -n "$forge" ] || return 0
+    was_not_reached "$1" && return 0
 
     printf '%s\n' \
+        'source-github: if git holds no credential for the forge, hand it the one gh holds:' \
+        "source-github:   git config --global --add credential.$forge.helper '!gh auth git-credential'" \
         'source-github: if the forge refused the one git holds, see which account gh signs in as:' \
         'source-github:   gh auth status' >&2
 }
 
-# Scheme and host, the way a credential key names a forge. Nothing for a remote that is not https,
-# because a helper is never asked there and a cure naming one would send the reader nowhere.
-https_forge_of_origin() {
-    url=$(git remote get-url origin 2>/dev/null) || return 0
-    case $url in https://*) ;; *) return 0 ;; esac
+# Git's words for a forge it never reached — the push ran in the C locale so these are the words.
+# A transport this host's git will not use is one of them: nothing was ever sent.
+was_not_reached() {
+    case $1 in
+        *'Could not resolve host'*|*'Failed to connect'*|*'timed out'*|*'not allowed'*) return 0 ;;
+    esac
+    return 1
+}
 
-    rest=${url#https://}
-    printf 'https://%s\n' "${rest%%/*}"
+#
+# Scheme and host, the way a credential key names a forge. Nothing for a remote that is not https.
+#
+# **Never the userinfo.** A token rides there, and this line is printed and then run with `--global`.
+# Everything to the last `@` goes, because a password may hold one — `strip_userinfo` in the runner
+# reads it the same way.
+https_forge_of_origin() {
+    origin_url=$(git remote get-url origin 2>/dev/null) || return 0
+    case $origin_url in https://*) ;; *) return 0 ;; esac
+
+    authority=${origin_url#https://}
+    authority=${authority%%/*}
+    printf 'https://%s\n' "${authority##*@}"
 }
 
 # A commit on top of the one there, so the push is a fast-forward the server

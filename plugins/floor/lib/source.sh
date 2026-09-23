@@ -37,7 +37,7 @@ say_what_answers() {
         { printf 'a directory, and the remote is GitHub. Install gh, or Issues stay unreachable.\n'; return; }
 
     gh auth status >/dev/null 2>&1 ||
-        { printf 'GitHub, but gh is not signed in. Run: gh auth login && gh auth setup-git\n'; return; }
+        { printf 'GitHub, but gh is not signed in. Run: gh auth login\n'; return; }
 
     printf 'GitHub\n'
 }
