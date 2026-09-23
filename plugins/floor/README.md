@@ -1953,6 +1953,10 @@ fast-forward the server refuses if the tip moved.
 holds. If another host took it, the answer is 30 and a `claim.lost` line, however young the claim.
 Either answer is marked in the run, so the hook asks the source once a window, never once a tool use.
 
+**Working is as exclusive as claiming.** `gates`, `judged` and `deliver` ask the keep before they
+start. An item another host holds answers 30 and names the holder. A run holding no item says that
+nothing it does is exclusive.
+
 **Two clocks, and nothing reconciles them.** The stamp is the holder's; the age is the reader's
 arithmetic. Hosts far out of step will disagree about what is dead, and floor neither detects that
 nor claims to.
