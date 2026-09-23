@@ -104,10 +104,29 @@ Measured 22 September 2026, in a fresh container:
 | `~/.claude/plugins/marketplaces` | holds `claude-plugins-official`, and nothing else |
 
 So the checkout asks for three plugins from a marketplace this machine never registered.
-**Nothing in steps 1 to 5 says so.** The host starts and the harness replies with none of them.
 
-**A project setting reaches a session started inside that project.** The shell opens in
-`/home/forge`, so `cd /src` first, or the three stay off whatever else is true.
+**With `FOUNDRY_KEYS` set, the host installs them itself, at a worker's first start.** It reads
+three things from the checkout it was started in: its origin, the marketplace in
+`.claude-plugin/marketplace.json`, and the plugins `.claude/settings.json` enables.
+`FOUNDRY_PLUGINS` names others. No name is written in the code.
+
+Measured 23 September 2026, on a fresh volume:
+
+| | |
+|---|---|
+| the first start | added the marketplace and installed kernel, signal and floor, in 17 seconds |
+| the second | installed nothing, in 10 |
+| floor's `run.sh`, from the installed plugin | answered |
+
+**A failed install starts nothing.** The host exits 6 and says which of four it was: no origin, no
+marketplace, no plugin named, or the install itself.
+
+**The origin loses any name or token before its host.** A token kept there would reach the volume's
+config and the terminal.
+
+**Without `FOUNDRY_KEYS` nothing would keep an install, so the host makes none.** Run these in each
+container instead. A project setting reaches a session started inside that project, so `cd /src`
+first.
 
 ```sh
 cd /src
@@ -116,14 +135,6 @@ claude plugin install kernel@the-foundry
 claude plugin install signal@the-foundry
 claude plugin install floor@the-foundry
 ```
-
-**Nobody has driven those lines in this container.** They are what the README installs with, and
-what `plugins.sh` tells an unregistered host to run. Treat them as the thing to try. The next
-section says how to see whether they worked.
-
-**`.claude` is a kept place**, so an install that lands survives the container. That place is the
-store named in step 3, the same one holding the sign-ins. Unset `FOUNDRY_KEYS` and this step is due
-again every container, exactly like the logins.
 
 ## The three are not all of Foundry
 

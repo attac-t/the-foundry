@@ -15,6 +15,8 @@
 # **`--worker` is the host that can do the work.** It builds a second image on this one, carrying
 # node and both provider commands. A judge found this flag documented nowhere and it was right.
 #
+# **With `FOUNDRY_KEYS` set, a worker's first start installs Foundry's plugins into that volume.**
+#
 # **The grading image stays light because of that split.** Measured: 258 MB here, 1.56 GB with both
 # providers. A container grade would carry 1.3 GB it never calls.
 #
@@ -70,6 +72,8 @@
 #   3   the image would not build
 #   4   this machine has no home to keep runs in
 #   5   FOUNDRY_KEYS names a volume that could not be prepared
+#   6   a worker could not be given Foundry: this checkout names no origin, marketplace or plugin,
+#       or the install failed
 
 set -u
 
@@ -89,6 +93,7 @@ main() {
     ensure_docker_answers
     ensure_the_image_is_built
     ensure_the_keys_are_there
+    ensure_the_worker_carries_foundry
 
     run_in_the_container "$@"
 }
@@ -198,6 +203,47 @@ make_them_here() {
         mkdir -p "$FOUNDRY_KEYS/${pair%%:*}" 2>/dev/null || \
             fail "the directory named by FOUNDRY_KEYS could not be made." 5
     done
+}
+
+#
+# **A worker carries Foundry from its first start.** Its plugins go into the keys volume, from the
+# repository this host started from, so a clean host needs no clone. #736's box 1, 23 September.
+#
+# **Every name comes from this checkout**, and `FOUNDRY_PLUGINS` names others. A failed install
+# starts nothing: a worker without Foundry is the gap this closes.
+ensure_the_worker_carries_foundry() {
+    the_worker_keeps_what_it_installs || return 0
+
+    from=$(the_origin_here) || fail "this checkout has no origin, so a worker has nothing to install Foundry from." 6
+    market=$(the_marketplace_here) || fail "this checkout names no marketplace in .claude-plugin/marketplace.json." 6
+    plugins=$(the_plugins_to_install "$market") || fail "this checkout enables no plugin from $market, and FOUNDRY_PLUGINS names none." 6
+
+    run_in_the_container sh /src/bin/install.sh "$from" "$market" $plugins \
+        || fail "Foundry could not be installed into the keys volume, so nothing started." 6
+}
+
+# Only the worker has a harness, and only a volume outlives the container.
+the_worker_keeps_what_it_installs() { [ "$image" = foundry:worker ] && [ -n "${FOUNDRY_KEYS:-}" ]; }
+
+# The origin, less any name or token before its host. Kept, a token would reach the keys volume's
+# config and the terminal both. Found by driving it: this checkout's origin carries a name.
+the_origin_here() {
+    origin=$(git -C "$root" remote get-url origin 2>/dev/null) || return 1
+
+    printf '%s' "$origin" | sed 's#^\([a-z+]*://\)[^/@]*@#\1#'
+}
+
+# The marketplace's own name is the first field two spaces in. A plugin's name sits deeper.
+the_marketplace_here() {
+    name=$(sed -n '/^  "name": /{ s/^  "name": *"\([^"]*\)",*$/\1/p; q; }' "$root/.claude-plugin/marketplace.json" 2>/dev/null)
+    [ -n "$name" ] && printf '%s' "$name"
+}
+
+the_plugins_to_install() {
+    plugins=${FOUNDRY_PLUGINS:-}
+    [ -n "$plugins" ] || plugins=$(sed -n "s/^ *\"\\([a-z0-9-]*\\)@$1\": *true.*/\\1/p" "$root/.claude/settings.json" 2>/dev/null)
+
+    [ -n "$plugins" ] && printf '%s' "$plugins"
 }
 
 #

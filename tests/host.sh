@@ -33,12 +33,13 @@ command -v cygpath >/dev/null 2>&1 && kept=$(cygpath -m "$tmp/home")
 # recorded and never performed, which is the whole reason this stands in.
 #
 # `$1` decides whether `info` succeeds, because a machine without Docker is one of the two cases a
-# person actually meets.
+# person actually meets. `$2` does the same for `build`, and `$3` for the run that installs Foundry.
 stub_docker() {
   {
     printf '#!/bin/sh\n'
     printf 'printf "%%s\\n" "$*" >> "%s/asked"\n' "$tmp"
     printf 'printf "%%s\\n" "$@" >> "%s/argv"\n' "$tmp"
+    printf 'case "$*" in\n  *install.sh*) exit %s ;;\nesac\n' "${3:-0}"
     printf 'case "$1" in\n'
     printf '  info)  exit %s ;;\n' "${1:-0}"
     printf '  build) exit %s ;;\n' "${2:-0}"
@@ -392,6 +393,182 @@ grep -q 'docker run --rm' "$root/bin/gates.sh" \
 grep -v '^[[:space:]]*#' "$root/bin/host.sh" | grep -q 'FOUNDRY_EPHEMERAL' \
   && bad "and this lane never says it — it does" \
   || ok  "and this lane never says it"
+
+#
+# --- a worker carries Foundry ---
+#
+# **Every name comes from the checkout the host started in.** So this builds one with names no real
+# repository uses, and reads them back off the command line. #736's box 1.
+#
+a_checkout() {
+  rm -rf "$tmp/co" && mkdir -p "$tmp/co/bin" "$tmp/co/.claude-plugin" "$tmp/co/.claude" "$tmp/co/plugins/floor/bin"
+  cp "$root/bin/host.sh" "$root/bin/install.sh" "$tmp/co/bin/"
+  printf '#!/bin/sh\nprintf "%%s\\n" "$FOUNDRY_HOME"\n' > "$tmp/co/plugins/floor/bin/run.sh"
+  printf '{\n  "name": "fixture-market",\n  "plugins": [\n    {\n      "name": "one"\n    }\n  ]\n}\n' \
+    > "$tmp/co/.claude-plugin/marketplace.json"
+  printf '{\n  "enabledPlugins": {\n    "one@fixture-market": true,\n    "off@fixture-market": false,\n    "else@elsewhere": true,\n    "two@fixture-market": true\n  }\n}\n' \
+    > "$tmp/co/.claude/settings.json"
+  git -C "$tmp/co" init -q && git -C "$tmp/co" remote add origin "${1:-https://example.invalid/acme/fixture.git}"
+}
+
+# The host, started in that checkout, with a volume or without.
+hosted_there() {
+  ( PATH="$tmp/bin:$PATH" FOUNDRY_HOME="$tmp/home" sh "$tmp/co/bin/host.sh" "$@" >/dev/null 2>&1 </dev/null )
+}
+
+handed() { grep -qx -- "$1" "$tmp/argv"; }
+
+a_checkout
+stub_docker
+FOUNDRY_KEYS=akeyvolume hosted_there --worker true
+
+handed /src/bin/install.sh \
+  && ok  "a worker with a volume installs Foundry" \
+  || bad "a worker with a volume installs Foundry — nothing was installed"
+handed https://example.invalid/acme/fixture.git \
+  && ok  "from the origin of the checkout it started in" \
+  || bad "from the origin of the checkout it started in — it named another"
+handed fixture-market \
+  && ok  "and the marketplace that checkout names" \
+  || bad "and the marketplace that checkout names — it named another"
+handed one && handed two \
+  && ok  "and each plugin its settings enable" \
+  || bad "and each plugin its settings enable — one was missing"
+handed off || handed else \
+  && bad "and none it turns off or takes from elsewhere — one was named" \
+  || ok  "and none it turns off or takes from elsewhere"
+
+install_line=$(grep -n 'install.sh' "$tmp/asked" | head -n 1 | cut -d: -f1)
+worker_line=$(grep -n 'foundry:worker true$' "$tmp/asked" | tail -n 1 | cut -d: -f1)
+[ -n "$install_line" ] && [ -n "$worker_line" ] && [ "$install_line" -lt "$worker_line" ] \
+  && ok  "and it installs before the worker starts" \
+  || bad "and it installs before the worker starts — the order was otherwise"
+
+stub_docker
+FOUNDRY_KEYS=akeyvolume FOUNDRY_PLUGINS=three hosted_there --worker true
+handed three && ! handed one \
+  && ok  "FOUNDRY_PLUGINS names the plugins instead" \
+  || bad "FOUNDRY_PLUGINS names the plugins instead — it did not"
+
+stub_docker
+hosted_there --worker true
+handed /src/bin/install.sh \
+  && bad "without a volume nothing is installed, since nothing would keep it — it installed" \
+  || ok  "without a volume nothing is installed, since nothing would keep it"
+
+stub_docker
+FOUNDRY_KEYS=akeyvolume hosted_there true
+handed /src/bin/install.sh \
+  && bad "and the grading image installs nothing — it did" \
+  || ok  "and the grading image installs nothing"
+
+# **A failed install starts nothing.** A worker without Foundry is the gap this closes, so starting
+# one anyway would hide it.
+stub_docker 0 0 1
+FOUNDRY_KEYS=akeyvolume hosted_there --worker true
+is_six=$?
+[ "$is_six" = 6 ] && ! grep -q 'foundry:worker true$' "$tmp/asked" \
+  && ok  "a failed install stops the host at 6, and no worker starts" \
+  || bad "a failed install stops the host at 6, and no worker starts — exit $is_six"
+
+# **An origin may carry a name, or a token, before its host.** Either would reach the volume's config
+# and the terminal. Found by driving the real thing: this repository's own origin carries a name.
+a_checkout https://someone:secret@example.invalid/acme/fixture.git
+stub_docker
+FOUNDRY_KEYS=akeyvolume hosted_there --worker true
+handed https://example.invalid/acme/fixture.git && ! grep -q -e secret -e someone "$tmp/argv" \
+  && ok  "an origin's name and token never reach the container" \
+  || bad "an origin's name and token never reach the container — one did"
+
+git -C "$tmp/co" remote remove origin
+stub_docker
+FOUNDRY_KEYS=akeyvolume hosted_there --worker true
+is_six=$?
+[ "$is_six" = 6 ] && ! handed /src/bin/install.sh \
+  && ok  "a checkout with no origin has nothing to install from, and says 6" \
+  || bad "a checkout with no origin has nothing to install from, and says 6 — exit $is_six"
+
+#
+# **No name is written in the code.** Both scripts read every name from the checkout, so neither may
+# hold this repository's marketplace or its origin. A planted line proves the check can see one.
+#
+names_in_code() {
+  market=$(grep -m 1 '^  "name"' "$root/.claude-plugin/marketplace.json" | cut -d'"' -f4)
+  origin=$(git -C "$root" remote get-url origin 2>/dev/null | sed -E 's#\.git$##; s#^.*[:/]([^/]+/[^/]+)$#\1#')
+
+  grep -v '^[[:space:]]*#' "$@" | grep -F -e "${market:-no-market-read}" -e "${origin:-no-origin-read}"
+}
+
+[ -z "$(names_in_code "$root/bin/host.sh" "$root/bin/install.sh")" ] \
+  && ok  "neither script names this repository's marketplace or origin" \
+  || bad "neither script names this repository's marketplace or origin — one does"
+
+{ cat "$root/bin/host.sh"; printf 'market=%s\n' "$(grep -m 1 '^  "name"' "$root/.claude-plugin/marketplace.json" | cut -d'"' -f4)"; } \
+  > "$tmp/planted-host.sh"
+[ -n "$(names_in_code "$tmp/planted-host.sh")" ] \
+  && ok  "and a planted name is found" \
+  || bad "and a planted name is found — the check cannot see one"
+
+#
+# --- the install, inside a worker ---
+#
+# **Against a harness this file writes.** It answers both lists from files, and adding or installing
+# appends to them, so a second start finds what the first one left.
+#
+stub_harness() {
+  mkdir -p "$tmp/harness"
+  : > "$tmp/harness-asked"; : > "$tmp/markets"; : > "$tmp/installed"
+  cat > "$tmp/harness/claude" <<EOF
+#!/bin/sh
+printf '%s\n' "\$*" >> "$tmp/harness-asked"
+case "\$*" in
+  "plugin marketplace list --json") cat "$tmp/markets" ;;
+  "plugin list --json")             cat "$tmp/installed" ;;
+  "plugin marketplace add "*)       [ "${1:-ok}" = ok ] || exit 1; printf '"name": "%s"\n' "${2:-fixture-market}" >> "$tmp/markets" ;;
+  "plugin install "*)               printf '"%s"\n' "\$3" >> "$tmp/installed" ;;
+esac
+EOF
+  chmod +x "$tmp/harness/claude"
+}
+
+installed() {
+  ( PATH="$tmp/harness:$PATH" sh "$root/bin/install.sh" https://example.invalid/acme/fixture.git fixture-market one two \
+      >/dev/null 2>&1 )
+}
+
+harness_asked() { grep -qx -- "$1" "$tmp/harness-asked"; }
+
+stub_harness
+installed
+harness_asked 'plugin marketplace add https://example.invalid/acme/fixture.git' \
+  && ok  "the first start adds the marketplace from the source it was handed" \
+  || bad "the first start adds the marketplace from the source it was handed — it did not"
+harness_asked 'plugin install one@fixture-market' && harness_asked 'plugin install two@fixture-market' \
+  && ok  "and installs each plugin from it" \
+  || bad "and installs each plugin from it — one was not"
+[ "$(grep -cx 'plugin list --json' "$tmp/harness-asked")" = 1 ] \
+  && ok  "and asks what is installed once, however many plugins" \
+  || bad "and asks what is installed once, however many plugins — it asked again"
+
+: > "$tmp/harness-asked"
+installed
+grep -qE 'marketplace add|plugin install' "$tmp/harness-asked" \
+  && bad "a second start adds and installs nothing — it asked again" \
+  || ok  "a second start adds and installs nothing"
+
+stub_harness refused
+installed
+is_one=$?
+[ "$is_one" = 1 ] && ! grep -q 'plugin install' "$tmp/harness-asked" \
+  && ok  "a marketplace that cannot be added fails the install, before any plugin" \
+  || bad "a marketplace that cannot be added fails the install, before any plugin — exit $is_one"
+
+stub_harness ok another-market
+installed
+is_one=$?
+[ "$is_one" = 1 ] \
+  && ok  "and so does one that arrives under another name" \
+  || bad "and so does one that arrives under another name — exit $is_one"
 
 printf '\nhost — %d passed, %d failed\n' "$passed" "$failed"
 [ "$failed" -eq 0 ]
