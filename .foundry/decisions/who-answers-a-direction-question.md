@@ -129,3 +129,18 @@ then.
 the act with a person.
 
 **Nothing enforces this either.** What holds it is the record and whoever reads it next.
+
+## One model judges while the second has no credits, 22 September 2026
+
+`.foundry/judged` cites *the owner's decision* for judging on one model. These are the words.
+
+> Let's use opus as a judge or fable when merited. Codex is out of credit.
+
+> Codex is out of credit. Use opus instead
+
+**What it settles:** the panel is one model until the second one can answer. `.foundry/judged`
+keeps the second line commented, and says to restore it when the credits return.
+
+**What it does not settle:** #529's bar for another machine — *"Both providers must participate in
+at least one real, attributable, mixed-provider decision."* One model cannot meet that, and nothing
+here says it does.
