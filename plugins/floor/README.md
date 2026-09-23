@@ -1969,6 +1969,10 @@ then, the answer says so and names `claim <item>`.
 claim: when it takes one, or when a keep finds one a pass took first. So a run carried to another
 machine, or graded in a container that starts under a new host name, still holds its own claim.
 
+**The name is a record, not a credential.** It is a file in the run, so a worker that writes the
+holder's name there passes the keep, as one that set its host name always could. #156 owns the
+actor.
+
 **Two clocks, and nothing reconciles them.** The stamp is the holder's; the age is the reader's
 arithmetic. Hosts far out of step will disagree about what is dead, and floor neither detects that
 nor claims to.
@@ -1985,7 +1989,8 @@ items carry that label, and who put it on each, and when. It prints them oldest 
 
 **The line is read at `origin/HEAD`**, where the default branch stood at the last fetch. A worker's
 commit moves `HEAD` and never that, so it grants nothing. A hand that rewrites the ref does reach it,
-and that is the actor question #156 owns.
+and that is the actor question #156 owns. A checkout that has not fetched since a person changed the
+line reads the old one.
 
 **A line must name a hand.** One naming none would take a label anyone put on, and an issue form can
 put a label on every issue it opens. No fetched default branch, no line, or no hand, and nothing is

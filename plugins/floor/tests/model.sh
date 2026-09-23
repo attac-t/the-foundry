@@ -7288,7 +7288,7 @@ case "$*" in
   # What an issue carries now is its own file, apart from the events that say who put it on.
   "issue list"*"--label"*)  [ -f "$store/reads-fail" ] && { echo "HTTP 401: Bad credentials" >&2; exit 1; }
                             for carried in "$store/open"/*; do
-                                [ -f "$carried" ] && grep -qx -- "$4" "$carried" && printf '%s\n' "${carried##*/}"
+                                [ -f "$carried" ] && grep -qxF -- "$4" "$carried" && printf '%s\n' "${carried##*/}"
                             done
                             true ;;
   # Each issue's `labeled` events, pre-shaped the way the adapter's `--jq` shapes them. No file is no
