@@ -2647,7 +2647,7 @@ wreck_runner "a pass that calls a refused delivery delivered is caught" \
   passdeliver '/^carry_it_to_a_request() {/,/^}/s#^    \[ "\$code" -eq 0 \] || { record_the_stop "\$1" deliver; exit "\$code"; }$#    :#'
 
 wreck_runner "a pass whose run answers to nobody is caught" \
-  passwho '/^pass() {/,/^}/s#^        FOUNDRY_WHO=\$(applier_of "\$item" "\$items"); export FOUNDRY_WHO$#        :#'
+  passwho '/^pass() {/,/^}/s#^        unset FOUNDRY_WHO; FOUNDRY_WHO=\$(applier_of "\$item" "\$items")$#        :#'
 
 
 # Whether `chmod 000` means anything here. Windows records no read bit and root ignores the one it
