@@ -2487,6 +2487,25 @@ wreck_runner "a loss read afresh on every fire is caught" \
 wreck_runner "a loss that outlives a claim taken by hand is caught" \
   handkept '/^mark_kept_where_held()/,/^}/s#^    mark_kept "$dir"$#    :#'
 
+#
+# **Working an item is as exclusive as claiming it.** One break per verb that works, one for the
+# guard itself, and one for the run that holds nothing and must say so. #991 found the gap.
+#
+wreck_runner "a grade of an item another host holds is caught" \
+  workgates '/^gates() {/,/^}/s#^    refuse_an_item_another_host_holds "\$dir"$#    :#'
+
+wreck_runner "a judgement of an item another host holds is caught" \
+  workjudged '/^judged() {/,/^}/s#^    refuse_an_item_another_host_holds "\$dir"$#    :#'
+
+wreck_runner "a delivery of an item another host holds is caught" \
+  workdeliver '/^deliver() {/,/^}/s#^    refuse_an_item_another_host_holds "\$dir"$#    :#'
+
+wreck_runner "a guard that lets every item through is caught" \
+  workkeep 's#^    renew_this_run_claim \&\& return 0$#    return 0#'
+
+wreck_runner "a run holding no item that keeps quiet about it is caught" \
+  workalone 's#{ note "this run holds no item, so nothing here is exclusive"; return 0; }#{ return 0; }#'
+
 
 # Whether `chmod 000` means anything here. Windows records no read bit and root ignores the one it
 # finds, so the break below would report a rule held for a reason that is not the rule.

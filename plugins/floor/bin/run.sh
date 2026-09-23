@@ -2077,6 +2077,7 @@ gates() {
     # writes a row nothing takes back. Both of these refused everywhere but here.
     refuse_renamed_run "$dir"
     refuse_moved_selection "$dir" "$(unit_targets_file "$dir")" || exit 10
+    refuse_an_item_another_host_holds "$dir"
 
     check_charter "$dir"
     run_pinned_gates "$dir"
@@ -2447,6 +2448,7 @@ judged() {
 
     refuse_renamed_run "$dir"
     refuse_moved_selection "$dir" "$(unit_targets_file "$dir")" || exit 10
+    refuse_an_item_another_host_holds "$dir"
 
     check_charter "$dir"
     ask_pinned_judges "$dir"
@@ -3404,6 +3406,22 @@ mark_kept_where_held() {
     mark_kept "$dir"
 }
 
+#
+# **Claiming was exclusive, and working was not.** `claim` refused a second holder, and every verb
+# after it checked nothing, so a copy holding no claim graded and judged an item another host held.
+#
+# The keep answers it, 30 for another host's item whatever its age. A run holding no item says so:
+# exclusivity it never took is not exclusivity it can keep. #991 saw two copies work one item.
+refuse_an_item_another_host_holds() {
+    item=$(item_id "$1")
+    [ -n "$item" ] || { note "this run holds no item, so nothing here is exclusive"; return 0; }
+
+    renew_this_run_claim && return 0
+
+    say_who_holds "$item"
+    exit 30
+}
+
 claim() {
     [ "$#" -le 1 ] || { usage; exit 2; }
     refuse_missing_source
@@ -3754,6 +3772,7 @@ deliver() {
     here=$(this_repository)
 
     refuse_unreadable_run "$dir"
+    refuse_an_item_another_host_holds "$dir"
     refuse_ungranted_delivery "$dir" "$here"
     refuse_foreign_ancestry "$dir" "$here"
     refuse_incomplete "$dir"

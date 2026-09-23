@@ -3964,6 +3964,33 @@ exactly_one_host_takes_an_item() {
 exactly_one_host_takes_an_item
 
 #
+# **Working an item is as exclusive as claiming it.** Every verb after `claim` once checked nothing,
+# so a copy holding no claim graded and judged an item another host held. #991 saw two at once.
+#
+another_hosts_item_is_refused_at_the_work() {
+  make_repo "$tmp/wrk" main && set_origin "$tmp/wrk" 'https://gitlab.com/acme/wrk.git'     || { skip "working a held item — git could not make a repo here"; return; }
+
+  mkdir -p "$src/items" "$src/claims/73"
+  printf 'Worked by two
+' > "$src/items/73"
+  floor "$tmp/wrk" new "Worked by two" >/dev/null 2>&1
+  floor "$tmp/wrk" source read 73 >/dev/null 2>&1
+  printf '2026-01-01T00:00:00Z	OtherHost	%s
+' "$(date -u +%s)" > "$src/claims/73/held"
+
+  is  "a grade of an item another host holds is refused" "$(code_of floor "$tmp/wrk" gates)" "30"
+  has "and it names who holds it" "$(floor_says "$tmp/wrk" gates)" "held by OtherHost"
+  is  "so is a judgement"  "$(code_of floor "$tmp/wrk" judged)"            "30"
+  is  "and a delivery"     "$(code_of floor "$tmp/wrk" deliver 'A title')" "30"
+
+  # A run holding no item cannot be exclusive, and says so rather than grading as though it were.
+  make_repo "$tmp/wrk2" main && set_origin "$tmp/wrk2" 'https://gitlab.com/acme/wrk2.git'     || { skip "a run with no item — git could not make a repo here"; return; }
+  floor "$tmp/wrk2" new "Nothing held" >/dev/null 2>&1
+  has "a run holding no item says nothing is exclusive"       "$(floor_says "$tmp/wrk2" gates)" "holds no item"
+}
+another_hosts_item_is_refused_at_the_work
+
+#
 # **A release that races a renewal deleted the claim that replaced the one it read.**
 #
 # The shape: a host's lease runs out, a second host claims, and the first host's late release takes
