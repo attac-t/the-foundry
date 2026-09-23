@@ -2571,8 +2571,8 @@ wreck_runner "a directory source that lists every label is caught" \
 wreck_runner "a GitHub source that drops an issue no event names is caught" \
   ghunnamed '/^label_put_on() {/,/^}/s#END { printf#END { if (at != "") printf#' lib/source-github.sh
 #
-# **A pass takes the first eligible item nobody holds.** One break per rule: it claims before it
-# begins, it leaves a run in progress alone, and it says so when nothing is eligible. #884, #997.
+# **A pass takes the first eligible item nobody holds, and works only in the run it begins.** One
+# break per rule. #884, #997.
 #
 wreck_runner "a pass that begins a run without claiming the item is caught" \
   passclaim '/^pass() {/,/^}/s#( claim "\$item" ) >/dev/null 2>&1; code=\$?#code=0#'
@@ -2583,6 +2583,9 @@ wreck_runner "a pass that stops when another host takes its item is caught" \
 wreck_runner "a pass that takes a second item beside a run in progress is caught" \
   passleave '/^pass() {/,/^}/s#^    leave_a_run_in_progress_alone$#    :#'
 
+wreck_runner "a pass that works beside a run holding no item is caught" \
+  passany '/^leave_a_run_in_progress_alone() {/,/^}/s#^    here=\$(active_run 2>/dev/null) || return 0$#    here=$(active_run 2>/dev/null) \&\& [ -n "$(item_id "$here")" ] || return 0#'
+
 wreck_runner "a pass that finds nothing eligible and says something else is caught" \
   passnone '/^pass() {/,/^}/s#^    \[ -n "\$items" \] || { note .*; exit 42; }$#    :#'
 
@@ -2592,7 +2595,13 @@ wreck_runner "a pass that finds nothing eligible and says something else is caug
 # and hands the command the item it took. #997, #371.
 #
 wreck_runner "a pass that takes an item another run here already has is caught" \
-  passown '/^pass() {/,/^}/s#^        this_host_holds "\$item" \&\& {.*continue; }$#        :#'
+  passown '/^pass() {/,/^}/s#^        already_underway_here "\$item" \&\& {.*continue; }$#        :#'
+
+wreck_runner "a claim nothing here works on, passed over for good, is caught" \
+  passstale '/^already_underway_here() {/,/^}/s#^    a_run_here_holds "\$1"$#    :#'
+
+wreck_runner "a pass that cannot open its work and leaves no stop is caught" \
+  passopen '/^open_the_work() {/,/^}/s#) >/dev/null || stop_at "\$1" open "\$?"#) >/dev/null || exit 1#'
 
 wreck_runner "a pass that acts with no command set is caught" \
   passnocmd '/^act_on_it() {/,/^}/s#^    \[ -n "\${FOUNDRY_PASS_COMMAND:-}" \] || { record_the_stop "\$1" no-command; exit 44; }$#    :#'
@@ -2605,6 +2614,15 @@ wreck_runner "a command that is not handed the item is caught" \
 
 wreck_runner "a command that is not handed its workspace is caught" \
   passplace '/^act_on_it() {/,/^}/s#FOUNDRY_PASS_WORKSPACE="\$tree" ##'
+
+wreck_runner "a command handed the name of who selected the run is caught" \
+  passunwho '/^act_on_it() {/,/^}/s#unset FOUNDRY_WHO \&\& ##'
+
+wreck_runner "a command that does not run as a worker is caught" \
+  passworker '/^act_on_it() {/,/^}/s#FOUNDRY_WORKER=\${FOUNDRY_WORKER:-pass} ##'
+
+wreck_runner "a claim bound late and marked kept is caught" \
+  bindmark '/^name_a_claim_taken_first() {/,/^}/s#^    remember_the_holder "\$1"$#    remember_the_holder "$1"; mark_kept "$1"#'
 
 #
 # **From a label to a request.** One break per rule: a failed bar stops it, a charter naming no judge

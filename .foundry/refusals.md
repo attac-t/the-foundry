@@ -358,6 +358,6 @@ where it is — a key for a one-off buys indirection and saves nothing.
 | `refuse_an_adapter_that_moved` | 40 | invariant | $1 authorises adapter [$pin] and [$ran] is what answered | `refusal` |
 | `say_nothing_here_can_find_it_again` | 41 | answer | so tell every later command which run: export FOUNDRY_RUN=$dir | `header` |
 | `pass` | 42 | answer | nothing is eligible, so this pass takes nothing | `header` |
-| `leave_a_run_in_progress_alone` | 43 | answer | a run here already holds [$holding], so this pass leaves it alone: $here | `header` |
+| `leave_a_run_in_progress_alone` | 43 | answer | a run is active here already, so this pass leaves it alone: $here | `header` |
 | `act_on_it` | 44 | answer | — | `header` |
 | `act_on_it` | 45 | answer | — | `header` |

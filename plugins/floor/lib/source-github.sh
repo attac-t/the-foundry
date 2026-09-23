@@ -588,7 +588,7 @@ read_claim() {
 # Reading the tip and then deleting it is two steps, and a renewal between them is deleted on a
 # reading that was true. `git push --delete` takes no expected value, so the window stays.
 drop_claim() {
-    at=$(claim_tip "$1")
+    at=$(claim_tip "$1") || return 3
     [ -n "$at" ] || return 0
 
     holder_at "$at" "$2" || return 4

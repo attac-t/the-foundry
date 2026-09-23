@@ -3596,7 +3596,11 @@ kept_by_who_put_it_on() {
 # this (#997), and what a pass does once its run has begun is the next piece of that work.
 #
 # **It never chooses.** The order is the rule's, and an item another host holds is passed over,
-# never taken. A run already in progress here is left alone, because one pass takes one item.
+# never taken. Any run already active here is left alone, because one pass takes one item.
+#
+# **Exclusive between hosts, not within one.** A claim from the same host renews, so two passes
+# started at once on one host could both take one item. One live pass per host is the trigger's
+# to keep, #997.
 pass() {
     [ "$#" -eq 0 ] || { usage; exit 2; }
     refuse_missing_source
@@ -3607,7 +3611,7 @@ pass() {
     [ -n "$items" ] || { note "nothing is eligible, so this pass takes nothing"; exit 42; }
 
     for item in $(printf '%s\n' "$items" | cut -f1); do
-        this_host_holds "$item" && { note "[$item] is this host's already, in another run, so this pass passes it over"; continue; }
+        already_underway_here "$item" && { note "[$item] is underway in a run here already, so this pass passes it over"; continue; }
 
         ( claim "$item" ) >/dev/null 2>&1; code=$?
         [ "$code" -eq 20 ] && { note "the work source could not be asked to claim [$item]"; exit 20; }
@@ -3627,19 +3631,31 @@ pass() {
 # names nobody, and a run nobody selected may never deliver — invariant 4.
 applier_of() { printf '%s\n' "$2" | awk -F'\t' -v item="$1" '$1 == item { print $3; exit }'; }
 
-# To `claim`, this host's own claim is a renewal and succeeds. To a pass it is work another run here
-# already has, and taking it again would start that work twice.
-this_host_holds() {
+#
+# **An item this host claimed is underway only while a run here holds it.** To `claim`, this host's
+# own claim is a renewal. To a pass it is work already started, unless no run holds the item: then the
+# claim outlived a pass that died before binding it, and this pass takes it again. #884's judge.
+already_underway_here() {
     record=$(source_says held "$1") || return 1
-    [ "$(claim_holder "$record")" = "$(recording_host)" ]
+    [ "$(claim_holder "$record")" = "$(recording_host)" ] || return 1
+
+    a_run_here_holds "$1"
 }
 
+a_run_here_holds() {
+    for held_by in "$RUNS"/*/; do
+        [ "$(item_id "${held_by%/}" 2>/dev/null)" = "$1" ] && return 0
+    done
+    return 1
+}
+
+#
+# **Any run active here is left alone**, not only one that holds an item. Every verb a pass calls
+# resolves the active run first, so a pass beside another run did its work in that run. #884's judge.
 leave_a_run_in_progress_alone() {
     here=$(active_run 2>/dev/null) || return 0
-    holding=$(item_id "$here")
-    [ -n "$holding" ] || return 0
 
-    note "a run here already holds [$holding], so this pass leaves it alone: $here"
+    note "a run is active here already, so this pass leaves it alone: $here"
     exit 43
 }
 
@@ -3682,22 +3698,30 @@ approved_or_unjudged() { [ "$1" -eq 0 ] || [ "$1" -eq 8 ]; }
 #
 # The run's workspace: this checkout's own target, at the ref the host stood on. A target Foundry was
 # invoked in needs nobody's grant, so nothing here waits on a person.
+#
+# **A step that refuses is a stop, written in the run**, so the next pass can tell a refusal from a
+# death. Each step runs apart, and leaves by its own code. #884's judge.
 open_the_work() {
-    targets add "$(bootstrap_identity "$dir")" "$(bootstrap_ref "$dir")" >/dev/null
-    charter derive >/dev/null
-    open_workspace >/dev/null
-    tree=$(unit_work_tree "$dir" "$(this_repository)") || exit 16
+    ( targets add "$(bootstrap_identity "$dir")" "$(bootstrap_ref "$dir")" ) >/dev/null || stop_at "$1" open "$?"
+    ( charter derive ) >/dev/null || stop_at "$1" charter "$?"
+    ( open_workspace ) >/dev/null || stop_at "$1" workspace "$?"
+    tree=$(unit_work_tree "$dir" "$(this_repository)") || { record_the_stop "$1" workspace; exit 16; }
 }
 
+stop_at() { record_the_stop "$1" "$2"; exit "$3"; }
+
 #
-# **The host's command does the work, and floor names no harness.** It runs in the workspace and is
-# handed floor's own words: the item, the workspace and the item's text. The pass reads back only
-# floor's record, never what the command printed.
+# **The host's command does the work, and floor names no harness.** It runs in the workspace, as a
+# worker, handed the item, the workspace and a file holding the item's words. Not who selected the
+# run: that is stamped already, and a worker holding the name could act in that person's place.
+#
+# `FOUNDRY_WORKER` is the host's word for its worker, or `pass` when it names none. The pass reads
+# back the command's exit and floor's record, never what the command printed.
 act_on_it() {
     [ -n "${FOUNDRY_PASS_COMMAND:-}" ] || { record_the_stop "$1" no-command; exit 44; }
 
-    ( cd "$tree" && FOUNDRY_PASS_ITEM="$1" FOUNDRY_PASS_WORKSPACE="$tree" FOUNDRY_PASS_TEXT="$dir/item.md" \
-        sh -c "$FOUNDRY_PASS_COMMAND" ); code=$?
+    ( cd "$tree" && unset FOUNDRY_WHO && FOUNDRY_WORKER=${FOUNDRY_WORKER:-pass} FOUNDRY_PASS_ITEM="$1" \
+        FOUNDRY_PASS_WORKSPACE="$tree" FOUNDRY_PASS_ITEM_FILE="$dir/item.md" sh -c "$FOUNDRY_PASS_COMMAND" ); code=$?
     [ "$code" -eq 0 ] || { record_the_stop "$1" command-failed; exit 45; }
 
     emit "$dir" pass.acted item="$1"
@@ -6471,12 +6495,14 @@ read_work_item() {
 # **A claim taken before the run held its item is named here**, while the host that took it is the
 # one reading. Left to a keep, a run bound and then graded in a new container was refused its own
 # claim. #991's judge found it. The name is kept only when the source says this host holds it.
+#
+# **The name, and no mark.** A mark would stop the next keep reading the source, and a claim bound
+# late could then age out and be broken mid-work. The first keep reads it, and renews what is old.
 name_a_claim_taken_first() {
     held=$(source_says held "$2" 2>/dev/null) || return 0
     [ "$(claim_holder "$held")" = "$(recording_host)" ] || return 0
 
     remember_the_holder "$1"
-    mark_kept "$1"
 }
 
 #

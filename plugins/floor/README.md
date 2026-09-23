@@ -2006,22 +2006,34 @@ With one shared account, the name an event gives is the account's, not a person'
 record, not a control, until a worker has its own identity.
 
 **`run.sh pass` takes the first of them this host can claim, and begins its run.** An item another
-host holds is passed over and said, and so is one another run here already has. A run already in
-progress in this checkout is left alone, exit 43, because one pass takes one item. Nothing eligible
-is exit 42, with the reason.
+host holds is passed over and said, and so is one a run here already works on. Any run active in
+this checkout is left alone, exit 43, one holding no item included: every verb a pass calls reads
+the active run first. Nothing eligible is exit 42, with the reason.
+
+**Exclusive between hosts, not within one.** A claim from the same host renews, so two passes started
+at once on one host could both take one item. One live pass per host is the trigger's to keep, #997.
 
 **The host names the command that does the work, in `FOUNDRY_PASS_COMMAND`.** Floor names no
 harness. The pass opens the run's workspace on this checkout's own target, which needs nobody's
-grant, and runs the command there. It hands over three things and no others:
+grant, and runs the command there. A step that refuses is a stop the run records. It hands over three
+things and no others:
 
 | | |
 |---|---|
 | `FOUNDRY_PASS_ITEM` | the item it took |
 | `FOUNDRY_PASS_WORKSPACE` | the checkout to work in |
-| `FOUNDRY_PASS_TEXT` | the item's own words, as the run read them |
+| `FOUNDRY_PASS_ITEM_FILE` | a file holding the item's own words, as the run read them |
 
-It reads back only the run's record, never what the command printed. No command set is exit 44,
-and a command that fails is 45. Either way the run records why it stopped.
+**The command runs as a worker.** `FOUNDRY_WORKER` is the host's word for it, or `pass` when the host
+names none. Who selected the run is not handed over: it is stamped already, and a worker holding the
+name could act in that person's place.
+
+It reads back the command's exit and the run's record, never what the command printed. No command
+set is exit 44, and a command that fails is 45. Either way the run records why it stopped.
+
+**Nothing keeps the claim while the command runs.** The keep fires from floor's own verbs and from
+the harness hook. A command that runs past a third of `FOUNDRY_CLAIM_TTL` should run `run.sh claim`
+from its workspace, or another host's pass may take the item.
 
 **Then the bar, the judges, and the request.** The pass runs `gates`, then `judged` when the charter
 names a judge, then `deliver`. It stops at the first that does not pass, with that verb's own code,

@@ -4062,7 +4062,20 @@ a_run_keeps_the_name_it_claimed_under() {
      "$(cat "$(floor "$tmp/mvd3" path)/claim.holder" 2>/dev/null)" ""
   is "and is refused at the work" "$(code_of floor "$tmp/mvd3" gates)" "30"
 
-  rm -rf "$src/claims/74" "$src/claims/75" "$src/claims/76"
+  # **Bound late, and renewed at the next keep.** Binding names the claim and marks nothing, so the
+  # first keep reads the source and renews a claim past a third of its window. #884's judge.
+  printf 'Bound late\n' > "$src/items/77"
+  mkdir -p "$src/claims/77"
+  printf '2026-01-01T00:00:00Z\t%s\t%s\n' "$(uname -n)" "$(( $(date -u +%s) - 1500 ))" > "$src/claims/77/held"
+  make_repo "$tmp/mvd4" main && set_origin "$tmp/mvd4" 'https://gitlab.com/acme/mvd4.git' \
+    || { skip "a claim bound late — git could not make a repo here"; return; }
+  floor "$tmp/mvd4" new "Bound late" >/dev/null 2>&1
+  floor "$tmp/mvd4" source read 77 >/dev/null 2>&1
+  floor "$tmp/mvd4" claim >/dev/null 2>&1
+
+  has "a claim bound late is renewed at the next keep" "$(floor "$tmp/mvd4" observe)" "claim.renewed	item=77"
+
+  rm -rf "$src/claims/74" "$src/claims/75" "$src/claims/76" "$src/claims/77"
 }
 
 # A `uname` that answers `-n` with another name, the way a new container does, and passes the rest on.
@@ -4187,17 +4200,23 @@ a_pass_takes_the_first_item_nobody_holds() {
 
   # The command writes what it was handed and commits it through floor, the way a worker would. One
   # line each, because the item's words hold its number too, and one check once read them for both.
-  saw_it="printf '%s\\n' \"\$FOUNDRY_PASS_ITEM\" \"\$FOUNDRY_PASS_WORKSPACE\" > saw"
-  saw_it="$saw_it && cat \"\$FOUNDRY_PASS_TEXT\" >> saw && git add saw && sh '$runner' commit 'saw it'"
+  saw_it="printf '%s\\n' \"\$FOUNDRY_PASS_ITEM\" \"\$FOUNDRY_PASS_WORKSPACE\""
+  saw_it="$saw_it \"\${FOUNDRY_WHO:-nobody}\" \"\${FOUNDRY_WORKER:-none}\" > saw"
+  saw_it="$saw_it && cat \"\$FOUNDRY_PASS_ITEM_FILE\" >> saw && git add saw && sh '$runner' commit 'saw it'"
 
+  # The host names no worker here, and says so with an empty one rather than leaving it unset.
   is "a pass with no grant to deliver stops at the request" \
-     "$(FOUNDRY_PASS_COMMAND=$saw_it code_of floor "$tmp/pss2" pass)" "18"
+     "$(FOUNDRY_WORKER='' FOUNDRY_PASS_COMMAND=$saw_it code_of floor "$tmp/pss2" pass)" "18"
 
   said_back=$(cat "$(floor "$tmp/pss2" path)"/units/01/workspace/*/saw)
   is  "the command ran in the workspace, handed the item it took" \
       "$(printf '%s\n' "$said_back" | sed -n 1p)" "93"
   has "and the workspace it runs in" \
       "$(printf '%s\n' "$said_back" | sed -n 2p)" "/units/01/workspace/"
+  is  "and not who selected the run, which is stamped already" \
+      "$(printf '%s\n' "$said_back" | sed -n 3p)" "nobody"
+  is  "and it runs as a worker, named pass when the host names none" \
+      "$(printf '%s\n' "$said_back" | sed -n 4p)" "pass"
   has "and the item's own words" "$said_back" "Pass item 93"
   has "and the run records that it acted" "$(floor "$tmp/pss2" observe)" "pass.acted"
   has "and why it stopped"                "$(floor "$tmp/pss2" observe)" "why=deliver"
@@ -4286,22 +4305,123 @@ two_hosts_pass_at_once() {
 two_hosts_pass_at_once
 
 #
-# **Floor never puts the eligibility mark on.** A worker that could label its own issue would choose
-# its own work, so no shipped line writes a label, and a planted one is found. The one-pass charter.
+# **A pass works only in the run it begins.** Every verb it calls resolves the active run first, and
+# `FOUNDRY_RUN` wins over the checkout. Beside a run holding no item, a pass did its work there: it
+# opened that run's workspace, ran the command in it, and wrote its stops into it. #884's judge.
 #
-# It knows `gh`'s own flags, a write to an issue's labels through the API, and the directory
-# adapter's label files. A route it does not know, it cannot see.
+a_pass_leaves_any_active_run_alone() {
+  make_repo "$tmp/pin" main && set_origin "$tmp/pin" 'https://gitlab.com/acme/pin.git' \
+    && make_repo "$tmp/pin2" main && set_origin "$tmp/pin2" 'https://gitlab.com/acme/pin.git' \
+    || { skip "a pass beside another run — git could not make a repo here"; return; }
+
+  printf 'Pinned item\n' > "$src/items/90"
+  printf 'pin\t2026-09-09T00:00:00Z\tpat\n' > "$src/labels/90"
+  bar_and_rule "$tmp/pin" 'eligible pin pat'
+  bar_and_rule "$tmp/pin2" 'eligible pin pat'
+
+  other=$(floor "$tmp/pin" new "A person's run")
+  lines=$(floor_as "$tmp/pin" "$home" "$other" observe | grep -c .)
+
+  is "a pass beside the run FOUNDRY_RUN names leaves it alone" \
+     "$(code_of floor_as "$tmp/pin2" "$home" "$other" pass)" "43"
+  is "and writes nothing into it" "$(floor_as "$tmp/pin" "$home" "$other" observe | grep -c .)" "$lines"
+  is "and claims nothing" "$(ls "$src/claims/90" 2>/dev/null | grep -c .)" "0"
+
+  # The checkout's own pointer names that run, and no variable is set.
+  is "a pass beside the run this checkout points at leaves it alone" \
+     "$(code_of floor "$tmp/pin" pass)" "43"
+
+  rm -rf "$src/claims/90" "$src/labels/90" "$src/items/90"
+}
+a_pass_leaves_any_active_run_alone
+
+#
+# **A claim nothing here works on is taken again.** A pass that died between its claim and its run
+# left this host's name on an item no run holds. Passed over for good, it would need a person to
+# free it. #884's judge.
+#
+a_pass_takes_back_a_claim_no_run_holds() {
+  make_repo "$tmp/stale-claim" main && set_origin "$tmp/stale-claim" 'https://gitlab.com/acme/stale.git' \
+    || { skip "a claim no run holds — git could not make a repo here"; return; }
+
+  printf 'Stale item\n' > "$src/items/89"
+  printf 'stale\t2026-09-10T00:00:00Z\tpat\n' > "$src/labels/89"
+  mkdir -p "$src/claims/89"
+  printf '%s\t%s\t%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$(uname -n)" "$(date -u +%s)" > "$src/claims/89/held"
+  bar_and_rule "$tmp/stale-claim" 'eligible stale pat'
+
+  is  "a claim of this host's that no run holds is taken again" \
+      "$(code_of floor "$tmp/stale-claim" pass)" "44"
+  has "and a run holds the item now" "$(floor "$tmp/stale-claim" observe)" "item=89"
+
+  rm -rf "$src/claims/89" "$src/labels/89" "$src/items/89"
+}
+a_pass_takes_back_a_claim_no_run_holds
+
+#
+# **A step that refuses is a stop in the run.** With no origin the target cannot be named, so the pass
+# cannot open its work. It used to leave with no line, and a refusal read the same as a death.
+#
+a_refused_step_is_a_stop() {
+  make_repo "$tmp/noorigin" main || { skip "a refused step — git could not make a repo here"; return; }
+
+  printf 'Unopened item\n' > "$src/items/88"
+  printf 'unopened\t2026-09-11T00:00:00Z\tpat\n' > "$src/labels/88"
+  bar_and_rule "$tmp/noorigin" 'eligible unopened pat'
+
+  differs "a pass that cannot open its work stops" "$(code_of floor "$tmp/noorigin" pass)" "0"
+  has "and the run says where" "$(floor "$tmp/noorigin" observe)" "why=open"
+
+  rm -rf "$src/claims/88" "$src/labels/88" "$src/items/88"
+}
+a_refused_step_is_a_stop
+
+#
+# **Floor never puts the eligibility mark on.** A worker that could label its own issue would choose
+# its own work. So every kind of `gh` call floor ships is named here, and so is every line that
+# touches the directory adapter's labels. **An allowlist**, because a list of known writes misses the
+# next one: a new call or a new line goes red until a person names it. #884's judge.
+#
+GH_CALLS_FLOOR_MAKES='gh api
+gh api user
+gh auth status
+gh issue comment
+gh issue list
+gh issue view
+gh pr create
+gh pr list
+gh pr merge
+gh pr view
+gh repo view'
+
+LABEL_LINES_FLOOR_HOLDS='[ -d "$root/labels" ] || return 0
+for file in "$root"/labels/*; do
+said=$(gh issue view "$1" --json labels --jq '"'"'.labels[].name'"'"' 2>&1) || {'
+
 floor_never_puts_the_mark_on() {
-  is "no shipped line puts a label on" "$(label_writes_in "$(dirname "$runner")/..")" ""
+  is "every kind of gh call floor ships is named here" \
+     "$(gh_calls_in "$(dirname "$runner")/..")" "$GH_CALLS_FLOOR_MAKES"
+  is "and no gh api call writes" "$(gh_api_writes_in "$(dirname "$runner")/..")" ""
+  is "and every line touching the labels is named here" \
+     "$(label_lines_in "$(dirname "$runner")/..")" "$LABEL_LINES_FLOOR_HOLDS"
 
   plant_in "$tmp/planted-label" 'gh issue edit "$1" --add-label "$2"' \
     || { skip "a planted label write — could not copy floor"; return; }
-  has "and a planted one is found" "$(label_writes_in "$tmp/planted-label")" "add-label"
+  has "and a planted call is found" "$(gh_calls_in "$tmp/planted-label")" "gh issue edit"
 }
 
-label_writes_in() {
-  grep -rnE -- '--(add|remove)-label|gh label (create|edit|clone|delete)|/labels.*( -[fF] | --field | --raw-field | --input | -X | --method )|>>? *"?\$root/labels' \
-    "$1/bin" "$1/lib" "$1/hooks" 2>/dev/null
+gh_calls_in() {
+  calls_of "$1" gh | grep -oE 'gh[[:space:]]+[a-z-]+([[:space:]]+[a-z-]+)?' \
+    | sed -E 's/[[:space:]]+/ /g' | LC_ALL=C sort -u
+}
+
+gh_api_writes_in() {
+  calls_of "$1" gh | grep -E 'gh[[:space:]]+api' | grep -E -- '(-X|--method|-f|-F|--field|--raw-field|--input)([[:space:]]|=)'
+}
+
+label_lines_in() {
+  grep -rh 'labels' "$1/bin" "$1/lib" "$1/hooks" 2>/dev/null | grep -vE '^[[:space:]]*#' \
+    | sed -E 's/^[[:space:]]+//' | LC_ALL=C sort
 }
 
 # Floor's shipped code, copied, with one line added to its runner.
@@ -4310,25 +4430,34 @@ plant_in() {
     "$(dirname "$runner")/../hooks" "$1/" 2>/dev/null || return 1
   printf '    %s\n' "$2" >> "$1/bin/run.sh"
 }
+
+#
+# A command in call position: first on its line, after a separator or a word that runs one, inside
+# `$(`, behind a path or a quote. Comments go, and a name inside a line a person reads is not a call.
+CALL_POSITION='(^[[:space:]]*|[;&|({][[:space:]]*|\$\([[:space:]]*|(if|while|until|then|do|else|exec|command|env|nohup|nice|time|xargs|!)[[:space:]]+|timeout[[:space:]]+[0-9]+[a-z]?[[:space:]]+)"?([^[:space:];&|()"]*/)?'
+
+calls_of() {
+  grep -rnE "$CALL_POSITION($2)\"?([[:space:]]|\$)" "$1/bin" "$1/lib" "$1/hooks" 2>/dev/null \
+    | grep -vE '^[^:]*:[0-9]+:[[:space:]]*#'
+}
 floor_never_puts_the_mark_on
 
 #
 # **Core runs no harness.** A pass runs the command the host names, so nothing in floor may call the
-# program behind it. A name a person is told to type is not a call. The one-pass charter.
+# program behind it. The one-pass charter.
 #
+# It knows harnesses by name, in any position a shell gives a command. **A harness it does not name,
+# it cannot see**, so the list is the limit of the proof, and a new name belongs in it.
 floor_runs_no_harness() {
   is "no shipped line runs a harness" "$(harness_calls_in "$(dirname "$runner")/..")" ""
 
-  plant_in "$tmp/planted-harness" 'claude -p "$brief"' \
+  plant_in "$tmp/planted-harness" 'if "$HOME/.local/bin/claude" -p "$brief"; then :; fi' \
     || { skip "a planted harness call — could not copy floor"; return; }
-  has "and a planted one is found" "$(harness_calls_in "$tmp/planted-harness")" 'claude -p'
+  has "and a planted one is found, behind a path and an if" \
+      "$(harness_calls_in "$tmp/planted-harness")" 'bin/claude'
 }
 
-# A command in call position: first on its line, after a separator, or inside `$(`. Comments go.
-harness_calls_in() {
-  grep -rnE '(^[[:space:]]*|[;&|][[:space:]]*|\$\([[:space:]]*|(exec|command|nohup|env)[[:space:]]+)(claude|codex|gemini|aider)([[:space:]]|$)' \
-    "$1/bin" "$1/lib" "$1/hooks" 2>/dev/null | grep -vE '^[^:]*:[0-9]+:[[:space:]]*#'
-}
+harness_calls_in() { calls_of "$1" 'claude|codex|gemini|aider|cursor-agent|opencode|goose|qwen|copilot'; }
 floor_runs_no_harness
 
 #
