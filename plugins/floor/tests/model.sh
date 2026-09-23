@@ -4185,42 +4185,6 @@ label_lines_in() {
 the_directory_adapter_only_reads_its_labels
 
 #
-# **An item a request is open for is not offered.** Its claim aged out while the request waited on
-# review, and a second host took the item again. The source says which item each request answers.
-# #1025.
-#
-an_open_request_keeps_its_item() {
-  make_repo "$tmp/req" main && set_origin "$tmp/req" 'https://gitlab.com/acme/req.git' \
-    || { skip "an open request — git could not make a repo here"; return; }
-
-  for n in 64 65; do printf 'Requested item %s\n' "$n" > "$src/items/$n"; done
-  printf 'req\t2026-09-16T00:00:00Z\tpat\n' > "$src/labels/64"
-  printf 'req\t2026-09-17T00:00:00Z\tpat\n' > "$src/labels/65"
-  mkdir -p "$src/deliveries"
-  printf 'work/req-64\t64\tRequested item 64\n' > "$src/deliveries/a-request-for-64"
-  bar_and_rule "$tmp/req" 'offer req pat'
-
-  is  "an item a request is open for is not offered" "$(floor "$tmp/req" offer | cut -f1 | tr '\n' ' ')" "65 "
-  has "and it says why" "$(floor_says "$tmp/req" offer)" "[64] is not offered: a request for it is open"
-
-  # The claim this host took for 64 has aged past the window, so another host could break it.
-  mkdir -p "$src/claims/64"
-  printf '2026-01-01T00:00:00Z\t%s\t%s\n' "$(uname -n)" "$(( $(date -u +%s) - 7200 ))" > "$src/claims/64/held"
-  a_host_named RequestHost "$tmp/reqbin" || { skip "an open request — could not put a uname on the path"; return; }
-
-  is  "a second host's pass, with the claim aged out, takes the next item" \
-      "$(PATH="$tmp/reqbin:$PATH" code_of floor "$tmp/req" pass)" "44"
-  has "the one no request is open for" "$(floor "$tmp/req" observe)" "item=65"
-
-  rm -f "$src/deliveries/a-request-for-64"
-  is "once the request is gone, the item is offered again" \
-     "$(floor "$tmp/req" offer | cut -f1 | tr '\n' ' ')" "64 65 "
-
-  rm -rf "$src/claims/64" "$src/claims/65" "$src/labels/64" "$src/labels/65" "$src/items/64" "$src/items/65"
-}
-an_open_request_keeps_its_item
-
-#
 # **A pass takes the first item offered that nobody holds, and carries it to a request.** It never
 # chooses: the order is the rule's, and an item another host holds is passed over. #884 asked that
 # whatever picks an item claims it before anything else happens.
@@ -4506,6 +4470,42 @@ a_blank_item_is_still_an_item() {
   rm -rf "$src/claims/79" "$src/labels/79" "$src/items/79"
 }
 a_blank_item_is_still_an_item
+
+#
+# **An item a request is open for is not offered.** Its claim aged out while the request waited on
+# review, and a second host took the item again. The source says which item each request answers.
+# #1025.
+#
+an_open_request_keeps_its_item() {
+  make_repo "$tmp/req" main && set_origin "$tmp/req" 'https://gitlab.com/acme/req.git' \
+    || { skip "an open request — git could not make a repo here"; return; }
+
+  for n in 64 65; do printf 'Requested item %s\n' "$n" > "$src/items/$n"; done
+  printf 'req\t2026-09-16T00:00:00Z\tpat\n' > "$src/labels/64"
+  printf 'req\t2026-09-17T00:00:00Z\tpat\n' > "$src/labels/65"
+  mkdir -p "$src/deliveries"
+  printf 'work/req-64\t64\tRequested item 64\n' > "$src/deliveries/a-request-for-64"
+  bar_and_rule "$tmp/req" 'offer req pat'
+
+  is  "an item a request is open for is not offered" "$(floor "$tmp/req" offer | cut -f1 | tr '\n' ' ')" "65 "
+  has "and it says why" "$(floor_says "$tmp/req" offer)" "[64] is not offered: a request for it is open"
+
+  # The claim this host took for 64 has aged past the window, so another host could break it.
+  mkdir -p "$src/claims/64"
+  printf '2026-01-01T00:00:00Z\t%s\t%s\n' "$(uname -n)" "$(( $(date -u +%s) - 7200 ))" > "$src/claims/64/held"
+  a_host_named RequestHost "$tmp/reqbin" || { skip "an open request — could not put a uname on the path"; return; }
+
+  is  "a second host's pass, with the claim aged out, takes the next item" \
+      "$(PATH="$tmp/reqbin:$PATH" code_of floor "$tmp/req" pass)" "44"
+  has "the one no request is open for" "$(floor "$tmp/req" observe)" "item=65"
+
+  rm -f "$src/deliveries/a-request-for-64"
+  is "once the request is gone, the item is offered again" \
+     "$(floor "$tmp/req" offer | cut -f1 | tr '\n' ' ')" "64 65 "
+
+  rm -rf "$src/claims/64" "$src/claims/65" "$src/labels/64" "$src/labels/65" "$src/items/64" "$src/items/65"
+}
+an_open_request_keeps_its_item
 
 #
 # **A pass leaves by the code of the step that refused.** Four exits had no case: a source that cannot
