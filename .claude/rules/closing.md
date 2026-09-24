@@ -33,12 +33,16 @@ carried `Closes`. The issue closed, the hook spoke, and the only repair was to r
 **So tick the list on the issue before the request merges.** A box that will not tick is a box that
 keeps the issue open, and then the request says `Refs` rather than `Closes`.
 
-**`.claude/hooks/closes.sh` now refuses that merge.** It reads the request body before `gh pr merge`
-runs, counts the open boxes on every issue the body would close, and denies while any stands. It
-names the issue, the count, and the line it matched.
+**`.claude/hooks/closes.sh` now refuses that merge.** Before `gh pr merge` runs, it reads the
+request's body, its title and every commit message. It counts the open boxes on every issue they
+would close, and denies while any stands. It names the issue, the count, and the line it matched.
 
-**The keyword is nine words, in any case, anywhere in the body.** `close`, `closes`, `closed`,
-`fix`, `fixes`, `fixed`, `resolve`, `resolves`, `resolved`.
+**The keyword is nine words, in any case, anywhere in any of the three.** `close`, `closes`,
+`closed`, `fix`, `fixes`, `fixed`, `resolve`, `resolves`, `resolved`.
+
+**A commit closes an issue when it reaches `main`, whatever the body says.** On 24 September #1021
+closed from its own fix, whose message ended `Closes #1021`, under a body saying `Refs`. The title
+rides in the merge commit the same way.
 
 On 15 September a body ending `Refs #711, #738` closed #711 with one box open. **What fired was
 prose** — *this closes #711's last box and nothing else* — and the close event carries no commit, so
@@ -52,7 +56,8 @@ merges, and a person closes the issue by hand against the merge tree.
 what a gate read.
 
 **The hook is lint.** The worker holds the same account and can edit it, so it closes the easy path
-and nothing more. `ticks.sh` still reports after the merge, and that remains the audit.
+and nothing more. `ticks.sh` still reports after the merge, and that remains the audit. **It hears
+one closing word of nine, in the body alone**, and #1033 owns that.
 
 ## A box that cannot be met yet
 

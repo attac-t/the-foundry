@@ -31,14 +31,23 @@ call() { printf '{"tool_name":"Bash","tool_input":{"command":"%s"}}' "$1" > "$tm
 
 #
 # A stand-in for the forge, so this suite never asks the real one. It answers two questions and
-# tells them apart by the noun: a request body carries what it closes, an issue body carries boxes.
+# tells them apart by the noun: a request carries what it closes, an issue body carries boxes.
+#
+# A request's title and commits come back only when `--json` names them, in the lines the hook's
+# `--jq` makes. **So a hook that stops asking goes red.** The `--jq` itself is measured live.
 stub_gh() {
   printf "%s" "$1" > "$tmp/pr.body"
   printf "%s" "$2" > "$tmp/issue.body"
+  printf "%s" "${3:-}" > "$tmp/pr.commits"
+  printf "%s" "${4:-}" > "$tmp/pr.title"
   {
     printf '#!/bin/sh\n'
+    printf 'fields=; prior=\n'
+    printf 'for arg in "$@"; do [ "$prior" = --json ] && fields=$arg; prior=$arg; done\n'
     printf 'case "$1 $2" in\n'
-    printf '  "pr view")    cat %s ;;\n' "$tmp/pr.body"
+    printf '  "pr view")    cat %s; echo\n' "$tmp/pr.body"
+    printf '    case ",$fields," in *,title,*) cat %s; echo ;; esac\n' "$tmp/pr.title"
+    printf '    case ",$fields," in *,commits,*) cat %s; echo ;; esac ;;\n' "$tmp/pr.commits"
     printf '  "issue view") [ "$3" = 711 ] && cat %s ;;\n' "$tmp/issue.body"
     printf 'esac\nexit 0\n'
   } > "$tmp/bin/gh"
@@ -139,6 +148,62 @@ esac
 case $(asked) in
   *'closes #999'*) bad "it does not quote another issue's line — it did" ;;
   *)               ok "it does not quote another issue's line" ;;
+esac
+
+# --- a commit closes an issue too, and so does the title ---
+#
+# On 24 September #1021 closed from commit `04cf28b`, whose message ended `Closes #1021`, under a
+# body saying `Refs`. **GitHub closes from a commit when it reaches `main`.** The title rides in the
+# merge commit, so it closes the same way.
+
+stub_gh 'Refs #711' '- [ ] one thing' 'commit 04cf28b: one still fails. Closes #711.'
+
+call "$(verb pr merge) 740 --merge"
+case $(asked) in
+  *'"permissionDecision":"deny"'*) ok "a commit message is read the way the forge reads it" ;;
+  *)                               bad "a commit message is read the way the forge reads it — it was not" ;;
+esac
+
+case $(asked) in
+  *'[commit 04cf28b: one still fails. Closes #711.]'*) ok "it names the commit whose line closes it" ;;
+  *)                                                   bad "it names the commit whose line closes it — it did not" ;;
+esac
+
+stub_gh 'Refs #711' '- [x] one thing' 'commit 04cf28b: Closes #711.'
+
+call "$(verb pr merge) 740 --merge"
+case $(asked) in
+  *deny*) bad "a commit closing a fully ticked issue merges — it was denied" ;;
+  *)      ok "a commit closing a fully ticked issue merges" ;;
+esac
+
+stub_gh 'Refs #711' '- [ ] one thing' '' 'merge commit: fix #711 in one line'
+
+call "$(verb pr merge) 740 --merge"
+case $(asked) in
+  *'"permissionDecision":"deny"'*) ok "a title is read, because the merge commit carries it" ;;
+  *)                               bad "a title is read, because the merge commit carries it — it was not" ;;
+esac
+
+# --- the line it quotes never breaks the refusal ---
+#
+# A commit quotes freely, and a refusal that does not parse refuses nothing. A request edited on
+# the web comes back with carriage returns.
+
+stub_gh 'Refs #711' '- [ ] one thing' 'commit 04cf28b: the "last" box, in a\b. Closes #711.'
+
+call "$(verb pr merge) 740 --merge"
+case $(asked) in
+  *'[commit 04cf28b: the last box, in ab. Closes #711.]'*) ok "a quote and a backslash never reach the JSON" ;;
+  *)                                                      bad "a quote and a backslash never reach the JSON — one did" ;;
+esac
+
+stub_gh $'Closes #711\t\r' '- [ ] one thing'
+
+call "$(verb pr merge) 740 --merge"
+case $(asked) in
+  *'[Closes #711]'*) ok "a tab and a carriage return never reach the JSON" ;;
+  *)                 bad "a tab and a carriage return never reach the JSON — one did" ;;
 esac
 
 # --- every box ticked, so the merge may close it ---

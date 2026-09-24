@@ -3,7 +3,7 @@
 # Deny a merge that would close an issue while one of its boxes is still open.
 #
 # Reads a `PreToolUse` tool call as JSON on stdin. Denies a `Bash` command running `gh pr merge` on a
-# request whose body would close an issue with an unticked box.
+# request whose body, title or commits would close an issue with an unticked box.
 #
 # **Merge and completion are two transitions, and only one of them is checked.** `ticks.sh` reports
 # after the merge, which is after the lie is on the page. This is the half that comes first.
@@ -23,9 +23,9 @@
 
 set -u
 
-# What the body would close, and the body itself. Filled by the walk, read by the refusal.
+# What the request would close, and what the forge reads. Filled by the walk, read by the refusal.
 shut=
-body=
+said=
 
 main() {
     call=$(cat)
@@ -57,15 +57,15 @@ number_in() {
         | sed -n 's/.*gh pr merge[[:space:]]\{1,\}\([0-9]\{1,\}\).*/\1/p' | head -1
 }
 
-# **Anywhere in the body, in any case, and all nine words.** That is what the forge does, so a check
-# reading only the last line agrees with the author's intent and not with the machine.
+# **Anywhere the forge reads, in any case, and all nine words.** That is what the forge does, so a
+# check reading only the last line agrees with the author's intent and not with the machine.
 #
 # `Refs` is not closure and is left alone.
 read_what_it_would_close() {
-    body=$(gh pr view "$1" --json body --jq .body 2>/dev/null) || return 0
+    said=$(what_the_forge_reads "$1") || return 0
 
     # Lowered once, so each pattern says the word rather than spelling both cases of every letter.
-    lowered=$(printf '%s' "$body" | tr 'A-Z' 'a-z')
+    lowered=$(printf '%s' "$said" | tr 'A-Z' 'a-z')
 
     shut=$(
         numbers_after 'close[sd]*'        "$lowered"
@@ -74,6 +74,16 @@ read_what_it_would_close() {
     )
     shut=$(printf '%s\n' $shut | sort -u)
 
+}
+
+# **The body, the title and each commit message.** GitHub closes from all three: a commit when it
+# reaches `main`, and the title inside the merge commit. #1021 closed from a commit under `Refs`.
+#
+# Each line of a commit carries its hash, so a refusal names the commit that closes.
+what_the_forge_reads() {
+    gh pr view "$1" --json body,title,commits --jq '.body, ("merge commit: " + .title),
+        (.commits[] | .oid[0:7] as $c | (.messageHeadline, (.messageBody | split("\n")[]))
+            | "commit \($c): \(.)")' 2>/dev/null
 }
 
 numbers_after() {
@@ -90,10 +100,10 @@ refuse_while_a_box_is_open() {
     done
 }
 
-# **The line for this issue, never the first in the body.** A body closing two issues quoted the
+# **The line for this issue, never the first one read.** A body closing two issues quoted the
 # wrong one, and the author read a sentence they had not written.
 line_closing() {
-    printf '%s' "$body" | grep -i -m1 -E "(close[sd]*|fix[esd]*|resolve[sd]*) *#$1"
+    printf '%s' "$said" | grep -i -m1 -E "(close[sd]*|fix[esd]*|resolve[sd]*) *#$1"
 }
 
 open_boxes_on() {
@@ -102,9 +112,15 @@ open_boxes_on() {
 
 deny() {
     printf '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny",'
-    printf '"permissionDecisionReason":"%s"}}\n' "$1"
+    printf '"permissionDecisionReason":"%s"}}\n' "$(safe_in_json "$1")"
 
     exit 0
+}
+
+# A commit quotes freely, and a refusal that does not parse refuses nothing. So a quote, a
+# backslash, a tab and a carriage return are dropped, as `ticks.sh` drops them. `sh` has no parser.
+safe_in_json() {
+    printf '%s' "$1" | tr -d '"\\\r\t'
 }
 
 allow() { exit 0; }
