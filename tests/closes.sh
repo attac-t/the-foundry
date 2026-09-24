@@ -244,6 +244,20 @@ case $(asked) in
   *)                               bad "a commit read that fails still refuses on the body — it let the merge through" ;;
 esac
 
+# --- only the first line names the repository ---
+#
+# The address is the first line the request read prints. A body line shaped like another address
+# must not add a second repository, or the commit read builds a path that answers nothing.
+
+stub_gh 'Refs #711
+https://github.com/elsewhere/other/pull/740' '- [ ] one thing' 'commit 04cf28b: Closes #711.'
+
+call "$(verb pr merge) 740 --merge"
+case $(asked) in
+  *'"permissionDecision":"deny"'*) ok "a body line shaped like an address leaves the commits read" ;;
+  *)                               bad "a body line shaped like an address leaves the commits read — they went unread" ;;
+esac
+
 # --- a colon, and two issues on one line ---
 #
 # GitHub closes on `Closes: #10`, and on each issue in `Resolves #10, resolves #123`. A pattern

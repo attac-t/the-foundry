@@ -75,7 +75,7 @@ read_what_it_would_close() {
     shut=$(numbers_closed_in "$lowered" | sort -u)
 }
 
-# **The body and every commit message, whole.** GitHub closes from the body, and from a commit when
+# **The body and each commit message, whole.** GitHub closes from the body, and from a commit when
 # it reaches `main`. #1021 closed from a commit while the body said `Refs`.
 #
 # The title is read by choice. It rides in the merge commit, and whether that closes is unmeasured.
