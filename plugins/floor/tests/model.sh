@@ -4462,6 +4462,7 @@ a_pass_leaves_any_active_run_alone
 # **A pass at work says so, and a second pass hears it.** The claim renews for any pass holding the
 # run's name, so on one host it reads the same for a live pass and a dead one. Piece 5's judge.
 a_pass_at_work_is_left_to_work() {
+  mkdir -p "$src/items" "$src/labels" "$src/claims"
   make_repo "$tmp/alive" main && set_origin "$tmp/alive" 'https://gitlab.com/acme/alive.git' \
     || { skip "a pass at work — git could not make a repo here"; return; }
 
