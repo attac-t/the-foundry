@@ -3687,6 +3687,42 @@ wreck_runner "a read that never records the item's digest is caught" \
 
 wreck_runner "a brief that reads the source again is caught" \
   itemreread '/^fenced_as_data()/,/^}/ s@^    cat "\$1"$@    source_says read "$(item_id "${1%/item.md}")"@'
+#
+# **The request names its record.** #736's box 16. Each break removes one of the four, or the
+# handover itself, and the case reads what the adapter kept.
+#
+wreck_runner "a delivery that composes no body is caught" \
+  bodyunmade 's@^    compose_the_body "\$1" "\$4"@    :@'
+
+wreck_runner "a second delivery that rewrites the body it never sends is caught" \
+  bodyrewritten 's@^    delivered_already "\$1" >/dev/null && return 0@    :@'
+
+wreck_runner "a body naming the head as it stands after the push is caught" \
+  bodyfreshhead 's@^    compose_the_body "\$1" "\$4"@    compose_the_body "$1" "$(unit_head "$1" "$2")"@'
+
+wreck_runner "a second delivery that moves the head in silence is caught" \
+  saymoved 's@^    say_a_moved_head "\$1" "\$4"@    :@'
+
+wreck_runner "a body composed and never handed to the adapter is caught" \
+  bodyunsent 's@"\$(body_if_composed "\$1")"@"$(brief_file "$1")"@'
+
+wreck_runner "a request that does not name its commit is caught" \
+  bodynocommit 's@^    printf -- .- commit .*@    :@'
+
+wreck_runner "a request that does not name its charter is caught" \
+  bodynocharter 's@^    printf -- .- charter .*@    :@'
+
+wreck_runner "a request that names no clause is caught" \
+  bodynorows 's@^each_clause_and_what_met_it() {@each_clause_and_what_met_it() { return 0;@'
+
+wreck_runner "a judged clause named without its panel is caught" \
+  bodypanel 's@^    \[ "\$met_by" = panel \] && .*@    :@'
+
+wreck_runner "a body that ignores its setting is caught" \
+  bodysetting 's@^    \[ "\$(body_form_at_base "\$1")" = brief \] && .*@    :@'
+
+wreck_runner "a setting nobody can read that is kept silent is caught" \
+  bodytypo 's@^    note "the practice says \[body \$form\].*@    :@'
 
 report_breaks
 

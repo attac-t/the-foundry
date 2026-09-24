@@ -263,7 +263,8 @@ ${FOUNDRY_HOME:-$HOME/.foundry}/runs/<date>-<slug>-<short id>/
 ├── evidence           one line per gate that ran, tab-separated
 ├── charter            the bar — one clause, one pin and one command per line
 ├── delivery           the branch this run pushed, the commit it pushed, and where it landed
-├── brief              the body a source carried — absent when `deliver` was handed none
+├── brief              what `deliver` was handed — absent when it was handed none
+├── body               the brief, then what floor recorded: run, commit, charter, what met each clause
 ├── substitutions      files graded as the base wrote them — absent when the run changed no gate
 ├── judged/            what `judged` asked each judge, and what came back — one pair per clause
 ├── observations       what happened, one line each, and nothing granted by any of it
@@ -798,6 +799,26 @@ The grant is keyed by the item, so it cannot outlive the item it was given for.
 **Floor still reads no part of the item.** It never sees the list, never counts a box, and cannot
 tell a met one from an unmet one. A person reads it and types one line — the same shape as
 `targets add`, and for the same reason.
+
+---
+### A delivery names its record
+
+**The body is the brief, then what floor recorded.** The record is the run, the commit the push
+sent, and the charter by the digest every handoff stamps. Then it says what met each clause there.
+**`deliver` reads the head once.** The ancestry check, the grade, the push and the record all take
+that one commit. A commit landing meanwhile, even from a `pre-push` hook, reaches none of them.
+`deliver` refuses an unmet clause before it pushes, so every clause the record lists was met.
+Each is named by whom the grader accepted: every judge its panel names, or the kind of row it
+trusts. The record reads no row itself, so it cannot name one the grader skipped. The brief above
+it is its author's words, and may say anything. The adapter adds its marker last. Decided on #736.
+
+**A second `deliver` on the same branch pushes the new head, and the request keeps its first
+body.** One run, one delivery: the request is not rewritten, and the run keeps the body it sent.
+So the request then names the older commit, and `deliver` says so, naming both.
+
+**The body is a setting.** `body brief` in `.foundry/practice` sends the brief alone, and `body
+record`, or no line, sends the record too. It is read at the run's base, so no worker sets it. A
+word that is neither is named, and the record is kept.
 
 ---
 ### A kind is the source's word, not Foundry's
