@@ -9172,12 +9172,59 @@ a_second_delivery_keeps_the_body_it_sent() {
   floor "$tmp/resent" commit 'chore: a second change' >/dev/null 2>&1
   floor "$tmp/resent" gates >/dev/null 2>&1
 
-  is  "a second delivery answers"            "$(code_of floor "$tmp/resent" deliver 'a change')" "0"
-  is  "and pushes the new head"              "$(git -C "$tmp/resent-remote.git" rev-parse "foundry/$(basename "$d")" 2>/dev/null)" "$(git -C "$co" rev-parse HEAD)"
+  second=$(git -C "$co" rev-parse HEAD)
+  said=$(floor_says "$tmp/resent" deliver 'a change'; printf 'exit=%s' "$?")
+
+  has "a second delivery answers"            "$said" "exit=0"
+  has "and says the request names the first" "$said" "the request names [$first]"
+  has "and that it pushed the second"        "$said" "this pushed [$second]"
+  is  "and pushes the new head"              "$(git -C "$tmp/resent-remote.git" rev-parse "foundry/$(basename "$d")" 2>/dev/null)" "$second"
   is  "while the run keeps the body it sent" "$(cat "$d/body" 2>/dev/null)" "$sent"
   has "which names the first commit"         "$sent" "- commit \`$first\`"
 }
 a_second_delivery_keeps_the_body_it_sent
+
+#
+# `deliver` read HEAD four times: to check ancestry, to grade, to push and to name. A commit landing
+# between them was pushed ungraded, or named by a body saying every clause was met there. A
+# `pre-push` hook that commits stands in that window, after git has fixed what it sends.
+a_delivery_names_the_commit_it_graded() {
+  git init -q --bare "$tmp/landed-remote.git" 2>/dev/null \
+    && make_repo "$tmp/landed" main && set_origin "$tmp/landed" 'https://github.com/acme/landed.git' \
+    && mkdir -p "$tmp/landed/.foundry" \
+    && commit_file "$tmp/landed" .foundry/gates 'tests  true
+' || { skip "a commit landing mid-delivery — git could not make a repo here"; return; }
+
+  d=$(floor_new_as "$tmp/landed" ada@example.com "Landed")
+  for step in "charter derive" "policy authorize https://github.com/acme/landed.git" \
+      "policy deliver-to https://github.com/acme/landed.git" "targets add https://github.com/acme/landed.git main" \
+      open gates; do
+    floor "$tmp/landed" $step >/dev/null 2>&1
+  done
+  co=$(only_slot "$(floor "$tmp/landed" path)/units/01/workspace")
+  git -C "$co" config "url.$tmp/landed-remote.git.pushInsteadOf" 'https://github.com/acme/landed.git'
+  graded=$(git -C "$co" rev-parse HEAD)
+
+  # `core.hooksPath` pinned, or a machine that sets one globally runs no hook and this passes for
+  # nothing. The hook drops git's environment first, since the push's `GIT_DIR` outranks its own.
+  mkdir -p "$co/.git/hooks"
+  git -C "$co" config core.hooksPath "$co/.git/hooks"
+  cat > "$co/.git/hooks/pre-push" <<'HOOK'
+#!/bin/sh
+unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_OBJECT_DIRECTORY
+git -c user.email=a@b.c -c user.name=a commit -q --allow-empty -m 'landed during the push'
+exit 0
+HOOK
+  chmod +x "$co/.git/hooks/pre-push"
+
+  floor "$tmp/landed" deliver 'a change' >/dev/null 2>&1
+
+  differs "a commit landed while it pushed"      "$(git -C "$co" rev-parse HEAD)" "$graded"
+  is      "the push carried the commit it graded" \
+          "$(git -C "$tmp/landed-remote.git" rev-parse "foundry/$(basename "$d")" 2>/dev/null)" "$graded"
+  has     "and the body names that commit"       "$(cat "$d/body" 2>/dev/null)" "- commit \`$graded\`"
+}
+a_delivery_names_the_commit_it_graded
 
 a_delivery_that_succeeds() {
   git init -q --bare "$tmp/dvremote.git" 2>/dev/null \

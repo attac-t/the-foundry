@@ -804,7 +804,9 @@ tell a met one from an unmet one. A person reads it and types one line — the s
 ### A delivery names its record
 
 **The body is the brief, then what floor recorded.** The record is the run, the commit the push
-sent, the charter by the digest every handoff stamps, and what met each clause at that commit.
+sent, and the charter by the digest every handoff stamps. Then it says what met each clause there.
+**`deliver` reads the head once.** The ancestry check, the grade, the push and the record all take
+that one commit. A commit landing meanwhile, even from a `pre-push` hook, reaches none of them.
 `deliver` refuses an unmet clause before it pushes, so every clause the record lists was met.
 Each is named by whom the grader accepted: every judge its panel names, or the kind of row it
 trusts. The record reads no row itself, so it cannot name one the grader skipped. The brief above
@@ -812,6 +814,7 @@ it is its author's words, and may say anything. The adapter adds its marker last
 
 **A second `deliver` on the same branch pushes the new head, and the request keeps its first
 body.** One run, one delivery: the request is not rewritten, and the run keeps the body it sent.
+So the request then names the older commit, and `deliver` says so, naming both.
 
 **The body is a setting.** `body brief` in `.foundry/practice` sends the brief alone, and `body
 record`, or no line, sends the record too. It is read at the run's base, so no worker sets it. A

@@ -1261,7 +1261,7 @@ refuse_foreign_ancestry() {
         exit 33
     }
 
-    head=$(git -C "$tree" rev-parse --verify --quiet HEAD 2>/dev/null) || head=
+    head=${3:-}
     [ -n "$head" ] || { note "[$tree] has no head to inspect — saw nothing, wanted a sha"; exit 33; }
 
     # `base..head` answers for a head the base is not behind, and the answer is
@@ -3067,7 +3067,7 @@ unmet_for_delivery() {
     empty_selection "$1"
     ungradable_targets "$1"
     underived_clauses "$1"
-    unmet_clauses "$1"
+    unmet_clauses "$1" "${2:-}"
 }
 
 #
@@ -4176,11 +4176,12 @@ deliver() {
     refuse_unreadable_run "$dir"
     refuse_an_item_another_host_holds "$dir"
     refuse_ungranted_delivery "$dir" "$here"
-    refuse_foreign_ancestry "$dir" "$here"
-    refuse_incomplete "$dir"
+    carrying=$(unit_head "$dir" "$here")
+    refuse_foreign_ancestry "$dir" "$here" "$carrying"
+    refuse_incomplete "$dir" "$carrying"
     keep_the_brief "$dir" "${2:-}"
 
-    send_delivery "$dir" "$here" "$title"
+    send_delivery "$dir" "$here" "$title" "$carrying"
     say_the_asides "$dir"
     emit "$dir" run.delivered
 }
@@ -4273,14 +4274,13 @@ each_clause_and_what_met_it() {
 clause_ids_in() { awk '$1 == "clause" { print $2 }' "$1" 2>/dev/null; }
 
 clause_and_what_met_it() {
-    met_kind=$(clause_kind "$1" "$2")
-    printf '  - %s `%s`: %s\n' "$met_kind" "$(clause_text "$1" "$2")" "$(what_met "$1" "$2" "$met_kind")"
+    printf '  - %s `%s`: %s\n' "$(clause_kind "$1" "$2")" "$(clause_text "$1" "$2")" "$(what_met "$1" "$2")"
 }
 
 what_met() {
-    met_panel=$(named_judges "$1" "$2")
-    [ -n "$met_panel" ] && { printf 'judged by %s' "$(spaced "$met_panel" | sed 's/ /, /g')"; return; }
-    answers_for "$3"
+    met_by=$(answerer_of "$1" "$2")
+    [ "$met_by" = panel ] && { printf 'judged by %s' "$(spaced "$(named_judges "$1" "$2")" | sed 's/ /, /g')"; return; }
+    printf '%s' "$met_by"
 }
 
 # A path, or nothing at all. An adapter that is given a path it cannot
@@ -4298,7 +4298,7 @@ refuse_ungranted_delivery() {
 }
 
 refuse_incomplete() {
-    findings=$(unmet_for_delivery "$1")
+    findings=$(unmet_for_delivery "$1" "${2:-}")
 
     [ -n "$findings" ] || return 0
     printf '%s\n' "$findings"
@@ -4306,27 +4306,37 @@ refuse_incomplete() {
 }
 
 # Push, then say so. A source told about a delivery nobody can fetch is worse than silence, so the
-# order is not a preference. The body is composed after the push, from the commit it sent.
+# order is not a preference. `$4` is the commit `deliver` graded, and the push and the body take it.
 send_delivery() {
     branch=$(delivery_branch "$1")
 
-    push_workspace "$1" "$2" "$branch"
-    pushed=$(unit_head "$1" "$2")
-    compose_the_body "$1" "$pushed"
-    publish_delivery "$1" "$branch" "$3" "$pushed"
+    push_workspace "$1" "$2" "$branch" "$4"
+    say_a_moved_head "$1" "$4"
+    compose_the_body "$1" "$4"
+    publish_delivery "$1" "$branch" "$3" "$4"
 }
 
+# The sha, never `HEAD`. A commit landing after `deliver` read its head is not what it graded.
 push_workspace() {
     tree=$(unit_work_tree "$1" "$2") || exit 16
 
-    why=$(git -C "$tree" push origin "HEAD:refs/heads/$3" 2>&1) && return 0
+    why=$(git -C "$tree" push origin "$4:refs/heads/$3" 2>&1) && return 0
     note "could not deliver [$3] to [$2]: $why"
     exit 19
 }
 
-# Read after the push and never before. `push_workspace` sends `HEAD`, so
-# asking first names a commit the push might not have carried.
-unit_head() { git -C "$(unit_work_tree "$1" "$2")" rev-parse HEAD 2>/dev/null; }
+# Read once, by `deliver`, before anything looks. The ancestry check, the grade, the push and the
+# body each take this sha, so a commit landing while it works reaches none of them.
+unit_head() { git -C "$(unit_work_tree "$1" "$2")" rev-parse --verify --quiet HEAD 2>/dev/null; }
+
+# A request is never rewritten. So a second `deliver` that pushed a new head says the request still
+# names the first, because nothing else will.
+say_a_moved_head() {
+    named=$(delivered_head "$1") || return 0
+    [ "$named" != "$2" ] || return 0
+
+    note "the request names [$named], and this pushed [$2] to its branch — the request is not rewritten"
+}
 
 # Derived, never chosen. A branch a worker names is a branch a retry can rename, and then the source
 # holds two deliveries for one run.
@@ -4386,7 +4396,8 @@ unmet_clauses() {
     tree=$(unit_work_tree "$1" "$here" 2>/dev/null) \
         || { printf 'unopened: no workspace holds [%s], so nothing was delivered from one\n' "$here"; return; }
 
-    ref=$(git -C "$tree" rev-parse --verify --quiet HEAD 2>/dev/null)
+    # `deliver` hands in the one commit it will push. `complete` asks of the head as it stands.
+    ref=${2:-$(git -C "$tree" rev-parse --verify --quiet HEAD 2>/dev/null)}
     [ -n "$ref" ] || { printf 'nothing delivered: the workspace holds no commit to be graded at\n'; return; }
 
     awk '$1 == "clause" { print $2 }' "$file" 2>/dev/null | while read -r id; do
@@ -4409,17 +4420,28 @@ what_it_lacks() {
     has_local_pin "$2" "$3" "$4" \
         || { printf 'unverifiable: [%s] is pinned to a repository this checkout is not\n' "$text"; return; }
 
-    panel=$(named_judges "$2" "$3")
-    [ -n "$panel" ] && { what_the_panel_lacks "$1" "$text" "$4" "$5" "$panel"; return; }
-
-    # A judged clause naming nobody is answered by nobody. Falling through let
-    # any verdict satisfy it, which is a reader removing a requirement.
-    [ "$(clause_kind "$2" "$3")" = Judged ] \
+    answerer=$(answerer_of "$2" "$3")
+    [ "$answerer" = panel ] && { what_the_panel_lacks "$1" "$text" "$4" "$5" "$(named_judges "$2" "$3")"; return; }
+    [ "$answerer" = nobody ] \
         && { printf 'unmet: [%s] at %s@%s — its panel names nobody, so nothing can answer it\n' "$text" "$4" "$5"; return; }
 
-    satisfied "$1" "$text" "$5" "$(answers_for "$(clause_kind "$2" "$3")")" "" && return
+    satisfied "$1" "$text" "$5" "$answerer" "" && return
 
     printf 'unmet: [%s] at %s@%s\n' "$text" "$4" "$5"
+}
+
+#
+# **Who may answer a clause, and the one place that says so:** the judges its panel names, or else
+# the kind of row its kind trusts. The grader and a request's record both ask here, so a new answer
+# cannot reach one of them and leave the other naming the old.
+#
+# A judged clause naming nobody is answered by nobody. Falling through let
+# any verdict satisfy it, which is a reader removing a requirement.
+answerer_of() {
+    [ -n "$(named_judges "$1" "$2")" ] && { printf 'panel\n'; return; }
+    [ "$(clause_kind "$1" "$2")" = Judged ] && { printf 'nobody\n'; return; }
+
+    answers_for "$(clause_kind "$1" "$2")"
 }
 
 #
