@@ -1225,7 +1225,9 @@ what the work is judged against, and a difference between the two is a finding. 
 **The fence is a mitigation, not a control.** Each fence line carries the digest recorded when the
 run read the item, so no text inside can end the fence for a reader that compares the whole digest.
 Floor counts the lines shaped like an edge itself. A copy edited since the read, one never digested,
-or a run that bound no item says so, and nothing is read fresh.
+or a run that bound no item says so, and nothing is read fresh. **A worker is not stopped:** it
+writes this record as the same user, so it can rewrite the digest too, or read a changed source
+again. #419 owns what binds, and a case pins the limit until it does.
 
 The command is handed two variables and nothing else:
 

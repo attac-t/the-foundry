@@ -2833,14 +2833,17 @@ write_brief() {
 
 #
 # **The item the run bound travels, fenced as data.** Decided on #736, 23 September: the judge reads
-# the words as read before work began, and the charter stays the bar.
+# the words the run last read, and the charter stays the bar.
 #
 # Against it: whoever filed the item now speaks to the judge. **The fence is a mitigation, not a
 # control.** Each fence line carries the item's digest, and no text can hold its own, so the end
 # line comes once and last. That holds for a reader that compares the whole digest.
 #
 # So floor counts the lines shaped like an edge itself, and a model never has to pair them. And the
-# digest was recorded when the run read the item, so a copy edited since then does not travel.
+# digest was recorded at the read, so an edit to the copy alone does not travel.
+#
+# **That is not a control against the worker.** It writes this record as the same user, so it can
+# rewrite the digest too, or change the source and read it again. #419 owns what binds.
 #
 # `cksum` would not do. A text can be made to match its own CRC, and `digest_of` is `cksum`.
 #
@@ -2892,7 +2895,9 @@ fenced_as_data() {
     printf 'The item is over. The charter is the bar.\n'
 }
 
-fence_shaped_lines_in() { grep -c -E '^--- item .* (begins|ends) ---$' "$1"; }
+# Loose on purpose: a planted edge with a trailing space or a carriage return is still an edge to
+# the model reading it, so it is counted as one.
+fence_shaped_lines_in() { tr -d '\r' < "$1" | grep -c -E -- '-{3} *item .*(begins|ends)'; }
 
 #
 # The half of the receipt only the runner knows, written before the judge is asked.
