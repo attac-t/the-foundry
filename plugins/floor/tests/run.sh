@@ -2761,6 +2761,100 @@ wreck_runner "a source that cannot be asked to list, read as nothing marked, is 
 wreck_runner "a reconcile that reads the item as part of where is caught" \
   reconcilecols '/^report_clashes() {/,/^}/s#read -r branch identity _; do#read -r branch identity; do#'
 
+#
+# **A pass carries on the run a pass began.** Piece 5b: one break per row the door and the resume
+# route, and one per line a resume writes.
+#
+wreck_runner "a run a pass let go of, carried on anyway, is caught" \
+  resumeletgo '/^let_go_of_a_finished_run() {/,/^}/s#^        pass.left|pass.delivered) ;;$#        pass.none) ;;#'
+
+wreck_runner "a run whose item is requested elsewhere, carried on anyway, is caught" \
+  resumerequested '/^carry_on_a_run_a_pass_began() {/,/^}/s#^    let_go_if_requested_elsewhere "\$resumed" "\$resumed_item" \&\& return 1$#    :#'
+
+wreck_runner "a run whose item another host holds, carried on anyway, is caught" \
+  resumeheld '/^let_go_if_held_elsewhere() {/,/^}/s#^    \[ "\$claimed" -eq 0 \] \&\& return 1$#    return 1#'
+
+wreck_runner "a run let go when its item is held, with no line saying so, is caught" \
+  resumeheldline '/^let_go_if_held_elsewhere() {/,/^}/s#^    emit "\$1" pass.left item="\$2" why=held$#    :#'
+
+wreck_runner "a claim nobody could ask, on a resume, read as held is caught" \
+  resumeoutage '/^let_go_if_held_elsewhere() {/,/^}/s#^    \[ "\$claimed" -eq 30 \] \\$#    true \\#'
+
+wreck_runner "a resume that never says it resumed is caught" \
+  resumeline '/^resume_the_run() {/,/^}/s#^    say_where_this_resumes "\$2" "\$3"$#    :#'
+
+wreck_runner "a resume that never starts its heartbeat is caught" \
+  resumebeat '/^resume_the_run() {/,/^}/s#^    say_this_pass_is_alive$#    :#'
+
+wreck_runner "a resume that ignores its bound is caught" \
+  resumebound '/^resume_the_run() {/,/^}/s#^    let_go_past_the_bound "\$2"$#    :#'
+
+wreck_runner "a recorded wait counted against the bound is caught" \
+  boundwait '/^resumes_counted() {/,/^}/s#open \&\& \$3 != "pass.waiting"#open#'
+
+wreck_runner "a wake killed before it recorded anything, let off, is caught" \
+  boundkilled '/^resumes_counted() {/,/^}/s#open \&\& \$3 != "pass.waiting"#open \&\& $3 == "pass.stopped"#'
+
+wreck_runner "a bound that leaves out the wake counting it is caught" \
+  boundopen '/^resumes_counted() {/,/^}/s#END { print counted + open }#END { print counted + 0 }#'
+
+wreck_runner "a resume that resumes from its own line is caught" \
+  resumedafter '/^say_where_this_resumes() {/,/^}/s#^    \[ "\$resumed_event" != pass.resumed \] || resumed_event=\$(field_of "\$2" after)$#    :#'
+
+wreck_runner "a resume line that drops the stop's why is caught" \
+  resumedwhy '/^say_where_this_resumes() {/,/^}/s#\${resumed_why:+"why=\$resumed_why"} ##'
+
+wreck_runner "a waiting line routed as no line at all is caught" \
+  waitingrow '/^carry_on_from_the_line() {/,/^}/s#^        pass.stopped|pass.waiting) carry_on_from_the_stop "\$1" ;;$#        pass.stopped) carry_on_from_the_stop "$1" ;;#'
+
+wreck_runner "a resumed run that never reads an item no read landed is caught" \
+  rereaditem '/^carry_on_from_the_start() {/,/^}/s#^    \[ -n "\$(item_id "\$dir")" \] || read_the_item "\$1"$#    :#'
+
+wreck_runner "a resumed open that selects its target twice is caught" \
+  skiptarget '/^select_the_checkout() {/,/^}/s#^    \[ -z "\$(list_targets "\$(unit_targets_file "\$dir")")" \] || return 0$#    :#'
+
+wreck_runner "a wait on the host with no line is caught" \
+  hostwaitline '/^wait_on_the_host() {/,/^}/s#^    emit "\$dir" pass.waiting item="\$1" why=no-command$#    :#'
+
+wreck_runner "a wait on a person with no line is caught" \
+  personwaitline '/^wait_on_a_person() {/,/^}/s#^    emit "\$dir" pass.waiting item="\$1" why=deliver code="\$2"$#    :#'
+
+wreck_runner "a grant deliver asks for, read as nothing a person can answer, is caught" \
+  deliverperson '/^deliver_and_route() {/,/^}/s#^        15|18|32) wait_on_a_person#        15|32) wait_on_a_person#'
+
+wreck_runner "a failed send let go rather than sent again is caught" \
+  deliversend '/^deliver_and_route() {/,/^}/s#^        19)       stop_at "\$1" deliver 19 ;;$#        19) ;;#'
+
+wreck_runner "a code no row names, let go with no line, is caught" \
+  deliverother '/^let_the_run_go() {/,/^}/s#^    emit "\$dir" pass.left item="\$1" why=deliver code="\$2"$#    :#'
+
+wreck_runner "a pass that never counts revise rounds is caught" \
+  roundsignored '/^act_on_a_refusal() {/,/^}/s#^    \[ -z "\$(members_out_of_rounds "\$2")" \] || { stop_the_item_here "\$1" rounds; exit 48; }$#    :#'
+
+wreck_runner "revise rounds counted across members, not apart, is caught" \
+  roundsapart '/^refusals_by() {/,/^}/s#^        \$4 "" != ENVIRON\["name"\] "" || \$8 "" != ENVIRON\["judge"\] "" { next }$#        $4 "" != ENVIRON["name"] "" { next }#'
+
+wreck_runner "a charter with no rounds line, bounded by nothing, is caught" \
+  roundsdefault '/^members_out_of_rounds() {/,/^}/s#is_a_count "\$spent_limit" || spent_limit=3#is_a_count "$spent_limit" || spent_limit=99#'
+
+wreck_runner "a deadlock read as something new work could change is caught" \
+  ledgerdeadlock '/^leave_on_an_answer_that_stops() {/,/^}/s#^    answered_by_any "\$2" deadlock    \&\& .*#    :#'
+
+wreck_runner "a judge that could not be reached read as one that might answer is caught" \
+  ledgerunavailable '/^leave_on_an_answer_that_stops() {/,/^}/s#^    answered_by_any "\$2" unavailable \&\& .*#    :#'
+
+wreck_runner "a silent member left unasked at a judged stop is caught" \
+  ledgersilent '/^let_the_ledger_decide() {/,/^}/s#^    ask_the_judges "\$1"$#    :#'
+
+wreck_runner "a handoff read as an answer is caught" \
+  ledgerhanded '/^last_answer_at() {/,/^}/s#^        \$2 != "judged"  *{ next }$#        0 { next }#'
+
+wreck_runner "a run let go that the checkout still points at is caught" \
+  letgopointer '/^let_go_of() {/,/^}/s#^    rm -f "\$let_go_mark"$#    :#'
+
+wreck_runner "a run FOUNDRY_RUN names, let go without a word, is caught" \
+  letgonamed '/^let_go_of() {/,/^}/s#^    \[ -z "\$named_by_the_caller" \] \\$#    true \\#'
+
 
 # Whether `chmod 000` means anything here. Windows records no read bit and root ignores the one it
 # finds, so the break below would report a rule held for a reason that is not the rule.
