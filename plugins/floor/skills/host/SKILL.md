@@ -32,7 +32,8 @@ cd the-foundry
 ```
 
 **The image carries no Foundry.** `bin/host.sh` is in this clone, and every container mounts the
-clone at `/src`, read-only. **That mount is how the scripts get in. Step 6 is how the plugins do.**
+clone at `/src`, read-only. **That mount is how the scripts get in.** The plugins come in at step
+4's first start when `FOUNDRY_KEYS` is set, and step 6 says how, and what to do without it.
 
 ### 3. Name a place for the sign-ins
 
@@ -66,6 +67,9 @@ both harnesses sit on it. The build is once, and a later container costs about f
 
 **`--worker` is what puts the harnesses in.** The plain host answers *not found* for both — it
 carries `git`, `gh` and certificates, and it grades.
+
+**With `FOUNDRY_KEYS` set, its first start also installs Foundry's plugins**, before the shell
+opens. It exits 6 if that fails, and starts nothing. Step 6 says what it reads.
 
 ### 5. Sign in, inside, once
 
@@ -104,10 +108,35 @@ Measured 22 September 2026, in a fresh container:
 | `~/.claude/plugins/marketplaces` | holds `claude-plugins-official`, and nothing else |
 
 So the checkout asks for three plugins from a marketplace this machine never registered.
-**Nothing in steps 1 to 5 says so.** The host starts and the harness replies with none of them.
 
-**A project setting reaches a session started inside that project.** The shell opens in
-`/home/forge`, so `cd /src` first, or the three stay off whatever else is true.
+**With `FOUNDRY_KEYS` set, the host installs them itself, at a worker's first start.** It reads
+three things from the checkout it was started in: the marketplace in
+`.claude-plugin/marketplace.json`, the source `.claude/settings.json` declares for it, and the
+plugins that file enables. `FOUNDRY_PLUGINS` names the plugins instead. No name is written in the
+code.
+
+Measured 23 September 2026, on a fresh volume:
+
+| | |
+|---|---|
+| the first start | added the marketplace and installed kernel, signal and floor, in 17 seconds |
+| the second | installed nothing, in 10 |
+| floor's `run.sh`, from the installed plugin | answered |
+
+**A failed install starts nothing.** The host exits 6 and says which of four it was: no
+marketplace, no source a container can reach, no plugin named, or the install itself.
+
+**The source is the one the checkout declares, never its origin.** Added from the origin's URL,
+the harness recorded `git` where the checkout says `github`, and `plugins.sh declared` below then
+called a sound host faulty. A `path` source is this machine's own disk, which no container reaches.
+
+**A worker can still rewrite what a later start carries.** The volume is writable by every process
+in the container, and the host knows a marketplace and a plugin by name. It never re-adds a
+marketplace that is there, and the harness refuses one whose source changed under the same name.
+
+**Without `FOUNDRY_KEYS` nothing would keep an install, so the host makes none.** Run these in each
+container instead. A project setting reaches a session started inside that project, so `cd /src`
+first.
 
 ```sh
 cd /src
@@ -116,14 +145,6 @@ claude plugin install kernel@the-foundry
 claude plugin install signal@the-foundry
 claude plugin install floor@the-foundry
 ```
-
-**Nobody has driven those lines in this container.** They are what the README installs with, and
-what `plugins.sh` tells an unregistered host to run. Treat them as the thing to try. The next
-section says how to see whether they worked.
-
-**`.claude` is a kept place**, so an install that lands survives the container. That place is the
-store named in step 3, the same one holding the sign-ins. Unset `FOUNDRY_KEYS` and this step is due
-again every container, exactly like the logins.
 
 ## The three are not all of Foundry
 
@@ -206,6 +227,7 @@ own line reads *cannot tell*, because there is no `~/.claude/settings.json` yet 
 | 3 | the image would not build. Run the same `docker build` without `-q` and read it |
 | 4 | the machine has no home for runs. Set `FOUNDRY_HOME`, or set `HOME` |
 | 5 | the place `FOUNDRY_KEYS` names could not be prepared. **Two causes as well**, and `host.sh` says which |
+| 6 | a worker could not be given Foundry. The checkout names no marketplace, no source a container can reach, or no plugin, or the install failed, and `host.sh` says which |
 
 ### Exit 2 is not always a stopped daemon
 
