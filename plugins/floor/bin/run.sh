@@ -442,7 +442,8 @@ quiet_days() {
 # **And a bad bar is worse than a silent one.** `find -mtime +-1` does not fail — measured, it
 # matches a file made seconds ago. So an unchecked value names every run at once rather than none.
 #
-# Four digits is twenty-seven years. Past that it is not a bar anybody meant.
+# Four digits is twenty-seven years as `FOUNDRY_QUIET_DAYS`, and under three hours as a pass's beat.
+# Past that neither is a setting anybody meant.
 is_a_plain_decimal() {
     case "$1" in
         ''|*[!0-9]*|0*) return 1 ;;
@@ -3722,7 +3723,6 @@ pass() {
     answer_to_the_applier "$taken" "$items"
     heading=$(the_heading_of "$taken") || exit "$?"
     begin_a_run_for "$taken" "$heading"
-    say_this_pass_is_alive
 
     open_the_work "$taken"
     act_on_it "$taken"
@@ -3812,12 +3812,14 @@ leave_a_run_in_progress_alone() {
 # holding the run's name, so on one host it reads the same for a live pass and a dead one. A mark
 # younger than three beats is a pass at work.
 #
-# **What it cannot see, and nothing owns yet:** a command, a grade or a judgement still running
-# after its pass was killed. And a reused process id keeps a dead pass's mark fresh, so on one host
-# every wake leaves that run alone until the id goes.
+# **What it cannot see:** a command, a grade or a judgement still running after its pass was killed,
+# which #1046 owns. And a reused process id keeps a dead pass's mark fresh, so on one host every
+# wake leaves that run alone until the id goes.
 #
 # The mark holds the time it was written, never a file's age: `date -r` reads a file on GNU and a
 # number on BSD, and the pass runs on both.
+#
+# **It holds its writer's beat too**, and a reader ages it by that, since two hosts may set two.
 #
 PASS_BEAT=60
 
@@ -3831,43 +3833,56 @@ pass_beat() {
     printf '%s' "$PASS_BEAT"
 }
 
+#
+# **The beat holds none of the pass's descriptors.** It inherited stdout and stderr, so a caller
+# reading a pass to its end waited out the beat's `sleep`, and one that reaps only after reading
+# never reaped a killed pass, whose mark `kill -0` then kept fresh. 5a's judge, round one.
 say_this_pass_is_alive() {
     alive=$(alive_file "$dir")
-    date -u +%s > "$alive" 2>/dev/null || return 0
+    own_beat=$(pass_beat)
+    mark_alive "$alive" "$own_beat" || return 0
 
-    beat_while_alive "$$" "$alive" "$(pass_beat)" &
+    beat_while_alive "$$" "$alive" "$own_beat" </dev/null >/dev/null 2>&1 &
     heartbeat=$!
     trap stop_the_heartbeat EXIT
 }
 
-# Beats while the pass's own process lives, so a pass killed outright leaves a mark that goes stale.
-# From `/`, so a beat left sleeping holds no fixture's directory open.
+# Beats while the pass's own process lives and its run is there, so a pass killed outright leaves a
+# mark that goes stale. From `/`, so a beat left sleeping holds no fixture's directory open.
+#
+# A failed `sleep` or write is tried again next beat. Only the pass's end stops the beat.
 beat_while_alive() {
     cd / || return 0
-    while kill -0 "$1" 2>/dev/null; do
-        sleep "$3" || return 0
-        date -u +%s > "$2" 2>/dev/null || return 0
+    while kill -0 "$1" 2>/dev/null && [ -d "${2%/*}" ]; do
+        sleep "$3"
+        mark_alive "$2" "$3"
     done
+}
+
+# Written beside the mark and renamed over it, so no reader sees one half made.
+mark_alive() {
+    printf '%s %s\n' "$(date -u +%s)" "$2" > "$1.new" 2>/dev/null && mv -f "$1.new" "$1" 2>/dev/null
 }
 
 # Waited on before the mark goes, so a beat already writing cannot put it back.
 stop_the_heartbeat() {
     kill "$heartbeat" 2>/dev/null
     wait "$heartbeat" 2>/dev/null
-    rm -f "$alive"
+    rm -f "$alive" "$alive.new"
 }
 
 # A mark that is there and cannot be aged reads as a pass at work. Leaving a dead run costs a wake;
 # resuming a live one puts two workers in one workspace.
 a_pass_is_alive_in() {
     [ -f "$(alive_file "$1")" ] || return 1
-    was=$(cat "$(alive_file "$1")" 2>/dev/null)
+    was= writers_beat=
+    read -r was writers_beat 2>/dev/null < "$(alive_file "$1")"
     now=$(date -u +%s 2>/dev/null)
-    beat=$(pass_beat)
+    is_a_plain_decimal "$writers_beat" || writers_beat=$(pass_beat)
 
     case $was in ''|*[!0-9]*) return 0 ;; esac
     case $now in ''|*[!0-9]*) return 0 ;; esac
-    [ "$(( now - was ))" -lt "$(( beat * 3 ))" ]
+    [ "$(( now - was ))" -lt "$(( writers_beat * 3 ))" ]
 }
 
 alive_file() { printf '%s/pass.alive' "$1"; }
@@ -3884,9 +3899,12 @@ the_heading_of() {
 #
 # **It says it began before it reads the item again**, so a read that fails leaves a stop, never a
 # run with no line a later pass could read. #1026.
+#
+# **Its beat starts first of all**, so no pass sees this run before it sees the mark. 5a's judge.
 begin_a_run_for() {
     make_run "$2" >/dev/null
     pin_this_run
+    say_this_pass_is_alive
     emit "$dir" pass.began item="$1"
 
     ( read_work_item "$dir" "$1" ) >/dev/null || stop_at "$1" read "$?"
