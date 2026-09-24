@@ -19,6 +19,9 @@
 
 set -u
 
+# The reads the merge hook uses, so the two hooks agree on what a merge closed. #1033.
+. "$(dirname "$0")/forge-reads.sh"
+
 main() {
     call=$(cat)
 
@@ -45,10 +48,12 @@ number_in() {
         | sed -n 's/.*gh pr merge[[:space:]]\{1,\}\([0-9]\{1,\}\).*/\1/p' | head -1
 }
 
-# What the merged body says it closes. `Refs` is not closure and is left alone.
+# What the merge closed, read as `closes.sh` reads it: the body, the title and each commit message,
+# with all nine words. It heard only `Closes`, in the body alone, until #1033.
 issues_closed_by() {
-    gh pr view "$1" --json body --jq .body 2>/dev/null \
-        | sed -n 's/.*[Cc]loses #\([0-9]\{1,\}\).*/\1/p' | sort -u
+    forge_text=$(what_the_forge_reads "$1") || return 0
+
+    numbers_closed_in "$(printf '%s' "$forge_text" | tr 'A-Z' 'a-z')" | sort -u
 }
 
 report_each_issue_it_closes() {
