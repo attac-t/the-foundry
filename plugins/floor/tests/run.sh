@@ -2586,6 +2586,43 @@ wreck_runner "a pass that takes a second item beside a run in progress is caught
 wreck_runner "a pass that works beside a run holding no item is caught" \
   passany '/^leave_a_run_in_progress_alone() {/,/^}/s#^    here=\$(active_run 2>/dev/null) || return 0$#    here=$(active_run 2>/dev/null) \&\& [ -n "$(item_id "$here")" ] || return 0#'
 
+#
+# **A pass at work says so.** Piece 5a: each break removes one part of the mark, and the case runs
+# a second pass from inside the first one's command.
+#
+wreck_runner "a second pass that never reads the mark of a pass at work is caught" \
+  alivenoread '/^leave_a_run_in_progress_alone() {/,/^}/s#^    a_pass_is_alive_in "\$here" \\$#    false \\#'
+
+wreck_runner "a pass that never starts its heartbeat is caught" \
+  alivenomark '/^begin_a_run_for() {/,/^}/s#^    say_this_pass_is_alive$#    :#'
+
+wreck_runner "a mark left behind when the pass ends is caught" \
+  alivestays '/^stop_the_heartbeat() {/,/^}/s#^    rm -f "\$alive" "\$alive.new"$#    :#'
+
+wreck_runner "a stale mark read as a pass at work is caught" \
+  alivestale '/^a_pass_is_alive_in() {/,/^}/s#-lt "\$(( writers_beat \* 3 ))"#-lt 999999999#'
+
+wreck_runner "a beat holding its pass's output open is caught" \
+  alivefds '/^say_this_pass_is_alive() {/,/^}/s#"\$own_beat" </dev/null >/dev/null 2>\&1 \&$#"$own_beat" \&#'
+
+wreck_runner "a beat that outlives its pass is caught" \
+  alivekill '/^beat_while_alive() {/,/^}/s#while kill -0 "\$1" 2>/dev/null \&\& #while #'
+
+wreck_runner "a mark aged by the reader's beat, not its writer's, is caught" \
+  alivewriter '/^a_pass_is_alive_in() {/,/^}/s#^    is_a_plain_decimal "\$writers_beat" || writers_beat=\$(pass_beat)$#    writers_beat=$(pass_beat)#'
+
+wreck_runner "a mark nobody can age read as a dead pass is caught" \
+  aliveopen '/^a_pass_is_alive_in() {/,/^}/s#^    case \$was in .*) return 0 ;; esac$#    case $was in '"''"'|*[!0-9]*) return 1 ;; esac#'
+
+wreck_runner "a beat nobody can do arithmetic on, taken anyway, is caught" \
+  beatbar '/^pass_beat() {/,/^}/s#^    is_a_plain_decimal "$asked" #    true "$asked" #'
+
+wreck_runner "a stop line with no exit code is caught" \
+  stopcode '/^record_the_stop() {/,/^}/s# code="\$3"$##'
+
+wreck_runner "a worker writing a line floor steers by is caught" \
+  observeprefix '/^observe() {/,/^}/s#^    refuse_floors_own_event "\$event"$#    :#'
+
 wreck_runner "a pass offered nothing that says something else is caught" \
   passnone '/^what_is_offered() {/,/^}/s#^    \[ -n "\$items" \] || { note .*; exit 42; }$#    :#'
 
@@ -2629,13 +2666,13 @@ wreck_runner "a pass that cannot open its work and leaves no stop is caught" \
   passopen '/^open_the_work() {/,/^}/s#) >/dev/null || stop_at "\$1" open "\$?"#) >/dev/null || exit 1#'
 
 wreck_runner "a pass that acts with no command set is caught" \
-  passnocmd '/^act_on_it() {/,/^}/s#^    \[ -n "\$host_command" \] || { record_the_stop "\$1" no-command; exit 44; }$#    :#'
+  passnocmd '/^act_on_it() {/,/^}/s#^    \[ -n "\$host_command" \] || { record_the_stop "\$1" no-command 44; exit 44; }$#    :#'
 
 wreck_runner "a host command left for every gate and judge to inherit is caught" \
   passcommand '/^keep_the_host_command_to_itself() {/,/^}/s#^    unset FOUNDRY_PASS_COMMAND$#    export FOUNDRY_PASS_COMMAND#'
 
 wreck_runner "a pass that carries on after its command failed is caught" \
-  passfail '/^act_on_it() {/,/^}/s#^    run_the_host_command "\$1" || { record_the_stop "\$1" command-failed; exit 45; }$#    run_the_host_command "$1"#'
+  passfail '/^act_on_it() {/,/^}/s#^    run_the_host_command "\$1" || { record_the_stop "\$1" command-failed 45; exit 45; }$#    run_the_host_command "$1"#'
 
 wreck_runner "a command that is not handed the item is caught" \
   passhand '/^run_the_host_command() {/,/^}/s#FOUNDRY_PASS_ITEM="\$1" ##'
@@ -3553,7 +3590,7 @@ wreck_runner "a quiet bar nobody can set is caught" \
 #
 # A reader named it: the first draft of this comment said `+-1` errors, and it does not.
 wreck_runner "a quiet bar nothing checks is caught" \
-  anybar 's#^    is_a_quiet_bar "$asked" #    true "$asked" #'
+  anybar '/^quiet_days() {/,/^}/s#^    is_a_plain_decimal "$asked" #    true "$asked" #'
 
 #
 # **A leading zero is the form `is_a_count` lets through**, and each breaks differently: `00` is

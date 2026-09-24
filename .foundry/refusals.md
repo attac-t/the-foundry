@@ -237,6 +237,7 @@ where it is — a key for a one-off buys indirection and saves nothing.
 | `refuse_a_receipt_nobody_named` | 2 | default | receipt needs the file to read | `no-field` |
 | `refuse_a_torn_row` | 2 | invariant | an observation must fit one atomic write, and that one is ${#1} long | `record` — the length is the runner's, and a setting could move it. **Whole-or-not-at-all is not a choice any backend has**, or *in the order it happened* is lost |
 | `refuse_an_unnamed_field` | 2 | default | an observation's fields are key=value, and [$pair] is not one | `our-format` |
+| `refuse_floors_own_event` | 2 | default | [$1] is an event floor writes itself, so \`observe\` does not take it | `our-format` — a `pass.` line steers the next pass, so a worker may not write one through this verb |
 | `refuse_unrecordable` | 2 | invariant | record needs a command to run — a result is not something you pass | `evidence` — a worker writing the result of a command nothing ran |
 | `refuse_unrecordable` | 2 | default | record needs a name and a command | `no-field` |
 | `release` | 2 | default | release names an item | `no-field` |
@@ -359,5 +360,6 @@ where it is — a key for a one-off buys indirection and saves nothing.
 | `say_nothing_here_can_find_it_again` | 41 | answer | so tell every later command which run: export FOUNDRY_RUN=$dir | `header` |
 | `what_is_offered` | 42 | answer | nothing is offered, so this pass takes nothing | `header` |
 | `leave_a_run_in_progress_alone` | 43 | answer | a run is active here already, so this pass leaves it alone: $here | `header` |
+| `leave_a_run_in_progress_alone` | 43 | answer | a pass is at work in this run now, so this pass leaves it alone: $here | `header` |
 | `act_on_it` | 44 | answer | — | `header` |
 | `run_the_host_command` | 45 | answer | — | `header` |
