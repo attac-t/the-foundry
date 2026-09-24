@@ -34,15 +34,17 @@ carried `Closes`. The issue closed, the hook spoke, and the only repair was to r
 keeps the issue open, and then the request says `Refs` rather than `Closes`.
 
 **`.claude/hooks/closes.sh` now refuses that merge.** Before `gh pr merge` runs, it reads the
-request's body, its title and every commit message. It counts the open boxes on every issue they
-would close, and denies while any stands. It names the issue, the count, and the line it matched.
+request's body, its title and each commit message, up to the 250 commits GitHub's list returns. It
+counts the open boxes on every issue they would close, and denies while any stands. It names the
+issue, the count, and the line it matched.
 
 **The keyword is nine words, in any case, anywhere in any of the three.** `close`, `closes`,
 `closed`, `fix`, `fixes`, `fixed`, `resolve`, `resolves`, `resolved`. A colon after the word counts.
 
 **A commit closes an issue when it reaches `main`, whatever the body says.** On 24 September #1021
 closed from its own fix, whose message ended `Closes #1021`, under a body saying `Refs`. The title
-is read by choice: the merge commit carries it, and whether that closes is unmeasured.
+is read by choice: the merge commit carries it, and whether that closes is unmeasured. A merge
+given `-t`, `-b` or `-F` writes its own merge message, and the hook does not read that.
 
 On 15 September a body ending `Refs #711, #738` closed #711 with one box open. **What fired was
 prose** — *this closes #711's last box and nothing else* — and the close event carries no commit, so

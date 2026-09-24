@@ -31,11 +31,14 @@ call() { printf '{"tool_name":"Bash","tool_input":{"command":"%s"}}' "$1" > "$tm
 
 #
 # A stand-in for the forge, so this suite never asks the real one. It answers three questions: a
-# request's body and title, its commits, and an issue's boxes.
+# request's address, body and title, its commits, and an issue's boxes.
 #
 # **It answers only the two `--jq` strings measured live on #1027.** No jq runs here, so a hook
 # whose expression drifts gets nothing back and goes red. Measure again before changing a copy.
-BODY_AND_TITLE='.body, ("merge commit: " + .title)'
+#
+# The commits answer only at the repository the request's address names, and only paged, because
+# `{owner}` follows the directory and an unpaged read stops at thirty.
+THE_REQUEST='.url, .body, ("merge commit: " + .title)'
 EACH_COMMIT_LINE='.[] | .sha[0:7] as $c | .commit.message | split("\n")[] | "commit \($c): \(.)"'
 
 stub_gh() {
@@ -43,24 +46,26 @@ stub_gh() {
   printf "%s" "$2" > "$tmp/issue.body"
   printf "%s" "${3:-}" > "$tmp/pr.commits"
   printf "%s" "${4:-}" > "$tmp/pr.title"
-  printf "%s" "$BODY_AND_TITLE" > "$tmp/jq.view"
+  printf "%s" "$THE_REQUEST" > "$tmp/jq.view"
   printf "%s" "$EACH_COMMIT_LINE" > "$tmp/jq.api"
   printf '0' > "$tmp/api.exit"
   {
     printf '#!/bin/sh\n'
-    printf 'fields=; jq=; prior=\n'
+    printf 'fields=; jq=; paged=; prior=\n'
     printf 'for arg in "$@"; do\n'
     printf '  [ "$prior" = --json ] && fields=$arg\n'
     printf '  [ "$prior" = --jq ] && jq=$arg\n'
+    printf '  [ "$arg" = --paginate ] && paged=yes\n'
     printf '  prior=$arg\n'
     printf 'done\n'
     printf 'case "$1 $2" in\n'
     printf '  "pr view")    [ "$jq" = "$(cat %s)" ] || exit 1\n' "$tmp/jq.view"
+    printf '                case ",$fields," in *,url,*) echo https://github.com/acme/closes/pull/740 ;; esac\n'
     printf '                cat %s; echo\n' "$tmp/pr.body"
     printf '                case ",$fields," in *,title,*) cat %s; echo ;; esac ;;\n' "$tmp/pr.title"
     printf '  "issue view") [ "$3" = 711 ] && cat %s ;;\n' "$tmp/issue.body"
-    printf '  "api repos/{owner}/{repo}/pulls/740/commits")\n'
-    printf '                [ "$jq" = "$(cat %s)" ] || exit 1\n' "$tmp/jq.api"
+    printf '  "api repos/acme/closes/pulls/740/commits")\n'
+    printf '                [ "$jq" = "$(cat %s)" ] && [ -n "$paged" ] || exit 1\n' "$tmp/jq.api"
     printf '                cat %s; echo; exit "$(cat %s)" ;;\n' "$tmp/pr.commits" "$tmp/api.exit"
     printf 'esac\nexit 0\n'
   } > "$tmp/bin/gh"
@@ -163,7 +168,7 @@ case $(asked) in
   *)               ok "it does not quote another issue's line" ;;
 esac
 
-# --- a commit closes an issue too, and so does the title ---
+# --- a commit closes an issue too, and the title is read by choice ---
 #
 # On 24 September #1021 closed from commit `04cf28b`, whose message ended `Closes #1021`, under a
 # body saying `Refs`. **GitHub closes from a commit when it reaches `main`.** The title rides in the
