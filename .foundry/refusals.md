@@ -26,7 +26,7 @@ yet.
 file defines it as a function, and the enclosing function otherwise — so `[`, `mkdir` and `cd` are
 never heads.
 
-**Two hundred and twenty exit sites, one hundred and ninety decisions.** `sh bin/refusals.sh
+**Two hundred and thirty-one exit sites, two hundred and one decisions**, measured 24 September. `sh bin/refusals.sh
 plugins/floor/bin/run.sh` prints the sites, and `sh bin/unnamed.sh` compares them to this
 page.
 
@@ -47,8 +47,8 @@ and a reader who disagrees can open that line and say so. A row citing nothing i
 rule, and the page says which line a person would have to write to change it.
 ## The settings, by name
 
-**A count hides a swap.** Thirteen were reported on 18 September and fifteen were true. **Eighteen
-stand today.** Three arrived this week: two on the check that reads this page, and one on the runner
+**A count hides a swap.** Thirteen were reported on 18 September and fifteen were true. **Twenty-two
+stand today**, and on 24 September the list below held eighteen of them. Three arrived this week: two on the check that reads this page, and one on the runner
 itself.
 
 | | |
@@ -62,10 +62,12 @@ itself.
 | `FOUNDRY_REFUSALS_PAGE` `FOUNDRY_REFUSALS_READS` | `bin/unnamed.sh`, both ends settable |
 | `FOUNDRY_UNDER` | **new** — what the host says it runs on. Core writes it down and never reads it |
 | `FOUNDRY_WHO` `FOUNDRY_WORKER` | who the record says did it |
+| `FOUNDRY_PASS_COMMAND` `FOUNDRY_PASS_BEAT` `FOUNDRY_PASS_TRIES` `FOUNDRY_CLAIM_FLOOR` | **missing here until 24 September**: what a pass runs, how often it beats, how often it resumes, and how often a claim is asked about |
 
-**No setting changes the condition any decision below fires on.** Several change what the run is
-looking at — which adapter, which home, which file the detector reads. **That is a different thing,
-and confusing the two is how a setting that softens an invariant gets built by accident.**
+**One setting changes the condition a decision below fires on**: `FOUNDRY_PASS_TRIES` moves when
+46 does, and its row is a `default` for that reason. The rest change what the run is looking at —
+which adapter, which home, which file the detector reads. **That is a different thing, and
+confusing the two is how a setting that softens an invariant gets built by accident.**
 
 ## What the other fifty-nine scripts hold
 
@@ -298,6 +300,7 @@ where it is — a key for a one-off buys indirection and saves nothing.
 | `record_produced` | 16 | default | committed in [$2] and could not read the sha back | `no-workspace` |
 | `refuse_occupied_slot` | 16 | default | [$1] is not a checkout of [$2] — remove it and open again | `no-workspace` |
 | `unit_work_tree` | 16 | default | — | `no-workspace` |
+| `find_the_workspace` | 16 | default | — | `no-workspace` |
 | `refuse_another_item` | 17 | default | start a new run — one item has many runs, and a second item is one of them | `one-item` |
 | `refuse_unless_answered` | 17 | invariant | send the one it sent, or start a new run | `refusal` |
 | `refuse_ungranted_delivery` | 18 | invariant | nobody said this run may deliver to [$2] — \`policy deliver-to\` is what says so | `refusal` |
@@ -358,7 +361,15 @@ where it is — a key for a one-off buys indirection and saves nothing.
 | `refuse_an_adapter_that_moved` | 40 | invariant | $1 authorises adapter [$pin] and [$ran] is what answered | `refusal` |
 | `say_nothing_here_can_find_it_again` | 41 | answer | so tell every later command which run: export FOUNDRY_RUN=$dir | `header` |
 | `what_is_offered` | 42 | answer | nothing is offered, so this pass takes nothing | `header` |
-| `leave_a_run_in_progress_alone` | 43 | answer | a run is active here already, so this pass leaves it alone: $here | `header` |
-| `leave_a_run_in_progress_alone` | 43 | answer | a pass is at work in this run now, so this pass leaves it alone: $here | `header` |
+| `leave_a_pass_at_work` | 43 | answer | a pass is at work in this run now, so this pass leaves it alone: $1 | `header` |
+| `leave_a_persons_run` | 43 | answer | a run is active here already, and no pass began it, so this pass leaves it alone: $1 | `header` |
+| `let_go_of` | 43 | answer | FOUNDRY_RUN names a run a pass has let go of — unset it: $1 | `header` |
+| `carry_on_from_the_line` | 43 | answer | no pass carries on from [$resumed_event], so this one leaves the run alone: $dir | `header` |
+| `carry_on_from_the_stop` | 43 | answer | no pass carries on from a stop at [$resumed_why], so this one leaves the run alone: $dir | `header` |
 | `act_on_it` | 44 | answer | — | `header` |
+| `wait_on_the_host` | 44 | answer | the host names no command, so this run waits for one: $dir | `header` |
 | `run_the_host_command` | 45 | answer | — | `header` |
+| `let_go_past_the_bound` | 46 | default | — | five resumes, a number somebody chose. `FOUNDRY_PASS_TRIES` names another |
+| `wait_on_a_person` | 47 | answer | delivering [$1] waits on a person, $2: $dir | `header` |
+| `leave_on_an_answer_that_stops` | 48 | answer | — | `header` |
+| `act_on_a_refusal` | 48 | default | — | three rounds where the charter pins none, a number somebody chose. A `rounds` line names another |

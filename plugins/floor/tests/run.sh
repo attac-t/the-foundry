@@ -2581,17 +2581,17 @@ wreck_runner "a pass that stops when another host takes its item is caught" \
   passnext '/^this_pass_claims() {/,/^}/s#is held by another host, so this pass passes it over"; return 1; }#is held by another host, so this pass passes it over"; exit 30; }#'
 
 wreck_runner "a pass that takes a second item beside a run in progress is caught" \
-  passleave '/^pass() {/,/^}/s#^    leave_a_run_in_progress_alone$#    :#'
+  passleave '/^pass() {/,/^}/s#^    carry_on_a_run_a_pass_began \&\& return 0$#    :#'
 
-wreck_runner "a pass that works beside a run holding no item is caught" \
-  passany '/^leave_a_run_in_progress_alone() {/,/^}/s#^    here=\$(active_run 2>/dev/null) || return 0$#    here=$(active_run 2>/dev/null) \&\& [ -n "$(item_id "$here")" ] || return 0#'
+wreck_runner "a pass that works in a person's run is caught" \
+  passany '/^leave_a_persons_run() {/,/^}/s#^    \[ -z "\$2" \] || return 0$#    return 0#'
 
 #
 # **A pass at work says so.** Piece 5a: each break removes one part of the mark, and the case runs
 # a second pass from inside the first one's command.
 #
 wreck_runner "a second pass that never reads the mark of a pass at work is caught" \
-  alivenoread '/^leave_a_run_in_progress_alone() {/,/^}/s#^    a_pass_is_alive_in "\$here" \\$#    false \\#'
+  alivenoread '/^leave_a_pass_at_work() {/,/^}/s#^    a_pass_is_alive_in "\$1" || return 0$#    return 0#'
 
 wreck_runner "a pass that never starts its heartbeat is caught" \
   alivenomark '/^pass() {/,/^}/s#^    say_this_pass_is_alive$#    :#'
@@ -2654,7 +2654,7 @@ wreck_runner "a claim nothing here works on, passed over for good, is caught" \
   passstale '/^already_underway_here() {/,/^}/s#^    a_run_here_holds "\$1"$#    :#'
 
 wreck_runner "a pass that cannot open its work and leaves no stop is caught" \
-  passopen '/^open_the_work() {/,/^}/s#) >/dev/null || stop_at "\$1" open "\$?"#) >/dev/null || exit 1#'
+  passopen '/^select_the_checkout() {/,/^}/s#) >/dev/null || stop_at "\$1" open "\$?"#) >/dev/null || exit 1#'
 
 wreck_runner "a pass that acts with no command set is caught" \
   passnocmd '/^act_on_it() {/,/^}/s#^    \[ -n "\$host_command" \] || { record_the_stop "\$1" no-command 44; exit 44; }$#    :#'
@@ -2695,13 +2695,13 @@ wreck_runner "a claim bound late and marked kept is caught" \
 # label on. #997, #736.
 #
 wreck_runner "a pass that carries on past a failed gate is caught" \
-  passgates '/^carry_it_to_a_request() {/,/^}/s#^    ( gates ) >/dev/null || stop_at "\$1" gates "\$?"$#    ( gates ) >/dev/null#'
+  passgates '/^pass_the_gates() {/,/^}/s#^    ( gates ) >/dev/null || stop_at "\$1" gates "\$?"$#    ( gates ) >/dev/null#'
 
 wreck_runner "a pass that stops on a charter naming no judge is caught" \
   passunjudged 's#^approved_or_unjudged() { \[ "\$1" -eq 0 \] || \[ "\$1" -eq 8 \]; }$#approved_or_unjudged() { [ "$1" -eq 0 ]; }#'
 
 wreck_runner "a pass that carries on past a judge that refused is caught" \
-  passjudged '/^carry_it_to_a_request() {/,/^}/s#^    approved_or_unjudged "\$code" || stop_at "\$1" judged "\$code"$#    :#'
+  passjudged '/^ask_the_judges() {/,/^}/s#^    approved_or_unjudged "\$code" || stop_at "\$1" judged "\$code"$#    :#'
 
 wreck_runner "a pass that stops on a judge that approved is caught" \
   passapproved 's#^approved_or_unjudged() { \[ "\$1" -eq 0 \] || \[ "\$1" -eq 8 \]; }$#approved_or_unjudged() { [ "$1" -eq 8 ]; }#'
@@ -2738,7 +2738,7 @@ wreck_runner "a GitHub source that trusts a list filled to its bound is caught" 
   openfull 's#^    fewer_than_the_bound "\$said" || return 3$#    :#' lib/source-github.sh
 
 wreck_runner "a second read that fails and leaves no stop is caught" \
-  passreadstop '/^begin_a_run_for() {/,/^}/s#|| stop_at "\$1" read "\$?"$#|| exit "$?"#'
+  passreadstop '/^read_the_item() {/,/^}/s#|| stop_at "\$1" read "\$?"$#|| exit "$?"#'
 
 wreck_runner "a run that never says the pass began is caught" \
   passbegan '/^begin_a_run_for() {/,/^}/s#^    emit "\$dir" pass.began item="\$1"$#    :#'

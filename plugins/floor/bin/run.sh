@@ -4104,7 +4104,8 @@ PASS_TRIES=5
 let_go_past_the_bound() {
     [ "$(resumes_counted "$dir")" -gt "$(pass_tries)" ] || return 0
 
-    stop_the_item_here "$1" tries 46
+    stop_the_item_here "$1" tries
+    exit 46
 }
 
 pass_tries() {
@@ -4129,7 +4130,6 @@ stop_the_item_here() {
     emit "$dir" pass.left item="$1" why="$2"
     note "this pass lets [$1] go, $2: $dir"
     let_go_of "$dir"
-    exit "$3"
 }
 
 #
@@ -4238,13 +4238,13 @@ let_the_ledger_decide() {
 }
 
 leave_on_an_answer_that_stops() {
-    answered_by_any "$2" deadlock    && stop_the_item_here "$1" deadlock 48
-    answered_by_any "$2" unavailable && stop_the_item_here "$1" unavailable 48
+    answered_by_any "$2" deadlock    && { stop_the_item_here "$1" deadlock; exit 48; }
+    answered_by_any "$2" unavailable && { stop_the_item_here "$1" unavailable; exit 48; }
     return 0
 }
 
 act_on_a_refusal() {
-    [ -z "$(members_out_of_rounds "$2")" ] || stop_the_item_here "$1" rounds 48
+    [ -z "$(members_out_of_rounds "$2")" ] || { stop_the_item_here "$1" rounds; exit 48; }
     act_again "$1"
 }
 
@@ -4277,9 +4277,11 @@ answer_at() {
     esac
 }
 
-# The code one member last gave on one clause at one commit, or nothing.
+# The code one member last gave on one clause at one commit, or nothing. Only a verdict row: a
+# handoff carries a 0 in the same column, and a member handed the bar has not answered it.
 last_answer_at() {
     judge=$3 name=$1 awk -F'\t' -v ref="$2" '
+        $2 != "judged"                                  { next }
         $4 "" != ENVIRON["name"] "" || $6 "" != ref "" { next }
         $8 "" == ENVIRON["judge"] ""                    { said = $5 }
         END { print said }' "$(evidence_file "$dir")" 2>/dev/null
@@ -4300,6 +4302,7 @@ members_out_of_rounds() {
 
 refusals_by() {
     judge=$2 name=$1 awk -F'\t' '
+        $2 != "judged"                                             { next }
         $4 "" != ENVIRON["name"] "" || $8 "" != ENVIRON["judge"] "" { next }
         $5 == "1" || $5 == "2"                                     { n++ }
         END { print n + 0 }' "$(evidence_file "$dir")" 2>/dev/null
