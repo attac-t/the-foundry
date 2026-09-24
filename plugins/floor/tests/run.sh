@@ -3724,6 +3724,19 @@ wreck_runner "a body that ignores its setting is caught" \
 wreck_runner "a setting nobody can read that is kept silent is caught" \
   bodytypo 's@^    note "the practice says \[body \$form\].*@    :@'
 
+#
+# **A member who answered here is not asked again.** Piece 5b-i. Each break removes the skip, the
+# count of what a skipped member holds, or the check that it answered under this charter.
+#
+wreck_runner "a member asked again at a commit it already answered is caught" \
+  skipnone '/^judge_or_recount() {/,/^}/s#^    answered_here "\$1" "\$2" "\$3" "\$4" || { judge_answered "\$@"; return; }$#    judge_answered "$@"; return#'
+
+wreck_runner "a refusal from a member not asked again, left uncounted, is caught" \
+  skipcount '/^judge_or_recount() {/,/^}/s@^    satisfied "\$1" "\$asked_text" "\$2" judged "\$4"$@    true@'
+
+wreck_runner "an answer to an older charter kept as an answer to this one is caught" \
+  skipversion '/^answered_here() {/,/^}/s@ || return 1$@@'
+
 report_breaks
 
 # --- break the install ---
