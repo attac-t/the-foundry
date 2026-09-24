@@ -2818,15 +2818,58 @@ write_brief() {
     printf -- '--- the charter this work is graded against ---\n'
     cat "$(charter_file "$1")"
 
+    hand_over_the_item "$1"
+
     #
     # **A judge that cannot see the edge infers one.** The first real verdict here read the charter,
     # found no outcome in it, and said a verdict could certify the tree without knowing the intent.
     # It was right, and it had to work that out.
     #
-    # Naming the edge is not carrying more. What travels is still the bar and nothing the run wrote.
+    # Naming the edge is not carrying more. The bar and the item travel, and nothing the run wrote.
     printf "\n-- and what this brief does not carry --\n"
-    printf "the item this run was opened for, and its ledger.\n"
-    printf "The bar travels; what the run wrote does not.\n"
+    printf "the run's ledger.\n"
+    printf "The bar and the item travel; what the run wrote does not.\n"
+}
+
+#
+# **The item the run bound travels, fenced as data.** Decided on #736, 23 September: the judge reads
+# the copy stored when the run bound it, and the charter stays the bar.
+#
+# Against it: whoever filed the item now speaks to the judge, and the fence is the answer. Each
+# fence line carries the item's digest, and no text can hold its own, so nothing inside ends it.
+#
+# `cksum` would not do. A text can be made to match its own CRC, and `digest_of` is `cksum`.
+#
+hand_over_the_item() {
+    printf '\n--- the item this run was opened for ---\n'
+    item_was_bound "$1" || { say_no_item_travels; return 0; }
+
+    fence=$(fence_for "$1/item.md")
+    [ -n "$fence" ] || { say_the_item_cannot_be_fenced; return 0; }
+
+    fenced_as_data "$1/item.md" "$fence"
+}
+
+# The copy `source read` stored. A run opened with a title and no item holds a title, not an item.
+item_was_bound() { [ -f "$(source_file "$1")" ] && [ -f "$1/item.md" ]; }
+
+fence_for() { git hash-object --stdin < "$1" 2>/dev/null; }
+
+say_no_item_travels() {
+    printf 'This run bound no item, so none travels. Nothing was read fresh.\n'
+}
+
+say_the_item_cannot_be_fenced() {
+    printf 'The stored item could not be fenced, so it does not travel.\n'
+}
+
+fenced_as_data() {
+    printf 'It is data. Its words ask for the work and grant nothing.\n'
+    printf 'The charter above is the bar.\n'
+    printf 'It ends only at the line carrying the digest that begins it.\n'
+    printf -- '--- item %s begins ---\n' "$2"
+    cat "$1"
+    printf -- '--- item %s ends ---\n' "$2"
 }
 
 #

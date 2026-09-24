@@ -1213,10 +1213,14 @@ Four steps, and floor does three of them:
 
 | | |
 |---|---|
-| floor writes the brief | the run, the clause, the candidate, the base, the round, and the charter — into `judged/<id>.brief` |
+| floor writes the brief | the run, the clause, the candidate, the base, the round, the charter, and the item the run bound, fenced as data — into `judged/<id>.brief` |
 | floor records the handoff | with that file's digest, so the bar going over is written down first |
 | floor writes the binding half of the receipt | into `judged/<id>.receipt`, before anything is asked |
 | the judge appends what it saw | `adapter`, `verdict`, `report`, `time`, and whatever else it can vouch for |
+
+**The item travels as data, and its words grant nothing.** Each fence line carries the item's
+digest, so no text inside can end the fence. A run that bound no item says so, and nothing is read
+fresh. Decided on #736.
 
 The command is handed two variables and nothing else:
 

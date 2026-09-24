@@ -3628,6 +3628,25 @@ wreck_runner "a run that recorded nothing and is never told is caught" \
 wreck_runner "a run told it said nothing when it said something is caught" \
   alwaystold 's@read -r _ _ event _; do@read -r _ _ event _; do continue;@'
 
+#
+# **The item travels fenced, and the fence is the whole answer to who now speaks to the judge.**
+# Decided on #736, 23 September. A weak digest is the attack: `0000` is what the case plants.
+#
+wreck_runner "a brief that drops the item a run bound is caught" \
+  itemunbound 's@^item_was_bound() {.*@item_was_bound() { return 1; }@'
+
+wreck_runner "a fence an item's own text can close is caught" \
+  fenceweak 's@^fence_for() {.*@fence_for() { printf 0000; }@'
+
+wreck_runner "a fence that does not carry its digest is caught" \
+  fenceopen '/^fenced_as_data()/,/^}/ s@item %s begins@item begins@'
+
+wreck_runner "an item handed over without saying it grants nothing is caught" \
+  fencewords 's@^    printf .It is data\. Its words ask for the work and grant nothing\..*@    :@'
+
+wreck_runner "a brief silent about an item it does not carry is caught" \
+  fencenone 's@^say_no_item_travels() {@say_no_item_travels() { return 0;@'
+
 report_breaks
 
 # --- break the install ---
