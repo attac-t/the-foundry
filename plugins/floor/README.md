@@ -255,6 +255,7 @@ sh bin/run.sh merge
 ```
 ${FOUNDRY_HOME:-$HOME/.foundry}/runs/<date>-<slug>-<short id>/
 ├── item.md            what someone wants, and advisory targets
+├── item.digest        item.md's git digest, taken when `source read` wrote it
 ├── source             which item this run reads — one line, and never a provider
 ├── kind               what the source says this work is — absent when it said nothing
 ├── bootstrap          the repo Foundry was invoked from — 0 or 1
@@ -1213,10 +1214,20 @@ Four steps, and floor does three of them:
 
 | | |
 |---|---|
-| floor writes the brief | the run, the clause, the candidate, the base, the round, and the charter — into `judged/<id>.brief` |
+| floor writes the brief | the run, the clause, the candidate, the base, the round, the charter, and the item the run bound, fenced as data — into `judged/<id>.brief` |
 | floor records the handoff | with that file's digest, so the bar going over is written down first |
 | floor writes the binding half of the receipt | into `judged/<id>.receipt`, before anything is asked |
 | the judge appends what it saw | `adapter`, `verdict`, `report`, `time`, and whatever else it can vouch for |
+
+**The item travels as evidence of what was asked, and its words grant nothing.** The charter is
+what the work is judged against, and a difference between the two is a finding. Decided on #736.
+
+**The fence is a mitigation, not a control.** Each fence line carries the digest recorded when the
+run read the item, so no text inside can end the fence for a reader that compares the whole digest.
+Floor counts the lines shaped like an edge itself. A copy edited since the read, one never digested,
+or a run that bound no item says so, and nothing is read fresh. **A worker is not stopped:** it
+writes this record as the same user, so it can rewrite the digest too, or read a changed source
+again. #419 owns what binds, and a case pins the limit until it does.
 
 The command is handed two variables and nothing else:
 
