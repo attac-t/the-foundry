@@ -2576,6 +2576,44 @@ a_request_names_what_the_grader_accepts() {
 a_request_names_what_the_grader_accepts
 
 #
+# One run, one delivery. A second `deliver` pushed a new head and rewrote the body, which the request
+# never carried: only the first `deliver` hands one over, so the run described a request nobody sent.
+a_second_delivery_keeps_the_body_it_sent() {
+  git init -q --bare "$tmp/sdremote.git" 2>/dev/null \
+    && make_repo "$tmp/sd" main && set_origin "$tmp/sd" 'https://github.com/acme/sd.git' \
+    && mkdir -p "$tmp/sd/.foundry" \
+    && commit_file "$tmp/sd" .foundry/gates 'tests  true
+' || { skip "a second delivery — git could not make a repo here"; return; }
+
+  mkdir -p "$src/items" && printf 'Deliver it twice\n' > "$src/items/411"
+
+  # An item bound and authorised, because a delivery is recorded only once the source has taken it.
+  d=$(floor_new_as "$tmp/sd" ada@example.com "Twice")
+  for step in "source read 411" "charter derive" "policy authorize https://github.com/acme/sd.git" \
+      "policy deliver-to https://github.com/acme/sd.git" "targets add https://github.com/acme/sd.git main" \
+      authorise open gates; do
+    floor "$tmp/sd" $step >/dev/null 2>&1
+  done
+  co=$(only_slot "$(floor "$tmp/sd" path)/units/01/workspace")
+  git -C "$co" config "url.$tmp/sdremote.git.pushInsteadOf" 'https://github.com/acme/sd.git'
+
+  is "a first delivery answers" "$(code_of floor "$tmp/sd" deliver 'a change')" "0"
+  first=$(git -C "$co" rev-parse HEAD)
+  sent=$(cat "$d/body" 2>/dev/null)
+
+  printf 'more\n' > "$co/more.txt"
+  git -C "$co" add more.txt >/dev/null 2>&1
+  floor "$tmp/sd" commit 'chore: a second change' >/dev/null 2>&1
+  floor "$tmp/sd" gates >/dev/null 2>&1
+
+  is  "a second delivery answers"            "$(code_of floor "$tmp/sd" deliver 'a change')" "0"
+  is  "and pushes the new head"              "$(git -C "$tmp/sdremote.git" rev-parse "foundry/$(basename "$d")" 2>/dev/null)" "$(git -C "$co" rev-parse HEAD)"
+  is  "while the run keeps the body it sent" "$(cat "$d/body" 2>/dev/null)" "$sent"
+  has "which names the first commit"         "$sent" "- commit \`$first\`"
+}
+a_second_delivery_keeps_the_body_it_sent
+
+#
 # **Both adapters carry a brief and nothing compared them.** #377 calls that a seam built and
 # unproved: two implementations, one contract, and no case driving one input through both.
 #

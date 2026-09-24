@@ -3694,6 +3694,9 @@ wreck_runner "a brief that reads the source again is caught" \
 wreck_runner "a delivery that composes no body is caught" \
   bodyunmade 's@^    compose_the_body "\$1" "\$pushed"@    :@'
 
+wreck_runner "a second delivery that rewrites the body it never sends is caught" \
+  bodyrewritten 's@^    delivered_already "\$1" >/dev/null && return 0@    :@'
+
 wreck_runner "a request naming a commit the push did not send is caught" \
   bodybeforepush 's@^    pushed=\$(unit_head "\$1" "\$2")@    pushed=$(bootstrap_base "$1")@'
 

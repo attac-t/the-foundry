@@ -810,7 +810,7 @@ name a row the grader ignores or say what the run did not record. The brief abov
 author's words, and may say anything. The adapter adds its marker last. Decided on #736.
 
 **A second `deliver` on the same branch pushes the new head, and the request keeps its first
-body.** One run, one delivery: the request is not rewritten.
+body.** One run, one delivery: the request is not rewritten, and the run keeps the body it sent.
 
 **The body is a setting.** `body brief` in `.foundry/practice` sends the brief alone, and `body
 record`, or no line, sends the record too. It is read at the run's base, so no worker sets it. A

@@ -4220,6 +4220,8 @@ say_what_a_brief_is() {
 compose_the_body() {
     body=$(body_file "$1")
 
+    # A request is never rewritten, so a second `deliver` keeps the body it carries.
+    delivered_already "$1" >/dev/null && return 0
     [ "$(body_form_at_base "$1")" = brief ] && { the_brief_alone "$1" > "$body"; return 0; }
 
     { cat "$(brief_file "$1")" 2>/dev/null; what_floor_recorded "$1" "$2"; } > "$body" \
