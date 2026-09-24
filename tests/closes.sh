@@ -30,25 +30,38 @@ trap 'rm -rf "$tmp"' EXIT
 call() { printf '{"tool_name":"Bash","tool_input":{"command":"%s"}}' "$1" > "$tmp/call.json"; }
 
 #
-# A stand-in for the forge, so this suite never asks the real one. It answers two questions and
-# tells them apart by the noun: a request carries what it closes, an issue body carries boxes.
+# A stand-in for the forge, so this suite never asks the real one. It answers three questions: a
+# request's body and title, its commits, and an issue's boxes.
 #
-# A request's title and commits come back only when `--json` names them, in the lines the hook's
-# `--jq` makes. **So a hook that stops asking goes red.** The `--jq` itself is measured live.
+# **It answers only the two `--jq` strings measured live on #1027.** No jq runs here, so a hook
+# whose expression drifts gets nothing back and goes red. Measure again before changing a copy.
+BODY_AND_TITLE='.body, ("merge commit: " + .title)'
+EACH_COMMIT_LINE='.[] | .sha[0:7] as $c | .commit.message | split("\n")[] | "commit \($c): \(.)"'
+
 stub_gh() {
   printf "%s" "$1" > "$tmp/pr.body"
   printf "%s" "$2" > "$tmp/issue.body"
   printf "%s" "${3:-}" > "$tmp/pr.commits"
   printf "%s" "${4:-}" > "$tmp/pr.title"
+  printf "%s" "$BODY_AND_TITLE" > "$tmp/jq.view"
+  printf "%s" "$EACH_COMMIT_LINE" > "$tmp/jq.api"
+  printf '0' > "$tmp/api.exit"
   {
     printf '#!/bin/sh\n'
-    printf 'fields=; prior=\n'
-    printf 'for arg in "$@"; do [ "$prior" = --json ] && fields=$arg; prior=$arg; done\n'
+    printf 'fields=; jq=; prior=\n'
+    printf 'for arg in "$@"; do\n'
+    printf '  [ "$prior" = --json ] && fields=$arg\n'
+    printf '  [ "$prior" = --jq ] && jq=$arg\n'
+    printf '  prior=$arg\n'
+    printf 'done\n'
     printf 'case "$1 $2" in\n'
-    printf '  "pr view")    cat %s; echo\n' "$tmp/pr.body"
-    printf '    case ",$fields," in *,title,*) cat %s; echo ;; esac\n' "$tmp/pr.title"
-    printf '    case ",$fields," in *,commits,*) cat %s; echo ;; esac ;;\n' "$tmp/pr.commits"
+    printf '  "pr view")    [ "$jq" = "$(cat %s)" ] || exit 1\n' "$tmp/jq.view"
+    printf '                cat %s; echo\n' "$tmp/pr.body"
+    printf '                case ",$fields," in *,title,*) cat %s; echo ;; esac ;;\n' "$tmp/pr.title"
     printf '  "issue view") [ "$3" = 711 ] && cat %s ;;\n' "$tmp/issue.body"
+    printf '  "api repos/{owner}/{repo}/pulls/740/commits")\n'
+    printf '                [ "$jq" = "$(cat %s)" ] || exit 1\n' "$tmp/jq.api"
+    printf '                cat %s; echo; exit "$(cat %s)" ;;\n' "$tmp/pr.commits" "$tmp/api.exit"
     printf 'esac\nexit 0\n'
   } > "$tmp/bin/gh"
   chmod +x "$tmp/bin/gh"
@@ -154,7 +167,7 @@ esac
 #
 # On 24 September #1021 closed from commit `04cf28b`, whose message ended `Closes #1021`, under a
 # body saying `Refs`. **GitHub closes from a commit when it reaches `main`.** The title rides in the
-# merge commit, so it closes the same way.
+# merge commit. Whether that closes is unmeasured, so reading it is a choice that only refuses more.
 
 stub_gh 'Refs #711' '- [ ] one thing' 'commit 04cf28b: one still fails. Closes #711.'
 
@@ -204,6 +217,57 @@ call "$(verb pr merge) 740 --merge"
 case $(asked) in
   *'[Closes #711]'*) ok "a tab and a carriage return never reach the JSON" ;;
   *)                 bad "a tab and a carriage return never reach the JSON — one did" ;;
+esac
+
+# JSON forbids every control character below a space, not only the two a web edit brings.
+stub_gh $'Closes #711\001\033' '- [ ] one thing'
+
+call "$(verb pr merge) 740 --merge"
+case $(asked) in
+  *'[Closes #711]'*) ok "no control character reaches the JSON" ;;
+  *)                 bad "no control character reaches the JSON — one did" ;;
+esac
+
+# --- a commit read that fails leaves the body's check standing ---
+
+stub_gh 'Closes #711' '- [ ] one thing' 'commit 04cf28b: nothing here'
+printf '1' > "$tmp/api.exit"
+
+call "$(verb pr merge) 740 --merge"
+case $(asked) in
+  *'"permissionDecision":"deny"'*) ok "a commit read that fails still refuses on the body" ;;
+  *)                               bad "a commit read that fails still refuses on the body — it let the merge through" ;;
+esac
+
+# --- a colon, and two issues on one line ---
+#
+# GitHub closes on `Closes: #10`, and on each issue in `Resolves #10, resolves #123`. A pattern
+# keeping the last match on a line read only the second, and a colon hid the first.
+
+stub_gh 'Closes: #711' '- [ ] one thing'
+
+call "$(verb pr merge) 740 --merge"
+case $(asked) in
+  *'"permissionDecision":"deny"'*) ok "a colon after the word is closure" ;;
+  *)                               bad "a colon after the word is closure — it was let through" ;;
+esac
+
+stub_gh 'Resolves #711, resolves #999' '- [ ] one thing'
+
+call "$(verb pr merge) 740 --merge"
+case $(asked) in
+  *'#711 with 1 box'*) ok "every issue on a line is read, not only the last" ;;
+  *)                   bad "every issue on a line is read, not only the last — #711 was missed" ;;
+esac
+
+# A longer number is not this issue's line. With no boundary, the pattern quoted `#7110` for `#711`.
+stub_gh 'Closes #7110
+Closes #711' '- [ ] one thing'
+
+call "$(verb pr merge) 740 --merge"
+case $(asked) in
+  *'[Closes #711]'*) ok "it quotes the line for this number, not a longer one" ;;
+  *)                 bad "it quotes the line for this number, not a longer one — it quoted #7110" ;;
 esac
 
 # --- every box ticked, so the merge may close it ---

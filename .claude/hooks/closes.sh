@@ -27,6 +27,11 @@ set -u
 shut=
 said=
 
+# The two reads, pinned. `tests/closes.sh` answers these exact strings and nothing else, so an edit
+# goes red there until somebody measures it live again. #1027 is where both were measured.
+THE_BODY_AND_TITLE='.body, ("merge commit: " + .title)'
+EACH_COMMIT_LINE='.[] | .sha[0:7] as $c | .commit.message | split("\n")[] | "commit \($c): \(.)"'
+
 main() {
     call=$(cat)
 
@@ -67,27 +72,34 @@ read_what_it_would_close() {
     # Lowered once, so each pattern says the word rather than spelling both cases of every letter.
     lowered=$(printf '%s' "$said" | tr 'A-Z' 'a-z')
 
-    shut=$(
-        numbers_after 'close[sd]*'        "$lowered"
-        numbers_after 'fix[esd]*'         "$lowered"
-        numbers_after 'resolve[sd]*'      "$lowered"
-    )
-    shut=$(printf '%s\n' $shut | sort -u)
-
+    shut=$(numbers_closed_in "$lowered" | sort -u)
 }
 
-# **The body, the title and each commit message.** GitHub closes from all three: a commit when it
-# reaches `main`, and the title inside the merge commit. #1021 closed from a commit under `Refs`.
+# **The body and every commit message, whole.** GitHub closes from the body, and from a commit when
+# it reaches `main`. #1021 closed from a commit while the body said `Refs`.
 #
-# Each line of a commit carries its hash, so a refusal names the commit that closes.
+# The title is read by choice. It rides in the merge commit, and whether that closes is unmeasured.
+# Reading it can only refuse more than GitHub closes, which costs a retitle and never a wrong close.
+#
+# The commits come from the REST list, whole. `gh pr view` cuts a headline near seventy characters,
+# and #1027's own subjects came back split around `…`. Each line carries its commit's hash.
+#
+# A commit read that fails leaves the body's check standing, so it returns nothing and no failure.
 what_the_forge_reads() {
-    gh pr view "$1" --json body,title,commits --jq '.body, ("merge commit: " + .title),
-        (.commits[] | .oid[0:7] as $c | (.messageHeadline, (.messageBody | split("\n")[]))
-            | "commit \($c): \(.)")' 2>/dev/null
+    gh pr view "$1" --json body,title --jq "$THE_BODY_AND_TITLE" 2>/dev/null || return 1
+    gh api "repos/{owner}/{repo}/pulls/$1/commits" --paginate --jq "$EACH_COMMIT_LINE" 2>/dev/null
+    return 0
 }
 
-numbers_after() {
-    printf '%s' "$2" | sed -n "s/.*$1[[:space:]]*#\([0-9]\{1,\}\).*/\1/p"
+# **Every match on a line, and a colon allowed.** `Closes: #10` closes, and so does each issue in
+# `Resolves #10, resolves #123`. A pattern keeping the last match read only the second.
+numbers_closed_in() {
+    printf '%s\n' "$1" | awk '{
+        while (match($0, /(close[sd]*|fix[esd]*|resolve[sd]*):?[ \t]*#[0-9]+/)) {
+            hit = substr($0, RSTART, RLENGTH); sub(/.*#/, "", hit); print hit
+            $0 = substr($0, RSTART + RLENGTH)
+        }
+    }'
 }
 
 refuse_while_a_box_is_open() {
@@ -103,7 +115,7 @@ refuse_while_a_box_is_open() {
 # **The line for this issue, never the first one read.** A body closing two issues quoted the
 # wrong one, and the author read a sentence they had not written.
 line_closing() {
-    printf '%s' "$said" | grep -i -m1 -E "(close[sd]*|fix[esd]*|resolve[sd]*) *#$1"
+    printf '%s' "$said" | grep -i -m1 -E "(close[sd]*|fix[esd]*|resolve[sd]*):? *#$1([^0-9]|\$)"
 }
 
 open_boxes_on() {
@@ -117,10 +129,11 @@ deny() {
     exit 0
 }
 
-# A commit quotes freely, and a refusal that does not parse refuses nothing. So a quote, a
-# backslash, a tab and a carriage return are dropped, as `ticks.sh` drops them. `sh` has no parser.
+# A commit quotes freely, and a refusal that does not parse refuses nothing. So a quote, a backslash
+# and every control character JSON forbids are dropped. `ticks.sh` drops the first two, as `sh` has
+# no parser to escape them with.
 safe_in_json() {
-    printf '%s' "$1" | tr -d '"\\\r\t'
+    printf '%s' "$1" | tr -d '"\\\000-\037'
 }
 
 allow() { exit 0; }

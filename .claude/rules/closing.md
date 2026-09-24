@@ -38,11 +38,11 @@ request's body, its title and every commit message. It counts the open boxes on 
 would close, and denies while any stands. It names the issue, the count, and the line it matched.
 
 **The keyword is nine words, in any case, anywhere in any of the three.** `close`, `closes`,
-`closed`, `fix`, `fixes`, `fixed`, `resolve`, `resolves`, `resolved`.
+`closed`, `fix`, `fixes`, `fixed`, `resolve`, `resolves`, `resolved`. A colon after the word counts.
 
 **A commit closes an issue when it reaches `main`, whatever the body says.** On 24 September #1021
 closed from its own fix, whose message ended `Closes #1021`, under a body saying `Refs`. The title
-rides in the merge commit the same way.
+is read by choice: the merge commit carries it, and whether that closes is unmeasured.
 
 On 15 September a body ending `Refs #711, #738` closed #711 with one box open. **What fired was
 prose** — *this closes #711's last box and nothing else* — and the close event carries no commit, so
@@ -56,8 +56,8 @@ merges, and a person closes the issue by hand against the merge tree.
 what a gate read.
 
 **The hook is lint.** The worker holds the same account and can edit it, so it closes the easy path
-and nothing more. `ticks.sh` still reports after the merge, and that remains the audit. **It hears
-one closing word of nine, in the body alone**, and #1033 owns that.
+and nothing more. `ticks.sh` still reports after the merge, and that remains the audit.
+**`ticks.sh` hears one closing word of nine, in the body alone**, and #1033 owns that.
 
 ## A box that cannot be met yet
 
