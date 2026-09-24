@@ -2473,6 +2473,7 @@ a_run_nobody_selected_may_not_deliver
 # belongs to whoever remembered to run the second command.
 #
 a_delivery_carries_its_brief() {
+  git init -q --bare "$tmp/brremote.git" 2>/dev/null || { skip "brief — git could not make a bare repo here"; return; }
   make_repo "$tmp/br" main && set_origin "$tmp/br" 'https://github.com/acme/br.git'     && mkdir -p "$tmp/br/.foundry"     && commit_file "$tmp/br" .foundry/gates 'tests  true
 ' || { skip "brief — git could not make a repo here"; return; }
 
@@ -2483,6 +2484,10 @@ a_delivery_carries_its_brief() {
   floor "$tmp/br" targets add 'https://github.com/acme/br.git' main >/dev/null 2>&1
   floor "$tmp/br" open >/dev/null 2>&1
   floor "$tmp/br" gates >/dev/null 2>&1
+
+  # The body is composed after the push, from the commit it sent, so the push has to land.
+  git -C "$(only_slot "$(floor "$tmp/br" path)/units/01/workspace")" \
+    config "url.$tmp/brremote.git.pushInsteadOf" 'https://github.com/acme/br.git'
 
   # A path that is not there is a lie, not an absent brief. One is a mistake and the other is a
   # legal choice, and a source told the first would write a body from nothing.
@@ -2496,8 +2501,79 @@ A reader knows what changed.
   floor "$tmp/br" deliver 'a change' "$tmp/br-brief.md" >/dev/null 2>&1
 
   has "the run keeps the brief it was handed" "$(cat "$d/brief" 2>/dev/null)" "A reader knows what changed"
+
+  # A reader opens a request to decide, so the brief comes before what floor recorded.
+  is "and the body it composes opens with the brief" "$(head -1 "$d/body" 2>/dev/null)" "Outcome"
+  has "and then says what floor recorded"            "$(cat "$d/body" 2>/dev/null)" "What floor recorded"
 }
 a_delivery_carries_its_brief
+
+#
+# #736's decision made the body a setting. `body brief` in the practice, read at the run's base,
+# sends the brief alone; a word that is neither is named, and the record is kept.
+a_body_set_to_brief_carries_the_brief_alone() {
+  for form in brief brevity; do
+    git init -q --bare "$tmp/bf-$form-remote.git" 2>/dev/null \
+      && make_repo "$tmp/bf-$form" main && set_origin "$tmp/bf-$form" "https://github.com/acme/bf-$form.git" \
+      && mkdir -p "$tmp/bf-$form/.foundry" \
+      && commit_file "$tmp/bf-$form" .foundry/gates 'tests  true
+' && commit_file "$tmp/bf-$form" .foundry/practice "body $form
+" || { skip "the body setting — git could not make a repo here"; return; }
+  done
+
+  printf 'Outcome\n\nA reader knows what changed.\n' > "$tmp/bf-brief.md"
+  for form in brief brevity; do
+    floor_new_as "$tmp/bf-$form" ada@example.com "Setting $form" > "$tmp/bf-$form.run"
+    for step in "charter derive" "policy authorize https://github.com/acme/bf-$form.git" \
+        "policy deliver-to https://github.com/acme/bf-$form.git" \
+        "targets add https://github.com/acme/bf-$form.git main" open gates; do
+      floor "$tmp/bf-$form" $step >/dev/null 2>&1
+    done
+    git -C "$(only_slot "$(floor "$tmp/bf-$form" path)/units/01/workspace")" \
+      config "url.$tmp/bf-$form-remote.git.pushInsteadOf" "https://github.com/acme/bf-$form.git"
+  done
+
+  floor "$tmp/bf-brief" deliver 'a change' "$tmp/bf-brief.md" >/dev/null 2>&1
+  said=$(floor_says "$tmp/bf-brevity" deliver 'a change' "$tmp/bf-brief.md")
+
+  alone=$(cat "$(cat "$tmp/bf-brief.run")/body" 2>/dev/null)
+  has   "a body set to brief carries the brief"   "$alone" 'A reader knows what changed'
+  lacks "and nothing floor recorded"              "$alone" 'What floor recorded'
+  has   "a word that is neither is named"         "$said"  '[body brevity]'
+  has   "and the record is kept"                  "$(cat "$(cat "$tmp/bf-brevity.run")/body" 2>/dev/null)" 'What floor recorded'
+}
+a_body_set_to_brief_carries_the_brief_alone
+
+#
+# The body named the last row it found for a clause. A machine pass under a judged clause's words,
+# or a later handoff, then stood where the panel's approval belonged, and the grader reads neither.
+a_request_names_what_the_grader_accepts() {
+  git init -q --bare "$tmp/accepted-remote.git" 2>/dev/null \
+    && make_repo "$tmp/accepted" main && set_origin "$tmp/accepted" 'https://github.com/acme/accepted.git' \
+    && mkdir -p "$tmp/accepted/.foundry" \
+    && commit_file "$tmp/accepted" .foundry/gates 'tests  true
+' && commit_file "$tmp/accepted" .foundry/judged 'a-reviewer  a stranger can read it
+' || { skip "what met a clause — git could not make a repo here"; return; }
+
+  d=$(floor_new_as "$tmp/accepted" ada@example.com "Accepted")
+  for step in "charter derive" "policy authorize https://github.com/acme/accepted.git" \
+      "policy deliver-to https://github.com/acme/accepted.git" "targets add https://github.com/acme/accepted.git main" open gates; do
+    floor "$tmp/accepted" $step >/dev/null 2>&1
+  done
+  git -C "$(only_slot "$(floor "$tmp/accepted" path)/units/01/workspace")" \
+    config "url.$tmp/accepted-remote.git.pushInsteadOf" 'https://github.com/acme/accepted.git'
+
+  judged "$tmp/accepted" 'a stranger can read it' a-reviewer approve 'reads fine' >/dev/null 2>&1
+  floor "$tmp/accepted" evidence record 'a stranger can read it' true >/dev/null 2>&1
+  floor "$tmp/accepted" evidence handed 'a stranger can read it' a-reviewer 'a test harness' >/dev/null 2>&1
+  floor "$tmp/accepted" deliver 'a change' >/dev/null 2>&1
+
+  body=$(cat "$d/body" 2>/dev/null)
+  has   "a judged clause is named by the panel that approved it" "$body" "Judged \`a stranger can read it\`: judged by a-reviewer"
+  lacks "never by a machine row the grader skips"                "$body" "Judged \`a stranger can read it\`: machine"
+  lacks "nor by the handoff recorded after it"                   "$body" "Judged \`a stranger can read it\`: handed"
+}
+a_request_names_what_the_grader_accepts
 
 #
 # **Both adapters carry a brief and nothing compared them.** #377 calls that a seam built and
@@ -8312,7 +8388,7 @@ The answer is 9876543210.'
   # Only a line that is nothing else goes. A sentence holding the number is the
   # writer's, and it stays.
   #
-  # A brief reaches the seam from the run's own record, never as an argument.
+  # A body reaches the seam from the run's own record, never as an argument.
   # `send_and_record` reads it there, so that is where a test puts one.
   {
     echo 'Outcome here.'
@@ -8320,7 +8396,7 @@ The answer is 9876543210.'
     echo 'It also fixes Closes #12 style footers.'
     echo
     echo 'Closes #12'
-  } > "$ghrun/brief"
+  } > "$ghrun/body"
 
   # Both records, because either one alone answers before a body is built. The
   # run's own is read first, and the source's search finds the last one after.
@@ -9028,6 +9104,14 @@ a_delivery_carrying_a_commit_nobody_recorded() {
   floor "$tmp/pv" gates >/dev/null 2>&1
   is "a recorded commit delivers" "$(code_of floor "$tmp/pv" deliver 'Accounted for')" "0"
 
+  # #736's box 16: the request names the run, the commit, the charter and the row that met each
+  # clause. Read from what the adapter kept, so a body composed and never handed over is red.
+  sent=$(cat "$src/deliveries/$(basename "$pvrun").brief" 2>/dev/null)
+  has "the request names the run it came from"    "$sent" "- run \`$(basename "$pvrun")\`"
+  has "and the commit it delivers"                "$sent" "- commit \`$mine\`"
+  has "and the charter, by the digest a handoff stamps" "$sent" "- charter \`$(cksum < "$pvrun/charter" | awk '{ print $1 }')\`"
+  has "and each clause beside what met it"        "$sent" "Gate \`tests\`: machine"
+
   # 3. A commit made outside that operation is foreign, and refuses.
   printf 'two
 ' > "$co/outside.txt"
@@ -9100,6 +9184,91 @@ Refs #43
 }
 a_delivery_carrying_a_commit_nobody_recorded
 
+#
+# One run, one delivery. A second `deliver` pushed a new head and rewrote the body, which the request
+# never carried: only the first `deliver` hands one over, so the run described a request nobody sent.
+a_second_delivery_keeps_the_body_it_sent() {
+  git init -q --bare "$tmp/resent-remote.git" 2>/dev/null \
+    && make_repo "$tmp/resent" main && set_origin "$tmp/resent" 'https://github.com/acme/resent.git' \
+    && mkdir -p "$tmp/resent/.foundry" \
+    && commit_file "$tmp/resent" .foundry/gates 'tests  true
+' || { skip "a second delivery — git could not make a repo here"; return; }
+
+  mkdir -p "$src/items" && printf 'Deliver it twice\n' > "$src/items/411"
+
+  # An item bound and authorised, because a delivery is recorded only once the source has taken it.
+  d=$(floor_new_as "$tmp/resent" ada@example.com "Twice")
+  for step in "source read 411" "charter derive" "policy authorize https://github.com/acme/resent.git" \
+      "policy deliver-to https://github.com/acme/resent.git" "targets add https://github.com/acme/resent.git main" \
+      authorise open gates; do
+    floor "$tmp/resent" $step >/dev/null 2>&1
+  done
+  co=$(only_slot "$(floor "$tmp/resent" path)/units/01/workspace")
+  git -C "$co" config "url.$tmp/resent-remote.git.pushInsteadOf" 'https://github.com/acme/resent.git'
+
+  is "a first delivery answers" "$(code_of floor "$tmp/resent" deliver 'a change')" "0"
+  first=$(git -C "$co" rev-parse HEAD)
+  sent=$(cat "$d/body" 2>/dev/null)
+
+  printf 'more\n' > "$co/more.txt"
+  git -C "$co" add more.txt >/dev/null 2>&1
+  floor "$tmp/resent" commit 'chore: a second change' >/dev/null 2>&1
+  floor "$tmp/resent" gates >/dev/null 2>&1
+
+  second=$(git -C "$co" rev-parse HEAD)
+  said=$(floor_says "$tmp/resent" deliver 'a change'; printf 'exit=%s' "$?")
+
+  has "a second delivery answers"            "$said" "exit=0"
+  has "and says the request names the first" "$said" "the request names [$first]"
+  has "and that it pushed the second"        "$said" "this pushed [$second]"
+  is  "and pushes the new head"              "$(git -C "$tmp/resent-remote.git" rev-parse "foundry/$(basename "$d")" 2>/dev/null)" "$second"
+  is  "while the run keeps the body it sent" "$(cat "$d/body" 2>/dev/null)" "$sent"
+  has "which names the first commit"         "$sent" "- commit \`$first\`"
+}
+a_second_delivery_keeps_the_body_it_sent
+
+#
+# `deliver` read HEAD four times: to check ancestry, to grade, to push and to name. A commit landing
+# between them was pushed ungraded, or named by a body saying every clause was met there. A
+# `pre-push` hook that commits stands in that window, after git has fixed what it sends.
+a_delivery_names_the_commit_it_graded() {
+  git init -q --bare "$tmp/landed-remote.git" 2>/dev/null \
+    && make_repo "$tmp/landed" main && set_origin "$tmp/landed" 'https://github.com/acme/landed.git' \
+    && mkdir -p "$tmp/landed/.foundry" \
+    && commit_file "$tmp/landed" .foundry/gates 'tests  true
+' || { skip "a commit landing mid-delivery — git could not make a repo here"; return; }
+
+  d=$(floor_new_as "$tmp/landed" ada@example.com "Landed")
+  for step in "charter derive" "policy authorize https://github.com/acme/landed.git" \
+      "policy deliver-to https://github.com/acme/landed.git" "targets add https://github.com/acme/landed.git main" \
+      open gates; do
+    floor "$tmp/landed" $step >/dev/null 2>&1
+  done
+  co=$(only_slot "$(floor "$tmp/landed" path)/units/01/workspace")
+  git -C "$co" config "url.$tmp/landed-remote.git.pushInsteadOf" 'https://github.com/acme/landed.git'
+  graded=$(git -C "$co" rev-parse HEAD)
+
+  # `core.hooksPath` pinned, or a machine that sets one globally runs no hook and this passes for
+  # nothing. The hook drops git's environment first, since the push's `GIT_DIR` outranks its own.
+  mkdir -p "$co/.git/hooks"
+  git -C "$co" config core.hooksPath "$co/.git/hooks"
+  cat > "$co/.git/hooks/pre-push" <<'HOOK'
+#!/bin/sh
+unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_OBJECT_DIRECTORY
+git -c user.email=a@b.c -c user.name=a commit -q --allow-empty -m 'landed during the push'
+exit 0
+HOOK
+  chmod +x "$co/.git/hooks/pre-push"
+
+  floor "$tmp/landed" deliver 'a change' >/dev/null 2>&1
+
+  differs "a commit landed while it pushed"      "$(git -C "$co" rev-parse HEAD)" "$graded"
+  is      "the push carried the commit it graded" \
+          "$(git -C "$tmp/landed-remote.git" rev-parse "foundry/$(basename "$d")" 2>/dev/null)" "$graded"
+  has     "and the body names that commit"       "$(cat "$d/body" 2>/dev/null)" "- commit \`$graded\`"
+}
+a_delivery_names_the_commit_it_graded
+
 a_delivery_that_succeeds() {
   git init -q --bare "$tmp/dvremote.git" 2>/dev/null \
     || { skip "a delivery that succeeds — git could not make a bare repo here"; return; }
@@ -9139,8 +9308,8 @@ a_delivery_that_succeeds() {
         "$(code_of floor "$tmp/dv" deliver 'A change worth reading')" "0"
 
   #
-  # What `merge` refuses on, written down. The head is read after the push, so the record names what
-  # landed rather than what the workspace held.
+  # What `merge` refuses on, written down. `deliver` reads the head once, so the record names the one
+  # commit it graded and pushed, whatever the workspace holds after.
   #
   landed=$(cut -d' ' -f2 "$dvrun/delivery")
 

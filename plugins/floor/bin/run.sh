@@ -1261,7 +1261,7 @@ refuse_foreign_ancestry() {
         exit 33
     }
 
-    head=$(git -C "$tree" rev-parse --verify --quiet HEAD 2>/dev/null) || head=
+    head=${3:-}
     [ -n "$head" ] || { note "[$tree] has no head to inspect — saw nothing, wanted a sha"; exit 33; }
 
     # `base..head` answers for a head the base is not behind, and the answer is
@@ -3067,7 +3067,7 @@ unmet_for_delivery() {
     empty_selection "$1"
     ungradable_targets "$1"
     underived_clauses "$1"
-    unmet_clauses "$1"
+    unmet_clauses "$1" "${2:-}"
 }
 
 #
@@ -4260,11 +4260,12 @@ deliver() {
     refuse_unreadable_run "$dir"
     refuse_an_item_another_host_holds "$dir"
     refuse_ungranted_delivery "$dir" "$here"
-    refuse_foreign_ancestry "$dir" "$here"
-    refuse_incomplete "$dir"
+    carrying=$(unit_head "$dir" "$here")
+    refuse_foreign_ancestry "$dir" "$here" "$carrying"
+    refuse_incomplete "$dir" "$carrying"
     keep_the_brief "$dir" "${2:-}"
 
-    send_delivery "$dir" "$here" "$title"
+    send_delivery "$dir" "$here" "$title" "$carrying"
     say_the_asides "$dir"
     emit "$dir" run.delivered
 }
@@ -4289,15 +4290,88 @@ brief_file() { printf '%s/brief' "$1"; }
 # at the moment that it applies is a skill that nobody ever invokes,
 # and this is the very last moment that a delivery has to say so.
 say_what_a_brief_is() {
-    note "no brief, so this delivery says only which item it answers"
+    note "no brief, so this delivery carries floor's words alone"
     note "  floor:brief names the five shapes a human surface takes"
+}
+
+#
+# **The request names its record.** #736's box 16, decided 23 September: `deliver` composes the body
+# from the run, the charter, the evidence and the commit, **and the body is a setting.**
+#
+# The brief comes first, because a reader opens a request to decide, and it is its author's words.
+# The record follows, built only from files the run keeps, so the record cannot say what the run
+# did not record. `$2` is the commit the push sent.
+#
+compose_the_body() {
+    body=$(body_file "$1")
+
+    # A request is never rewritten, so a second `deliver` keeps the body it carries.
+    delivered_already "$1" >/dev/null && return 0
+    [ "$(body_form_at_base "$1")" = brief ] && { the_brief_alone "$1" > "$body"; return 0; }
+
+    { cat "$(brief_file "$1")" 2>/dev/null; what_floor_recorded "$1" "$2"; } > "$body" \
+        || die_unwritable "$body"
+}
+
+#
+# `body brief` or `body record` in `.foundry/practice`, read at the run's base, so no worker sets
+# it. None means `record`, the decided default. Any other word is named, and the record is kept.
+#
+body_form_at_base() {
+    base=$(bootstrap_base "$1") || { printf 'record\n'; return 0; }
+    form=$(practice_at_base "$base" | awk '$1 == "body" { print $2; exit }')
+
+    case ${form:-record} in
+        record|brief) printf '%s\n' "${form:-record}"; return 0 ;;
+    esac
+
+    note "the practice says [body $form], and a body is \`brief\` or \`record\`, so the record is kept"
+    printf 'record\n'
+}
+
+the_brief_alone() { cat "$(brief_file "$1")" 2>/dev/null; return 0; }
+
+body_file() { printf '%s/body' "$1"; }
+
+# The charter by `charter_version`, the digest every handoff row stamps, so a reader can match the
+# request's charter to the one each judge was handed.
+what_floor_recorded() {
+    printf '\n**What floor recorded.**\n\n'
+    printf -- '- run `%s`\n' "$(recorded_id "$1")"
+    printf -- '- commit `%s`\n' "$2"
+    printf -- '- charter `%s`, each clause beside what met it:\n' "$(charter_version "$1")"
+    each_clause_and_what_met_it "$(charter_file "$1")"
+}
+
+#
+# **Every clause here was met.** `deliver` refuses an unmet one before it pushes, so the grader has
+# already read the rows at this commit, and this reads none. It names whom the grader accepted:
+# every judge a panel names, because one dissent stops a panel, or the kind the clause trusts.
+# Round one read the rows again, loosely, and named a pass the grader had skipped.
+#
+each_clause_and_what_met_it() {
+    for met_id in $(clause_ids_in "$1"); do
+        clause_and_what_met_it "$1" "$met_id"
+    done
+}
+
+clause_ids_in() { awk '$1 == "clause" { print $2 }' "$1" 2>/dev/null; }
+
+clause_and_what_met_it() {
+    printf '  - %s `%s`: %s\n' "$(clause_kind "$1" "$2")" "$(clause_text "$1" "$2")" "$(what_met "$1" "$2")"
+}
+
+what_met() {
+    met_by=$(answerer_of "$1" "$2")
+    [ "$met_by" = panel ] && { printf 'judged by %s' "$(spaced "$(named_judges "$1" "$2")" | sed 's/ /, /g')"; return; }
+    printf '%s' "$met_by"
 }
 
 # A path, or nothing at all. An adapter that is given a path it cannot
 # read has been told a lie. One that was handed no path knows there
 # is nothing at all, and so those are two very different things.
-brief_if_kept() {
-    [ -s "$(brief_file "$1")" ] && printf '%s' "$(brief_file "$1")"
+body_if_composed() {
+    [ -s "$(body_file "$1")" ] && printf '%s' "$(body_file "$1")"
 }
 
 refuse_ungranted_delivery() {
@@ -4308,7 +4382,7 @@ refuse_ungranted_delivery() {
 }
 
 refuse_incomplete() {
-    findings=$(unmet_for_delivery "$1")
+    findings=$(unmet_for_delivery "$1" "${2:-}")
 
     [ -n "$findings" ] || return 0
     printf '%s\n' "$findings"
@@ -4316,25 +4390,37 @@ refuse_incomplete() {
 }
 
 # Push, then say so. A source told about a delivery nobody can fetch is worse than silence, so the
-# order is not a preference.
+# order is not a preference. `$4` is the commit `deliver` graded, and the push and the body take it.
 send_delivery() {
     branch=$(delivery_branch "$1")
 
-    push_workspace "$1" "$2" "$branch"
-    publish_delivery "$1" "$branch" "$3" "$(unit_head "$1" "$2")"
+    push_workspace "$1" "$2" "$branch" "$4"
+    say_a_moved_head "$1" "$4"
+    compose_the_body "$1" "$4"
+    publish_delivery "$1" "$branch" "$3" "$4"
 }
 
+# The sha, never `HEAD`. A commit landing after `deliver` read its head is not what it graded.
 push_workspace() {
     tree=$(unit_work_tree "$1" "$2") || exit 16
 
-    why=$(git -C "$tree" push origin "HEAD:refs/heads/$3" 2>&1) && return 0
+    why=$(git -C "$tree" push origin "$4:refs/heads/$3" 2>&1) && return 0
     note "could not deliver [$3] to [$2]: $why"
     exit 19
 }
 
-# Read after the push and never before. `push_workspace` sends `HEAD`, so
-# asking first names a commit the push might not have carried.
-unit_head() { git -C "$(unit_work_tree "$1" "$2")" rev-parse HEAD 2>/dev/null; }
+# Read once, by `deliver`, before anything looks. The ancestry check, the grade, the push and the
+# body each take this sha, so a commit landing while it works reaches none of them.
+unit_head() { git -C "$(unit_work_tree "$1" "$2")" rev-parse --verify --quiet HEAD 2>/dev/null; }
+
+# A request is never rewritten. So a second `deliver` that pushed a new head says the request still
+# names the first, because nothing else will.
+say_a_moved_head() {
+    named=$(delivered_head "$1") || return 0
+    [ "$named" != "$2" ] || return 0
+
+    note "the request names [$named], and this pushed [$2] to its branch — the request is not rewritten"
+}
 
 # Derived, never chosen. A branch a worker names is a branch a retry can rename, and then the source
 # holds two deliveries for one run.
@@ -4394,7 +4480,8 @@ unmet_clauses() {
     tree=$(unit_work_tree "$1" "$here" 2>/dev/null) \
         || { printf 'unopened: no workspace holds [%s], so nothing was delivered from one\n' "$here"; return; }
 
-    ref=$(git -C "$tree" rev-parse --verify --quiet HEAD 2>/dev/null)
+    # `deliver` hands in the one commit it will push. `complete` asks of the head as it stands.
+    ref=${2:-$(git -C "$tree" rev-parse --verify --quiet HEAD 2>/dev/null)}
     [ -n "$ref" ] || { printf 'nothing delivered: the workspace holds no commit to be graded at\n'; return; }
 
     awk '$1 == "clause" { print $2 }' "$file" 2>/dev/null | while read -r id; do
@@ -4417,17 +4504,28 @@ what_it_lacks() {
     has_local_pin "$2" "$3" "$4" \
         || { printf 'unverifiable: [%s] is pinned to a repository this checkout is not\n' "$text"; return; }
 
-    panel=$(named_judges "$2" "$3")
-    [ -n "$panel" ] && { what_the_panel_lacks "$1" "$text" "$4" "$5" "$panel"; return; }
-
-    # A judged clause naming nobody is answered by nobody. Falling through let
-    # any verdict satisfy it, which is a reader removing a requirement.
-    [ "$(clause_kind "$2" "$3")" = Judged ] \
+    answerer=$(answerer_of "$2" "$3")
+    [ "$answerer" = panel ] && { what_the_panel_lacks "$1" "$text" "$4" "$5" "$(named_judges "$2" "$3")"; return; }
+    [ "$answerer" = nobody ] \
         && { printf 'unmet: [%s] at %s@%s — its panel names nobody, so nothing can answer it\n' "$text" "$4" "$5"; return; }
 
-    satisfied "$1" "$text" "$5" "$(answers_for "$(clause_kind "$2" "$3")")" "" && return
+    satisfied "$1" "$text" "$5" "$answerer" "" && return
 
     printf 'unmet: [%s] at %s@%s\n' "$text" "$4" "$5"
+}
+
+#
+# **Who may answer a clause, and the one place that says so:** the judges its panel names, or else
+# the kind of row its kind trusts. The grader and a request's record both ask here, so a new answer
+# cannot reach one of them and leave the other naming the old.
+#
+# A judged clause naming nobody is answered by nobody. Falling through let
+# any verdict satisfy it, which is a reader removing a requirement.
+answerer_of() {
+    [ -n "$(named_judges "$1" "$2")" ] && { printf 'panel\n'; return; }
+    [ "$(clause_kind "$1" "$2")" = Judged ] && { printf 'nobody\n'; return; }
+
+    answers_for "$(clause_kind "$1" "$2")"
 }
 
 #
@@ -6900,7 +6998,7 @@ closure_word() {
 
 send_and_record() {
     said=$(source_says publish "$(item_id "$1")" "${1##*/}" "$2" "$3" \
-        "$(closure_word "$1")" "$(brief_if_kept "$1")")
+        "$(closure_word "$1")" "$(body_if_composed "$1")")
     refuse_unless_answered "$?" delivery 19
 
     record_delivery "$1" "$2" "${4:-}" "$said"
