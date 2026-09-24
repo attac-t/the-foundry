@@ -9105,7 +9105,7 @@ a_delivery_carrying_a_commit_nobody_recorded() {
   has "the request names the run it came from"    "$sent" "- run \`$(basename "$pvrun")\`"
   has "and the commit it delivers"                "$sent" "- commit \`$mine\`"
   has "and the charter, by the digest a handoff stamps" "$sent" "- charter \`$(cksum < "$pvrun/charter" | awk '{ print $1 }')\`"
-  has "and each clause beside the row that met it" "$sent" "Gate \`tests\`: machine"
+  has "and each clause beside what met it"        "$sent" "Gate \`tests\`: machine"
 
   # 3. A commit made outside that operation is foreign, and refuses.
   printf 'two

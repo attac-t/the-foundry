@@ -805,9 +805,10 @@ tell a met one from an unmet one. A person reads it and types one line — the s
 
 **The body is the brief, then what floor recorded.** The record is the run, the commit the push
 sent, the charter by the digest every handoff stamps, and what met each clause at that commit.
-Each clause is named by what `satisfied` accepts, the grader's own test, so the record cannot
-name a row the grader ignores or say what the run did not record. The brief above it is its
-author's words, and may say anything. The adapter adds its marker last. Decided on #736.
+`deliver` refuses an unmet clause before it pushes, so every clause the record lists was met.
+Each is named by whom the grader accepted: every judge its panel names, or the kind of row it
+trusts. The record reads no row itself, so it cannot name one the grader skipped. The brief above
+it is its author's words, and may say anything. The adapter adds its marker last. Decided on #736.
 
 **A second `deliver` on the same branch pushes the new head, and the request keeps its first
 body.** One run, one delivery: the request is not rewritten, and the run keeps the body it sent.

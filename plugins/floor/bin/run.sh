@@ -4255,45 +4255,32 @@ what_floor_recorded() {
     printf -- '- run `%s`\n' "$(recorded_id "$1")"
     printf -- '- commit `%s`\n' "$2"
     printf -- '- charter `%s`, each clause beside what met it:\n' "$(charter_version "$1")"
-    each_clause_and_what_met_it "$1" "$2"
+    each_clause_and_what_met_it "$(charter_file "$1")"
 }
 
 #
-# **Met the way the grader meets it.** `satisfied` is asked of each clause, with the kind its clause
-# trusts, and of each judge a panel names. So a row the grader ignores is never named, and a panel
-# is named by every member who approved. Round one's Critical was a looser copy of this.
+# **Every clause here was met.** `deliver` refuses an unmet one before it pushes, so the grader has
+# already read the rows at this commit, and this reads none. It names whom the grader accepted:
+# every judge a panel names, because one dissent stops a panel, or the kind the clause trusts.
+# Round one read the rows again, loosely, and named a pass the grader had skipped.
 #
 each_clause_and_what_met_it() {
-    for met_id in $(clause_ids_in "$(charter_file "$1")"); do
-        clause_and_what_met_it "$1" "$met_id" "$2"
+    for met_id in $(clause_ids_in "$1"); do
+        clause_and_what_met_it "$1" "$met_id"
     done
 }
 
 clause_ids_in() { awk '$1 == "clause" { print $2 }' "$1" 2>/dev/null; }
 
 clause_and_what_met_it() {
-    met_file=$(charter_file "$1")
-    met_text=$(clause_text "$met_file" "$2")
-    met_kind=$(clause_kind "$met_file" "$2")
-    met_how=$(what_met "$1" "$met_file" "$2" "$met_text" "$3" "$met_kind")
-
-    printf '  - %s `%s`: %s\n' "$met_kind" "$met_text" "$met_how"
+    met_kind=$(clause_kind "$1" "$2")
+    printf '  - %s `%s`: %s\n' "$met_kind" "$(clause_text "$1" "$2")" "$(what_met "$1" "$2" "$met_kind")"
 }
 
-# Named by the grader's own test, never by what the ledger holds. A worker may record a pass
-# under any name the charter does not pin, and the grader skips it.
 what_met() {
-    met_panel=$(named_judges "$2" "$3")
-    [ -n "$met_panel" ] && { the_panel_that_met "$1" "$4" "$5" "$met_panel"; return; }
-
-    met_trust=$(answers_for "$6")
-    satisfied "$1" "$4" "$5" "$met_trust" "" && { printf '%s' "$met_trust"; return; }
-    printf 'not met at this commit'
-}
-
-the_panel_that_met() {
-    judged_by_all "$1" "$2" "$3" "$4" || { printf 'not met at this commit'; return; }
-    printf 'judged by %s' "$(spaced "$4" | sed 's/ /, /g')"
+    met_panel=$(named_judges "$1" "$2")
+    [ -n "$met_panel" ] && { printf 'judged by %s' "$(spaced "$met_panel" | sed 's/ /, /g')"; return; }
+    answers_for "$3"
 }
 
 # A path, or nothing at all. An adapter that is given a path it cannot
