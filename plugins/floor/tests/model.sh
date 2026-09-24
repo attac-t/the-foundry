@@ -264,6 +264,14 @@ case "$*" in
   # own fixture, set by emptying the file rather than deleting it.
   "api user"*)              [ -f "$store/reads-fail" ] && { echo "HTTP 401: Bad credentials" >&2; exit 1; }
                             cat "$store/me" 2>/dev/null || printf 'foundry-run\n' ;;
+  # The requests open against the repository, each with the item it answers, pre-shaped the way the
+  # adapter's `--jq` shapes them. That expression was measured live, since nothing here can run it.
+  # Cut at `--limit` as gh cuts, and at 30 when none is named, because that is where gh stops.
+  "pr list --state open"*)  [ -f "$store/reads-fail" ] && { echo "could not resolve host: api.github.com" >&2; exit 1; }
+                            limit=30 prev=
+                            for arg in "$@"; do [ "$prev" = --limit ] && limit=$arg; prev=$arg; done
+                            head -n "$limit" "$store/open-prs" 2>/dev/null
+                            true ;;
   # A read that cannot answer. GitHub fails this way for a network, a token or a rate limit, and none
   # of them mean "nothing is there yet" — which is what both readers below used to conclude.
   # `gh` matches words in a body, so a run made the same day as another comes back on shared tokens.
@@ -4467,6 +4475,49 @@ a_blank_item_is_still_an_item() {
 a_blank_item_is_still_an_item
 
 #
+# **An item a request is open for is not offered.** Its claim aged out while the request waited on
+# review, and a second host took the item again. The source says which item each request answers.
+# #1025.
+#
+an_open_request_keeps_its_item() {
+  make_repo "$tmp/req" main && set_origin "$tmp/req" 'https://gitlab.com/acme/req.git' \
+    || { skip "an open request — git could not make a repo here"; return; }
+
+  for n in 64 65; do printf 'Requested item %s\n' "$n" > "$src/items/$n"; done
+  printf 'req\t2026-09-16T00:00:00Z\tpat\n' > "$src/labels/64"
+  printf 'req\t2026-09-17T00:00:00Z\tpat\n' > "$src/labels/65"
+  mkdir -p "$src/deliveries"
+  # Delivered through the adapter's own `publish`, with a brief, so what it writes is what `open`
+  # reads. A record written by hand here was a record chosen by whoever wrote the reader.
+  printf 'The work for 64.\n' > "$tmp/req-brief"
+  ( FOUNDRY_SOURCE_DIR="$src" sh "$dir_source" publish 64 a-request-for-64 work/req-64 'Requested item 64' \
+      Refs "$tmp/req-brief" ) >/dev/null 2>&1
+  bar_and_rule "$tmp/req" 'offer req pat'
+
+  lacks "a kept brief is not listed as a request of its own" \
+        "$(FOUNDRY_SOURCE_DIR="$src" sh "$dir_source" open '')" ".brief"
+
+  is  "an item a request is open for is not offered" "$(floor "$tmp/req" offer | cut -f1 | tr '\n' ' ')" "65 "
+  has "and it says why" "$(floor_says "$tmp/req" offer)" "[64] is not offered: a request for it is open"
+
+  # The claim this host took for 64 has aged past the window, so another host could break it.
+  mkdir -p "$src/claims/64"
+  printf '2026-01-01T00:00:00Z\t%s\t%s\n' "$(uname -n)" "$(( $(date -u +%s) - 7200 ))" > "$src/claims/64/held"
+  a_host_named RequestHost "$tmp/reqbin" || { skip "an open request — could not put a uname on the path"; return; }
+
+  is  "a second host's pass, with the claim aged out, takes the next item" \
+      "$(PATH="$tmp/reqbin:$PATH" code_of floor "$tmp/req" pass)" "44"
+  has "the one no request is open for" "$(floor "$tmp/req" observe)" "item=65"
+
+  rm -f "$src/deliveries/a-request-for-64" "$src/deliveries/a-request-for-64.brief"
+  is "once the request is gone, the item is offered again" \
+     "$(floor "$tmp/req" offer | cut -f1 | tr '\n' ' ')" "64 65 "
+
+  rm -rf "$src/claims/64" "$src/claims/65" "$src/labels/64" "$src/labels/65" "$src/items/64" "$src/items/65"
+}
+an_open_request_keeps_its_item
+
+#
 # **A pass leaves by the code of the step that refused.** Four exits had no case: a source that cannot
 # list what is marked, a claim nobody could ask, a claimed item nobody could read, and every item
 # passed over. Two of them answered wrongly. #884's judge, round five.
@@ -4479,8 +4530,13 @@ a_pass_says_which_step_refused() {
   printf 'refused\t2026-09-14T00:00:00Z\tpat\n' > "$src/labels/78"
   bar_and_rule "$tmp/refused" 'offer refused pat'
 
+  is "a pass given an argument is refused at 2" "$(code_of floor "$tmp/refused" pass 64)" "2"
   is "a source that cannot list what is marked ends the pass with its code" \
      "$(code_of floor_through "$(a_source_answering find 2)" "$tmp/refused" pass)" "27"
+  is "and one that cannot be asked to list ends it at 20" \
+     "$(code_of floor_through "$(a_source_answering find 3)" "$tmp/refused" pass)" "20"
+  is "and so does one that cannot be asked what requests are open" \
+     "$(code_of floor_through "$(a_source_answering open 3)" "$tmp/refused" pass)" "20"
   is "a claim nobody could ask ends the pass at 20" \
      "$(code_of floor_through "$(a_source_answering claim 3)" "$tmp/refused" pass)" "20"
   is "a claimed item nobody could read ends the pass at 20, not 1" \
@@ -4515,6 +4571,40 @@ floor_through() {
     FOUNDRY_HOME="$home" FOUNDRY_RUN="" FOUNDRY_WHO="" FOUNDRY_SOURCE="$through" sh "$runner" "$@" 2>&1 )
 }
 a_pass_says_which_step_refused
+
+#
+# **A read that fails after the run is made is a stop.** A pass reads the item twice: once to name
+# the run, and once to bind it. A source that failed between the two left a run holding no line a
+# later pass could read, and that run would look like a person's. #1026.
+#
+a_second_read_that_fails_is_a_stop() {
+  make_repo "$tmp/reread" main && set_origin "$tmp/reread" 'https://gitlab.com/acme/reread.git' \
+    || { skip "a second read that fails — git could not make a repo here"; return; }
+
+  printf 'Read once\n' > "$src/items/66"
+  printf 'reread\t2026-09-18T00:00:00Z\tpat\n' > "$src/labels/66"
+  bar_and_rule "$tmp/reread" 'offer reread pat'
+
+  is  "a pass whose second read fails stops at 20" \
+      "$(code_of floor_through "$(a_source_reading_once)" "$tmp/reread" pass)" "20"
+  has "and its run says it began" "$(floor "$tmp/reread" observe)" "pass.began"
+  has "and why it stopped"        "$(floor "$tmp/reread" observe)" "why=read"
+
+  rm -rf "$src/claims/66" "$src/labels/66" "$src/items/66"
+}
+
+# A source that answers the first `read`, and cannot be asked for any after it.
+a_source_reading_once() {
+  rm -f "$tmp/read-once"
+  cat > "$tmp/reads-once.sh" <<STUB
+#!/bin/sh
+[ "\$1" = read ] && [ -f '$tmp/read-once' ] && exit 3
+[ "\$1" = read ] && : > '$tmp/read-once'
+exec sh '$dir_source' "\$@"
+STUB
+  printf '%s' "$tmp/reads-once.sh"
+}
+a_second_read_that_fails_is_a_stop
 
 #
 # **Floor never puts the mark on, through any adapter.** A worker that could label its own issue would
@@ -7299,6 +7389,9 @@ two_deliveries_reconcile_or_say_they_cannot() {
   # prints whichever it was given rather than deciding what a delivery is called.
   has "it says which delivery" \
       "$(floor_says "$tmp/rc" reconcile)" "2026-01-02-item-41-0000"
+  # `open` names each delivery's item in a third column now, and it must not ride in with the name.
+  has "and names it by its record alone, not with its item" \
+      "$(floor_says "$tmp/rc" reconcile)" "2026-01-02-item-41-0000] and this one both change"
   has "and names the file rather than the fact" \
       "$(floor_says "$tmp/rc" reconcile)" "both change: a"
 
@@ -7752,6 +7845,14 @@ case "$*" in
   # own fixture, set by emptying the file rather than deleting it.
   "api user"*)              [ -f "$store/reads-fail" ] && { echo "HTTP 401: Bad credentials" >&2; exit 1; }
                             cat "$store/me" 2>/dev/null || printf 'foundry-run\n' ;;
+  # The requests open against the repository, each with the item it answers, pre-shaped the way the
+  # adapter's `--jq` shapes them. That expression was measured live, since nothing here can run it.
+  # Cut at `--limit` as gh cuts, and at 30 when none is named, because that is where gh stops.
+  "pr list --state open"*)  [ -f "$store/reads-fail" ] && { echo "could not resolve host: api.github.com" >&2; exit 1; }
+                            limit=30 prev=
+                            for arg in "$@"; do [ "$prev" = --limit ] && limit=$arg; prev=$arg; done
+                            head -n "$limit" "$store/open-prs" 2>/dev/null
+                            true ;;
   # A read that cannot answer. GitHub fails this way for a network, a token or a rate limit, and none
   # of them mean "nothing is there yet" — which is what both readers below used to conclude.
   # `gh` matches words in a body, so a run made the same day as another comes back on shared tokens.
@@ -8081,6 +8182,25 @@ the_offer_reads_the_same_from_github() {
   printf 'other\t2026-07-01T00:00:00Z\tpat\n' > "$tmp/ghestore/events/85"
 
   kept_oldest_named_first ghe_floor ghe_says "GitHub"
+
+  # A request open for 82, as GitHub lists it. #1025.
+  printf 'work/82\thttps://example.invalid/pr/9\t82\n' > "$tmp/ghestore/open-prs"
+  is  "an item a request is open for is not offered — GitHub" "$(ghe_floor offer | cut -f1 | tr '\n' ' ')" "81 "
+  has "and it says why — GitHub" "$(ghe_says offer)" "[82] is not offered: a request for it is open"
+
+  # **The oldest request, behind thirty-nine newer ones.** gh answers its newest 30 unless told how
+  # many, and the one that falls off is the one whose claim aged out first. Batch four's judge.
+  { awk 'BEGIN { for (n = 1; n <= 39; n++) printf "work/r%d\thttps://example.invalid/pr/%d\t%d\n", n, n, 9000 + n }'
+    printf 'work/82\thttps://example.invalid/pr/82\t82\n'; } > "$tmp/ghestore/open-prs"
+  is "and neither is one whose request is older than gh's first page — GitHub" \
+     "$(ghe_floor offer | cut -f1 | tr '\n' ' ')" "81 "
+
+  # A list as long as the bound may be one gh stopped short, so it answers nothing.
+  awk 'BEGIN { for (n = 1; n <= 500; n++) printf "work/r%d\thttps://example.invalid/pr/%d\t%d\n", n, n, 9000 + n }' \
+    > "$tmp/ghestore/open-prs"
+  is  "a list of open requests that fills the bound is refused — GitHub" "$(code_of ghe_floor offer)" "20"
+  has "and it says the list may be cut short — GitHub" "$(ghe_says offer)" "as many as this reads"
+  rm -f "$tmp/ghestore/open-prs"
 }
 
 ghe_floor() { ghe_run "$@" 2>/dev/null; }

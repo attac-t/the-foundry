@@ -3226,7 +3226,7 @@ report_clashes() {
     tree=$(unit_work_tree "$1" "$2") || exit 16
     clashed=0
 
-    while IFS="$(printf '\t')" read -r branch identity; do
+    while IFS="$(printf '\t')" read -r branch identity _; do
         [ -n "$branch" ] || continue
         name_the_clash "$1" "$tree" "$branch" "$identity" || clashed=$((clashed + 1))
     done <<EOF
@@ -3549,7 +3549,10 @@ offer() {
     [ -n "$rule" ] || return 0
 
     set -f; set -- $rule; set +f
-    marked_by_the_rule "$@"
+    marked=$(marked_by_the_rule "$@") || exit "$?"
+    requested=$(items_with_an_open_request) || exit "$?"
+
+    printf '%s\n' "$marked" | not_yet_requested "$requested"
 }
 
 #
@@ -3585,6 +3588,27 @@ marked_by_the_rule() {
 }
 
 oldest_first() { sort -t "$(printf '\t')" -k2,2; }
+
+#
+# **An item a request is open for is not offered.** That request is its work, waiting on review. Its
+# claim ages out while it waits, so a second host took the item again. #1025.
+#
+# The items the source says a request is open for. One with no notion of open has none.
+items_with_an_open_request() {
+    open=$(source_says open ""); code=$?
+    refuse_unasked "$code" "list of open requests"
+    [ "$code" -eq 0 ] || return 0
+
+    printf '%s\n' "$open" | cut -f3
+}
+
+not_yet_requested() {
+    awk -F'\t' -v requested=" $(printf '%s' "$1" | tr '\n' ' ') " '
+        function say(item) { printf "floor: [%s] is not offered: a request for it is open\n", item | "cat 1>&2" }
+        NF == 0                      { next }
+        index(requested, " " $1 " ") { say($1); next }
+        { print }'
+}
 
 #
 # **The rule is read where a worker's commit cannot reach**: the commit `origin/HEAD` names, which a
@@ -3626,7 +3650,8 @@ pass() {
     items=$(what_is_offered) || exit "$?"
     taken=$(claim_the_first_offered "$items") || exit "$?"
     answer_to_the_applier "$taken" "$items"
-    begin_a_run_for "$taken"
+    heading=$(the_heading_of "$taken") || exit "$?"
+    begin_a_run_for "$taken" "$heading"
 
     open_the_work "$taken"
     act_on_it "$taken"
@@ -3709,16 +3734,24 @@ leave_a_run_in_progress_alone() {
     exit 43
 }
 
-# The run, named for the item's own first line, holding the item. `claim` came first, so a second
-# host is already refused. The heading titles the request too.
-begin_a_run_for() {
+# The item's first line with words, which names the run and titles the request. #884's judge,
+# round six, asked that `pass` get it from a call it names.
+the_heading_of() {
     words=$(words_of_item "$1") || exit "$?"
-    heading=$(title_for "$1" "$words")
+    title_for "$1" "$words"
+}
 
-    make_run "$heading" >/dev/null
+#
+# The run, holding the item. `claim` came first, so a second host is already refused.
+#
+# **It says it began before it reads the item again**, so a read that fails leaves a stop, never a
+# run with no line a later pass could read. #1026.
+begin_a_run_for() {
+    make_run "$2" >/dev/null
     pin_this_run
-    read_work_item "$dir" "$1" >/dev/null
     emit "$dir" pass.began item="$1"
+
+    ( read_work_item "$dir" "$1" ) >/dev/null || stop_at "$1" read "$?"
     note "this pass took [$1]: $dir"
 }
 
