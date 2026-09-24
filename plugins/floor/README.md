@@ -223,7 +223,8 @@ sh bin/run.sh judged
 sh bin/run.sh source read 7
 sh bin/run.sh claim 7
 sh bin/run.sh release 7
-sh bin/run.sh eligible
+sh bin/run.sh offer
+sh bin/run.sh pass
 sh bin/run.sh source publish work/gift-cards "Gift card flow"
 sh bin/run.sh source ask authorisation tests "May this clause exist? …"
 sh bin/run.sh source receive authorisation tests
@@ -1963,15 +1964,17 @@ a source the keep cannot read, because a local grade must never wait on a networ
 nobody holds. A run holding no item says that nothing it does is exclusive.
 
 **A loss stands for a third of the window**, even once the holder lets go. If nobody holds the item
-then, the answer says so and names `claim <item>`.
+then, the answer says so and names `claim <item>`. A remote that cannot be asked is never *nobody*:
+the GitHub adapter answers 3 for it, and the item reads as held by someone the source could not name.
 
 **The name a claim goes under is the run's.** The run keeps the name the first time it sees its
-claim: when it takes one, or when a keep finds one a pass took first. So a run carried to another
-machine, or graded in a container that starts under a new host name, still holds its own claim.
+claim: when it takes one, or when it binds an item this host already holds. So a run carried to
+another machine, or graded in a container that starts under a new host name, still holds its own
+claim. Bound to another host's item, it keeps no name, and the work is refused.
 
 **The name is a record, not a credential.** It is a file in the run, so a worker that writes the
 holder's name there passes the keep, as one that set its host name always could. #156 owns the
-actor.
+actor, and #419 a control the worker cannot rewrite.
 
 **Two clocks, and nothing reconciles them.** The stamp is the holder's; the age is the reader's
 arithmetic. Hosts far out of step will disagree about what is dead, and floor neither detects that
@@ -1983,9 +1986,12 @@ does not cover, and it is the safe half.
 
 ### What a pass may take
 
-**A line of the practice and a mark a person put on.** `run.sh eligible` reads
-`eligible <label> <who may put it on> ...` from `.foundry/practice`. It asks the source which open
-items carry that label, and who put it on each, and when. It prints them oldest label first.
+**A line of the practice and a mark a person put on.** `run.sh offer` reads
+`offer <label> <who may put it on> ...` from `.foundry/practice`. It asks the source to `find` the open
+items carrying that label, and who put it on each, and when. It prints them oldest mark first.
+
+**The repository offers, and a pass takes.** Practice lines grant verbs — `deliver`, `merge`, and now
+`offer` — and the verb a person reaches for is the line's own word.
 
 **The line is read at `origin/HEAD`**, where the default branch stood at the last fetch. A worker's
 commit moves `HEAD` and never that, so it grants nothing. A hand that rewrites the ref does reach it,
@@ -1994,13 +2000,66 @@ line reads the old one.
 
 **A line must name a hand.** One naming none would take a label anyone put on, and an issue form can
 put a label on every issue it opens. No fetched default branch, no line, or no hand, and nothing is
-eligible, and it says which.
+offered, and it says which.
 
 A label no event names is dropped and said, and so is one put on by a hand the rule does not name.
 **Floor never puts the label on.**
 
+**An item a request is open for is not offered**, and that is said too. The request is its work,
+waiting on review. Its claim ages out while it waits, and a second host took the item again, #1025.
+The source says which item each open request answers. GitHub's list is read up to 500 requests, and
+one that fills that is refused, since gh may have stopped short.
+
 With one shared account, the name an event gives is the account's, not a person's. So the mark is a
 record, not a control, until a worker has its own identity.
+
+**`run.sh pass` takes the first of them this host can claim, and carries it to a request.** An item
+another host holds is passed over and said, and so is one a run here already works on. When every
+item is, that is exit 30. Any run active in this checkout is left alone, exit 43, one holding no item
+included: every verb a pass calls reads the active run first. Nothing offered is exit 42, with the
+reason. **Once a pass begins its run, every verb it calls reads that run**, whatever the checkout
+points at by then, and an item with no words is titled by its id.
+
+**Exclusive between hosts, not within one.** A claim from the same host renews, so two passes in two
+checkouts on one host could both take one item. One live pass per host is the trigger's to keep,
+#997.
+
+**The host names the command that does the work, in `FOUNDRY_PASS_COMMAND`.** Floor names no
+harness. The pass opens the run's workspace on this checkout's own target, which needs nobody's
+grant, and runs the command there. A step that refuses is a stop the run records. It hands over three
+things and no others:
+
+| | |
+|---|---|
+| `FOUNDRY_PASS_ITEM` | the item it took |
+| `FOUNDRY_PASS_WORKSPACE` | the checkout to work in |
+| `FOUNDRY_PASS_ITEM_FILE` | a file holding the item's own words, as the run read them |
+
+**The command runs as a worker.** `FOUNDRY_WORKER` is the host's word for it, or `pass` when the host
+names none. Who selected the run is not handed over: it is stamped already, and a worker holding the
+name could act in that person's place.
+
+**Neither the selection nor the pin leaves floor's own shell.** The pass never exports them, so the
+command, each gate and each judge run as they would outside a pass. Exported, the pin once reached
+floor's own suite when it ran as a gate, and the suite wrote into the pass's run.
+
+It reads back the command's exit and the run's record, never what the command printed. No command
+set is exit 44, and a command that fails is 45. Either way the run records why it stopped.
+
+**A read that fails after the run is made is a stop.** The pass writes `pass.began` before it reads
+the item a second time, and a read that fails then is `why=read`. #1026. A run whose pointer could
+not be written stops earlier, at 41, before any pass line.
+
+**Nothing keeps the claim while the command runs.** The keep fires from floor's own verbs and from
+the harness hook. A command that runs past a third of `FOUNDRY_CLAIM_TTL` should run `run.sh claim`
+from its workspace, or another host's pass may take the item.
+
+**Then the bar, the judges, and the request.** The pass runs `gates`, then `judged` when the charter
+names a judge, then `deliver`. It stops at the first that does not pass, with that verb's own code,
+and the run records which. Delivery needs the practice's standing `deliver` line, as it always has.
+
+**The run answers to the person who put the label on.** A container names nobody, and a run nobody
+selected may never deliver. So the pass records the label's applier as the run's selector.
 
 ### Two adapters, because one proves nothing
 

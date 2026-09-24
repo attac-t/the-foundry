@@ -29,7 +29,7 @@
 #        sh source-github.sh receive <issue> <question>
 #        sh source-github.sh state   <run>
 #        sh source-github.sh land    <run>
-#        sh source-github.sh eligible <label>
+#        sh source-github.sh find    <label>
 #
 # Exit: 0 answered · 1 nothing there · 2 asked for something this does not do · 3 GitHub refused,
 #       or could not be reached at all
@@ -424,18 +424,48 @@ kind_of_item() {
 
 
 #
-# Every delivery open against this source but this run's. A run never reads
-# another run's workspace. The source knows, and a branch name is all that crosses.
+# **The item a request floor opened answers**: the `Refs #N` or `Closes #N` line `body_for` writes
+# a blank line above `floor-run:`. Prose that names the marker is not one. #1025.
+#
+# **Measured live, never here.** Nothing on a grading host runs `--jq`, so the fake answers
+# pre-shaped, as it does for the rules and the delivery expressions.
+#
+# Measured 23 September over this repository's last 400 requests: 71 carry an item, each on a
+# `foundry/` branch, and none names its own number.
+#
+# Request 401 names the marker in its prose, and a looser read took its own number as its item.
+# Fourteen from August put two items on the line; floor writes one now, and none of them is open.
+ITEM_A_REQUEST_ANSWERS='([match("(?m)^(?:Refs|Closes) #([0-9]+)\r?\n\r?\nfloor-run: "; "g")] | last | .captures[0].string) // ""'
+
+#
+# **A bound, and a list that fills it is refused.** gh answers its newest 30 unless told otherwise,
+# and the oldest requests, whose claims aged out first, fell off. Batch four's judge.
+#
+# 500, as `find_marked` reads. A list that long may be one gh stopped short.
+OPEN_REQUESTS_READ=500
+
+#
+# Every delivery open against this source but this run's: its branch, its URL and its item. A run
+# never reads another run's workspace. The source knows, and a branch name is all that crosses.
 open_deliveries() {
     # Named, because a `gh` line holding a pipe reads as one to the gate that grades this file.
-    shape='.[] | .headRefName + "	" + .url'
+    shape='.[] | .headRefName + "	" + .url + "	" + ((.body // "") | '"$ITEM_A_REQUEST_ANSWERS"')'
 
-    said=$(gh pr list --state open --json headRefName,url --jq "$shape" 2>&1) || {
+    said=$(gh pr list --state open --limit "$OPEN_REQUESTS_READ" --json headRefName,url,body --jq "$shape" 2>&1) || {
         printf 'source-github: could not ask what else is open: %s\n' "$said" >&2
         return 3
     }
+    fewer_than_the_bound "$said" || return 3
 
     printf '%s\n' "$said" | awk -F'\t' -v mine="$1" '$1 != mine && NF'
+}
+
+fewer_than_the_bound() {
+    [ "$(printf '%s\n' "$1" | grep -c .)" -lt "$OPEN_REQUESTS_READ" ] && return 0
+
+    printf 'source-github: %s requests are open, as many as this reads, so it cannot say which items are free\n' \
+        "$OPEN_REQUESTS_READ" >&2
+    return 1
 }
 
 #
@@ -554,8 +584,9 @@ claim_commit() {
     printf 'claimed by %s\n' "$1" | git commit-tree "$tree" -p "$2" 2>/dev/null
 }
 
+# The tip of an item's claim ref, empty when there is none, and 3 when the remote could not be asked.
 claim_tip() {
-    listed=$(git ls-remote origin "refs/heads/$(claim_ref "$1")" 2>/dev/null) || return 0
+    listed=$(git ls-remote origin "refs/heads/$(claim_ref "$1")" 2>/dev/null) || return 3
 
     printf '%s' "${listed%%	*}"
 }
@@ -570,7 +601,9 @@ holder_at() {
 # `%ct` is the commit's own time, so the age travels with the claim and no
 # clock but the holder's wrote it. A reader elsewhere compares to its own.
 read_claim() {
-    at=$(claim_tip "$1")
+    # A remote nobody could ask says nothing about who holds the item. Read as 1, it told a run that
+    # had lost its claim that nobody held it. #991's judge found it.
+    at=$(claim_tip "$1") || return 3
     [ -n "$at" ] || return 1
 
     git fetch origin "refs/heads/$(claim_ref "$1")" >/dev/null 2>&1 || return 3
@@ -585,7 +618,7 @@ read_claim() {
 # Reading the tip and then deleting it is two steps, and a renewal between them is deleted on a
 # reading that was true. `git push --delete` takes no expected value, so the window stays.
 drop_claim() {
-    at=$(claim_tip "$1")
+    at=$(claim_tip "$1") || return 3
     [ -n "$at" ] || return 0
 
     holder_at "$at" "$2" || return 4
@@ -616,7 +649,7 @@ claim_ref() { printf 'foundry/claim/%s' "$1"; }
 # The open issues carrying one label, with when it last went on and who put it on, from each issue's
 # own events. Floor orders them and decides; this only reads what the forge recorded.
 #
-list_eligible() {
+find_marked() {
     [ -n "$1" ] || return 2
 
     numbers=$(gh issue list --label "$1" --state open --limit 500 --json number --jq '.[].number') || {
@@ -655,7 +688,7 @@ case "${1:-}" in
     receive) shift; read_answer      "${1:-}" "${2:-}" ;;
     state)   shift; delivery_state   "${1:-}" ;;
     land)    shift; land_delivery    "${1:-}" ;;
-    eligible) shift; list_eligible   "${1:-}" ;;
-    *)       echo "source-github: read <issue> | kind <issue> | eligible <label> | claim <issue> <host> | held <issue> | release <issue> <host> | publish <issue> <run> <branch> <title> [word] [brief] | ask <issue> <question> <text> | receive <issue> <question> | state <run> | land <run>" >&2
+    find)    shift; find_marked      "${1:-}" ;;
+    *)       echo "source-github: read <issue> | kind <issue> | find <label> | claim <issue> <host> | held <issue> | release <issue> <host> | publish <issue> <run> <branch> <title> [word] [brief] | ask <issue> <question> <text> | receive <issue> <question> | state <run> | land <run>" >&2
              exit 2 ;;
 esac

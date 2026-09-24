@@ -18,6 +18,10 @@ export LC_ALL
 FOUNDRY_WORKER=
 export FOUNDRY_WORKER
 
+# A host that exports its pass command ran it in every fixture pass here, whenever it ran the gates by
+# hand. Each case that wants a command names its own. #884's judge, round five.
+unset FOUNDRY_PASS_COMMAND
+
 here="$(cd "$(dirname "$0")/.." && pwd)"
 . "$here/tests/lib.sh"
 
@@ -260,6 +264,14 @@ case "$*" in
   # own fixture, set by emptying the file rather than deleting it.
   "api user"*)              [ -f "$store/reads-fail" ] && { echo "HTTP 401: Bad credentials" >&2; exit 1; }
                             cat "$store/me" 2>/dev/null || printf 'foundry-run\n' ;;
+  # The requests open against the repository, each with the item it answers, pre-shaped the way the
+  # adapter's `--jq` shapes them. That expression was measured live, since nothing here can run it.
+  # Cut at `--limit` as gh cuts, and at 30 when none is named, because that is where gh stops.
+  "pr list --state open"*)  [ -f "$store/reads-fail" ] && { echo "could not resolve host: api.github.com" >&2; exit 1; }
+                            limit=30 prev=
+                            for arg in "$@"; do [ "$prev" = --limit ] && limit=$arg; prev=$arg; done
+                            head -n "$limit" "$store/open-prs" 2>/dev/null
+                            true ;;
   # A read that cannot answer. GitHub fails this way for a network, a token or a rate limit, and none
   # of them mean "nothing is there yet" — which is what both readers below used to conclude.
   # `gh` matches words in a body, so a run made the same day as another comes back on shared tokens.
@@ -4035,21 +4047,47 @@ a_run_keeps_the_name_it_claimed_under() {
   lacks "and records no loss"                       "$(floor "$tmp/mvd" observe)" "claim.lost"
   has   "and the claim keeps the name it was taken under" "$(cat "$src/claims/74/held")" "$(uname -n)"
 
-  # **Claimed before the run held the item**, which is the order a pass takes. The first keep on the
-  # claiming host names it, so a move after that loses nothing.
+  # **Claimed before the run held the item**, which is the order a pass takes. Binding names it, so
+  # a run bound and moved at once, with no keep between, loses nothing. #991's judge.
   make_repo "$tmp/mvd2" main && set_origin "$tmp/mvd2" 'https://gitlab.com/acme/mvd2.git' \
     || { skip "a run that claimed first — git could not make a repo here"; return; }
   printf 'Claimed first\n' > "$src/items/75"
   floor "$tmp/mvd2" claim 75 >/dev/null 2>&1
   floor "$tmp/mvd2" new "Claimed first" >/dev/null 2>&1
   floor "$tmp/mvd2" source read 75 >/dev/null 2>&1
-  floor "$tmp/mvd2" claim >/dev/null 2>&1
   rm -f "$(floor "$tmp/mvd2" path)/claim.kept"
 
   lacks "a run that claimed before it held the item keeps it after a move" \
         "$(PATH="$tmp/hostbin:$PATH" floor_says "$tmp/mvd2" gates)" "held by"
 
-  rm -rf "$src/claims/74" "$src/claims/75"
+  # **Binding names only what the source confirms.** Bound to another host's item, a run that named
+  # itself and marked the claim kept would work that item unasked for a third of the window.
+  printf 'Held elsewhere\n' > "$src/items/76"
+  mkdir -p "$src/claims/76"
+  printf '2026-01-01T00:00:00Z\tOtherHost\t%s\n' "$(date -u +%s)" > "$src/claims/76/held"
+  make_repo "$tmp/mvd3" main && set_origin "$tmp/mvd3" 'https://gitlab.com/acme/mvd3.git' \
+    || { skip "a run bound to a held item — git could not make a repo here"; return; }
+  floor "$tmp/mvd3" new "Held elsewhere" >/dev/null 2>&1
+  floor "$tmp/mvd3" source read 76 >/dev/null 2>&1
+
+  is "a run bound to another host's item names no holder" \
+     "$(cat "$(floor "$tmp/mvd3" path)/claim.holder" 2>/dev/null)" ""
+  is "and is refused at the work" "$(code_of floor "$tmp/mvd3" gates)" "30"
+
+  # **Bound late, and renewed at the next keep.** Binding names the claim and marks nothing, so the
+  # first keep reads the source and renews a claim past a third of its window. #884's judge.
+  printf 'Bound late\n' > "$src/items/77"
+  mkdir -p "$src/claims/77"
+  printf '2026-01-01T00:00:00Z\t%s\t%s\n' "$(uname -n)" "$(( $(date -u +%s) - 1500 ))" > "$src/claims/77/held"
+  make_repo "$tmp/mvd4" main && set_origin "$tmp/mvd4" 'https://gitlab.com/acme/mvd4.git' \
+    || { skip "a claim bound late — git could not make a repo here"; return; }
+  floor "$tmp/mvd4" new "Bound late" >/dev/null 2>&1
+  floor "$tmp/mvd4" source read 77 >/dev/null 2>&1
+  floor "$tmp/mvd4" claim >/dev/null 2>&1
+
+  has "a claim bound late is renewed at the next keep" "$(floor "$tmp/mvd4" observe)" "claim.renewed	item=77"
+
+  rm -rf "$src/claims/74" "$src/claims/75" "$src/claims/76" "$src/claims/77"
 }
 
 # A `uname` that answers `-n` with another name, the way a new container does, and passes the rest on.
@@ -4067,9 +4105,9 @@ a_run_keeps_the_name_it_claimed_under
 # who put the label on is read from the source, never assumed.
 #
 # The times run against the file order on purpose, so an order nobody sorted cannot pass.
-eligibility_is_a_named_mark_oldest_first() {
+an_offer_is_a_named_mark_oldest_first() {
   make_repo "$tmp/elg" main && set_origin "$tmp/elg" 'https://gitlab.com/acme/elg.git' \
-    || { skip "eligibility — git could not make a repo here"; return; }
+    || { skip "the offer — git could not make a repo here"; return; }
 
   mkdir -p "$src/items" "$src/labels"
   for n in 81 82 83 84 85; do printf 'Item %s\n' "$n" > "$src/items/$n"; done
@@ -4079,33 +4117,33 @@ eligibility_is_a_named_mark_oldest_first() {
   printf 'go\t2026-08-02T00:00:00Z\tsam\n'   > "$src/labels/84"
   printf 'other\t2026-07-01T00:00:00Z\tpat\n' > "$src/labels/85"
 
-  is  "with no default branch fetched nothing is eligible" "$(floor "$tmp/elg" eligible)" ""
-  has "and it says where the rule is read" "$(floor_says "$tmp/elg" eligible)" "this checkout has none"
+  is  "with no default branch fetched nothing is offered" "$(floor "$tmp/elg" offer)" ""
+  has "and it says where the rule is read" "$(floor_says "$tmp/elg" offer)" "this checkout has none"
 
   commit_file "$tmp/elg" README 'elg' && as_fetched "$tmp/elg"
-  is  "with no rule nothing is eligible" "$(floor "$tmp/elg" eligible)" ""
-  has "and it says why" "$(floor_says "$tmp/elg" eligible)" "no line in .foundry/practice"
+  is  "with no rule nothing is offered" "$(floor "$tmp/elg" offer)" ""
+  has "and it says why" "$(floor_says "$tmp/elg" offer)" "line in .foundry/practice, so nothing is offered"
 
   #
   # **A worker's own commit grants nothing.** The rule is read where the default branch stood at the
   # last fetch, and a commit moves `HEAD` and never that. #991's judge committed one and was obeyed.
   #
   mkdir -p "$tmp/elg/.foundry"
-  commit_file "$tmp/elg" .foundry/practice 'eligible go pat'
-  is "a rule the worker committed grants nothing" "$(floor "$tmp/elg" eligible)" ""
+  commit_file "$tmp/elg" .foundry/practice 'offer go pat'
+  is "a rule the worker committed grants nothing" "$(floor "$tmp/elg" offer)" ""
 
   as_fetched "$tmp/elg"
   kept_oldest_named_first elg_floor elg_says "a directory"
 
-  commit_file "$tmp/elg" .foundry/practice 'eligible go pat sam'
+  commit_file "$tmp/elg" .foundry/practice 'offer go pat sam'
   is "a worker widening the rule it was handed widens nothing" \
-     "$(floor "$tmp/elg" eligible | cut -f1 | tr '\n' ' ')" "82 81 "
+     "$(floor "$tmp/elg" offer | cut -f1 | tr '\n' ' ')" "82 81 "
 
-  # **A rule names a hand, or nothing is eligible.** One naming none took a label anyone put on, and
+  # **A rule names a hand, or nothing is offered.** One naming none took a label anyone put on, and
   # an issue form can put one on every issue it opens.
-  commit_file "$tmp/elg" .foundry/practice 'eligible go' && as_fetched "$tmp/elg"
-  is  "a rule naming no hand makes nothing eligible" "$(floor "$tmp/elg" eligible)" ""
-  has "and it says so" "$(floor_says "$tmp/elg" eligible)" "names no hand"
+  commit_file "$tmp/elg" .foundry/practice 'offer go' && as_fetched "$tmp/elg"
+  is  "a rule naming no hand offers nothing" "$(floor "$tmp/elg" offer)" ""
+  has "and it says so" "$(floor_says "$tmp/elg" offer)" "names no hand"
 }
 
 # The fixture's own commit, held the way a clone that had just fetched it would hold it.
@@ -4121,13 +4159,522 @@ elg_says()  { floor_says "$tmp/elg" "$@"; }
 # depend on which one answered.
 kept_oldest_named_first() {
   is  "the oldest label goes first, and only the label named — $3" \
-      "$($1 eligible | cut -f1 | tr '\n' ' ')" "82 81 "
+      "$($1 offer | cut -f1 | tr '\n' ' ')" "82 81 "
   has "a label nobody is named for is dropped, and said — $3" \
-      "$($2 eligible)" "[83] is not eligible: nothing names who put [go] on it"
+      "$($2 offer)" "[83] is not offered: nothing names who put [go] on it"
   has "a hand the rule does not name is dropped, and said — $3" \
-      "$($2 eligible)" "[84] is not eligible: [go] was put on by sam"
+      "$($2 offer)" "[84] is not offered: [go] was put on by sam"
 }
-eligibility_is_a_named_mark_oldest_first
+an_offer_is_a_named_mark_oldest_first
+
+#
+# **The directory adapter only reads its labels.** Its own proof, beside its own cases: every code
+# line naming them is listed here, so a line that writes one goes red until a person names it.
+#
+LABEL_LINES_THE_DIRECTORY_HOLDS='[ -d "$root/labels" ] || return 0
+for file in "$root"/labels/*; do'
+
+the_directory_adapter_only_reads_its_labels() {
+  is "every line of the directory adapter naming its labels is named here" \
+     "$(label_lines_in "$dir_source")" "$LABEL_LINES_THE_DIRECTORY_HOLDS"
+
+  { cat "$dir_source"; printf '    printf "go\\n" > "$root/labels/$1"\n'; } > "$tmp/planted-label-line.sh"
+  has "and a planted write is found" "$(label_lines_in "$tmp/planted-label-line.sh")" 'labels/$1'
+}
+
+label_lines_in() {
+  grep -h 'labels' "$1" 2>/dev/null | grep -vE '^[[:space:]]*#' | sed -E 's/^[[:space:]]+//' | LC_ALL=C sort
+}
+the_directory_adapter_only_reads_its_labels
+
+#
+# **A pass takes the first item offered that nobody holds, and carries it to a request.** It never
+# chooses: the order is the rule's, and an item another host holds is passed over. #884 asked that
+# whatever picks an item claims it before anything else happens.
+#
+a_pass_takes_the_first_item_nobody_holds() {
+  make_repo "$tmp/pss" main && set_origin "$tmp/pss" 'https://gitlab.com/acme/pss.git' \
+    || { skip "a pass — git could not make a repo here"; return; }
+
+  mkdir -p "$src/items" "$src/labels" "$src/claims/91"
+  for n in 91 92 93 94 95 96; do printf 'Pass item %s\n' "$n" > "$src/items/$n"; done
+  printf 'ready\t2026-09-06T00:00:00Z\tpat\n' > "$src/labels/96"
+  printf 'ready\t2026-09-01T00:00:00Z\tpat\n' > "$src/labels/91"
+  printf 'ready\t2026-09-02T00:00:00Z\tpat\n' > "$src/labels/92"
+  printf 'ready\t2026-09-03T00:00:00Z\tpat\n' > "$src/labels/93"
+  printf 'ready\t2026-09-04T00:00:00Z\tpat\n' > "$src/labels/94"
+  printf 'ready\t2026-09-05T00:00:00Z\tpat\n' > "$src/labels/95"
+  printf '2026-01-01T00:00:00Z\tOtherHost\t%s\n' "$(date -u +%s)" > "$src/claims/91/held"
+
+  # No work source, and the pass refuses, rather than reading nothing as nothing offered. #884.
+  is "a pass with no work source refuses" \
+     "$( cd "$tmp/pss" && FOUNDRY_HOME="$home" FOUNDRY_RUN="" FOUNDRY_WHO="" FOUNDRY_SOURCE="$tmp/no-such" \
+         sh "$runner" pass >/dev/null 2>&1; printf '%s' "$?" )" "3"
+
+  is "a pass with no rule takes nothing" "$(code_of floor "$tmp/pss" pass)" "42"
+
+  bar_and_rule "$tmp/pss"
+
+  is  "a pass with no command begins the run and waits" "$(code_of floor "$tmp/pss" pass)" "44"
+  has "it passed over the item another host holds, and claimed the next" \
+      "$(cat "$src/claims/92/held")" "$(uname -n)"
+  has "and its run holds that item"  "$(floor "$tmp/pss" observe)" "item=92"
+  has "and says why it stopped"      "$(floor "$tmp/pss" observe)" "why=no-command"
+
+  is "a second pass leaves that run alone" "$(code_of floor "$tmp/pss" pass)" "43"
+
+  #
+  # **The host names the command, and floor hands it only its own words.** A second checkout: 92 is
+  # this host's already, so the pass passes it over too, rather than start that work twice.
+  make_repo "$tmp/pss2" main && set_origin "$tmp/pss2" 'https://gitlab.com/acme/pss.git' \
+    || { skip "a pass with a command — git could not make a repo here"; return; }
+  bar_and_rule "$tmp/pss2"
+
+  # The command writes what it was handed and commits it through floor, the way a worker would. One
+  # line each, because the item's words hold its number too, and one check once read them for both.
+  saw_it="printf '%s\\n' \"\$FOUNDRY_PASS_ITEM\" \"\$FOUNDRY_PASS_WORKSPACE\""
+  saw_it="$saw_it \"\${FOUNDRY_WHO:-nobody}\" \"\${FOUNDRY_WORKER:-none}\" \"\${FOUNDRY_RUN:-unpinned}\" > saw"
+  saw_it="$saw_it && cat \"\$FOUNDRY_PASS_ITEM_FILE\" >> saw && git add saw && sh '$runner' commit 'saw it'"
+
+  # The host names no worker here, and says so with an empty one rather than leaving it unset.
+  is "a pass with no grant to deliver stops at the request" \
+     "$(FOUNDRY_WORKER='' FOUNDRY_PASS_COMMAND=$saw_it code_of floor "$tmp/pss2" pass)" "18"
+
+  said_back=$(cat "$(floor "$tmp/pss2" path)"/units/01/workspace/*/saw)
+  is  "the command ran in the workspace, handed the item it took" \
+      "$(printf '%s\n' "$said_back" | sed -n 1p)" "93"
+  has "and the workspace it runs in" \
+      "$(printf '%s\n' "$said_back" | sed -n 2p)" "/units/01/workspace/"
+  is  "and not who selected the run, which is stamped already" \
+      "$(printf '%s\n' "$said_back" | sed -n 3p)" "nobody"
+  is  "and it runs as a worker, named pass when the host names none" \
+      "$(printf '%s\n' "$said_back" | sed -n 4p)" "pass"
+  is  "and without the pass's pin on its run" \
+      "$(printf '%s\n' "$said_back" | sed -n 5p)" "unpinned"
+  has "and the item's own words" "$said_back" "Pass item 93"
+  has "and the run records that it acted" "$(floor "$tmp/pss2" observe)" "pass.acted"
+  has "and why it stopped"                "$(floor "$tmp/pss2" observe)" "why=deliver"
+
+  make_repo "$tmp/pss3" main && set_origin "$tmp/pss3" 'https://gitlab.com/acme/pss.git' \
+    || { skip "a failing command — git could not make a repo here"; return; }
+  bar_and_rule "$tmp/pss3"
+
+  is  "a command that fails stops the pass" \
+      "$(FOUNDRY_PASS_COMMAND='exit 7' code_of floor "$tmp/pss3" pass)" "45"
+  has "and the run says why" "$(floor "$tmp/pss3" observe)" "why=command-failed"
+
+  #
+  # **One pass, from a label to a request, with no command typed.** The practice grants delivery here,
+  # and the person who put the label on is who the run answers to — invariant 4 holds without a
+  # person present.
+  #
+  # The push lands in a bare repository here: `isolate.sh` rewrites a push to github.com into this
+  # suite's own `remotes/`, so a delivery is driven without leaving the machine.
+  git init -q --bare "$tmp/remotes/acme/pss4.git" 2>/dev/null \
+    || { skip "a whole pass — git could not make a bare repo here"; return; }
+  make_repo "$tmp/pss4" main && set_origin "$tmp/pss4" 'https://github.com/acme/pss4.git' \
+    || { skip "a whole pass — git could not make a repo here"; return; }
+  bar_and_rule "$tmp/pss4" 'offer ready pat
+deliver https://github.com/acme/pss4.git'
+
+  is  "a pass takes a labelled item to a request" \
+      "$(FOUNDRY_PASS_COMMAND=$saw_it code_of floor "$tmp/pss4" pass)" "0"
+  has "and the source holds the delivery" "$(ls "$src/deliveries")" "$(basename "$(floor "$tmp/pss4" path)")"
+  has "and the run records it"            "$(floor "$tmp/pss4" observe)" "pass.delivered"
+  has "and answers to who put the label on" "$(cat "$(floor "$tmp/pss4" path)/authority")" "pat"
+
+  #
+  # **A pass runs its gates with what they have outside one, and no more.** Four rounds of review
+  # found one leak each: the run, the selector, the host's command. So the gate writes down every
+  # `FOUNDRY_` name it sees, and the same gate run by hand must see the same. #884's judge.
+  inside=$(cat "$tmp/pss4.gate-saw" 2>/dev/null)
+  rm -f "$tmp/pss4.gate-saw"
+  floor "$tmp/pss4" gates >/dev/null 2>&1
+  has "a gate inside the pass ran, and saw the host's own names" "$inside" "FOUNDRY_HOME"
+  is  "and saw the same names as one run outside a pass" "$inside" "$(cat "$tmp/pss4.gate-saw" 2>/dev/null)"
+
+  # The source is shared, and a delivery left open reads as work to reconcile in every later case.
+  rm -f "$src/deliveries/$(basename "$(floor "$tmp/pss4" path)")"
+
+  # A bar that does not pass stops the pass before any request, and the run says so.
+  make_repo "$tmp/pss5" main && set_origin "$tmp/pss5" 'https://gitlab.com/acme/pss.git' \
+    || { skip "a failing gate — git could not make a repo here"; return; }
+  mkdir -p "$tmp/pss5/.foundry"
+  commit_file "$tmp/pss5" .foundry/gates 'tests  false'
+  commit_file "$tmp/pss5" .foundry/practice 'offer ready pat
+deliver https://gitlab.com/acme/pss.git' && as_fetched "$tmp/pss5"
+
+  is  "a gate that fails stops the pass before the request" \
+      "$(FOUNDRY_PASS_COMMAND=$saw_it code_of floor "$tmp/pss5" pass)" "14"
+  has "and the run says it was the gates" "$(floor "$tmp/pss5" observe)" "why=gates"
+}
+
+#
+# A bar with one gate, and the practice a pass reads: committed and fetched, as a merge would be.
+# **The gate writes down every `FOUNDRY_` name it was handed**, beside the checkout, so a case can
+# compare what a gate sees inside a pass with what it sees outside one.
+bar_and_rule() {
+  mkdir -p "$1/.foundry"
+  commit_file "$1" .foundry/gates "tests  env | sed -n 's/^\\(FOUNDRY_[A-Z_]*\\)=..*/\\1/p' | LC_ALL=C sort > '$1.gate-saw'"
+  commit_file "$1" .foundry/practice "${2:-offer ready pat}" && as_fetched "$1"
+}
+a_pass_takes_the_first_item_nobody_holds
+
+#
+# **Two hosts pass at once, and each takes a different item.** The claim is the one step both go
+# through, so the host that loses an item is refused it and takes the next. #884 asked for this.
+#
+# Every order the two can run in ends the same way, which is why a race can be a case here.
+two_hosts_pass_at_once() {
+  make_repo "$tmp/twa" main && set_origin "$tmp/twa" 'https://gitlab.com/acme/tw.git' \
+    && make_repo "$tmp/twb" main && set_origin "$tmp/twb" 'https://gitlab.com/acme/tw.git' \
+    || { skip "two hosts at once — git could not make a repo here"; return; }
+  a_host_named SecondHost "$tmp/twbin" \
+    || { skip "two hosts at once — could not put a uname on the path"; return; }
+
+  for n in 97 98; do printf 'Race item %s\n' "$n" > "$src/items/$n"; done
+  printf 'race\t2026-09-07T00:00:00Z\tpat\n' > "$src/labels/97"
+  printf 'race\t2026-09-08T00:00:00Z\tpat\n' > "$src/labels/98"
+  bar_and_rule "$tmp/twa" 'offer race pat'
+  bar_and_rule "$tmp/twb" 'offer race pat'
+
+  floor "$tmp/twa" pass >/dev/null 2>&1 &
+  PATH="$tmp/twbin:$PATH" floor "$tmp/twb" pass >/dev/null 2>&1 &
+  wait
+
+  is "two hosts passing at once take two items" \
+     "$(cut -f2 "$src/claims/97/held" "$src/claims/98/held" 2>/dev/null | sort -u | grep -c .)" "2"
+  differs "and each run holds a different one" \
+     "$(cat "$(floor "$tmp/twa" path)/source")" "$(cat "$(floor "$tmp/twb" path)/source")"
+
+  rm -rf "$src/claims/97" "$src/claims/98" "$src/labels/97" "$src/labels/98"
+}
+two_hosts_pass_at_once
+
+#
+# **A pass works only in the run it begins.** Every verb it calls resolves the active run first, and
+# `FOUNDRY_RUN` wins over the checkout. Beside a run holding no item, a pass did its work there: it
+# opened that run's workspace, ran the command in it, and wrote its stops into it. #884's judge.
+#
+a_pass_leaves_any_active_run_alone() {
+  make_repo "$tmp/pin" main && set_origin "$tmp/pin" 'https://gitlab.com/acme/pin.git' \
+    && make_repo "$tmp/pin2" main && set_origin "$tmp/pin2" 'https://gitlab.com/acme/pin.git' \
+    || { skip "a pass beside another run — git could not make a repo here"; return; }
+
+  printf 'Pinned item\n' > "$src/items/90"
+  printf 'pin\t2026-09-09T00:00:00Z\tpat\n' > "$src/labels/90"
+  bar_and_rule "$tmp/pin" 'offer pin pat'
+  bar_and_rule "$tmp/pin2" 'offer pin pat'
+
+  other=$(floor "$tmp/pin" new "A person's run")
+  lines=$(floor_as "$tmp/pin" "$home" "$other" observe | grep -c .)
+
+  is "a pass beside the run FOUNDRY_RUN names leaves it alone" \
+     "$(code_of floor_as "$tmp/pin2" "$home" "$other" pass)" "43"
+  is "and writes nothing into it" "$(floor_as "$tmp/pin" "$home" "$other" observe | grep -c .)" "$lines"
+  is "and claims nothing" "$(ls "$src/claims/90" 2>/dev/null | grep -c .)" "0"
+
+  # The checkout's own pointer names that run, and no variable is set.
+  is "a pass beside the run this checkout points at leaves it alone" \
+     "$(code_of floor "$tmp/pin" pass)" "43"
+
+  rm -rf "$src/claims/90" "$src/labels/90" "$src/items/90"
+}
+a_pass_leaves_any_active_run_alone
+
+#
+# **A claim nothing here works on is taken again.** A pass that died between its claim and its run
+# left this host's name on an item no run holds. Passed over for good, it would need a person to
+# free it. #884's judge.
+#
+a_pass_takes_back_a_claim_no_run_holds() {
+  make_repo "$tmp/stale-claim" main && set_origin "$tmp/stale-claim" 'https://gitlab.com/acme/stale.git' \
+    || { skip "a claim no run holds — git could not make a repo here"; return; }
+
+  printf 'Stale item\n' > "$src/items/89"
+  printf 'stale\t2026-09-10T00:00:00Z\tpat\n' > "$src/labels/89"
+  mkdir -p "$src/claims/89"
+  printf '%s\t%s\t%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$(uname -n)" "$(date -u +%s)" > "$src/claims/89/held"
+  bar_and_rule "$tmp/stale-claim" 'offer stale pat'
+
+  is  "a claim of this host's that no run holds is taken again" \
+      "$(code_of floor "$tmp/stale-claim" pass)" "44"
+  has "and a run holds the item now" "$(floor "$tmp/stale-claim" observe)" "item=89"
+
+  rm -rf "$src/claims/89" "$src/labels/89" "$src/items/89"
+}
+a_pass_takes_back_a_claim_no_run_holds
+
+#
+# **A step that refuses is a stop in the run.** With no origin the target cannot be named, so the pass
+# cannot open its work. It used to leave with no line, and a refusal read the same as a death.
+#
+a_refused_step_is_a_stop() {
+  make_repo "$tmp/noorigin" main || { skip "a refused step — git could not make a repo here"; return; }
+
+  printf 'Unopened item\n' > "$src/items/88"
+  printf 'unopened\t2026-09-11T00:00:00Z\tpat\n' > "$src/labels/88"
+  bar_and_rule "$tmp/noorigin" 'offer unopened pat'
+
+  differs "a pass that cannot open its work stops" "$(code_of floor "$tmp/noorigin" pass)" "0"
+  has "and the run says where" "$(floor "$tmp/noorigin" observe)" "why=open"
+
+  rm -rf "$src/claims/88" "$src/labels/88" "$src/items/88"
+}
+a_refused_step_is_a_stop
+
+#
+# **A run begun while the command works does not take the pass's verbs.** The door refuses a run that
+# is there at the start. This one arrives later: the command runs `new` in the pass's own checkout,
+# the way the running rule tells an agent to, and the pass still delivers from its own run. #884's
+# judge, round two.
+#
+a_pass_keeps_its_own_run() {
+  git init -q --bare "$tmp/remotes/acme/pinx.git" 2>/dev/null \
+    || { skip "a run begun under a pass — git could not make a bare repo here"; return; }
+  make_repo "$tmp/pinx" main && set_origin "$tmp/pinx" 'https://github.com/acme/pinx.git' \
+    || { skip "a run begun under a pass — git could not make a repo here"; return; }
+
+  printf 'Pinned across a new run\n' > "$src/items/87"
+  printf 'pinx\t2026-09-12T00:00:00Z\tpat\n' > "$src/labels/87"
+  bar_and_rule "$tmp/pinx" 'offer pinx pat
+deliver https://github.com/acme/pinx.git'
+
+  interlope="( cd '$tmp/pinx' && sh '$runner' new 'Interloper' ) >/dev/null 2>&1"
+  interlope="$interlope; printf 'x\\n' > saw && git add saw && sh '$runner' commit 'saw it'"
+
+  is "a pass whose command begins another run here still delivers" \
+     "$(FOUNDRY_WORKER='' FOUNDRY_PASS_COMMAND=$interlope code_of floor "$tmp/pinx" pass)" "0"
+
+  own=$(ls -d "$home"/runs/*-pinned-across-a-new-run-* 2>/dev/null | head -1)
+  has   "and the delivery is from the pass's own run" "$(ls "$src/deliveries")" "$(basename "$own")"
+  lacks "and none from the run begun under it" "$(ls "$src/deliveries")" "interloper"
+
+  rm -f "$src/deliveries/$(basename "$own")"
+  rm -rf "$src/claims/87" "$src/labels/87" "$src/items/87"
+}
+a_pass_keeps_its_own_run
+
+#
+# **An item with no words is titled by its id.** `make_run` refused an empty title after the claim,
+# so every pass that reached such an item stopped there, and wrote no line. #884's judge.
+#
+a_blank_item_is_still_an_item() {
+  make_repo "$tmp/blank" main && set_origin "$tmp/blank" 'https://gitlab.com/acme/blank.git' \
+    || { skip "a blank item — git could not make a repo here"; return; }
+
+  printf '\n\n' > "$src/items/79"
+  printf 'blank\t2026-09-13T00:00:00Z\tpat\n' > "$src/labels/79"
+  bar_and_rule "$tmp/blank" 'offer blank pat'
+
+  is  "a pass that takes an item with no words begins its run" "$(code_of floor "$tmp/blank" pass)" "44"
+  has "titled by the item's id" "$(floor "$tmp/blank" path)" "item-79"
+
+  rm -rf "$src/claims/79" "$src/labels/79" "$src/items/79"
+}
+a_blank_item_is_still_an_item
+
+#
+# **An item a request is open for is not offered.** Its claim aged out while the request waited on
+# review, and a second host took the item again. The source says which item each request answers.
+# #1025.
+#
+an_open_request_keeps_its_item() {
+  make_repo "$tmp/req" main && set_origin "$tmp/req" 'https://gitlab.com/acme/req.git' \
+    || { skip "an open request — git could not make a repo here"; return; }
+
+  for n in 64 65; do printf 'Requested item %s\n' "$n" > "$src/items/$n"; done
+  printf 'req\t2026-09-16T00:00:00Z\tpat\n' > "$src/labels/64"
+  printf 'req\t2026-09-17T00:00:00Z\tpat\n' > "$src/labels/65"
+  mkdir -p "$src/deliveries"
+  # Delivered through the adapter's own `publish`, with a brief, so what it writes is what `open`
+  # reads. A record written by hand here was a record chosen by whoever wrote the reader.
+  printf 'The work for 64.\n' > "$tmp/req-brief"
+  ( FOUNDRY_SOURCE_DIR="$src" sh "$dir_source" publish 64 a-request-for-64 work/req-64 'Requested item 64' \
+      Refs "$tmp/req-brief" ) >/dev/null 2>&1
+  bar_and_rule "$tmp/req" 'offer req pat'
+
+  lacks "a kept brief is not listed as a request of its own" \
+        "$(FOUNDRY_SOURCE_DIR="$src" sh "$dir_source" open '')" ".brief"
+
+  is  "an item a request is open for is not offered" "$(floor "$tmp/req" offer | cut -f1 | tr '\n' ' ')" "65 "
+  has "and it says why" "$(floor_says "$tmp/req" offer)" "[64] is not offered: a request for it is open"
+
+  # The claim this host took for 64 has aged past the window, so another host could break it.
+  mkdir -p "$src/claims/64"
+  printf '2026-01-01T00:00:00Z\t%s\t%s\n' "$(uname -n)" "$(( $(date -u +%s) - 7200 ))" > "$src/claims/64/held"
+  a_host_named RequestHost "$tmp/reqbin" || { skip "an open request — could not put a uname on the path"; return; }
+
+  is  "a second host's pass, with the claim aged out, takes the next item" \
+      "$(PATH="$tmp/reqbin:$PATH" code_of floor "$tmp/req" pass)" "44"
+  has "the one no request is open for" "$(floor "$tmp/req" observe)" "item=65"
+
+  rm -f "$src/deliveries/a-request-for-64" "$src/deliveries/a-request-for-64.brief"
+  is "once the request is gone, the item is offered again" \
+     "$(floor "$tmp/req" offer | cut -f1 | tr '\n' ' ')" "64 65 "
+
+  rm -rf "$src/claims/64" "$src/claims/65" "$src/labels/64" "$src/labels/65" "$src/items/64" "$src/items/65"
+}
+an_open_request_keeps_its_item
+
+#
+# **A pass leaves by the code of the step that refused.** Four exits had no case: a source that cannot
+# list what is marked, a claim nobody could ask, a claimed item nobody could read, and every item
+# passed over. Two of them answered wrongly. #884's judge, round five.
+#
+a_pass_says_which_step_refused() {
+  make_repo "$tmp/refused" main && set_origin "$tmp/refused" 'https://gitlab.com/acme/refused.git' \
+    || { skip "a refused pass — git could not make a repo here"; return; }
+
+  printf 'Refused item\n' > "$src/items/78"
+  printf 'refused\t2026-09-14T00:00:00Z\tpat\n' > "$src/labels/78"
+  bar_and_rule "$tmp/refused" 'offer refused pat'
+
+  is "a pass given an argument is refused at 2" "$(code_of floor "$tmp/refused" pass 64)" "2"
+  is "a source that cannot list what is marked ends the pass with its code" \
+     "$(code_of floor_through "$(a_source_answering find 2)" "$tmp/refused" pass)" "27"
+  is "and one that cannot be asked to list ends it at 20" \
+     "$(code_of floor_through "$(a_source_answering find 3)" "$tmp/refused" pass)" "20"
+  is "and so does one that cannot be asked what requests are open" \
+     "$(code_of floor_through "$(a_source_answering open 3)" "$tmp/refused" pass)" "20"
+  is "a claim nobody could ask ends the pass at 20" \
+     "$(code_of floor_through "$(a_source_answering claim 3)" "$tmp/refused" pass)" "20"
+  is "a claimed item nobody could read ends the pass at 20, not 1" \
+     "$(code_of floor_through "$(a_source_answering read 3)" "$tmp/refused" pass)" "20"
+  is "a claimed item the source does not hold ends it at 1" \
+     "$(code_of floor_through "$(a_source_answering read 1)" "$tmp/refused" pass)" "1"
+  is "and none of them begins a run" "$(floor "$tmp/refused" path)" ""
+
+  mkdir -p "$src/claims/78"
+  printf '2026-01-01T00:00:00Z\tOtherHost\t%s\n' "$(date -u +%s)" > "$src/claims/78/held"
+  is  "every item passed over ends the pass at 30" "$(code_of floor "$tmp/refused" pass)" "30"
+  has "and says why" "$(floor_says "$tmp/refused" pass)" "held by another host or underway here"
+
+  rm -rf "$src/claims/78" "$src/labels/78" "$src/items/78"
+}
+
+# A work source that answers one verb with one code, and hands every other to the directory adapter.
+a_source_answering() {
+  cat > "$tmp/answers-$1-$2.sh" <<STUB
+#!/bin/sh
+[ "\$1" = $1 ] && exit $2
+exec sh '$dir_source' "\$@"
+STUB
+  printf '%s' "$tmp/answers-$1-$2.sh"
+}
+
+# `floor`, through a work source the case names rather than the directory adapter.
+floor_through() {
+  through=$1 dir=$2
+  shift 2
+  ( cd "$dir" 2>/dev/null || exit 9
+    FOUNDRY_HOME="$home" FOUNDRY_RUN="" FOUNDRY_WHO="" FOUNDRY_SOURCE="$through" sh "$runner" "$@" 2>&1 )
+}
+a_pass_says_which_step_refused
+
+#
+# **A read that fails after the run is made is a stop.** A pass reads the item twice: once to name
+# the run, and once to bind it. A source that failed between the two left a run holding no line a
+# later pass could read, and that run would look like a person's. #1026.
+#
+a_second_read_that_fails_is_a_stop() {
+  make_repo "$tmp/reread" main && set_origin "$tmp/reread" 'https://gitlab.com/acme/reread.git' \
+    || { skip "a second read that fails — git could not make a repo here"; return; }
+
+  printf 'Read once\n' > "$src/items/66"
+  printf 'reread\t2026-09-18T00:00:00Z\tpat\n' > "$src/labels/66"
+  bar_and_rule "$tmp/reread" 'offer reread pat'
+
+  is  "a pass whose second read fails stops at 20" \
+      "$(code_of floor_through "$(a_source_reading_once)" "$tmp/reread" pass)" "20"
+  has "and its run says it began" "$(floor "$tmp/reread" observe)" "pass.began"
+  has "and why it stopped"        "$(floor "$tmp/reread" observe)" "why=read"
+
+  rm -rf "$src/claims/66" "$src/labels/66" "$src/items/66"
+}
+
+# A source that answers the first `read`, and cannot be asked for any after it.
+a_source_reading_once() {
+  rm -f "$tmp/read-once"
+  cat > "$tmp/reads-once.sh" <<STUB
+#!/bin/sh
+[ "\$1" = read ] && [ -f '$tmp/read-once' ] && exit 3
+[ "\$1" = read ] && : > '$tmp/read-once'
+exec sh '$dir_source' "\$@"
+STUB
+  printf '%s' "$tmp/reads-once.sh"
+}
+a_second_read_that_fails_is_a_stop
+
+#
+# **Floor never puts the mark on, through any adapter.** A worker that could label its own issue would
+# choose its own work. Core holds the part every adapter owes: an adapter answers only the verbs core
+# calls, and none of those writes a mark. What an adapter does inside its own verbs, its own section
+# proves: the GitHub adapter's forge calls, and the directory adapter's label lines. #884's judge.
+#
+every_adapter_answers_only_what_core_calls() {
+  core_calls=$(verbs_core_calls "$(dirname "$runner")/..")
+
+  for adapter in "$(dirname "$runner")"/../lib/source-*.sh; do
+    is "the ${adapter##*/} adapter answers only verbs core calls" \
+       "$(verbs_answered_by "$adapter" | grep -vxF "$core_calls")" ""
+  done
+
+  mkdir -p "$tmp/planted-verb-adapter" || { skip "a planted adapter verb — no room"; return; }
+  awk '{ print } /^case "\$\{1:-\}" in$/ { print "    label)   shift; put_label \"$@\" ;;" }' \
+    "$dir_source" > "$tmp/planted-verb-adapter/source-dir.sh"
+  has "and one answering a verb core never calls is found" \
+      "$(verbs_answered_by "$tmp/planted-verb-adapter/source-dir.sh" | grep -vxF "$core_calls")" "label"
+}
+
+# Every verb core asks a work source for, wherever in floor's shipped code it asks.
+verbs_core_calls() {
+  grep -rhoE 'source_says [a-z]+' "$1/bin" "$1/hooks" "$1/lib/source.sh" 2>/dev/null | cut -d' ' -f2 | LC_ALL=C sort -u
+}
+
+# The verbs an adapter's own dispatch answers.
+verbs_answered_by() { awk '/^case "\$\{1:-\}" in$/,/^esac$/' "$1" | sed -n 's/^    \([a-z]*\)).*/\1/p'; }
+
+# Floor's shipped code, copied, with one line added to its runner.
+plant_in() {
+  mkdir -p "$1" && cp -R "$(dirname "$runner")/../bin" "$(dirname "$runner")/../lib" \
+    "$(dirname "$runner")/../hooks" "$1/" 2>/dev/null || return 1
+  printf '    %s\n' "$2" >> "$1/bin/run.sh"
+}
+
+#
+# A command in call position: first on its line, after a separator or a word that runs one, inside
+# `$(`, behind a path or a quote. Comments go, and a name inside a line a person reads is not a call.
+CALL_POSITION='(^[[:space:]]*|[;&|({`][[:space:]]*|\$\([[:space:]]*|(if|while|until|then|do|else|exec|command|env|nohup|nice|time|xargs|!)[[:space:]]+|timeout[[:space:]]+[0-9]+[a-z]?[[:space:]]+)"?([^[:space:];&|()"]*/)?'
+
+# Every shipped line calling one of these commands, joined first where a backslash continues it.
+calls_of() {
+  find "$1/bin" "$1/lib" "$1/hooks" -type f 2>/dev/null | while IFS= read -r file; do
+    joined_lines_of "$file" | grep -E "$CALL_POSITION($2)\"?([[:space:]]|\$)" \
+      | grep -vE '^[[:space:]]*#' | sed "s|^|${file##*/}: |"
+  done
+}
+
+joined_lines_of() { sed -e ':a' -e '/\\$/N' -e 's/\\\n[[:space:]]*/ /' -e 'ta' "$1"; }
+every_adapter_answers_only_what_core_calls
+
+#
+# **Core runs no harness.** A pass runs the command the host names, so nothing in floor may call the
+# program behind it. The one-pass charter.
+#
+# It knows harnesses by name, in the call positions above. `eval` and `sh -c` are not read, and **a
+# harness it does not name, it cannot see**: the list is the limit of the proof.
+floor_runs_no_harness() {
+  is "no shipped line runs a harness" "$(harness_calls_in "$(dirname "$runner")/..")" ""
+
+  plant_in "$tmp/planted-harness" 'if "$HOME/.local/bin/claude" -p "$brief"; then :; fi' \
+    || { skip "a planted harness call — could not copy floor"; return; }
+  has "and a planted one is found, behind a path and an if" \
+      "$(harness_calls_in "$tmp/planted-harness")" 'bin/claude'
+}
+
+harness_calls_in() { calls_of "$1" 'claude|codex|gemini|aider|cursor-agent|opencode|goose|qwen|copilot'; }
+floor_runs_no_harness
 
 #
 # **A release that races a renewal deleted the claim that replaced the one it read.**
@@ -4357,6 +4904,11 @@ HOOK
         "$(gh_claims_says "$work" claim 71)" "could not be asked"
   lacks "and never the host that last held it" \
         "$(gh_claims_says "$work" claim 71)" "OtherHost"
+
+  # **Nor is it an item nobody holds.** Read as 1, a run that had lost its claim was told nobody held
+  # the item, when nobody could say. #991's judge found it.
+  is "a claim nobody could read is not one nobody holds" \
+     "$( cd "$work" && sh "$gh_source" held 71 >/dev/null 2>&1; printf '%s' "$?" )" "3"
 
   # #981: the fault, then the cure — and a cure only where one can work. A path asks no helper and
   # `gh` answers for none, so this origin gets neither line.
@@ -5304,6 +5856,39 @@ a-reviewer  a stranger can read it
   lacks "a charter bounding nothing holds no limit at all" "$(floor "$tmp/asked" charter)" "rounds "
 }
 the_runner_asks_the_judge
+
+#
+# **A pass asks the judges its charter names, and only an approval goes on.** Every pass case named
+# none, so the judged step only ever answered 8. #884's judge, rounds four and five.
+#
+a_pass_asks_the_judges() {
+  a_judged_pass "$tmp/pjudge" pjudge reject 70 \
+    || { skip "a judged pass — git could not make a repo here"; return; }
+
+  is  "a judge that refuses stops the pass before the request" \
+      "$(FOUNDRY_PASS_COMMAND=true code_of floor "$tmp/pjudge" pass)" "39"
+  has "and the run says it was the judges" "$(floor "$tmp/pjudge" observe)" "why=judged"
+
+  a_judged_pass "$tmp/pjudge2" pjudge2 approve 69 \
+    || { skip "an approved pass — git could not make a repo here"; return; }
+
+  is  "a judge that approves lets the pass go on to the request" \
+      "$(FOUNDRY_PASS_COMMAND=true code_of floor "$tmp/pjudge2" pass)" "18"
+  has "and it stops there, with no grant to deliver" "$(floor "$tmp/pjudge2" observe)" "why=deliver"
+
+  rm -rf "$src/claims/69" "$src/claims/70" "$src/labels/69" "$src/labels/70" "$src/items/69" "$src/items/70"
+}
+
+# A repository whose one judge answers one verdict, and an item under a label named for it.
+a_judged_pass() {
+  a_judged_repo "$1" "$2" "$(a_judge_that_approves "$3")" 'reach  a-reviewer  sh bin/fake-judge.sh
+a-reviewer  a stranger can read it
+' && commit_file "$1" .foundry/practice "offer $2 pat" && as_fetched "$1" || return 1
+
+  printf 'Judged item %s\n' "$4" > "$src/items/$4"
+  printf '%s\t2026-09-15T00:00:00Z\tpat\n' "$2" > "$src/labels/$4"
+}
+a_pass_asks_the_judges
 
 #
 # **Two judges on one clause, and every fixture before this had one.** A rule with a single instance
@@ -6804,6 +7389,9 @@ two_deliveries_reconcile_or_say_they_cannot() {
   # prints whichever it was given rather than deciding what a delivery is called.
   has "it says which delivery" \
       "$(floor_says "$tmp/rc" reconcile)" "2026-01-02-item-41-0000"
+  # `open` names each delivery's item in a third column now, and it must not ride in with the name.
+  has "and names it by its record alone, not with its item" \
+      "$(floor_says "$tmp/rc" reconcile)" "2026-01-02-item-41-0000] and this one both change"
   has "and names the file rather than the fact" \
       "$(floor_says "$tmp/rc" reconcile)" "both change: a"
 
@@ -7257,6 +7845,14 @@ case "$*" in
   # own fixture, set by emptying the file rather than deleting it.
   "api user"*)              [ -f "$store/reads-fail" ] && { echo "HTTP 401: Bad credentials" >&2; exit 1; }
                             cat "$store/me" 2>/dev/null || printf 'foundry-run\n' ;;
+  # The requests open against the repository, each with the item it answers, pre-shaped the way the
+  # adapter's `--jq` shapes them. That expression was measured live, since nothing here can run it.
+  # Cut at `--limit` as gh cuts, and at 30 when none is named, because that is where gh stops.
+  "pr list --state open"*)  [ -f "$store/reads-fail" ] && { echo "could not resolve host: api.github.com" >&2; exit 1; }
+                            limit=30 prev=
+                            for arg in "$@"; do [ "$prev" = --limit ] && limit=$arg; prev=$arg; done
+                            head -n "$limit" "$store/open-prs" 2>/dev/null
+                            true ;;
   # A read that cannot answer. GitHub fails this way for a network, a token or a rate limit, and none
   # of them mean "nothing is there yet" — which is what both readers below used to conclude.
   # `gh` matches words in a body, so a run made the same day as another comes back on shared tokens.
@@ -7570,12 +8166,12 @@ the_other_adapter
 # **The same list, from the forge.** Which issues carry the label comes from one call and who put it
 # on from each issue's events, so an issue the listing named and no event did is still said.
 #
-eligibility_reads_the_same_from_github() {
+the_offer_reads_the_same_from_github() {
   make_repo "$tmp/ghe" main && set_origin "$tmp/ghe" 'https://github.com/acme/ghe.git' \
-    && mkdir -p "$tmp/ghe/.foundry" && commit_file "$tmp/ghe" .foundry/practice 'eligible go pat' \
+    && mkdir -p "$tmp/ghe/.foundry" && commit_file "$tmp/ghe" .foundry/practice 'offer go pat' \
     && as_fetched "$tmp/ghe" \
-    || { skip "eligibility on GitHub — git could not make a repo here"; return; }
-  fake_gh "$tmp/ghebin" || { skip "eligibility on GitHub — could not put a gh on the path"; return; }
+    || { skip "the offer on GitHub — git could not make a repo here"; return; }
+  fake_gh "$tmp/ghebin" || { skip "the offer on GitHub — could not put a gh on the path"; return; }
 
   mkdir -p "$tmp/ghestore/open" "$tmp/ghestore/events"
   for n in 81 82 83 84; do printf 'go\n' > "$tmp/ghestore/open/$n"; done
@@ -7586,6 +8182,25 @@ eligibility_reads_the_same_from_github() {
   printf 'other\t2026-07-01T00:00:00Z\tpat\n' > "$tmp/ghestore/events/85"
 
   kept_oldest_named_first ghe_floor ghe_says "GitHub"
+
+  # A request open for 82, as GitHub lists it. #1025.
+  printf 'work/82\thttps://example.invalid/pr/9\t82\n' > "$tmp/ghestore/open-prs"
+  is  "an item a request is open for is not offered — GitHub" "$(ghe_floor offer | cut -f1 | tr '\n' ' ')" "81 "
+  has "and it says why — GitHub" "$(ghe_says offer)" "[82] is not offered: a request for it is open"
+
+  # **The oldest request, behind thirty-nine newer ones.** gh answers its newest 30 unless told how
+  # many, and the one that falls off is the one whose claim aged out first. Batch four's judge.
+  { awk 'BEGIN { for (n = 1; n <= 39; n++) printf "work/r%d\thttps://example.invalid/pr/%d\t%d\n", n, n, 9000 + n }'
+    printf 'work/82\thttps://example.invalid/pr/82\t82\n'; } > "$tmp/ghestore/open-prs"
+  is "and neither is one whose request is older than gh's first page — GitHub" \
+     "$(ghe_floor offer | cut -f1 | tr '\n' ' ')" "81 "
+
+  # A list as long as the bound may be one gh stopped short, so it answers nothing.
+  awk 'BEGIN { for (n = 1; n <= 500; n++) printf "work/r%d\thttps://example.invalid/pr/%d\t%d\n", n, n, 9000 + n }' \
+    > "$tmp/ghestore/open-prs"
+  is  "a list of open requests that fills the bound is refused — GitHub" "$(code_of ghe_floor offer)" "20"
+  has "and it says the list may be cut short — GitHub" "$(ghe_says offer)" "as many as this reads"
+  rm -f "$tmp/ghestore/open-prs"
 }
 
 ghe_floor() { ghe_run "$@" 2>/dev/null; }
@@ -7594,7 +8209,88 @@ ghe_run() {
   ( cd "$tmp/ghe" && PATH="$tmp/ghebin:$PATH" GH_STORE="$tmp/ghestore" FOUNDRY_HOME="$home" \
       FOUNDRY_RUN="" FOUNDRY_WHO="" FOUNDRY_SOURCE="" sh "$runner" "$@" )
 }
-eligibility_reads_the_same_from_github
+the_offer_reads_the_same_from_github
+
+#
+# **The GitHub adapter's calls to its forge, named.** It never puts the mark on, and this is its own
+# proof, beside its own cases: every kind of `gh` call floor ships is listed, and a new kind goes red
+# until a person names it. An allowlist, because a list of known writes misses the next. #884's judge.
+#
+# A call straight after a separator or in backticks is read, and one whose verb is a variable reads
+# as `gh ?`. What it cannot see is a route that names no `gh`, or a call inside `eval` or `sh -c`.
+#
+GH_CALLS_FLOOR_MAKES='gh api
+gh api user
+gh auth status
+gh issue comment
+gh issue list
+gh issue view
+gh pr create
+gh pr list
+gh pr merge
+gh pr view
+gh repo view'
+
+the_github_adapter_calls_only_these() {
+  is "every kind of gh call floor ships is named here" \
+     "$(gh_calls_in "$(dirname "$runner")/..")" "$GH_CALLS_FLOOR_MAKES"
+  is "and no gh api call writes" "$(gh_api_writes_in "$(dirname "$runner")/..")" ""
+
+  plant_in "$tmp/planted-label" 'gh issue edit "$1" --add-label "$2"' \
+    || { skip "a planted label write — could not copy floor"; return; }
+  has "and a planted call is found" "$(gh_calls_in "$tmp/planted-label")" "gh issue edit"
+
+  plant_in "$tmp/planted-verb" 'gh "$verb" "$1"' \
+    || { skip "a planted call by variable — could not copy floor"; return; }
+  has "and one whose verb is a variable reads as unknown" "$(gh_calls_in "$tmp/planted-verb")" "gh ?"
+
+  plant_in "$tmp/planted-write" "$(printf '%s\n%s' 'gh api "repos/{owner}/{repo}/issues/$1" \' \
+    '        -X PATCH -f "labels[]=go"')" \
+    || { skip "a planted continued write — could not copy floor"; return; }
+  has "and a write flag on a continued line is found" "$(gh_api_writes_in "$tmp/planted-write")" "-X PATCH"
+
+  plant_in "$tmp/planted-semi" 'true;gh issue edit "$1" --add-label go' \
+    || { skip "a planted call after a separator — could not copy floor"; return; }
+  has "and one straight after a separator is found" "$(gh_calls_in "$tmp/planted-semi")" "gh issue edit"
+
+  plant_in "$tmp/planted-tick" 'x=`gh issue edit "$1" --add-label go`' \
+    || { skip "a planted call in backticks — could not copy floor"; return; }
+  has "and one in backticks is found" "$(gh_calls_in "$tmp/planted-tick")" "gh issue edit"
+}
+
+# The word after `gh` and the one after that when both are plain, or `gh ?` when the first is not.
+# A line matched as a call that holds no `gh` it can read is `gh ??`, and no list names that.
+gh_calls_in() {
+  calls_of "$1" gh | awk '{
+      for (i = 1; i <= NF; i++) if ($i ~ /(^|[(\/";&|`])gh"?$/) break
+      if (i > NF) { print "gh ??"; next }
+      verb = (i < NF && $(i + 1) ~ /^[a-z-]+$/) ? $(i + 1) : "?"
+      then_ = (verb != "?" && i + 1 < NF && $(i + 2) ~ /^[a-z-]+$/) ? " " $(i + 2) : ""
+      print "gh " verb then_ }' | LC_ALL=C sort -u
+}
+
+gh_api_writes_in() {
+  calls_of "$1" gh | grep -E 'gh[[:space:]]+api' | grep -E -- '(-X|--method|-f|-F|--field|--raw-field|--input)([[:space:]]|=)'
+}
+the_github_adapter_calls_only_these
+
+#
+# **Only the adapter calls the forge.** Core reaches it through the work source, never by name. Three
+# rounds of review judged this scan by hand. A file is known by its name, so a second `source.sh`
+# elsewhere would pass. #884's judge, round five.
+#
+the_forge_is_called_only_by_its_adapter() {
+  is "gh is called only by the resolver and the GitHub adapter" \
+     "$(files_calling_gh_in "$(dirname "$runner")/..")" "source-github.sh
+source.sh"
+
+  plant_in "$tmp/planted-core-gh" 'gh issue list --label go' \
+    || { skip "a planted forge call in core — could not copy floor"; return; }
+  has "and a planted call in core is found" "$(files_calling_gh_in "$tmp/planted-core-gh")" "run.sh"
+}
+
+files_calling_gh_in() { calls_of "$1" gh | cut -d: -f1 | LC_ALL=C sort -u; }
+the_forge_is_called_only_by_its_adapter
 
 #
 # An item filed in a repository, advising that same repository. The bootstrap authorises it because

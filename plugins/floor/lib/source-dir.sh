@@ -25,7 +25,7 @@
 #        sh source-dir.sh publish <item> <run> <branch> <title> [word] [brief]
 #        sh source-dir.sh ask     <item> <question> <text>
 #        sh source-dir.sh receive <item> <question>
-#        sh source-dir.sh eligible <label>
+#        sh source-dir.sh find    <label>
 #
 # Exit: 0 answered · 1 nothing there · 2 asked for something this does not do · 3 it could not
 #       read or write what it needs · 4 this run already sent something else under that name
@@ -133,21 +133,26 @@ kind_of_item() {
 
 
 #
-# Every delivery this directory holds but this run's. Nothing here merges, so
-# it holds no notion of open and reports every delivery it recorded.
+# Every delivery this directory holds but this run's: its branch, its record and its item. Nothing
+# here merges, so it holds no notion of open and reports every delivery it recorded.
 open_deliveries() {
     [ -d "$root/deliveries" ] || return 0
 
     for file in "$root/deliveries"/*; do
         [ -f "$file" ] || continue
+        # A kept brief sits beside its record, and read as a delivery whose branch was its first word.
+        case $file in *.brief) continue ;; esac
 
         branch=$(awk 'NR == 1 { print $1 }' "$file")
         [ -n "$branch" ] || continue
         [ "$branch" = "$1" ] && continue
 
-        printf '%s\t%s\n' "$branch" "$file"
+        printf '%s\t%s\t%s\n' "$branch" "$file" "$(delivered_item "$file")"
     done
 }
+
+# The item a delivery answers: the record's second field. `offer` passes it over while it is open.
+delivered_item() { awk -F'\t' 'NR == 1 { print $2 }' "$1"; }
 
 
 # A fresh claim is linked into place whole. Failing that, the holder rewriting its own stamp is
@@ -214,7 +219,7 @@ drop_claim() {
 # Floor orders them and decides. A label is a line, not a file name, because a name holding a
 # colon is one Windows will not write.
 #
-list_eligible() {
+find_marked() {
     [ -n "$1" ] || return 2
     [ -d "$root/labels" ] || return 0
 
@@ -238,7 +243,7 @@ case "${1:-}" in
     publish) shift; publish_delivery "${1:-}" "${2:-}" "${3:-}" "${4:-}" "${5:-}" "${6:-}" ;;
     ask)     shift; put_question     "${1:-}" "${2:-}" "${3:-}" ;;
     receive) shift; read_answer      "${1:-}" "${2:-}" ;;
-    eligible) shift; list_eligible   "${1:-}" ;;
-    *)       echo "source-dir: read <item> | eligible <label> | claim <item> <host> | held <item> | release <item> <host> | publish <item> <run> <branch> <title> [word] [brief] | ask <item> <question> <text> | receive <item> <question>" >&2
+    find)    shift; find_marked      "${1:-}" ;;
+    *)       echo "source-dir: read <item> | find <label> | claim <item> <host> | held <item> | release <item> <host> | publish <item> <run> <branch> <title> [word] [brief] | ask <item> <question> <text> | receive <item> <question>" >&2
              exit 2 ;;
 esac
