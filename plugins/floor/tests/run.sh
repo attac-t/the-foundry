@@ -2594,13 +2594,22 @@ wreck_runner "a second pass that never reads the mark of a pass at work is caugh
   alivenoread '/^leave_a_pass_at_work() {/,/^}/s#^    a_pass_is_alive_in "\$1" || return 0$#    return 0#'
 
 wreck_runner "a pass that never starts its heartbeat is caught" \
-  alivenomark '/^pass() {/,/^}/s#^    say_this_pass_is_alive$#    :#'
+  alivenomark '/^begin_a_run_for() {/,/^}/s#^    say_this_pass_is_alive$#    :#'
 
 wreck_runner "a mark left behind when the pass ends is caught" \
-  alivestays '/^stop_the_heartbeat() {/,/^}/s#^    rm -f "\$alive"$#    :#'
+  alivestays '/^stop_the_heartbeat() {/,/^}/s#^    rm -f "\$alive" "\$alive.new"$#    :#'
 
 wreck_runner "a stale mark read as a pass at work is caught" \
-  alivestale '/^a_pass_is_alive_in() {/,/^}/s#-lt "\$(( beat \* 3 ))"#-lt 999999999#'
+  alivestale '/^a_pass_is_alive_in() {/,/^}/s#-lt "\$(( writers_beat \* 3 ))"#-lt 999999999#'
+
+wreck_runner "a beat holding its pass's output open is caught" \
+  alivefds '/^say_this_pass_is_alive() {/,/^}/s#"\$own_beat" </dev/null >/dev/null 2>\&1 \&$#"$own_beat" \&#'
+
+wreck_runner "a beat that outlives its pass is caught" \
+  alivekill '/^beat_while_alive() {/,/^}/s#while kill -0 "\$1" 2>/dev/null \&\& #while #'
+
+wreck_runner "a mark aged by the reader's beat, not its writer's, is caught" \
+  alivewriter '/^a_pass_is_alive_in() {/,/^}/s#^    is_a_plain_decimal "\$writers_beat" || writers_beat=\$(pass_beat)$#    writers_beat=$(pass_beat)#'
 
 wreck_runner "a mark nobody can age read as a dead pass is caught" \
   aliveopen '/^a_pass_is_alive_in() {/,/^}/s#^    case \$was in .*) return 0 ;; esac$#    case $was in '"''"'|*[!0-9]*) return 1 ;; esac#'

@@ -268,7 +268,7 @@ ${FOUNDRY_HOME:-$HOME/.foundry}/runs/<date>-<slug>-<short id>/
 ├── substitutions      files graded as the base wrote them — absent when the run changed no gate
 ├── judged/            what `judged` asked each judge, and what came back — one pair per clause
 ├── observations       what happened, one line each, and nothing granted by any of it
-├── pass.alive         the time a pass at work last beat — absent when no pass is at work
+├── pass.alive         the time a pass at work last beat, and its beat — absent when no pass is at work
 ├── asides             what this run could not act on — written by `aside`, read by nothing
 ├── id                 this run's name, so a copied directory still knows it
 ├── gates-tree/        the tree a substituted gate was graded in — absent unless one was
@@ -571,8 +571,9 @@ apart by it. Neither is checked by it.**
 **Naming a worker permits nothing.** It widens no allowlist and satisfies no clause — the same weight
 as every other observation.
 
-**`observe` takes no event floor writes itself.** A `pass.`, `claim.`, `run.` or `judge.` line
-steers the next pass, so the verb refuses one, exit 2. Writing the file directly is the same user's,
+**`observe` takes no event a pass steers by.** A `pass.`, `claim.`, `run.` or `judge.` line steers
+the next pass, so the verb refuses those four prefixes, exit 2. Floor writes others, such as
+`gate.finished` and `item.read`, and `observe` takes them as it always did. Writing the file directly is the same user's,
 and #419 owns that.
 
 **What is still one thing.** The outward actor. A push and a pull request go out on whatever
@@ -2090,16 +2091,19 @@ It reads back the command's exit and the run's record, never what the command pr
 set is exit 44, and a command that fails is 45. Either way the run records why it stopped, and with
 which code: `pass.stopped why=deliver code=18`.
 
-**A pass at work says so.** While a pass works, it writes the time into `pass.alive` in its run every
-`FOUNDRY_PASS_BEAT` seconds, sixty by default, and removes it when it exits. A second pass on this
-host may find a mark younger than three beats. It then says a pass is at work, and leaves the run
-alone, 43. The claim cannot tell the two apart, because it renews for any pass holding the run's
-name.
+**A pass at work says so.** From the moment its run exists, a pass writes the time and its beat into
+`pass.alive` every `FOUNDRY_PASS_BEAT` seconds, sixty by default. Each write lands whole, and the
+mark goes when the pass exits. A second pass on this host may find a mark younger than three of its
+writer's beats. It then says a pass is at work, and leaves the run alone, 43. The claim cannot tell
+the two apart, because it renews for any pass holding the run's name.
+
+**The beat holds none of the pass's output**, so a caller reading a pass to its end waits for the
+pass and nothing else.
 
 **A mark nobody can age reads as live.** Leaving a dead run costs a wake. Resuming a live one puts
-two workers in one workspace. **What the mark cannot see**, and nothing owns yet: a command, a grade
-or a judgement still running after its pass was killed. A reused process id keeps a dead pass's
-mark fresh, so on one host every wake leaves that run alone until the id goes.
+two workers in one workspace. **What the mark cannot see:** a command, a grade or a judgement still
+running after its pass was killed, which #1046 owns. A reused process id keeps a dead pass's mark
+fresh, so on one host every wake leaves that run alone until the id goes.
 
 **A pass carries on a run a pass began, before it takes anything new.** The run's own record decides,
 read in this order:

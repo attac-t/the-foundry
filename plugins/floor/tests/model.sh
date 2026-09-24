@@ -4492,6 +4492,10 @@ a_pass_at_work_is_left_to_work() {
   # two workers in one workspace.
   printf 'not a time\n' > "$run/pass.alive"
   has "a mark that cannot be aged reads as a pass at work" "$(floor_says "$tmp/alive" pass)" "a pass is at work"
+
+  # Aged by its writer's beat of sixty, a mark a hundred seconds old is live, whatever the reader keeps.
+  printf '%s 60\n' "$(( $(date -u +%s) - 100 ))" > "$run/pass.alive"
+  has "a mark is aged by the beat its writer kept" "$(FOUNDRY_PASS_BEAT=1 floor_says "$tmp/alive" pass)" "a pass is at work"
   rm -f "$run/pass.alive"
 
   is  "a worker may not write a line floor steers by" "$(code_of floor "$tmp/alive" observe pass.delivered item=421)" "2"
@@ -4501,6 +4505,77 @@ a_pass_at_work_is_left_to_work() {
   rm -rf "$src/claims/421" "$src/labels/421" "$src/items/421"
 }
 a_pass_at_work_is_left_to_work
+
+#
+# **The beat holds nothing its caller waits on, and ends with its pass.** Read through a pipe, a pass
+# is done when it is done. Killed, its mark goes stale on its own. And a second pass during the
+# item's second read already sees it at work. 5a's judge, round one.
+#
+a_beat_ends_with_its_pass() {
+  a_beat_repo alive2 516 || { skip "a beat and its pipe — git could not make a repo here"; return; }
+  began=$(date -u +%s)
+  said=$(floor_says "$tmp/alive2" pass)
+  took=$(( $(date -u +%s) - began ))
+  is  "a pass read through a pipe is done when the pass is, not a beat later" \
+      "$([ "$took" -lt 40 ] && echo promptly || echo "after $took seconds")" "promptly"
+  has "and it did begin its run" "$said" "this pass took [516]"
+
+  a_beat_repo alive3 517 || { skip "a killed pass — git could not make a repo here"; return; }
+  kill_a_pass_in "$tmp/alive3" "$tmp/alive3.acting" "$dir_source" "touch '$tmp/alive3.acting'; sleep 4"
+  sleep 4
+  has "a pass killed in its command is no pass at work three of its beats later" \
+      "$(floor_says "$tmp/alive3" pass)" "a run is active here already"
+
+  a_beat_repo alive4 518 || { skip "a slow second read — git could not make a repo here"; return; }
+  ( cd "$tmp/alive4" && FOUNDRY_HOME="$home" FOUNDRY_RUN="" FOUNDRY_WHO="" \
+      FOUNDRY_SOURCE="$(a_source_slow_on_the_second_read "$tmp/alive4.reading")" sh "$runner" pass ) >/dev/null 2>&1 &
+  first=$!
+  waited=0
+  while [ ! -f "$tmp/alive4.reading" ] && [ "$waited" -lt 60 ]; do sleep 1; waited=$((waited + 1)); done
+  has "a second pass during the item's second read already sees the first at work" \
+      "$(floor_says "$tmp/alive4" pass)" "a pass is at work"
+  wait "$first"
+
+  rm -rf "$src/claims/516" "$src/claims/517" "$src/claims/518" "$src/labels/516" "$src/labels/517" "$src/labels/518"
+  rm -rf "$src/items/516" "$src/items/517" "$src/items/518"
+}
+
+# A repository offering one item under its own label.
+a_beat_repo() {
+  make_repo "$tmp/$1" main && set_origin "$tmp/$1" "https://gitlab.com/acme/$1.git" || return 1
+
+  mkdir -p "$src/items" "$src/labels" "$src/claims"
+  printf 'Beat item %s\n' "$2" > "$src/items/$2"
+  printf '%s\t2026-09-10T00:00:00Z\tpat\n' "$1" > "$src/labels/$2"
+  bar_and_rule "$tmp/$1" "offer $1 pat"
+}
+
+# A pass killed during its command, the way a host's crash kills one: SIGKILL once the marker exists.
+kill_a_pass_in() {
+  rm -f "$2"
+  ( cd "$1" || exit 9
+    FOUNDRY_HOME="$home" FOUNDRY_RUN="" FOUNDRY_WHO="" FOUNDRY_SOURCE="$3" \
+      FOUNDRY_PASS_BEAT=1 FOUNDRY_PASS_COMMAND="$4" exec sh "$runner" pass ) >/dev/null 2>&1 &
+  killed=$!
+
+  waited=0
+  while [ ! -f "$2" ] && [ "$waited" -lt 60 ]; do sleep 1; waited=$((waited + 1)); done
+  kill -9 "$killed" 2>/dev/null
+  wait "$killed" 2>/dev/null
+}
+
+# A work source whose first `read` answers at once, and whose later ones wait ten seconds first.
+a_source_slow_on_the_second_read() {
+  rm -f "$tmp/read-once-slow"
+  cat > "$tmp/reads-slowly.sh" <<STUB
+#!/bin/sh
+[ "\$1" = read ] && [ -f '$tmp/read-once-slow' ] && { touch '$1'; sleep 10; }
+[ "\$1" = read ] && : > '$tmp/read-once-slow'
+exec sh '$dir_source' "\$@"
+STUB
+  printf '%s' "$tmp/reads-slowly.sh"
+}
+a_beat_ends_with_its_pass
 
 #
 # **A claim nothing here works on is taken again.** A pass that died between its claim and its run
