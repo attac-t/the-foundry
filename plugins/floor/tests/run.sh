@@ -1625,14 +1625,20 @@ a_moot_read_from_a_file_is_counted
 # seeded and came back empty. Both look the same from here, and both are the same finding.
 #
 a_slot_that_says_nothing_is_named_not_failed() {
-  local was=$never_ran keep_failed=$failed said=''
+  local was=$never_ran keep_failed=$failed said='' counted
 
   : > "$tmp/verdict/selftest"
 
   # **Through a file, never a command substitution.** `$(...)` is a subshell: `report_verdict` raised
   # `never_ran` inside it and the rise died there, so the count below could never hold and this check
   # failed on every run since it shipped.
+  #
+  # **From zero, and put back at once.** `report_verdict` raises `failed` only from 0, so a check that
+  # failed earlier left 1 here, and this one read it as its own. One fault read as two. #1021.
+  failed=0
   report_verdict selftest > "$tmp/selftest.said"
+  counted=$failed
+  failed=$keep_failed
   said=$(cat "$tmp/selftest.said")
 
   case $said in
@@ -1640,13 +1646,12 @@ a_slot_that_says_nothing_is_named_not_failed() {
     *) bad "an empty verdict slot was not named" ;;
   esac
 
-  [ "$never_ran" -eq $((was + 1)) ] && [ "$failed" -ne 1 ] \
+  [ "$never_ran" -eq $((was + 1)) ] && [ "$counted" -ne 1 ] \
     && printf '  ok    a slot that says nothing is a MOOT, never a failed break\n' \
     || bad "an empty verdict slot was counted as a failed break"
 
   rm -f "$tmp/selftest.said" "$tmp/verdict/selftest"
   never_ran=$was
-  restore_what_report_verdict_set
 }
 a_slot_that_says_nothing_is_named_not_failed
 
@@ -2517,23 +2522,26 @@ wreck_runner "a keep hook that reports a lost claim as a failure is caught" \
 # **What a pass may take is a mark a person put on, oldest first.** One break per rule, so a rule
 # nothing holds shows as the break that is missing. #833.
 #
-wreck_runner "eligible items in the order the source listed them is caught" \
-  eligsort '/^eligible() {/,/^}/s# | sort -t .*-k2,2$##'
+wreck_runner "items offered in the order the source listed them is caught" \
+  offersort 's#^oldest_first() { sort -t .*-k2,2; }$#oldest_first() { cat; }#'
 
-wreck_runner "a label nobody is named for passing as eligible is caught" \
-  eligwho '/^kept_by_who_put_it_on() {/,/^}/s#^        \$3 == ""  *{#        0 {#'
+wreck_runner "items offered newest first is caught" \
+  offerreverse '/^oldest_first() {/s#-k2,2; }#-k2,2 -r; }#'
 
-wreck_runner "a hand the rule does not name passing as eligible is caught" \
-  elighand '/^kept_by_who_put_it_on() {/,/^}/s#^        index(allowed, " " \$3 " ") == 0 {#        0 {#'
+wreck_runner "a label nobody is named for, offered anyway, is caught" \
+  offerwho '/^kept_by_who_put_it_on() {/,/^}/s#^        \$3 == ""  *{#        0 {#'
+
+wreck_runner "a hand the rule does not name, offered anyway, is caught" \
+  offerhand '/^kept_by_who_put_it_on() {/,/^}/s#^        index(allowed, " " \$3 " ") == 0 {#        0 {#'
 
 wreck_runner "a practice line that is never read is caught" \
-  eligrule '/^eligibility_rule() {/,/^}/s#\$1 == "eligible"#$1 == "never"#'
+  offerrule '/^offer_rule() {/,/^}/s#\$1 == "offer"#$1 == "never"#'
 
 wreck_runner "a rule read where a worker commits is caught" \
-  eligtip '/^eligible() {/,/^}/s#tip=\$(fetched_default_tip) ||#tip=$(git rev-parse HEAD) ||#'
+  offertip '/^the_offer_line() {/,/^}/s#tip=\$(fetched_default_tip) ||#tip=$(git rev-parse HEAD) ||#'
 
 wreck_runner "a rule naming no hand that says nothing about it is caught" \
-  elignohand '/^eligible() {/,/^}/s#^    \[ "\$\#" -ge 2 \] || { note .*; return 0; }$#    :#'
+  offernohand '/^the_offer_line() {/,/^}/s#^    \[ "\$\#" -ge 2 \] || { note .*; return 0; }$#    :#'
 
 #
 # **The name a run claims under is the run's.** A container starts under a new host name each time,
@@ -2545,17 +2553,136 @@ wreck_runner "a run that loses its own claim to a new host name is caught" \
 wreck_runner "a run that never records the name it claimed under is caught" \
   holdrecord 's#^remember_the_holder() { .*; }$#remember_the_holder() { :; }#'
 
-wreck_runner "a keep that never records a claim a pass took first is caught" \
-  holdkeep '/^renew_this_run_claim() {/,/^}/s#^    remember_the_holder "\$dir"$#    :#'
+wreck_runner "a run that never names a claim taken before it bound the item is caught" \
+  holdbind '/^read_work_item() {/,/^}/s#^    name_a_claim_taken_first "\$dir" "\$item"$#    :#'
+
+wreck_runner "a run that names itself holder of another host's item is caught" \
+  bindany '/^name_a_claim_taken_first() {/,/^}/s#^    \[ "\$(claim_holder "\$held")" = "\$(recording_host)" \] || return 0$#    :#'
+
+wreck_runner "a GitHub source that reads an unreachable remote as nobody holding is caught" \
+  ghheldgone '/^read_claim() {/,/^}/s#at=\$(claim_tip "\$1") || return 3#at=$(claim_tip "$1")#' lib/source-github.sh
 
 wreck_runner "an item nobody holds described as held is caught" \
   nobodyholds '/^say_why_the_work_waits() {/,/^}/s#^    \[ "\$code" -eq 1 \] || { say_who_holds "\$1"; return 0; }$#    say_who_holds "$1"; return 0#'
 
 wreck_runner "a directory source that lists every label is caught" \
-  eliglabel '/^list_eligible() {/,/^}/s#\$1 == label {#1 {#' lib/source-dir.sh
+  offerlabel '/^find_marked() {/,/^}/s#\$1 == label {#1 {#' lib/source-dir.sh
 
 wreck_runner "a GitHub source that drops an issue no event names is caught" \
   ghunnamed '/^label_put_on() {/,/^}/s#END { printf#END { if (at != "") printf#' lib/source-github.sh
+#
+# **A pass takes the first item offered that nobody holds, and works only in the run it begins.** One
+# break per rule. #884, #997.
+#
+wreck_runner "a pass that begins a run without claiming the item is caught" \
+  passclaim '/^this_pass_claims() {/,/^}/s#( claim "\$1" ) >/dev/null 2>&1; code=\$?#code=0#'
+
+wreck_runner "a pass that stops when another host takes its item is caught" \
+  passnext '/^this_pass_claims() {/,/^}/s#is held by another host, so this pass passes it over"; return 1; }#is held by another host, so this pass passes it over"; exit 30; }#'
+
+wreck_runner "a pass that takes a second item beside a run in progress is caught" \
+  passleave '/^pass() {/,/^}/s#^    leave_a_run_in_progress_alone$#    :#'
+
+wreck_runner "a pass that works beside a run holding no item is caught" \
+  passany '/^leave_a_run_in_progress_alone() {/,/^}/s#^    here=\$(active_run 2>/dev/null) || return 0$#    here=$(active_run 2>/dev/null) \&\& [ -n "$(item_id "$here")" ] || return 0#'
+
+wreck_runner "a pass offered nothing that says something else is caught" \
+  passnone '/^what_is_offered() {/,/^}/s#^    \[ -n "\$items" \] || { note .*; exit 42; }$#    :#'
+
+#
+# **A pass leaves by the code of the step that refused.** One break per exit, and one for each line
+# that carries a code up to `pass`. #884's judge, round five.
+#
+wreck_runner "a source that cannot list what is marked, read as nothing offered, is caught" \
+  offercode '/^what_is_offered() {/,/^}/s#^    items=\$(offer) || exit "\$?"$#    items=$(offer)#'
+
+wreck_runner "a pass that drops the code of what it was offered is caught" \
+  passcode '/^pass() {/,/^}/s#^    items=\$(what_is_offered) || exit "\$?"$#    items=$(what_is_offered)#'
+
+wreck_runner "a pass that drops the code of its claim is caught" \
+  passtaken '/^pass() {/,/^}/s#^    taken=\$(claim_the_first_offered "\$items") || exit "\$?"$#    taken=$(claim_the_first_offered "$items")#'
+
+wreck_runner "a pass that passes over every item and carries on is caught" \
+  passover '/^claim_the_first_offered() {/,/^}/s#^    exit 30$#    exit 0#'
+
+wreck_runner "a claim nobody could ask, passed over as held, is caught" \
+  passask '/^this_pass_claims() {/,/^}/s#could not be asked to claim \[\$1\]"; exit 20; }#could not be asked to claim [$1]"; return 1; }#'
+
+wreck_runner "an item nobody could ask for, read as one the source does not hold, is caught" \
+  passread '/^words_of_item() {/,/^}/s#^    refuse_unasked "\$code" "item \[\$1\]"$#    :#'
+
+wreck_runner "an item the source does not hold, read as one with no words, is caught" \
+  passheld '/^words_of_item() {/,/^}/s#^    \[ "\$code" -eq 0 \] || { note .*; exit 1; }$#    :#'
+
+#
+# **The host's command does the work, and floor hands it only its own words.** One break per rule: a
+# pass passes over this host's own items, stops without a command, stops when the command fails,
+# and hands the command the item it took. #997, #371.
+#
+wreck_runner "a pass that takes an item another run here already has is caught" \
+  passown '/^this_pass_claims() {/,/^}/s#^    already_underway_here "\$1" \&\& {.*return 1; }$#    :#'
+
+wreck_runner "a claim nothing here works on, passed over for good, is caught" \
+  passstale '/^already_underway_here() {/,/^}/s#^    a_run_here_holds "\$1"$#    :#'
+
+wreck_runner "a pass that cannot open its work and leaves no stop is caught" \
+  passopen '/^open_the_work() {/,/^}/s#) >/dev/null || stop_at "\$1" open "\$?"#) >/dev/null || exit 1#'
+
+wreck_runner "a pass that acts with no command set is caught" \
+  passnocmd '/^act_on_it() {/,/^}/s#^    \[ -n "\$host_command" \] || { record_the_stop "\$1" no-command; exit 44; }$#    :#'
+
+wreck_runner "a host command left for every gate and judge to inherit is caught" \
+  passcommand '/^keep_the_host_command_to_itself() {/,/^}/s#^    unset FOUNDRY_PASS_COMMAND$#    export FOUNDRY_PASS_COMMAND#'
+
+wreck_runner "a pass that carries on after its command failed is caught" \
+  passfail '/^act_on_it() {/,/^}/s#^    run_the_host_command "\$1" || { record_the_stop "\$1" command-failed; exit 45; }$#    run_the_host_command "$1"#'
+
+wreck_runner "a command that is not handed the item is caught" \
+  passhand '/^run_the_host_command() {/,/^}/s#FOUNDRY_PASS_ITEM="\$1" ##'
+
+wreck_runner "a command that is not handed its workspace is caught" \
+  passplace '/^run_the_host_command() {/,/^}/s#FOUNDRY_PASS_WORKSPACE="\$tree" ##'
+
+wreck_runner "a selection exported to everything the pass runs is caught" \
+  passunwho 's#^answer_to_the_applier() { unset FOUNDRY_WHO; FOUNDRY_WHO=\$(applier_of "\$1" "\$2"); }$#answer_to_the_applier() { FOUNDRY_WHO=$(applier_of "$1" "$2"); export FOUNDRY_WHO; }#'
+
+wreck_runner "a pin exported to every gate and judge is caught" \
+  passexport 's#^pin_this_run() { unset FOUNDRY_RUN; FOUNDRY_RUN=\$dir; }$#pin_this_run() { FOUNDRY_RUN=$dir; export FOUNDRY_RUN; }#'
+
+wreck_runner "a pass whose verbs follow a run begun under it is caught" \
+  passpin 's#^pin_this_run() { .*}$#pin_this_run() { :; }#'
+
+wreck_runner "a pass stopped for good by an item with no words is caught" \
+  passblank '/^title_for() {/,/^}/s#"\${title:-item \$1}"#"$title"#'
+
+wreck_runner "a command that does not run as a worker is caught" \
+  passworker '/^run_the_host_command() {/,/^}/s#FOUNDRY_WORKER=\${FOUNDRY_WORKER:-pass} ##'
+
+wreck_runner "a claim bound late and marked kept is caught" \
+  bindmark '/^name_a_claim_taken_first() {/,/^}/s#^    remember_the_holder "\$1"$#    remember_the_holder "$1"; mark_kept "$1"#'
+
+#
+# **From a label to a request.** One break per rule: a failed bar or a refusing judge stops it, an
+# approving judge or none does not, a refused delivery stops it, and the run answers to who put the
+# label on. #997, #736.
+#
+wreck_runner "a pass that carries on past a failed gate is caught" \
+  passgates '/^carry_it_to_a_request() {/,/^}/s#^    ( gates ) >/dev/null || stop_at "\$1" gates "\$?"$#    ( gates ) >/dev/null#'
+
+wreck_runner "a pass that stops on a charter naming no judge is caught" \
+  passunjudged 's#^approved_or_unjudged() { \[ "\$1" -eq 0 \] || \[ "\$1" -eq 8 \]; }$#approved_or_unjudged() { [ "$1" -eq 0 ]; }#'
+
+wreck_runner "a pass that carries on past a judge that refused is caught" \
+  passjudged '/^carry_it_to_a_request() {/,/^}/s#^    approved_or_unjudged "\$code" || stop_at "\$1" judged "\$code"$#    :#'
+
+wreck_runner "a pass that stops on a judge that approved is caught" \
+  passapproved 's#^approved_or_unjudged() { \[ "\$1" -eq 0 \] || \[ "\$1" -eq 8 \]; }$#approved_or_unjudged() { [ "$1" -eq 8 ]; }#'
+
+wreck_runner "a pass that calls a refused delivery delivered is caught" \
+  passdeliver '/^carry_it_to_a_request() {/,/^}/s#^    ( deliver "\$2" ) >/dev/null || stop_at "\$1" deliver "\$?"$#    ( deliver "$2" ) >/dev/null#'
+
+wreck_runner "a pass whose run answers to nobody is caught" \
+  passwho 's#^answer_to_the_applier() { .*}$#answer_to_the_applier() { :; }#'
 
 
 # Whether `chmod 000` means anything here. Windows records no read bit and root ignores the one it

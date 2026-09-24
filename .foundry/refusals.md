@@ -26,7 +26,7 @@ yet.
 file defines it as a function, and the enclosing function otherwise — so `[`, `mkdir` and `cd` are
 never heads.
 
-**Two hundred and twelve exit sites, one hundred and eighty-three decisions.** `sh bin/refusals.sh
+**Two hundred and twenty exit sites, one hundred and ninety decisions.** `sh bin/refusals.sh
 plugins/floor/bin/run.sh` prints the sites, and `sh bin/unnamed.sh` compares them to this
 page.
 
@@ -175,9 +175,9 @@ where it is — a key for a one-off buys indirection and saves nothing.
 | `authorise` | 1 | default | this run has no charter — run \`charter derive\` first | `nothing-held` |
 | `check_charter` | 1 | default | this run has no charter | `nothing-held` |
 | `derive_charter` | 1 | default |   one is written from an origin remote and a first commit. Add whichever is missing | `nothing-held` |
-| `eligibility_rule` | 1 | default | — | `nothing-held` |
+| `the_offer_line` | 1 | default | — | `nothing-held` |
 | `print_bootstrap` | 1 | default | — | `nothing-held` |
-| `read_work_item` | 1 | default | the work source holds no item [$item] | `nothing-held` |
+| `words_of_item` | 1 | default | the work source holds no item [$1] | `nothing-held` |
 | `receive_answer` | 1 | default | — | `nothing-held` |
 | `refuse_unaddressed` | 1 | default | this run has read no item, so there is nowhere to address that | `nothing-held` |
 | `refuse_unheld_clause` | 1 | default | this run's charter holds no clause [$2], so nothing would ever read an answer about it | `nothing-held` |
@@ -201,7 +201,7 @@ where it is — a key for a one-off buys indirection and saves nothing.
 | `complete` | 2 | default | — | `usage` |
 | `deliver` | 2 | default | — | `usage` |
 | `deliver` | 2 | default | deliver names the change | `no-field` |
-| `eligible` | 2 | default | — | `usage` |
+| `offer` | 2 | default | — | `usage` |
 | `evidence` | 2 | default | — | `usage` |
 | `gates` | 2 | default | — | `usage` |
 | `grant` | 2 | default | a grant names a repo | `no-field` — the unbounded grant is caught by the next guard, not this one |
@@ -220,6 +220,7 @@ where it is — a key for a one-off buys indirection and saves nothing.
 | `merge_delivery` | 2 | default | — | `usage` |
 | `observed` | 2 | default | — | `usage` |
 | `open_workspace` | 2 | default | — | `usage` |
+| `pass` | 2 | default | — | `usage` |
 | `policy` | 2 | default | — | `usage` |
 | `publish_delivery` | 2 | default | publish needs a branch and a title | `no-field` |
 | `publish_delivery` | 2 | default | — | `usage` |
@@ -300,6 +301,7 @@ where it is — a key for a one-off buys indirection and saves nothing.
 | `refuse_unless_answered` | 17 | invariant | send the one it sent, or start a new run | `refusal` |
 | `refuse_ungranted_delivery` | 18 | invariant | nobody said this run may deliver to [$2] — \`policy deliver-to\` is what says so | `refusal` |
 | `push_workspace` | 19 | answer | could not deliver [$3] to [$2]: $why | `source` |
+| `this_pass_claims` | 20 | answer | the work source could not be asked to claim [$1] | `source` |
 | `refuse_unasked` | 20 | answer | the work source could not be asked for that $2 | `source` |
 | `ask_the_judge` | 21 | invariant | the judge could not run on this host: $said | `evidence` |
 | `ask_the_judge` | 21 | invariant | the judge was killed by signal $((answered - 128)) | `evidence` |
@@ -317,10 +319,11 @@ where it is — a key for a one-off buys indirection and saves nothing.
 | `land_what_was_graded` | 25 | answer | — | `source` |
 | `land_what_was_graded` | 25 | answer | the source would not land it — a bar floor cannot read may be what refused | `source` |
 | `source_says` | 25 | answer | — | `source` |
-| `eligible` | 27 | answer | this work source cannot say which items carry a label | `source` |
+| `marked_by_the_rule` | 27 | answer | this work source cannot say which items carry a label | `source` |
 | `refuse_unless_answered` | 27 | answer | this work source can only be read, so nothing here can carry a $2 | `source` |
 | `refuse_the_source_as_advice` | 28 | invariant | a human naming it with \`targets add\` still can | `refusal` |
 | `claim` | 30 | answer | — | `header` |
+| `claim_the_first_offered` | 30 | answer | every item offered is held by another host or underway here, so this pass takes nothing | `header` |
 | `refuse_an_item_another_host_holds` | 30 | answer | — | `header` |
 | `release` | 30 | answer | [$item] is not this host's to release | `header` |
 | `refuse_two_kinds` | 31 | default | an item is one kind — the inventory is short on purpose | nobody yet — the person who could want it otherwise is a repository whose work item is two kinds at once, and then a reader picking one of them answers differently each time it is asked |
@@ -353,3 +356,7 @@ where it is — a key for a one-off buys indirection and saves nothing.
 | `refuse_an_adapter_nobody_authorised` | 40 | invariant |   or declare a command of your own with \`@custom\` | `refusal` |
 | `refuse_an_adapter_that_moved` | 40 | invariant | $1 authorises adapter [$pin] and [$ran] is what answered | `refusal` |
 | `say_nothing_here_can_find_it_again` | 41 | answer | so tell every later command which run: export FOUNDRY_RUN=$dir | `header` |
+| `what_is_offered` | 42 | answer | nothing is offered, so this pass takes nothing | `header` |
+| `leave_a_run_in_progress_alone` | 43 | answer | a run is active here already, so this pass leaves it alone: $here | `header` |
+| `act_on_it` | 44 | answer | — | `header` |
+| `run_the_host_command` | 45 | answer | — | `header` |

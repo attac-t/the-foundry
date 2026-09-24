@@ -25,7 +25,7 @@
 #        sh source-dir.sh publish <item> <run> <branch> <title> [word] [brief]
 #        sh source-dir.sh ask     <item> <question> <text>
 #        sh source-dir.sh receive <item> <question>
-#        sh source-dir.sh eligible <label>
+#        sh source-dir.sh find    <label>
 #
 # Exit: 0 answered · 1 nothing there · 2 asked for something this does not do · 3 it could not
 #       read or write what it needs · 4 this run already sent something else under that name
@@ -214,7 +214,7 @@ drop_claim() {
 # Floor orders them and decides. A label is a line, not a file name, because a name holding a
 # colon is one Windows will not write.
 #
-list_eligible() {
+find_marked() {
     [ -n "$1" ] || return 2
     [ -d "$root/labels" ] || return 0
 
@@ -238,7 +238,7 @@ case "${1:-}" in
     publish) shift; publish_delivery "${1:-}" "${2:-}" "${3:-}" "${4:-}" "${5:-}" "${6:-}" ;;
     ask)     shift; put_question     "${1:-}" "${2:-}" "${3:-}" ;;
     receive) shift; read_answer      "${1:-}" "${2:-}" ;;
-    eligible) shift; list_eligible   "${1:-}" ;;
-    *)       echo "source-dir: read <item> | eligible <label> | claim <item> <host> | held <item> | release <item> <host> | publish <item> <run> <branch> <title> [word] [brief] | ask <item> <question> <text> | receive <item> <question>" >&2
+    find)    shift; find_marked      "${1:-}" ;;
+    *)       echo "source-dir: read <item> | find <label> | claim <item> <host> | held <item> | release <item> <host> | publish <item> <run> <branch> <title> [word] [brief] | ask <item> <question> <text> | receive <item> <question>" >&2
              exit 2 ;;
 esac

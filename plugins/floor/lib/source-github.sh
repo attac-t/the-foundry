@@ -29,7 +29,7 @@
 #        sh source-github.sh receive <issue> <question>
 #        sh source-github.sh state   <run>
 #        sh source-github.sh land    <run>
-#        sh source-github.sh eligible <label>
+#        sh source-github.sh find    <label>
 #
 # Exit: 0 answered · 1 nothing there · 2 asked for something this does not do · 3 GitHub refused,
 #       or could not be reached at all
@@ -554,8 +554,9 @@ claim_commit() {
     printf 'claimed by %s\n' "$1" | git commit-tree "$tree" -p "$2" 2>/dev/null
 }
 
+# The tip of an item's claim ref, empty when there is none, and 3 when the remote could not be asked.
 claim_tip() {
-    listed=$(git ls-remote origin "refs/heads/$(claim_ref "$1")" 2>/dev/null) || return 0
+    listed=$(git ls-remote origin "refs/heads/$(claim_ref "$1")" 2>/dev/null) || return 3
 
     printf '%s' "${listed%%	*}"
 }
@@ -570,7 +571,9 @@ holder_at() {
 # `%ct` is the commit's own time, so the age travels with the claim and no
 # clock but the holder's wrote it. A reader elsewhere compares to its own.
 read_claim() {
-    at=$(claim_tip "$1")
+    # A remote nobody could ask says nothing about who holds the item. Read as 1, it told a run that
+    # had lost its claim that nobody held it. #991's judge found it.
+    at=$(claim_tip "$1") || return 3
     [ -n "$at" ] || return 1
 
     git fetch origin "refs/heads/$(claim_ref "$1")" >/dev/null 2>&1 || return 3
@@ -585,7 +588,7 @@ read_claim() {
 # Reading the tip and then deleting it is two steps, and a renewal between them is deleted on a
 # reading that was true. `git push --delete` takes no expected value, so the window stays.
 drop_claim() {
-    at=$(claim_tip "$1")
+    at=$(claim_tip "$1") || return 3
     [ -n "$at" ] || return 0
 
     holder_at "$at" "$2" || return 4
@@ -616,7 +619,7 @@ claim_ref() { printf 'foundry/claim/%s' "$1"; }
 # The open issues carrying one label, with when it last went on and who put it on, from each issue's
 # own events. Floor orders them and decides; this only reads what the forge recorded.
 #
-list_eligible() {
+find_marked() {
     [ -n "$1" ] || return 2
 
     numbers=$(gh issue list --label "$1" --state open --limit 500 --json number --jq '.[].number') || {
@@ -655,7 +658,7 @@ case "${1:-}" in
     receive) shift; read_answer      "${1:-}" "${2:-}" ;;
     state)   shift; delivery_state   "${1:-}" ;;
     land)    shift; land_delivery    "${1:-}" ;;
-    eligible) shift; list_eligible   "${1:-}" ;;
-    *)       echo "source-github: read <issue> | kind <issue> | eligible <label> | claim <issue> <host> | held <issue> | release <issue> <host> | publish <issue> <run> <branch> <title> [word] [brief] | ask <issue> <question> <text> | receive <issue> <question> | state <run> | land <run>" >&2
+    find)    shift; find_marked      "${1:-}" ;;
+    *)       echo "source-github: read <issue> | kind <issue> | find <label> | claim <issue> <host> | held <issue> | release <issue> <host> | publish <issue> <run> <branch> <title> [word] [brief] | ask <issue> <question> <text> | receive <issue> <question> | state <run> | land <run>" >&2
              exit 2 ;;
 esac
