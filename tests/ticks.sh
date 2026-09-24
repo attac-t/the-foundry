@@ -30,17 +30,40 @@ trap 'rm -rf "$tmp"' EXIT
 call() { printf '{"tool_name":"Bash","tool_input":{"command":"%s"}}' "$1" > "$tmp/call.json"; }
 
 #
-# A stand-in for the forge, so this suite never asks the real one. It answers two questions and
-# tells them apart by the noun: a request body carries what it closes, an issue body carries boxes.
+# A stand-in for the forge, so this suite never asks the real one. It answers a request's address,
+# body and title, its commits, and an issue's boxes.
 #
-# `$1` is the noun and `$2` the verb, because `gh <noun> <verb>` is the shape the hook calls.
+# **It answers only the two reads `forge-reads.sh` pins**, as `tests/closes.sh` does, so the two
+# hooks are held to one reading. The commits answer only paged, at the address's repository.
+THE_REQUEST='.url, .body, ("merge commit: " + .title)'
+EACH_COMMIT_LINE='.[] | .sha[0:7] as $c | .commit.message | split("\n")[] | "commit \($c): \(.)"'
+
 stub_gh() {
+  printf "%s" "$1" > "$tmp/pr.body"
+  printf "%s" "$2" > "$tmp/issue.body"
+  printf "%s" "${3:-}" > "$tmp/pr.commits"
+  printf "%s" "${4:-}" > "$tmp/pr.title"
+  printf "%s" "$THE_REQUEST" > "$tmp/jq.view"
+  printf "%s" "$EACH_COMMIT_LINE" > "$tmp/jq.api"
   {
     printf '#!/bin/sh\n'
+    printf 'fields=; jq=; paged=; prior=\n'
+    printf 'for arg in "$@"; do\n'
+    printf '  [ "$prior" = --json ] && fields=$arg\n'
+    printf '  [ "$prior" = --jq ] && jq=$arg\n'
+    printf '  [ "$arg" = --paginate ] && paged=yes\n'
+    printf '  prior=$arg\n'
+    printf 'done\n'
     printf 'case "$1 $2" in\n'
-    printf '  "pr view")    printf "%%s\\\\n" "%s" ;;\n' "$1"
-    printf '  "issue view") printf "%%s\\\\n" "%s" ;;\n' "$2"
-    printf 'esac\n'
+    printf '  "pr view")    [ "$jq" = "$(cat %s)" ] || exit 1\n' "$tmp/jq.view"
+    printf '                case ",$fields," in *,url,*) echo https://github.com/acme/ticks/pull/530 ;; esac\n'
+    printf '                cat %s; echo\n' "$tmp/pr.body"
+    printf '                case ",$fields," in *,title,*) cat %s; echo ;; esac ;;\n' "$tmp/pr.title"
+    printf '  "issue view") cat %s ;;\n' "$tmp/issue.body"
+    printf '  "api repos/acme/ticks/pulls/530/commits")\n'
+    printf '                [ "$jq" = "$(cat %s)" ] && [ -n "$paged" ] || exit 1\n' "$tmp/jq.api"
+    printf '                cat %s; echo ;;\n' "$tmp/pr.commits"
+    printf 'esac\nexit 0\n'
   } > "$tmp/bin/gh"
   chmod +x "$tmp/bin/gh"
 }
@@ -76,6 +99,49 @@ case $(asked) in
   ticks:*) bad "and never prints plainly — it did" ;;
   *)       ok  "and never prints plainly" ;;
 esac
+
+# --- it hears what the merge hook hears ---
+#
+# It heard only `Closes`, in the body alone, until #1033. A merge closes on nine words, in any case,
+# from the body or from a commit message, and the two hooks now read those through one file.
+
+for said in 'fixes #517' 'CLOSES #517' 'Resolved: #517'; do
+  stub_gh "$said" '- [ ] one thing'
+  call "$(verb pr merge) 530 --merge"
+  case $(asked) in
+    *'#517 closed'*) ok "[$said] is closure" ;;
+    *)               bad "[$said] is closure — it said nothing" ;;
+  esac
+done
+
+stub_gh 'Refs #517' '- [ ] one thing' 'commit 04cf28b: Closes #517.'
+call "$(verb pr merge) 530 --merge"
+case $(asked) in
+  *'#517 closed'*) ok "a commit message that closes is heard" ;;
+  *)               bad "a commit message that closes is heard — it said nothing" ;;
+esac
+
+stub_gh 'Refs #517' '- [ ] one thing' '' 'merge commit: fix #517 in one line'
+call "$(verb pr merge) 530 --merge"
+case $(asked) in
+  *'#517 closed'*) ok "a title that closes is heard, as the merge hook hears it" ;;
+  *)               bad "a title that closes is heard, as the merge hook hears it — it said nothing" ;;
+esac
+
+# The body and a commit can both name one issue, and the report names it once.
+stub_gh 'Closes #517' '- [ ] one thing' 'commit 04cf28b: Closes #517.'
+call "$(verb pr merge) 530 --merge"
+[ "$(asked | grep -o '#517 closed' | grep -c .)" = 1 ] && ok "an issue named twice is reported once" \
+  || bad "an issue named twice is reported once — it was not"
+
+# --- a hook copied without its sibling says nothing, and fails nothing ---
+
+mkdir -p "$tmp/lonely" && cp "$root/.claude/hooks/ticks.sh" "$tmp/lonely/ticks.sh"
+stub_gh 'Closes #517' '- [ ] one thing'
+call "$(verb pr merge) 530 --merge"
+lonely=$(PATH="$tmp/bin:$PATH" sh "$tmp/lonely/ticks.sh" < "$tmp/call.json" 2>&1); code=$?
+[ "$code" -eq 0 ] && [ -z "$lonely" ] && ok "a hook missing its sibling exits 0 and says nothing" \
+  || bad "a hook missing its sibling exits 0 and says nothing — it exited $code"
 
 # --- silence, and it is the ordinary case ---
 
