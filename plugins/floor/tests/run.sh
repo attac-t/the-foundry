@@ -3706,6 +3706,12 @@ wreck_runner "a request that does not name its charter is caught" \
 wreck_runner "a request that names no clause's row is caught" \
   bodynorows 's@^each_clause_and_the_row_that_met_it() {@each_clause_and_the_row_that_met_it() { return 0;@'
 
+wreck_runner "a body that ignores its setting is caught" \
+  bodysetting 's@^    \[ "\$(body_form_at_base "\$1")" = brief \] && .*@    :@'
+
+wreck_runner "a setting nobody can read that is kept silent is caught" \
+  bodytypo 's@^    note "the practice says \[body \$form\].*@    :@'
+
 report_breaks
 
 # --- break the install ---

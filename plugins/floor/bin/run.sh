@@ -4212,7 +4212,7 @@ say_what_a_brief_is() {
 
 #
 # **The request names its record.** #736's box 16, decided 23 September: `deliver` composes the body
-# from the run, the charter, the evidence and the commit.
+# from the run, the charter, the evidence and the commit, **and the body is a setting.**
 #
 # The brief comes first, because a reader opens a request to decide. The record follows, built
 # only from files the run keeps, so it cannot say what the run did not record.
@@ -4220,9 +4220,29 @@ say_what_a_brief_is() {
 compose_the_body() {
     body=$(body_file "$1")
 
+    [ "$(body_form_at_base "$1")" = brief ] && { the_brief_alone "$1" > "$body"; return 0; }
+
     { cat "$(brief_file "$1")" 2>/dev/null; what_floor_recorded "$1" "$2"; } > "$body" \
         || die_unwritable "$body"
 }
+
+#
+# `body brief` or `body record` in `.foundry/practice`, read at the run's base, so no worker sets
+# it. None means `record`, the decided default. Any other word is named, and the record is kept.
+#
+body_form_at_base() {
+    base=$(bootstrap_base "$1") || { printf 'record\n'; return 0; }
+    form=$(practice_at_base "$base" | awk '$1 == "body" { print $2; exit }')
+
+    case ${form:-record} in
+        record|brief) printf '%s\n' "${form:-record}"; return 0 ;;
+    esac
+
+    note "the practice says [body $form], and a body is \`brief\` or \`record\`, so the record is kept"
+    printf 'record\n'
+}
+
+the_brief_alone() { cat "$(brief_file "$1")" 2>/dev/null; return 0; }
 
 body_file() { printf '%s/body' "$1"; }
 

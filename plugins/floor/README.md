@@ -808,6 +808,10 @@ charter's digest, and each clause beside the row that met it at that commit. It 
 the run keeps, so it cannot say what the run did not record. The adapter adds its marker last.
 Decided on #736.
 
+**The body is a setting.** `body brief` in `.foundry/practice` sends the brief alone, and `body
+record`, or no line, sends the record too. It is read at the run's base, so no worker sets it. A
+word that is neither is named, and the record is kept.
+
 ---
 ### A kind is the source's word, not Foundry's
 

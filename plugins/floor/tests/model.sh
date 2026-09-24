@@ -2504,6 +2504,39 @@ A reader knows what changed.
 a_delivery_carries_its_brief
 
 #
+# #736's decision made the body a setting. `body brief` in the practice, read at the run's base,
+# sends the brief alone; a word that is neither is named, and the record is kept.
+a_body_set_to_brief_carries_the_brief_alone() {
+  for form in brief brevity; do
+    make_repo "$tmp/bf-$form" main && set_origin "$tmp/bf-$form" "https://github.com/acme/bf-$form.git" \
+      && mkdir -p "$tmp/bf-$form/.foundry" \
+      && commit_file "$tmp/bf-$form" .foundry/gates 'tests  true
+' && commit_file "$tmp/bf-$form" .foundry/practice "body $form
+" || { skip "the body setting — git could not make a repo here"; return; }
+  done
+
+  printf 'Outcome\n\nA reader knows what changed.\n' > "$tmp/bf-brief.md"
+  for form in brief brevity; do
+    floor_new_as "$tmp/bf-$form" ada@example.com "Setting $form" > "$tmp/bf-$form.run"
+    for step in "charter derive" "policy authorize https://github.com/acme/bf-$form.git" \
+        "policy deliver-to https://github.com/acme/bf-$form.git" \
+        "targets add https://github.com/acme/bf-$form.git main" open gates; do
+      floor "$tmp/bf-$form" $step >/dev/null 2>&1
+    done
+  done
+
+  floor "$tmp/bf-brief" deliver 'a change' "$tmp/bf-brief.md" >/dev/null 2>&1
+  said=$(floor_says "$tmp/bf-brevity" deliver 'a change' "$tmp/bf-brief.md")
+
+  alone=$(cat "$(cat "$tmp/bf-brief.run")/body" 2>/dev/null)
+  has   "a body set to brief carries the brief"   "$alone" 'A reader knows what changed'
+  lacks "and nothing floor recorded"              "$alone" 'What floor recorded'
+  has   "a word that is neither is named"         "$said"  '[body brevity]'
+  has   "and the record is kept"                  "$(cat "$(cat "$tmp/bf-brevity.run")/body" 2>/dev/null)" 'What floor recorded'
+}
+a_body_set_to_brief_carries_the_brief_alone
+
+#
 # **Both adapters carry a brief and nothing compared them.** #377 calls that a seam built and
 # unproved: two implementations, one contract, and no case driving one input through both.
 #
