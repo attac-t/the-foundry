@@ -426,7 +426,7 @@ QUIET_DAYS=2
 quiet_days() {
     asked=${FOUNDRY_QUIET_DAYS:-$QUIET_DAYS}
 
-    is_a_quiet_bar "$asked" && { printf '%s' "$asked"; return 0; }
+    is_a_plain_decimal "$asked" && { printf '%s' "$asked"; return 0; }
 
     note "FOUNDRY_QUIET_DAYS is [$asked] — one to four digits, no leading zero. Using $QUIET_DAYS"
     printf '%s' "$QUIET_DAYS"
@@ -443,7 +443,7 @@ quiet_days() {
 # matches a file made seconds ago. So an unchecked value names every run at once rather than none.
 #
 # Four digits is twenty-seven years. Past that it is not a bar anybody meant.
-is_a_quiet_bar() {
+is_a_plain_decimal() {
     case "$1" in
         ''|*[!0-9]*|0*) return 1 ;;
     esac
@@ -3722,6 +3722,7 @@ pass() {
     answer_to_the_applier "$taken" "$items"
     heading=$(the_heading_of "$taken") || exit "$?"
     begin_a_run_for "$taken" "$heading"
+    say_this_pass_is_alive
 
     open_the_work "$taken"
     act_on_it "$taken"
@@ -3800,9 +3801,76 @@ a_run_here_holds() {
 leave_a_run_in_progress_alone() {
     here=$(active_run 2>/dev/null) || return 0
 
+    a_pass_is_alive_in "$here" \
+        && { note "a pass is at work in this run now, so this pass leaves it alone: $here"; exit 43; }
     note "a run is active here already, so this pass leaves it alone: $here"
     exit 43
 }
+
+#
+# **A pass at work says so, in its run, every beat.** The claim cannot: it renews for any pass
+# holding the run's name, so on one host it reads the same for a live pass and a dead one. A mark
+# younger than three beats is a pass at work.
+#
+# **What it cannot see, and nothing owns yet:** a command, a grade or a judgement still running
+# after its pass was killed. And a reused process id keeps a dead pass's mark fresh, so on one host
+# every wake leaves that run alone until the id goes.
+#
+# The mark holds the time it was written, never a file's age: `date -r` reads a file on GNU and a
+# number on BSD, and the pass runs on both.
+#
+PASS_BEAT=60
+
+# The host's beat, or the default and a word about why.
+pass_beat() {
+    asked=${FOUNDRY_PASS_BEAT:-$PASS_BEAT}
+
+    is_a_plain_decimal "$asked" && { printf '%s' "$asked"; return 0; }
+
+    note "FOUNDRY_PASS_BEAT is [$asked] — one to four digits, no leading zero. Using $PASS_BEAT"
+    printf '%s' "$PASS_BEAT"
+}
+
+say_this_pass_is_alive() {
+    alive=$(alive_file "$dir")
+    date -u +%s > "$alive" 2>/dev/null || return 0
+
+    beat_while_alive "$$" "$alive" "$(pass_beat)" &
+    heartbeat=$!
+    trap stop_the_heartbeat EXIT
+}
+
+# Beats while the pass's own process lives, so a pass killed outright leaves a mark that goes stale.
+# From `/`, so a beat left sleeping holds no fixture's directory open.
+beat_while_alive() {
+    cd / || return 0
+    while kill -0 "$1" 2>/dev/null; do
+        sleep "$3" || return 0
+        date -u +%s > "$2" 2>/dev/null || return 0
+    done
+}
+
+# Waited on before the mark goes, so a beat already writing cannot put it back.
+stop_the_heartbeat() {
+    kill "$heartbeat" 2>/dev/null
+    wait "$heartbeat" 2>/dev/null
+    rm -f "$alive"
+}
+
+# A mark that is there and cannot be aged reads as a pass at work. Leaving a dead run costs a wake;
+# resuming a live one puts two workers in one workspace.
+a_pass_is_alive_in() {
+    [ -f "$(alive_file "$1")" ] || return 1
+    was=$(cat "$(alive_file "$1")" 2>/dev/null)
+    now=$(date -u +%s 2>/dev/null)
+    beat=$(pass_beat)
+
+    case $was in ''|*[!0-9]*) return 0 ;; esac
+    case $now in ''|*[!0-9]*) return 0 ;; esac
+    [ "$(( now - was ))" -lt "$(( beat * 3 ))" ]
+}
+
+alive_file() { printf '%s/pass.alive' "$1"; }
 
 # The item's first line with words, which names the run and titles the request. #884's judge,
 # round six, asked that `pass` get it from a call it names.
@@ -3867,10 +3935,10 @@ open_the_work() {
     ( targets add "$(bootstrap_identity "$dir")" "$(bootstrap_ref "$dir")" ) >/dev/null || stop_at "$1" open "$?"
     ( charter derive ) >/dev/null || stop_at "$1" charter "$?"
     ( open_workspace ) >/dev/null || stop_at "$1" workspace "$?"
-    tree=$(unit_work_tree "$dir" "$(this_repository)") || { record_the_stop "$1" workspace; exit 16; }
+    tree=$(unit_work_tree "$dir" "$(this_repository)") || stop_at "$1" workspace 16
 }
 
-stop_at() { record_the_stop "$1" "$2"; exit "$3"; }
+stop_at() { record_the_stop "$1" "$2" "$3"; exit "$3"; }
 
 #
 # **The host's command does the work, and floor names no harness.** It runs in the workspace, as a
@@ -3883,9 +3951,9 @@ stop_at() { record_the_stop "$1" "$2"; exit "$3"; }
 #
 # The pass reads back the command's exit and floor's record, never what the command printed.
 act_on_it() {
-    [ -n "$host_command" ] || { record_the_stop "$1" no-command; exit 44; }
+    [ -n "$host_command" ] || stop_at "$1" no-command 44
 
-    run_the_host_command "$1" || { record_the_stop "$1" command-failed; exit 45; }
+    run_the_host_command "$1" || stop_at "$1" command-failed 45
     emit "$dir" pass.acted item="$1"
 }
 
@@ -3896,7 +3964,7 @@ run_the_host_command() {
 
 # A stop is a line in the run before it is an answer. The next pass reads the line, never the chat.
 record_the_stop() {
-    emit "$dir" pass.stopped item="$1" why="$2"
+    emit "$dir" pass.stopped item="$1" why="$2" code="$3"
     note "this pass stopped on [$1], $2: $dir"
 }
 
@@ -3928,9 +3996,25 @@ observe() {
     shift
 
     is_one_line "$event" || { note "an event name is one line: [$event]"; exit 2; }
+    refuse_floors_own_event "$event"
     refuse_an_unnamed_field "$@"
 
     record_observation "$dir" "$event" "$@" || die_unwritable "$(observations_file "$dir")"
+}
+
+#
+# **A worker may not write the lines floor steers by.** A pass reads its own `pass.` lines to learn
+# where a run stands, so one written through this verb would steer the next pass. The file itself
+# is writable by the same user, and #419 owns that.
+#
+refuse_floors_own_event() {
+    case $1 in
+        pass.*|claim.*|run.*|judge.*) ;;
+        *) return 0 ;;
+    esac
+
+    note "[$1] is an event floor writes itself, so \`observe\` does not take it"
+    exit 2
 }
 
 # Named pairs, so a reader knows what a value is without counting columns. A bare word could only be

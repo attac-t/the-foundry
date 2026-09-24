@@ -4383,6 +4383,49 @@ a_pass_leaves_any_active_run_alone() {
 a_pass_leaves_any_active_run_alone
 
 #
+# **A pass at work says so, and a second pass hears it.** The claim renews for any pass holding the
+# run's name, so on one host it reads the same for a live pass and a dead one. Piece 5's judge.
+a_pass_at_work_is_left_to_work() {
+  make_repo "$tmp/alive" main && set_origin "$tmp/alive" 'https://gitlab.com/acme/alive.git' \
+    || { skip "a pass at work — git could not make a repo here"; return; }
+
+  printf 'Alive item\n' > "$src/items/421"
+  printf 'alive\t2026-09-10T00:00:00Z\tpat\n' > "$src/labels/421"
+  bar_and_rule "$tmp/alive" 'offer alive pat'
+
+  # The host's command runs a second pass from the same checkout while the first waits on it.
+  second="cd '$tmp/alive' && sh '$runner' pass > '$tmp/alive.second' 2>&1; echo \"exit=\$?\" >> '$tmp/alive.second'"
+  FOUNDRY_PASS_COMMAND=$second floor "$tmp/alive" pass >/dev/null 2>&1
+  run=$(floor "$tmp/alive" path)
+
+  has "a second pass while the first works is told so" "$(cat "$tmp/alive.second" 2>/dev/null)" "a pass is at work in this run now"
+  has "and leaves the run alone"                       "$(cat "$tmp/alive.second" 2>/dev/null)" "exit=43"
+  is  "the mark goes when the pass ends"               "$([ -e "$run/pass.alive" ] && echo there || echo gone)" "gone"
+  has "and the stop line carries its code"             "$(floor "$tmp/alive" observe)" "why=deliver code=18"
+
+  # A pass killed outright leaves its mark. Three beats later, it is only a run.
+  date -u +%s | awk '{ print $1 - 600 }' > "$run/pass.alive"
+  has "a stale mark is a run, not a pass at work" "$(floor_says "$tmp/alive" pass)" "a run is active here already"
+
+  # `08` is not a number in base eight, and shell arithmetic would stop the pass on it.
+  has "a beat nobody can use is named, and the default kept" \
+      "$(FOUNDRY_PASS_BEAT=08 floor_says "$tmp/alive" pass)" "FOUNDRY_PASS_BEAT is [08]"
+
+  # A mark nobody can age is read as live: leaving a dead run costs a wake, and the other way costs
+  # two workers in one workspace.
+  printf 'not a time\n' > "$run/pass.alive"
+  has "a mark that cannot be aged reads as a pass at work" "$(floor_says "$tmp/alive" pass)" "a pass is at work"
+  rm -f "$run/pass.alive"
+
+  is  "a worker may not write a line floor steers by" "$(code_of floor "$tmp/alive" observe pass.delivered item=421)" "2"
+  has "and is told whose it is"                       "$(floor_says "$tmp/alive" observe run.began)" "an event floor writes itself"
+  is  "while a worker's own event is taken"           "$(code_of floor "$tmp/alive" observe worker.saw thing=1)" "0"
+
+  rm -rf "$src/claims/421" "$src/labels/421" "$src/items/421"
+}
+a_pass_at_work_is_left_to_work
+
+#
 # **A claim nothing here works on is taken again.** A pass that died between its claim and its run
 # left this host's name on an item no run holds. Passed over for good, it would need a person to
 # free it. #884's judge.
