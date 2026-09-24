@@ -3692,7 +3692,10 @@ wreck_runner "a brief that reads the source again is caught" \
 # handover itself, and the case reads what the adapter kept.
 #
 wreck_runner "a delivery that composes no body is caught" \
-  bodyunmade 's@^    compose_the_body "\$dir" "\$here"@    :@'
+  bodyunmade 's@^    compose_the_body "\$1" "\$pushed"@    :@'
+
+wreck_runner "a request naming a commit the push did not send is caught" \
+  bodybeforepush 's@^    pushed=\$(unit_head "\$1" "\$2")@    pushed=$(bootstrap_base "$1")@'
 
 wreck_runner "a body composed and never handed to the adapter is caught" \
   bodyunsent 's@"\$(body_if_composed "\$1")"@"$(brief_file "$1")"@'
@@ -3703,8 +3706,11 @@ wreck_runner "a request that does not name its commit is caught" \
 wreck_runner "a request that does not name its charter is caught" \
   bodynocharter 's@^    printf -- .- charter .*@    :@'
 
-wreck_runner "a request that names no clause's row is caught" \
-  bodynorows 's@^each_clause_and_the_row_that_met_it() {@each_clause_and_the_row_that_met_it() { return 0;@'
+wreck_runner "a request that names no clause is caught" \
+  bodynorows 's@^each_clause_and_what_met_it() {@each_clause_and_what_met_it() { return 0;@'
+
+wreck_runner "a judged clause named without its panel is caught" \
+  bodypanel 's@^    \[ -n "\$met_panel" \] && .*@    :@'
 
 wreck_runner "a body that ignores its setting is caught" \
   bodysetting 's@^    \[ "\$(body_form_at_base "\$1")" = brief \] && .*@    :@'

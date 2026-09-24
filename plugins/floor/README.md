@@ -264,7 +264,7 @@ ${FOUNDRY_HOME:-$HOME/.foundry}/runs/<date>-<slug>-<short id>/
 ├── charter            the bar — one clause, one pin and one command per line
 ├── delivery           the branch this run pushed, the commit it pushed, and where it landed
 ├── brief              what `deliver` was handed — absent when it was handed none
-├── body               the brief, then what floor recorded: run, commit, charter, each clause's row
+├── body               the brief, then what floor recorded: run, commit, charter, what met each clause
 ├── substitutions      files graded as the base wrote them — absent when the run changed no gate
 ├── judged/            what `judged` asked each judge, and what came back — one pair per clause
 ├── observations       what happened, one line each, and nothing granted by any of it
@@ -803,10 +803,14 @@ tell a met one from an unmet one. A person reads it and types one line — the s
 ---
 ### A delivery names its record
 
-**The body is the brief, then what floor recorded.** That is the run, the commit it pushed, the
-charter's digest, and each clause beside the row that met it at that commit. It is built from files
-the run keeps, so it cannot say what the run did not record. The adapter adds its marker last.
-Decided on #736.
+**The body is the brief, then what floor recorded.** The record is the run, the commit the push
+sent, the charter by the digest every handoff stamps, and what met each clause at that commit.
+Each clause is named by what `satisfied` accepts, the grader's own test, so the record cannot
+name a row the grader ignores or say what the run did not record. The brief above it is its
+author's words, and may say anything. The adapter adds its marker last. Decided on #736.
+
+**A second `deliver` on the same branch pushes the new head, and the request keeps its first
+body.** One run, one delivery: the request is not rewritten.
 
 **The body is a setting.** `body brief` in `.foundry/practice` sends the brief alone, and `body
 record`, or no line, sends the record too. It is read at the run's base, so no worker sets it. A

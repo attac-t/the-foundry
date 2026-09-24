@@ -2473,6 +2473,7 @@ a_run_nobody_selected_may_not_deliver
 # belongs to whoever remembered to run the second command.
 #
 a_delivery_carries_its_brief() {
+  git init -q --bare "$tmp/brremote.git" 2>/dev/null || { skip "brief — git could not make a bare repo here"; return; }
   make_repo "$tmp/br" main && set_origin "$tmp/br" 'https://github.com/acme/br.git'     && mkdir -p "$tmp/br/.foundry"     && commit_file "$tmp/br" .foundry/gates 'tests  true
 ' || { skip "brief — git could not make a repo here"; return; }
 
@@ -2483,6 +2484,10 @@ a_delivery_carries_its_brief() {
   floor "$tmp/br" targets add 'https://github.com/acme/br.git' main >/dev/null 2>&1
   floor "$tmp/br" open >/dev/null 2>&1
   floor "$tmp/br" gates >/dev/null 2>&1
+
+  # The body is composed after the push, from the commit it sent, so the push has to land.
+  git -C "$(only_slot "$(floor "$tmp/br" path)/units/01/workspace")" \
+    config "url.$tmp/brremote.git.pushInsteadOf" 'https://github.com/acme/br.git'
 
   # A path that is not there is a lie, not an absent brief. One is a mistake and the other is a
   # legal choice, and a source told the first would write a body from nothing.
@@ -2508,7 +2513,8 @@ a_delivery_carries_its_brief
 # sends the brief alone; a word that is neither is named, and the record is kept.
 a_body_set_to_brief_carries_the_brief_alone() {
   for form in brief brevity; do
-    make_repo "$tmp/bf-$form" main && set_origin "$tmp/bf-$form" "https://github.com/acme/bf-$form.git" \
+    git init -q --bare "$tmp/bf-$form-remote.git" 2>/dev/null \
+      && make_repo "$tmp/bf-$form" main && set_origin "$tmp/bf-$form" "https://github.com/acme/bf-$form.git" \
       && mkdir -p "$tmp/bf-$form/.foundry" \
       && commit_file "$tmp/bf-$form" .foundry/gates 'tests  true
 ' && commit_file "$tmp/bf-$form" .foundry/practice "body $form
@@ -2523,6 +2529,8 @@ a_body_set_to_brief_carries_the_brief_alone() {
         "targets add https://github.com/acme/bf-$form.git main" open gates; do
       floor "$tmp/bf-$form" $step >/dev/null 2>&1
     done
+    git -C "$(only_slot "$(floor "$tmp/bf-$form" path)/units/01/workspace")" \
+      config "url.$tmp/bf-$form-remote.git.pushInsteadOf" "https://github.com/acme/bf-$form.git"
   done
 
   floor "$tmp/bf-brief" deliver 'a change' "$tmp/bf-brief.md" >/dev/null 2>&1
@@ -2535,6 +2543,37 @@ a_body_set_to_brief_carries_the_brief_alone() {
   has   "and the record is kept"                  "$(cat "$(cat "$tmp/bf-brevity.run")/body" 2>/dev/null)" 'What floor recorded'
 }
 a_body_set_to_brief_carries_the_brief_alone
+
+#
+# The body named the last row it found for a clause. A machine pass under a judged clause's words,
+# or a later handoff, then stood where the panel's approval belonged, and the grader reads neither.
+a_request_names_what_the_grader_accepts() {
+  git init -q --bare "$tmp/garemote.git" 2>/dev/null \
+    && make_repo "$tmp/ga" main && set_origin "$tmp/ga" 'https://github.com/acme/ga.git' \
+    && mkdir -p "$tmp/ga/.foundry" \
+    && commit_file "$tmp/ga" .foundry/gates 'tests  true
+' && commit_file "$tmp/ga" .foundry/judged 'a-reviewer  a stranger can read it
+' || { skip "what met a clause — git could not make a repo here"; return; }
+
+  d=$(floor_new_as "$tmp/ga" ada@example.com "Accepted")
+  for step in "charter derive" "policy authorize https://github.com/acme/ga.git" \
+      "policy deliver-to https://github.com/acme/ga.git" "targets add https://github.com/acme/ga.git main" open gates; do
+    floor "$tmp/ga" $step >/dev/null 2>&1
+  done
+  git -C "$(only_slot "$(floor "$tmp/ga" path)/units/01/workspace")" \
+    config "url.$tmp/garemote.git.pushInsteadOf" 'https://github.com/acme/ga.git'
+
+  judged "$tmp/ga" 'a stranger can read it' a-reviewer approve 'reads fine' >/dev/null 2>&1
+  floor "$tmp/ga" evidence record 'a stranger can read it' true >/dev/null 2>&1
+  floor "$tmp/ga" evidence handed 'a stranger can read it' a-reviewer 'a test harness' >/dev/null 2>&1
+  floor "$tmp/ga" deliver 'a change' >/dev/null 2>&1
+
+  body=$(cat "$d/body" 2>/dev/null)
+  has   "a judged clause is named by the panel that approved it" "$body" "Judged \`a stranger can read it\`: judged by a-reviewer"
+  lacks "never by a machine row the grader skips"                "$body" "Judged \`a stranger can read it\`: machine"
+  lacks "nor by the handoff recorded after it"                   "$body" "Judged \`a stranger can read it\`: handed"
+}
+a_request_names_what_the_grader_accepts
 
 #
 # **Both adapters carry a brief and nothing compared them.** #377 calls that a seam built and
@@ -9027,7 +9066,7 @@ a_delivery_carrying_a_commit_nobody_recorded() {
   sent=$(cat "$src/deliveries/$(basename "$pvrun").brief" 2>/dev/null)
   has "the request names the run it came from"    "$sent" "- run \`$(basename "$pvrun")\`"
   has "and the commit it delivers"                "$sent" "- commit \`$mine\`"
-  has "and the charter, by its digest"            "$sent" "- charter \`$(git hash-object "$pvrun/charter")\`"
+  has "and the charter, by the digest a handoff stamps" "$sent" "- charter \`$(cksum < "$pvrun/charter" | awk '{ print $1 }')\`"
   has "and each clause beside the row that met it" "$sent" "Gate \`tests\`: machine"
 
   # 3. A commit made outside that operation is foreign, and refuses.
