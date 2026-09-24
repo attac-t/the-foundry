@@ -3820,11 +3820,19 @@ already_underway_here() {
     a_run_here_holds "$1"
 }
 
+# A run holds its item once a read bound it, and from the moment a pass began it for one. A read that
+# failed bound nothing, and a pass in a second checkout took the item again. Piece 7's judge.
 a_run_here_holds() {
     for held_by in "$RUNS"/*/; do
-        [ "$(item_id "${held_by%/}" 2>/dev/null)" = "$1" ] && return 0
+        run_item=$(item_id "${held_by%/}" 2>/dev/null)
+        [ -n "$run_item" ] || run_item=$(item_a_pass_began "${held_by%/}")
+        [ "$run_item" = "$1" ] && return 0
     done
     return 1
+}
+
+item_a_pass_began() {
+    field_of "$(awk -F'\t' '$3 == "pass.began" { print $3 "\t" $4; exit }' "$(observations_file "$1")" 2>/dev/null)" item
 }
 
 #

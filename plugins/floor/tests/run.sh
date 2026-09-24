@@ -2664,6 +2664,9 @@ wreck_runner "a pass that takes an item another run here already has is caught" 
 wreck_runner "a claim nothing here works on, passed over for good, is caught" \
   passstale '/^already_underway_here() {/,/^}/s#^    a_run_here_holds "\$1"$#    :#'
 
+wreck_runner "an item a run began and never bound, taken again from a second checkout, is caught" \
+  heldbegan '/^a_run_here_holds() {/,/^}/s#^        \[ -n "\$run_item" \] || run_item=\$(item_a_pass_began "\${held_by%/}")$#        :#'
+
 wreck_runner "a pass that cannot open its work and leaves no stop is caught" \
   passopen '/^select_the_checkout() {/,/^}/s#) >/dev/null || stop_at "\$1" open "\$?"#) >/dev/null || exit 1#'
 

@@ -4804,6 +4804,13 @@ a_second_read_that_fails_is_a_stop() {
   has "and its run says it began" "$(floor "$tmp/reread" observe)" "pass.began"
   has "and why it stopped"        "$(floor "$tmp/reread" observe)" "why=read"
 
+  # A second checkout of the same repository: the run above holds 66 from the moment it began.
+  make_repo "$tmp/reread2" main && set_origin "$tmp/reread2" 'https://gitlab.com/acme/reread.git' \
+    || { skip "a second checkout — git could not make a repo here"; return; }
+  bar_and_rule "$tmp/reread2" 'offer reread pat'
+  is  "a pass in a second checkout passes over an item a run began and never bound" \
+      "$(code_of floor "$tmp/reread2" pass)" "30"
+
   is  "the next wake reads the item it could not, and goes on" "$(code_of floor "$tmp/reread" pass)" "44"
   has "and binds it"                                          "$(floor "$tmp/reread" observe)" "item.read"
 
