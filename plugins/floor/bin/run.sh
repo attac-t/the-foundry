@@ -3977,7 +3977,7 @@ say_this_pass_is_alive() {
 # Beats while the pass's own process lives and its run is there, so a pass killed outright leaves a
 # mark that goes stale. From `/`, so a beat left sleeping holds no fixture's directory open.
 #
-# A failed `sleep` or write is tried again next beat. Only the pass's end stops the beat.
+# A failed write is tried again next beat, and a failed `sleep` at once. Only the pass's end stops it.
 beat_while_alive() {
     cd / || return 0
     while kill -0 "$1" 2>/dev/null && [ -d "${2%/*}" ]; do
@@ -3986,16 +3986,24 @@ beat_while_alive() {
     done
 }
 
-# Written beside the mark and renamed over it, so no reader sees one half made.
+# Written beside the mark and renamed over it, so no reader sees one half made. A `date` that printed
+# nothing writes nothing: a mark holding only its beat would read as a time long past.
 mark_alive() {
-    printf '%s %s\n' "$(date -u +%s)" "$2" > "$1.new" 2>/dev/null && mv -f "$1.new" "$1" 2>/dev/null
+    written_at=$(date -u +%s 2>/dev/null)
+    case $written_at in ''|*[!0-9]*) return 1 ;; esac
+
+    printf '%s %s\n' "$written_at" "$2" > "$1.new" 2>/dev/null && mv -f "$1.new" "$1" 2>/dev/null
 }
 
-# Waited on before the mark goes, so a beat already writing cannot put it back.
+#
+# **Stopped with a signal it cannot ignore.** A pass started with TERM ignored hands that on to its
+# beat, and a TERM then did nothing while the pass waited on the beat for ever. 5a's judge, round two.
+#
+# `.new` goes first, so a rename already under way finds nothing to rename, or lands before the mark goes.
 stop_the_heartbeat() {
-    kill "$heartbeat" 2>/dev/null
+    kill -9 "$heartbeat" 2>/dev/null
     wait "$heartbeat" 2>/dev/null
-    rm -f "$alive" "$alive.new"
+    rm -f "$alive.new" "$alive"
 }
 
 # A mark that is there and cannot be aged reads as a pass at work. Leaving a dead run costs a wake;
@@ -4027,7 +4035,8 @@ the_heading_of() {
 # **It says it began before it reads the item again**, so a read that fails leaves a stop, never a
 # run with no line a later pass could read. #1026.
 #
-# **Its beat starts first of all**, so no pass sees this run before it sees the mark. 5a's judge.
+# **Its beat starts as soon as the run exists**, before any read. A second pass could find the run
+# without its mark only in the few forks between. 5a's judge.
 begin_a_run_for() {
     make_run "$2" >/dev/null
     pin_this_run
