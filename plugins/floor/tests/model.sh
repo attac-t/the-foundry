@@ -4710,6 +4710,9 @@ a_second_read_that_fails_is_a_stop() {
   has "and its run says it began" "$(floor "$tmp/reread" observe)" "pass.began"
   has "and why it stopped"        "$(floor "$tmp/reread" observe)" "why=read"
 
+  is  "the next wake reads the item it could not, and goes on" "$(code_of floor "$tmp/reread" pass)" "44"
+  has "and binds it"                                          "$(floor "$tmp/reread" observe)" "item.read"
+
   rm -rf "$src/claims/66" "$src/labels/66" "$src/items/66"
 }
 
@@ -6236,6 +6239,7 @@ STUB
 
 # A repository offering one item under its own label, with one passing gate.
 a_resumable_repo() {
+  mkdir -p "$src/items" "$src/labels" "$src/claims"
   make_repo "$tmp/$1" main && set_origin "$tmp/$1" "${3:-https://gitlab.com/acme/$1.git}" || return 1
 
   printf 'Resumed item %s\n' "$2" > "$src/items/$2"
@@ -6262,9 +6266,12 @@ a_run_waits_on_the_host_then_a_person() {
       "pass.resumed pass.waiting "
   has "and names what it waits for" "$(last_pass_line_in "$tmp/rsw")" "pass.waiting item=501 why=no-command"
 
+  # The command runs a second pass from the same checkout, while the resumed one works.
+  second="cd '$tmp/rsw' && sh '$runner' pass > '$tmp/rsw.second' 2>&1; echo \"exit=\$?\" >> '$tmp/rsw.second'"
   is  "the host names its command after more waits than the bound, and the run acts" \
-      "$(FOUNDRY_PASS_COMMAND=$COMMITTING_WORKER resume_in "$tmp/rsw")" "47"
+      "$(FOUNDRY_PASS_COMMAND="$second; $COMMITTING_WORKER" resume_in "$tmp/rsw")" "47"
   has "and waits on a person for the grant" "$(last_pass_line_in "$tmp/rsw")" "why=deliver code=18"
+  has "a second pass while a resumed one works is told so" "$(cat "$tmp/rsw.second" 2>/dev/null)" "a pass is at work in this run now"
   for wake in 1 2 3; do
     is "a wake before the grant waits again, $wake" "$(resume_in "$tmp/rsw")" "47"
   done
@@ -6325,9 +6332,10 @@ a_code_no_row_names_lets_the_run_go() {
   run=$(floor "$tmp/rsx" path)
   printf 'https://gitlab.com/acme/elsewhere.git main\n' >> "$run/units/01/targets"
 
+  # Read from the file: `observe` refuses a run whose selection was edited, which is this one.
   resume_in "$tmp/rsx" >/dev/null
   has "the run says it was let go, and the code" \
-      "$(floor_as "$tmp/rsx" "$home" "$run" observe | awk -F'\t' '$3 == "pass.left" { print $4 }')" "why=deliver code="
+      "$(awk -F'\t' '$3 == "pass.left" { print $4 }' "$run/observations")" "why=deliver code="
   is  "and the checkout no longer points at it" "$(floor "$tmp/rsx" path)" ""
 
   rm -rf "$src/claims/504" "$src/labels/504" "$src/items/504"
@@ -6351,6 +6359,8 @@ a_pass_killed_on_every_wake_is_let_go() {
       "$(FOUNDRY_PASS_COMMAND=$dying resume_in "$tmp/rsk")" "46"
   has "and the run says why" "$(why_it_left "$tmp/rsk" "$run")" "item=505 why=tries"
   is  "and the item stops on this host" "$(resume_in "$tmp/rsk")" "30"
+  is  "a pass whose FOUNDRY_RUN names a run let go leaves it, and is told to unset it" \
+      "$(code_of floor_as "$tmp/rsk" "$home" "$run" pass)" "43"
 
   # A host that waits, then names a command that dies on every wake: only the deaths count.
   a_resumable_repo rsn 506 || { skip "a command named after a wait — git could not make a repo here"; return; }
@@ -6392,6 +6402,7 @@ a_pass_killed_in_deliver_is_let_go
 # **A step that fails on every wake is let go past the bound**: gates that keep failing under a
 # committing worker, and a judge that cannot run here.
 a_step_failing_on_every_wake_is_let_go() {
+  mkdir -p "$src/items" "$src/labels" "$src/claims"
   make_repo "$tmp/rsg" main && set_origin "$tmp/rsg" 'https://gitlab.com/acme/rsg.git' \
     || { skip "failing gates — git could not make a repo here"; return; }
   mkdir -p "$tmp/rsg/.foundry"
@@ -6427,6 +6438,7 @@ a_step_failing_on_every_wake_is_let_go
 # again, so only the bound ends it. Two members who revise every round are counted apart, so the
 # run leaves after three rounds each, never after two. And a member who approved is not asked again.
 the_ledger_decides_at_a_judged_stop() {
+  mkdir -p "$src/items" "$src/labels" "$src/claims"
   a_judged_pass "$tmp/rsa" rsa reject 510 || { skip "an unanswered refusal — git could not make a repo here"; return; }
   for wake in 0 1 2; do
     is "a refusal stops the pass, $wake" "$(FOUNDRY_PASS_COMMAND=true resume_in "$tmp/rsa")" "39"
@@ -6476,10 +6488,44 @@ $(a_judge_that_approves)" \
   is "and the silent one twice, asked alone" \
      "$(awk -F'\t' '$2 == "handed" && $8 == "second:adversary"' "$run/evidence" | grep -c .)" "2"
 
+  # A judge that could not be reached, and one out of rounds: neither is an answer new work can change.
+  a_judged_pass "$tmp/rsu" rsu unavailable 513 || { skip "an unreachable judge — git could not make a repo here"; return; }
+  is  "a judge that could not be reached stops the pass" "$(FOUNDRY_PASS_COMMAND=true resume_in "$tmp/rsu")" "39"
+  run=$(floor "$tmp/rsu" path)
+  is  "and the next wake lets the item go" "$(FOUNDRY_PASS_COMMAND=true resume_in "$tmp/rsu")" "48"
+  has "and the run says why" "$(why_it_left "$tmp/rsu" "$run")" "item=513 why=unavailable"
+
+  a_judged_pass "$tmp/rsv" rsv deadlock 514 || { skip "a deadlocked judge — git could not make a repo here"; return; }
+  is  "a deadlocked judge stops the pass" "$(FOUNDRY_PASS_COMMAND=true resume_in "$tmp/rsv")" "39"
+  run=$(floor "$tmp/rsv" path)
+  is  "and the next wake lets the item go" "$(FOUNDRY_PASS_COMMAND=true resume_in "$tmp/rsv")" "48"
+  has "and the run says why" "$(why_it_left "$tmp/rsv" "$run")" "item=514 why=deadlock"
+
   rm -rf "$src/claims/510" "$src/claims/511" "$src/claims/512" "$src/labels/510" "$src/labels/511" "$src/labels/512"
   rm -rf "$src/items/510" "$src/items/511" "$src/items/512"
+  rm -rf "$src/claims/513" "$src/claims/514" "$src/labels/513" "$src/labels/514" "$src/items/513" "$src/items/514"
 }
 the_ledger_decides_at_a_judged_stop
+
+#
+# **A send that failed is sent again next wake**, and the run delivers once the remote is there.
+a_failed_send_is_sent_again() {
+  a_resumable_repo rsy 515 'https://github.com/acme/rsy.git' \
+    || { skip "a failed send — git could not make a repo here"; return; }
+
+  is "a run stops at the request, with no grant" "$(FOUNDRY_PASS_COMMAND=$COMMITTING_WORKER resume_in "$tmp/rsy")" "18"
+  floor "$tmp/rsy" policy deliver-to 'https://github.com/acme/rsy.git' >/dev/null 2>&1
+  is "a send that fails stops the resumed run at 19" "$(resume_in "$tmp/rsy")" "19"
+
+  git init -q --bare "$tmp/remotes/acme/rsy.git" 2>/dev/null \
+    || { skip "a failed send — git could not make a bare repo here"; return; }
+  run=$(floor "$tmp/rsy" path)
+  is "and the next wake sends again, and delivers" "$(resume_in "$tmp/rsy")" "0"
+
+  rm -f "$src/deliveries/$(basename "$run")" "$src/deliveries/$(basename "$run").brief"
+  rm -rf "$src/claims/515" "$src/labels/515" "$src/items/515"
+}
+a_failed_send_is_sent_again
 
 #
 # **Two judges on one clause, and every fixture before this had one.** A rule with a single instance
