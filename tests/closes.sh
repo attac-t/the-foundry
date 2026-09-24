@@ -244,6 +244,18 @@ case $(asked) in
   *)                               bad "a commit read that fails still refuses on the body — it let the merge through" ;;
 esac
 
+# --- a hook copied without its sibling blocks nothing ---
+#
+# Under dash a failed `.` exits 2, and a PreToolUse hook that exits 2 blocks every command. So a
+# hook that cannot read `forge-reads.sh` exits 0 before it tries.
+
+mkdir -p "$tmp/lonely" && cp "$root/.claude/hooks/closes.sh" "$tmp/lonely/closes.sh"
+stub_gh 'Closes #711' '- [ ] one thing'
+call "$(verb pr merge) 740 --merge"
+lonely=$(PATH="$tmp/bin:$PATH" sh "$tmp/lonely/closes.sh" < "$tmp/call.json" 2>&1); code=$?
+[ "$code" -eq 0 ] && [ -z "$lonely" ] && ok "a hook missing its sibling exits 0 and blocks nothing" \
+  || bad "a hook missing its sibling exits 0 and blocks nothing — it exited $code"
+
 # --- only the first line names the repository ---
 #
 # The address is the first line the request read prints. A body line shaped like another address
