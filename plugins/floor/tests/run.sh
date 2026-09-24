@@ -2597,8 +2597,10 @@ wreck_runner "a pass that never starts its heartbeat is caught" \
   alivenomark '/^begin_a_run_for() {/,/^}/s#^    say_this_pass_is_alive$#    :#'
 
 wreck_runner "a mark left behind when the pass ends is caught" \
-  alivestays '/^stop_the_heartbeat() {/,/^}/s#^    rm -f "\$alive" "\$alive.new"$#    :#'
+  alivestays '/^stop_the_heartbeat() {/,/^}/s#^    rm -f "\$alive.new" "\$alive"$#    :#'
 
+wreck_runner "a beat stopped with a signal a pass can have ignored is caught" \
+  alivekill9 '/^stop_the_heartbeat() {/,/^}/s#^    kill -9 "\$heartbeat" 2>/dev/null$#    kill "$heartbeat" 2>/dev/null#'
 wreck_runner "a stale mark read as a pass at work is caught" \
   alivestale '/^a_pass_is_alive_in() {/,/^}/s#-lt "\$(( writers_beat \* 3 ))"#-lt 999999999#'
 
