@@ -3935,7 +3935,7 @@ open_the_work() {
     ( targets add "$(bootstrap_identity "$dir")" "$(bootstrap_ref "$dir")" ) >/dev/null || stop_at "$1" open "$?"
     ( charter derive ) >/dev/null || stop_at "$1" charter "$?"
     ( open_workspace ) >/dev/null || stop_at "$1" workspace "$?"
-    tree=$(unit_work_tree "$dir" "$(this_repository)") || stop_at "$1" workspace 16
+    tree=$(unit_work_tree "$dir" "$(this_repository)") || { record_the_stop "$1" workspace 16; exit 16; }
 }
 
 stop_at() { record_the_stop "$1" "$2" "$3"; exit "$3"; }
@@ -3951,9 +3951,9 @@ stop_at() { record_the_stop "$1" "$2" "$3"; exit "$3"; }
 #
 # The pass reads back the command's exit and floor's record, never what the command printed.
 act_on_it() {
-    [ -n "$host_command" ] || stop_at "$1" no-command 44
+    [ -n "$host_command" ] || { record_the_stop "$1" no-command 44; exit 44; }
 
-    run_the_host_command "$1" || stop_at "$1" command-failed 45
+    run_the_host_command "$1" || { record_the_stop "$1" command-failed 45; exit 45; }
     emit "$dir" pass.acted item="$1"
 }
 

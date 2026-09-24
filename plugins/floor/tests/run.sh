@@ -2657,13 +2657,13 @@ wreck_runner "a pass that cannot open its work and leaves no stop is caught" \
   passopen '/^open_the_work() {/,/^}/s#) >/dev/null || stop_at "\$1" open "\$?"#) >/dev/null || exit 1#'
 
 wreck_runner "a pass that acts with no command set is caught" \
-  passnocmd '/^act_on_it() {/,/^}/s#^    \[ -n "\$host_command" \] || stop_at "\$1" no-command 44$#    :#'
+  passnocmd '/^act_on_it() {/,/^}/s#^    \[ -n "\$host_command" \] || { record_the_stop "\$1" no-command 44; exit 44; }$#    :#'
 
 wreck_runner "a host command left for every gate and judge to inherit is caught" \
   passcommand '/^keep_the_host_command_to_itself() {/,/^}/s#^    unset FOUNDRY_PASS_COMMAND$#    export FOUNDRY_PASS_COMMAND#'
 
 wreck_runner "a pass that carries on after its command failed is caught" \
-  passfail '/^act_on_it() {/,/^}/s#^    run_the_host_command "\$1" || stop_at "\$1" command-failed 45$#    run_the_host_command "$1"#'
+  passfail '/^act_on_it() {/,/^}/s#^    run_the_host_command "\$1" || { record_the_stop "\$1" command-failed 45; exit 45; }$#    run_the_host_command "$1"#'
 
 wreck_runner "a command that is not handed the item is caught" \
   passhand '/^run_the_host_command() {/,/^}/s#FOUNDRY_PASS_ITEM="\$1" ##'
