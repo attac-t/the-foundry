@@ -2496,6 +2496,10 @@ A reader knows what changed.
   floor "$tmp/br" deliver 'a change' "$tmp/br-brief.md" >/dev/null 2>&1
 
   has "the run keeps the brief it was handed" "$(cat "$d/brief" 2>/dev/null)" "A reader knows what changed"
+
+  # A reader opens a request to decide, so the brief comes before what floor recorded.
+  is "and the body it composes opens with the brief" "$(head -1 "$d/body" 2>/dev/null)" "Outcome"
+  has "and then says what floor recorded"            "$(cat "$d/body" 2>/dev/null)" "What floor recorded"
 }
 a_delivery_carries_its_brief
 
@@ -8984,6 +8988,14 @@ a_delivery_carrying_a_commit_nobody_recorded() {
 
   floor "$tmp/pv" gates >/dev/null 2>&1
   is "a recorded commit delivers" "$(code_of floor "$tmp/pv" deliver 'Accounted for')" "0"
+
+  # #736's box 16: the request names the run, the commit, the charter and the row that met each
+  # clause. Read from what the adapter kept, so a body composed and never handed over is red.
+  sent=$(cat "$src/deliveries/$(basename "$pvrun").brief" 2>/dev/null)
+  has "the request names the run it came from"    "$sent" "- run \`$(basename "$pvrun")\`"
+  has "and the commit it delivers"                "$sent" "- commit \`$mine\`"
+  has "and the charter, by its digest"            "$sent" "- charter \`$(git hash-object "$pvrun/charter")\`"
+  has "and each clause beside the row that met it" "$sent" "Gate \`tests\`: machine"
 
   # 3. A commit made outside that operation is foreign, and refuses.
   printf 'two

@@ -4179,6 +4179,7 @@ deliver() {
     refuse_foreign_ancestry "$dir" "$here"
     refuse_incomplete "$dir"
     keep_the_brief "$dir" "${2:-}"
+    compose_the_body "$dir" "$here"
 
     send_delivery "$dir" "$here" "$title"
     say_the_asides "$dir"
@@ -4205,15 +4206,62 @@ brief_file() { printf '%s/brief' "$1"; }
 # at the moment that it applies is a skill that nobody ever invokes,
 # and this is the very last moment that a delivery has to say so.
 say_what_a_brief_is() {
-    note "no brief, so this delivery says only which item it answers"
+    note "no brief, so this delivery says which item it answers and what floor recorded"
     note "  floor:brief names the five shapes a human surface takes"
+}
+
+#
+# **The request names its record.** #736's box 16, decided 23 September: `deliver` composes the body
+# from the run, the charter, the evidence and the commit.
+#
+# The brief comes first, because a reader opens a request to decide. The record follows, built
+# only from files the run keeps, so it cannot say what the run did not record.
+#
+compose_the_body() {
+    body=$(body_file "$1")
+
+    { cat "$(brief_file "$1")" 2>/dev/null; what_floor_recorded "$1" "$2"; } > "$body" \
+        || die_unwritable "$body"
+}
+
+body_file() { printf '%s/body' "$1"; }
+
+what_floor_recorded() {
+    pushed=$(unit_head "$1" "$2")
+
+    printf '\n**What floor recorded.**\n\n'
+    printf -- '- run `%s`\n' "$(recorded_id "$1")"
+    printf -- '- commit `%s`\n' "$pushed"
+    printf -- '- charter `%s`, each clause beside the row that met it:\n' "$(charter_digest "$1")"
+    each_clause_and_the_row_that_met_it "$1" "$pushed"
+}
+
+charter_digest() { git hash-object --stdin < "$(charter_file "$1")" 2>/dev/null; }
+
+#
+# Matched the way `satisfied` matches: the clause's text, this commit, and a zero. A handoff row
+# records a zero too, and a second round's handoff lands after the first round's answer, so a row
+# kept `handed` is never taken for one.
+#
+each_clause_and_the_row_that_met_it() {
+    awk -v ledger="$(evidence_file "$1")" -v ref="$2" '
+        FILENAME == ledger {
+            split($0, f, "\t")
+            if (f[6] != ref || f[5] != "0" || f[2] == "handed") next
+            met[f[4]] = f[2] (f[8] == "" ? "" : " by " f[8])
+            next
+        }
+        $1 == "clause" {
+            kind = $3; $1 = $2 = $3 = ""; sub(/^ +/, "")
+            printf "  - %s `%s`: %s\n", kind, $0, (($0 in met) ? met[$0] : "no row at this commit")
+        }' "$(evidence_file "$1")" "$(charter_file "$1")" 2>/dev/null
 }
 
 # A path, or nothing at all. An adapter that is given a path it cannot
 # read has been told a lie. One that was handed no path knows there
 # is nothing at all, and so those are two very different things.
-brief_if_kept() {
-    [ -s "$(brief_file "$1")" ] && printf '%s' "$(brief_file "$1")"
+body_if_composed() {
+    [ -s "$(body_file "$1")" ] && printf '%s' "$(body_file "$1")"
 }
 
 refuse_ungranted_delivery() {
@@ -6816,7 +6864,7 @@ closure_word() {
 
 send_and_record() {
     said=$(source_says publish "$(item_id "$1")" "${1##*/}" "$2" "$3" \
-        "$(closure_word "$1")" "$(brief_if_kept "$1")")
+        "$(closure_word "$1")" "$(body_if_composed "$1")")
     refuse_unless_answered "$?" delivery 19
 
     record_delivery "$1" "$2" "${4:-}" "$said"

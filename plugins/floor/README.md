@@ -263,7 +263,8 @@ ${FOUNDRY_HOME:-$HOME/.foundry}/runs/<date>-<slug>-<short id>/
 ├── evidence           one line per gate that ran, tab-separated
 ├── charter            the bar — one clause, one pin and one command per line
 ├── delivery           the branch this run pushed, the commit it pushed, and where it landed
-├── brief              the body a source carried — absent when `deliver` was handed none
+├── brief              what `deliver` was handed — absent when it was handed none
+├── body               the brief, then what floor recorded: run, commit, charter, each clause's row
 ├── substitutions      files graded as the base wrote them — absent when the run changed no gate
 ├── judged/            what `judged` asked each judge, and what came back — one pair per clause
 ├── observations       what happened, one line each, and nothing granted by any of it
@@ -798,6 +799,14 @@ The grant is keyed by the item, so it cannot outlive the item it was given for.
 **Floor still reads no part of the item.** It never sees the list, never counts a box, and cannot
 tell a met one from an unmet one. A person reads it and types one line — the same shape as
 `targets add`, and for the same reason.
+
+---
+### A delivery names its record
+
+**The body is the brief, then what floor recorded.** That is the run, the commit it pushed, the
+charter's digest, and each clause beside the row that met it at that commit. It is built from files
+the run keeps, so it cannot say what the run did not record. The adapter adds its marker last.
+Decided on #736.
 
 ---
 ### A kind is the source's word, not Foundry's
