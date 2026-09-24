@@ -2548,25 +2548,25 @@ a_body_set_to_brief_carries_the_brief_alone
 # The body named the last row it found for a clause. A machine pass under a judged clause's words,
 # or a later handoff, then stood where the panel's approval belonged, and the grader reads neither.
 a_request_names_what_the_grader_accepts() {
-  git init -q --bare "$tmp/garemote.git" 2>/dev/null \
-    && make_repo "$tmp/ga" main && set_origin "$tmp/ga" 'https://github.com/acme/ga.git' \
-    && mkdir -p "$tmp/ga/.foundry" \
-    && commit_file "$tmp/ga" .foundry/gates 'tests  true
-' && commit_file "$tmp/ga" .foundry/judged 'a-reviewer  a stranger can read it
+  git init -q --bare "$tmp/accepted-remote.git" 2>/dev/null \
+    && make_repo "$tmp/accepted" main && set_origin "$tmp/accepted" 'https://github.com/acme/accepted.git' \
+    && mkdir -p "$tmp/accepted/.foundry" \
+    && commit_file "$tmp/accepted" .foundry/gates 'tests  true
+' && commit_file "$tmp/accepted" .foundry/judged 'a-reviewer  a stranger can read it
 ' || { skip "what met a clause — git could not make a repo here"; return; }
 
-  d=$(floor_new_as "$tmp/ga" ada@example.com "Accepted")
-  for step in "charter derive" "policy authorize https://github.com/acme/ga.git" \
-      "policy deliver-to https://github.com/acme/ga.git" "targets add https://github.com/acme/ga.git main" open gates; do
-    floor "$tmp/ga" $step >/dev/null 2>&1
+  d=$(floor_new_as "$tmp/accepted" ada@example.com "Accepted")
+  for step in "charter derive" "policy authorize https://github.com/acme/accepted.git" \
+      "policy deliver-to https://github.com/acme/accepted.git" "targets add https://github.com/acme/accepted.git main" open gates; do
+    floor "$tmp/accepted" $step >/dev/null 2>&1
   done
-  git -C "$(only_slot "$(floor "$tmp/ga" path)/units/01/workspace")" \
-    config "url.$tmp/garemote.git.pushInsteadOf" 'https://github.com/acme/ga.git'
+  git -C "$(only_slot "$(floor "$tmp/accepted" path)/units/01/workspace")" \
+    config "url.$tmp/accepted-remote.git.pushInsteadOf" 'https://github.com/acme/accepted.git'
 
-  judged "$tmp/ga" 'a stranger can read it' a-reviewer approve 'reads fine' >/dev/null 2>&1
-  floor "$tmp/ga" evidence record 'a stranger can read it' true >/dev/null 2>&1
-  floor "$tmp/ga" evidence handed 'a stranger can read it' a-reviewer 'a test harness' >/dev/null 2>&1
-  floor "$tmp/ga" deliver 'a change' >/dev/null 2>&1
+  judged "$tmp/accepted" 'a stranger can read it' a-reviewer approve 'reads fine' >/dev/null 2>&1
+  floor "$tmp/accepted" evidence record 'a stranger can read it' true >/dev/null 2>&1
+  floor "$tmp/accepted" evidence handed 'a stranger can read it' a-reviewer 'a test harness' >/dev/null 2>&1
+  floor "$tmp/accepted" deliver 'a change' >/dev/null 2>&1
 
   body=$(cat "$d/body" 2>/dev/null)
   has   "a judged clause is named by the panel that approved it" "$body" "Judged \`a stranger can read it\`: judged by a-reviewer"
@@ -2574,44 +2574,6 @@ a_request_names_what_the_grader_accepts() {
   lacks "nor by the handoff recorded after it"                   "$body" "Judged \`a stranger can read it\`: handed"
 }
 a_request_names_what_the_grader_accepts
-
-#
-# One run, one delivery. A second `deliver` pushed a new head and rewrote the body, which the request
-# never carried: only the first `deliver` hands one over, so the run described a request nobody sent.
-a_second_delivery_keeps_the_body_it_sent() {
-  git init -q --bare "$tmp/sdremote.git" 2>/dev/null \
-    && make_repo "$tmp/sd" main && set_origin "$tmp/sd" 'https://github.com/acme/sd.git' \
-    && mkdir -p "$tmp/sd/.foundry" \
-    && commit_file "$tmp/sd" .foundry/gates 'tests  true
-' || { skip "a second delivery — git could not make a repo here"; return; }
-
-  mkdir -p "$src/items" && printf 'Deliver it twice\n' > "$src/items/411"
-
-  # An item bound and authorised, because a delivery is recorded only once the source has taken it.
-  d=$(floor_new_as "$tmp/sd" ada@example.com "Twice")
-  for step in "source read 411" "charter derive" "policy authorize https://github.com/acme/sd.git" \
-      "policy deliver-to https://github.com/acme/sd.git" "targets add https://github.com/acme/sd.git main" \
-      authorise open gates; do
-    floor "$tmp/sd" $step >/dev/null 2>&1
-  done
-  co=$(only_slot "$(floor "$tmp/sd" path)/units/01/workspace")
-  git -C "$co" config "url.$tmp/sdremote.git.pushInsteadOf" 'https://github.com/acme/sd.git'
-
-  is "a first delivery answers" "$(code_of floor "$tmp/sd" deliver 'a change')" "0"
-  first=$(git -C "$co" rev-parse HEAD)
-  sent=$(cat "$d/body" 2>/dev/null)
-
-  printf 'more\n' > "$co/more.txt"
-  git -C "$co" add more.txt >/dev/null 2>&1
-  floor "$tmp/sd" commit 'chore: a second change' >/dev/null 2>&1
-  floor "$tmp/sd" gates >/dev/null 2>&1
-
-  is  "a second delivery answers"            "$(code_of floor "$tmp/sd" deliver 'a change')" "0"
-  is  "and pushes the new head"              "$(git -C "$tmp/sdremote.git" rev-parse "foundry/$(basename "$d")" 2>/dev/null)" "$(git -C "$co" rev-parse HEAD)"
-  is  "while the run keeps the body it sent" "$(cat "$d/body" 2>/dev/null)" "$sent"
-  has "which names the first commit"         "$sent" "- commit \`$first\`"
-}
-a_second_delivery_keeps_the_body_it_sent
 
 #
 # **Both adapters carry a brief and nothing compared them.** #377 calls that a seam built and
@@ -9178,6 +9140,44 @@ Refs #43
   is "and the delivery refuses too"       "$(code_of floor "$tmp/pv" deliver 'No base at all')" "33"
 }
 a_delivery_carrying_a_commit_nobody_recorded
+
+#
+# One run, one delivery. A second `deliver` pushed a new head and rewrote the body, which the request
+# never carried: only the first `deliver` hands one over, so the run described a request nobody sent.
+a_second_delivery_keeps_the_body_it_sent() {
+  git init -q --bare "$tmp/resent-remote.git" 2>/dev/null \
+    && make_repo "$tmp/resent" main && set_origin "$tmp/resent" 'https://github.com/acme/resent.git' \
+    && mkdir -p "$tmp/resent/.foundry" \
+    && commit_file "$tmp/resent" .foundry/gates 'tests  true
+' || { skip "a second delivery — git could not make a repo here"; return; }
+
+  mkdir -p "$src/items" && printf 'Deliver it twice\n' > "$src/items/411"
+
+  # An item bound and authorised, because a delivery is recorded only once the source has taken it.
+  d=$(floor_new_as "$tmp/resent" ada@example.com "Twice")
+  for step in "source read 411" "charter derive" "policy authorize https://github.com/acme/resent.git" \
+      "policy deliver-to https://github.com/acme/resent.git" "targets add https://github.com/acme/resent.git main" \
+      authorise open gates; do
+    floor "$tmp/resent" $step >/dev/null 2>&1
+  done
+  co=$(only_slot "$(floor "$tmp/resent" path)/units/01/workspace")
+  git -C "$co" config "url.$tmp/resent-remote.git.pushInsteadOf" 'https://github.com/acme/resent.git'
+
+  is "a first delivery answers" "$(code_of floor "$tmp/resent" deliver 'a change')" "0"
+  first=$(git -C "$co" rev-parse HEAD)
+  sent=$(cat "$d/body" 2>/dev/null)
+
+  printf 'more\n' > "$co/more.txt"
+  git -C "$co" add more.txt >/dev/null 2>&1
+  floor "$tmp/resent" commit 'chore: a second change' >/dev/null 2>&1
+  floor "$tmp/resent" gates >/dev/null 2>&1
+
+  is  "a second delivery answers"            "$(code_of floor "$tmp/resent" deliver 'a change')" "0"
+  is  "and pushes the new head"              "$(git -C "$tmp/resent-remote.git" rev-parse "foundry/$(basename "$d")" 2>/dev/null)" "$(git -C "$co" rev-parse HEAD)"
+  is  "while the run keeps the body it sent" "$(cat "$d/body" 2>/dev/null)" "$sent"
+  has "which names the first commit"         "$sent" "- commit \`$first\`"
+}
+a_second_delivery_keeps_the_body_it_sent
 
 a_delivery_that_succeeds() {
   git init -q --bare "$tmp/dvremote.git" 2>/dev/null \
