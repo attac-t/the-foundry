@@ -27,7 +27,9 @@ set -u
 shut=
 said=
 
-# The reads both hooks share, so what closes is decided in one place.
+# The reads both hooks share, so what closes is decided in one place. A hook missing its sibling
+# says nothing: under dash a failed `.` exits 2, and exit 2 here would block every command.
+[ -r "$(dirname "$0")/forge-reads.sh" ] || exit 0
 . "$(dirname "$0")/forge-reads.sh"
 
 main() {
@@ -67,10 +69,7 @@ number_in() {
 read_what_it_would_close() {
     said=$(what_the_forge_reads "$1") || return 0
 
-    # Lowered once, so each pattern says the word rather than spelling both cases of every letter.
-    lowered=$(printf '%s' "$said" | tr 'A-Z' 'a-z')
-
-    shut=$(numbers_closed_in "$lowered" | sort -u)
+    shut=$(numbers_closed_in "$said" | sort -u)
 }
 
 refuse_while_a_box_is_open() {

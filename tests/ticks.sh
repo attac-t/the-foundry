@@ -121,6 +121,28 @@ case $(asked) in
   *)               bad "a commit message that closes is heard — it said nothing" ;;
 esac
 
+stub_gh 'Refs #517' '- [ ] one thing' '' 'merge commit: fix #517 in one line'
+call "$(verb pr merge) 530 --merge"
+case $(asked) in
+  *'#517 closed'*) ok "a title that closes is heard, as the merge hook hears it" ;;
+  *)               bad "a title that closes is heard, as the merge hook hears it — it said nothing" ;;
+esac
+
+# The body and a commit can both name one issue, and the report names it once.
+stub_gh 'Closes #517' '- [ ] one thing' 'commit 04cf28b: Closes #517.'
+call "$(verb pr merge) 530 --merge"
+[ "$(asked | grep -o '#517 closed' | grep -c .)" = 1 ] && ok "an issue named twice is reported once" \
+  || bad "an issue named twice is reported once — it was not"
+
+# --- a hook copied without its sibling says nothing, and fails nothing ---
+
+mkdir -p "$tmp/lonely" && cp "$root/.claude/hooks/ticks.sh" "$tmp/lonely/ticks.sh"
+stub_gh 'Closes #517' '- [ ] one thing'
+call "$(verb pr merge) 530 --merge"
+lonely=$(PATH="$tmp/bin:$PATH" sh "$tmp/lonely/ticks.sh" < "$tmp/call.json" 2>&1); code=$?
+[ "$code" -eq 0 ] && [ -z "$lonely" ] && ok "a hook missing its sibling exits 0 and says nothing" \
+  || bad "a hook missing its sibling exits 0 and says nothing — it exited $code"
+
 # --- silence, and it is the ordinary case ---
 
 stub_gh 'Closes #517' '- [x] one thing'

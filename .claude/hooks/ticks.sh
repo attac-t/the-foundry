@@ -19,7 +19,9 @@
 
 set -u
 
-# The reads the merge hook uses, so the two hooks agree on what a merge closed. #1033.
+# The reads the merge hook uses, so the two hooks agree on what a merge closed. #1033. A hook
+# missing its sibling says nothing, as `closes.sh` does, rather than failing on the `.`.
+[ -r "$(dirname "$0")/forge-reads.sh" ] || exit 0
 . "$(dirname "$0")/forge-reads.sh"
 
 main() {
@@ -53,7 +55,7 @@ number_in() {
 issues_closed_by() {
     forge_text=$(what_the_forge_reads "$1") || return 0
 
-    numbers_closed_in "$(printf '%s' "$forge_text" | tr 'A-Z' 'a-z')" | sort -u
+    numbers_closed_in "$forge_text" | sort -u
 }
 
 report_each_issue_it_closes() {

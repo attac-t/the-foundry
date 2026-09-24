@@ -2,9 +2,14 @@
 #
 # What a merge would close, read the way the forge reads it. `closes.sh` sources this before a
 # merge and `ticks.sh` after one, so the two hooks cannot disagree about what a merge closed.
+#
+# **It reads more than GitHub may close**, and the two callers pay for that differently.
+# `closes.sh` refuses a merge it might have let through. `ticks.sh` may report an issue closed
+# that GitHub left open. Both err the safe way, and what they cannot read is named below.
 
-# The two reads, pinned. `tests/closes.sh` and `tests/ticks.sh` answer these exact strings and nothing else, so an edit
-# goes red there until somebody measures it live again. #1027 is where both were measured.
+# The two reads, pinned. `tests/closes.sh` and `tests/ticks.sh` answer these exact strings and
+# nothing else, so an edit goes red there until somebody measures it live again. #1027 is where
+# both were measured.
 THE_REQUEST='.url, .body, ("merge commit: " + .title)'
 EACH_COMMIT_LINE='.[] | .sha[0:7] as $c | .commit.message | split("\n")[] | "commit \($c): \(.)"'
 
@@ -41,10 +46,12 @@ commits_of() {
     gh api "repos/$1/pulls/$2/commits" --paginate --jq "$EACH_COMMIT_LINE" 2>/dev/null
 }
 
-# **Every match on a line, and a colon allowed.** `Closes: #10` closes, and so does each issue in
-# `Resolves #10, resolves #123`. A pattern keeping the last match read only the second.
+# **Every match on a line, in any case, and a colon allowed.** `Closes: #10` closes, and so does
+# each issue in `Resolves #10, resolves #123`. Keeping the last match read only the second.
+#
+# Lowered here, not by each caller, so a caller that forgot could not hear only one case.
 numbers_closed_in() {
-    printf '%s\n' "$1" | awk '{
+    printf '%s\n' "$1" | tr 'A-Z' 'a-z' | awk '{
         while (match($0, /(close[sd]*|fix[esd]*|resolve[sd]*):?[ \t]*#[0-9]+/)) {
             hit = substr($0, RSTART, RLENGTH); sub(/.*#/, "", hit); print hit
             $0 = substr($0, RSTART + RLENGTH)
