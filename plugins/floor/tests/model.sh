@@ -4523,8 +4523,8 @@ a_beat_ends_with_its_pass() {
   a_beat_repo alive3 517 || { skip "a killed pass — git could not make a repo here"; return; }
   kill_a_pass_in "$tmp/alive3" "$tmp/alive3.acting" "$dir_source" "touch '$tmp/alive3.acting'; sleep 4"
   sleep 4
-  has "a pass killed in its command is no pass at work three of its beats later" \
-      "$(floor_says "$tmp/alive3" pass)" "a run is active here already"
+  has "a pass killed in its command is no pass at work three of its beats later, and its run resumes" \
+      "$(floor_says "$tmp/alive3" pass)" "this pass resumes"
 
   a_beat_repo alive4 518 || { skip "a slow second read — git could not make a repo here"; return; }
   ( cd "$tmp/alive4" && FOUNDRY_HOME="$home" FOUNDRY_RUN="" FOUNDRY_WHO="" \
@@ -6282,21 +6282,10 @@ resume_in() { FOUNDRY_PASS_TRIES=2 FOUNDRY_PASS_BEAT=1 code_of floor "$1" pass; 
 # Appends a line to a file, and commits it through floor, the way a worker would.
 COMMITTING_WORKER="date >> worked && git add worked && sh '$runner' commit 'worked'"
 
-#
-# A pass killed partway, the way a host's crash kills one: once the marker exists it takes SIGKILL.
-# Its beat is let stop, and its mark is aged, so the next wake reads a dead pass and not a live one.
-kill_a_pass_in() {
-  rm -f "$2"
-  ( cd "$1" || exit 9
-    FOUNDRY_HOME="$home" FOUNDRY_RUN="" FOUNDRY_WHO="" FOUNDRY_SOURCE="$3" FOUNDRY_PASS_TRIES=2 \
-      FOUNDRY_PASS_BEAT=1 FOUNDRY_PASS_COMMAND="$4" exec sh "$runner" pass ) >/dev/null 2>&1 &
-  killed=$!
-
-  waited=0
-  while [ ! -f "$2" ] && [ "$waited" -lt 60 ]; do sleep 1; waited=$((waited + 1)); done
-  kill -9 "$killed" 2>/dev/null
-  wait "$killed" 2>/dev/null
-
+# A pass killed partway with the bound at two. Once its beat of one second has stopped, its mark is
+# aged, so the next wake reads a dead pass whatever the clock did.
+kill_and_age_a_pass_in() {
+  FOUNDRY_PASS_TRIES=2 kill_a_pass_in "$@"
   sleep 3
   date -u +%s | awk '{ print $1 - 600 }' > "$(floor "$1" path)/pass.alive"
 }
@@ -6424,7 +6413,7 @@ a_pass_killed_on_every_wake_is_let_go() {
   a_resumable_repo rsk 505 || { skip "a pass killed on every wake — git could not make a repo here"; return; }
 
   dying="touch '$tmp/rsk.acting'; sleep 4"
-  for wake in 0 1 2; do kill_a_pass_in "$tmp/rsk" "$tmp/rsk.acting" "$dir_source" "$dying"; done
+  for wake in 0 1 2; do kill_and_age_a_pass_in "$tmp/rsk" "$tmp/rsk.acting" "$dir_source" "$dying"; done
 
   is  "each killed wake after the first said it resumed" "$(resumes_in "$tmp/rsk")" "2"
   has "and resumed from the line before its own" \
@@ -6441,7 +6430,7 @@ a_pass_killed_on_every_wake_is_let_go() {
   a_resumable_repo rsn 506 || { skip "a command named after a wait — git could not make a repo here"; return; }
   for wake in 0 1 2; do resume_in "$tmp/rsn" >/dev/null; done
   dying="touch '$tmp/rsn.acting'; sleep 4"
-  for wake in 3 4; do kill_a_pass_in "$tmp/rsn" "$tmp/rsn.acting" "$dir_source" "$dying"; done
+  for wake in 3 4; do kill_and_age_a_pass_in "$tmp/rsn" "$tmp/rsn.acting" "$dir_source" "$dying"; done
   is  "a command named after the host's wait, then killed on every wake, is let go" \
       "$(FOUNDRY_PASS_COMMAND=$dying resume_in "$tmp/rsn")" "46"
 
@@ -6462,7 +6451,7 @@ a_pass_killed_in_deliver_is_let_go() {
   floor "$tmp/rsd" policy deliver-to 'https://github.com/acme/rsd.git' >/dev/null 2>&1
 
   hanging=$(a_source_hanging_on publish "$tmp/rsd.sending")
-  for wake in 1 2; do kill_a_pass_in "$tmp/rsd" "$tmp/rsd.sending" "$hanging" ""; done
+  for wake in 1 2; do kill_and_age_a_pass_in "$tmp/rsd" "$tmp/rsd.sending" "$hanging" ""; done
   has "a wake after a killed one carries the stop it resumed from" \
       "$(floor "$tmp/rsd" observe | awk -F'\t' '$3 == "pass.resumed" { l = $4 } END { print l }')" \
       "after=pass.stopped why=deliver code=18"
