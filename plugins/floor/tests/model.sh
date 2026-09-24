@@ -25,6 +25,9 @@ unset FOUNDRY_PASS_COMMAND
 # The pipe case sees a held pipe only while a beat is long, so a host's short beat would hide one.
 unset FOUNDRY_PASS_BEAT
 
+# The rounds case reaches its limit inside the default bound, which a host's own bound would move.
+unset FOUNDRY_PASS_TRIES
+
 here="$(cd "$(dirname "$0")/.." && pwd)"
 . "$here/tests/lib.sh"
 
