@@ -22,6 +22,9 @@ export FOUNDRY_WORKER
 # hand. Each case that wants a command names its own. #884's judge, round five.
 unset FOUNDRY_PASS_COMMAND
 
+# The pipe case sees a held pipe only while a beat is long, so a host's short beat would hide one.
+unset FOUNDRY_PASS_BEAT
+
 here="$(cd "$(dirname "$0")/.." && pwd)"
 . "$here/tests/lib.sh"
 
@@ -4536,8 +4539,20 @@ a_beat_ends_with_its_pass() {
       "$(floor_says "$tmp/alive4" pass)" "a pass is at work"
   wait "$first"
 
-  rm -rf "$src/claims/516" "$src/claims/517" "$src/claims/518" "$src/labels/516" "$src/labels/517" "$src/labels/518"
-  rm -rf "$src/items/516" "$src/items/517" "$src/items/518"
+  # A pass started with TERM ignored hands that on to its beat, and a TERM then stops nothing.
+  a_beat_repo alive5 519 || { skip "a pass that ignores TERM — git could not make a repo here"; return; }
+  ( cd "$tmp/alive5" && trap '' TERM && FOUNDRY_HOME="$home" FOUNDRY_RUN="" FOUNDRY_WHO="" \
+      FOUNDRY_SOURCE="$dir_source" exec sh "$runner" pass ) >/dev/null 2>&1 &
+  deaf=$!
+  waited=0
+  while kill -0 "$deaf" 2>/dev/null && [ "$waited" -lt 60 ]; do sleep 1; waited=$((waited + 1)); done
+  is  "a pass started with TERM ignored still ends" "$([ "$waited" -lt 60 ] && echo ended || echo hung)" "ended"
+  kill -9 "$deaf" 2>/dev/null
+  wait "$deaf" 2>/dev/null
+  is  "and leaves no mark" "$(ls "$(floor "$tmp/alive5" path)"/pass.alive 2>/dev/null | grep -c .)" "0"
+
+  rm -rf "$src/claims/516" "$src/claims/517" "$src/claims/518" "$src/claims/519" "$src/labels/516" "$src/labels/517" "$src/labels/518" "$src/labels/519"
+  rm -rf "$src/items/516" "$src/items/517" "$src/items/518" "$src/items/519"
 }
 
 # A repository offering one item under its own label.

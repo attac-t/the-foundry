@@ -2085,14 +2085,16 @@ It reads back the command's exit and the run's record, never what the command pr
 set is exit 44, and a command that fails is 45. Either way the run records why it stopped, and with
 which code: `pass.stopped why=deliver code=18`.
 
-**A pass at work says so.** From the moment its run exists, a pass writes the time and its beat into
-`pass.alive` every `FOUNDRY_PASS_BEAT` seconds, sixty by default. Each write lands whole, and the
-mark goes when the pass exits. A second pass on this host may find a mark younger than three of its
-writer's beats. It then says a pass is at work, and leaves the run alone, 43. The claim cannot tell
-the two apart, because it renews for any pass holding the run's name.
+**A pass at work says so.** As soon as its run exists, a pass writes the time and its beat into
+`pass.alive` every `FOUNDRY_PASS_BEAT` seconds, sixty by default. A second pass could find the run
+without its mark only in the few forks between. Each write lands whole, and the mark goes when the
+pass exits. A second pass on this host may find a mark younger than three of its writer's beats. It
+then says a pass is at work, and leaves the run alone, 43. The claim cannot tell the two apart,
+because it renews for any pass holding the run's name.
 
 **The beat holds none of the pass's output**, so a caller reading a pass to its end waits for the
-pass and nothing else.
+pass and nothing else. **It is stopped with a signal it cannot ignore**, so a pass started with TERM
+ignored still ends.
 
 **A mark nobody can age reads as live.** Leaving a dead run costs a wake. Resuming a live one puts
 two workers in one workspace. **What the mark cannot see:** a command, a grade or a judgement still
