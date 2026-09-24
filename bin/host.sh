@@ -15,6 +15,8 @@
 # **`--worker` is the host that can do the work.** It builds a second image on this one, carrying
 # node and both provider commands. A judge found this flag documented nowhere and it was right.
 #
+# **With `FOUNDRY_KEYS` set, a worker's first start installs Foundry's plugins into that volume.**
+#
 # **The grading image stays light because of that split.** Measured: 258 MB here, 1.56 GB with both
 # providers. A container grade would carry 1.3 GB it never calls.
 #
@@ -70,6 +72,8 @@
 #   3   the image would not build
 #   4   this machine has no home to keep runs in
 #   5   FOUNDRY_KEYS names a volume that could not be prepared
+#   6   a worker could not be given Foundry: this checkout names no marketplace, reachable source
+#       or plugin, or the install failed
 
 set -u
 
@@ -89,6 +93,8 @@ main() {
     ensure_docker_answers
     ensure_the_image_is_built
     ensure_the_keys_are_there
+    kept=$(where_runs_are_kept) || exit $?
+    ensure_the_worker_carries_foundry
 
     run_in_the_container "$@"
 }
@@ -201,6 +207,63 @@ make_them_here() {
 }
 
 #
+# **A worker carries Foundry from its first start.** Its plugins go into the keys volume, from the
+# source this checkout declares, so a clean host needs no clone. #736's box 1, 23 September.
+#
+# **Every name comes from this checkout**, or `FOUNDRY_PLUGINS` names the plugins instead. A failed
+# install starts nothing: a worker without Foundry is the gap this closes.
+ensure_the_worker_carries_foundry() {
+    the_worker_keeps_what_it_installs || return 0
+
+    market=$(the_marketplace_here) || fail "this checkout names no marketplace in .claude-plugin/marketplace.json." 6
+    from=$(the_source_declared_for "$market") || fail "this checkout declares no source for $market a container can reach, in .claude/settings.json." 6
+    plugins=$(the_plugins_to_install "$market") || fail "this checkout enables no plugin from $market, and FOUNDRY_PLUGINS names none." 6
+
+    run_in_the_container sh /src/bin/install.sh "$from" "$market" $plugins \
+        || fail "Foundry could not be installed into the keys volume, so nothing started." 6
+}
+
+# Only the worker has a harness, and only a volume outlives the container.
+the_worker_keeps_what_it_installs() { [ "$image" = foundry:worker ] && [ -n "${FOUNDRY_KEYS:-}" ]; }
+
+#
+# **Where this checkout declares its marketplace lives**: a GitHub repository or a URL, as the add
+# takes it. The harness records the kind it was added as, and `plugins.sh declared` compares that
+# with this file. Added from the origin's URL, it read `git` where the checkout says `github`.
+#
+# Walked the way `plugins.sh` walks it: one key a line, and a brace count for the depth. A `path` is
+# the host's own disk, which no container reaches, so it answers nothing.
+the_source_declared_for() {
+    from=$(awk -F'"' -v want="$1" '
+        !block && /"extraKnownMarketplaces"/ { block = 1; next }
+        !block                               { next }
+
+        { copy = $0; opens = gsub(/\{/, "", copy); copy = $0; shuts = gsub(/\}/, "", copy) }
+
+        depth == 0 && opens                                 { mine = ($2 == want) }
+        mine && ($2 == "repo" || $2 == "url") && NF >= 4 { print $4; exit }
+
+        { depth += opens - shuts }
+        depth < 0 { exit }
+    ' "$root/.claude/settings.json" 2>/dev/null)
+
+    [ -n "$from" ] && printf '%s' "$from"
+}
+
+# The marketplace's own name is the first field two spaces in. A plugin's name sits deeper.
+the_marketplace_here() {
+    name=$(sed -n '/^  "name": /{ s/^  "name": *"\([^"]*\)",*$/\1/p; q; }' "$root/.claude-plugin/marketplace.json" 2>/dev/null)
+    [ -n "$name" ] && printf '%s' "$name"
+}
+
+the_plugins_to_install() {
+    plugins=${FOUNDRY_PLUGINS:-}
+    [ -n "$plugins" ] || plugins=$(sed -n "s/^ *\"\\([a-z0-9-]*\\)@$1\": *true.*/\\1/p" "$root/.claude/settings.json" 2>/dev/null)
+
+    [ -n "$plugins" ] && printf '%s' "$plugins"
+}
+
+#
 # Where the runs go, and the whole of the choice. `run.sh home` answers it — `FOUNDRY_HOME`, else
 # `$HOME/.foundry`, else it refuses — so **nothing new decides where a run lives.**
 #
@@ -246,8 +309,6 @@ how_to_attach() {
 # split on every space, so a host whose git name is two words started no container at all — Docker
 # read the second word as the image name. A shell has one list of arguments, and this is it.
 run_in_the_container() {
-    kept=$(where_runs_are_kept) || return $?
-
     [ $# -eq 0 ] && set -- sh
 
     set -- "$image" "$@"
