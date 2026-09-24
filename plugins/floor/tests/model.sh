@@ -6112,6 +6112,41 @@ a-reviewer  a stranger can read it
 the_runner_asks_the_judge
 
 #
+# **A member who answered at this commit is not asked again.** Every answer holds its ref, so a
+# second ask spends a round and can only cancel a yes. Piece 5b-i of the one-pass build.
+a_member_who_answered_here_is_not_asked_again() {
+  a_judged_repo "$tmp/once" once "$(a_judge_that_approves approve "echo asked >> '$tmp/once.asked'")" 'reach  a-reviewer  sh bin/fake-judge.sh
+a-reviewer  a stranger can read it
+' && a_judged_repo "$tmp/nays" nays "$(a_judge_that_approves revise "echo asked >> '$tmp/nays.asked'")" 'reach  a-reviewer  sh bin/fake-judge.sh
+a-reviewer  a stranger can read it
+' || { skip "a member asked once — git could not make a repo here"; return; }
+
+  for r in once nays; do
+    floor_new_as "$tmp/$r" ada@example.com "Asked $r" > "$tmp/$r.run"
+    for step in "charter derive" "policy authorize https://gitlab.com/acme/$r.git" \
+        "targets add https://gitlab.com/acme/$r.git main" open gates; do
+      floor "$tmp/$r" $step >/dev/null 2>&1
+    done
+  done
+
+  is  "the first ask is answered"                      "$(code_of floor "$tmp/once" judged)" "0"
+  is  "a second at the same commit still passes"       "$(code_of floor "$tmp/once" judged)" "0"
+  is  "and the judge was asked once"                   "$(grep -c asked "$tmp/once.asked")" "1"
+  has "and it says why"                                "$(floor_says "$tmp/once" judged)" "already answered"
+
+  # A refusal holds its ref too, and still counts.
+  is  "a refusal is answered"                          "$(code_of floor "$tmp/nays" judged)" "39"
+  is  "and asked again at the same commit it still counts" "$(code_of floor "$tmp/nays" judged)" "39"
+  is  "while the judge was asked once"                 "$(grep -c asked "$tmp/nays.asked")" "1"
+
+  # A bar rewritten since the handoff is a new question: its answer met an older bar.
+  printf '# a bar rewritten after the handoff\n' >> "$(charter_of "$(cat "$tmp/once.run")")"
+  is  "a member handed an older charter is asked again" "$(code_of floor "$tmp/once" judged)" "0"
+  is  "and the judge ran a second time"                "$(grep -c asked "$tmp/once.asked")" "2"
+}
+a_member_who_answered_here_is_not_asked_again
+
+#
 # **A pass asks the judges its charter names, and only an approval goes on.** Every pass case named
 # none, so the judged step only ever answered 8. #884's judge, rounds four and five.
 #

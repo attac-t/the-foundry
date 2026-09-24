@@ -2485,7 +2485,7 @@ ask_pinned_judges() {
     # the only thing this loop produces that the caller needs.
     while read -r id who command; do
         [ -n "$who" ] || continue
-        judge_answered "$dir" "$ref" "$id" "$who" "$command" || unmet=$((unmet + 1))
+        judge_or_recount "$dir" "$ref" "$id" "$who" "$command" || unmet=$((unmet + 1))
     done <<EOF
 $bench
 EOF
@@ -2493,6 +2493,29 @@ EOF
     [ "$unmet" -eq 0 ] && return 0
     note "judged clauses no judge approved: $unmet"
     return 39
+}
+
+#
+# **A member who answered here, under this charter, is not asked again.** Every answer holds its ref:
+# an approval, a refusal and an unavailable. Asking again spends a round, and it can only cancel a
+# yes. Its answer still counts, so a refusal it gave keeps `judged` at 39.
+#
+judge_or_recount() {
+    answered_here "$1" "$2" "$3" "$4" || { judge_answered "$@"; return; }
+
+    note "[$4] already answered [$asked_text] at this commit, so it was not asked again"
+    satisfied "$1" "$asked_text" "$2" judged "$4"
+}
+
+# Handed this charter's bar at this ref, and answered: yes, no, or never judged. A member handed an
+# older bar is asked again, since its answer met a bar the run no longer holds.
+answered_here() {
+    asked_text=$(clause_text "$(charter_file "$1")" "$3")
+    was_handed "$1" "$asked_text" "$4" "$2" "$(charter_version "$1")" || return 1
+
+    satisfied "$1" "$asked_text" "$2" judged "$4" && return 0
+    refused "$1" "$asked_text" "$2" "$4" && return 0
+    stopped "$1" "$asked_text" "$2" "$4"
 }
 
 #
