@@ -8345,7 +8345,7 @@ The answer is 9876543210.'
   # Only a line that is nothing else goes. A sentence holding the number is the
   # writer's, and it stays.
   #
-  # A brief reaches the seam from the run's own record, never as an argument.
+  # A body reaches the seam from the run's own record, never as an argument.
   # `send_and_record` reads it there, so that is where a test puts one.
   {
     echo 'Outcome here.'
@@ -8353,7 +8353,7 @@ The answer is 9876543210.'
     echo 'It also fixes Closes #12 style footers.'
     echo
     echo 'Closes #12'
-  } > "$ghrun/brief"
+  } > "$ghrun/body"
 
   # Both records, because either one alone answers before a body is built. The
   # run's own is read first, and the source's search finds the last one after.
