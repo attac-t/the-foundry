@@ -156,6 +156,7 @@ sh bin/run.sh open                                   # prints the workspace — 
 # ... a worker commits in the workspace ...
 
 sh bin/run.sh gates                                  # every gate the charter pins, each recorded
+sh bin/run.sh status                                 # the run, what ran, what met its bar, what is missing
 sh bin/run.sh complete                               # may this run deliver? 15 names what is missing
 sh bin/run.sh policy deliver-to https://github.com/acme/api.git
 sh bin/run.sh policy closes
@@ -799,6 +800,37 @@ The grant is keyed by the item, so it cannot outlive the item it was given for.
 **Floor still reads no part of the item.** It never sees the list, never counts a box, and cannot
 tell a met one from an unmet one. A person reads it and types one line — the same shape as
 `targets add`, and for the same reason.
+
+---
+### One reading of a run
+
+**`run.sh status` prints the run, what ran, what met its bar, and what is still missing.** Each part
+comes from the reader that already owns it, so it keeps nothing and grants nothing. #736's box 19.
+
+| Part | Printed by |
+|---|---|
+| the run | its name, its item and its delivery |
+| ran | the ledger, as `evidence` prints it: each gate that ran, each handoff and each verdict |
+| met | each clause the grader passes at the workspace's head, and whom it accepted |
+| missing | what `complete` would name, at that same head |
+
+**It never says the run may deliver.** `deliver` refuses on four things before its grade, and
+`status` asks none of them:
+
+- the grant, 18
+- an item another host holds, 30
+- commits the run did not make, 32
+- a history it cannot trust, 33
+
+Asking the grant opens a worktree, and asking the claim renews it.
+
+**One head, read once.** *met* and *missing* take the same commit. With no workspace, *met* grades
+nothing and *missing* says `unopened`. A ledger row landing between the two reads can still put a
+clause in both parts, or in neither. A handoff is written before its judge runs, so *ran* can show a
+judge that has not answered yet.
+
+**A run `complete` cannot read, `status` cannot either,** and it exits with the same code. Otherwise
+it exits 0, whatever is missing.
 
 ---
 ### A delivery names its record

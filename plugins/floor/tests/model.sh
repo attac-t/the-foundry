@@ -9226,6 +9226,56 @@ HOOK
 }
 a_delivery_names_the_commit_it_graded
 
+#
+# **One reading of a run**, #736's box 19: the run, what ran, what met its bar, and what is still
+# missing, each through the reader that owns it. Read before the work, after it, and unreadable.
+a_run_is_read_in_one_status() {
+  make_repo "$tmp/reading" main && set_origin "$tmp/reading" 'https://github.com/acme/reading.git' \
+    && mkdir -p "$tmp/reading/.foundry" \
+    && commit_file "$tmp/reading" .foundry/gates 'tests  true
+' || { skip "a status reading — git could not make a repo here"; return; }
+
+  d=$(floor_new_as "$tmp/reading" ada@example.com "Reading")
+  for step in "charter derive" "policy authorize https://github.com/acme/reading.git" \
+      "targets add https://github.com/acme/reading.git main"; do
+    floor "$tmp/reading" $step >/dev/null 2>&1
+  done
+
+  # Nothing done: no workspace, so nothing is graded, and *missing* says why.
+  before=$(floor_says "$tmp/reading" status; printf 'exit=%s' "$?")
+  has   "a run with nothing done still reads, and exits 0" "$before" "exit=0"
+  has   "it names the run"                      "$before" "run       $(basename "$d")"
+  has   "and says nothing has run"              "$before" "nothing has run"
+  has   "and grades nothing with no workspace"  "$before" "nothing: no workspace holds a commit to grade"
+  has   "and names what is missing"             "$before" "unopened"
+
+  for step in open gates; do floor "$tmp/reading" $step >/dev/null 2>&1; done
+  after=$(floor_says "$tmp/reading" status; printf 'exit=%s' "$?")
+
+  is  "the four parts come in order" \
+      "$(printf '%s\n' "$after" | grep -E '^(run|ran|met|missing)( |$)' | cut -d' ' -f1 | tr '\n' ' ')" \
+      "run ran met missing "
+  has "what ran is the ledger, as evidence prints it" "$after" "  $(floor "$tmp/reading" evidence | head -1)"
+  has "what met names whom the grader accepted"      "$after" "Gate \`tests\`: machine"
+  has "and nothing complete would name"              "$after" "nothing \`complete\` would name"
+  has "while it names what it never read"            "$after" "the grant, 18"
+  has "  and the rest of it"                         "$after" "a history it cannot trust, 33"
+  lacks "and it never says the run may deliver"      "$after" "may deliver"
+
+  # `status` names what `deliver` refuses on before its grade. A fifth refusal there would leave it
+  # short, so the list is read from `deliver` itself.
+  is "status names each refusal deliver makes before its grade" \
+     "$(awk '/^deliver\(\) \{/,/^}/' "$runner" | grep -o 'refuse_[a-z_]*' | sed '/^refuse_incomplete$/q' | tr '\n' ' ')" \
+     "refuse_unreadable_run refuse_an_item_another_host_holds refuse_ungranted_delivery refuse_foreign_ancestry refuse_incomplete "
+
+  # A run `complete` cannot read, `status` cannot either.
+  mv "$d" "$(dirname "$d")/reading-renamed"
+  printf 'reading-renamed\n' > "$tmp/reading/.git/foundry-run"
+  is "a run complete cannot read exits the way complete does" \
+     "$(code_of floor "$tmp/reading" status)/$(code_of floor "$tmp/reading" complete)" "13/13"
+}
+a_run_is_read_in_one_status
+
 a_delivery_that_succeeds() {
   git init -q --bare "$tmp/dvremote.git" 2>/dev/null \
     || { skip "a delivery that succeeds — git could not make a bare repo here"; return; }
