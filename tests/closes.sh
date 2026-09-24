@@ -252,7 +252,8 @@ case $(asked) in
   *)                               bad "a colon after the word is closure — it was let through" ;;
 esac
 
-stub_gh 'Resolves #711, resolves #999' '- [ ] one thing'
+# In the middle, so reading only the first match or only the last one both miss it.
+stub_gh 'Resolves #999, resolves #711, resolves #998' '- [ ] one thing'
 
 call "$(verb pr merge) 740 --merge"
 case $(asked) in
