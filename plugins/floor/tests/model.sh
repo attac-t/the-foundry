@@ -4551,8 +4551,45 @@ a_beat_ends_with_its_pass() {
   wait "$deaf" 2>/dev/null
   is  "and leaves no mark" "$(ls "$(floor "$tmp/alive5" path)"/pass.alive 2>/dev/null | grep -c .)" "0"
 
-  rm -rf "$src/claims/516" "$src/claims/517" "$src/claims/518" "$src/claims/519" "$src/labels/516" "$src/labels/517" "$src/labels/518" "$src/labels/519"
-  rm -rf "$src/items/516" "$src/items/517" "$src/items/518" "$src/items/519"
+  # Read to its end through fd 3, as a bats test or a stderr swap reads one. 5a's judge, round three.
+  a_beat_repo alive6 520 || { skip "a pass read through fd 3 — git could not make a repo here"; return; }
+  ( ( cd "$tmp/alive6" && FOUNDRY_HOME="$home" FOUNDRY_RUN="" FOUNDRY_WHO="" FOUNDRY_SOURCE="$dir_source" \
+      sh "$runner" pass >/dev/null 2>&1 ) 3>&1 | cat >/dev/null ) &
+  reading=$!
+  waited=0
+  while kill -0 "$reading" 2>/dev/null && [ "$waited" -lt 40 ]; do sleep 1; waited=$((waited + 1)); done
+  is  "a pass read through fd 3 is done when the pass is, not a beat later" \
+      "$([ "$waited" -lt 40 ] && echo promptly || echo "after $waited seconds")" "promptly"
+  kill -9 "$reading" 2>/dev/null
+  wait "$reading" 2>/dev/null
+
+  # **Killed outright while its caller reads it to the end**, as `$(...)` reads one. That caller reaps
+  # only after reading, so a beat holding a copy of its pipe kept the dead pass's mark fresh for ever.
+  # The caller is `sh`, since bash reaps a killed child at once and never waits. 5a's judge, round four.
+  #
+  # The command kills its own pass: `$PPID` there is the pass.
+  a_beat_repo alive7 521 || { skip "a pass killed while read — git could not make a repo here"; return; }
+  FOUNDRY_HOME="$home" FOUNDRY_RUN="" FOUNDRY_WHO="" FOUNDRY_SOURCE="$dir_source" FOUNDRY_PASS_BEAT=1 \
+    FOUNDRY_PASS_COMMAND="touch '$tmp/alive7.killing'; kill -9 \$PPID" \
+    sh -c 'said=$(cd "$1" && exec sh "$2" pass 2>&1); : > "$3"' reader "$tmp/alive7" "$runner" "$tmp/alive7.read" &
+  caller=$!
+  waited=0
+  while [ ! -f "$tmp/alive7.killing" ] && [ "$waited" -lt 60 ]; do sleep 1; waited=$((waited + 1)); done
+  waited=0
+  while [ ! -f "$tmp/alive7.read" ] && [ "$waited" -lt 20 ]; do sleep 1; waited=$((waited + 1)); done
+  is  "a caller reading a pass killed outright is done when the pass is" \
+      "$([ -f "$tmp/alive7.read" ] && echo done || echo "still reading after $waited seconds")" "done"
+
+  # A beat left holding the pipe ends once its run is gone, so a red case leaves nothing running.
+  [ -f "$tmp/alive7.read" ] || rm -rf "$(floor "$tmp/alive7" path)"
+  wait "$caller" 2>/dev/null
+  sleep 4
+  has "and the dead pass is no pass at work three of its beats later" \
+      "$(floor_says "$tmp/alive7" pass)" "a run is active here already"
+
+  rm -rf "$src/claims/516" "$src/claims/517" "$src/claims/518" "$src/claims/519" "$src/claims/520" "$src/labels/516" "$src/labels/517" "$src/labels/518" "$src/labels/519" "$src/labels/520"
+  rm -rf "$src/items/516" "$src/items/517" "$src/items/518" "$src/items/519" "$src/items/520"
+  rm -rf "$src/claims/521" "$src/labels/521" "$src/items/521"
 }
 
 # A repository offering one item under its own label.
