@@ -2093,9 +2093,10 @@ then says a pass is at work, and leaves the run alone, 43. The claim cannot tell
 because it renews for any pass holding the run's name.
 
 **The beat holds none of the pass's output**, so a caller reading a pass to its end waits for the
-pass and nothing else. That covers descriptors 0 to 9, as far as POSIX sh can name them; one above
-9 is still held. **It is stopped with a signal it cannot ignore**, so a pass started with TERM
-ignored still ends.
+pass and nothing else, even a pass killed outright. That covers descriptors 0 to 9, as far as POSIX
+sh can name them; one above 9 is still held. They are closed on a subshell around the beat, never on
+the function call: there, dash keeps a copy of each for as long as the function runs. **It is stopped
+with a signal it cannot ignore**, so a pass started with TERM ignored still ends.
 
 **A mark nobody can age reads as live.** Leaving a dead run costs a wake. Resuming a live one puts
 two workers in one workspace. **What the mark cannot see:** a command, a grade or a judgement still
