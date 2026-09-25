@@ -6906,9 +6906,9 @@ a_pass_started_while_another_is_live() {
 }
 
 two_passes_released_together() {
-  a_resumable_repo race 627 && a_second_checkout_of race \
+  a_resumable_repo together 627 && a_second_checkout_of together \
     || { skip "two passes at once — git could not make a repo here"; return; }
-  both_pass_at_once "$tmp/race" "$tmp/race-outside"
+  both_pass_at_once "$tmp/together" "$tmp/together-outside"
 
   is "two passes released together: exactly one exits 43" "$(printf '%s\n' "$raced" | grep -cx 43)" "1"
   is "and one run holds the item they raced for" "$(runs_holding 627)" "1"
@@ -7159,8 +7159,8 @@ the_sweep_stays_below
 # pass met and its code, and `process=` pairs them, with another pass's lines between. Piece 7, 7c.
 #
 every_wake_is_recorded() {
-  a_resumable_repo woken 640 || { skip "the host record — git could not make a repo here"; return; }
-  FOUNDRY_WAKE='mechanism=cron cadence=300 identity=job7' code_of floor "$tmp/woken" pass >/dev/null
+  a_resumable_repo recorded 640 || { skip "the host record — git could not make a repo here"; return; }
+  FOUNDRY_WAKE='mechanism=cron cadence=300 identity=job7' code_of floor "$tmp/recorded" pass >/dev/null
   woke=$(last_wake_line woke)
   ended=$(last_wake_line ended)
 
@@ -7168,12 +7168,12 @@ every_wake_is_recorded() {
   has "and a field the trigger did not name reads unnamed" "$woke" "stops=unnamed command=unnamed"
   has "and it ended with what it took, and its code" "$ended" "read=took:640 code=44"
   is  "and the two pair by process" "$(process_of "$woke")" "$(process_of "$ended")"
-  has "and its run's first line carries the same fields" "$(floor "$tmp/woken" observe)" "identity=job7 stops=unnamed"
+  has "and its run's first line carries the same fields" "$(floor "$tmp/recorded" observe)" "identity=job7 stops=unnamed"
 
-  make_repo "$tmp/woken-idle" main && set_origin "$tmp/woken-idle" 'https://gitlab.com/acme/woken.git' \
+  make_repo "$tmp/recorded-idle" main && set_origin "$tmp/recorded-idle" 'https://gitlab.com/acme/recorded.git' \
     || { skip "a wake offered nothing — git could not make a repo here"; return; }
-  bar_and_rule "$tmp/woken-idle" 'offer nobodymarked pat'
-  is  "a pass offered nothing still records its wake" "$(code_of floor "$tmp/woken-idle" pass)" "42"
+  bar_and_rule "$tmp/recorded-idle" 'offer nobodymarked pat'
+  is  "a pass offered nothing still records its wake" "$(code_of floor "$tmp/recorded-idle" pass)" "42"
   has "and ended with what it met" "$(last_wake_line ended)" "read=nothing-offered code=42"
 
   a_door_exit_is_recorded
@@ -7182,11 +7182,11 @@ every_wake_is_recorded() {
 
 # A pass stopped at the door records what it met, and the live pass's two lines hold its lines between.
 a_door_exit_is_recorded() {
-  a_resumable_repo woken2 641 || { skip "a door exit recorded — git could not make a repo here"; return; }
-  hold_the_host_in "$tmp/woken2" "$tmp/woken2.acting"
+  a_resumable_repo recorded2 641 || { skip "a door exit recorded — git could not make a repo here"; return; }
+  hold_the_host_in "$tmp/recorded2" "$tmp/recorded2.acting"
   holding=$(last_wake_line woke)
 
-  is  "a pass stopped at the door records its wake too" "$(code_of floor "$tmp/woken-idle" pass)" "43"
+  is  "a pass stopped at the door records its wake too" "$(code_of floor "$tmp/recorded-idle" pass)" "43"
   has "and ended with the live mark it met" "$(last_wake_line ended)" "read=live:0"
   wait "$holder"
 
