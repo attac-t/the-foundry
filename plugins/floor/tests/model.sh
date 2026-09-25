@@ -6393,8 +6393,9 @@ a_run_waits_on_the_host_then_a_person() {
       "pass.resumed pass.waiting "
   has "and names what it waits for" "$(last_pass_line_in "$tmp/rsw")" "pass.waiting item=501 why=no-command"
 
-  # The command runs a second pass from the same checkout, while the resumed one works.
-  second="cd '$tmp/rsw' && sh '$runner' pass > '$tmp/rsw.second' 2>&1; echo \"exit=\$?\" >> '$tmp/rsw.second'"
+  # The command runs a second pass from the same checkout, while the resumed one works. In a
+  # subshell, so the worker after it still commits in the workspace.
+  second="( cd '$tmp/rsw' && sh '$runner' pass > '$tmp/rsw.second' 2>&1; echo \"exit=\$?\" >> '$tmp/rsw.second' )"
   is  "the host names its command after more waits than the bound, and the run acts" \
       "$(FOUNDRY_PASS_COMMAND="$second; $COMMITTING_WORKER" resume_in "$tmp/rsw")" "47"
   has "and waits on a person for the grant" "$(last_pass_line_in "$tmp/rsw")" "why=deliver code=18"
