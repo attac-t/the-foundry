@@ -4565,11 +4565,13 @@ a_beat_ends_with_its_pass() {
 
   # **Killed outright while its caller reads it to the end**, as `$(...)` reads one. That caller reaps
   # only after reading, so a beat holding a copy of its pipe kept the dead pass's mark fresh for ever.
-  # The command kills its own pass: `$PPID` there is the pass. 5a's judge, round four.
+  # The caller is `sh`, since bash reaps a killed child at once and never waits. 5a's judge, round four.
+  #
+  # The command kills its own pass: `$PPID` there is the pass.
   a_beat_repo alive7 521 || { skip "a pass killed while read — git could not make a repo here"; return; }
-  ( said=$(cd "$tmp/alive7" && FOUNDRY_HOME="$home" FOUNDRY_RUN="" FOUNDRY_WHO="" FOUNDRY_SOURCE="$dir_source" \
-      FOUNDRY_PASS_BEAT=1 FOUNDRY_PASS_COMMAND="touch '$tmp/alive7.killing'; kill -9 \$PPID" exec sh "$runner" pass 2>&1)
-    : > "$tmp/alive7.read" ) &
+  FOUNDRY_HOME="$home" FOUNDRY_RUN="" FOUNDRY_WHO="" FOUNDRY_SOURCE="$dir_source" FOUNDRY_PASS_BEAT=1 \
+    FOUNDRY_PASS_COMMAND="touch '$tmp/alive7.killing'; kill -9 \$PPID" \
+    sh -c 'said=$(cd "$1" && exec sh "$2" pass 2>&1); : > "$3"' reader "$tmp/alive7" "$runner" "$tmp/alive7.read" &
   caller=$!
   waited=0
   while [ ! -f "$tmp/alive7.killing" ] && [ "$waited" -lt 60 ]; do sleep 1; waited=$((waited + 1)); done
