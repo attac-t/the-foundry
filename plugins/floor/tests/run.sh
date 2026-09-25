@@ -2609,6 +2609,65 @@ wreck_runner "a wake that takes a cadence past the claim window is caught" \
 wreck_runner "a wake that hands a pass three of its four fields is caught" \
   wakefields '/^name_this_wake() {/,/^}/s# identity=\$\$##' bin/wake.sh
 
+#
+# **One live pass per host, taken at the door.** One break per rule the spec names: the look, the
+# take, the read, the beat, the exit action, the aging, the `.found` name, the sweep and the check. 7a.
+#
+wreck_runner "a door that never looks at the newest mark is caught" \
+  hostlook '/^take_the_host() {/,/^}/s#^    leave_while_a_pass_holds_the_host$#    :#'
+
+wreck_runner "a take that is not one ln is caught" \
+  hostcopy '/^take_the_next_number() {/,/^}/s#\&\& ln "\$draft" "\$host_marks/\$mine"#\&\& cp "$draft" "$host_marks/$mine"#'
+
+wreck_runner "a failed ln read as a lost race is caught" \
+  hostlostfault '/^lose_or_fault_at_the_take() {/,/^}/s#^    \[ -e "\$host_marks/\$mine" \] || {.*exit 3; }$#    :#'
+
+wreck_runner "a take with no read after it is caught" \
+  hostnoread '/^take_the_host() {/,/^}/s#^    leave_if_a_later_number_won$#    :#'
+
+wreck_runner "a host mark beaten only once a run begins is caught" \
+  beatfromrun '/^beat_for_the_host() {/,/^}/s#^    beat_the_marks$#    :#'
+
+wreck_runner "an exit action set before the pass knows its own mark is caught" \
+  exitearly '/^take_the_host() {/,/^}/s#^    leave_while_a_pass_holds_the_host$#    trap end_this_pass EXIT; leave_while_a_pass_holds_the_host#'
+
+wreck_runner "an exit action replaced when a run begins is caught" \
+  exitreplaced '/^say_this_pass_is_alive() {/,/^}/s#^    beat_the_marks$#    beat_the_marks; trap stop_the_beat EXIT#'
+
+wreck_runner "an aged mark removed to replace it is caught" \
+  agedremoved '/^take_the_next_number() {/,/^}/s#^    mine=\$(the_number_after "\$newest")$#    rm -f "$host_marks/$newest"; mine=$(the_number_after "$newest")#'
+
+wreck_runner "a mark aged by its reader's beat is caught" \
+  readerbeat '/^a_mark_holds_the_host() {/,/^}/s#younger_than_three_beats "\$was" "\$writers_beat"#younger_than_three_beats "$was" "$own_beat"#'
+
+wreck_runner "a mark nobody can read, found and never named, is caught" \
+  nofound '/^name_a_mark_found() {/,/^}/s#^    : > "\$host_marks/\$1.\$found_at.\$own_beat.found" 2>/dev/null$#    :#'
+
+wreck_runner "a sweep that reaches above the sweeper's own number is caught" \
+  sweepabove '/^numbers_a_day_old_below() {/,/^}/s#n + 0 < mine + 0 \&\& ##'
+
+#
+# **The host record.** A wake not written, a field left blank, a door exit or a pass's exit with no
+# `ended`, and a wake left in the environment for a gate to see. 7c.
+#
+wreck_runner "a pass that never writes that it woke is caught" \
+  nowoke '/^pass() {/,/^}/s#^    say_this_pass_woke$#    :#'
+
+wreck_runner "a field the trigger did not name, left blank, is caught" \
+  blankfield '/^wake_field() {/,/^}/s#"\${named:-unnamed}"#"$named"#'
+
+wreck_runner "an exit at the door with no ended line is caught" \
+  noended '/^leave_while_a_pass_holds_the_host() {/,/^}/s#^    say_this_pass_ended 43 "live:\$newest"$#    :#'
+
+wreck_runner "a pass whose exit writes no ended line is caught" \
+  noexitended '/^end_this_pass() {/,/^}/s#^    say_this_pass_ended "\$ended_with" "\${pass_read:-unread}"$#    :#'
+
+wreck_runner "a wake left in the environment for a gate to see is caught" \
+  wakeleak '/^read_the_wake() {/,/^}/s#^    unset FOUNDRY_WAKE$#    :#'
+
+wreck_runner "a pass that never checks the host is its own before a verb is caught" \
+  nocheck '/^still_holding_the_host() {/,/^}/s#^    \[ -e "\$host_marks/\$(the_newest_number).\$taken_at.\$own_beat.\$\$" \] \&\& return 0$#    return 0#'
+
 wreck_runner "a GitHub source that reads an unreachable remote as nobody holding is caught" \
   ghheldgone '/^read_claim() {/,/^}/s#at=\$(claim_tip "\$1") || return 3#at=$(claim_tip "$1")#' lib/source-github.sh
 
@@ -2647,24 +2706,24 @@ wreck_runner "a pass that never starts its heartbeat is caught" \
   alivenomark '/^begin_a_run_for() {/,/^}/s#^    say_this_pass_is_alive$#    :#'
 
 wreck_runner "a mark left behind when the pass ends is caught" \
-  alivestays '/^stop_the_heartbeat() {/,/^}/s#^    rm -f "\$alive.new" "\$alive"$#    :#'
+  alivestays '/^end_this_pass() {/,/^}/s#^    \[ -z "\${run_alive:-}" \] || rm -f "\$run_alive.new" "\$run_alive"$#    :#'
 
 wreck_runner "a beat stopped with a signal a pass can have ignored is caught" \
-  alivekill9 '/^stop_the_heartbeat() {/,/^}/s#^    kill -9 "\$heartbeat" 2>/dev/null$#    kill "$heartbeat" 2>/dev/null#'
+  alivekill9 '/^stop_the_beat() {/,/^}/s#^    kill -9 "\$heartbeat" 2>/dev/null$#    kill "$heartbeat" 2>/dev/null#'
 wreck_runner "a stale mark read as a pass at work is caught" \
   alivestale '/^a_pass_is_alive_in() {/,/^}/s#-lt "\$(( writers_beat \* 3 ))"#-lt 999999999#'
 
 wreck_runner "a beat holding its pass's output open is caught" \
-  alivefds '/^say_this_pass_is_alive() {/,/^}/s#"\$own_beat" ) </dev/null >/dev/null 2>\&1 3>#"$own_beat" ) 3>#'
+  alivefds '/^beat_the_marks() {/,/^}/s#) </dev/null >/dev/null 2>\&1 3>#) 3>#'
 
 wreck_runner "a beat holding a descriptor above 2 open is caught" \
-  alivefd3 '/^say_this_pass_is_alive() {/,/^}/s# 3>\&- 4>\&- 5>\&- 6>\&- 7>\&- 8>\&- 9>\&- \&$# \&#'
+  alivefd3 '/^beat_the_marks() {/,/^}/s# 3>\&- 4>\&- 5>\&- 6>\&- 7>\&- 8>\&- 9>\&- \&$# \&#'
 
 wreck_runner "a beat whose descriptors are closed on the call, where dash keeps copies, is caught" \
-  alivecopy '/^say_this_pass_is_alive() {/,/^}/s#^    ( beat_while_alive "\$\$" "\$alive" "\$own_beat" ) </dev/null#    beat_while_alive "$$" "$alive" "$own_beat" </dev/null#'
+  alivecopy '/^beat_the_marks() {/,/^}/s#^    ( \(beat_while_alive .*\) ) </dev/null#    \1 </dev/null#'
 
 wreck_runner "a beat that outlives its pass is caught" \
-  alivekill '/^beat_while_alive() {/,/^}/s#while kill -0 "\$1" 2>/dev/null \&\& #while #'
+  alivekill '/^beat_while_alive() {/,/^}/s#while kill -0 "\$beating" 2>/dev/null \&\& #while #'
 
 wreck_runner "a mark aged by the reader's beat, not its writer's, is caught" \
   alivewriter '/^a_pass_is_alive_in() {/,/^}/s#^    is_a_plain_decimal "\$writers_beat" || writers_beat=\$(pass_beat)$#    writers_beat=$(pass_beat)#'
@@ -2811,7 +2870,7 @@ wreck_runner "a second read that fails and leaves no stop is caught" \
   passreadstop '/^read_the_item() {/,/^}/s#|| stop_at "\$1" read "\$?"$#|| exit "$?"#'
 
 wreck_runner "a run that never says the pass began is caught" \
-  passbegan '/^begin_a_run_for() {/,/^}/s#^    emit "\$dir" pass.began item="\$1"$#    :#'
+  passbegan '/^begin_a_run_for() {/,/^}/s#^    emit "\$dir" pass.began item="\$1" "process=\$\$ \$wake_fields"$#    :#'
 
 wreck_runner "a pass that takes an argument is caught" \
   passargs '/^pass() {/,/^}/s#^    \[ "\$\#" -eq 0 \] || { usage; exit 2; }$#    :#'

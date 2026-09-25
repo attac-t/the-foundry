@@ -48,8 +48,8 @@ rule, and the page says which line a person would have to write to change it.
 ## The settings, by name
 
 **A count hides a swap.** Thirteen were reported on 18 September and fifteen were true. **Twenty-two
-stand today**, and on 24 September the list below held eighteen of them. Three arrived this week: two on the check that reads this page, and one on the runner
-itself.
+stood on 24 September**, and the list below held eighteen of them. Three arrived that week: two on the check that reads this page, and one on the runner
+itself. **Piece 7 adds a twenty-third**, `FOUNDRY_WAKE`.
 
 | | |
 |---|---|
@@ -61,6 +61,7 @@ itself.
 | `FOUNDRY_HOME` `FOUNDRY_RUN` | where runs live, and which one is active |
 | `FOUNDRY_REFUSALS_PAGE` `FOUNDRY_REFUSALS_READS` | `bin/unnamed.sh`, both ends settable |
 | `FOUNDRY_UNDER` | **new** — what the host says it runs on. Core writes it down and never reads it |
+| `FOUNDRY_WAKE` | **new** — what a trigger says about a wake. Read once, recorded in the host record, unset. No decision fires on it |
 | `FOUNDRY_WHO` `FOUNDRY_WORKER` | who the record says did it |
 | `FOUNDRY_PASS_COMMAND` `FOUNDRY_PASS_BEAT` `FOUNDRY_PASS_TRIES` `FOUNDRY_CLAIM_FLOOR` | **missing here until 24 September**: what a pass runs, how often it beats, how often it resumes, and how often a claim is asked about |
 
@@ -250,6 +251,8 @@ where it is — a key for a one-off buys indirection and saves nothing.
 | `work_source` | 2 | default | — | `usage` |
 | `die_homeless` | 3 | default | no FOUNDRY_HOME and no HOME — nowhere to put a run | `no-home` |
 | `die_unwritable` | 3 | default | could not write $1 | `no-home` |
+| `lose_or_fault_at_the_take` | 3 | default | floor could not take a host mark in its home | `no-home` |
+| `name_this_mark` | 3 | default | floor could not name its host mark in its home | `no-home` |
 | `refuse_missing_resolver` | 3 | default | no gate resolver at [$(gate_resolver)] | `no-home` |
 | `refuse_missing_source` | 3 | default | no work source at [$(source_resolver)] | `no-home` |
 | `add_target` | 4 | invariant | no portable identity for [$repo] — needs a remote url, no local path, no space, no .. | `durable` |
@@ -363,6 +366,10 @@ where it is — a key for a one-off buys indirection and saves nothing.
 | `what_is_offered` | 42 | answer | nothing is offered, so this pass takes nothing | `header` |
 | `leave_a_pass_at_work` | 43 | answer | a pass is at work in this run now, so this pass leaves it alone: $1 | `header` |
 | `leave_a_persons_run` | 43 | answer | a run is active here already, and no pass began it, so this pass leaves it alone: $1 | `header` |
+| `leave_while_a_pass_holds_the_host` | 43 | answer | a pass holds this host: mark $newest, $mark_age, named $mark_names | `header` |
+| `lose_or_fault_at_the_take` | 43 | answer | another pass took this host first, as $mine | `header` |
+| `leave_if_a_later_number_won` | 43 | answer | a later pass took this host, as $later | `header` |
+| `still_holding_the_host` | 43 | answer | a newer pass holds this host now, so this pass stops: $(the_newest_number) | `header` |
 | `let_go_of` | 43 | answer | FOUNDRY_RUN names a run a pass has let go of — unset it: $1 | `header` |
 | `carry_on_from_the_line` | 43 | answer | no pass carries on from [$resumed_event], so this one leaves the run alone: $dir | `header` |
 | `carry_on_from_the_stop` | 43 | answer | no pass carries on from a stop at [$resumed_why], so this one leaves the run alone: $dir | `header` |

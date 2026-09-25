@@ -2083,9 +2083,57 @@ alone, exit 43: every verb a pass calls reads the active run first. Nothing offe
 reason. **Once a pass begins its run, every verb it calls reads that run**, whatever the checkout
 points at by then, and an item with no words is titled by its id.
 
-**Exclusive between hosts, not within one.** A claim from the same host renews, so two passes in two
-checkouts on one host could both take one item. One live pass per host is the trigger's to keep,
-#997.
+**One live pass per host, taken at the door.** A claim from the same host renews, so two passes in
+two checkouts on one host could both take one item. The door keeps them apart. A host is one home on
+one machine, and its live pass holds the newest number in the home's `pass/` directory.
+
+Before it reads the offer or any run, a pass looks at the newest number, takes the next one with a
+single `ln`, and lists the numbers again:
+
+| It finds | It does |
+|---|---|
+| the newest mark younger than three of its writer's beats | exits 43, naming the mark, its age and its side name |
+| the number it wanted already taken, or a later one on the second look | exits 43: another pass won |
+| its `ln` failed and nothing is there | exits 3, a fault, and never as if it lost |
+| an aged mark, or one that says `ended` | takes the next number, and leaves the old one where it is |
+
+**The mark is beaten from the take until the pass exits**, when it says `ended`. A run the pass
+begins or resumes is beaten by the same beat. **Before each verb, the pass checks the newest number
+is still its own**, by the side name beside it, and stops with 43 when it is not. **A mark nobody can
+read** holds the host for three beats from its side name, and a pass that finds one with no side name
+adds a `.found` one, so no person has to clear it. A winner removes numbers below its own whose side
+names are a day old.
+
+**What the door cannot see.** A command still running after its pass was killed, which #1046 owns. A
+reused process id, which keeps a dead pass's mark fresh until it goes. And a machine that slept past
+three beats: a second pass starts, and one in the same checkout can resume the live pass's own run,
+so two passes work one workspace for up to one verb.
+
+**Every wake is recorded, whether or not a run is made.** `wakes` in floor's home gets two lines per
+pass, each appended whole: `woke` first, and `ended` at exit with what the pass met and its code.
+`process=` pairs them, with other passes' lines between. The trigger names four fields in
+`FOUNDRY_WAKE`, one token each: `mechanism=`, `cadence=`, `identity=` and `stops=`. Floor adds
+`command=`, the host command's first word and never its arguments. A field nobody named reads
+`unnamed`. `FOUNDRY_WAKE` is read once and unset, so no gate or judge sees it, and `pass.began` and
+`pass.resumed` carry the same fields.
+
+| `read=` | Where the pass ended |
+|---|---|
+| `live:<number>` | the door found a live mark, 43 |
+| `lost:<number>` | the take or the read lost, 43 |
+| `fault` | the take failed with no rival, 3 |
+| `nothing-offered` | nothing was offered, 42 |
+| `all-held` | every item offered was held or underway, 30 |
+| `source-unasked` | the source could not be asked, 20 |
+| `offer-failed:<code>` | the offer could not be read |
+| `left-alone:<run>` | a pass at work or a person's run was left alone, 43 |
+| `named-let-go:<run>` | `FOUNDRY_RUN` names a run a pass let go, 43 |
+| `resumed:<run>` | it resumed a run |
+| `took:<item>` | it took an item |
+
+**An open `woke` is a pass at work or one that died**, and the host mark says which. A pass killed
+outright never writes its `ended`. A pass with no work source records nothing, since every verb
+refuses that before it wakes.
 
 **A host with no timer of its own can use `bin/wake.sh <seconds>`.** It runs `run.sh pass`, waits,
 and runs it again, until `wake.stop` appears in floor's home. It looks for that file before each
@@ -2279,7 +2327,7 @@ floor's own version. It is floor asking about floor, through a layout the harnes
 
 ## Every setting floor reads
 
-Fifteen, and the page named seven of them a paragraph at a time. **Absent is the ordinary path** — the
+Sixteen, and the page named seven of them a paragraph at a time. **Absent is the ordinary path** — the
 column says what happens then, because that is the case almost every reader is in.
 
 | Setting | Absent | Set |
@@ -2295,6 +2343,7 @@ column says what happens then, because that is the case almost every reader is i
 | `FOUNDRY_PASS_COMMAND` | a pass begins its run and stops, 44 | the pass runs it in the workspace |
 | `FOUNDRY_PASS_BEAT` | a pass at work beats every sixty seconds | it beats that often; anything but one to four digits is named, and sixty kept |
 | `FOUNDRY_PASS_TRIES` | a run is resumed five times before it is let go, 46 | that many; anything but one to four digits is named, and five kept |
+| `FOUNDRY_WAKE` | a wake's four fields read `unnamed` in the host record | a trigger names its mechanism, cadence, identity and what stops it |
 | `FOUNDRY_QUIET_DAYS` | `settled` names a run nothing touched for two days | it uses that many days |
 | `FOUNDRY_BRIEF`, `FOUNDRY_RECEIPT` | nothing — floor sets these when it runs a judge | an adapter reads and writes them |
 | `FOUNDRY_UNDER` | `run.began` records `under=nothing` | it records what the host stated, as one token |
