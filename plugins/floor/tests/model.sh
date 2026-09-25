@@ -4588,8 +4588,8 @@ a_beat_ends_with_its_pass() {
   [ -f "$tmp/alive7.read" ] || rm -rf "$(floor "$tmp/alive7" path)"
   wait "$caller" 2>/dev/null
   sleep 4
-  has "and the dead pass is no pass at work three of its beats later" \
-      "$(floor_says "$tmp/alive7" pass)" "a run is active here already"
+  has "and the dead pass is no pass at work three of its beats later, and its run resumes" \
+      "$(floor_says "$tmp/alive7" pass)" "this pass resumes"
 
   rm -rf "$src/claims/516" "$src/claims/517" "$src/claims/518" "$src/claims/519" "$src/claims/520" "$src/labels/516" "$src/labels/517" "$src/labels/518" "$src/labels/519" "$src/labels/520"
   rm -rf "$src/items/516" "$src/items/517" "$src/items/518" "$src/items/519" "$src/items/520"
