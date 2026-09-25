@@ -6515,6 +6515,54 @@ a_pass_killed_on_every_wake_is_let_go() {
 
   rm -rf "$src/claims/505" "$src/claims/506" "$src/labels/505" "$src/labels/506" "$src/items/505" "$src/items/506"
 }
+
+#
+# **A resume nobody could count takes no step.** Its line is the bound's only input, so a home that
+# cannot take it stops the wake, 3, and a count nobody could read is past the bound, 46.
+#
+a_resume_nobody_could_count_takes_no_step() {
+  a_resumable_repo rsq 591 || { skip "an uncounted resume — git could not make a repo here"; return; }
+  is "a pass with no command stops, so the next wake resumes" "$(resume_in "$tmp/rsq")" "44"
+  run=$(floor "$tmp/rsq" path)
+
+  # The door has read the run by the time it claims, so the source swaps the file for a directory.
+  is  "a resume whose line cannot be written stops before any step, 3" \
+      "$(FOUNDRY_PASS_COMMAND="touch '$tmp/rsq.acted'" FOUNDRY_PASS_TRIES=2 FOUNDRY_PASS_BEAT=1 \
+          code_of floor_through "$(a_source_that_unwrites_observations "$run")" "$tmp/rsq" pass)" "3"
+  lacks "and the host command never ran" "$(ls "$tmp")" "rsq.acted"
+  rmdir "$run/observations" && mv "$run/observations.kept" "$run/observations"
+
+  an_awk_that_cannot_count "$tmp/rsqbin"
+  is  "a count nobody could read is past the bound, 46" \
+      "$(PATH="$tmp/rsqbin:$PATH" FOUNDRY_PASS_COMMAND="touch '$tmp/rsq.acted'" resume_in "$tmp/rsq")" "46"
+  lacks "and the host command still never ran" "$(ls "$tmp")" "rsq.acted"
+  has "and the run says why" "$(last_pass_line_in "$tmp/rsq")" "item=591 why=tries"
+
+  rm -rf "$src/claims/591" "$src/labels/591" "$src/items/591"
+}
+
+# A source that answers as the directory one does, and puts a directory where a run's observations
+# were the moment a claim is asked. A write fails there whatever the permissions, root's included.
+a_source_that_unwrites_observations() {
+  cat > "$tmp/unwrites.sh" <<STUB
+#!/bin/sh
+[ "\$1" = claim ] && mv '$1/observations' '$1/observations.kept' && mkdir '$1/observations'
+exec sh '$dir_source' "\$@"
+STUB
+  printf '%s' "$tmp/unwrites.sh"
+}
+
+# An `awk` that fails, printing nothing, for the bound's count and nothing else.
+an_awk_that_cannot_count() {
+  mkdir -p "$1" && real=$(command -v awk) || return 1
+  cat > "$1/awk" <<STUB
+#!/bin/sh
+case "\$*" in *counted++*) exit 2 ;; esac
+exec "$real" "\$@"
+STUB
+  chmod +x "$1/awk"
+}
+a_resume_nobody_could_count_takes_no_step
 a_pass_killed_on_every_wake_is_let_go
 
 #

@@ -2794,6 +2794,15 @@ wreck_runner "a claim nobody could ask, on a resume, read as held is caught" \
 wreck_runner "a resume that never says it resumed is caught" \
   resumeline '/^resume_the_run() {/,/^}/s#^    say_where_this_resumes "\$2" "\$3"$#    :#'
 
+wreck_runner "a resume that says it resumed only after its step is caught" \
+  resumeafter '/^resume_the_run() {/,/^}/s#^    say_where_this_resumes "\$2" "\$3"$#    let_go_past_the_bound "$2"; carry_on_from_the_line "$2"; say_where_this_resumes "$2" "$3"#'
+
+wreck_runner "a resume line that could not be written, let pass, is caught" \
+  resumeswallow '/^say_where_this_resumes() {/,/^}/s#^        || die_unwritable "\$(observations_file "\$dir")"$#        || :#'
+
+wreck_runner "a count nobody could read, taken as under the bound, is caught" \
+  countunread '/^let_go_past_the_bound() {/,/^}/s#^    is_a_count "\$counted" && \[ "\$counted" -le "\$(pass_tries)" \] && return 0$#    [ "$counted" -gt "$(pass_tries)" ] || return 0#'
+
 wreck_runner "a resume that never starts its heartbeat is caught" \
   resumebeat '/^resume_the_run() {/,/^}/s#^    say_this_pass_is_alive$#    :#'
 
