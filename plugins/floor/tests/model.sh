@@ -6536,7 +6536,7 @@ a_resume_nobody_could_count_takes_no_step() {
   is  "a count nobody could read is past the bound, 46" \
       "$(PATH="$tmp/rsqbin:$PATH" FOUNDRY_PASS_COMMAND="touch '$tmp/rsq.acted'" resume_in "$tmp/rsq")" "46"
   lacks "and the host command still never ran" "$(ls "$tmp")" "rsq.acted"
-  has "and the run says why" "$(last_pass_line_in "$tmp/rsq")" "item=591 why=tries"
+  has "and the run it let go says why" "$(why_it_left "$tmp/rsq" "$run")" "item=591 why=tries"
 
   rm -rf "$src/claims/591" "$src/labels/591" "$src/items/591"
 }
