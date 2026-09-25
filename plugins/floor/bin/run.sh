@@ -3068,7 +3068,7 @@ complete() {
 # missing. Each part is printed by the reader that already owns its record, so this keeps nothing.
 # A run `complete` cannot read, `status` cannot either, and it exits the way `complete` does.
 #
-# The head is read once, and *met* and *missing* both take it.
+# The head is read once, and *met* and *missing* both take it. With none, *missing* looks again.
 status() {
     [ "$#" -eq 0 ] || { usage; exit 2; }
 

@@ -3791,6 +3791,12 @@ wreck_runner "a status that reads a run complete cannot is caught" \
 wreck_runner "a head read from the calling checkout when no workspace holds the run is caught" \
   headfallback '/^unit_head() {/,/^}/s@ || return 1$@@'
 
+wreck_runner "a missing part that reads the head a second time is caught" \
+  statustwice '/^say_what_is_missing() {/,/^}/s@unmet_for_delivery "\$1" "\$2"@unmet_for_delivery "$1"@'
+
+wreck_runner "a reading that writes into the run is caught" \
+  statuswrites '/^status() {/,/^}/s@^    say_the_run "\$dir"$@    say_the_run "$dir"; : > "$dir/status.read"@'
+
 report_breaks
 
 # --- break the install ---

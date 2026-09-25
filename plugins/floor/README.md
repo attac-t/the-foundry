@@ -831,9 +831,10 @@ comes from the reader that already owns it, so it keeps nothing and grants nothi
 
 Asking the grant opens a worktree, and asking the claim renews it.
 
-**One head, read once.** *met* and *missing* take the same commit. With no workspace, *met* grades
-nothing and *missing* says `unopened`. A ledger row landing between the two reads can still put a
-clause in both parts, or in neither. A handoff is written before its judge runs, so *ran* can show a
+**One head, read once, while a workspace holds one.** *met* and *missing* take the same commit, and a
+commit landing while `status` reads reaches neither. With no workspace head, *met* grades nothing and
+*missing* looks for the workspace again, so an `open` landing between the two shows a head *met* never
+saw. A ledger row landing between the two reads can still put a clause in both parts, or in neither. A handoff is written before its judge runs, so *ran* can show a
 judge that has not answered yet.
 
 **A run `complete` cannot read, `status` cannot either,** and it exits with the same code. Otherwise
