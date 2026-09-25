@@ -4547,14 +4547,18 @@ resume_the_run() {
 
 # `after=` names the line this wake carries on from, with its `why=` and `code=`. A wake killed after
 # writing its own resume line left that line last, so it is read through, never resumed from.
+#
+# **Never through `emit`, which is silent when a write fails.** This line is the bound's only input,
+# so a home that cannot take it stops the wake before any step. A resume nobody counted is a loop.
 say_where_this_resumes() {
     resumed_event=$(event_of "$2")
     resumed_why=$(field_of "$2" why)
     resumed_code=$(field_of "$2" code)
     [ "$resumed_event" != pass.resumed ] || resumed_event=$(field_of "$2" after)
 
-    emit "$dir" pass.resumed item="$1" after="$resumed_event" \
-        ${resumed_why:+"why=$resumed_why"} ${resumed_code:+"code=$resumed_code"} "process=$$ $wake_fields"
+    record_observation "$dir" pass.resumed item="$1" after="$resumed_event" \
+        ${resumed_why:+"why=$resumed_why"} ${resumed_code:+"code=$resumed_code"} "process=$$ $wake_fields" \
+        || die_unwritable "$(observations_file "$dir")"
     note "this pass resumes [$1] after [$resumed_event${resumed_why:+ $resumed_why}]: $dir"
 }
 
@@ -4565,8 +4569,11 @@ say_where_this_resumes() {
 # Revise rounds are resumes too, so a `rounds` limit above the bound is never reached.
 PASS_TRIES=5
 
+# A count that could not be read is past the bound. This wake's own line is already in it, so a
+# count below one is one nobody could read either.
 let_go_past_the_bound() {
-    [ "$(resumes_counted "$dir")" -gt "$(pass_tries)" ] || return 0
+    counted=$(resumes_counted "$dir")
+    is_a_count "$counted" && [ "$counted" -le "$(pass_tries)" ] && return 0
 
     stop_the_item_here "$1" tries
     exit 46
