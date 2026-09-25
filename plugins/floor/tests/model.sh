@@ -9779,6 +9779,94 @@ HOOK
 }
 a_delivery_names_the_commit_it_graded
 
+#
+# **One reading of a run**, #736's box 19: the run, what ran, what met its bar, and what is still
+# missing, each through the reader that owns it. Read before the work, after it, and unreadable.
+a_run_is_read_in_one_status() {
+  make_repo "$tmp/reading" main && set_origin "$tmp/reading" 'https://github.com/acme/reading.git' \
+    && mkdir -p "$tmp/reading/.foundry" \
+    && commit_file "$tmp/reading" .foundry/gates 'tests  true
+' || { skip "a status reading — git could not make a repo here"; return; }
+
+  d=$(floor_new_as "$tmp/reading" ada@example.com "Reading")
+  for step in "charter derive" "policy authorize https://github.com/acme/reading.git" \
+      "targets add https://github.com/acme/reading.git main"; do
+    floor "$tmp/reading" $step >/dev/null 2>&1
+  done
+
+  # Nothing done: no workspace, so nothing is graded, and *missing* says why. **And the first reading
+  # writes nothing into the run**, by name or by content, since any later one would find it there.
+  kept=$(the_files_in "$d")
+  before=$(floor_says "$tmp/reading" status; printf 'exit=%s' "$?")
+  is    "a reading writes nothing into the run"      "$(the_files_in "$d")" "$kept"
+  has   "a run with nothing done still reads, and exits 0" "$before" "exit=0"
+  has   "it names the run"                      "$before" "run       $(basename "$d")"
+  has   "and says nothing has run"              "$before" "nothing has run"
+  has   "and grades nothing with no workspace"  "$before" "nothing: no workspace holds a commit to grade"
+  has   "and names what is missing"             "$before" "unopened"
+
+  for step in open gates; do floor "$tmp/reading" $step >/dev/null 2>&1; done
+  after=$(floor_says "$tmp/reading" status; printf 'exit=%s' "$?")
+
+  is  "the four parts come in order" \
+      "$(printf '%s\n' "$after" | grep -E '^(run|ran|met|missing)( |$)' | cut -d' ' -f1 | tr '\n' ' ')" \
+      "run ran met missing "
+  has "what ran is the ledger, as evidence prints it" "$after" "  $(floor "$tmp/reading" evidence | head -1)"
+  has "what met names whom the grader accepted"      "$after" "Gate \`tests\`: machine"
+  has "and nothing complete would name"              "$after" "nothing \`complete\` would name"
+  has "while it names what it never read"            "$after" "the grant, 18"
+  has "  and the rest of it"                         "$after" "a history it cannot trust, 33"
+  lacks "and it never says the run may deliver"      "$after" "may deliver"
+  has   "and with nothing missing it exits 0 too"      "$after" "exit=0"
+
+  # **The head is read once.** A `git` commits in the workspace right after the first read of its head,
+  # so a second read would grade a commit the gate never ran at, and name the gate missing.
+  a_git_that_commits_after_the_first_head_read "$tmp/movinggit" \
+    || { skip "a head that moves — could not put a git on the path"; return; }
+  moved=$(PATH="$tmp/movinggit:$PATH" floor_says "$tmp/reading" status)
+  is  "a head that moved while status read it did move" "$(ls "$tmp/movinggit/moved" 2>/dev/null | grep -c .)" "1"
+  has "and met names the gate at the head status read"   "$moved" "Gate \`tests\`: machine"
+  has "and missing names nothing at that same head"      "$moved" "nothing \`complete\` would name"
+
+  # `status` names what `deliver` refuses on before its grade. A fifth refusal there would leave it
+  # short, so the list is read from `deliver` itself.
+  is "status names each refusal deliver makes before its grade" \
+     "$(awk '/^deliver\(\) \{/,/^}/' "$runner" | grep -o 'refuse_[a-z_]*' | sed '/^refuse_incomplete$/q' | tr '\n' ' ')" \
+     "refuse_unreadable_run refuse_an_item_another_host_holds refuse_ungranted_delivery refuse_foreign_ancestry refuse_incomplete "
+
+  # A run `complete` cannot read, `status` cannot either.
+  mv "$d" "$(dirname "$d")/reading-renamed"
+  printf 'reading-renamed\n' > "$tmp/reading/.git/foundry-run"
+  is "a run complete cannot read exits the way complete does" \
+     "$(code_of floor "$tmp/reading" status)/$(code_of floor "$tmp/reading" complete)" "13/13"
+}
+
+# Every file in a run, each with its checksum, so a file changed in place reads as a change.
+the_files_in() { ( cd "$1" && find . -type f -exec cksum {} \; | LC_ALL=C sort ); }
+
+# A `git` that answers the first kept read of a workspace's head and then commits there, so any later
+# read sees a commit nobody graded. A check sends its read to `/dev/null`; a kept one reads a pipe.
+a_git_that_commits_after_the_first_head_read() {
+  mkdir -p "$1" && real=$(command -v git) || return 1
+  cat > "$1/git" <<STUB
+#!/bin/sh
+"$real" "\$@"
+answered=\$?
+case " \$* " in
+  *" -C "*"/units/"*" rev-parse --verify --quiet HEAD "*) ;;
+  *) exit \$answered ;;
+esac
+[ -p /dev/stdout ] || exit \$answered
+[ -f '$1/moved' ] && exit \$answered
+: > '$1/moved'
+tree=\$(printf '%s\n' "\$@" | awk 'seen { print; exit } \$0 == "-C" { seen = 1 }')
+"$real" -C "\$tree" -c user.email=fixture@example.invalid -c user.name=fixture commit -q --allow-empty -m moved >/dev/null 2>&1
+exit \$answered
+STUB
+  chmod +x "$1/git"
+}
+a_run_is_read_in_one_status
+
 a_delivery_that_succeeds() {
   git init -q --bare "$tmp/dvremote.git" 2>/dev/null \
     || { skip "a delivery that succeeds — git could not make a bare repo here"; return; }

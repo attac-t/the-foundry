@@ -245,6 +245,7 @@ where it is — a key for a one-off buys indirection and saves nothing.
 | `release` | 2 | default | release names an item | `no-field` |
 | `release` | 2 | default | — | `usage` |
 | `settled` | 2 | default | — | `usage` |
+| `status` | 2 | default | — | `usage` |
 | `targets` | 2 | default | — | `usage` |
 | `verdict` | 2 | invariant | a verdict names the clause, the judge, the outcome, what they said, and the sha they read | `receipt` |
 | `work_source` | 2 | default | — | `usage` |
