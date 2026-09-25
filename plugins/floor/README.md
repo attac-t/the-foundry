@@ -269,6 +269,7 @@ ${FOUNDRY_HOME:-$HOME/.foundry}/runs/<date>-<slug>-<short id>/
 ├── judged/            what `judged` asked each judge, and what came back — one pair per clause
 ├── observations       what happened, one line each, and nothing granted by any of it
 ├── pass.alive         the time a pass at work last beat, and its beat — absent when no pass is at work
+├── claim.holder       the name this run's claim goes under, kept when the run moves
 ├── asides             what this run could not act on — written by `aside`, read by nothing
 ├── id                 this run's name, so a copied directory still knows it
 ├── gates-tree/        the tree a substituted gate was graded in — absent unless one was
@@ -2011,10 +2012,28 @@ nobody holds. A run holding no item says that nothing it does is exclusive.
 then, the answer says so and names `claim <item>`. A remote that cannot be asked is never *nobody*:
 the GitHub adapter answers 3 for it, and the item reads as held by someone the source could not name.
 
-**The name a claim goes under is the run's.** The run keeps the name the first time it sees its
-claim: when it takes one, or when it binds an item this host already holds. So a run carried to
-another machine, or graded in a container that starts under a new host name, still holds its own
-claim. Bound to another host's item, it keeps no name, and the work is refused.
+**A host is a machine and a home.** A claim goes under `<machine>/<home>`, where the home's name is
+a token it makes once and keeps in `host-name`, beside `runs/`. Never its path. So two homes on one
+machine are two hosts, and one item is never taken by both.
+
+**The name a claim goes under is the run's.** A pass writes it into the run when its claim lands. A
+person's run takes it the first time the source answers, when the claim is under one of this host's
+names. So a run carried to another machine, or graded in a container that starts under a new host
+name, still holds its own claim. Bound to another host's item, it keeps no name, and the work is
+refused.
+
+**Two definitions, and nothing else decides either.** The item a run holds is the one a read bound,
+else the one its pass began. The name it claims under is its own, else this host's. Every claim,
+keep and release asks those two.
+
+**A claim taken before claims named the home carries the machine's name alone.** A run on this
+machine adopts it, and so could a run in another home on the same machine. Such a claim ages out
+within one window.
+
+**A run with no holder that moves before the source first answers is not covered.** Its claim is
+under neither of this host's names, so its keep refuses it, and once the window passes a pass may
+take its item into a second run. Only a person's run, or one from before claims named the home, can
+be in that state.
 
 **The name is a record, not a credential.** It is a file in the run, so a worker that writes the
 holder's name there passes the keep, as one that set its host name always could. #156 owns the

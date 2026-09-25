@@ -3460,7 +3460,7 @@ mark_lost() { rm -f "$1/claim.kept"; : > "$1/claim.lost" 2>/dev/null || true; }
 
 renew_this_run_claim() {
     dir=$(active_run) || return 0
-    item=$(item_id "$dir")
+    item=$(held_item_of "$dir")
     [ -n "$item" ] || return 0
 
     kept_recently "$dir" && return 0
@@ -3475,6 +3475,7 @@ renew_this_run_claim() {
     # **Whatever the claim's age.** Age was once read first, so a claim another host took a minute
     # ago was marked kept before anyone asked whose it was. #1010 found it.
     holder=$(claim_holder "$held")
+    adopt_if_ours "$dir" "$holder"
     [ "$holder" = "$(holder_of "$dir")" ] || { settle_the_loss "$dir" "$item" "$holder"; return 30; }
 
     age=$(claim_age "$held") || return 0
@@ -3511,27 +3512,58 @@ settle_the_loss() {
 # answering for it until the window moved.
 mark_kept_where_held() {
     dir=$(active_run 2>/dev/null) || return 0
-    [ "$(item_id "$dir")" = "$1" ] || return 0
+    [ "$(held_item_of "$dir")" = "$1" ] || return 0
 
-    remember_the_holder "$dir"
+    remember_the_holder "$dir" "$(holder_of "$dir")"
     mark_kept "$dir"
 }
 
 #
-# **The name a run claims under is the run's, not the machine's.** A container starts under a new
-# host name each time, and a run is meant to move, so the name is kept the first time the run sees
-# its claim: when it takes one, or when it binds an item this host already holds.
-remember_the_holder() { [ -s "$1/claim.holder" ] || recording_host > "$1/claim.holder" 2>/dev/null; }
-
-holder_of() {
-    [ -s "$1/claim.holder" ] && { cat "$1/claim.holder"; return 0; }
-    recording_host
+# **Two definitions, and nothing else decides either.** Five review rounds found one fault by five
+# routes: a claim compared with a name other than the one it was taken under. Each route worked out
+# the item or the name on its own. Piece 7, 7b.
+#
+# **The item a run holds:** the one a read bound, else the one its pass began.
+held_item_of() {
+    run_item=$(item_id "$1" 2>/dev/null)
+    [ -n "$run_item" ] || run_item=$(item_a_pass_began "$1")
+    printf '%s' "$run_item"
 }
 
-# Whose name a claim on this item goes under: the active run's own when it holds the item.
+# **The name a run claims under:** its `claim.holder`, else this host's. A container starts under a
+# new name each time, and a run is meant to move, so the name is kept once the run has one.
+holder_of() {
+    [ -s "$1/claim.holder" ] && { cat "$1/claim.holder"; return 0; }
+    this_host
+}
+
+remember_the_holder() { [ -s "$1/claim.holder" ] || printf '%s\n' "$2" > "$1/claim.holder" 2>/dev/null; }
+
+#
+# **A run with no holder adopts its claim's name** when that name is one of this host's: the
+# machine's, from before claims named the home, or this host's. Another host's is never adopted.
+adopt_the_claims_name() {
+    [ -s "$1/claim.holder" ] && return 0
+    held=$(source_says held "$2" 2>/dev/null) || return 0
+
+    adopt_if_ours "$1" "$(claim_holder "$held")"
+}
+
+adopt_if_ours() {
+    [ -s "$1/claim.holder" ] && return 0
+    is_this_hosts_name "$2" || return 0
+
+    remember_the_holder "$1" "$2"
+}
+
+is_this_hosts_name() { [ "$1" = "$(this_machine)" ] || [ "$1" = "$(this_host)" ]; }
+
+# Whose name a claim on this item goes under: the active run's own when it holds the item, bound or
+# begun, after it has adopted its claim's name. Else this host's, and nothing else decides it.
 claimant_for() {
-    here=$(active_run 2>/dev/null) && [ "$(item_id "$here")" = "$1" ] && { holder_of "$here"; return 0; }
-    recording_host
+    here=$(active_run 2>/dev/null) && [ "$(held_item_of "$here")" = "$1" ] \
+        && { adopt_the_claims_name "$here" "$1"; holder_of "$here"; return 0; }
+    this_host
 }
 
 #
@@ -3541,7 +3573,7 @@ claimant_for() {
 # The keep answers it, 30 for another host's item whatever its age. A run holding no item says so:
 # exclusivity it never took is not exclusivity it can keep. #991 saw two copies work one item.
 refuse_an_item_another_host_holds() {
-    item=$(item_id "$1")
+    item=$(held_item_of "$1")
     [ -n "$item" ] || { note "this run holds no item, so nothing here is exclusive"; return 0; }
 
     renew_this_run_claim && return 0
@@ -3810,25 +3842,30 @@ answer_to_the_applier() { unset FOUNDRY_WHO; FOUNDRY_WHO=$(applier_of "$1" "$2")
 applier_of() { printf '%s\n' "$2" | awk -F'\t' -v item="$1" '$1 == item { print $3; exit }'; }
 
 #
-# **An item this host claimed is underway only while a run here holds it.** To `claim`, this host's
-# own claim is a renewal. To a pass it is work already started, unless no run holds the item: then the
-# claim outlived a pass that died before binding it, and this pass takes it again. #884's judge.
+# **An item is underway here while a run here holds it, under the name its claim carries.** To
+# `claim`, this host's own claim is a renewal. To a pass it is work already started, unless no run
+# here holds it so: then the claim outlived a pass that died, and this pass takes it again.
+#
+# A released item is held by nobody, so it is taken again. #884's judge, and piece 7's.
 already_underway_here() {
     record=$(source_says held "$1") || return 1
-    [ "$(claim_holder "$record")" = "$(recording_host)" ] || return 1
 
-    a_run_here_holds "$1"
+    a_run_here_holds "$1" "$(claim_holder "$record")"
 }
 
-# A run holds its item once a read bound it, and from the moment a pass began it for one. A read that
-# failed bound nothing, and a pass in a second checkout took the item again. Piece 7's judge.
 a_run_here_holds() {
     for held_by in "$RUNS"/*/; do
-        run_item=$(item_id "${held_by%/}" 2>/dev/null)
-        [ -n "$run_item" ] || run_item=$(item_a_pass_began "${held_by%/}")
-        [ "$run_item" = "$1" ] && return 0
+        [ "$(held_item_of "${held_by%/}")" = "$1" ] || continue
+        claims_under "${held_by%/}" "$2" && return 0
     done
     return 1
+}
+
+# A run with a holder claims under it, whatever the machine is called now. A run with none claims
+# under either of this host's names.
+claims_under() {
+    [ -s "$1/claim.holder" ] && { [ "$(cat "$1/claim.holder")" = "$2" ]; return; }
+    is_this_hosts_name "$2"
 }
 
 item_a_pass_began() {
@@ -4038,7 +4075,8 @@ the_heading_of() {
 }
 
 #
-# The run, holding the item. `claim` came first, so a second host is already refused.
+# The run, holding the item. `claim` came first, so a second host is already refused. The run keeps
+# the name that claim was taken under, so no later claim or keep falls back to another. Piece 7, 7b.
 #
 # **It says it began before it reads the item again**, so a read that fails leaves a stop, never a
 # run with no line a later pass could read. #1026.
@@ -4046,8 +4084,10 @@ the_heading_of() {
 # **Its beat starts as soon as the run exists**, before any read. A second pass could find the run
 # without its mark only in the few forks between. 5a's judge.
 begin_a_run_for() {
+    claimed_as=$(claimant_for "$1")
     make_run "$2" >/dev/null
     pin_this_run
+    remember_the_holder "$dir" "$claimed_as"
     say_this_pass_is_alive
     emit "$dir" pass.began item="$1"
 
@@ -4468,7 +4508,7 @@ record_observation() {
     shift 2
 
     line=$(printf '%s\t%s\t%s\t%s' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-        "$(one_line "$(recording_host)")" "$(one_line "$event")" "$(one_line "$*")")
+        "$(one_line "$(this_machine)")" "$(one_line "$event")" "$(one_line "$*")")
 
     refuse_a_torn_row "$line"
 
@@ -4478,7 +4518,32 @@ record_observation() {
 
 # `uname -n`, because `hostname` is not POSIX and a machine that answers neither is still a machine
 # whose clock this row belongs to. Unknown is a name; empty is a column nobody can read.
-recording_host() { uname -n 2>/dev/null || printf 'unknown'; }
+this_machine() { uname -n 2>/dev/null || printf 'unknown'; }
+
+#
+# **The name a claim is taken under: the machine and the home.** Two homes on one machine are two
+# hosts, and a claim named for the machine alone let both take one item. Piece 7, 7b.
+this_host() { printf '%s/%s' "$(this_machine)" "$(home_name)"; }
+
+# A home's name, made once and kept. Never its path, since a path can carry an account's name. A home
+# nobody can write is `unnamed`, never blank, since a host's first claim comes before its first run.
+home_name() {
+    [ -s "$HOME_DIR/host-name" ] || name_this_home
+    cat "$HOME_DIR/host-name" 2>/dev/null || printf 'unnamed'
+}
+
+# Linked into place, so two passes naming the home at once keep the one that landed first.
+name_this_home() {
+    mkdir -p "$HOME_DIR" 2>/dev/null
+    printf '%s\n' "$(a_fresh_token)" > "$HOME_DIR/host-name.$$" 2>/dev/null || return 0
+    ln "$HOME_DIR/host-name.$$" "$HOME_DIR/host-name" 2>/dev/null
+    rm -f "$HOME_DIR/host-name.$$"
+}
+
+a_fresh_token() {
+    [ -r /dev/urandom ] && { od -An -N8 -tx1 /dev/urandom 2>/dev/null | tr -d ' \n'; return 0; }
+    printf '%s%s' "$(date -u +%s)" "$$"
+}
 
 #
 # **One line, one write.** POSIX makes an append atomic only under `PIPE_BUF`, which is 4096 at
@@ -7289,9 +7354,8 @@ words_of_item() {
 # late could then age out and be broken mid-work. The first keep reads it, and renews what is old.
 name_a_claim_taken_first() {
     held=$(source_says held "$2" 2>/dev/null) || return 0
-    [ "$(claim_holder "$held")" = "$(recording_host)" ] || return 0
 
-    remember_the_holder "$1"
+    adopt_if_ours "$1" "$(claim_holder "$held")"
 }
 
 #

@@ -2548,7 +2548,7 @@ wreck_runner "a rule naming no hand that says nothing about it is caught" \
 # so the run records the name it claimed under, and a loss nobody holds says so. #991's judge.
 #
 wreck_runner "a run that loses its own claim to a new host name is caught" \
-  holdname '/^renew_this_run_claim() {/,/^}/s#\[ "\$holder" = "\$(holder_of "\$dir")" \]#[ "$holder" = "$(recording_host)" ]#'
+  holdname '/^renew_this_run_claim() {/,/^}/s#\[ "\$holder" = "\$(holder_of "\$dir")" \]#[ "$holder" = "$(this_host)" ]#'
 
 wreck_runner "a run that never records the name it claimed under is caught" \
   holdrecord 's#^remember_the_holder() { .*; }$#remember_the_holder() { :; }#'
@@ -2557,7 +2557,44 @@ wreck_runner "a run that never names a claim taken before it bound the item is c
   holdbind '/^read_work_item() {/,/^}/s#^    name_a_claim_taken_first "\$dir" "\$item"$#    :#'
 
 wreck_runner "a run that names itself holder of another host's item is caught" \
-  bindany '/^name_a_claim_taken_first() {/,/^}/s#^    \[ "\$(claim_holder "\$held")" = "\$(recording_host)" \] || return 0$#    :#'
+  bindany '/^adopt_if_ours() {/,/^}/s#^    is_this_hosts_name "\$2" || return 0$#    :#'
+
+#
+# **A claim names its machine and its home, and a run keeps the name it claimed under.** Two
+# definitions decide the item a run holds and the name it claims under, and one break per rule. 7b.
+#
+wreck_runner "a claim named for the machine without its home is caught" \
+  hostnohome 's#^this_host() { printf .*; }$#this_host() { this_machine; }#'
+
+wreck_runner "a home named again each time it is asked is caught" \
+  homeonce '/^home_name() {/,/^}/s#^    \[ -s "\$HOME_DIR/host-name" \] || name_this_home$#    rm -f "$HOME_DIR/host-name"; name_this_home#'
+
+wreck_runner "a home not yet made, named blank, is caught" \
+  homemade '/^name_this_home() {/,/^}/s#^    mkdir -p "\$HOME_DIR" 2>/dev/null$#    :#'
+
+wreck_runner "underway judged by this host's names, not the run's own holder, is caught" \
+  hostnames '/^claims_under() {/,/^}/s#^    \[ -s "\$1/claim.holder" \] && {.*return; }$#    :#'
+
+wreck_runner "a run with no holder kept under the machine's name alone is caught" \
+  holdmachine '/^claims_under() {/,/^}/s#^    is_this_hosts_name "\$2"$#    [ "$2" = "$(this_machine)" ]#'
+
+wreck_runner "a run with no holder that never adopts its claim's name is caught" \
+  holdnoadopt '/^adopt_if_ours() {/,/^}/s#^    remember_the_holder "\$1" "\$2"$#    :#'
+
+wreck_runner "a claim that asks the bind alone which item its run holds is caught" \
+  heldclaim '/^claimant_for() {/,/^}/s#\[ "\$(held_item_of "\$here")" = "\$1" \]#[ "$(item_id "$here" 2>/dev/null)" = "$1" ]#'
+
+wreck_runner "a keep that asks the bind alone which item its run holds is caught" \
+  heldkeep '/^renew_this_run_claim() {/,/^}/s#^    item=\$(held_item_of "\$dir")$#    item=$(item_id "$dir" 2>/dev/null)#'
+
+wreck_runner "underway judged by the bind alone is caught" \
+  heldhere '/^a_run_here_holds() {/,/^}/s#\[ "\$(held_item_of "\${held_by%/}")" = "\$1" \]#[ "$(item_id "${held_by%/}" 2>/dev/null)" = "$1" ]#'
+
+wreck_runner "a run that claims under this host's name while it has its own is caught" \
+  holdignored '/^holder_of() {/,/^}/s#^    \[ -s "\$1/claim.holder" \] && { cat "\$1/claim.holder"; return 0; }$#    :#'
+
+wreck_runner "a pass whose run learns its holder only at the bind is caught" \
+  holdatbind '/^begin_a_run_for() {/,/^}/s#^    remember_the_holder "\$dir" "\$claimed_as"$#    :#'
 
 wreck_runner "a GitHub source that reads an unreachable remote as nobody holding is caught" \
   ghheldgone '/^read_claim() {/,/^}/s#at=\$(claim_tip "\$1") || return 3#at=$(claim_tip "$1")#' lib/source-github.sh
@@ -2662,10 +2699,10 @@ wreck_runner "a pass that takes an item another run here already has is caught" 
   passown '/^this_pass_claims() {/,/^}/s#^    already_underway_here "\$1" \&\& {.*return 1; }$#    :#'
 
 wreck_runner "a claim nothing here works on, passed over for good, is caught" \
-  passstale '/^already_underway_here() {/,/^}/s#^    a_run_here_holds "\$1"$#    :#'
+  passstale '/^already_underway_here() {/,/^}/s#^    a_run_here_holds "\$1" "\$(claim_holder "\$record")"$#    :#'
 
 wreck_runner "an item a run began and never bound, taken again from a second checkout, is caught" \
-  heldbegan '/^a_run_here_holds() {/,/^}/s#^        \[ -n "\$run_item" \] || run_item=\$(item_a_pass_began "\${held_by%/}")$#        :#'
+  heldbegan '/^held_item_of() {/,/^}/s#^    \[ -n "\$run_item" \] || run_item=\$(item_a_pass_began "\$1")$#    :#'
 
 wreck_runner "a pass that cannot open its work and leaves no stop is caught" \
   passopen '/^select_the_checkout() {/,/^}/s#) >/dev/null || stop_at "\$1" open "\$?"#) >/dev/null || exit 1#'
@@ -2701,7 +2738,7 @@ wreck_runner "a command that does not run as a worker is caught" \
   passworker '/^run_the_host_command() {/,/^}/s#FOUNDRY_WORKER=\${FOUNDRY_WORKER:-pass} ##'
 
 wreck_runner "a claim bound late and marked kept is caught" \
-  bindmark '/^name_a_claim_taken_first() {/,/^}/s#^    remember_the_holder "\$1"$#    remember_the_holder "$1"; mark_kept "$1"#'
+  bindmark '/^name_a_claim_taken_first() {/,/^}/s#^    adopt_if_ours "\$1" "\$(claim_holder "\$held")"$#    adopt_if_ours "$1" "$(claim_holder "$held")"; mark_kept "$1"#'
 
 #
 # **From a label to a request.** One break per rule: a failed bar or a refusing judge stops it, an

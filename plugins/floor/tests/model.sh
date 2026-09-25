@@ -55,6 +55,11 @@ mkdir -p "$tmp/bare"
 # hand.
 [ -n "${FOUNDRY_CASE_STATE:-}" ] || trap 'chmod -R u+rwX "$tmp" 2>/dev/null; rm -rf "$tmp"' EXIT
 
+# **This home's name is pinned**, so a case can plant a claim under this host's name before any pass
+# has asked for it. Floor writes a random one otherwise, once. Piece 7, 7b.
+mkdir -p "$home" && printf 'suite\n' > "$home/host-name"
+this_host() { printf '%s/%s' "$(uname -n)" "$(cat "$home/host-name")"; }
+
 #
 # Git transport isolation, and nothing wider. `tests/isolate.sh` holds the mechanism.
 #
@@ -3928,7 +3933,7 @@ exactly_one_host_takes_an_item() {
   rm -rf "$src/claims/71"
   mkdir -p "$src/claims/71"
   is  "a claim with no stamp in it is taken"  "$(code_of floor "$tmp/clm" claim 71)" "0"
-  has "and this host holds it"                "$(cat "$src/claims/71/held")" "$(uname -n)"
+  is  "and this host holds it"                "$(cut -f2 "$src/claims/71/held")" "$(this_host)"
   is  "and no draft is left beside it"        "$(ls "$src/claims/71")" "held"
 
   # A claim is not authority. It says a host started, never that it may.
@@ -3937,7 +3942,7 @@ exactly_one_host_takes_an_item() {
   # The holder claiming again is the renewal. Without it a claim needs a heartbeat, and a heartbeat
   # is the daemon this refuses to be. `recording_host` is this machine, so a second host is written
   # by hand below — nothing in the environment can pretend to be one.
-  printf '2026-01-01T00:00:00Z\t%s\t1767225600\n' "$(uname -n)" > "$src/claims/71/held"
+  printf '2026-01-01T00:00:00Z\t%s\t1767225600\n' "$(this_host)" > "$src/claims/71/held"
   is "the holder claiming again renews it" "$(code_of floor "$tmp/clm" claim 71)" "0"
   lacks "and the stamp moved" "$(cat "$src/claims/71/held")" "1767225600"
 
@@ -3949,14 +3954,14 @@ exactly_one_host_takes_an_item() {
   # **Young is left alone**, because the github adapter claims by pushing a ref, and asking on every
   # edit would push on every edit.
   floor "$tmp/clm" source read 71 >/dev/null 2>&1
-  printf '2026-01-01T00:00:00Z\t%s\t%s\n' "$(uname -n)" "$(date -u +%s)" > "$src/claims/71/held"
+  printf '2026-01-01T00:00:00Z\t%s\t%s\n' "$(this_host)" "$(date -u +%s)" > "$src/claims/71/held"
   young=$(cat "$src/claims/71/held")
 
   is    "a young claim is left alone"    "$(code_of floor "$tmp/clm" claim)" "0"
   is    "and the stamp did not move"     "$(cat "$src/claims/71/held")"      "$young"
   lacks "and it leaves no line to count" "$(floor "$tmp/clm" observe)"       "claim.renewed"
 
-  printf '2026-01-01T00:00:00Z\t%s\t1767225600\n' "$(uname -n)" > "$src/claims/71/held"
+  printf '2026-01-01T00:00:00Z\t%s\t1767225600\n' "$(this_host)" > "$src/claims/71/held"
 
   #
   # **The local mark is cleared, because this fixture is time passing.** A keep writes
@@ -3977,7 +3982,7 @@ exactly_one_host_takes_an_item() {
   #
   # **The mark is what stops a second read.** A keep that has just settled the question does not
   # ask the source again, and on the github adapter every ask is a push or a fetch.
-  printf '2026-01-01T00:00:00Z\t%s\t1767225600\n' "$(uname -n)" > "$src/claims/71/held"
+  printf '2026-01-01T00:00:00Z\t%s\t1767225600\n' "$(this_host)" > "$src/claims/71/held"
 
   is  "a keep inside the throttle asks nothing" "$(code_of floor "$tmp/clm" claim)" "0"
   has "and the stamp it would have moved stays" "$(cat "$src/claims/71/held")"      "1767225600"
@@ -4026,7 +4031,7 @@ exactly_one_host_takes_an_item() {
 
   has "a claim past the window says what it broke" \
       "$(floor_says "$tmp/clm" claim 71)" "without a word from OtherHost"
-  has "and this host holds it after" "$(cat "$src/claims/71/held")" "$(uname -n)"
+  is  "and this host holds it after" "$(cut -f2 "$src/claims/71/held")" "$(this_host)"
 
   # A claim taken by hand settles the question too, so the loss marked above stops answering.
   is "and a keep after it is no longer a loss" "$(code_of floor "$tmp/clm" claim)" "0"
@@ -4050,7 +4055,7 @@ exactly_one_host_takes_an_item() {
   has "and the claim is still there" "$(cat "$src/claims/71/held")" "OtherHost"
 
   printf '%s	%s	%s
-' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$(uname -n)" "$(date +%s)"       > "$src/claims/71/held"
+' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$(this_host)" "$(date +%s)"       > "$src/claims/71/held"
 
   is "the holder may let go"     "$(code_of floor "$tmp/clm" release 71)" "0"
   is "and nobody holds it after" "$(code_of floor "$tmp/clm" release 71)" "30"
@@ -4127,7 +4132,7 @@ a_run_keeps_the_name_it_claimed_under() {
   lacks "a run worked under a new host name keeps its own claim" \
         "$(PATH="$tmp/hostbin:$PATH" floor_says "$tmp/mvd" gates)" "held by"
   lacks "and records no loss"                       "$(floor "$tmp/mvd" observe)" "claim.lost"
-  has   "and the claim keeps the name it was taken under" "$(cat "$src/claims/74/held")" "$(uname -n)"
+  is    "and the claim keeps the name it was taken under" "$(cut -f2 "$src/claims/74/held")" "$(this_host)"
 
   # **Claimed before the run held the item**, which is the order a pass takes. Binding names it, so
   # a run bound and moved at once, with no keep between, loses nothing. #991's judge.
@@ -4160,7 +4165,7 @@ a_run_keeps_the_name_it_claimed_under() {
   # first keep reads the source and renews a claim past a third of its window. #884's judge.
   printf 'Bound late\n' > "$src/items/77"
   mkdir -p "$src/claims/77"
-  printf '2026-01-01T00:00:00Z\t%s\t%s\n' "$(uname -n)" "$(( $(date -u +%s) - 1500 ))" > "$src/claims/77/held"
+  printf '2026-01-01T00:00:00Z\t%s\t%s\n' "$(this_host)" "$(( $(date -u +%s) - 1500 ))" > "$src/claims/77/held"
   make_repo "$tmp/mvd4" main && set_origin "$tmp/mvd4" 'https://gitlab.com/acme/mvd4.git' \
     || { skip "a claim bound late — git could not make a repo here"; return; }
   floor "$tmp/mvd4" new "Bound late" >/dev/null 2>&1
@@ -4298,8 +4303,10 @@ a_pass_takes_the_first_item_nobody_holds() {
   bar_and_rule "$tmp/pss"
 
   is  "a pass with no command begins the run and waits" "$(code_of floor "$tmp/pss" pass)" "44"
-  has "it passed over the item another host holds, and claimed the next" \
-      "$(cat "$src/claims/92/held")" "$(uname -n)"
+  is  "it passed over the item another host holds, and claimed the next" \
+      "$(cut -f2 "$src/claims/92/held")" "$(this_host)"
+  is  "and its run names the host it claimed under" \
+      "$(cat "$(floor "$tmp/pss" path)/claim.holder")" "$(this_host)"
   has "and its run holds that item"  "$(floor "$tmp/pss" observe)" "item=92"
   has "and says why it stopped"      "$(floor "$tmp/pss" observe)" "why=no-command"
 
@@ -4608,7 +4615,7 @@ a_pass_takes_back_a_claim_no_run_holds() {
   printf 'Stale item\n' > "$src/items/89"
   printf 'stale\t2026-09-10T00:00:00Z\tpat\n' > "$src/labels/89"
   mkdir -p "$src/claims/89"
-  printf '%s\t%s\t%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$(uname -n)" "$(date -u +%s)" > "$src/claims/89/held"
+  printf '%s\t%s\t%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$(this_host)" "$(date -u +%s)" > "$src/claims/89/held"
   bar_and_rule "$tmp/stale-claim" 'offer stale pat'
 
   is  "a claim of this host's that no run holds is taken again" \
@@ -4716,7 +4723,7 @@ an_open_request_keeps_its_item() {
 
   # The claim this host took for 64 has aged past the window, so another host could break it.
   mkdir -p "$src/claims/64"
-  printf '2026-01-01T00:00:00Z\t%s\t%s\n' "$(uname -n)" "$(( $(date -u +%s) - 7200 ))" > "$src/claims/64/held"
+  printf '2026-01-01T00:00:00Z\t%s\t%s\n' "$(this_host)" "$(( $(date -u +%s) - 7200 ))" > "$src/claims/64/held"
   a_host_named RequestHost "$tmp/reqbin" || { skip "an open request — could not put a uname on the path"; return; }
 
   is  "a second host's pass, with the claim aged out, takes the next item" \
@@ -4810,6 +4817,14 @@ a_second_read_that_fails_is_a_stop() {
   bar_and_rule "$tmp/reread2" 'offer reread pat'
   is  "a pass in a second checkout passes over an item a run began and never bound" \
       "$(code_of floor "$tmp/reread2" pass)" "30"
+
+  # **The keep asks what the run holds, bound or begun.** Asked by the bind alone, a run that never
+  # bound its item kept nothing, and worked on while another host held it. 7b.
+  printf '2026-01-01T00:00:00Z\tOtherHost\t%s\n' "$(date -u +%s)" > "$src/claims/66/held"
+  is "a run that began an item another host now holds is refused at its keep" \
+     "$(code_of floor "$tmp/reread" claim)" "30"
+  printf '2026-01-01T00:00:00Z\t%s\t%s\n' "$(this_host)" "$(date -u +%s)" > "$src/claims/66/held"
+  rm -f "$(floor "$tmp/reread" path)/claim.lost"
 
   is  "the next wake reads the item it could not, and goes on" "$(code_of floor "$tmp/reread" pass)" "44"
   has "and binds it"                                          "$(floor "$tmp/reread" observe)" "item.read"
@@ -5096,7 +5111,7 @@ HOOK
   # **A renewal that lands after a release brings nothing back.** The holder reads its own tip, and
   # its release lands before the renewal's push connects. #1017 watched a plain push make the ref
   # again. This shim deletes the ref between the read and the push, which is where that release was.
-  mine=$(printf 'claimed by %s\n' "$(uname -n)" | git -C "$work" commit-tree "$tree")
+  mine=$(printf 'claimed by %s\n' "$(this_host)" | git -C "$work" commit-tree "$tree")
   git -C "$work" push -q -f origin "$mine:refs/heads/foundry/claim/71" 2>/dev/null
 
   late="$tmp/gitshim-late"
@@ -6616,6 +6631,144 @@ a_failed_send_is_sent_again() {
   rm -rf "$src/claims/515" "$src/labels/515" "$src/items/515"
 }
 a_failed_send_is_sent_again
+
+#
+# **A claim names its machine and its home**, so two homes on one machine are two hosts. The home's
+# name is a token made once and kept, never its path, and made before the home holds any run. 7b.
+#
+a_claim_names_its_home() {
+  make_repo "$tmp/named" main && set_origin "$tmp/named" 'https://gitlab.com/acme/named.git' \
+    || { skip "a named home — git could not make a repo here"; return; }
+  mkdir -p "$src/items"
+  printf 'Named\n' > "$src/items/621"
+
+  is "a home that does not exist yet takes a claim" "$(code_of claim_from_home "$tmp/newhome")" "0"
+  named=$(cat "$tmp/newhome/host-name" 2>/dev/null)
+  is    "under the machine's name and the name it gave the home" "$(cut -f2 "$src/claims/621/held")" "$(uname -n)/$named"
+  lacks "and a home's name is never its path" "$named" "/"
+
+  is "the same home claiming again renews its own claim" "$(code_of claim_from_home "$tmp/newhome")" "0"
+  is "under the same name"                               "$(cut -f2 "$src/claims/621/held")" "$(uname -n)/$named"
+  is "and another home on this machine is another host"  "$(code_of claim_from_home "$tmp/otherhome")" "30"
+
+  rm -rf "$src/claims/621" "$src/items/621"
+}
+
+# A claim on 621 from another home, through this suite's work source, so two homes share one.
+claim_from_home() { ( FOUNDRY_SOURCE_DIR="$src"; export FOUNDRY_SOURCE_DIR; floor_as "$tmp/named" "$1" "" claim 621 ); }
+a_claim_names_its_home
+
+#
+# **Each way a run holds its item, with the machine renamed past the claim window.** A pass outside the
+# run's checkout passes the item over, and one inside carries it on under the claim's own name.
+#
+# Five review rounds found one fault by five routes: a claim compared with a name other than the one it
+# was taken under. So every member ends the same way, with one run for the item. 7b.
+#
+the_rename_family() {
+  a_host_named RenamedHost "$tmp/renamedbin" \
+    || { skip "the rename family — could not put a uname on the path"; return; }
+
+  a_bound_run_renamed
+  a_begun_run_renamed
+  a_run_with_no_holder_renamed
+  a_run_from_before_7b_renamed
+
+  rm -rf "$src/claims/622" "$src/claims/623" "$src/claims/624" "$src/claims/625"
+  rm -rf "$src/labels/622" "$src/labels/623" "$src/labels/624" "$src/labels/625"
+  rm -rf "$src/items/622" "$src/items/623" "$src/items/624" "$src/items/625"
+}
+
+# **Bound:** a pass took the item and its read bound it.
+a_bound_run_renamed() {
+  a_resumable_repo rnbound 622 || { skip "a bound run renamed — git could not make a repo here"; return; }
+  is "a pass takes an item and binds it" "$(code_of floor "$tmp/rnbound" pass)" "44"
+
+  age_the_claim 622
+  is "renamed past the window, a pass outside passes over a bound run's item" "$(renamed pass_outside rnbound)" "30"
+  is "and the pass inside carries it on"            "$(renamed code_of floor "$tmp/rnbound" pass)" "44"
+  is "under the name its claim was taken under"     "$(cut -f2 "$src/claims/622/held")" "$(this_host)"
+  is "and one run holds the bound item"             "$(runs_holding 622)" "1"
+}
+
+# **Begun:** a pass took the item and its read failed, so nothing bound it.
+a_begun_run_renamed() {
+  a_resumable_repo rnbegun 623 || { skip "a begun run renamed — git could not make a repo here"; return; }
+  is "a pass whose read fails holds the item it began" \
+     "$(code_of floor_through "$(a_source_reading_once)" "$tmp/rnbegun" pass)" "20"
+
+  age_the_claim 623
+  is "renamed past the window, a pass outside passes over a begun run's item" "$(renamed pass_outside rnbegun)" "30"
+  is "and the pass inside carries it on"            "$(renamed code_of floor "$tmp/rnbegun" pass)" "44"
+  is "under the name its claim was taken under"     "$(cut -f2 "$src/claims/623/held")" "$(this_host)"
+  is "and one run holds the begun item"             "$(runs_holding 623)" "1"
+}
+
+# **No holder:** a person's run, bound while the source could not be asked, its claim under this host's
+# name. It keeps its item before it has a holder, and adopts the claim's name once the source answers.
+a_run_with_no_holder_renamed() {
+  a_resumable_repo rnnone 624 || { skip "a run with no holder — git could not make a repo here"; return; }
+  floor "$tmp/rnnone" claim 624 >/dev/null 2>&1
+  floor "$tmp/rnnone" new "No holder" >/dev/null 2>&1
+  floor "$tmp/rnnone" source read 624 >/dev/null 2>&1
+  rm -f "$(floor "$tmp/rnnone" path)/claim.holder"
+
+  is "a pass outside passes over the item of a run with no holder" "$(pass_outside rnnone)" "30"
+  floor "$tmp/rnnone" claim >/dev/null 2>&1
+  is "and the run adopts its claim's name once the source answers" \
+     "$(cat "$(floor "$tmp/rnnone" path)/claim.holder" 2>/dev/null)" "$(this_host)"
+
+  age_the_claim 624
+  is "renamed past the window, a pass outside still passes it over" "$(renamed pass_outside rnnone)" "30"
+  is "and a pass inside leaves a person's run alone"  "$(renamed code_of floor "$tmp/rnnone" pass)" "43"
+  is "and one run holds the item with no holder"      "$(runs_holding 624)" "1"
+}
+
+# **From before 7b:** a pass's run with no holder, its claim under the machine's name alone. A resume
+# adopts that name before it claims, so the run is never refused by its own claim.
+a_run_from_before_7b_renamed() {
+  a_resumable_repo rnold 625 || { skip "a run from before 7b — git could not make a repo here"; return; }
+  is "a pass takes an item" "$(code_of floor "$tmp/rnold" pass)" "44"
+  rm -f "$(floor "$tmp/rnold" path)/claim.holder" "$(floor "$tmp/rnold" path)/claim.kept"
+  printf '2026-01-01T00:00:00Z\t%s\t%s\n' "$(uname -n)" "$(date -u +%s)" > "$src/claims/625/held"
+
+  is "a pass outside passes over the item of a run from before 7b" "$(pass_outside rnold)" "30"
+  is "a resume adopts the machine's name, then claims under it" "$(code_of floor "$tmp/rnold" pass)" "44"
+  is "and the run keeps that name" "$(cat "$(floor "$tmp/rnold" path)/claim.holder" 2>/dev/null)" "$(uname -n)"
+
+  age_the_claim 625
+  is "renamed past the window, a pass outside passes it over" "$(renamed pass_outside rnold)" "30"
+  is "and the pass inside carries it on"            "$(renamed code_of floor "$tmp/rnold" pass)" "44"
+  is "under the machine's name it was taken under"  "$(cut -f2 "$src/claims/625/held")" "$(uname -n)"
+  is "and one run holds the item from before 7b"    "$(runs_holding 625)" "1"
+}
+
+# An item's claim, aged past the window under the name it holds.
+age_the_claim() {
+  printf '2026-01-01T00:00:00Z\t%s\t1767225600\n' "$(cut -f2 "$src/claims/$1/held")" > "$src/claims/$1/held"
+}
+
+# A command run with the machine renamed. The subshell keeps the name from anything after it.
+renamed() { ( PATH="$tmp/renamedbin:$PATH"; export PATH; "$@" ); }
+
+# A pass in a second checkout of the same repository, offered the same item, and its exit code.
+pass_outside() {
+  [ -d "$tmp/$1-outside" ] || a_second_checkout_of "$1" || return 9
+  code_of floor "$tmp/$1-outside" pass
+}
+
+a_second_checkout_of() {
+  make_repo "$tmp/$1-outside" main && set_origin "$tmp/$1-outside" "https://gitlab.com/acme/$1.git" \
+    && bar_and_rule "$tmp/$1-outside" "offer $1 pat"
+}
+
+# How many runs in this suite's home hold an item, by the lines their passes and reads wrote.
+runs_holding() {
+  awk -F'\t' -v held=" item=$1 " '
+    ($3 == "pass.began" || $3 == "item.read") && index(" " $4 " ", held) { print FILENAME }' \
+    "$home"/runs/*/observations 2>/dev/null | sort -u | grep -c .
+}
+the_rename_family
 
 #
 # **Two judges on one clause, and every fixture before this had one.** A rule with a single instance
