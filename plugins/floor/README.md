@@ -1342,9 +1342,10 @@ refused judgement is answered by new work.
 
 **A member who answered at this commit is not asked again.** Every answer holds its ref: an approval,
 a refusal and an unavailable alike. Asking again spends a round, and it can only cancel a yes. So
-`judged` skips a member it handed this charter's bar at this ref and that answered. It still counts
-what that member holds, so a refusal keeps it at 39. A member handed an older charter is asked again,
-since its answer met a bar the run no longer holds. A new commit asks everyone.
+`judged` skips a member whose latest handoff at this ref carried this charter's bar, and that
+answered it. It still counts what that member holds, so a refusal keeps it at 39. A member handed an
+older charter is asked again, since its answer met a bar the run no longer holds. So is one whose
+latest handoff went unanswered: a re-ask that died. A new commit asks everyone.
 
 **`rounds  judge  n` in `.foundry/judged` is the ceiling.** It derives into a record of its own,
 `rounds <id> <who> <n>`, one per clause that judge sits on. At the limit the runner records a
