@@ -158,6 +158,7 @@ main() {
         open)      open_workspace "$@" ;;
         commit)    commit_work "$@" ;;
         complete)  complete "$@" ;;
+        status)    status "$@" ;;
         deliver)   deliver "$@" ;;
         aside)     aside "$@" ;;
         claim)     claim "$@" ;;
@@ -176,6 +177,8 @@ main() {
 
 usage() {
     usage_run
+    usage_bar
+    usage_work
     usage_evidence
     usage_source
 }
@@ -192,6 +195,12 @@ floor — where work happens.
   run.sh bootstrap                print the run's bootstrap target, or exit 1
   run.sh targets                  list unit 01's targets
   run.sh targets add <repo> <ref> add one
+EOF
+}
+
+# What the run may change, and what it must meet.
+usage_bar() {
+    cat <<'EOF'
   run.sh policy                   list what this run may change
   run.sh policy authorize <repo>  let this run change one more
   run.sh policy deliver-to <repo> let this run write to one — a second act, and grading is not it
@@ -202,10 +211,17 @@ floor — where work happens.
   run.sh charter check            report clauses that drifted from their pins, or went missing
   run.sh charter introduce <kind> <text>
                                   add a clause nothing derived — it stays introduced
+EOF
+}
+
+# Doing the work, and handing it over.
+usage_work() {
+    cat <<'EOF'
   run.sh gates                    run every pinned gate and record each — exit 14 if one did not pass
   run.sh judged                   ask every judge the charter names — exit 39 if one did not approve
   run.sh open                     check out every selected target in isolation, and print where
   run.sh commit <message>         commit what is staged, and record that this run made it
+  run.sh status                   the run, what ran, what met its bar, and what is still missing
   run.sh complete                 may this run deliver? exit 15 names what is missing
   run.sh deliver <title> [brief]  push the work, with a file the source carries as the body
   run.sh aside [text]             record what this run cannot act on, or print what it has
@@ -229,7 +245,7 @@ EOF
 # reaches, so the next verb added does not move the seam again.
 usage_evidence() {
     cat <<'EOF'
-  run.sh evidence                 print what this run has proved
+  run.sh evidence                 print what ran: each gate, each handoff and each verdict
   run.sh evidence record <name> <command...>   run it, and stamp what happened
   run.sh evidence handed <clause> <judge> <how> [brief]
                                   say this judge was given the bar, how it ran, and which brief
@@ -1881,7 +1897,7 @@ evidence() {
     dir=$(active_run) || exit 1
 
     case "${1:-}" in
-        '')     cat "$(evidence_file "$dir")" 2>/dev/null; return 0 ;;
+        '')     the_ledger "$dir"; return 0 ;;
         record) shift; refuse_wrong_repository "$dir"; record_gate "$dir" "$@" ;;
         verdict) shift; refuse_wrong_repository "$dir"; verdict "$dir" "$@" ;;
         handed) shift; refuse_wrong_repository "$dir"; handed "$dir" "$@" ;;
@@ -1889,6 +1905,9 @@ evidence() {
         *)      usage; exit 2 ;;
     esac
 }
+
+# The ledger, whole. `evidence` and `status` both print it through this, so the two cannot differ.
+the_ledger() { cat "$(evidence_file "$1")" 2>/dev/null; }
 
 #
 # **There is no parameter for a result.** The recorder takes a command, runs it, and stamps what
@@ -3042,6 +3061,74 @@ complete() {
     [ -n "$findings" ] || return 0
     printf '%s\n' "$findings"
     exit 15
+}
+
+#
+# **One reading of a run**, #736's box 19: the run, what ran, what met its bar, and what is still
+# missing. Each part is printed by the reader that already owns its record, so this keeps nothing.
+# A run `complete` cannot read, `status` cannot either, and it exits the way `complete` does.
+#
+# The head is read once, and *met* and *missing* both take it. With none, *missing* looks again.
+status() {
+    [ "$#" -eq 0 ] || { usage; exit 2; }
+
+    dir=$(active_run) || exit 1
+    refuse_unreadable_run "$dir"
+
+    here=$(this_repository)
+    read_at=$(unit_head "$dir" "$here")
+
+    say_the_run "$dir"
+    say_what_ran "$dir"
+    say_what_met "$dir" "$here" "$read_at"
+    say_what_is_missing "$dir" "$read_at"
+}
+
+say_the_run() {
+    printf 'run       %s\n' "$(recorded_id "$1")"
+    printf 'item      %s\n' "$(or_none "$(item_id "$1" 2>/dev/null)")"
+    printf 'delivery  %s\n' "$(or_none "$(recorded_delivery "$1")")"
+}
+
+or_none() { [ -n "$1" ] || { printf 'none'; return 0; }; printf '%s' "$1"; }
+
+# The ledger, as `evidence` prints it: each gate that ran, each handoff and each verdict.
+say_what_ran() {
+    printf '\nran\n'
+    ran=$(the_ledger "$1")
+    [ -n "$ran" ] || { printf '  nothing has run\n'; return 0; }
+
+    printf '%s\n' "$ran" | sed 's/^/  /'
+}
+
+# The grader decides, and box 16's record names whom it accepted. With no commit to grade, nothing is
+# graded here, and *missing* says why.
+say_what_met() {
+    printf '\nmet\n'
+    [ -n "$3" ] || { printf '  nothing: no workspace holds a commit to grade\n'; return 0; }
+
+    status_file=$(charter_file "$1")
+    status_met=
+    for status_id in $(clause_ids_in "$status_file"); do
+        [ -z "$(what_it_lacks "$1" "$status_file" "$status_id" "$2" "$3")" ] || continue
+        clause_and_what_met_it "$status_file" "$status_id"
+        status_met=yes
+    done
+    [ -n "$status_met" ] || printf '  nothing yet\n'
+}
+
+# `complete`'s findings, at the same commit. It never asks what `deliver` refuses on before its grade,
+# so it claims only what `complete` would name, never that the run may deliver.
+say_what_is_missing() {
+    printf '\nmissing\n'
+    say_each_finding "$(unmet_for_delivery "$1" "$2")"
+    printf '  not read here, and `deliver` refuses on each: the grant, 18; an item another host\n'
+    printf '  holds, 30; commits the run did not make, 32; a history it cannot trust, 33\n'
+}
+
+say_each_finding() {
+    [ -n "$1" ] || { printf '  nothing `complete` would name\n'; return 0; }
+    printf '%s\n' "$1" | sed 's/^/  /'
 }
 
 #
@@ -4446,7 +4533,13 @@ push_workspace() {
 
 # Read once, by `deliver`, before anything looks. The ancestry check, the grade, the push and the
 # body each take this sha, so a commit landing while it works reaches none of them.
-unit_head() { git -C "$(unit_work_tree "$1" "$2")" rev-parse --verify --quiet HEAD 2>/dev/null; }
+#
+# Nothing when no workspace holds the run. An empty `-C` is the directory git was run from, so the
+# head of whatever checkout called this would stand in for the run's own.
+unit_head() {
+    head_tree=$(unit_work_tree "$1" "$2" 2>/dev/null) || return 1
+    git -C "$head_tree" rev-parse --verify --quiet HEAD 2>/dev/null
+}
 
 # A request is never rewritten. So a second `deliver` that pushed a new head says the request still
 # names the first, because nothing else will.

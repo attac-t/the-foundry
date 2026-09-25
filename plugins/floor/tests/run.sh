@@ -3769,6 +3769,34 @@ wreck_runner "a body that ignores its setting is caught" \
 wreck_runner "a setting nobody can read that is kept silent is caught" \
   bodytypo 's@^    note "the practice says \[body \$form\].*@    :@'
 
+#
+# **One reading of a run.** #736's box 19. Each break removes one part, or the head it grades, and
+# the case reads the run before its work, after it, and once nobody can read it.
+#
+wreck_runner "a status that never names the run is caught" \
+  statusrun '/^status() {/,/^}/s@^    say_the_run "\$dir"$@    :@'
+
+wreck_runner "a status that never says what ran is caught" \
+  statusran '/^status() {/,/^}/s@^    say_what_ran "\$dir"$@    :@'
+
+wreck_runner "a status that never says what met is caught" \
+  statusmet '/^status() {/,/^}/s@^    say_what_met .*@    :@'
+
+wreck_runner "a status that never says what is missing is caught" \
+  statusmissing '/^status() {/,/^}/s@^    say_what_is_missing .*@    :@'
+
+wreck_runner "a status that reads a run complete cannot is caught" \
+  statusunread '/^status() {/,/^}/s@^    refuse_unreadable_run "\$dir"$@    :@'
+
+wreck_runner "a head read from the calling checkout when no workspace holds the run is caught" \
+  headfallback '/^unit_head() {/,/^}/s@ || return 1$@@'
+
+wreck_runner "a missing part that reads the head a second time is caught" \
+  statustwice '/^say_what_is_missing() {/,/^}/s@unmet_for_delivery "\$1" "\$2"@unmet_for_delivery "$1"@'
+
+wreck_runner "a reading that writes into the run is caught" \
+  statuswrites '/^status() {/,/^}/s@^    say_the_run "\$dir"$@    say_the_run "$dir"; : > "$dir/status.read"@'
+
 report_breaks
 
 # --- break the install ---
