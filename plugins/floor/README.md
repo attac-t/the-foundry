@@ -221,6 +221,7 @@ sh bin/run.sh evidence verdict "the interface is understandable" "A Reviewer" ap
 sh bin/run.sh evidence receipt ./judgement-receipt
 sh bin/run.sh gates
 sh bin/run.sh judged
+sh bin/run.sh status
 sh bin/run.sh source read 7
 sh bin/run.sh claim 7
 sh bin/run.sh release 7
