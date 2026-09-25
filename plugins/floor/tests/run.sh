@@ -2674,6 +2674,22 @@ wreck_runner "a wake left in the environment for a gate to see is caught" \
 wreck_runner "a pass that never checks the host is its own before a verb is caught" \
   nocheck '/^still_holding_the_host() {/,/^}/s#^    \[ -e "\$host_marks/\$(the_newest_number).\$taken_at.\$own_beat.\$\$" \] \&\& return 0$#    return 0#'
 
+#
+# **Round one of the build review.** A superseded pass that never says so, a wake with no source that
+# leaves no record or refuses before it wakes, and a beat that takes its names from the environment.
+#
+wreck_runner "a superseded pass whose record says nothing of it is caught" \
+  supersededread '/^still_holding_the_host() {/,/^}/s#^    pass_read="superseded:\$(the_newest_number)"$#    :#'
+
+wreck_runner "a wake with no source that ends with no record line is caught" \
+  nosourceended '/^leave_with_no_source() {/,/^}/s#^    say_this_pass_ended 3 no-source$#    :#'
+
+wreck_runner "a wake with no source that refuses before it says it woke is caught" \
+  nosourcewoke '/^pass() {/,/^}/s#^    keep_the_host_command_to_itself$#    leave_with_no_source; keep_the_host_command_to_itself#'
+
+wreck_runner "a beat that takes its run's mark from the environment is caught" \
+  beatenv '/^take_the_host() {/,/^}/s#^    heartbeat= run_alive= pass_read=$#    :#'
+
 wreck_runner "a GitHub source that reads an unreachable remote as nobody holding is caught" \
   ghheldgone '/^read_claim() {/,/^}/s#at=\$(claim_tip "\$1") || return 3#at=$(claim_tip "$1")#' lib/source-github.sh
 
@@ -2757,10 +2773,10 @@ wreck_runner "a source that cannot list what is marked, read as nothing offered,
   offercode '/^what_is_offered() {/,/^}/s#^    items=\$(offer) || exit "\$?"$#    items=$(offer)#'
 
 wreck_runner "a pass that drops the code of what it was offered is caught" \
-  passcode '/^pass() {/,/^}/s#^    items=\$(what_is_offered) || exit "\$?"$#    items=$(what_is_offered)#'
+  passcode '/^select_an_item() {/,/^}/s#^    items=\$(what_is_offered) || leave_with_no_item "\$?"$#    items=$(what_is_offered)#'
 
 wreck_runner "a pass that drops the code of its claim is caught" \
-  passtaken '/^pass() {/,/^}/s#^    taken=\$(claim_the_first_offered "\$items") || exit "\$?"$#    taken=$(claim_the_first_offered "$items")#'
+  passtaken '/^select_an_item() {/,/^}/s#^    taken=\$(claim_the_first_offered "\$items") || leave_with_no_item "\$?"$#    taken=$(claim_the_first_offered "$items")#'
 
 wreck_runner "a pass that passes over every item and carries on is caught" \
   passover '/^claim_the_first_offered() {/,/^}/s#^    exit 30$#    exit 0#'

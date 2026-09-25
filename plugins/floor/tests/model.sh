@@ -4498,7 +4498,7 @@ a_pass_at_work_is_left_to_work() {
   FOUNDRY_PASS_COMMAND=$second floor "$tmp/alive" pass >/dev/null 2>&1
   run=$(floor "$tmp/alive" path)
 
-  has "a second pass while the first works is told so" "$(cat "$tmp/alive.second" 2>/dev/null)" "a pass is at work in this run now"
+  has "a second pass while the first works is told so, at the door" "$(cat "$tmp/alive.second" 2>/dev/null)" "a pass holds this host"
   has "and leaves the run alone"                       "$(cat "$tmp/alive.second" 2>/dev/null)" "exit=43"
   is  "the mark goes when the pass ends"               "$([ -e "$run/pass.alive" ] && echo there || echo gone)" "gone"
   has "and the stop line carries its code"             "$(floor "$tmp/alive" observe)" "why=deliver code=18"
@@ -6404,6 +6404,10 @@ age_the_host_mark() {
 
 newest_host_mark() { ls "$home/pass" 2>/dev/null | grep -E '^[0-9]{10}$' | tail -n 1; }
 
+last_wake_line() { grep "	$1	" "$home/wakes" 2>/dev/null | tail -n 1; }
+
+process_of() { printf '%s\n' "$1" | tr ' \t' '\n\n' | sed -n 's/^process=//p'; }
+
 # A work source that hangs on one verb, once the marker says it was reached, and hands every other
 # to the directory adapter.
 a_source_hanging_on() {
@@ -6447,10 +6451,12 @@ a_run_waits_on_the_host_then_a_person() {
   # The command runs a second pass from the same checkout, while the resumed one works. In a
   # subshell, so the worker after it still commits in the workspace.
   second="( cd '$tmp/rsw' && sh '$runner' pass > '$tmp/rsw.second' 2>&1; echo \"exit=\$?\" >> '$tmp/rsw.second' )"
+  # A beat of sixty, so the first pass's host mark cannot age while the second one looks at it.
   is  "the host names its command after more waits than the bound, and the run acts" \
-      "$(FOUNDRY_PASS_COMMAND="$second; $COMMITTING_WORKER" resume_in "$tmp/rsw")" "47"
+      "$(FOUNDRY_PASS_COMMAND="$second; $COMMITTING_WORKER" FOUNDRY_PASS_TRIES=2 FOUNDRY_PASS_BEAT=60 \
+          code_of floor "$tmp/rsw" pass)" "47"
   has "and waits on a person for the grant" "$(last_pass_line_in "$tmp/rsw")" "why=deliver code=18"
-  has "a second pass while a resumed one works is told so" "$(cat "$tmp/rsw.second" 2>/dev/null)" "a pass is at work in this run now"
+  has "a second pass while a resumed one works is told so, at the door" "$(cat "$tmp/rsw.second" 2>/dev/null)" "a pass holds this host"
   for wake in 1 2 3; do
     is "a wake before the grant waits again, $wake" "$(resume_in "$tmp/rsw")" "47"
   done
@@ -6522,6 +6528,7 @@ a_code_no_row_names_lets_the_run_go() {
   is  "a pass that lets its run go and takes nothing leaves the host's mark ended" \
       "$(cat "$home/pass/$(newest_host_mark)" 2>/dev/null)" "ended"
   is  "and the run it let go carries no mark" "$(ls "$let_go_run"/pass.alive 2>/dev/null | grep -c .)" "0"
+  has "and its record ends with what the offer met" "$(last_wake_line ended)" "read=all-held code=30"
 
   rm -rf "$src/claims/504" "$src/labels/504" "$src/items/504"
 }
@@ -7097,17 +7104,20 @@ the_take_is_one_link() {
   is  "a pass whose number another pass linked first exits 43, trying no other" "$code" "43"
   has "and says another pass took the host first" "$said" "another pass took this host first"
   differs "and never writes into the winner's mark" "$(cat "$home/pass/$(newest_host_mark)")" "ended"
+  has "and its record says it lost" "$(last_wake_line ended)" "read=lost:"
   end_the_newest_mark
 
   an_ln_for_host_marks "$tmp/faultbin" 'exit 1'
   said=$(PATH="$tmp/faultbin:$PATH" floor_says "$tmp/take" pass); code=$?
   is  "a take that links nothing, with no rival, is a fault" "$code" "3"
   has "and says so" "$said" "floor could not take a host mark"
+  has "and its record says it faulted" "$(last_wake_line ended)" "read=fault code=3"
 
   an_ln_for_host_marks "$tmp/pastbin" 'next_past "$@"'
   said=$(PATH="$tmp/pastbin:$PATH" floor_says "$tmp/take" pass); code=$?
   is  "a winner whose read finds a later number exits 43" "$code" "43"
   has "and says a later pass took the host" "$said" "a later pass took this host"
+  has "and its record says it lost to the later one" "$(last_wake_line ended)" "read=lost:"
   end_the_newest_mark
 
   is  "and none of the three began a run" "$(runs_holding 635)" "0"
@@ -7153,6 +7163,7 @@ a_superseded_pass_stops_at_its_next_verb() {
   said=$(FOUNDRY_PASS_COMMAND="sh '$tmp/take-past.sh' '$home/pass'" floor_says "$tmp/superseded" pass); code=$?
   is  "a pass whose mark a later one replaced stops at its next verb, 43" "$code" "43"
   has "and says a newer pass holds the host" "$said" "a newer pass holds this host now"
+  has "and its record says a newer pass took it" "$(last_wake_line ended)" "read=superseded:"
   end_the_newest_mark
 
   rm -rf "$src/claims/636" "$src/labels/636" "$src/items/636"
@@ -7207,7 +7218,10 @@ the_sweep_stays_below() {
   printf 'ended\n' > "$home/pass/$young"
   : > "$home/pass/9999999999.$(( now - 172800 )).1.found"
 
-  floor "$tmp/swept" pass >/dev/null 2>&1
+  # A `run_alive` in the environment names a file the beat would write and the exit remove.
+  : > "$tmp/swept.victim"
+  run_alive="$tmp/swept.victim" floor "$tmp/swept" pass >/dev/null 2>&1
+  is "a pass writes nothing into a file its environment calls run_alive" "$(cat "$tmp/swept.victim" 2>&1)" ""
   is "a sweep removes a number below its own whose side names are a day old" \
      "$(ls "$home/pass" | grep -c "^$old")" "0"
   is "keeps one whose side name is younger" "$(ls "$home/pass" | grep -c "^$young\$")" "1"
@@ -7240,9 +7254,33 @@ every_wake_is_recorded() {
   is  "a pass offered nothing still records its wake" "$(code_of floor "$tmp/recorded-idle" pass)" "42"
   has "and ended with what it met" "$(last_wake_line ended)" "read=nothing-offered code=42"
 
+  # A host that names no work source still wakes, so that wake is recorded before the refusal.
+  nosource=$( ( cd "$tmp/recorded-idle" && FOUNDRY_HOME="$home" FOUNDRY_RUN="" FOUNDRY_WHO="" \
+      FOUNDRY_SOURCE="$tmp/no-such-source.sh" sh "$runner" pass ) >/dev/null 2>&1; echo "$?")
+  is  "a pass with no work source refuses, 3" "$nosource" "3"
+  has "and still ended, saying why" "$(last_wake_line ended)" "read=no-source code=3"
+  is  "after a woke of its own" "$(process_of "$(last_wake_line woke)")" "$(process_of "$(last_wake_line ended)")"
+
   a_door_exit_is_recorded
   rm -rf "$src/claims/640" "$src/labels/640" "$src/items/640" "$src/claims/641" "$src/labels/641" "$src/items/641"
 }
+
+#
+# **A released item is taken again.** Releasing drops the claim, so the next pass on this host, from
+# another checkout, takes the item into a run of its own. Piece 7, 7b.
+#
+a_released_item_is_taken_again() {
+  a_resumable_repo released 592 && a_second_checkout_of released \
+    || { skip "a released item — git could not make a repo here"; return; }
+
+  is "a pass takes the item, and stops with no command" "$(resume_in "$tmp/released")" "44"
+  floor "$tmp/released" release 592 >/dev/null 2>&1
+  is "a pass from another checkout takes it again once released" "$(resume_in "$tmp/released-outside")" "44"
+  is "into a run of its own" "$(runs_holding 592)" "2"
+
+  rm -rf "$src/claims/592" "$src/labels/592" "$src/items/592"
+}
+a_released_item_is_taken_again
 
 # A pass stopped at the door records what it met, and the live pass's two lines hold its lines between.
 a_door_exit_is_recorded() {
@@ -7258,9 +7296,6 @@ a_door_exit_is_recorded() {
      "$(grep "process=$(process_of "$holding") read=" "$home/wakes" | grep -c 'read=took:641')" "1"
 }
 
-last_wake_line() { grep "	$1	" "$home/wakes" 2>/dev/null | tail -n 1; }
-
-process_of() { printf '%s\n' "$1" | tr ' \t' '\n\n' | sed -n 's/^process=//p'; }
 every_wake_is_recorded
 
 #
@@ -10571,5 +10606,16 @@ a_session_that_held_no_run() {
   is "and says nothing at all"  "$(ended_says "$tmp/quiet-end")"       ""
 }
 a_session_that_held_no_run
+
+#
+# **Every wake this suite made says where it ended.** Last, so it reads them all. An `ended` reading
+# `unread`, or an offer failing with a code the offer never gives, is an exit with no `read=` row.
+#
+every_wake_says_where_it_ended() {
+  is "no wake in this suite ended unread" "$(grep -c 'read=unread' "$home/wakes" 2>/dev/null)" "0"
+  is "and no offer failed with a code it never gives" \
+     "$(grep 'read=offer-failed:' "$home/wakes" 2>/dev/null | grep -vcE 'read=offer-failed:(1|27) ')" "0"
+}
+every_wake_says_where_it_ended
 
 summary "model"

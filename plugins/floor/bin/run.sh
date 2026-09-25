@@ -3868,9 +3868,9 @@ kept_by_who_put_it_on() {
 # two checkouts on one host could both take one item. The door is what keeps them apart. Piece 7, 7a.
 pass() {
     [ "$#" -eq 0 ] || { usage; exit 2; }
-    refuse_missing_source
     keep_the_host_command_to_itself
     say_this_pass_woke
+    leave_with_no_source
     take_the_host
     carry_on_a_run_a_pass_began && return 0
 
@@ -3933,6 +3933,15 @@ record_the_wake() {
 
 say_this_pass_ended() { record_the_wake ended "process=$$ read=$2 code=$1"; }
 
+# A wake with no source to ask is still a wake, so it leaves its record before it refuses.
+leave_with_no_source() {
+    [ -f "$(source_resolver)" ] && return 0
+
+    say_this_pass_ended 3 no-source
+    note "no work source at [$(source_resolver)]"
+    exit 3
+}
+
 # The offer, then the first item this host can claim. What a pass that took nothing met is its code's.
 select_an_item() {
     items=$(what_is_offered) || leave_with_no_item "$?"
@@ -3950,6 +3959,7 @@ what_the_offer_met() {
         42) printf 'nothing-offered' ;;
         30) printf 'all-held' ;;
         20) printf 'source-unasked' ;;
+        43) printf 'superseded' ;;
         *)  printf 'offer-failed:%s' "$1" ;;
     esac
 }
@@ -3960,6 +3970,7 @@ what_the_offer_met() {
 #
 # Numbers are ten digits, padded, so a listing sorts them as numbers.
 take_the_host() {
+    heartbeat= run_alive= pass_read=
     host_marks="$HOME_DIR/pass"
     own_beat=$(pass_beat)
 
@@ -4135,6 +4146,7 @@ beat_for_the_host() {
 still_holding_the_host() {
     [ -e "$host_marks/$(the_newest_number).$taken_at.$own_beat.$$" ] && return 0
 
+    pass_read="superseded:$(the_newest_number)"
     note "a newer pass holds this host now, so this pass stops: $(the_newest_number)"
     exit 43
 }
@@ -4295,6 +4307,7 @@ field_of() {
 # **A request open for this item on another branch is its work already**, waiting on review. #1025
 # keeps such an item from being offered; this keeps a run begun before the request from working it.
 let_go_if_requested_elsewhere() {
+    still_holding_the_host
     requests=$(source_says open "$(delivery_branch "$1")"); asked=$?
     [ "$asked" -ne 3 ] || pass_read=source-unasked
     refuse_unasked "$asked" "list of open requests"
@@ -4788,7 +4801,9 @@ refusals_by() {
 open_the_work() {
     still_holding_the_host
     select_the_checkout "$1"
+    still_holding_the_host
     ( charter derive ) >/dev/null || stop_at "$1" charter "$?"
+    still_holding_the_host
     ( open_workspace ) >/dev/null || stop_at "$1" workspace "$?"
     find_the_workspace "$1"
 }

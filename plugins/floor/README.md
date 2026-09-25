@@ -2157,6 +2157,8 @@ pass, each appended whole: `woke` first, and `ended` at exit with what the pass 
 | `live:<number>` | the door found a live mark, 43 |
 | `lost:<number>` | the take or the read lost, 43 |
 | `fault` | the take failed with no rival, 3 |
+| `no-source` | the host names no work source, 3 |
+| `superseded:<number>` | a newer pass took the host, 43; mid-claim it reads `superseded` |
 | `nothing-offered` | nothing was offered, 42 |
 | `all-held` | every item offered was held or underway, 30 |
 | `source-unasked` | the source could not be asked, 20 |
@@ -2167,8 +2169,8 @@ pass, each appended whole: `woke` first, and `ended` at exit with what the pass 
 | `took:<item>` | it took an item |
 
 **An open `woke` is a pass at work or one that died**, and the host mark says which. A pass killed
-outright never writes its `ended`. A pass with no work source records nothing, since every verb
-refuses that before it wakes.
+outright never writes its `ended`. A pass with no work source still records its wake, and ends
+`no-source`.
 
 **A host with no timer of its own can use `bin/wake.sh <seconds>`.** It runs `run.sh pass`, waits,
 and runs it again, until `wake.stop` appears in floor's home. It looks for that file before each
@@ -2203,9 +2205,10 @@ which code: `pass.stopped why=deliver code=18`.
 **A pass at work says so.** As soon as its run exists, a pass writes the time and its beat into
 `pass.alive` every `FOUNDRY_PASS_BEAT` seconds, sixty by default. A second pass could find the run
 without its mark only in the few forks between. Each write lands whole, and the mark goes when the
-pass exits. A second pass on this host may find a mark younger than three of its writer's beats. It
-then says a pass is at work, and leaves the run alone, 43. The claim cannot tell the two apart,
-because it renews for any pass holding the run's name.
+pass exits. A second pass on this host meets the host mark at the door first, and exits 43 there. One
+that took the host past an aged mark reaches this mark next: younger than three of its writer's
+beats, it says a pass is at work in this run, and leaves the run alone, 43. The claim cannot tell
+the two apart, because it renews for any pass holding the run's name.
 
 **The beat holds none of the pass's output**, so a caller reading a pass to its end waits for the
 pass and nothing else, even a pass killed outright. That covers descriptors 0 to 9, as far as POSIX

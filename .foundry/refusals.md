@@ -258,6 +258,7 @@ where it is — a key for a one-off buys indirection and saves nothing.
 | `name_this_mark` | 3 | default | floor could not name its host mark in its home | `no-home` |
 | `refuse_missing_resolver` | 3 | default | no gate resolver at [$(gate_resolver)] | `no-home` |
 | `refuse_missing_source` | 3 | default | no work source at [$(source_resolver)] | `no-home` |
+| `leave_with_no_source` | 3 | default | no work source at [$(source_resolver)] | `no-home` |
 | `add_target` | 4 | invariant | no portable identity for [$repo] — needs a remote url, no local path, no space, no .. | `durable` |
 | `grant` | 4 | invariant | no portable identity for [$repo] — needs a remote url, no local path, no space, no .. | `durable` |
 | `is_usable_ref` | 4 | default | not a usable ref: [$ref] | `no-field` — a ref format check |
