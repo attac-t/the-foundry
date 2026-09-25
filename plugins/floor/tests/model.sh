@@ -6456,13 +6456,13 @@ a_code_no_row_names_lets_the_run_go() {
   a_resumable_repo rsx 504 || { skip "a code no row names — git could not make a repo here"; return; }
 
   is "a run stops at the request, with no grant" "$(FOUNDRY_PASS_COMMAND=$COMMITTING_WORKER resume_in "$tmp/rsx")" "18"
-  run=$(floor "$tmp/rsx" path)
-  printf 'https://gitlab.com/acme/elsewhere.git main\n' >> "$run/units/01/targets"
+  let_go_run=$(floor "$tmp/rsx" path)
+  printf 'https://gitlab.com/acme/elsewhere.git main\n' >> "$let_go_run/units/01/targets"
 
   # Read from the file: `observe` refuses a run whose selection was edited, which is this one.
   resume_in "$tmp/rsx" >/dev/null
   has "the run says it was let go, and the code" \
-      "$(awk -F'\t' '$3 == "pass.left" { print $4 }' "$run/observations")" "why=deliver code="
+      "$(awk -F'\t' '$3 == "pass.left" { print $4 }' "$let_go_run/observations")" "why=deliver code="
   is  "and the checkout no longer points at it" "$(floor "$tmp/rsx" path)" ""
 
   rm -rf "$src/claims/504" "$src/labels/504" "$src/items/504"
