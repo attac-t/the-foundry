@@ -6284,13 +6284,15 @@ the_runner_asks_the_judge
 # **A member who answered at this commit is not asked again.** Every answer holds its ref, so a
 # second ask spends a round and can only cancel a yes. Piece 5b-i of the one-pass build.
 a_member_who_answered_here_is_not_asked_again() {
-  a_judged_repo "$tmp/once" once "$(a_judge_that_approves approve "echo asked >> '$tmp/once.asked'")" 'reach  a-reviewer  sh bin/fake-judge.sh
+  a_judged_repo "$tmp/once" once "$(a_judge_that_approves approve "echo asked >> '$tmp/once.asked'; [ ! -e '$tmp/once.silent' ] || exit 127")" 'reach  a-reviewer  sh bin/fake-judge.sh
 a-reviewer  a stranger can read it
 ' && a_judged_repo "$tmp/nays" nays "$(a_judge_that_approves revise "echo asked >> '$tmp/nays.asked'")" 'reach  a-reviewer  sh bin/fake-judge.sh
 a-reviewer  a stranger can read it
+' && a_judged_repo "$tmp/gone" gone "$(a_judge_that_approves unavailable "echo asked >> '$tmp/gone.asked'")" 'reach  a-reviewer  sh bin/fake-judge.sh
+a-reviewer  a stranger can read it
 ' || { skip "a member asked once — git could not make a repo here"; return; }
 
-  for r in once nays; do
+  for r in once nays gone; do
     floor_new_as "$tmp/$r" ada@example.com "Asked $r" > "$tmp/$r.run"
     for step in "charter derive" "policy authorize https://gitlab.com/acme/$r.git" \
         "targets add https://gitlab.com/acme/$r.git main" open gates; do
@@ -6308,10 +6310,23 @@ a-reviewer  a stranger can read it
   is  "and asked again at the same commit it still counts" "$(code_of floor "$tmp/nays" judged)" "39"
   is  "while the judge was asked once"                 "$(grep -c asked "$tmp/nays.asked")" "1"
 
+  # So does an unavailable.
+  is  "an unavailable is answered"                     "$(code_of floor "$tmp/gone" judged)" "39"
+  is  "and at the same commit it still counts"         "$(code_of floor "$tmp/gone" judged)" "39"
+  is  "while that judge was asked once"                "$(grep -c asked "$tmp/gone.asked")" "1"
+
   # A bar rewritten since the handoff is a new question: its answer met an older bar.
   printf '# a bar rewritten after the handoff\n' >> "$(charter_of "$(cat "$tmp/once.run")")"
   is  "a member handed an older charter is asked again" "$(code_of floor "$tmp/once" judged)" "0"
   is  "and the judge ran a second time"                "$(grep -c asked "$tmp/once.asked")" "2"
+
+  # A re-ask that dies after its handoff answered nothing, so an older yes never stands in for it.
+  printf '# and rewritten again\n' >> "$(charter_of "$(cat "$tmp/once.run")")"
+  : > "$tmp/once.silent"
+  is  "a re-ask that dies after its handoff stops, 21" "$(code_of floor "$tmp/once" judged)" "21"
+  rm -f "$tmp/once.silent"
+  is  "and the next asks again rather than count an older yes" "$(code_of floor "$tmp/once" judged)" "0"
+  is  "so the judge ran a fourth time"                 "$(grep -c asked "$tmp/once.asked")" "4"
 }
 a_member_who_answered_here_is_not_asked_again
 
