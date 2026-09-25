@@ -4551,8 +4551,20 @@ a_beat_ends_with_its_pass() {
   wait "$deaf" 2>/dev/null
   is  "and leaves no mark" "$(ls "$(floor "$tmp/alive5" path)"/pass.alive 2>/dev/null | grep -c .)" "0"
 
-  rm -rf "$src/claims/516" "$src/claims/517" "$src/claims/518" "$src/claims/519" "$src/labels/516" "$src/labels/517" "$src/labels/518" "$src/labels/519"
-  rm -rf "$src/items/516" "$src/items/517" "$src/items/518" "$src/items/519"
+  # Read to its end through fd 3, as a bats test or a stderr swap reads one. 5a's judge, round three.
+  a_beat_repo alive6 520 || { skip "a pass read through fd 3 — git could not make a repo here"; return; }
+  ( ( cd "$tmp/alive6" && FOUNDRY_HOME="$home" FOUNDRY_RUN="" FOUNDRY_WHO="" FOUNDRY_SOURCE="$dir_source" \
+      sh "$runner" pass >/dev/null 2>&1 ) 3>&1 | cat >/dev/null ) &
+  reading=$!
+  waited=0
+  while kill -0 "$reading" 2>/dev/null && [ "$waited" -lt 40 ]; do sleep 1; waited=$((waited + 1)); done
+  is  "a pass read through fd 3 is done when the pass is, not a beat later" \
+      "$([ "$waited" -lt 40 ] && echo promptly || echo "after $waited seconds")" "promptly"
+  kill -9 "$reading" 2>/dev/null
+  wait "$reading" 2>/dev/null
+
+  rm -rf "$src/claims/516" "$src/claims/517" "$src/claims/518" "$src/claims/519" "$src/claims/520" "$src/labels/516" "$src/labels/517" "$src/labels/518" "$src/labels/519" "$src/labels/520"
+  rm -rf "$src/items/516" "$src/items/517" "$src/items/518" "$src/items/519" "$src/items/520"
 }
 
 # A repository offering one item under its own label.

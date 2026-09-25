@@ -2093,7 +2093,8 @@ then says a pass is at work, and leaves the run alone, 43. The claim cannot tell
 because it renews for any pass holding the run's name.
 
 **The beat holds none of the pass's output**, so a caller reading a pass to its end waits for the
-pass and nothing else. **It is stopped with a signal it cannot ignore**, so a pass started with TERM
+pass and nothing else. That covers descriptors 0 to 9, as far as POSIX sh can name them; one above
+9 is still held. **It is stopped with a signal it cannot ignore**, so a pass started with TERM
 ignored still ends.
 
 **A mark nobody can age reads as live.** Leaving a dead run costs a wake. Resuming a live one puts
