@@ -3969,15 +3969,23 @@ pass_beat() {
 }
 
 #
-# **The beat holds none of the pass's descriptors.** It inherited stdout and stderr, so a caller
-# reading a pass to its end waited out the beat's `sleep`, and one that reaps only after reading
-# never reaped a killed pass, whose mark `kill -0` then kept fresh. 5a's judge, round one.
+# **The beat holds none of the pass's descriptors that sh can name.** It inherited stdout and stderr,
+# so a caller reading a pass to its end waited out the beat's `sleep`, and one that reaps only after
+# reading never reaped a killed pass, whose mark `kill -0` then kept fresh. 5a's judge, round one.
+#
+# Descriptors 3 to 9 go too, as far as POSIX sh can name: a caller reading through fd 3 waited the
+# same way. One above 9 is still held. 5a's judge, round three.
+#
+# **They are closed on a subshell, never on the call.** On a function call dash keeps a copy of each
+# until the function returns, and the beat returns only when it dies. 5a's judge, round four.
+#
+# The beat starts even when the first write came out empty, so the next beat marks the run.
 say_this_pass_is_alive() {
     alive=$(alive_file "$dir")
     own_beat=$(pass_beat)
-    mark_alive "$alive" "$own_beat" || return 0
+    mark_alive "$alive" "$own_beat"
 
-    beat_while_alive "$$" "$alive" "$own_beat" </dev/null >/dev/null 2>&1 &
+    ( beat_while_alive "$$" "$alive" "$own_beat" ) </dev/null >/dev/null 2>&1 3>&- 4>&- 5>&- 6>&- 7>&- 8>&- 9>&- &
     heartbeat=$!
     trap stop_the_heartbeat EXIT
 }

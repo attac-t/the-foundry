@@ -2605,7 +2605,13 @@ wreck_runner "a stale mark read as a pass at work is caught" \
   alivestale '/^a_pass_is_alive_in() {/,/^}/s#-lt "\$(( writers_beat \* 3 ))"#-lt 999999999#'
 
 wreck_runner "a beat holding its pass's output open is caught" \
-  alivefds '/^say_this_pass_is_alive() {/,/^}/s#"\$own_beat" </dev/null >/dev/null 2>\&1 \&$#"$own_beat" \&#'
+  alivefds '/^say_this_pass_is_alive() {/,/^}/s#"\$own_beat" ) </dev/null >/dev/null 2>\&1 3>#"$own_beat" ) 3>#'
+
+wreck_runner "a beat holding a descriptor above 2 open is caught" \
+  alivefd3 '/^say_this_pass_is_alive() {/,/^}/s# 3>\&- 4>\&- 5>\&- 6>\&- 7>\&- 8>\&- 9>\&- \&$# \&#'
+
+wreck_runner "a beat whose descriptors are closed on the call, where dash keeps copies, is caught" \
+  alivecopy '/^say_this_pass_is_alive() {/,/^}/s#^    ( beat_while_alive "\$\$" "\$alive" "\$own_beat" ) </dev/null#    beat_while_alive "$$" "$alive" "$own_beat" </dev/null#'
 
 wreck_runner "a beat that outlives its pass is caught" \
   alivekill '/^beat_while_alive() {/,/^}/s#while kill -0 "\$1" 2>/dev/null \&\& #while #'
