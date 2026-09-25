@@ -7028,9 +7028,9 @@ a_slow_door_is_not_overtaken
 the_take_is_one_link() {
   a_resumable_repo take 635 || { skip "the take — git could not make a repo here"; return; }
 
-  an_ln_for_host_marks "$tmp/lostbin" 'printf "%s 60\n" "$(date -u +%s)" > "$2"'
+  an_ln_for_host_marks "$tmp/lostbin" 'link_first_once "$@"'
   said=$(PATH="$tmp/lostbin:$PATH" floor_says "$tmp/take" pass); code=$?
-  is  "a pass whose number another pass linked first exits 43" "$code" "43"
+  is  "a pass whose number another pass linked first exits 43, trying no other" "$code" "43"
   has "and says another pass took the host first" "$said" "another pass took this host first"
   differs "and never writes into the winner's mark" "$(cat "$home/pass/$(newest_host_mark)")" "ended"
   end_the_newest_mark
@@ -7051,13 +7051,18 @@ the_take_is_one_link() {
 }
 
 #
-# An `ln` that runs a line of its own for a host mark, before linking it, and links everything else as
-# `ln` would. `next_past` links the mark, then writes a fresh one on the number after it.
+# An `ln` that runs a line of its own for a host mark, and links everything else as `ln` would.
+# `link_first_once` is a rival that wins one take; `next_past` writes a mark past the one it links.
 an_ln_for_host_marks() {
   mkdir -p "$1" && real=$(command -v ln) || return 1
 
   cat > "$1/ln" <<STUB
 #!/bin/sh
+link_first_once() {
+  [ -e "$1/.once" ] && return
+  : > "$1/.once"
+  printf '%s 60\n' "\$(date -u +%s)" > "\$2"
+}
 next_past() {
   "$real" "\$@" || exit \$?
   last=\$(basename "\$2"); last=\${last#"\${last%%[!0]*}"}

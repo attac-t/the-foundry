@@ -2616,8 +2616,14 @@ wreck_runner "a wake that hands a pass three of its four fields is caught" \
 wreck_runner "a door that never looks at the newest mark is caught" \
   hostlook '/^take_the_host() {/,/^}/s#^    leave_while_a_pass_holds_the_host$#    :#'
 
+wreck_runner "a live mark read as aged is caught" \
+  hostaged '/^a_mark_holds_the_host() {/,/^}/s#{ younger_than_three_beats "\$was" "\$writers_beat"; return; }#{ return 1; }#'
+
 wreck_runner "a take that is not one ln is caught" \
   hostcopy '/^take_the_next_number() {/,/^}/s#\&\& ln "\$draft" "\$host_marks/\$mine"#\&\& cp "$draft" "$host_marks/$mine"#'
+
+wreck_runner "a loser that tries the next number is caught" \
+  hostretry '/^lose_or_fault_at_the_take() {/,/^}/s#^    say_this_pass_ended 43 "lost:\$mine"$#    newest=$mine; take_the_next_number; return#'
 
 wreck_runner "a failed ln read as a lost race is caught" \
   hostlostfault '/^lose_or_fault_at_the_take() {/,/^}/s#^    \[ -e "\$host_marks/\$mine" \] || {.*exit 3; }$#    :#'
