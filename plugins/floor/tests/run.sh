@@ -3770,6 +3770,25 @@ wreck_runner "a setting nobody can read that is kept silent is caught" \
   bodytypo 's@^    note "the practice says \[body \$form\].*@    :@'
 
 #
+# **A member who answered here is not asked again.** Piece 5b-i. Each break removes the skip, the
+# count of what a skipped member holds, the check of the charter's version, the check that an answer
+# followed the latest handoff, or an unavailable counted as an answer.
+#
+wreck_runner "a member asked again at a commit it already answered is caught" \
+  skipnone '/^judge_or_recount() {/,/^}/s#^    answered_here "\$1" "\$2" "\$asked_text" "\$4" || { judge_answered "\$@"; return; }$#    judge_answered "$@"; return#'
+
+wreck_runner "a refusal from a member not asked again, left uncounted, is caught" \
+  skipcount '/^judge_or_recount() {/,/^}/s@^    satisfied "\$1" "\$asked_text" "\$2" judged "\$4"$@    true@'
+
+wreck_runner "an answer to an older charter kept as an answer to this one is caught" \
+  skipversion '/^answered_here() {/,/^}/s@current = (\$7 "" == version "")@current = 1@'
+
+wreck_runner "an answer from before the latest handoff, kept as answering it, is caught" \
+  skipstale '/^answered_here() {/,/^}/s@ answered = 0;@@'
+
+wreck_runner "an unavailable not counted as an answer, and asked again, is caught" \
+  skipgone '/^answered_here() {/,/^}/s@\$2 == "judged" { answered = 1 }@$2 == "judged" \&\& $5 < 3 { answered = 1 }@'
+
 # **One reading of a run.** #736's box 19. Each break removes one part, or the head it grades, and
 # the case reads the run before its work, after it, and once nobody can read it.
 #
