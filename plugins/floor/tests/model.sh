@@ -22,6 +22,9 @@ export FOUNDRY_WORKER
 # hand. Each case that wants a command names its own. #884's judge, round five.
 unset FOUNDRY_PASS_COMMAND
 
+# The pipe case sees a held pipe only while a beat is long, so a host's short beat would hide one.
+unset FOUNDRY_PASS_BEAT
+
 here="$(cd "$(dirname "$0")/.." && pwd)"
 . "$here/tests/lib.sh"
 
@@ -4457,6 +4460,174 @@ a_pass_leaves_any_active_run_alone() {
   rm -rf "$src/claims/90" "$src/labels/90" "$src/items/90"
 }
 a_pass_leaves_any_active_run_alone
+
+#
+# **A pass at work says so, and a second pass hears it.** The claim renews for any pass holding the
+# run's name, so on one host it reads the same for a live pass and a dead one. Piece 5's judge.
+a_pass_at_work_is_left_to_work() {
+  mkdir -p "$src/items" "$src/labels" "$src/claims"
+  make_repo "$tmp/alive" main && set_origin "$tmp/alive" 'https://gitlab.com/acme/alive.git' \
+    || { skip "a pass at work — git could not make a repo here"; return; }
+
+  printf 'Alive item\n' > "$src/items/421"
+  printf 'alive\t2026-09-10T00:00:00Z\tpat\n' > "$src/labels/421"
+  bar_and_rule "$tmp/alive" 'offer alive pat'
+
+  # The host's command runs a second pass from the same checkout while the first waits on it.
+  second="cd '$tmp/alive' && sh '$runner' pass > '$tmp/alive.second' 2>&1; echo \"exit=\$?\" >> '$tmp/alive.second'"
+  FOUNDRY_PASS_COMMAND=$second floor "$tmp/alive" pass >/dev/null 2>&1
+  run=$(floor "$tmp/alive" path)
+
+  has "a second pass while the first works is told so" "$(cat "$tmp/alive.second" 2>/dev/null)" "a pass is at work in this run now"
+  has "and leaves the run alone"                       "$(cat "$tmp/alive.second" 2>/dev/null)" "exit=43"
+  is  "the mark goes when the pass ends"               "$([ -e "$run/pass.alive" ] && echo there || echo gone)" "gone"
+  has "and the stop line carries its code"             "$(floor "$tmp/alive" observe)" "why=deliver code=18"
+
+  # A pass killed outright leaves its mark. Three beats later, it is only a run.
+  date -u +%s | awk '{ print $1 - 600 }' > "$run/pass.alive"
+  has "a stale mark is a run, not a pass at work" "$(floor_says "$tmp/alive" pass)" "a run is active here already"
+
+  # `08` is not a number in base eight, and shell arithmetic would stop the pass on it.
+  has "a beat nobody can use is named, and the default kept" \
+      "$(FOUNDRY_PASS_BEAT=08 floor_says "$tmp/alive" pass)" "FOUNDRY_PASS_BEAT is [08]"
+
+  # A mark nobody can age is read as live: leaving a dead run costs a wake, and the other way costs
+  # two workers in one workspace.
+  printf 'not a time\n' > "$run/pass.alive"
+  has "a mark that cannot be aged reads as a pass at work" "$(floor_says "$tmp/alive" pass)" "a pass is at work"
+
+  # Aged by its writer's beat of sixty, a mark a hundred seconds old is live, whatever the reader keeps.
+  printf '%s 60\n' "$(( $(date -u +%s) - 100 ))" > "$run/pass.alive"
+  has "a mark is aged by the beat its writer kept" "$(FOUNDRY_PASS_BEAT=1 floor_says "$tmp/alive" pass)" "a pass is at work"
+  rm -f "$run/pass.alive"
+
+  is  "a worker may not write a line floor steers by" "$(code_of floor "$tmp/alive" observe pass.delivered item=421)" "2"
+  has "and is told whose it is"                       "$(floor_says "$tmp/alive" observe run.began)" "an event floor writes itself"
+  is  "while a worker's own event is taken"           "$(code_of floor "$tmp/alive" observe worker.saw thing=1)" "0"
+
+  rm -rf "$src/claims/421" "$src/labels/421" "$src/items/421"
+}
+a_pass_at_work_is_left_to_work
+
+#
+# **The beat holds nothing its caller waits on, and ends with its pass.** Read through a pipe, a pass
+# is done when it is done. Killed, its mark goes stale on its own. And a second pass during the
+# item's second read already sees it at work. 5a's judge, round one.
+#
+a_beat_ends_with_its_pass() {
+  a_beat_repo alive2 516 || { skip "a beat and its pipe — git could not make a repo here"; return; }
+  began=$(date -u +%s)
+  said=$(floor_says "$tmp/alive2" pass)
+  took=$(( $(date -u +%s) - began ))
+  is  "a pass read through a pipe is done when the pass is, not a beat later" \
+      "$([ "$took" -lt 40 ] && echo promptly || echo "after $took seconds")" "promptly"
+  has "and it did begin its run" "$said" "this pass took [516]"
+
+  a_beat_repo alive3 517 || { skip "a killed pass — git could not make a repo here"; return; }
+  kill_a_pass_in "$tmp/alive3" "$tmp/alive3.acting" "$dir_source" "touch '$tmp/alive3.acting'; sleep 4"
+  sleep 4
+  has "a pass killed in its command is no pass at work three of its beats later" \
+      "$(floor_says "$tmp/alive3" pass)" "a run is active here already"
+
+  a_beat_repo alive4 518 || { skip "a slow second read — git could not make a repo here"; return; }
+  ( cd "$tmp/alive4" && FOUNDRY_HOME="$home" FOUNDRY_RUN="" FOUNDRY_WHO="" \
+      FOUNDRY_SOURCE="$(a_source_slow_on_the_second_read "$tmp/alive4.reading")" sh "$runner" pass ) >/dev/null 2>&1 &
+  first=$!
+  waited=0
+  while [ ! -f "$tmp/alive4.reading" ] && [ "$waited" -lt 60 ]; do sleep 1; waited=$((waited + 1)); done
+  has "a second pass during the item's second read already sees the first at work" \
+      "$(floor_says "$tmp/alive4" pass)" "a pass is at work"
+  wait "$first"
+
+  # A pass started with TERM ignored hands that on to its beat, and a TERM then stops nothing.
+  a_beat_repo alive5 519 || { skip "a pass that ignores TERM — git could not make a repo here"; return; }
+  ( cd "$tmp/alive5" && trap '' TERM && FOUNDRY_HOME="$home" FOUNDRY_RUN="" FOUNDRY_WHO="" \
+      FOUNDRY_SOURCE="$dir_source" exec sh "$runner" pass ) >/dev/null 2>&1 &
+  deaf=$!
+  waited=0
+  while kill -0 "$deaf" 2>/dev/null && [ "$waited" -lt 60 ]; do sleep 1; waited=$((waited + 1)); done
+  is  "a pass started with TERM ignored still ends" "$([ "$waited" -lt 60 ] && echo ended || echo hung)" "ended"
+  kill -9 "$deaf" 2>/dev/null
+  wait "$deaf" 2>/dev/null
+  is  "and leaves no mark" "$(ls "$(floor "$tmp/alive5" path)"/pass.alive 2>/dev/null | grep -c .)" "0"
+
+  # Read to its end through fd 3, as a bats test or a stderr swap reads one. 5a's judge, round three.
+  a_beat_repo alive6 520 || { skip "a pass read through fd 3 — git could not make a repo here"; return; }
+  ( ( cd "$tmp/alive6" && FOUNDRY_HOME="$home" FOUNDRY_RUN="" FOUNDRY_WHO="" FOUNDRY_SOURCE="$dir_source" \
+      sh "$runner" pass >/dev/null 2>&1 ) 3>&1 | cat >/dev/null ) &
+  reading=$!
+  waited=0
+  while kill -0 "$reading" 2>/dev/null && [ "$waited" -lt 40 ]; do sleep 1; waited=$((waited + 1)); done
+  is  "a pass read through fd 3 is done when the pass is, not a beat later" \
+      "$([ "$waited" -lt 40 ] && echo promptly || echo "after $waited seconds")" "promptly"
+  kill -9 "$reading" 2>/dev/null
+  wait "$reading" 2>/dev/null
+
+  # **Killed outright while its caller reads it to the end**, as `$(...)` reads one. That caller reaps
+  # only after reading, so a beat holding a copy of its pipe kept the dead pass's mark fresh for ever.
+  # The caller is `sh`, since bash reaps a killed child at once and never waits. 5a's judge, round four.
+  #
+  # The command kills its own pass: `$PPID` there is the pass.
+  a_beat_repo alive7 521 || { skip "a pass killed while read — git could not make a repo here"; return; }
+  FOUNDRY_HOME="$home" FOUNDRY_RUN="" FOUNDRY_WHO="" FOUNDRY_SOURCE="$dir_source" FOUNDRY_PASS_BEAT=1 \
+    FOUNDRY_PASS_COMMAND="touch '$tmp/alive7.killing'; kill -9 \$PPID" \
+    sh -c 'said=$(cd "$1" && exec sh "$2" pass 2>&1); : > "$3"' reader "$tmp/alive7" "$runner" "$tmp/alive7.read" &
+  caller=$!
+  waited=0
+  while [ ! -f "$tmp/alive7.killing" ] && [ "$waited" -lt 60 ]; do sleep 1; waited=$((waited + 1)); done
+  waited=0
+  while [ ! -f "$tmp/alive7.read" ] && [ "$waited" -lt 20 ]; do sleep 1; waited=$((waited + 1)); done
+  is  "a caller reading a pass killed outright is done when the pass is" \
+      "$([ -f "$tmp/alive7.read" ] && echo done || echo "still reading after $waited seconds")" "done"
+
+  # A beat left holding the pipe ends once its run is gone, so a red case leaves nothing running.
+  [ -f "$tmp/alive7.read" ] || rm -rf "$(floor "$tmp/alive7" path)"
+  wait "$caller" 2>/dev/null
+  sleep 4
+  has "and the dead pass is no pass at work three of its beats later" \
+      "$(floor_says "$tmp/alive7" pass)" "a run is active here already"
+
+  rm -rf "$src/claims/516" "$src/claims/517" "$src/claims/518" "$src/claims/519" "$src/claims/520" "$src/labels/516" "$src/labels/517" "$src/labels/518" "$src/labels/519" "$src/labels/520"
+  rm -rf "$src/items/516" "$src/items/517" "$src/items/518" "$src/items/519" "$src/items/520"
+  rm -rf "$src/claims/521" "$src/labels/521" "$src/items/521"
+}
+
+# A repository offering one item under its own label.
+a_beat_repo() {
+  make_repo "$tmp/$1" main && set_origin "$tmp/$1" "https://gitlab.com/acme/$1.git" || return 1
+
+  mkdir -p "$src/items" "$src/labels" "$src/claims"
+  printf 'Beat item %s\n' "$2" > "$src/items/$2"
+  printf '%s\t2026-09-10T00:00:00Z\tpat\n' "$1" > "$src/labels/$2"
+  bar_and_rule "$tmp/$1" "offer $1 pat"
+}
+
+# A pass killed during its command, the way a host's crash kills one: SIGKILL once the marker exists.
+kill_a_pass_in() {
+  rm -f "$2"
+  ( cd "$1" || exit 9
+    FOUNDRY_HOME="$home" FOUNDRY_RUN="" FOUNDRY_WHO="" FOUNDRY_SOURCE="$3" \
+      FOUNDRY_PASS_BEAT=1 FOUNDRY_PASS_COMMAND="$4" exec sh "$runner" pass ) >/dev/null 2>&1 &
+  killed=$!
+
+  waited=0
+  while [ ! -f "$2" ] && [ "$waited" -lt 60 ]; do sleep 1; waited=$((waited + 1)); done
+  kill -9 "$killed" 2>/dev/null
+  wait "$killed" 2>/dev/null
+}
+
+# A work source whose first `read` answers at once, and whose later ones wait ten seconds first.
+a_source_slow_on_the_second_read() {
+  rm -f "$tmp/read-once-slow"
+  cat > "$tmp/reads-slowly.sh" <<STUB
+#!/bin/sh
+[ "\$1" = read ] && [ -f '$tmp/read-once-slow' ] && { touch '$1'; sleep 10; }
+[ "\$1" = read ] && : > '$tmp/read-once-slow'
+exec sh '$dir_source' "\$@"
+STUB
+  printf '%s' "$tmp/reads-slowly.sh"
+}
+a_beat_ends_with_its_pass
 
 #
 # **A claim nothing here works on is taken again.** A pass that died between its claim and its run
@@ -9300,8 +9471,8 @@ a_delivery_that_succeeds() {
         "$(code_of floor "$tmp/dv" deliver 'A change worth reading')" "0"
 
   #
-  # What `merge` refuses on, written down. The head is read after the push, so the record names what
-  # landed rather than what the workspace held.
+  # What `merge` refuses on, written down. `deliver` reads the head once, so the record names the one
+  # commit it graded and pushed, whatever the workspace holds after.
   #
   landed=$(cut -d' ' -f2 "$dvrun/delivery")
 
