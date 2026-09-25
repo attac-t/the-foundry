@@ -6771,6 +6771,49 @@ runs_holding() {
 the_rename_family
 
 #
+# **The trigger floor ships runs `run.sh pass` until its file says stop, and keeps nothing.** The case
+# wakes a copy of it beside a runner that only records what each pass was handed. 7d.
+#
+a_wake_runs_passes_until_its_file() {
+  make_repo "$tmp/woken" main || { skip "a wake — git could not make a repo here"; return; }
+  mkdir -p "$tmp/wakebin" "$tmp/wakehome"
+  cp "$(dirname "$runner")/wake.sh" "$tmp/wakebin/wake.sh"
+  a_runner_that_records_its_passes "$tmp/wakebin/run.sh" "$tmp/wakehome"
+
+  is "a wake with no cadence is refused"  "$(code_of wake_in "$tmp/woken")" "2"
+  is "and one that is not whole seconds"  "$(code_of wake_in "$tmp/woken" 0)" "2"
+  is "and one past the claim window"      "$(FOUNDRY_CLAIM_TTL=10 code_of wake_in "$tmp/woken" 11)" "2"
+  is "and a wake outside a checkout"      "$(code_of wake_in "$tmp/wakehome" 1)" "3"
+
+  is "a wake runs passes until its file is there" "$(code_of wake_in "$tmp/woken" 1)" "0"
+  is "and ran two, the second making the file"    "$(grep -c . "$tmp/wakehome/passes")" "2"
+  is "each pass handed the wake's four fields" \
+     "$(sed 's/identity=[0-9]*/identity=N/' "$tmp/wakehome/passes" | sort -u)" \
+     "mechanism=wake.sh cadence=1 identity=N stops=wake.stop"
+  is "and it kept nothing of its own"             "$(ls "$tmp/wakehome" | tr '\n' ' ')" "passes wake.stop "
+  is "nor wrote into the checkout"                "$(git -C "$tmp/woken" status --porcelain)" ""
+
+  rm -f "$tmp/wakehome/passes"
+  is "a wake whose file is there already runs no pass" "$(code_of wake_in "$tmp/woken" 1)" "0"
+  is "and never asks the runner for one"               "$(ls "$tmp/wakehome" | tr '\n' ' ')" "wake.stop "
+}
+
+# A runner that answers `home` with the case's home and records each pass's wake fields. The second
+# pass makes the stop file, as a host would.
+a_runner_that_records_its_passes() {
+  cat > "$1" <<STUB
+#!/bin/sh
+[ "\$1" = home ] && { printf '%s\n' '$2'; exit 0; }
+printf '%s\n' "\${FOUNDRY_WAKE:-unset}" >> '$2/passes'
+[ "\$(grep -c . '$2/passes')" -lt 2 ] || : > '$2/wake.stop'
+STUB
+}
+
+# The copy, woken from a checkout, and bounded so a wake that never stops fails rather than hangs.
+wake_in() { dir=$1; shift; ( cd "$dir" && timeout 30 sh "$tmp/wakebin/wake.sh" "$@" ); }
+a_wake_runs_passes_until_its_file
+
+#
 # **Two judges on one clause, and every fixture before this had one.** A rule with a single instance
 # is a description of that instance: every refusal floor made was both the rule and its only example.
 #

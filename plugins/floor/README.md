@@ -2087,6 +2087,13 @@ points at by then, and an item with no words is titled by its id.
 checkouts on one host could both take one item. One live pass per host is the trigger's to keep,
 #997.
 
+**A host with no timer of its own can use `bin/wake.sh <seconds>`.** It runs `run.sh pass`, waits,
+and runs it again, until `wake.stop` appears in floor's home. It looks for that file before each
+pass. It keeps nothing and holds no lock. The host names the cadence, and there is no default. A
+cadence past the claim window is refused, exit 2, since a claim would lapse between two passes. It
+runs in a checkout it can write, never floor's read-only `/src`, and refuses anything else with 3.
+cron, a systemd timer or a container loop need nothing from floor but `run.sh pass`.
+
 **The host names the command that does the work, in `FOUNDRY_PASS_COMMAND`.** Floor names no
 harness. The pass opens the run's workspace on this checkout's own target, which needs nobody's
 grant, and runs the command there. A step that refuses is a stop the run records. It hands over three

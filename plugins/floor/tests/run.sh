@@ -2596,6 +2596,19 @@ wreck_runner "a run that claims under this host's name while it has its own is c
 wreck_runner "a pass whose run learns its holder only at the bind is caught" \
   holdatbind '/^begin_a_run_for() {/,/^}/s#^    remember_the_holder "\$dir" "\$claimed_as"$#    :#'
 
+#
+# **The trigger floor ships.** It stops at its file, refuses a cadence past the claim window, and names
+# the wake to each pass. Each break is in `wake.sh`, and the case wakes the mutant's copy. 7d.
+#
+wreck_runner "a wake that never reads its stop file is caught" \
+  wakestop 's#^asked_to_stop() { \[ -e "\$home/wake.stop" \]; }$#asked_to_stop() { false; }#' bin/wake.sh
+
+wreck_runner "a wake that takes a cadence past the claim window is caught" \
+  wakelong '/^refuse_a_cadence_past_the_claim_window() {/,/^}/s#^    \[ "\$cadence" -le "\$window" \] \&\& return 0$#    return 0#' bin/wake.sh
+
+wreck_runner "a wake that hands a pass three of its four fields is caught" \
+  wakefields '/^name_this_wake() {/,/^}/s# identity=\$\$##' bin/wake.sh
+
 wreck_runner "a GitHub source that reads an unreachable remote as nobody holding is caught" \
   ghheldgone '/^read_claim() {/,/^}/s#at=\$(claim_tip "\$1") || return 3#at=$(claim_tip "$1")#' lib/source-github.sh
 
