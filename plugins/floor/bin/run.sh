@@ -2505,7 +2505,7 @@ ask_pinned_judges() {
     # the only thing this loop produces that the caller needs.
     while read -r id who command; do
         [ -n "$who" ] || continue
-        judge_answered "$dir" "$ref" "$id" "$who" "$command" || unmet=$((unmet + 1))
+        judge_or_recount "$dir" "$ref" "$id" "$who" "$command" || unmet=$((unmet + 1))
     done <<EOF
 $bench
 EOF
@@ -2513,6 +2513,32 @@ EOF
     [ "$unmet" -eq 0 ] && return 0
     note "judged clauses no judge approved: $unmet"
     return 39
+}
+
+#
+# **A member who answered here, under this charter, is not asked again.** Every answer holds its ref:
+# an approval, a refusal and an unavailable. Asking again spends a round, and it can only cancel a
+# yes. Its answer still counts, so a refusal it gave keeps `judged` at 39.
+#
+judge_or_recount() {
+    asked_text=$(clause_text "$(charter_file "$1")" "$3")
+    answered_here "$1" "$2" "$asked_text" "$4" || { judge_answered "$@"; return; }
+
+    note "[$4] already answered [$asked_text] at this commit, so it was not asked again"
+    satisfied "$1" "$asked_text" "$2" judged "$4"
+}
+
+#
+# **An answer belongs to the handoff it answered.** So this reads the member's latest handoff at this
+# ref: it must carry this charter's version, and an answer must follow it. An older handoff's answer
+# met a bar the run no longer holds, and a handoff nothing followed is a re-ask that died.
+#
+answered_here() {
+    judge=$4 name=$3 awk -F'\t' -v ref="$2" -v version="$(charter_version "$1")" '
+        $4 "" != ENVIRON["name"] "" || $6 "" != ref "" || $8 "" != ENVIRON["judge"] "" { next }
+        $2 == "handed" { current = ($7 "" == version ""); answered = 0; next }
+        $2 == "judged" { answered = 1 }
+        END { exit !(current && answered) }' "$(evidence_file "$1")" 2>/dev/null
 }
 
 #
