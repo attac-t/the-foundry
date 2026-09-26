@@ -91,13 +91,30 @@ echo "audit — break the brief, the suite must notice"
 
 caught_brief() { red_against brief.sh RUNNER="$tmp/$1/bin/brief.sh"; }
 
-# The role and its skills travel with the mutant. `brief.sh` reads them from its own parent, so a
-# copy alone would fail for want of a role rather than for the rule under test.
+# The role, its skills and every file beside it travel with the mutant. `brief.sh` reads all three
+# from its own parent, so a copy missing one fails for want of it, never for the rule under test.
+stage_brief() {
+  rm -rf "${tmp:?}/$1" && mkdir -p "$tmp/$1" \
+    && cp -r "$root/agents" "$root/skills" "$root/bin" "$tmp/$1/"
+}
+
+#
+# The control, run once before any break. An unbroken copy staged as each break is must pass.
+# It once failed nineteen checks for want of `verdicts.sh`, so every break read as caught. #1057.
+#
+refuse_a_staging_that_breaks_the_brief() {
+  stage_brief control || { bad "the brief could not be staged, so no break below proves anything"; return; }
+  caught_brief control
+  [ "$?" -eq 1 ] && { printf '  ok    an unbroken copy, staged as each break is, passes\n'; return; }
+
+  bad "an unbroken copy fails the suite, so no break below proves anything"
+}
+refuse_a_staging_that_breaks_the_brief
+
 wreck_brief() {
   local name="$1" tag="$2" mutation="$3"
 
-  rm -rf "${tmp:?}/$tag" && mkdir -p "$tmp/$tag/bin" || { bad "$name — could not stage"; return; }
-  cp -r "$root/agents" "$root/skills" "$tmp/$tag/" || { bad "$name — could not stage the role"; return; }
+  stage_brief "$tag" || { bad "$name — could not stage"; return; }
   sed "$mutation" "$root/bin/brief.sh" > "$tmp/$tag/bin/brief.sh" \
     || { bad "$name — sed failed, so this proves nothing"; return; }
   [ -s "$tmp/$tag/bin/brief.sh" ] || { bad "$name — the mutant is empty"; return; }
