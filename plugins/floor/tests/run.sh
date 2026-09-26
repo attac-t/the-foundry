@@ -2581,17 +2581,17 @@ wreck_runner "a pass that stops when another host takes its item is caught" \
   passnext '/^this_pass_claims() {/,/^}/s#is held by another host, so this pass passes it over"; return 1; }#is held by another host, so this pass passes it over"; exit 30; }#'
 
 wreck_runner "a pass that takes a second item beside a run in progress is caught" \
-  passleave '/^pass() {/,/^}/s#^    leave_a_run_in_progress_alone$#    :#'
+  passleave '/^pass() {/,/^}/s#^    carry_on_a_run_a_pass_began \&\& return 0$#    :#'
 
-wreck_runner "a pass that works beside a run holding no item is caught" \
-  passany '/^leave_a_run_in_progress_alone() {/,/^}/s#^    here=\$(active_run 2>/dev/null) || return 0$#    here=$(active_run 2>/dev/null) \&\& [ -n "$(item_id "$here")" ] || return 0#'
+wreck_runner "a pass that works in a person's run is caught" \
+  passany '/^leave_a_persons_run() {/,/^}/s#^    \[ -z "\$2" \] || return 0$#    return 0#'
 
 #
 # **A pass at work says so.** Piece 5a: each break removes one part of the mark, and the case runs
 # a second pass from inside the first one's command.
 #
 wreck_runner "a second pass that never reads the mark of a pass at work is caught" \
-  alivenoread '/^leave_a_run_in_progress_alone() {/,/^}/s#^    a_pass_is_alive_in "\$here" \\$#    false \\#'
+  alivenoread '/^leave_a_pass_at_work() {/,/^}/s#^    a_pass_is_alive_in "\$1" || return 0$#    return 0#'
 
 wreck_runner "a pass that never starts its heartbeat is caught" \
   alivenomark '/^begin_a_run_for() {/,/^}/s#^    say_this_pass_is_alive$#    :#'
@@ -2670,8 +2670,11 @@ wreck_runner "a pass that takes an item another run here already has is caught" 
 wreck_runner "a claim nothing here works on, passed over for good, is caught" \
   passstale '/^already_underway_here() {/,/^}/s#^    a_run_here_holds "\$1"$#    :#'
 
+wreck_runner "an item a run began and never bound, taken again from a second checkout, is caught" \
+  heldbegan '/^a_run_here_holds() {/,/^}/s#^        \[ -n "\$run_item" \] || run_item=\$(item_a_pass_began "\${held_by%/}")$#        :#'
+
 wreck_runner "a pass that cannot open its work and leaves no stop is caught" \
-  passopen '/^open_the_work() {/,/^}/s#) >/dev/null || stop_at "\$1" open "\$?"#) >/dev/null || exit 1#'
+  passopen '/^select_the_checkout() {/,/^}/s#) >/dev/null || stop_at "\$1" open "\$?"#) >/dev/null || exit 1#'
 
 wreck_runner "a pass that acts with no command set is caught" \
   passnocmd '/^act_on_it() {/,/^}/s#^    \[ -n "\$host_command" \] || { record_the_stop "\$1" no-command 44; exit 44; }$#    :#'
@@ -2712,13 +2715,13 @@ wreck_runner "a claim bound late and marked kept is caught" \
 # label on. #997, #736.
 #
 wreck_runner "a pass that carries on past a failed gate is caught" \
-  passgates '/^carry_it_to_a_request() {/,/^}/s#^    ( gates ) >/dev/null || stop_at "\$1" gates "\$?"$#    ( gates ) >/dev/null#'
+  passgates '/^pass_the_gates() {/,/^}/s#^    ( gates ) >/dev/null || stop_at "\$1" gates "\$?"$#    ( gates ) >/dev/null#'
 
 wreck_runner "a pass that stops on a charter naming no judge is caught" \
   passunjudged 's#^approved_or_unjudged() { \[ "\$1" -eq 0 \] || \[ "\$1" -eq 8 \]; }$#approved_or_unjudged() { [ "$1" -eq 0 ]; }#'
 
 wreck_runner "a pass that carries on past a judge that refused is caught" \
-  passjudged '/^carry_it_to_a_request() {/,/^}/s#^    approved_or_unjudged "\$code" || stop_at "\$1" judged "\$code"$#    :#'
+  passjudged '/^ask_the_judges() {/,/^}/s#^    approved_or_unjudged "\$code" || stop_at "\$1" judged "\$code"$#    :#'
 
 wreck_runner "a pass that stops on a judge that approved is caught" \
   passapproved 's#^approved_or_unjudged() { \[ "\$1" -eq 0 \] || \[ "\$1" -eq 8 \]; }$#approved_or_unjudged() { [ "$1" -eq 8 ]; }#'
@@ -2755,7 +2758,7 @@ wreck_runner "a GitHub source that trusts a list filled to its bound is caught" 
   openfull 's#^    fewer_than_the_bound "\$said" || return 3$#    :#' lib/source-github.sh
 
 wreck_runner "a second read that fails and leaves no stop is caught" \
-  passreadstop '/^begin_a_run_for() {/,/^}/s#|| stop_at "\$1" read "\$?"$#|| exit "$?"#'
+  passreadstop '/^read_the_item() {/,/^}/s#|| stop_at "\$1" read "\$?"$#|| exit "$?"#'
 
 wreck_runner "a run that never says the pass began is caught" \
   passbegan '/^begin_a_run_for() {/,/^}/s#^    emit "\$dir" pass.began item="\$1"$#    :#'
@@ -2768,6 +2771,109 @@ wreck_runner "a source that cannot be asked to list, read as nothing marked, is 
 
 wreck_runner "a reconcile that reads the item as part of where is caught" \
   reconcilecols '/^report_clashes() {/,/^}/s#read -r branch identity _; do#read -r branch identity; do#'
+
+#
+# **A pass carries on the run a pass began.** Piece 5b: one break per row the door and the resume
+# route, and one per line a resume writes.
+#
+wreck_runner "a run a pass let go of, carried on anyway, is caught" \
+  resumeletgo '/^let_go_of_a_finished_run() {/,/^}/s#^        pass.left|pass.delivered) ;;$#        pass.none) ;;#'
+
+wreck_runner "a run whose item is requested elsewhere, carried on anyway, is caught" \
+  resumerequested '/^carry_on_a_run_a_pass_began() {/,/^}/s#^    let_go_if_requested_elsewhere "\$resumed" "\$resumed_item" \&\& return 1$#    :#'
+
+wreck_runner "a run whose item another host holds, carried on anyway, is caught" \
+  resumeheld '/^let_go_if_held_elsewhere() {/,/^}/s#^    \[ "\$claimed" -eq 0 \] \&\& return 1$#    return 1#'
+
+wreck_runner "a run let go when its item is held, with no line saying so, is caught" \
+  resumeheldline '/^let_go_if_held_elsewhere() {/,/^}/s#^    emit "\$1" pass.left item="\$2" why=held$#    :#'
+
+wreck_runner "a claim nobody could ask, on a resume, read as held is caught" \
+  resumeoutage '/^let_go_if_held_elsewhere() {/,/^}/s#^    \[ "\$claimed" -eq 30 \] \\$#    true \\#'
+
+wreck_runner "a resume that never says it resumed is caught" \
+  resumeline '/^resume_the_run() {/,/^}/s#^    say_where_this_resumes "\$2" "\$3"$#    :#'
+
+wreck_runner "a resume that says it resumed only after its step is caught" \
+  resumeafter '/^resume_the_run() {/,/^}/s#^    say_where_this_resumes "\$2" "\$3"$#    let_go_past_the_bound "$2"; carry_on_from_the_line "$2"; say_where_this_resumes "$2" "$3"#'
+
+wreck_runner "a resume line that could not be written, let pass, is caught" \
+  resumeswallow '/^say_where_this_resumes() {/,/^}/s#^        || die_unwritable "\$(observations_file "\$dir")"$#        || :#'
+
+wreck_runner "a count nobody could read, taken as under the bound, is caught" \
+  countunread '/^let_go_past_the_bound() {/,/^}/s#^    is_a_count "\$counted" && \[ "\$counted" -le "\$(pass_tries)" \] && return 0$#    [ "$counted" -gt "$(pass_tries)" ] || return 0#'
+
+wreck_runner "a resume that never starts its heartbeat is caught" \
+  resumebeat '/^resume_the_run() {/,/^}/s#^    say_this_pass_is_alive$#    :#'
+
+wreck_runner "a resume that ignores its bound is caught" \
+  resumebound '/^resume_the_run() {/,/^}/s#^    let_go_past_the_bound "\$2"$#    :#'
+
+wreck_runner "a recorded wait counted against the bound is caught" \
+  boundwait '/^resumes_counted() {/,/^}/s#open \&\& \$3 != "pass.waiting"#open#'
+
+wreck_runner "a wake killed before it recorded anything, let off, is caught" \
+  boundkilled '/^resumes_counted() {/,/^}/s#open \&\& \$3 != "pass.waiting"#open \&\& $3 == "pass.stopped"#'
+
+wreck_runner "a bound that leaves out the wake counting it is caught" \
+  boundopen '/^resumes_counted() {/,/^}/s#END { print counted + open }#END { print counted + 0 }#'
+
+wreck_runner "a resume that resumes from its own line is caught" \
+  resumedafter '/^say_where_this_resumes() {/,/^}/s#^    \[ "\$resumed_event" != pass.resumed \] || resumed_event=\$(field_of "\$2" after)$#    :#'
+
+wreck_runner "a resume line that drops the stop's why is caught" \
+  resumedwhy '/^say_where_this_resumes() {/,/^}/s#\${resumed_why:+"why=\$resumed_why"} ##'
+
+wreck_runner "a waiting line routed as no line at all is caught" \
+  waitingrow '/^carry_on_from_the_line() {/,/^}/s#^        pass.stopped|pass.waiting) carry_on_from_the_stop "\$1" ;;$#        pass.stopped) carry_on_from_the_stop "$1" ;;#'
+
+wreck_runner "a resumed run that never reads an item no read landed is caught" \
+  rereaditem '/^carry_on_from_the_start() {/,/^}/s#^    \[ -n "\$(item_id "\$dir")" \] || read_the_item "\$1"$#    :#'
+
+wreck_runner "a resumed open that selects its target twice is caught" \
+  skiptarget '/^select_the_checkout() {/,/^}/s#^    \[ -z "\$(list_targets "\$(unit_targets_file "\$dir")")" \] || return 0$#    :#'
+
+wreck_runner "a wait on the host with no line is caught" \
+  hostwaitline '/^wait_on_the_host() {/,/^}/s#^    emit "\$dir" pass.waiting item="\$1" why=no-command$#    :#'
+
+wreck_runner "a wait on a person with no line is caught" \
+  personwaitline '/^wait_on_a_person() {/,/^}/s#^    emit "\$dir" pass.waiting item="\$1" why=deliver code="\$2"$#    :#'
+
+wreck_runner "a grant deliver asks for, read as nothing a person can answer, is caught" \
+  deliverperson '/^deliver_and_route() {/,/^}/s#^        15|18|32) wait_on_a_person#        15|32) wait_on_a_person#'
+
+wreck_runner "a failed send let go rather than sent again is caught" \
+  deliversend '/^deliver_and_route() {/,/^}/s#^        19)       stop_at "\$1" deliver 19 ;;$#        19) ;;#'
+
+wreck_runner "a code no row names, let go with no line, is caught" \
+  deliverother '/^let_the_run_go() {/,/^}/s#^    emit "\$dir" pass.left item="\$1" why=deliver code="\$2"$#    :#'
+
+wreck_runner "a pass that never counts revise rounds is caught" \
+  roundsignored '/^act_on_a_refusal() {/,/^}/s#^    \[ -z "\$(members_out_of_rounds "\$2")" \] || { stop_the_item_here "\$1" rounds; exit 48; }$#    :#'
+
+wreck_runner "revise rounds counted across members, not apart, is caught" \
+  roundsapart '/^refusals_by() {/,/^}/s#^        \$4 "" != ENVIRON\["name"\] "" || \$8 "" != ENVIRON\["judge"\] "" { next }$#        $4 "" != ENVIRON["name"] "" { next }#'
+
+wreck_runner "a charter with no rounds line, bounded by nothing, is caught" \
+  roundsdefault '/^members_out_of_rounds() {/,/^}/s#is_a_count "\$spent_limit" || spent_limit=3#is_a_count "$spent_limit" || spent_limit=99#'
+
+wreck_runner "a deadlock read as something new work could change is caught" \
+  ledgerdeadlock '/^leave_on_an_answer_that_stops() {/,/^}/s#^    answered_by_any "\$2" deadlock    \&\& .*#    :#'
+
+wreck_runner "a judge that could not be reached read as one that might answer is caught" \
+  ledgerunavailable '/^leave_on_an_answer_that_stops() {/,/^}/s#^    answered_by_any "\$2" unavailable \&\& .*#    :#'
+
+wreck_runner "a silent member left unasked at a judged stop is caught" \
+  ledgersilent '/^let_the_ledger_decide() {/,/^}/s#^    ask_the_judges "\$1"$#    :#'
+
+wreck_runner "a handoff read as an answer is caught" \
+  ledgerhanded '/^last_answer_at() {/,/^}/s#^        \$2 != "judged"  *{ next }$#        0 { next }#'
+
+wreck_runner "a run let go that the checkout still points at is caught" \
+  letgopointer '/^let_go_of() {/,/^}/s#^    rm -f "\$let_go_mark"$#    :#'
+
+wreck_runner "a run FOUNDRY_RUN names, let go without a word, is caught" \
+  letgonamed '/^let_go_of() {/,/^}/s#^    \[ -z "\$named_by_the_caller" \] \\$#    true \\#'
 
 
 # Whether `chmod 000` means anything here. Windows records no read bit and root ignores the one it
