@@ -2182,7 +2182,8 @@ leaves a run waiting too, 44.
 **A wait is never counted, and every other resume is.** `FOUNDRY_PASS_TRIES` bounds them, five by
 default. Past it the pass writes `pass.left why=tries`, 46. A wake killed partway still counts,
 because its line was written first. A home that cannot take that line stops the wake before any
-step, 3, and a count nobody could read is past the bound. Revise rounds are resumes too, so a
+step, 3, and a count nobody could read is past the bound. While the home stays that way, every wake
+stops there, and the claim the door renewed keeps the item on this host, uncounted, as a wait does. Revise rounds are resumes too, so a
 `rounds` limit above the bound is never reached.
 
 **What the bound costs:** a run that needs more than five resumes stops, even if each one moved it

@@ -64,10 +64,12 @@ itself.
 | `FOUNDRY_WHO` `FOUNDRY_WORKER` | who the record says did it |
 | `FOUNDRY_PASS_COMMAND` `FOUNDRY_PASS_BEAT` `FOUNDRY_PASS_TRIES` `FOUNDRY_CLAIM_FLOOR` | **missing here until 24 September**: what a pass runs, how often it beats, how often it resumes, and how often a claim is asked about |
 
-**Three settings change the condition a decision below fires on.** `FOUNDRY_PASS_TRIES` moves when
+**These settings change the condition a decision below fires on.** `FOUNDRY_PASS_TRIES` moves when
 46 does, and its row is a `default` for that reason. `FOUNDRY_CLAIM_TTL` moves when `claim` answers
-30, since a claim older than its window may be broken. `FOUNDRY_PASS_BEAT` moves when the door
-answers 43, since a mark ages by its writer's beat. The rest change what the run is looking at —
+30, since a claim older than its window may be broken. `FOUNDRY_CLAIM_FLOOR` moves when
+`refuse_an_item_another_host_holds` answers 30, since it sets how long a kept or lost mark stands in
+for the source. `FOUNDRY_PASS_BEAT` moves when the door answers 43, since a mark ages by its
+writer's beat. The rest change what the run is looking at —
 which adapter, which home, which file the detector reads. **That is a different thing, and
 confusing the two is how a setting that softens an invariant gets built by accident.**
 
