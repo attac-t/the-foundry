@@ -7303,6 +7303,37 @@ a_released_item_is_taken_again() {
 }
 a_released_item_is_taken_again
 
+#
+# **A change to either setting reaches the next pass.** The host names the cadence, the repository
+# the rule. A rule is read at a run's own base, so a change reaches the next run, never one begun
+# already. #997's fourth box.
+#
+a_change_to_either_setting_reaches_the_next_pass() {
+  make_repo "$tmp/cadenced" main || { skip "a changed cadence — git could not make a repo here"; return; }
+  mkdir -p "$tmp/cadencebin" "$tmp/cadencehome"
+  cp "$(dirname "$runner")/wake.sh" "$tmp/cadencebin/wake.sh"
+  a_runner_that_records_its_passes "$tmp/cadencebin/run.sh" "$tmp/cadencehome"
+
+  # The stub stops the wake at its second line, so the second wake runs one pass and adds a third.
+  ( cd "$tmp/cadenced" && timeout 30 sh "$tmp/cadencebin/wake.sh" 1 ) >/dev/null 2>&1
+  rm -f "$tmp/cadencehome/wake.stop"
+  ( cd "$tmp/cadenced" && timeout 30 sh "$tmp/cadencebin/wake.sh" 2 ) >/dev/null 2>&1
+  is "a host that changes its cadence changes the next pass's record" \
+     "$(sed 's/.* cadence=\([0-9]*\) .*/\1/' "$tmp/cadencehome/passes" | tr '\n' ' ')" "1 1 2 "
+
+  a_resumable_repo changed 594 || { skip "a changed rule — git could not make a repo here"; return; }
+  commit_file "$tmp/changed" .foundry/practice 'offer before pat' && as_fetched "$tmp/changed"
+  is  "a rule offering another label takes nothing" "$(code_of floor "$tmp/changed" pass)" "42"
+
+  commit_file "$tmp/changed" .foundry/practice 'offer changed pat' && as_fetched "$tmp/changed"
+  is  "a person's change to the rule, once fetched, reaches the next pass" \
+      "$(code_of floor "$tmp/changed" pass)" "44"
+  has "which took the item the new rule offers" "$(last_wake_line ended)" "read=took:594"
+
+  rm -rf "$src/claims/594" "$src/labels/594" "$src/items/594"
+}
+a_change_to_either_setting_reaches_the_next_pass
+
 # A pass stopped at the door records what it met, and the live pass's two lines hold its lines between.
 a_door_exit_is_recorded() {
   a_resumable_repo recorded2 641 || { skip "a door exit recorded — git could not make a repo here"; return; }

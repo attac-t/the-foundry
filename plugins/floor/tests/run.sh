@@ -2609,6 +2609,11 @@ wreck_runner "a wake that takes a cadence past the claim window is caught" \
 wreck_runner "a wake that hands a pass three of its four fields is caught" \
   wakefields '/^name_this_wake() {/,/^}/s# identity=\$\$##' bin/wake.sh
 
+# One cadence whatever the host named. The four-fields check reads a wake at 1, so only a second
+# wake at another cadence can see it. #997's fourth box.
+wreck_runner "a wake that names one cadence, whatever the host set, is caught" \
+  wakecadence '/^name_this_wake() {/,/^}/s#cadence=\$cadence #cadence=1 #' bin/wake.sh
+
 #
 # **One live pass per host, taken at the door.** One break per rule the spec names: the look, the
 # take, the read, the beat, the exit action, the aging, the `.found` name, the sweep and the check. 7a.
