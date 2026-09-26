@@ -6720,20 +6720,13 @@ $(a_judge_that_approves)" \
 
   differs "a member who never answered stops the pass" \
           "$(FOUNDRY_PASS_COMMAND=$COMMITTING_WORKER code_of floor "$tmp/rss" pass)" "0"
-
-  # A handoff is not an answer. Read as one, the silent member counts as a yes, and the pass goes to
-  # the request, where it is asked anyway: only a wake while it is still silent tells the two apart.
-  resume_in "$tmp/rss" >/dev/null
-  has "a wake while it still cannot answer stops at judged again, never at the request" \
-      "$(last_pass_line_in "$tmp/rss")" "pass.stopped item=512 why=judged"
-
   touch "$tmp/rss.may-answer"
   run=$(floor "$tmp/rss" path)
   is "once it can answer, the next wake goes on to the request" "$(resume_in "$tmp/rss")" "47"
   is "the member who approved was handed the bar once" \
      "$(awk -F'\t' '$2 == "handed" && $8 == "first:adversary"' "$run/evidence" | grep -c .)" "1"
-  is "and the silent one three times, asked alone" \
-     "$(awk -F'\t' '$2 == "handed" && $8 == "second:adversary"' "$run/evidence" | grep -c .)" "3"
+  is "and the silent one twice, asked alone" \
+     "$(awk -F'\t' '$2 == "handed" && $8 == "second:adversary"' "$run/evidence" | grep -c .)" "2"
 
   # A judge that could not be reached, and one out of rounds: neither is an answer new work can change.
   a_judged_pass "$tmp/rsu" rsu unavailable 513 || { skip "an unreachable judge — git could not make a repo here"; return; }
@@ -6753,6 +6746,25 @@ $(a_judge_that_approves)" \
   rm -rf "$src/claims/513" "$src/claims/514" "$src/labels/513" "$src/labels/514" "$src/items/513" "$src/items/514"
 }
 the_ledger_decides_at_a_judged_stop
+
+#
+# **A handoff is not an answer.** A refusal, then a handoff nobody answered at the same commit, is
+# still a refusal, so the pass acts again. Read as an answer, the handoff's 0 is a yes: the pass only
+# asks `judged`, and the command never runs. The one state the kind filter in `last_answer_at` decides.
+#
+a_handoff_after_a_refusal_is_no_answer() {
+  mkdir -p "$src/items" "$src/labels" "$src/claims"
+  a_judged_pass "$tmp/rsh" rsh reject 593 || { skip "a handoff after a refusal — git could not make a repo here"; return; }
+  is "a refusal stops the pass" "$(FOUNDRY_PASS_COMMAND=true resume_in "$tmp/rsh")" "39"
+
+  floor "$tmp/rsh" evidence handed 'a stranger can read it' a-reviewer 'a test harness' >/dev/null 2>&1
+  FOUNDRY_PASS_COMMAND="touch '$tmp/rsh.acted'" resume_in "$tmp/rsh" >/dev/null
+  is "a refusal, then a handoff nobody answered, is still a refusal: the pass acts again" \
+     "$(ls "$tmp" | grep -c '^rsh\.acted$')" "1"
+
+  rm -rf "$src/claims/593" "$src/labels/593" "$src/items/593"
+}
+a_handoff_after_a_refusal_is_no_answer
 
 #
 # **A send that failed is sent again next wake**, and the run delivers once the remote is there.
