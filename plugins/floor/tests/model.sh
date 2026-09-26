@@ -75,20 +75,20 @@ isolate_git_transport "$tmp" || { printf 'could not isolate the git transport\n'
 dir_source="$(dirname "$runner")/../lib/source-dir.sh"
 
 floor_as() {
-  dir=$1; home_dir=$2; run=$3; shift 3
+  local dir="$1" home_dir="$2" run="$3"; shift 3
   ( cd "$dir" 2>/dev/null || exit 9
     FOUNDRY_HOME="$home_dir" FOUNDRY_RUN="$run" FOUNDRY_WHO=""       FOUNDRY_SOURCE="$dir_source" sh "$runner" "$@" 2>/dev/null )
 }
 
 # The common case: this suite's home, and no run variable — or a developer with one exported answers
 # half these checks with their own run, and the suite passes for the wrong reason on their machine.
-floor() { dir=$1; shift; floor_as "$dir" "$home" "" "$@"; }
+floor() { local dir="$1"; shift; floor_as "$dir" "$home" "" "$@"; }
 
 # Like `floor`, but keeps what the CLI said while refusing. Every refusal explains itself on stderr,
 # and `floor_as` drops it — so an outer `2>&1` at the call site captures nothing and the check reads
 # as if the runner said nothing at all.
 floor_says() {
-  dir=$1; shift
+  local dir="$1"; shift
   ( cd "$dir" 2>/dev/null || exit 9
     FOUNDRY_HOME="$home" FOUNDRY_RUN="" FOUNDRY_WHO=""       FOUNDRY_SOURCE="$dir_source" sh "$runner" "$@" 2>&1 )
 }
@@ -96,14 +96,14 @@ floor_says() {
 # A run someone selected. `new` records whoever the environment names, and a container names nobody —
 # so a test about delivery has to say who, because invariant 4 is one of its conjuncts.
 floor_new_as() {
-  dir=$1; who=$2; shift 2
+  local dir="$1" who="$2"; shift 2
   ( cd "$dir" 2>/dev/null || exit 9
     FOUNDRY_HOME="$home" FOUNDRY_RUN="" FOUNDRY_WHO="$who" sh "$runner" new "$@" 2>/dev/null )
 }
 
 # Named, because `worker` reads the environment and nothing else can say who produced the work.
 floor_worked() {
-  dir=$1; said=$2; shift 2
+  local dir="$1" said="$2"; shift 2
   ( cd "$dir" 2>/dev/null || exit 9
     FOUNDRY_HOME="$home" FOUNDRY_RUN="" FOUNDRY_WHO="" FOUNDRY_WORKER="$said" \
       sh "$runner" "$@" 2>/dev/null )
@@ -112,14 +112,14 @@ floor_worked() {
 # Named, and never as the thing that produced the work. `reconcile accept` refuses a worker, so
 # an accept in this suite has to say who — and `floor` says nobody.
 floor_accepted_by() {
-  dir=$1; who=$2; shift 2
+  local dir="$1" who="$2"; shift 2
   ( cd "$dir" 2>/dev/null || exit 9
     FOUNDRY_HOME="$home" FOUNDRY_RUN="" FOUNDRY_WHO="$who" FOUNDRY_WORKER=""       sh "$runner" "$@" 2>/dev/null )
 }
 
 # `floor_worked`, keeping what it said while refusing.
 floor_worked_says() {
-  dir=$1; said=$2; shift 2
+  local dir="$1" said="$2"; shift 2
   ( cd "$dir" 2>/dev/null || exit 9
     FOUNDRY_HOME="$home" FOUNDRY_RUN="" FOUNDRY_WHO="" FOUNDRY_WORKER="$said"       sh "$runner" "$@" 2>&1 )
 }
@@ -127,7 +127,7 @@ floor_worked_says() {
 # Everything a gate needs before it can run: a charter, a selection, and a workspace to grade. Four
 # calls in every test that reaches the gate stage, and the gate stage is most of them.
 ready_run() {
-  dir=$1; identity=$2; ref=${3:-main}
+  local dir="$1" identity="$2" ref="${3:-main}"
   floor_new_as "$dir" ada@example.com "Ready" >/dev/null
   floor "$dir" charter derive >/dev/null 2>&1
   floor "$dir" policy authorize "$identity" >/dev/null 2>&1
@@ -6965,7 +6965,7 @@ pin_of() { git hash-object --no-filters -- "$tmp/a plugin/adapters/$1/run.sh" 2>
 # `floor`, through the plugin tree above. An adapter resolves under the runner's own plugin root, so
 # a check about one needs a root it can put an adapter in.
 floor_at() {
-  dir=$1; shift
+  local dir="$1"; shift
   ( cd "$dir" 2>/dev/null || exit 9
     FOUNDRY_HOME="$home" FOUNDRY_RUN="" FOUNDRY_WHO="" FOUNDRY_SOURCE="$dir_source" \
       sh "$tmp/a plugin/bin/run.sh" "$@" 2>/dev/null )
@@ -6973,7 +6973,7 @@ floor_at() {
 
 # The same, keeping what it said while refusing.
 floor_at_says() {
-  dir=$1; shift
+  local dir="$1"; shift
   ( cd "$dir" 2>/dev/null || exit 9
     FOUNDRY_HOME="$home" FOUNDRY_RUN="" FOUNDRY_WHO="" FOUNDRY_SOURCE="$dir_source" \
       sh "$tmp/a plugin/bin/run.sh" "$@" 2>&1 )
@@ -9630,5 +9630,30 @@ a_session_that_held_no_run() {
   is "and says nothing at all"  "$(ended_says "$tmp/quiet-end")"       ""
 }
 a_session_that_held_no_run
+
+#
+# **A helper leaves the caller's names as it found them.** `floor_as` set `dir`, `home_dir` and `run`
+# in the calling shell, so a case that kept its run in `run` read `/observations` afterwards. #1049.
+#
+a_helper_keeps_the_callers_names() {
+  make_repo "$tmp/names" main || { skip "a helper's names — git could not make a repo here"; return; }
+
+  dir=kept home_dir=kept run=kept who=kept said=kept identity=kept ref=kept
+  floor "$tmp/names" new "Names" >/dev/null
+  floor_as "$tmp/names" "$home" "" path >/dev/null
+  floor_says "$tmp/names" path >/dev/null
+  floor_new_as "$tmp/names" ada@example.com "Named" >/dev/null
+  floor_worked "$tmp/names" a-worker path >/dev/null
+  floor_accepted_by "$tmp/names" ada@example.com path >/dev/null
+  floor_worked_says "$tmp/names" a-worker path >/dev/null
+  floor_at "$tmp/names" path >/dev/null
+  floor_at_says "$tmp/names" path >/dev/null
+  ready_run "$tmp/names" 'https://gitlab.com/acme/names.git'
+
+  is "every name a helper takes is as the case left it" \
+     "$dir $home_dir $run $who $said $identity $ref" "kept kept kept kept kept kept kept"
+  unset dir home_dir run who said identity ref
+}
+a_helper_keeps_the_callers_names
 
 summary "model"
