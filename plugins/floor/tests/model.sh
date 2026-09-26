@@ -6699,6 +6699,25 @@ $(a_judge_that_approves)" \
 the_ledger_decides_at_a_judged_stop
 
 #
+# **A handoff is not an answer.** A refusal, then a handoff nobody answered at the same commit, is
+# still a refusal, so the pass acts again. Read as an answer, the handoff's 0 is a yes: the pass only
+# asks `judged`, and the command never runs. The one state the kind filter in `last_answer_at` decides.
+#
+a_handoff_after_a_refusal_is_no_answer() {
+  mkdir -p "$src/items" "$src/labels" "$src/claims"
+  a_judged_pass "$tmp/rsh" rsh reject 593 || { skip "a handoff after a refusal — git could not make a repo here"; return; }
+  is "a refusal stops the pass" "$(FOUNDRY_PASS_COMMAND=true resume_in "$tmp/rsh")" "39"
+
+  floor "$tmp/rsh" evidence handed 'a stranger can read it' a-reviewer 'a test harness' >/dev/null 2>&1
+  FOUNDRY_PASS_COMMAND="touch '$tmp/rsh.acted'" resume_in "$tmp/rsh" >/dev/null
+  is "a refusal, then a handoff nobody answered, is still a refusal: the pass acts again" \
+     "$(ls "$tmp" | grep -c '^rsh\.acted$')" "1"
+
+  rm -rf "$src/claims/593" "$src/labels/593" "$src/items/593"
+}
+a_handoff_after_a_refusal_is_no_answer
+
+#
 # **A send that failed is sent again next wake**, and the run delivers once the remote is there.
 a_failed_send_is_sent_again() {
   a_resumable_repo rsy 515 'https://github.com/acme/rsy.git' \
