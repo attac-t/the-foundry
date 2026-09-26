@@ -154,6 +154,13 @@ wreck_brief "a chain that records nothing answered as a prior round is caught" \
 wreck_brief "a role's declared skills quietly dropped is caught" \
   noskills 's#^    declared_skills "\$file" | while IFS= read -r skill; do#    false | while IFS= read -r skill; do#'
 
+#
+# Words asked for after the verdict line. Every word is still in the brief, in the wrong order, so
+# only the check on its last line can see it. #1056.
+wreck_brief "a paragraph asked for after the verdict line is caught" \
+  paraafter '/^    VERDICT: revise$/a\
+Then one paragraph saying why.'
+
 bash "$root/tests/chain.sh" || failed=1
 echo
 

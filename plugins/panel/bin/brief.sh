@@ -196,6 +196,9 @@ say_the_clause() { printf '\n---\n\n# The clause you answer\n\n    %s\n\n' "$cla
 #
 # Your role names four outcomes and the recorder takes three. A judge reading both lists picks one
 # nothing can store, and a verdict nothing stores is a verdict nobody gave.
+#
+# The line comes last. Floor's adapters read the last line that carries anything, and this used to
+# ask for a paragraph after it, which a judge could not write and also end on the line. #1056.
 say_what_is_wanted() {
     cat <<'ASK'
 Answer that clause and nothing else. Do not propose patches. Do not edit anything.
@@ -203,16 +206,16 @@ Answer that clause and nothing else. Do not propose patches. Do not edit anythin
 Your role names four outcomes. Only three can be recorded, so use these words and no others.
 A SPLIT or a DEADLOCK is a `revise`, and the paragraph says which it was.
 
-End with exactly one line, on its own:
+First, one paragraph saying why. Name the severity, and what would have to change.
+
+If the charter or the work says NOT SUPPLIED above, say so in that paragraph before anything else.
+A verdict given without the bar is worth what it was given.
+
+Then end with exactly one line, on its own, and nothing after it:
 
     VERDICT: approve
     VERDICT: reject
     VERDICT: revise
-
-Then one paragraph saying why. Name the severity, and what would have to change.
-
-If the charter or the work says NOT SUPPLIED above, say so in that paragraph before anything else.
-A verdict given without the bar is worth what it was given.
 ASK
 }
 

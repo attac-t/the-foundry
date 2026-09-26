@@ -80,6 +80,12 @@ what_reaches_the_judge() {
   has "a skill the role declares"   "$said" "Craft Verdict"
   has "which outcome words bind"    "$said" "VERDICT: revise"
 
+  # Floor's adapters read the last line that carries anything. A brief asking for words after the
+  # verdict asks the judge to leave none. #1056.
+  is  "the verdict line is the last thing it asks for" \
+      "$(printf '%s\n' "$said" | awk 'NF { last = $0 } END { sub(/^[ \t]+/, "", last); print last }')" "VERDICT: revise"
+  has "and it says nothing may follow it" "$said" "nothing after it"
+
   # Absent is legal. Silent is not.
   bare=$(brief adversary 'a clause' --verdicts "$tmp/empty" --review R1)
   has "a missing charter is said out loud" "$bare" "NOT SUPPLIED"
