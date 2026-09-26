@@ -7304,9 +7304,9 @@ a_released_item_is_taken_again() {
 a_released_item_is_taken_again
 
 #
-# **A change to either setting reaches the next pass.** The host names the cadence, the repository
-# the rule. A rule is read at a run's own base, so a change reaches the next run, never one begun
-# already. #997's fourth box.
+# **A change to either setting reaches the next pass's record.** The host names the cadence, the
+# repository the rule. Each pass reads the rule at the fetched tip, but nothing floor ships fetches:
+# this case moves `origin/HEAD` itself, and #1060 owns the host that never does. #997's fourth box.
 #
 a_change_to_either_setting_reaches_the_next_pass() {
   make_repo "$tmp/cadenced" main || { skip "a changed cadence — git could not make a repo here"; return; }
