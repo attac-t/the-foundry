@@ -2142,7 +2142,9 @@ names are a day old.
 **What the door cannot see.** A command still running after its pass was killed, which #1046 owns. A
 reused process id, which keeps a dead pass's mark fresh until it goes. And a machine that slept past
 three beats: a second pass starts, and one in the same checkout can resume the live pass's own run,
-so two passes work one workspace for up to one verb.
+so two passes work one workspace for up to one verb. That verb can be a resume's own tail. The pass
+that slept may then let go of the run the new holder works, and remove the checkout's pointer. The
+next wake passes the item over as underway, until a person acts.
 
 **Every wake is recorded, whether or not a run is made.** `wakes` in floor's home gets two lines per
 pass, each appended whole: `woke` first, and `ended` at exit with what the pass met and its code.

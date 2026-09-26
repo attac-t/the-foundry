@@ -7225,10 +7225,7 @@ the_sweep_stays_below() {
   printf 'ended\n' > "$home/pass/$young"
   : > "$home/pass/9999999999.$(( now - 172800 )).1.found"
 
-  # A `run_alive` in the environment names a file the beat would write and the exit remove.
-  : > "$tmp/swept.victim"
-  run_alive="$tmp/swept.victim" floor "$tmp/swept" pass >/dev/null 2>&1
-  is "a pass writes nothing into a file its environment calls run_alive" "$(cat "$tmp/swept.victim" 2>&1)" ""
+  floor "$tmp/swept" pass >/dev/null 2>&1
   is "a sweep removes a number below its own whose side names are a day old" \
      "$(ls "$home/pass" | grep -c "^$old")" "0"
   is "keeps one whose side name is younger" "$(ls "$home/pass" | grep -c "^$young\$")" "1"
@@ -7258,7 +7255,12 @@ every_wake_is_recorded() {
   make_repo "$tmp/recorded-idle" main && set_origin "$tmp/recorded-idle" 'https://gitlab.com/acme/recorded.git' \
     || { skip "a wake offered nothing — git could not make a repo here"; return; }
   bar_and_rule "$tmp/recorded-idle" 'offer nobodymarked pat'
-  is  "a pass offered nothing still records its wake" "$(code_of floor "$tmp/recorded-idle" pass)" "42"
+  # A `run_alive` in the environment names a file the exit would remove. A pass that begins no run
+  # keeps the name to its exit, so only a pass that takes nothing can show it.
+  : > "$tmp/recorded.victim"
+  is  "a pass offered nothing still records its wake" \
+      "$(run_alive="$tmp/recorded.victim" code_of floor "$tmp/recorded-idle" pass)" "42"
+  is  "and leaves alone a file its environment calls run_alive" "$(ls "$tmp" | grep -c '^recorded\.victim$')" "1"
   has "and ended with what it met" "$(last_wake_line ended)" "read=nothing-offered code=42"
 
   # A host that names no work source still wakes, so that wake is recorded before the refusal.
