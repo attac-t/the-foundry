@@ -140,8 +140,8 @@ wreck_brief "a directory passing for a charter is caught" \
   dirbar 's#^    \[ -f "\$2" \] || fail 4 "the \$1 at \[\$2\] is not a file"$#    :#'
 
 #
-# A chain that cannot say which round this is, carrying on anyway. That is the fail-closed rule
-# inverted, and `a chain nobody made stops the brief` is what kills it.
+# A chain that cannot say which round this is, carrying on anyway: the fail-closed rule inverted.
+# `and says the chain could not say which round` kills it. The exit-code check beside it cannot.
 #
 # By pattern, not by line number. It named lines 169 and 172, and 172 had long since stopped being a
 # refusal — a mutant aimed at the wrong line proves whatever that line happens to do.
