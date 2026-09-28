@@ -261,8 +261,8 @@ case_no_handoff() {
 # --- blind-stamp ---
 #
 # The account is not provenance. Two people share one and a run posts under another, so floor stamps
-# what it writes and the stamp is read before the account is. The checkpoint holds a person's answer
-# and a stamped comment beneath it, immediately before the read.
+# what it writes and a stamped comment is dropped whole. The checkpoint holds a person's yes and a
+# stamped comment holding the same yes, at a time only it carries, immediately before the read.
 
 checkpoint_blind_stamp() {
     make_repo "$tmp/bs" main || return 1
@@ -270,6 +270,8 @@ checkpoint_blind_stamp() {
     commit_file "$tmp/bs" Makefile 'test:
 	echo ok
 ' || return 1
+    mkdir -p "$tmp/bs/.foundry" || return 1
+    commit_file "$tmp/bs" .foundry/practice 'authorise a-person' || return 1
 
     fake_gh "$tmp/ghbin" || return 1
     the_store_this_case_reads || return 1
@@ -279,20 +281,25 @@ checkpoint_blind_stamp() {
     gh_floor charter derive >/dev/null 2>&1 || return 1
     gh_floor source ask authorisation tests 'May this clause exist?' >/dev/null 2>&1 || return 1
 
-    gh_says 'yes, go ahead'
-    said_by a-person 'floor-run: whatever-run
+    gh_says "yes $(the_question_this_case_asks)"
+    said_by a-person "floor-run: whatever-run
 
-The answer is 9876543210.'
+yes $(the_question_this_case_asks)" 2026-09-02T09:09:09Z
 }
 
 case_blind_stamp() {
     the_store_this_case_reads
 
     has "a person's answer comes back" \
-        "$(gh_floor source receive authorisation tests)" "yes, go ahead"
+        "$(gh_floor source receive authorisation tests)" "yes $(the_question_this_case_asks)"
 
     lacks "a stamped comment is dropped whatever the account said" \
-          "$(gh_floor source receive authorisation tests)" "9876543210"
+          "$(gh_floor source receive authorisation tests)" "2026-09-02T09:09:09Z"
+}
+
+# The run, the stage and the clause. Derived here, because `clause_of` sits below the line a case runs.
+the_question_this_case_asks() {
+    printf '%s.authorisation.%s' "$(basename "$(gh_floor path)")" "$(printf '%s' tests | cksum | awk '{ print $1 }')"
 }
 
 # What the stub answers from. Set in both halves, because a checkpoint keeps files and never a

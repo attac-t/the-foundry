@@ -229,24 +229,92 @@ set -u
 store=${GH_STORE:?}
 mkdir -p "$store"
 
+# What `gh` says on stderr when the call worked — a new release, a deprecation, a rate-limit hint.
+# A reader folding stderr into stdout turns one of those into data, and here data is a check the
+# target is said to require. Off unless a test asks for it.
+chatter() {
+  [ -f "$store/gh-chatter" ] && echo "gh: A new release of gh is available: 2.94.0 -> 2.95.0" >&2
+  return 0
+}
+
+# The `--jq` the adapter sent, whatever else it passed.
+the_jq() { prev=; for arg in "$@"; do [ "$prev" = --jq ] && printf '%s\n' "$arg"; prev=$arg; done; }
+
+# Each comment still on the item, oldest first. A deleted comment loses its body and keeps its author,
+# so slots only grow, and a new comment never takes a deleted one's place.
+slots() { for body in "$store/comments"/*; do [ -f "$body" ] && printf '%s\n' "${body##*/}"; done; }
+
+author_of() { cat "$store/authors/$1" 2>/dev/null || printf 'foundry-run\n'; }
+
+# `createdAt`: the time a case wrote, or one second a comment from a fixed start. A later comment is
+# always later, and in the same second only when a case says so.
+time_of() {
+  [ -f "$store/times/$1" ] && { cat "$store/times/$1"; return; }
+  printf '%s\n' "$1" | awk '{ n = $1 + 0; printf "2026-09-01T%02d:%02d:%02dZ\n", int(n / 3600), int(n / 60) % 60, n % 60 }'
+}
+
+# A jq regex, read a line at a time. `(^|\n)` opens a line, which is `^` to a reader of lines.
+per_line() { printf '%s\n' "$1" | sed 's/^(^|\\n)/^/'; }
+
+# The regexes an expression names: the stamp `receive` drops, the marker `speaker` selects, and the
+# marker it captures a question after.
+stamp_tested()    { printf '%s\n' "$1" | sed -n 's/.*select(\.body | test("\([^"]*\)") | not).*/\1/p' | head -n 1; }
+marker_selected() { printf '%s\n' "$1" | sed -n 's/.*select(\.body | test("\([^"]*\)")).*/\1/p' | head -n 1; }
+marker_captured() { printf '%s\n' "$1" | sed -n 's/.*capture("\([^"]*\)(?<q>.*/\1/p' | head -n 1; }
+
+# `receive`'s expression: every comment the stamp test leaves, a line at a time after its author and
+# time. The stamp is read out of the expression, so one that stops testing for it stops dropping.
+lines_said() {
+  stamp=$(per_line "$(stamp_tested "$1")")
+  for slot in $(slots); do
+    awk -v who="$(author_of "$slot")" -v when="$(time_of "$slot")" -v stamp="$stamp" '
+      { held[NR] = $0 }
+      stamp != "" && $0 ~ stamp { stamped = 1 }
+      END { if (stamped) exit; for (i = 1; i <= NR; i++) printf "%s\t%s\t%s\n", who, when, held[i] }
+    ' "$store/comments/$slot"
+  done
+}
+
+# `speaker`'s questions: the first comment carrying each marker, in comment order, as its author, the
+# question and its time. The select, the capture and keeping the first are each read out of the
+# expression, so one that stops doing any of them is answered as though it stopped.
+questions_asked() {
+  selected=$(per_line "$(marker_selected "$1")")
+  marked=$(per_line "$(marker_captured "$1")")
+  case $1 in *'if has($c.q) then . else .[$c.q] = $c end'*) keep=first ;; *) keep=last ;; esac
+
+  for slot in $(slots); do
+    awk -v who="$(author_of "$slot")" -v when="$(time_of "$slot")" -v selected="$selected" -v marked="$marked" '
+      $0 ~ selected { chosen = 1 }
+      q == "" && match($0, marked) { rest = substr($0, RSTART + RLENGTH); match(rest, /^[^ ]+/); q = substr(rest, 1, RLENGTH) }
+      END { if (chosen && q != "") printf "%s\t%s\t%s\n", q, who, when }
+    ' "$store/comments/$slot"
+  done | awk -F'\t' -v keep="$keep" '
+    keep == "first" && ($1 in line) { next }
+    { line[$1] = $2 "\t" $1 "\t" $3 }
+    END { for (q in line) print line[q] }' | sort -t "$(printf '\t')" -k2,2
+}
+
+every_body() { for slot in $(slots); do cat "$store/comments/$slot"; done; }
+
 case "$*" in
-  # The comments, as `gh` returns them: a list of bodies. **`gh` evaluates `--jq` itself**, so this
-  # honours the one expression the adapter sends — a chosen line before each body — and emits bodies
-  # alone if it stops asking for one. A fixture that printed the boundary regardless would be
-  # agreeing with the adapter instead of the service.
   # Labels a repository already had sit beside the ones Foundry owns. The adapter takes only its
   # own, and the fixture carries both so it can be caught taking more.
   "issue view"*"--json labels"*)   [ -f "$store/reads-fail" ] && { echo "HTTP 401: Bad credentials" >&2; exit 1; }
                             cat "$store/labels" 2>/dev/null ;;
+  #
+  # The comments, shaped as the `--jq` the adapter sends shapes them. **`gh` evaluates `--jq` itself and
+  # nothing here can**, so each expression is emulated from its own words, and the two were measured
+  # live. One this stub has never seen is refused, never guessed at.
+  #
   "issue view"*"--json comments"*) [ -f "$store/reads-fail" ] && { echo "could not resolve host: api.github.com" >&2; exit 1; }
-                            case "$*" in *floor-comment*) mark='floor-comment:' ;; *) mark='' ;; esac
-                            for body in "$store/comments"/*; do
-                                [ -f "$body" ] || continue
-                                slot=${body##*/}
-                                who=$(cat "$store/authors/$slot" 2>/dev/null || printf 'foundry-run')
-                                [ -n "$mark" ] && printf '%s %s\n' "$mark" "$who"
-                                cat "$body"
-                            done ;;
+                            asked_for=$(the_jq "$@")
+                            case $asked_for in
+                                *reduce*)           questions_asked "$asked_for" ;;
+                                *'split("\n")'*)    lines_said "$asked_for" ;;
+                                '.comments[].body') every_body ;;
+                                *) echo "the stub answers no such expression: $asked_for" >&2; exit 1 ;;
+                            esac ;;
   # An item nobody filed and a source nobody could ask both fail here, and only the probe below tells
   # them apart. GitHub answers 1 for each.
   "issue view"*)            [ -f "$store/reads-fail" ] && { echo "HTTP 401: Bad credentials" >&2; exit 1; }
@@ -266,10 +334,32 @@ case "$*" in
   # running. A test drops another person's words by writing both files
   # itself, which is the only way two authors exist offline.
   "issue comment"*)         mkdir -p "$store/comments" "$store/authors"
-                            slot=$(printf '%03d' "$(find "$store/comments" -type f | grep -c .)")
+                            slot=$(printf '%03d' "$(find "$store/authors" -type f | grep -c .)")
                             printf '%s\n' "$5" > "$store/comments/$slot"
                             cat "$store/me" 2>/dev/null > "$store/authors/$slot" \
                                 || printf 'foundry-run\n' > "$store/authors/$slot" ;;
+  # What the target requires, as the rules that apply to it answer. A branch nobody set a rule on
+  # answers with an empty list and never an error, which is the whole
+  # reason the adapter asks here.
+  #
+  # `rules-fail` is its own switch. A source that could not say what it requires
+  # must never read as one that requires nothing, and `reads-fail`
+  # stops the delivery read first.
+  #
+  # **The `--jq` never runs here, and nothing on this host can make it.** Real `gh` evaluates the
+  # expression itself; this answers pre-shaped, so a wrong field path stays green — the same hole the
+  # `pr view` arm has always had. There is no `jq` here or under WSL, and floor may not add one:
+  # `plugins.md` allows no parser and no runtime in shipped code, and a suite that needs one is a
+  # suite nobody runs. **Ungateable**, in the third sense `closing.md` names — the outcome is
+  # reachable and no exit code holds it.
+  #
+  # Measured instead, and this is what stands in for the gate. Both expressions were run live:
+  # `github/docs` (34 required contexts), `vercel/next.js` and `home-assistant/core` for the rules
+  # one, and pull request 467 of this repository for the delivery one. One source, and it is named.
+  "api repos/"*"/rules/branches/"*)
+                            [ -f "$store/rules-fail" ] && { echo "HTTP 502: Bad gateway" >&2; exit 1; }
+                            chatter
+                            cat "$store/required" 2>/dev/null ;;
   # Who this run comments as. `posting_as` fails closed on an empty answer, so a
   # store with no `me` still names somebody — the absent case is its
   # own fixture, set by emptying the file rather than deleting it.
@@ -298,6 +388,7 @@ case "$*" in
   # `gh` joins the four fields itself, so the fixture holds the answer already joined — the same
   # shape the adapter's `--jq` produces, and one a test can move a head in.
   "pr view"*)               [ -f "$store/reads-fail" ] && { echo "HTTP 502: Bad gateway" >&2; exit 1; }
+                            chatter
                             cat "$store/state" 2>/dev/null ;;
   "pr merge"*)              [ -f "$store/reads-fail" ] && { echo "could not resolve host" >&2; exit 1; }
                             printf '%s
@@ -309,6 +400,20 @@ case "$*" in
                             printf '%s' "$8" > "$store/lastbody"
                             printf '%s %s %s\n' "$4" "$url" "$run" >> "$store/prs"
                             printf '%s\n' "$url" ;;
+  # The open issues carrying a label, one number a line, the shape the adapter's `--jq` asks for.
+  # What an issue carries now is its own file, apart from the events that say who put it on.
+  "issue list"*"--label"*)  [ -f "$store/reads-fail" ] && { echo "HTTP 401: Bad credentials" >&2; exit 1; }
+                            for carried in "$store/open"/*; do
+                                [ -f "$carried" ] && grep -qxF -- "$4" "$carried" && printf '%s\n' "${carried##*/}"
+                            done
+                            true ;;
+  # Each issue's `labeled` events, pre-shaped the way the adapter's `--jq` shapes them. No file is no
+  # event: a label that arrived with nothing naming who put it on.
+  "api repos/"*"/issues/"*"/events"*)
+                            [ -f "$store/reads-fail" ] && { echo "HTTP 502: Bad gateway" >&2; exit 1; }
+                            issue=${2%/events}
+                            cat "$store/events/${issue##*/}" 2>/dev/null
+                            true ;;
   *) exit 2 ;;
 esac
 STUB
@@ -327,11 +432,14 @@ gh_says() { said_by a-person "$1"; }
 # refusal calls this — every other comment in this suite is a person's, and reads that way.
 run_says() { said_by foundry-run "$1"; }
 
+# Slots are counted by author, because a deleted comment keeps its author and its slot. A third
+# argument is the time the forge gives the comment, when a case needs one.
 said_by() {
-  mkdir -p "$GH_STORE/comments" "$GH_STORE/authors"
-  slot=$(printf '%03d' "$(find "$GH_STORE/comments" -type f | grep -c .)")
+  mkdir -p "$GH_STORE/comments" "$GH_STORE/authors" "$GH_STORE/times"
+  slot=$(printf '%03d' "$(find "$GH_STORE/authors" -type f | grep -c .)")
   printf '%s\n' "$2" > "$GH_STORE/comments/$slot"
   printf '%s\n' "$1" > "$GH_STORE/authors/$slot"
+  [ -z "${3:-}" ] || printf '%s\n' "$3" > "$GH_STORE/times/$slot"
 }
 
 #
@@ -1138,11 +1246,13 @@ charter_of() { printf '%s/charter' "$1"; }
 # Where a loose object lives, so a test can take one away.
 loose_object() { printf '%s/.git/objects/%.2s/%s' "$1" "$2" "${2#??}"; }
 
+# `pat` is named to answer, so a clause nothing derives is asked about rather than refused at 49.
 a_charter_derives_from_the_repository_it_is_run_in() {
   make_repo "$tmp/ch" develop && set_origin "$tmp/ch" 'https://github.com/acme/ch.git' \
     && commit_file "$tmp/ch" Makefile 'test:
 	echo ok
-' || { skip "charter — git could not make a repo here"; return; }
+' && mkdir -p "$tmp/ch/.foundry" && commit_file "$tmp/ch" .foundry/practice 'authorise pat' \
+    || { skip "charter — git could not make a repo here"; return; }
 
   chrun=$(floor "$tmp/ch" new "Charter")
   floor "$tmp/ch" charter derive >/dev/null 2>&1
@@ -3752,18 +3862,30 @@ src="$home/source"
 # moves the pointer — and every check above it would then quietly be about the wrong run.
 ws() { floor_as "$tmp/wsrc" "$home" "$wsrun" "$@"; }
 
-# Where a person leaves an answer. The adapter's own layout, and the suite writes it by hand on
-# purpose: a human answering is not something floor can be asked to do.
+# Where a person leaves an answer: one line in a file of their own, saying who, when and the words.
+# The adapter's own layout, and the suite writes it by hand on purpose — a human answering is not
+# something floor can be asked to do.
 answer_with() {
   mkdir -p "$src/answers/7"
-  printf '%s\n' "$2" > "$src/answers/7/$1"
+  printf '%s\t%s\t%s\n' "$2" "$3" "$4" > "$src/answers/7/$1"
 }
 
+# The questions a directory holds for one item, without the time beside each.
+questions_in() { ls "$src/questions/$1" 2>/dev/null | grep -v '\.when$' | grep -c .; }
+
+# An answer line as a source prints it: who, when and the words, a tab apart.
+line_of() { printf '%s\t%s\t%s' "$1" "$2" "$3"; }
+
+# The part of an `answer.unread` row a case reads: who, the code, when, and why.
+row_of() { printf '%s\t1\t%s\t%s' "$1" "$2" "$3"; }
+
+# `pat` is the hand this repository names, so an answer here can be heard at all.
 the_work_source() {
   make_repo "$tmp/wsrc" main && set_origin "$tmp/wsrc" 'https://gitlab.com/acme/ws.git' \
     && commit_file "$tmp/wsrc" Makefile 'test:
 	echo ok
-' || { skip "work source — git could not make a repo here"; return; }
+' && mkdir -p "$tmp/wsrc/.foundry" && commit_file "$tmp/wsrc" .foundry/practice 'authorise pat' \
+    || { skip "work source — git could not make a repo here"; return; }
 
   mkdir -p "$src/items"
   printf 'Make the thing\n\ntargets: https://gitlab.com/acme/items.git\n' > "$src/items/7"
@@ -6419,14 +6541,16 @@ STUB
   printf '%s' "$tmp/hangs-$1.sh"
 }
 
-# A repository offering one item under its own label, with one passing gate.
+# A repository offering one item under its own label, with one passing gate. A fourth argument is one
+# more line of practice.
 a_resumable_repo() {
   mkdir -p "$src/items" "$src/labels" "$src/claims"
   make_repo "$tmp/$1" main && set_origin "$tmp/$1" "${3:-https://gitlab.com/acme/$1.git}" || return 1
 
   printf 'Resumed item %s\n' "$2" > "$src/items/$2"
   printf '%s\t2026-09-19T00:00:00Z\tpat\n' "$1" > "$src/labels/$2"
-  bar_and_rule "$tmp/$1" "offer $1 pat"
+  bar_and_rule "$tmp/$1" "offer $1 pat${4:+
+$4}"
 }
 
 #
@@ -8887,14 +9011,15 @@ the_providers_prefix_lives_in_one_file
 # §2.5's `human` evidence, and the stage is what makes it that. The same answer read at authorisation
 # says the clause may exist; read at completion it says the clause was met.
 #
-# The answer names the clause or it is not one. `receive` carries whatever a human wrote — "no"
-# included — so an answer satisfying by merely existing would turn every reply into a yes.
+# The yes names its question or it is not one. A person writes whatever they like — "no" included —
+# so an answer satisfying by merely existing would turn every reply into a yes.
 #
 a_human_answer_can_satisfy_a_clause() {
   make_repo "$tmp/hv" main && set_origin "$tmp/hv" 'https://gitlab.com/acme/hv.git' \
     && commit_file "$tmp/hv" Makefile 'test:
 	echo ok
-' || { skip "human evidence — git could not make a repo here"; return; }
+' && mkdir -p "$tmp/hv/.foundry" && commit_file "$tmp/hv" .foundry/practice 'authorise pat' \
+    || { skip "human evidence — git could not make a repo here"; return; }
 
   mkdir -p "$src/items" && printf 'Ship it\n' > "$src/items/11"
 
@@ -8911,20 +9036,19 @@ a_human_answer_can_satisfy_a_clause() {
   floor "$tmp/hv" source ask completion "pricing copy signed off" "Is it?" >/dev/null 2>&1
 
   q=$(ls "$src/questions/11" 2>/dev/null | head -1)
-  id=$(printf '%s' "pricing copy signed off" | cksum | awk '{ print $1 }')
 
   mkdir -p "$src/answers/11"
-  printf 'no, hold it back\n' > "$src/answers/11/$q"
+  printf 'pat\t2999-01-01T00:00:00Z\tno, hold it back\n' > "$src/answers/11/reply"
   floor "$tmp/hv" source receive completion "pricing copy signed off" >/dev/null 2>&1
 
-  is "an answer that does not name the clause satisfies nothing" \
-     "$(floor "$tmp/hv" evidence 2>/dev/null | grep -c human)" "0"
+  is "a no satisfies nothing" \
+     "$(floor "$tmp/hv" evidence 2>/dev/null | grep -c '	human	')" "0"
 
-  printf 'yes, %s is signed off\n' "$id" > "$src/answers/11/$q"
+  printf 'pat\t2999-01-01T00:00:00Z\tyes %s\n' "$q" > "$src/answers/11/reply"
   floor "$tmp/hv" source receive completion "pricing copy signed off" >/dev/null 2>&1
 
-  is  "an answer that names it is human evidence" \
-      "$(floor "$tmp/hv" evidence 2>/dev/null | grep -c human)" "1"
+  is  "a named hand's yes to its question is human evidence" \
+      "$(floor "$tmp/hv" evidence 2>/dev/null | grep -c '	human	')" "1"
   has "and completion reads it" \
       "$(floor "$tmp/hv" complete 2>&1)" ""
 }
@@ -8941,7 +9065,8 @@ authorisation_asks_and_hears() {
   make_repo "$tmp/aa" main && set_origin "$tmp/aa" 'https://gitlab.com/acme/aa.git' \
     && commit_file "$tmp/aa" Makefile 'test:
 	echo ok
-' || { skip "authorisation ask — git could not make a repo here"; return; }
+' && mkdir -p "$tmp/aa/.foundry" && commit_file "$tmp/aa" .foundry/practice 'authorise pat' \
+    || { skip "authorisation ask — git could not make a repo here"; return; }
 
   mkdir -p "$src/items" && printf 'Ship it\n' > "$src/items/12"
 
@@ -8957,14 +9082,12 @@ authorisation_asks_and_hears() {
   # anybody under any circumstances.
   #
   is "a run whose clauses all derive authorises" "$(code_of floor "$tmp/aa" authorise)" "0"
-  is "and asks nobody" \
-     "$(ls "$src/questions/12" 2>/dev/null | wc -l | tr -d ' ')" "0"
+  is "and asks nobody" "$(questions_in 12)" "0"
 
   floor "$tmp/aa" charter introduce Decided "ship on friday" >/dev/null 2>&1
 
   is "an introduced clause blocks" "$(code_of floor "$tmp/aa" authorise)" "11"
-  is "and the question is where the human is" \
-     "$(ls "$src/questions/12" 2>/dev/null | wc -l | tr -d ' ')" "1"
+  is "and the question is where the human is" "$(questions_in 12)" "1"
 
   q=$(ls "$src/questions/12" | head -1)
   id=$(printf '%s' "ship on friday" | cksum | awk '{ print $1 }')
@@ -8976,21 +9099,24 @@ authorisation_asks_and_hears() {
   asked=$(cat "$src/questions/12/$q" 2>/dev/null)
   has "the ask carries the clause"   "$asked" "ship on friday"
   has "and why it blocked"           "$asked" "Nothing derives it"
-  has "and what an answer must name" "$asked" "$id"
+  has "and who may answer it"        "$asked" 'A hand named in `.foundry/practice` authorises it'
+  has "and the one line that does, fenced so a copy is exact" "$asked" "$(printf '```\nyes %s\n```' "$q")"
+  has "and how that answer is taken back" "$asked" "Delete the line before delivery to withdraw it."
 
+  # A refused stage banks nothing but the row saying why. One that kept a partial authorisation would
+  # carry it into the next attempt, where nobody asked for it.
+  aarun=$(floor "$tmp/aa" path)
+  held=$(ls "$aarun" | grep -vx evidence | sort | tr '\n' ' ')
 
-  # A refused stage banks nothing. One that kept a partial authorisation would carry it into the next
-  # attempt, where nobody asked for it — and evidence, a selection and a pending note all land here.
-  held=$(ls "$(floor "$tmp/aa" path)" | sort | tr '\n' ' ')
-
-  printf 'no, not friday\n' > "$src/answers/12/$q"
+  printf 'pat\t2999-01-01T00:00:00Z\tno, not friday\n' > "$src/answers/12/reply"
   is "a decline is not approval" "$(code_of floor "$tmp/aa" authorise)" "11"
-  is "and it banks nothing"      "$(ls "$(floor "$tmp/aa" path)" | sort | tr '\n' ' ')" "$held"
+  is "and it banks nothing"      "$(ls "$aarun" | grep -vx evidence | sort | tr '\n' ' ')" "$held"
+  is "but a row in the ledger saying why" \
+     "$(awk -F'\t' '$2 != "answer.unread"' "$aarun/evidence" 2>/dev/null | grep -c .)" "0"
 
-  printf 'yes, %s may exist\n' "$id" > "$src/answers/12/$q"
-  is "an answer naming the clause authorises it" "$(code_of floor "$tmp/aa" authorise)" "0"
-  is "and asking again asks nothing new" \
-     "$(ls "$src/questions/12" | wc -l | tr -d ' ')" "1"
+  printf 'pat\t2999-01-01T00:00:01Z\tyes %s\n' "$q" > "$src/answers/12/reply"
+  is "a named hand's yes to its question authorises it" "$(code_of floor "$tmp/aa" authorise)" "0"
+  is "and asking again asks nothing new" "$(questions_in 12)" "1"
 
   # Allowed to exist is not met. A stage that satisfied what it permitted would let a run write its
   # own bar, allow it, and clear it, in three commands nobody else read.
@@ -9007,8 +9133,7 @@ authorisation_asks_and_hears() {
   grep -v '^clause .* Gate tests$' "$aarun/charter.keep" > "$(charter_of "$aarun")"
 
   is "a clause the pins still derive, removed, refuses" "$(code_of floor "$tmp/aa" authorise)" "12"
-  is "and asks nothing to do it" \
-     "$(ls "$src/questions/12" | wc -l | tr -d ' ')" "1"
+  is "and asks nothing to do it" "$(questions_in 12)" "1"
   cp "$aarun/charter.keep" "$(charter_of "$aarun")"
 
   #
@@ -9079,8 +9204,8 @@ a_question_is_derived_not_issued() {
           "$q" "^$wsid\.authorisation\.$(clause_of tests)\$"
   is "asking again derives the same question" \
      "$(ws source ask authorisation tests 'May this clause exist?')" "$q"
-  is "and the source still holds one" \
-     "$(find "$src/questions/7" -type f 2>/dev/null | grep -c .)" "1"
+  is "and the source still holds one" "$(questions_in 7)" "1"
+  exists "with when it was first asked, beside it" "$src/questions/7/$q.when"
 
   # Someone may be holding the first. Rewriting it under them is not a resume.
   is "the same question in other words is refused" \
@@ -9105,22 +9230,24 @@ a_question_is_derived_not_issued() {
 }
 a_question_is_derived_not_issued
 
-# `receive` carries an answer and decides nothing about it. There is no parameter for one, so a
-# worker can produce a human's answer only by writing it where a human's answer lives.
+# `receive` carries a yes and makes none. There is no parameter for one, so a worker can produce a
+# human's answer only by writing it where a human's answer lives.
 an_answer_is_carried_never_minted() {
   [ -n "${q:-}" ] || { skip "answers — no question"; return; }
 
   is "an unanswered question is not an answer"  "$(code_of ws source receive authorisation tests)" "1"
   is "and it comes back saying nothing at all"  "$(ws source receive authorisation tests)" ""
 
-  answer_with "$q" 'no — not like this'
+  answer_with no pat 2999-01-01T00:00:00Z 'no — not like this'
+  is "a no never comes back as an answer" "$(code_of ws source receive authorisation tests)" "1"
 
-  is "a human's answer comes back as they wrote it" \
-     "$(ws source receive authorisation tests)" "no — not like this"
+  answer_with yes pat 2999-01-01T00:00:01Z "yes $q"
+  is "a named hand's yes comes back, with who said it and when" \
+     "$(ws source receive authorisation tests)" "$(line_of pat 2999-01-01T00:00:01Z "yes $q")"
   is "receive names a stage and a clause, never an answer" \
      "$(code_of ws source receive authorisation tests yes)" "2"
   is "replaying it says the same thing" \
-     "$(ws source receive authorisation tests)" "no — not like this"
+     "$(ws source receive authorisation tests)" "$(line_of pat 2999-01-01T00:00:01Z "yes $q")"
 
   # The stage is what keeps an answer permitting a clause from ever saying the clause was met.
   is "an answer at one stage is no answer at the other" \
@@ -9129,11 +9256,11 @@ an_answer_is_carried_never_minted() {
 an_answer_is_carried_never_minted
 
 #
-# Silence is not approval, and neither is a refusal, and neither is a yes. Authorisation reads no
-# answer yet — this stage carries questions and nothing more — so the only thing that could change
-# what a run may do is a human editing an artifact.
+# Silence is not approval, and neither is a refusal, and neither is a yes in a person's own words. One
+# line authorises a clause: the one its question prints, from a hand the base names. Even that widens
+# no allowlist and selects no target.
 #
-an_answer_authorises_nothing() {
+only_the_yes_line_authorises() {
   [ -n "${wsrun:-}" ] || { skip "authorisation — no work source run"; return; }
 
   ws charter introduce Judged 'the interface is understandable' >/dev/null 2>&1
@@ -9141,25 +9268,24 @@ an_answer_authorises_nothing() {
 
   # The stage asked when it blocked, so nothing here asks again — a second ask in other words under
   # one identity is refused, which is what keeps a resumed run from piling questions up.
-  qi=$(ls "$src/questions/7" | head -1)
+  qi=$wsid.authorisation.$(clause_of 'the interface is understandable')
 
-  answer_with "$qi" 'yes, go ahead'
-  is "an approval sitting in the source authorises nothing" "$(code_of ws authorise)" "11"
-  is "and it comes back as an answer, no more" \
-     "$(ws source receive authorisation 'the interface is understandable')" "yes, go ahead"
+  answer_with approval pat 2999-01-02T00:00:00Z 'yes, go ahead'
+  is "an approval in a person's own words authorises nothing" "$(code_of ws authorise)" "11"
+  is "and comes back as no answer at all" \
+     "$(code_of ws source receive authorisation 'the interface is understandable')" "1"
 
-  answer_with "$qi" 'no'
+  answer_with approval pat 2999-01-02T00:00:00Z 'no'
   is "a refusal leaves it exactly as unauthorised" "$(code_of ws authorise)" "11"
 
-  # The same code and the same shape for yes and for no. Deciding which one it is is the reader's,
-  # and a transport that could tell them apart would be answering for the human.
-  is "and comes back the same way an approval does" \
+  answer_with approval pat 2999-01-02T00:00:00Z "yes $qi"
+  is "the yes line its question prints, from a named hand, is heard" \
      "$(code_of ws source receive authorisation 'the interface is understandable')" "0"
 
-  lacks "an answer widens no allowlist" "$(ws policy)" "acme/items"
-  is    "and grants no target"          "$(code_of ws targets add https://gitlab.com/acme/items.git main)" "5"
+  lacks "and it widens no allowlist" "$(ws policy)" "acme/items"
+  is    "and grants no target"       "$(code_of ws targets add https://gitlab.com/acme/items.git main)" "5"
 }
-an_answer_authorises_nothing
+only_the_yes_line_authorises
 
 # A delivery is addressed to the item and belongs to the run — one item has many runs, and each
 # delivers its own.
@@ -9217,178 +9343,12 @@ a_missing_source_is_not_silence() {
 }
 a_missing_source_is_not_silence
 
-#
-# The second adapter, driven by a `gh` that is not GitHub. It answers from files, so the adapter's
-# own conventions run for real — the marker line, the digest, the search for this run's delivery.
-#
-# **What it cannot say is whether the service behaves that way.** Nothing here has spoken to it, and
-# a suite that needs a network and a token is a suite nobody runs.
-#
-fake_gh() {
-  mkdir -p "$1" || return 1
-  cat > "$1/gh" <<'STUB'
-#!/bin/sh
-# Not GitHub. It answers from $GH_STORE so the adapter's conventions can be exercised offline.
-set -u
-store=${GH_STORE:?}
-mkdir -p "$store"
-
-# What `gh` says on stderr when the call worked — a new release, a deprecation, a rate-limit hint.
-# A reader folding stderr into stdout turns one of those into data, and here data is a check the
-# target is said to require. Off unless a test asks for it.
-chatter() {
-  [ -f "$store/gh-chatter" ] && echo "gh: A new release of gh is available: 2.94.0 -> 2.95.0" >&2
-  return 0
-}
-
-case "$*" in
-  # The comments, as `gh` returns them: a list of bodies. **`gh` evaluates `--jq` itself**, so this
-  # honours the one expression the adapter sends — a chosen line before each body — and emits bodies
-  # alone if it stops asking for one. A fixture that printed the boundary regardless would be
-  # agreeing with the adapter instead of the service.
-  # Labels a repository already had sit beside the ones Foundry owns. The adapter takes only its
-  # own, and the fixture carries both so it can be caught taking more.
-  "issue view"*"--json labels"*)   [ -f "$store/reads-fail" ] && { echo "HTTP 401: Bad credentials" >&2; exit 1; }
-                            cat "$store/labels" 2>/dev/null ;;
-  "issue view"*"--json comments"*) [ -f "$store/reads-fail" ] && { echo "could not resolve host: api.github.com" >&2; exit 1; }
-                            case "$*" in *floor-comment*) mark='floor-comment:' ;; *) mark='' ;; esac
-                            for body in "$store/comments"/*; do
-                                [ -f "$body" ] || continue
-                                slot=${body##*/}
-                                who=$(cat "$store/authors/$slot" 2>/dev/null || printf 'foundry-run')
-                                [ -n "$mark" ] && printf '%s %s\n' "$mark" "$who"
-                                cat "$body"
-                            done ;;
-  # An item nobody filed and a source nobody could ask both fail here, and only the probe below tells
-  # them apart. GitHub answers 1 for each.
-  "issue view"*)            [ -f "$store/reads-fail" ] && { echo "HTTP 401: Bad credentials" >&2; exit 1; }
-                            cat "$store/item" 2>/dev/null ;;
-  # The probe. A repository cannot be absent, so failing here is the host and never the item.
-  # The stub answers a repository view with a url only when asked for
-  # one. Real gh applies the jq itself, so a fixture printing the
-  # same field regardless would be agreeing with the adapter.
-  "repo view"*"--json url"*)  [ -f "$store/reads-fail" ] && { echo "HTTP 401: Bad credentials" >&2; exit 1; }
-                            sed -e 's/\.git$//' "$store/repo" 2>/dev/null ;;
-  "repo view"*)             [ -f "$store/reads-fail" ] && { echo "HTTP 401: Bad credentials" >&2; exit 1; }
-                            printf '{"name":"gh"}\n' ;;
-  # One comment, one body, in order. GitHub keeps a list and the adapter asks for the field, so the
-  # fixture keeps a list too — a single file with separators in it would be a rendering nobody serves.
-  #
-  # A body written here belongs to whoever `api user` names, because that is who is
-  # running. A test drops another person's words by writing both files
-  # itself, which is the only way two authors exist offline.
-  "issue comment"*)         mkdir -p "$store/comments" "$store/authors"
-                            slot=$(printf '%03d' "$(find "$store/comments" -type f | grep -c .)")
-                            printf '%s\n' "$5" > "$store/comments/$slot"
-                            cat "$store/me" 2>/dev/null > "$store/authors/$slot" \
-                                || printf 'foundry-run\n' > "$store/authors/$slot" ;;
-  # What the target requires, as the rules that apply to it answer. A branch nobody set a rule on
-  # answers with an empty list and never an error, which is the whole
-  # reason the adapter asks here.
-  #
-  # `rules-fail` is its own switch. A source that could not say what it requires
-  # must never read as one that requires nothing, and `reads-fail`
-  # stops the delivery read first.
-  #
-  # **The `--jq` never runs here, and nothing on this host can make it.** Real `gh` evaluates the
-  # expression itself; this answers pre-shaped, so a wrong field path stays green — the same hole the
-  # `pr view` arm has always had. There is no `jq` here or under WSL, and floor may not add one:
-  # `plugins.md` allows no parser and no runtime in shipped code, and a suite that needs one is a
-  # suite nobody runs. **Ungateable**, in the third sense `closing.md` names — the outcome is
-  # reachable and no exit code holds it.
-  #
-  # Measured instead, and this is what stands in for the gate. Both expressions were run live:
-  # `github/docs` (34 required contexts), `vercel/next.js` and `home-assistant/core` for the rules
-  # one, and pull request 467 of this repository for the delivery one. One source, and it is named.
-  "api repos/"*"/rules/branches/"*)
-                            [ -f "$store/rules-fail" ] && { echo "HTTP 502: Bad gateway" >&2; exit 1; }
-                            chatter
-                            cat "$store/required" 2>/dev/null ;;
-  # Who this run comments as. `posting_as` fails closed on an empty answer, so a
-  # store with no `me` still names somebody — the absent case is its
-  # own fixture, set by emptying the file rather than deleting it.
-  "api user"*)              [ -f "$store/reads-fail" ] && { echo "HTTP 401: Bad credentials" >&2; exit 1; }
-                            cat "$store/me" 2>/dev/null || printf 'foundry-run\n' ;;
-  # The requests open against the repository, each with the item it answers, pre-shaped the way the
-  # adapter's `--jq` shapes them. That expression was measured live, since nothing here can run it.
-  # Cut at `--limit` as gh cuts, and at 30 when none is named, because that is where gh stops.
-  "pr list --state open"*)  [ -f "$store/reads-fail" ] && { echo "could not resolve host: api.github.com" >&2; exit 1; }
-                            limit=30 prev=
-                            for arg in "$@"; do [ "$prev" = --limit ] && limit=$arg; prev=$arg; done
-                            head -n "$limit" "$store/open-prs" 2>/dev/null
-                            true ;;
-  # A read that cannot answer. GitHub fails this way for a network, a token or a rate limit, and none
-  # of them mean "nothing is there yet" — which is what both readers below used to conclude.
-  # `gh` matches words in a body, so a run made the same day as another comes back on shared tokens.
-  # The stub answers the same way, and evaluates the `--jq` the adapter sends rather than
-  # filtering for it — a fixture that pre-filtered would grade its own assumption.
-  "pr list"*)               [ -f "$store/reads-fail" ] && { echo "could not resolve host: api.github.com" >&2; exit 1; }
-                            want=${6%% *}
-                            case "$*" in *"floor-run: $want"*) exact=1 ;; *) exact=0 ;; esac
-                            awk -v run="$want" -v exact="$exact" '
-                              exact && $3 == run                      { print $1, $2; next }
-                              !exact && index($3, substr(run, 1, 10)) { print $1, $2 }
-                            ' "$store/prs" 2>/dev/null || true ;;
-  # `gh` joins the four fields itself, so the fixture holds the answer already joined — the same
-  # shape the adapter's `--jq` produces, and one a test can move a head in.
-  "pr view"*)               [ -f "$store/reads-fail" ] && { echo "HTTP 502: Bad gateway" >&2; exit 1; }
-                            chatter
-                            cat "$store/state" 2>/dev/null ;;
-  "pr merge"*)              [ -f "$store/reads-fail" ] && { echo "could not resolve host" >&2; exit 1; }
-                            printf '%s
-' "$3" >> "$store/merged" ;;
-  "pr create"*)             [ -f "$store/writes-fail" ] && { echo "GraphQL: Head sha can't be blank (createPullRequest)" >&2; exit 1; }
-                            url="https://example.invalid/pr/$(cat "$store/prs" 2>/dev/null | grep -c .)"
-                            run=$(printf '%s' "$8" | awk '$1 == "floor-run:" { print $2 }')
-                            printf '%s' "$8" | head -1 >> "$store/words"
-                            printf '%s' "$8" > "$store/lastbody"
-                            printf '%s %s %s\n' "$4" "$url" "$run" >> "$store/prs"
-                            printf '%s\n' "$url" ;;
-  # The open issues carrying a label, one number a line, the shape the adapter's `--jq` asks for.
-  # What an issue carries now is its own file, apart from the events that say who put it on.
-  "issue list"*"--label"*)  [ -f "$store/reads-fail" ] && { echo "HTTP 401: Bad credentials" >&2; exit 1; }
-                            for carried in "$store/open"/*; do
-                                [ -f "$carried" ] && grep -qxF -- "$4" "$carried" && printf '%s\n' "${carried##*/}"
-                            done
-                            true ;;
-  # Each issue's `labeled` events, pre-shaped the way the adapter's `--jq` shapes them. No file is no
-  # event: a label that arrived with nothing naming who put it on.
-  "api repos/"*"/issues/"*"/events"*)
-                            [ -f "$store/reads-fail" ] && { echo "HTTP 502: Bad gateway" >&2; exit 1; }
-                            issue=${2%/events}
-                            cat "$store/events/${issue##*/}" 2>/dev/null
-                            true ;;
-  *) exit 2 ;;
-esac
-STUB
-  chmod +x "$1/gh"
-}
-
-# A person comments, and order is what makes an answer come *after* a question. Numbered the way the
-# stub numbers them, because a name that sorts differently is a transcript nobody wrote.
-#
-# The author is a person, never the run. #373 is what the two being one costs: the run's own
-# note, holding a clause number so a person could copy it, was read back as
-# that person saying yes. A second author is what tells them apart.
-gh_says() { said_by a-person "$1"; }
-
-# The run's own words, in the same place a person's would land. Only a test that means to
-# check the refusal calls this — every other comment in this suite is a
-# person's, and reads that way.
-run_says() { said_by foundry-run "$1"; }
-
-said_by() {
-  mkdir -p "$GH_STORE/comments" "$GH_STORE/authors"
-  slot=$(printf '%03d' "$(find "$GH_STORE/comments" -type f | grep -c .)")
-  printf '%s\n' "$2" > "$GH_STORE/comments/$slot"
-  printf '%s\n' "$1" > "$GH_STORE/authors/$slot"
-}
-
 the_other_adapter() {
   make_repo "$tmp/gh" main && set_origin "$tmp/gh" 'https://github.com/acme/gh.git' \
     && commit_file "$tmp/gh" Makefile 'test:
 	echo ok
-' || { skip "the other adapter — git could not make a repo here"; return; }
+' && mkdir -p "$tmp/gh/.foundry" && commit_file "$tmp/gh" .foundry/practice 'authorise a-person' \
+    || { skip "the other adapter — git could not make a repo here"; return; }
 
   fake_gh "$tmp/ghbin" || { skip "the other adapter — could not put a gh on the path"; return; }
   export GH_STORE="$tmp/ghstore"
@@ -9434,39 +9394,35 @@ the_other_adapter() {
      "$(code_of gh_floor source ask authorisation tests 'Something else entirely?')" "17"
 
   is "an unanswered question is not an answer" "$(code_of gh_floor source receive authorisation tests)" "1"
-  # A person comments. No marker — one they have to type is a command language nobody told them.
-  gh_says 'yes, go ahead'
-  is "and a human's answer comes back as they wrote it" \
-     "$(gh_floor source receive authorisation tests)" "yes, go ahead"
+  # A person comments, with the line the question printed for them. It carries no marker to learn.
+  said_by a-person "yes $gq" 2026-09-01T12:00:00Z
+  is "and a named hand's yes comes back, with who wrote it and when as the forge says" \
+     "$(gh_floor source receive authorisation tests)" "$(line_of a-person 2026-09-01T12:00:00Z "yes $gq")"
 
-  # Two people answer, and both are the answer. `want` survives a comment boundary and only a later
-  # question clears it — a reader stopping at the first boundary takes one voice for all of them, and
-  # a fixture holding one reply cannot tell.
+  # Every comment is read, and a later one hides nothing. A reader stopping at the first boundary took
+  # one voice for all of them, and a fixture holding one reply cannot tell.
   gh_says 'and a second person agrees'
-  has "everything said after the question comes back, not just the first" \
-      "$(gh_floor source receive authorisation tests)" "a second person agrees"
-  has "and the first is still there"  \
-      "$(gh_floor source receive authorisation tests)" "yes, go ahead"
+  has "a comment after the yes does not hide it" \
+      "$(gh_floor source receive authorisation tests)" "yes $gq"
 
-  # #373. The run posted a note explaining its own question, and the note held the clause number so a
-  # person could copy it. That note was read back as the person's yes, and floor stamped
-  # a human answer nobody had given. The author was in the data the whole time.
-  run_says 'To answer, post the clause number. It is 1234567890.'
-  lacks "the run's own comment is not an answer" \
-        "$(gh_floor source receive authorisation tests)" "1234567890"
-  has "and a person's answer still comes back" \
-      "$(gh_floor source receive authorisation tests)" "yes, go ahead"
+  # #373. The run posted a note explaining its own question, holding what a person should copy. That
+  # note was read back as the person's yes, and floor stamped a human answer nobody had given. The
+  # author was in the data the whole time.
+  run_says "yes $gq"
+  is "the run's own yes is not an answer" \
+     "$(gh_floor source receive authorisation tests | grep -c .)" "1"
 
   #
   # The account is not provenance. Two people can share one, and a run can post under another.
   #
-  # So floor stamps what it writes with the run, and the stamp is read before the account is.
-  # A comment carrying one is dropped whoever it came from.
-  said_by a-person 'floor-run: whatever-run
+  # So floor stamps what it writes with the run, and a stamped comment is dropped whole, whoever it
+  # came from, before anything reads its lines.
+  said_by a-person "floor-run: whatever-run
 
-The answer is 9876543210.'
-  lacks "a stamped comment is dropped whatever the account said"         "$(gh_floor source receive authorisation tests)" "9876543210"
-  has "and a person's answer still comes back"       "$(gh_floor source receive authorisation tests)" "yes, go ahead"
+yes $gq" 2026-09-02T09:09:09Z
+  lacks "a stamped comment is dropped whatever the account said" \
+        "$(gh_floor source receive authorisation tests)" "2026-09-02T09:09:09Z"
+  has "and a person's answer still comes back" "$(gh_floor source receive authorisation tests)" "yes $gq"
 
   # Fails closed, and this is why. An adapter that cannot name itself cannot tell its own words from
   # a person's, so it must refuse. Guessing here means guessing in its own favour.
@@ -9488,7 +9444,7 @@ The answer is 9876543210.'
   is "a later question is no answer to an earlier one" \
      "$(code_of gh_floor source receive completion tests)" "1"
   has "and the answer above it still stands" \
-     "$(gh_floor source receive authorisation tests)" "yes, go ahead"
+     "$(gh_floor source receive authorisation tests)" "yes $gq"
 
   gd=$(gh_floor source publish work/other 'The other attempt')
   matches "publishing answers with the delivery's identity" "$gd" '^https://'
@@ -9625,6 +9581,607 @@ The answer is 9876543210.'
   unset GH_STORE
 }
 the_other_adapter
+
+# --- the hearing ---
+#
+# A1 of charter A. A clause nothing derived binds a run only once a hand the base names says yes, in one
+# whole line, to that clause's own question, after it was asked. Every answer is read once, with who
+# wrote it and when as the source records them, so questions asked back to back are each answerable.
+
+#
+# A run holding one clause nothing derives, on the GitHub adapter through the stub. The practice at its
+# base names the hands given, or none. `open` opens the workspace before the clause arrives, for a case
+# that reads at completion.
+#
+hearing_on_github() {
+  make_repo "$tmp/$1" main && set_origin "$tmp/$1" "https://github.com/acme/$1.git" \
+    && commit_file "$tmp/$1" Makefile 'test:
+	echo ok
+' || return 1
+  hg=$tmp/$1 hgbin=$tmp/$1-bin hgstore=$tmp/$1-store hgrun=
+  [ -z "$2" ] || { mkdir -p "$hg/.foundry" && commit_file "$hg" .foundry/practice "authorise $2"; } || return 1
+
+  fake_gh "$hgbin" && mkdir -p "$hgstore/times" || return 1
+  printf 'Hear it\n' > "$hgstore/item" && printf 'foundry-run\n' > "$hgstore/me" || return 1
+
+  hgrun=$(hgf new "Hearing $1") && [ -n "$hgrun" ] || return 1
+  hgf source read 12 >/dev/null && hgf charter derive >/dev/null || return 1
+  hgf policy authorize "https://github.com/acme/$1.git" >/dev/null || return 1
+  hgf targets add "https://github.com/acme/$1.git" main >/dev/null || return 1
+  [ "${3:-}" != open ] || hgf open >/dev/null || return 1
+  hgf charter introduce Decided 'a person may ship it' >/dev/null || return 1
+
+  hgq=$(basename "$hgrun").authorisation.$(clause_of 'a person may ship it')
+}
+
+hgf()      { ( cd "$hg" && PATH="$hgbin:$PATH" GH_STORE="$hgstore" FOUNDRY_HOME="$home" FOUNDRY_RUN="$hgrun" FOUNDRY_WHO="" sh "$runner" "$@" 2>/dev/null ); }
+hgf_says() { ( cd "$hg" && PATH="$hgbin:$PATH" GH_STORE="$hgstore" FOUNDRY_HOME="$home" FOUNDRY_RUN="$hgrun" FOUNDRY_WHO="" sh "$runner" "$@" 2>&1 ); }
+
+# The adapter itself, asked a verb, as core would ask it.
+hg_adapter() { ( cd "$hg" && PATH="$hgbin:$PATH" GH_STORE="$hgstore" sh "$(dirname "$runner")/../lib/source-github.sh" "$@" 2>/dev/null ); }
+
+# A comment on the item by whoever is named, at one second a comment or at the time given.
+hg_says() { local GH_STORE=$hgstore; said_by "$@"; }
+
+# The account the stub says floor writes as now. Moving it is floor's login moving.
+hg_writes_as() { printf '%s\n' "$1" > "$hgstore/me"; }
+
+#
+# #1058. Two clauses asked one after the other, and one answer carrying a yes for each. Today's window
+# closed the first question when the second opened, so only the last could be heard.
+#
+two_questions_asked_back_to_back_are_both_heard() {
+  hearing_on_github hbb pat || { skip "back to back — git could not make a repo here"; return; }
+  hgf charter introduce Decided 'the copy reads well' >/dev/null
+  second=$(basename "$hgrun").authorisation.$(clause_of 'the copy reads well')
+
+  is "two clauses nothing derives are asked, one after the other" "$(code_of hgf authorise)" "11"
+
+  hg_says pat "yes $hgq
+yes $second"
+  is "one answer carrying both yes lines authorises both" "$(code_of hgf authorise)" "0"
+}
+two_questions_asked_back_to_back_are_both_heard
+
+#
+# #1059. A no naming the clause or its question, and a quote reply holding the yes line above a no. None
+# is a yes, whether the clause is asked about or asked whether it was met.
+#
+a_no_that_names_the_question_is_no_yes() {
+  hearing_on_github hno pat || { skip "a no — git could not make a repo here"; return; }
+  is "the clause is asked about" "$(code_of hgf authorise)" "11"
+
+  hg_says pat "no, not $(clause_of 'a person may ship it')"
+  hg_says pat "no, not $hgq"
+  hg_says pat "> yes $hgq
+
+no"
+  is "a no naming the clause or its question, and a quote of the yes above a no, authorise nothing" \
+     "$(code_of hgf authorise)" "11"
+
+  hearing_on_github hnoc pat open || { skip "a no at completion — git could not make a repo here"; return; }
+  hgf source ask completion 'a person may ship it' 'Was it shipped?' >/dev/null
+  met=$(basename "$hgrun").completion.$(clause_of 'a person may ship it')
+
+  hg_says pat "no, not $met"
+  hg_says pat "> yes $met
+
+no"
+  is "asked whether it was met, neither is heard" \
+     "$(code_of hgf source receive completion 'a person may ship it')" "1"
+  is "so no human row is written" "$(hgf evidence | grep -c '	human	')" "0"
+}
+a_no_that_names_the_question_is_no_yes
+
+# The question carries its stage, so a yes that authorised a clause never says it was met.
+an_authorisation_yes_completes_nothing() {
+  hearing_on_github hac pat || { skip "a yes at completion — git could not make a repo here"; return; }
+  hgf authorise >/dev/null
+  hg_says pat "yes $hgq"
+  is "a yes to the authorisation question authorises" "$(code_of hgf authorise)" "0"
+
+  hgf open >/dev/null
+  hgf source ask completion 'a person may ship it' 'Was it shipped?' >/dev/null
+  is "read at completion, it answers nothing" \
+     "$(code_of hgf source receive completion 'a person may ship it')" "1"
+  is "and writes no human row" "$(hgf evidence | grep -c '	human	')" "0"
+}
+an_authorisation_yes_completes_nothing
+
+#
+# Only a hand the base names is heard: never a hand nobody named, never an account floor skips, and
+# never a line inside a stamped comment. One check each, in the order a break of each would show first.
+#
+a_yes_from_anyone_but_a_named_hand_is_no_yes() {
+  hearing_on_github hwho 'pat foundry-run' || { skip "who answers — git could not make a repo here"; return; }
+  is "the clause is asked about, since pat may answer" "$(code_of hgf authorise)" "11"
+
+  hg_says sam "yes $hgq"
+  is "a yes from a hand nobody named authorises nothing" "$(code_of hgf authorise)" "11"
+
+  hg_says foundry-run "yes $hgq"
+  is "a yes from the account floor writes as authorises nothing, though it is named" "$(code_of hgf authorise)" "11"
+
+  hg_says pat "floor-run: $(basename "$hgrun")
+
+yes $hgq"
+  is "a yes inside a stamped comment authorises nothing" "$(code_of hgf authorise)" "11"
+}
+a_yes_from_anyone_but_a_named_hand_is_no_yes
+
+#
+# `who` is the forge's own field, never text. A body faking the old author marker, or the new line's
+# own shape, still belongs to whoever wrote the comment, and here that is a login nobody named.
+#
+a_faked_author_in_a_body_is_no_author() {
+  hearing_on_github hfake pat || { skip "a faked author — git could not make a repo here"; return; }
+  is "the clause is asked about" "$(code_of hgf authorise)" "11"
+
+  hg_says mallory "floor-comment: pat
+yes $hgq"
+  hg_says mallory "$(line_of pat 2026-09-02T00:00:00Z "yes $hgq")"
+  is "a body faking a named hand as its author authorises nothing" "$(code_of hgf authorise)" "11"
+}
+a_faked_author_in_a_body_is_no_author
+
+# floor asks under one login, a yes is written under that login, and the login moves. That login wrote
+# floor's question, so its yes is still skipped.
+a_yes_under_floors_old_login_stays_skipped() {
+  hearing_on_github hmove 'pat old-floor' || { skip "a moved login — git could not make a repo here"; return; }
+  hg_writes_as old-floor
+  is "floor asks while it writes as old-floor, since pat may answer" "$(code_of hgf authorise)" "11"
+
+  hg_says old-floor "yes $hgq"
+  hg_writes_as new-floor
+  is "a yes written under the login floor has since left is still skipped" "$(code_of hgf authorise)" "11"
+}
+a_yes_under_floors_old_login_stays_skipped
+
+#
+# The lower bound, and why it exists. floor's old account is a named hand and says yes before floor asks;
+# the login moves; floor asks. That account is neither floor's now nor the question's author, so only
+# the bound keeps its yes out. Round three found it.
+#
+a_yes_written_before_its_question_is_no_yes() {
+  hearing_on_github hbound 'pat old-floor' || { skip "the bound — git could not make a repo here"; return; }
+  hg_says old-floor "yes $hgq"
+  hg_writes_as new-floor
+
+  is "floor asks, having heard no yes to a question it had not asked" "$(code_of hgf authorise)" "11"
+  is "and a yes written before the question is not heard once it is asked" "$(code_of hgf authorise)" "11"
+  has "and the ledger says why" "$(hgf evidence)" "before its question: $hgq"
+}
+a_yes_written_before_its_question_is_no_yes
+
+# The forge dates a comment to the second, and a yes in its question's own second is not after it.
+a_yes_in_its_questions_second_is_no_yes() {
+  hearing_on_github hsec pat || { skip "the same second — git could not make a repo here"; return; }
+  hgf authorise >/dev/null
+  printf '2026-09-01T12:00:00Z\n' > "$hgstore/times/000"
+
+  hg_says pat "yes $hgq" 2026-09-01T12:00:00Z
+  is "a yes dated in the same second as its question is not heard" "$(code_of hgf authorise)" "11"
+}
+a_yes_in_its_questions_second_is_no_yes
+
+# A question `speaker` does not list was never asked, and nothing answers it.
+a_yes_to_a_question_never_asked_is_no_yes() {
+  hearing_on_github hunask pat || { skip "a question never asked — git could not make a repo here"; return; }
+  hg_says pat "yes $hgq"
+  is "a yes to a question speaker does not list is not heard" \
+     "$(code_of hgf source receive authorisation 'a person may ship it')" "1"
+}
+a_yes_to_a_question_never_asked_is_no_yes
+
+#
+# `authorise alice bob`: floor asks as bob, since alice may answer, then the login moves to alice. Now
+# alice is floor's account and bob wrote the question, so no hand is left outside, and floor must
+# refuse and name both rather than ask again.
+#
+a_login_that_moves_onto_the_other_hand_refuses() {
+  hearing_on_github halice 'alice bob' || { skip "alice and bob — git could not make a repo here"; return; }
+  hg_writes_as bob
+  is "floor asks as bob, since alice may answer" "$(code_of hgf authorise)" "11"
+
+  hg_writes_as alice
+  said=$(hgf_says authorise)
+  is  "the login moves to alice, and every hand is skipped: 50" "$(code_of hgf authorise)" "50"
+  has "naming alice as floor's account now" "$said" "alice: floor's account now"
+  has "and bob as a question's author" "$said" "bob: wrote $hgq"
+}
+a_login_that_moves_onto_the_other_hand_refuses
+
+#
+# A deleted question with a quote reply of it left was not asked: the quote's lines start with `>`, and
+# one reader holds that rule for `speaker` and `put_question` alike. floor asks again, and the new ask
+# is the one listed.
+#
+a_deleted_question_is_asked_again_past_a_quote_of_it() {
+  hearing_on_github hdel pat || { skip "a deleted question — git could not make a repo here"; return; }
+  hgf authorise >/dev/null
+  hg_says pat "$(sed 's/^/> /' "$hgstore/comments/000")
+
+not yet"
+  rm -f "$hgstore/comments/000"
+
+  is "with its question deleted and a quote of it left, the clause is asked again" "$(code_of hgf authorise)" "11"
+  is "so one question stands again" \
+     "$(grep -l "^floor-question: $hgq " "$hgstore"/comments/* 2>/dev/null | grep -c .)" "1"
+  is "and speaker lists the new ask, at its own time" \
+     "$(hg_adapter speaker 12 | awk -F'\t' -v q="$hgq" '$2 == q { print $3 }')" "2026-09-01T00:00:02Z"
+}
+a_deleted_question_is_asked_again_past_a_quote_of_it
+
+#
+# A hand who pastes the whole question writes a stamped comment, and that comment is skipped. The hand
+# is not: only the first comment carrying a marker is the question, so their yes afterwards is heard.
+#
+a_hand_who_pastes_the_question_is_still_heard() {
+  hearing_on_github hpaste pat || { skip "a pasted question — git could not make a repo here"; return; }
+  hgf authorise >/dev/null
+  hg_says pat "$(cat "$hgstore/comments/000")"
+  is "the pasted question authorises nothing" "$(code_of hgf authorise)" "11"
+
+  hg_says pat "yes $hgq"
+  is "and the yes after it is heard" "$(code_of hgf authorise)" "0"
+  is "alone: the yes inside the paste is not" \
+     "$(hgf source receive authorisation 'a person may ship it' | grep -c .)" "1"
+}
+a_hand_who_pastes_the_question_is_still_heard
+
+#
+# The words are fixed and the space around them is not. One pair of backticks, a capital first letter,
+# and a browser's carriage return each still say yes.
+#
+a_yes_as_people_type_it_is_heard() {
+  hearing_on_github htype pat || { skip "a yes as typed — git could not make a repo here"; return; }
+  hgf charter introduce Decided 'the copy reads well' >/dev/null
+  hgf charter introduce Decided 'the page loads fast' >/dev/null
+  copy=$(basename "$hgrun").authorisation.$(clause_of 'the copy reads well')
+  page=$(basename "$hgrun").authorisation.$(clause_of 'the page loads fast')
+  hgf authorise >/dev/null
+
+  hg_says pat "\`yes $hgq\`"
+  hg_says pat "Yes $copy"
+  hg_says pat "$(printf 'yes %s\r' "$page")"
+  is "a yes in one pair of backticks is heard" \
+     "$(code_of hgf source receive authorisation 'a person may ship it')" "0"
+  is "and one starting Yes" \
+     "$(code_of hgf source receive authorisation 'the copy reads well')" "0"
+  is "and one ending in a carriage return, as a browser types it" \
+     "$(code_of hgf source receive authorisation 'the page loads fast')" "0"
+}
+a_yes_as_people_type_it_is_heard
+
+#
+# The same rules through the directory adapter, which has no accounts: every answer line names who
+# wrote it, and every question carries its time. Each case reads its own item from the suite's source.
+#
+hearing_in_a_directory() {
+  make_repo "$tmp/$1" main && set_origin "$tmp/$1" "https://gitlab.com/acme/$1.git" \
+    && commit_file "$tmp/$1" Makefile 'test:
+	echo ok
+' || return 1
+  hd=$tmp/$1 hditem=$2 hdrun=
+  [ -z "$3" ] || { mkdir -p "$hd/.foundry" && commit_file "$hd" .foundry/practice "authorise $3"; } || return 1
+
+  mkdir -p "$src/items" && printf 'Hear it\n' > "$src/items/$2" || return 1
+  hdrun=$(floor "$hd" new "Hearing $1") && [ -n "$hdrun" ] || return 1
+  hdf source read "$2" >/dev/null && hdf charter derive >/dev/null || return 1
+  hdf policy authorize "https://gitlab.com/acme/$1.git" >/dev/null || return 1
+  hdf targets add "https://gitlab.com/acme/$1.git" main >/dev/null || return 1
+  hdf charter introduce Decided 'a person may ship it' >/dev/null || return 1
+
+  hdq=$(basename "$hdrun").authorisation.$(clause_of 'a person may ship it')
+}
+
+hdf()      { floor_as "$hd" "$home" "$hdrun" "$@"; }
+hdf_says() { ( cd "$hd" && FOUNDRY_HOME="$home" FOUNDRY_RUN="$hdrun" FOUNDRY_WHO="" FOUNDRY_SOURCE="$dir_source" sh "$runner" "$@" 2>&1 ); }
+
+# The same run, through a source the case names rather than the directory adapter.
+hd_through()      { local through=$1; shift; ( cd "$hd" && FOUNDRY_HOME="$home" FOUNDRY_RUN="$hdrun" FOUNDRY_WHO="" FOUNDRY_SOURCE="$through" sh "$runner" "$@" 2>/dev/null ); }
+hd_through_says() { local through=$1; shift; ( cd "$hd" && FOUNDRY_HOME="$home" FOUNDRY_RUN="$hdrun" FOUNDRY_WHO="" FOUNDRY_SOURCE="$through" sh "$runner" "$@" 2>&1 ); }
+
+# A person's answer on the item: one file of their own, holding the lines given.
+hd_answers() { mkdir -p "$src/answers/$hditem" && printf '%s\n' "$2" > "$src/answers/$hditem/$1"; }
+
+#
+# The directory adapter with accounts. `speaker` names floor's account now from the first line of
+# `$tmp/<name>.accounts`, and gives every question the directory lists to the account on its second,
+# so a case says who floor is and who wrote its questions, and moves either by writing a line.
+#
+a_source_with_accounts() {
+  cat > "$tmp/$1.sh" <<STUB
+#!/bin/sh
+[ "\$1" = speaker ] || exec sh '$dir_source' "\$@"
+  listed=\$(sh '$dir_source' speaker "\$2") || exit \$?
+  printf '%s\n' "\$listed" | awk -v now="\$(sed -n 1p '$tmp/$1.accounts')" -v by="\$(sed -n 2p '$tmp/$1.accounts')" \\
+    'NR == 1 { print now; next } { print by \$0 }'
+STUB
+  printf '%s' "$tmp/$1.sh"
+}
+
+# A question an earlier run asked on this item, where the directory keeps its questions.
+an_earlier_question() {
+  mkdir -p "$src/questions/$1" \
+    && printf 'May an earlier clause exist?\n' > "$src/questions/$1/an-earlier-run.authorisation.1" \
+    && printf '2026-09-01T00:00:00Z\n' > "$src/questions/$1/an-earlier-run.authorisation.1.when"
+}
+
+# The directory records when it asked, so the bound holds there too: a yes dated before its question is
+# not heard, and one dated after it is.
+the_directory_hears_only_a_yes_after_its_question() {
+  hearing_in_a_directory hdtime 711 pat || { skip "the directory's bound — git could not make a repo here"; return; }
+  hd_answers early "$(line_of pat 2000-01-01T00:00:00Z "yes $hdq")"
+  is "the clause is asked about" "$(code_of hdf authorise)" "11"
+
+  hd_answers late "$(line_of pat 2999-01-01T00:00:00Z "yes $hdq")"
+  is "only the yes dated after its question is heard" \
+     "$(hdf source receive authorisation 'a person may ship it')" "$(line_of pat 2999-01-01T00:00:00Z "yes $hdq")"
+  is "and it authorises" "$(code_of hdf authorise)" "0"
+}
+the_directory_hears_only_a_yes_after_its_question
+
+#
+# A source that cannot say who floor writes as stops the read at 20. No answer is read and nothing is
+# asked, because answers read without the skip and the bound are answers nobody checked.
+#
+a_speaker_that_cannot_say_stops_the_read() {
+  hearing_in_a_directory hspk 712 pat || { skip "a speaker that fails — git could not make a repo here"; return; }
+  cat > "$tmp/speaker-fails.sh" <<STUB
+#!/bin/sh
+[ "\$1" = speaker ] && exit 3
+[ "\$1" = receive ] && : > '$tmp/speaker-fails.read'
+exec sh '$dir_source' "\$@"
+STUB
+
+  is "a speaker that cannot say stops authorise at 20" "$(code_of hd_through "$tmp/speaker-fails.sh" authorise)" "20"
+  absent "and no answer is read" "$tmp/speaker-fails.read"
+  is "and nothing is asked" "$(questions_in 712)" "0"
+}
+a_speaker_that_cannot_say_stops_the_read
+
+#
+# **Every mix of named hands and the accounts floor skips**, one row each, through a source that has
+# accounts. Floor refuses whenever no named hand is outside them, and each refusal names every hand and
+# why. The check runs before the first ask, so floor's own first question never makes a hand an author.
+#
+every_mix_of_hands_and_skipped_accounts() {
+  mixed=$(a_source_with_accounts mixed)
+  printf 'bot\nold\n' > "$tmp/mixed.accounts"
+
+  hearing_in_a_directory hmixnone 721 '' || { skip "no hand named — git could not make a repo here"; return; }
+  is  "no hand named: 49" "$(code_of hd_through "$mixed" authorise)" "49"
+  has "naming the line to add" "$(hd_through_says "$mixed" authorise)" "authorise <hand>"
+
+  hearing_in_a_directory hmixnow 722 bot || { skip "floor's own hand — git could not make a repo here"; return; }
+  said=$(hd_through_says "$mixed" authorise)
+  is  "every hand floor's account now: 50" "$(code_of hd_through "$mixed" authorise)" "50"
+  has "naming the hand and why it is skipped" "$said" "bot: floor's account now"
+  is  "and nothing asked: the check runs before the first ask" "$(questions_in 722)" "0"
+
+  hearing_in_a_directory hmixold 723 old && an_earlier_question 723 \
+    || { skip "a hand that wrote the questions — git could not make a repo here"; return; }
+  is  "every hand a question's author: 51" "$(code_of hd_through "$mixed" authorise)" "51"
+  has "naming the hand and the questions it wrote" "$(hd_through_says "$mixed" authorise)" \
+      "old: wrote an-earlier-run.authorisation.1"
+
+  hearing_in_a_directory hmixboth 724 'bot old' && an_earlier_question 724 \
+    || { skip "a mix of the two — git could not make a repo here"; return; }
+  is  "a mix of the two: 50" "$(code_of hd_through "$mixed" authorise)" "50"
+  has "naming each hand and why" "$(hd_through_says "$mixed" authorise)" \
+      "bot: floor's account now; old: wrote an-earlier-run.authorisation.1"
+
+  hearing_in_a_directory hmixout 725 'bot pat' || { skip "a hand outside them — git could not make a repo here"; return; }
+  is "a hand outside them is asked" "$(code_of hd_through "$mixed" authorise)" "11"
+  hd_answers from-bot "$(line_of bot 2999-01-01T00:00:00Z "yes $hdq")"
+  hd_answers from-pat "$(line_of pat 2999-01-01T00:00:01Z "yes $hdq")"
+  is "and that hand is heard, floor's own account skipped" \
+     "$(hd_through "$mixed" source receive authorisation 'a person may ship it')" \
+     "$(line_of pat 2999-01-01T00:00:01Z "yes $hdq")"
+}
+every_mix_of_hands_and_skipped_accounts
+
+# A named hand's comment that authorises nothing says why, in the ledger and never on the item: a yes
+# before its question, and a yes to a question nobody asked, one row each.
+a_yes_that_counts_for_nothing_says_why() {
+  hearing_in_a_directory hwhy 714 pat || { skip "why a yes counts for nothing — git could not make a repo here"; return; }
+  is "the clause is asked about" "$(code_of hdf authorise)" "11"
+
+  hd_answers early "$(line_of pat 2000-01-01T00:00:00Z "yes $hdq")"
+  hd_answers unasked "$(line_of pat 2999-01-01T00:00:00Z 'yes 2026-01-01-nobody-0000.authorisation.1')"
+  is "neither a yes before its question nor one to a question nobody asked authorises" "$(code_of hdf authorise)" "11"
+
+  unread=$(hdf evidence | awk -F'\t' '$2 == "answer.unread"')
+  is  "one row each" "$(printf '%s\n' "$unread" | grep -c .)" "2"
+  has "the one before its question says so" "$unread" \
+      "$(row_of pat 2000-01-01T00:00:00Z "before its question: $hdq")"
+  has "and the one nobody asked says so" "$unread" \
+      "$(row_of pat 2999-01-01T00:00:00Z 'a question nobody asked: 2026-01-01-nobody-0000.authorisation.1')"
+
+  hdf authorise >/dev/null
+  is "heard again, nothing piles up" "$(hdf evidence | grep -c answer.unread)" "2"
+}
+a_yes_that_counts_for_nothing_says_why
+
+#
+# Every time is UTC to the second, the shape a forge writes, and two compare as text. A directory line
+# in any other shape is dropped and said, as a line naming nobody is, because text order is time order
+# only in that one shape.
+#
+a_directory_time_in_another_shape_is_dropped() {
+  hearing_in_a_directory hshape 715 pat || { skip "a time's shape — git could not make a repo here"; return; }
+  hdf authorise >/dev/null
+  hd_answers offset "$(line_of pat 2999-01-01T00:00:00+02:00 "yes $hdq")"
+  hd_answers dated "$(line_of pat 2999-01-01 "yes $hdq")"
+
+  said=$(hdf_says authorise)
+  is  "a time with an offset, and a date alone, each authorise nothing" "$(code_of hdf authorise)" "11"
+  has "the one with an offset is dropped, and said" "$said" \
+      "time is not UTC to the second: $(line_of pat 2999-01-01T00:00:00+02:00 '')"
+  has "and so is the date alone" "$said" "time is not UTC to the second: $(line_of pat 2999-01-01 '')"
+}
+a_directory_time_in_another_shape_is_dropped
+
+# The words are every byte after the second tab. `yes`, the question, a tab and a no is one line that
+# is not the yes line.
+a_yes_then_a_tab_then_a_no_is_no_yes() {
+  hearing_in_a_directory htab 716 pat || { skip "a tab then a no — git could not make a repo here"; return; }
+  hdf authorise >/dev/null
+  hd_answers tabbed "$(line_of pat 2999-01-01T00:00:00Z "$(printf 'yes %s\tno' "$hdq")")"
+  is "yes, a tab, then a no, on one line, authorises nothing" "$(code_of hdf authorise)" "11"
+}
+a_yes_then_a_tab_then_a_no_is_no_yes
+
+#
+# A source that answers the old way is refused by name at 27, and so is one that knows `speaker` and not
+# the new `receive`. Both go through the one door core calls them through, so no reader can miss it.
+#
+a_source_that_cannot_say_who_is_refused_by_name() {
+  hearing_in_a_directory hdold 717 pat || { skip "an old source — git could not make a repo here"; return; }
+  cat > "$tmp/answers-the-old-way.sh" <<STUB
+#!/bin/sh
+case "\$1" in speaker|receive) exit 2 ;; esac
+exec sh '$dir_source' "\$@"
+STUB
+  cat > "$tmp/answers-half-the-new-way.sh" <<STUB
+#!/bin/sh
+[ "\$1" = receive ] && exit 2
+exec sh '$dir_source' "\$@"
+STUB
+
+  is  "an adapter that knows neither speaker nor the new receive is refused at 27" \
+      "$(code_of hd_through "$tmp/answers-the-old-way.sh" authorise)" "27"
+  has "naming the source" "$(hd_through_says "$tmp/answers-the-old-way.sh" authorise)" "$tmp/answers-the-old-way.sh"
+  is  "and so is one that knows speaker and not the new receive" \
+      "$(code_of hd_through "$tmp/answers-half-the-new-way.sh" authorise)" "27"
+}
+a_source_that_cannot_say_who_is_refused_by_name
+
+# One bad line never stops the read. A line naming nobody is dropped and said, and the lines beside it
+# are still heard.
+a_line_that_names_nobody_is_dropped_and_said() {
+  hearing_in_a_directory hnobody 718 pat || { skip "a line naming nobody — git could not make a repo here"; return; }
+  hdf authorise >/dev/null
+  hd_answers mixed "$(line_of '' 2999-01-01T00:00:00Z "yes $hdq")
+$(line_of pat 2999-01-01T00:00:01Z "yes $hdq")"
+
+  has "a line naming nobody is dropped, and said" "$(hdf_says authorise)" "dropped a line that names nobody"
+  is  "and the others are still heard" "$(code_of hdf authorise)" "0"
+}
+a_line_that_names_nobody_is_dropped_and_said
+
+#
+# The yes names its question whole: the run, the stage and the clause's text. One table, and each row
+# changes one of the three. None authorises, and the question itself does.
+#
+a_yes_names_its_whole_question() {
+  hearing_in_a_directory hwhole 719 pat || { skip "a whole question — git could not make a repo here"; return; }
+  hdf authorise >/dev/null
+  asking_run=$(basename "$hdrun") asked_clause=$(clause_of 'a person may ship it')
+
+  hd_answers other "$(line_of pat 2999-01-01T00:00:00Z "yes 2026-01-01-another-run-0000.authorisation.$asked_clause")"
+  is "a yes naming another run authorises nothing" "$(code_of hdf authorise)" "11"
+
+  hd_answers other "$(line_of pat 2999-01-01T00:00:00Z "yes $asking_run.completion.$asked_clause")"
+  is "nor one naming the other stage" "$(code_of hdf authorise)" "11"
+
+  hd_answers other "$(line_of pat 2999-01-01T00:00:00Z "yes $asking_run.authorisation.$(clause_of 'a person may ship it soon')")"
+  is "nor one naming the clause with its text changed" "$(code_of hdf authorise)" "11"
+
+  hd_answers other "$(line_of pat 2999-01-01T00:00:00Z "yes $hdq")"
+  is "and the question itself does" "$(code_of hdf authorise)" "0"
+}
+a_yes_names_its_whole_question
+
+#
+# A named hand who answers in their own words is told why, in the ledger `status` prints, once however
+# often the run is heard. A hand is one hand in any case, so the base may name `Pat` and the line say
+# `pAT`.
+#
+a_hand_who_answers_without_a_yes_is_told_why() {
+  hearing_in_a_directory hnoyes 720 Pat || { skip "a reply with no yes — git could not make a repo here"; return; }
+  hdf authorise >/dev/null
+  hd_answers reply "$(line_of pAT 2999-01-01T00:00:00Z 'looks good to me')"
+
+  is  "a named hand's comment that is not a yes authorises nothing" "$(code_of hdf authorise)" "11"
+  has "and one row says who, when and why" \
+      "$(hdf evidence | awk -F'\t' '$2 == "answer.unread"')" "$(row_of pat 2999-01-01T00:00:00Z 'no whole-line yes')"
+  is  "once, however often it is heard" "$(hdf evidence | grep -c answer.unread)" "1"
+  has "and status shows it" "$(hdf status)" "answer.unread"
+
+  hd_answers reply "$(line_of pAT 2999-01-01T00:00:01Z "yes $hdq")"
+  is  "and a hand is one hand in any case" "$(code_of hdf authorise)" "0"
+}
+a_hand_who_answers_without_a_yes_is_told_why
+
+#
+# The three refusals in a pass. A pass meets a clause nothing derived only on a resume from the start:
+# the one before it was killed while its command introduced the clause, so this wake opens the work
+# again. 49 and 51 want a line at the base, and only a new run reads it, so the item is let go.
+#
+a_clause_introduced_by_a_killed_pass() {
+  introducing="sh '$runner' charter introduce Decided 'a person may ship it'; touch '$tmp/$1.acting'; sleep 4"
+  kill_and_age_a_pass_in "$tmp/$1" "$tmp/$1.acting" "$2" "$introducing"
+}
+
+a_pass_lets_go_of_an_item_nobody_may_answer() {
+  a_resumable_repo hp49 741 || { skip "a pass with no hand — git could not make a repo here"; return; }
+  a_clause_introduced_by_a_killed_pass hp49 "$dir_source"
+  let_go_run=$(floor "$tmp/hp49" path)
+
+  said=$(FOUNDRY_PASS_TRIES=2 FOUNDRY_PASS_BEAT=1 floor_says "$tmp/hp49" pass; printf '\nexit=%s' "$?")
+  has "a resumed pass meets a clause nothing derived, with no hand named: 49" "$said" "exit=49"
+  has "naming the line" "$said" "authorise <hand>"
+  has "and lets the item go, saying why" "$(why_it_left "$tmp/hp49" "$let_go_run")" "item=741 why=workspace code=49"
+
+  rm -rf "$src/claims/741" "$src/labels/741" "$src/items/741"
+}
+a_pass_lets_go_of_an_item_nobody_may_answer
+
+# Every hand floor's own account now: the fix is on the host, so a pass stops and a later one resumes,
+# and the bound counts each resume.
+a_pass_resumes_an_item_whose_only_hand_is_floors_account() {
+  a_resumable_repo hp50 742 '' 'authorise bot' || { skip "a pass with floor's own hand — git could not make a repo here"; return; }
+  bots=$(a_source_with_accounts bots)
+  printf 'bot\n\n' > "$tmp/bots.accounts"
+  a_clause_introduced_by_a_killed_pass hp50 "$bots"
+
+  said=$(FOUNDRY_PASS_TRIES=3 FOUNDRY_PASS_BEAT=1 floor_through "$bots" "$tmp/hp50" pass; printf '\nexit=%s' "$?")
+  has "a resumed pass meets every hand skipped as floor's own: 50" "$said" "exit=50"
+  has "naming the clash" "$said" "bot: floor's account now"
+  has "and stops at the workspace, to be resumed" "$(last_pass_line_in "$tmp/hp50")" \
+      "pass.stopped item=742 why=workspace code=50"
+
+  said=$(FOUNDRY_PASS_TRIES=3 FOUNDRY_PASS_BEAT=1 floor_through "$bots" "$tmp/hp50" pass; printf '\nexit=%s' "$?")
+  has "a later pass resumes it" "$said" "this pass resumes [742] after [pass.stopped workspace]"
+  has "and meets the clash again" "$said" "exit=50"
+
+  rm -rf "$src/claims/742" "$src/labels/742" "$src/items/742"
+}
+a_pass_resumes_an_item_whose_only_hand_is_floors_account
+
+#
+# floor asked as the only hand on an earlier run, and writes as another account now. That hand wrote
+# floor's questions, and only another hand frees the item. A line at the base, so a pass lets the item
+# go rather than resume it.
+#
+a_pass_lets_go_of_an_item_whose_only_hand_wrote_the_questions() {
+  a_resumable_repo hp51 743 '' 'authorise alice' && an_earlier_question 743 \
+    || { skip "a pass whose hand wrote the questions — git could not make a repo here"; return; }
+  wrote=$(a_source_with_accounts wrote)
+  printf 'bot\nalice\n' > "$tmp/wrote.accounts"
+  a_clause_introduced_by_a_killed_pass hp51 "$wrote"
+  let_go_run=$(floor "$tmp/hp51" path)
+
+  said=$(FOUNDRY_PASS_TRIES=2 FOUNDRY_PASS_BEAT=1 floor_through "$wrote" "$tmp/hp51" pass; printf '\nexit=%s' "$?")
+  has "a resumed pass meets a hand who wrote floor's questions: 51" "$said" "exit=51"
+  has "naming that account and its questions" "$said" "alice: wrote an-earlier-run.authorisation.1"
+  has "and lets the item go, saying why" "$(why_it_left "$tmp/hp51" "$let_go_run")" "item=743 why=workspace code=51"
+
+  rm -rf "$src/claims/743" "$src/labels/743" "$src/items/743" "$src/questions/743"
+}
+a_pass_lets_go_of_an_item_whose_only_hand_wrote_the_questions
 
 #
 # **The same list, from the forge.** Which issues carry the label comes from one call and who put it
@@ -9805,7 +10362,8 @@ a_source_that_can_only_be_read() {
   make_repo "$tmp/ro" main && set_origin "$tmp/ro" 'https://gitlab.com/acme/ro.git' \
     && commit_file "$tmp/ro" Makefile 'test:
 	echo ok
-' || { skip "a read-only source — git could not make a repo here"; return; }
+' && mkdir -p "$tmp/ro/.foundry" && commit_file "$tmp/ro" .foundry/practice 'authorise pat' \
+    || { skip "a read-only source — git could not make a repo here"; return; }
 
   mkdir -p "$src/items"
   printf 'Mend it\n\nAnd say nothing back.\n' > "$src/items/51"
@@ -9835,6 +10393,7 @@ a_source_that_can_only_be_read() {
   # gives has to be the shape of the source rather than a fault it should retry.
   has "an introduced clause blocks, and says the source cannot ask" \
       "$(ro_says authorise)" "can only be read"
+  is  "and refuses at 27, because it cannot say who answered" "$(code_of ro authorise)" "27"
 }
 a_source_that_can_only_be_read
 
@@ -10217,7 +10776,8 @@ a_question_that_never_arrived_is_not_asked() {
 
   make_repo "$tmp/nq" main && set_origin "$tmp/nq" 'https://gitlab.com/acme/nq.git'     && commit_file "$tmp/nq" Makefile 'test:
 	echo ok
-' || { skip "a question that never arrived — git could not make a repo here"; return; }
+' && mkdir -p "$tmp/nq/.foundry" && commit_file "$tmp/nq" .foundry/practice 'authorise pat' \
+    || { skip "a question that never arrived — git could not make a repo here"; return; }
 
   nq() { floor_as "$tmp/nq" "$h2" "" "$@"; }
   nq new "No question" >/dev/null
