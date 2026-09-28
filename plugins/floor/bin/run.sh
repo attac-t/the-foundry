@@ -89,10 +89,16 @@
 #  41  the run is made and this checkout cannot point at it. The record is there and complete, so
 #      this is an answer about the checkout: tell every later command the id, or work elsewhere
 #  42  a pass was offered nothing. An answer, and it says why: no rule, or no item the rule offers
-#  43  a pass left a run in progress alone. A run is already active in this checkout, and one pass
-#      takes one
-#  44  a pass began a run and no pass command is set, so the work waits. An answer about the host
+#  43  a pass left a run alone: a pass is at work in it, or no pass began it. Or `FOUNDRY_RUN` names
+#      a run a pass let go of, and the variable must be unset
+#  44  a pass began or resumed a run and no pass command is set, so the work waits. An answer about
+#      the host
 #  45  the pass command failed. The run records the stop, and the next pass reads it
+#  46  a pass let its run go, resumed more often than `FOUNDRY_PASS_TRIES` allows. The claim stays,
+#      so the item stops on this host
+#  47  a resumed run waits on a person: a clause, a grant or a commit `deliver` named
+#  48  a pass let its run go: a member's revise rounds are spent, or a judge was deadlocked or could
+#      not be reached. The line says which, and the item stops on this host
 #
 # Eight through twelve are one stage and five remedies: write a requirement down, select a target it
 # governs, or start again. Collapsing them would make the exit code say *authorisation refused* and
@@ -228,7 +234,7 @@ usage_work() {
   run.sh claim [item]             take it, or keep the one this run holds; 30 if another host has it
   run.sh release <item>           let it go, if this host took it
   run.sh offer                    what a pass may take, oldest mark first
-  run.sh pass                     take the first offered item nobody holds to a request — exit 42 to 45
+  run.sh pass                     carry on a run a pass began, or take the first item offered, to a request — exit 42 to 48
   run.sh observe [event] [k=v...] record that something happened, or print what did
   run.sh observed [event]         every run's observations, with the run named
   run.sh merge                    land what was graded, or say why it may not be
@@ -3544,7 +3550,7 @@ mark_lost() { rm -f "$1/claim.kept"; : > "$1/claim.lost" 2>/dev/null || true; }
 
 renew_this_run_claim() {
     dir=$(active_run) || return 0
-    item=$(item_id "$dir")
+    item=$(held_item_of "$dir")
     [ -n "$item" ] || return 0
 
     kept_recently "$dir" && return 0
@@ -3559,6 +3565,7 @@ renew_this_run_claim() {
     # **Whatever the claim's age.** Age was once read first, so a claim another host took a minute
     # ago was marked kept before anyone asked whose it was. #1010 found it.
     holder=$(claim_holder "$held")
+    adopt_if_ours "$dir" "$holder"
     [ "$holder" = "$(holder_of "$dir")" ] || { settle_the_loss "$dir" "$item" "$holder"; return 30; }
 
     age=$(claim_age "$held") || return 0
@@ -3595,27 +3602,58 @@ settle_the_loss() {
 # answering for it until the window moved.
 mark_kept_where_held() {
     dir=$(active_run 2>/dev/null) || return 0
-    [ "$(item_id "$dir")" = "$1" ] || return 0
+    [ "$(held_item_of "$dir")" = "$1" ] || return 0
 
-    remember_the_holder "$dir"
+    remember_the_holder "$dir" "$(holder_of "$dir")"
     mark_kept "$dir"
 }
 
 #
-# **The name a run claims under is the run's, not the machine's.** A container starts under a new
-# host name each time, and a run is meant to move, so the name is kept the first time the run sees
-# its claim: when it takes one, or when it binds an item this host already holds.
-remember_the_holder() { [ -s "$1/claim.holder" ] || recording_host > "$1/claim.holder" 2>/dev/null; }
-
-holder_of() {
-    [ -s "$1/claim.holder" ] && { cat "$1/claim.holder"; return 0; }
-    recording_host
+# **Two definitions, and nothing else decides either.** Five review rounds found one fault by five
+# routes: a claim compared with a name other than the one it was taken under. Each route worked out
+# the item or the name on its own. Piece 7, 7b.
+#
+# **The item a run holds:** the one a read bound, else the one its pass began.
+held_item_of() {
+    run_item=$(item_id "$1" 2>/dev/null)
+    [ -n "$run_item" ] || run_item=$(item_a_pass_began "$1")
+    printf '%s' "$run_item"
 }
 
-# Whose name a claim on this item goes under: the active run's own when it holds the item.
+# **The name a run claims under:** its `claim.holder`, else this host's. A container starts under a
+# new name each time, and a run is meant to move, so the name is kept once the run has one.
+holder_of() {
+    [ -s "$1/claim.holder" ] && { cat "$1/claim.holder"; return 0; }
+    this_host
+}
+
+remember_the_holder() { [ -s "$1/claim.holder" ] || printf '%s\n' "$2" > "$1/claim.holder" 2>/dev/null; }
+
+#
+# **A run with no holder adopts its claim's name** when that name is one of this host's: the
+# machine's, from before claims named the home, or this host's. Another host's is never adopted.
+adopt_the_claims_name() {
+    [ -s "$1/claim.holder" ] && return 0
+    held=$(source_says held "$2" 2>/dev/null) || return 0
+
+    adopt_if_ours "$1" "$(claim_holder "$held")"
+}
+
+adopt_if_ours() {
+    [ -s "$1/claim.holder" ] && return 0
+    is_this_hosts_name "$2" || return 0
+
+    remember_the_holder "$1" "$2"
+}
+
+is_this_hosts_name() { [ "$1" = "$(this_machine)" ] || [ "$1" = "$(this_host)" ]; }
+
+# Whose name a claim on this item goes under: the active run's own when it holds the item, bound or
+# begun, after it has adopted its claim's name. Else this host's, and nothing else decides it.
 claimant_for() {
-    here=$(active_run 2>/dev/null) && [ "$(item_id "$here")" = "$1" ] && { holder_of "$here"; return 0; }
-    recording_host
+    here=$(active_run 2>/dev/null) && [ "$(held_item_of "$here")" = "$1" ] \
+        && { adopt_the_claims_name "$here" "$1"; holder_of "$here"; return 0; }
+    this_host
 }
 
 #
@@ -3625,7 +3663,7 @@ claimant_for() {
 # The keep answers it, 30 for another host's item whatever its age. A run holding no item says so:
 # exclusivity it never took is not exclusivity it can keep. #991 saw two copies work one item.
 refuse_an_item_another_host_holds() {
-    item=$(item_id "$1")
+    item=$(held_item_of "$1")
     [ -n "$item" ] || { note "this run holds no item, so nothing here is exclusive"; return 0; }
 
     renew_this_run_claim && return 0
@@ -3817,22 +3855,26 @@ kept_by_who_put_it_on() {
 }
 
 #
-# One pass carries the first item offered that this host can claim to a request: a run, the host's
-# command in it, the bar, and a push. A trigger wakes it, #997.
+# One pass carries one item to a request: a run, the host's command in it, the bar, and a push. A
+# trigger wakes it, #997.
+#
+# **A run a pass began is carried on first**, from the line its last pass wrote. Only a pass that
+# finds none takes the first item offered that this host can claim.
 #
 # **It never chooses.** The order is the rule's, and an item another host holds is passed over,
-# never taken. Any run already active here is left alone, because one pass takes one item.
+# never taken. A run a person began is left alone, because one pass takes one item.
 #
-# **Exclusive between hosts, not within one.** A claim from the same host renews, so two passes in two
-# checkouts on one host could both take one item. One live pass per host is the trigger's, #997.
+# **One live pass per host, taken at the door.** A claim from the same host renews, so two passes in
+# two checkouts on one host could both take one item. The door is what keeps them apart. Piece 7, 7a.
 pass() {
     [ "$#" -eq 0 ] || { usage; exit 2; }
-    refuse_missing_source
-    leave_a_run_in_progress_alone
     keep_the_host_command_to_itself
+    say_this_pass_woke
+    leave_with_no_source
+    take_the_host
+    carry_on_a_run_a_pass_began && return 0
 
-    items=$(what_is_offered) || exit "$?"
-    taken=$(claim_the_first_offered "$items") || exit "$?"
+    select_an_item
     answer_to_the_applier "$taken" "$items"
     heading=$(the_heading_of "$taken") || exit "$?"
     begin_a_run_for "$taken" "$heading"
@@ -3849,6 +3891,264 @@ pass() {
 keep_the_host_command_to_itself() {
     host_command=${FOUNDRY_PASS_COMMAND:-}
     unset FOUNDRY_PASS_COMMAND
+}
+
+#
+# **Every wake is recorded, whether or not a run is made**: a `woke` line first and an `ended` line at
+# exit, in `<floor home>/wakes`. `process=` pairs the two, with other passes' lines between. Piece 7, 7c.
+say_this_pass_woke() {
+    read_the_wake
+    record_the_wake woke "process=$$ $wake_fields"
+}
+
+#
+# **The trigger's four fields**, one token each, and `unnamed` for any it did not name. Read once and
+# unset, as the host command is, so no gate or judge sees it. Floor adds the command's first word.
+read_the_wake() {
+    wake=${FOUNDRY_WAKE:-}
+    unset FOUNDRY_WAKE
+    wake_fields="mechanism=$(wake_field mechanism) cadence=$(wake_field cadence) identity=$(wake_field identity)"
+    wake_fields="$wake_fields stops=$(wake_field stops) command=$(the_command_word)"
+}
+
+wake_field() {
+    named=$(printf '%s\n' "$wake" | tr ' ' '\n' | awk -F= -v key="$1" '$1 == key { print substr($0, length(key) + 2); exit }')
+    one_token "${named:-unnamed}"
+}
+
+# Its first word and never its arguments, which can carry what a host would not print.
+the_command_word() {
+    set -f
+    set -- $host_command
+    set +f
+    one_token "${1:-unnamed}"
+}
+
+# One line, one append, so two passes writing at once each land whole.
+record_the_wake() {
+    mkdir -p "$HOME_DIR" 2>/dev/null
+    printf '%s\t%s\t%s\t%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$(one_line "$(this_machine)")" "$1" "$2" \
+        >> "$HOME_DIR/wakes" 2>/dev/null
+}
+
+say_this_pass_ended() { record_the_wake ended "process=$$ read=$2 code=$1"; }
+
+# A wake with no source to ask is still a wake, so it leaves its record before it refuses.
+leave_with_no_source() {
+    [ -f "$(source_resolver)" ] && return 0
+
+    say_this_pass_ended 3 no-source
+    note "no work source at [$(source_resolver)]"
+    exit 3
+}
+
+# The offer, then the first item this host can claim. What a pass that took nothing met is its code's.
+select_an_item() {
+    items=$(what_is_offered) || leave_with_no_item "$?"
+    taken=$(claim_the_first_offered "$items") || leave_with_no_item "$?"
+    pass_read="took:$taken"
+}
+
+leave_with_no_item() {
+    pass_read=$(what_the_offer_met "$1")
+    exit "$1"
+}
+
+what_the_offer_met() {
+    case $1 in
+        42) printf 'nothing-offered' ;;
+        30) printf 'all-held' ;;
+        20) printf 'source-unasked' ;;
+        43) printf 'superseded' ;;
+        *)  printf 'offer-failed:%s' "$1" ;;
+    esac
+}
+
+#
+# **A host is one home on one machine, and its live pass holds the newest number** in the home's
+# `pass/`. Each pass takes the next with one `ln`, before the offer is read or any run is. Piece 7, 7a.
+#
+# Numbers are ten digits, padded, so a listing sorts them as numbers.
+take_the_host() {
+    heartbeat= run_alive= pass_read=
+    host_marks="$HOME_DIR/pass"
+    own_beat=$(pass_beat)
+
+    leave_while_a_pass_holds_the_host
+    take_the_next_number
+    leave_if_a_later_number_won
+    name_this_mark
+    sweep_the_old_numbers
+    beat_for_the_host
+}
+
+#
+# **The look.** The newest mark holds the host while it is younger than three of its writer's beats.
+# One holding `ended` holds nothing. One nobody can read holds it for three beats from its side name.
+leave_while_a_pass_holds_the_host() {
+    newest=$(the_newest_number)
+    [ -n "$newest" ] || return 0
+    a_mark_holds_the_host "$newest" || return 0
+
+    mark_age=$(age_of_the_mark "$newest")
+    mark_names=$(side_names_of "$newest")
+    say_this_pass_ended 43 "live:$newest"
+    note "a pass holds this host: mark $newest, $mark_age, named $mark_names"
+    exit 43
+}
+
+the_newest_number() { ls "$host_marks" 2>/dev/null | grep -E '^[0-9]{10}$' | tail -n 1; }
+
+a_mark_holds_the_host() {
+    was= writers_beat=
+    read -r was writers_beat 2>/dev/null < "$host_marks/$1"
+    [ "$was" = ended ] && return 1
+    is_a_time "$was" && is_a_plain_decimal "$writers_beat" && { younger_than_three_beats "$was" "$writers_beat"; return; }
+
+    an_unreadable_mark_holds_the_host "$1"
+}
+
+#
+# **Aged from its earliest side name.** With none, the first pass to find it adds one, and the mark
+# holds three of that pass's beats from then. So a mark nobody can read needs no person to clear it.
+an_unreadable_mark_holds_the_host() {
+    first=$(earliest_side_name "$1")
+    [ -n "$first" ] || first=$(name_a_mark_found "$1") || return 0
+
+    rest=${first#*.}
+    beat_and_process=${rest#*.}
+    younger_than_three_beats "${rest%%.*}" "${beat_and_process%%.*}"
+}
+
+earliest_side_name() {
+    ls "$host_marks" 2>/dev/null | grep "^$1\.[0-9][0-9]*\.[0-9][0-9]*\." | sort -t. -k2,2n | head -n 1
+}
+
+# The time it was found, and this pass's beat. A `date` that printed nothing names nothing, so no mark
+# is ever aged from a time nobody can read.
+name_a_mark_found() {
+    found_at=$(date -u +%s 2>/dev/null)
+    is_a_time "$found_at" || return 1
+
+    : > "$host_marks/$1.$found_at.$own_beat.found" 2>/dev/null
+    printf '%s' "$1.$found_at.$own_beat.found"
+}
+
+# A time nobody can read is young: holding the door for three beats costs a wake, and passing it puts
+# two passes on one host.
+younger_than_three_beats() {
+    now=$(date -u +%s 2>/dev/null)
+    is_a_time "$1" && is_a_time "$now" && is_a_plain_decimal "$2" || return 0
+
+    [ "$(( now - $1 ))" -lt "$(( $2 * 3 ))" ]
+}
+
+is_a_time() { case $1 in ''|*[!0-9]*) return 1 ;; esac; }
+
+age_of_the_mark() {
+    was=
+    read -r was _ 2>/dev/null < "$host_marks/$1"
+    is_a_time "$was" || { printf 'unread'; return 0; }
+    printf '%s seconds since it beat' "$(( $(date -u +%s) - was ))"
+}
+
+side_names_of() {
+    names=$(ls "$host_marks" 2>/dev/null | grep "^$1\." | grep -v '\.new$' | tr '\n' ' ')
+    printf '%s' "${names:-nothing}"
+}
+
+#
+# **The take is one `ln`**, of a mark written whole beside it, to the number after the newest. A name
+# already there is a pass that won, and a loser never tries the next number: that race is a later wake's.
+take_the_next_number() {
+    mine=$(the_number_after "$newest")
+    taken_at=$(date -u +%s 2>/dev/null)
+    draft="$host_marks/.take.$$"
+
+    mkdir -p "$host_marks" 2>/dev/null
+    is_a_time "$taken_at" && printf '%s %s\n' "$taken_at" "$own_beat" > "$draft" 2>/dev/null \
+        && ln "$draft" "$host_marks/$mine" 2>/dev/null
+    took=$?
+    rm -f "$draft"
+    [ "$took" -eq 0 ] || lose_or_fault_at_the_take
+}
+
+# The digits after the zeros, so the shell never reads a padded number as octal.
+the_number_after() {
+    last=${1:-0}
+    last=${last#"${last%%[!0]*}"}
+    printf '%010d' "$(( ${last:-0} + 1 ))"
+}
+
+lose_or_fault_at_the_take() {
+    [ -e "$host_marks/$mine" ] || { say_this_pass_ended 3 fault; note "floor could not take a host mark in its home"; exit 3; }
+
+    say_this_pass_ended 43 "lost:$mine"
+    note "another pass took this host first, as $mine"
+    exit 43
+}
+
+#
+# **The read.** A later number is a pass that took after this one and won. This one's number goes,
+# since no reader looks below the newest.
+leave_if_a_later_number_won() {
+    later=$(the_newest_number)
+    [ "$later" = "$mine" ] && return 0
+
+    rm -f "$host_marks/$mine"
+    say_this_pass_ended 43 "lost:$later"
+    note "a later pass took this host, as $later"
+    exit 43
+}
+
+#
+# **The side name** says when the mark was taken, at what beat, and by which process. The pass knows
+# its mark by it, never by the number alone.
+name_this_mark() {
+    side_name="$mine.$taken_at.$own_beat.$$"
+    : > "$host_marks/$side_name" 2>/dev/null && return 0
+
+    say_this_pass_ended 3 fault
+    note "floor could not name its host mark in its home"
+    exit 3
+}
+
+#
+# **The sweep.** Numbers below this pass's own whose side names are a day old go, with their names.
+# The newest never goes, and nor does any number above the sweeper's own.
+sweep_the_old_numbers() {
+    now=$(date -u +%s 2>/dev/null)
+    is_a_time "$now" || return 0
+
+    ls "$host_marks" 2>/dev/null | numbers_a_day_old_below "$mine" "$now" | while read -r old; do
+        rm -f "$host_marks/$old" "$host_marks/$old".*
+    done
+}
+
+numbers_a_day_old_below() {
+    awk -F. -v mine="$1" -v now="$2" '
+        NF >= 4 && $1 ~ /^[0-9]+$/ && $2 ~ /^[0-9]+$/ && ($2 + 0 > newest[$1] + 0) { newest[$1] = $2 }
+        END { for (n in newest) if (n + 0 < mine + 0 && now - newest[n] >= 86400) print n }'
+}
+
+
+#
+# **The beat and the exit action start here, once the pass knows its own mark.** The exit action is
+# set once and never replaced: set any earlier, it could write into another pass's number.
+beat_for_the_host() {
+    trap end_this_pass EXIT
+    beat_the_marks
+}
+
+#
+# **Before each verb, the host is still this pass's own**, by its side name on the newest number. A
+# machine that slept past three beats lets a second pass take the host, and this one then stops.
+still_holding_the_host() {
+    [ -e "$host_marks/$(the_newest_number).$taken_at.$own_beat.$$" ] && return 0
+
+    pass_read="superseded:$(the_newest_number)"
+    note "a newer pass holds this host now, so this pass stops: $(the_newest_number)"
+    exit 43
 }
 
 # What `offer` lists. An empty list is an answer, and a pass has nothing to act on.
@@ -3872,6 +4172,7 @@ claim_the_first_offered() {
 # Passes over an item underway here or held elsewhere, and claims the rest. A source nobody could ask
 # ends the pass, since every item after this one would ask it the same.
 this_pass_claims() {
+    still_holding_the_host
     already_underway_here "$1" && { note "[$1] is underway in a run here already, so this pass passes it over"; return 1; }
 
     ( claim "$1" ) >/dev/null 2>&1; code=$?
@@ -3891,33 +4192,146 @@ answer_to_the_applier() { unset FOUNDRY_WHO; FOUNDRY_WHO=$(applier_of "$1" "$2")
 applier_of() { printf '%s\n' "$2" | awk -F'\t' -v item="$1" '$1 == item { print $3; exit }'; }
 
 #
-# **An item this host claimed is underway only while a run here holds it.** To `claim`, this host's
-# own claim is a renewal. To a pass it is work already started, unless no run holds the item: then the
-# claim outlived a pass that died before binding it, and this pass takes it again. #884's judge.
+# **An item is underway here while a run here holds it, under the name its claim carries.** To
+# `claim`, this host's own claim is a renewal. To a pass it is work already started, unless no run
+# here holds it so: then the claim outlived a pass that died, and this pass takes it again.
+#
+# A released item is held by nobody, so it is taken again. #884's judge, and piece 7's.
 already_underway_here() {
     record=$(source_says held "$1") || return 1
-    [ "$(claim_holder "$record")" = "$(recording_host)" ] || return 1
 
-    a_run_here_holds "$1"
+    a_run_here_holds "$1" "$(claim_holder "$record")"
 }
 
 a_run_here_holds() {
     for held_by in "$RUNS"/*/; do
-        [ "$(item_id "${held_by%/}" 2>/dev/null)" = "$1" ] && return 0
+        [ "$(held_item_of "${held_by%/}")" = "$1" ] || continue
+        claims_under "${held_by%/}" "$2" && return 0
     done
     return 1
 }
 
-#
-# **Any run active here is left alone**, not only one that holds an item. Every verb a pass calls
-# resolves the active run first, so a pass beside another run did its work in that run. #884's judge.
-leave_a_run_in_progress_alone() {
-    here=$(active_run 2>/dev/null) || return 0
+# A run with a holder claims under it, whatever the machine is called now. A run with none claims
+# under either of this host's names.
+claims_under() {
+    [ -s "$1/claim.holder" ] && { [ "$(cat "$1/claim.holder")" = "$2" ]; return; }
+    is_this_hosts_name "$2"
+}
 
-    a_pass_is_alive_in "$here" \
-        && { note "a pass is at work in this run now, so this pass leaves it alone: $here"; exit 43; }
-    note "a run is active here already, so this pass leaves it alone: $here"
+item_a_pass_began() {
+    field_of "$(awk -F'\t' '$3 == "pass.began" { print $3 "\t" $4; exit }' "$(observations_file "$1")" 2>/dev/null)" item
+}
+
+#
+# **The door, and the run's own record decides.** A pass at work and a person's run are left
+# alone, 43. A run whose pass delivered, or let it go, is let go.
+#
+# An item requested on another branch, or held by another host, lets its run go too, with a line
+# saying why. Every other run is carried on from its last line.
+#
+# **Letting go moves the checkout's pointer and keeps the claim**, so the item stops on this host.
+# After the claim window, another host may take it with fresh rounds.
+#
+# 0 when a run was carried to its request, and 1 when the pass is to select afresh.
+carry_on_a_run_a_pass_began() {
+    named_by_the_caller=${FOUNDRY_RUN:-}
+    resumed=$(active_run 2>/dev/null) || return 1
+
+    leave_a_pass_at_work "$resumed"
+    last_line=$(last_pass_line "$resumed")
+    leave_a_persons_run "$resumed" "$last_line"
+    let_go_of_a_finished_run "$resumed" "$last_line" && return 1
+
+    resumed_item=$(field_of "$last_line" item)
+    let_go_if_requested_elsewhere "$resumed" "$resumed_item" && return 1
+    let_go_if_held_elsewhere "$resumed" "$resumed_item" && return 1
+
+    resume_the_run "$resumed" "$resumed_item" "$last_line"
+}
+
+leave_a_pass_at_work() {
+    a_pass_is_alive_in "$1" || return 0
+
+    pass_read="left-alone:${1##*/}"
+    note "a pass is at work in this run now, so this pass leaves it alone: $1"
     exit 43
+}
+
+# **A run no pass wrote a line in is a person's**, and a pass never works in it. Every verb a pass
+# calls resolves the active run first, so a pass beside it did its work there. #884's judge.
+leave_a_persons_run() {
+    [ -z "$2" ] || return 0
+
+    pass_read="left-alone:${1##*/}"
+    note "a run is active here already, and no pass began it, so this pass leaves it alone: $1"
+    exit 43
+}
+
+let_go_of_a_finished_run() {
+    case $(event_of "$2") in
+        pass.left|pass.delivered) ;;
+        *) return 1 ;;
+    esac
+
+    note "this run's last pass wrote [$(event_of "$2")], so this pass lets it go: $1"
+    let_go_of "$1"
+}
+
+# **Letting go is the checkout's pointer, and never the claim.** A run the caller named cannot be
+# let go of from here, so the pass says to unset `FOUNDRY_RUN`, and leaves it, 43.
+let_go_of() {
+    [ -z "$named_by_the_caller" ] \
+        || { pass_read="named-let-go:${1##*/}"; note "FOUNDRY_RUN names a run a pass has let go of — unset it: $1"; exit 43; }
+
+    let_go_mark=$(pointer) || return 0
+    [ "$(pointed_run)" = "$1" ] || return 0
+    rm -f "$let_go_mark"
+}
+
+# The last line a pass wrote in this run: its event, a tab and its fields, or nothing.
+last_pass_line() {
+    awk -F'\t' '$3 ~ /^pass\./ { last = $3 "\t" $4 } END { if (last != "") print last }' \
+        "$(observations_file "$1")" 2>/dev/null
+}
+
+event_of() { printf '%s\n' "$1" | awk -F'\t' '{ print $1; exit }'; }
+
+# One of a line's `key=value` fields, or nothing when it has none by that name.
+field_of() {
+    printf '%s\n' "$1" | awk -F'\t' -v key="$2=" '
+        { n = split($2, pair, " ") }
+        { for (i = 1; i <= n; i++) if (index(pair[i], key) == 1) { print substr(pair[i], length(key) + 1); exit } }'
+}
+
+#
+# **A request open for this item on another branch is its work already**, waiting on review. #1025
+# keeps such an item from being offered; this keeps a run begun before the request from working it.
+let_go_if_requested_elsewhere() {
+    still_holding_the_host
+    requests=$(source_says open "$(delivery_branch "$1")"); asked=$?
+    [ "$asked" -ne 3 ] || pass_read=source-unasked
+    refuse_unasked "$asked" "list of open requests"
+    [ "$asked" -eq 0 ] || return 1
+    printf '%s\n' "$requests" | awk -F'\t' -v item="$2" '$3 == item { found = 1 } END { exit !found }' \
+        || return 1
+
+    emit "$1" pass.left item="$2" why=requested
+    note "a request for [$2] is open on another branch, so this pass lets its run go: $1"
+    let_go_of "$1"
+}
+
+# **The resume claims before it acts**, so a host that took the item since is told before any work.
+# A source nobody could ask ends the pass and writes nothing, so the last line still says where.
+let_go_if_held_elsewhere() {
+    still_holding_the_host
+    ( claim "$2" ) >/dev/null 2>&1; claimed=$?
+    [ "$claimed" -eq 0 ] && return 1
+    [ "$claimed" -eq 30 ] \
+        || { pass_read=$(what_the_offer_met "$claimed"); note "the work source could not be asked to claim [$2], so this run waits: $1"; exit "$claimed"; }
+
+    emit "$1" pass.left item="$2" why=held
+    note "[$2] is held by another host now, so this pass lets its run go: $1"
+    let_go_of "$1"
 }
 
 #
@@ -3947,6 +4361,15 @@ pass_beat() {
 }
 
 #
+# **A run the pass begins or resumes is beaten too**, from the same beat as the host's mark. The beat
+# starts even when the first write came out empty, so the next beat marks the run.
+say_this_pass_is_alive() {
+    run_alive=$(alive_file "$dir")
+    mark_alive "$run_alive" "$own_beat"
+    beat_the_marks
+}
+
+#
 # **The beat holds none of the pass's descriptors that sh can name.** It inherited stdout and stderr,
 # so a caller reading a pass to its end waited out the beat's `sleep`, and one that reaps only after
 # reading never reaped a killed pass, whose mark `kill -0` then kept fresh. 5a's judge, round one.
@@ -3957,27 +4380,32 @@ pass_beat() {
 # **They are closed on a subshell, never on the call.** On a function call dash keeps a copy of each
 # until the function returns, and the beat returns only when it dies. 5a's judge, round four.
 #
-# The beat starts even when the first write came out empty, so the next beat marks the run.
-say_this_pass_is_alive() {
-    alive=$(alive_file "$dir")
-    own_beat=$(pass_beat)
-    mark_alive "$alive" "$own_beat"
-
-    ( beat_while_alive "$$" "$alive" "$own_beat" ) </dev/null >/dev/null 2>&1 3>&- 4>&- 5>&- 6>&- 7>&- 8>&- 9>&- &
+# **Restarted whenever the marks it beats change**: the host's always, and a run's while the pass holds
+# one. So it is never started from the run, and a run let go is no longer beaten. Piece 7, 7a.
+beat_the_marks() {
+    [ -z "${heartbeat:-}" ] || stop_the_beat
+    ( beat_while_alive "$$" "$own_beat" "$host_marks/$mine" ${run_alive:+"$run_alive"} ) </dev/null >/dev/null 2>&1 3>&- 4>&- 5>&- 6>&- 7>&- 8>&- 9>&- &
     heartbeat=$!
-    trap stop_the_heartbeat EXIT
 }
 
-# Beats while the pass's own process lives and its run is there, so a pass killed outright leaves a
-# mark that goes stale. From `/`, so a beat left sleeping holds no fixture's directory open.
+# Beats while the pass's own process lives and a mark it beats can still be written, so a pass killed
+# outright leaves marks that go stale. From `/`, so a beat left sleeping holds no fixture's directory.
 #
 # A failed write is tried again next beat, and a failed `sleep` at once. Only the pass's end stops it.
 beat_while_alive() {
     cd / || return 0
-    while kill -0 "$1" 2>/dev/null && [ -d "${2%/*}" ]; do
-        sleep "$3"
-        mark_alive "$2" "$3"
+    beating=$1 every=$2
+    shift 2
+
+    while kill -0 "$beating" 2>/dev/null && a_mark_can_be_written "$@"; do
+        sleep "$every"
+        for mark in "$@"; do mark_alive "$mark" "$every"; done
     done
+}
+
+a_mark_can_be_written() {
+    for mark in "$@"; do [ -d "${mark%/*}" ] && return 0; done
+    return 1
 }
 
 # Written beside the mark and renamed over it, so no reader sees one half made. A `date` that printed
@@ -3992,12 +4420,31 @@ mark_alive() {
 #
 # **Stopped with a signal it cannot ignore.** A pass started with TERM ignored hands that on to its
 # beat, and a TERM then did nothing while the pass waited on the beat for ever. 5a's judge, round two.
-#
-# `.new` goes first, so a rename already under way finds nothing to rename, or lands before the mark goes.
-stop_the_heartbeat() {
+stop_the_beat() {
     kill -9 "$heartbeat" 2>/dev/null
     wait "$heartbeat" 2>/dev/null
-    rm -f "$alive.new" "$alive"
+    heartbeat=
+}
+
+#
+# **The exit action**: the beat stops, the host's mark says `ended`, and a run's mark goes. Set once,
+# at the door, and never replaced or cleared. Piece 7, 7a.
+#
+# `.new` goes first, so a rename already under way finds nothing to rename, or lands before the mark goes.
+end_this_pass() {
+    ended_with=$?
+    stop_the_beat
+    printf 'ended\n' > "$host_marks/$mine.new" 2>/dev/null && mv -f "$host_marks/$mine.new" "$host_marks/$mine" 2>/dev/null
+    [ -z "${run_alive:-}" ] || rm -f "$run_alive.new" "$run_alive"
+    say_this_pass_ended "$ended_with" "${pass_read:-unread}"
+}
+
+# A resume that lets its run go beats the host's mark alone from then, and the run's mark goes.
+stop_beating_the_run() {
+    unbeaten=$run_alive
+    run_alive=
+    beat_the_marks
+    rm -f "$unbeaten.new" "$unbeaten"
 }
 
 # A mark that is there and cannot be aged reads as a pass at work. Leaving a dead run costs a wake;
@@ -4024,7 +4471,8 @@ the_heading_of() {
 }
 
 #
-# The run, holding the item. `claim` came first, so a second host is already refused.
+# The run, holding the item. `claim` came first, so a second host is already refused. The run keeps
+# the name that claim was taken under, so no later claim or keep falls back to another. Piece 7, 7b.
 #
 # **It says it began before it reads the item again**, so a read that fails leaves a stop, never a
 # run with no line a later pass could read. #1026.
@@ -4032,13 +4480,21 @@ the_heading_of() {
 # **Its beat starts as soon as the run exists**, before any read. A second pass could find the run
 # without its mark only in the few forks between. 5a's judge.
 begin_a_run_for() {
+    still_holding_the_host
+    claimed_as=$(claimant_for "$1")
     make_run "$2" >/dev/null
     pin_this_run
+    remember_the_holder "$dir" "$claimed_as"
     say_this_pass_is_alive
-    emit "$dir" pass.began item="$1"
+    emit "$dir" pass.began item="$1" "process=$$ $wake_fields"
 
-    ( read_work_item "$dir" "$1" ) >/dev/null || stop_at "$1" read "$?"
+    read_the_item "$1"
     note "this pass took [$1]: $dir"
+}
+
+read_the_item() {
+    still_holding_the_host
+    ( read_work_item "$dir" "$1" ) >/dev/null || stop_at "$1" read "$?"
 }
 
 # An item's first line with words, or its id. Titled by nothing, `make_run` refused an item with no
@@ -4061,11 +4517,26 @@ pin_this_run() { unset FOUNDRY_RUN; FOUNDRY_RUN=$dir; }
 # After the command: the bar, the judges the charter names, and the request. The pass stops at the
 # first that does not pass, and that verb's own words and code say why.
 carry_it_to_a_request() {
-    ( gates ) >/dev/null || stop_at "$1" gates "$?"
-    ( judged ) >/dev/null; code=$?
-    approved_or_unjudged "$code" || stop_at "$1" judged "$code"
+    pass_the_gates "$1"
+    ask_the_judges "$1"
+    still_holding_the_host
     ( deliver "$2" ) >/dev/null || stop_at "$1" deliver "$?"
 
+    say_it_was_delivered "$1"
+}
+
+pass_the_gates() {
+    still_holding_the_host
+    ( gates ) >/dev/null || stop_at "$1" gates "$?"
+}
+
+ask_the_judges() {
+    still_holding_the_host
+    ( judged ) >/dev/null; code=$?
+    approved_or_unjudged "$code" || stop_at "$1" judged "$code"
+}
+
+say_it_was_delivered() {
     emit "$dir" pass.delivered item="$1"
     note "this pass delivered [$1]: $dir"
 }
@@ -4074,16 +4545,280 @@ carry_it_to_a_request() {
 approved_or_unjudged() { [ "$1" -eq 0 ] || [ "$1" -eq 8 ]; }
 
 #
+# **A resume says so before any step, on every wake**, so a wake killed partway is still counted.
+# Then the run is carried on from the line its last pass wrote, and ends the way a fresh pass ends.
+resume_the_run() {
+    pass_read="resumed:${1##*/}"
+    dir=$1
+    pin_this_run
+    say_this_pass_is_alive
+    say_where_this_resumes "$2" "$3"
+    let_go_past_the_bound "$2"
+
+    carry_on_from_the_line "$2"
+}
+
+# `after=` names the line this wake carries on from, with its `why=` and `code=`. A wake killed after
+# writing its own resume line left that line last, so it is read through, never resumed from.
+#
+# **Never through `emit`, which is silent when a write fails.** This line is the bound's only input,
+# so a home that cannot take it stops the wake before any step. A resume nobody counted is a loop.
+say_where_this_resumes() {
+    resumed_event=$(event_of "$2")
+    resumed_why=$(field_of "$2" why)
+    resumed_code=$(field_of "$2" code)
+    [ "$resumed_event" != pass.resumed ] || resumed_event=$(field_of "$2" after)
+
+    record_observation "$dir" pass.resumed item="$1" after="$resumed_event" \
+        ${resumed_why:+"why=$resumed_why"} ${resumed_code:+"code=$resumed_code"} "process=$$ $wake_fields" \
+        || die_unwritable "$(observations_file "$dir")"
+    note "this pass resumes [$1] after [$resumed_event${resumed_why:+ $resumed_why}]: $dir"
+}
+
+#
+# **The bound counts every resume, except one a recorded wait followed.** Only a wait that was
+# written is let off, so a wake killed before it could write one still counts.
+#
+# Revise rounds are resumes too, so a `rounds` limit above the bound is never reached.
+PASS_TRIES=5
+
+# A count that could not be read is past the bound. This wake's own line is already in it, so a
+# count below one is one nobody could read either.
+let_go_past_the_bound() {
+    counted=$(resumes_counted "$dir")
+    is_a_count "$counted" && [ "$counted" -le "$(pass_tries)" ] && return 0
+
+    stop_the_item_here "$1" tries
+    exit 46
+}
+
+pass_tries() {
+    asked=${FOUNDRY_PASS_TRIES:-$PASS_TRIES}
+
+    is_a_plain_decimal "$asked" && { printf '%s' "$asked"; return 0; }
+
+    note "FOUNDRY_PASS_TRIES is [$asked] — one to four digits, no leading zero. Using $PASS_TRIES"
+    printf '%s' "$PASS_TRIES"
+}
+
+resumes_counted() {
+    awk -F'\t' '
+        $3 !~ /^pass\./              { next }
+        open && $3 != "pass.waiting" { counted++ }
+        { open = ($3 == "pass.resumed") }
+        END { print counted + open }' "$(observations_file "$1")" 2>/dev/null
+}
+
+# The item stops on this host, and the line says why. The claim stays, so no pass here takes it again.
+stop_the_item_here() {
+    emit "$dir" pass.left item="$1" why="$2"
+    note "this pass lets [$1] go, $2: $dir"
+    let_go_of "$dir"
+}
+
+#
+# **What the last line says the run needs, and the rest of the way from there.**
+carry_on_from_the_line() {
+    case $resumed_event in
+        pass.began)                carry_on_from_the_start "$1" ;;
+        pass.acted)                carry_on_to_a_request "$1" ;;
+        pass.stopped|pass.waiting) carry_on_from_the_stop "$1" ;;
+        *) note "no pass carries on from [$resumed_event], so this one leaves the run alone: $dir"; exit 43 ;;
+    esac
+}
+
+carry_on_from_the_stop() {
+    case $resumed_why in
+        read|open|charter|workspace) carry_on_from_the_start "$1" ;;
+        no-command)                  act_once_a_command_is_named "$1" ;;
+        command-failed|gates)        act_again "$1" ;;
+        judged)                      let_the_ledger_decide "$1" ;;
+        deliver)                     deliver_and_route "$1" ;;
+        *) note "no pass carries on from a stop at [$resumed_why], so this one leaves the run alone: $dir"; exit 43 ;;
+    esac
+}
+
+# From `pass.began`: the item is read when no read landed, then the work is opened and acted on.
+carry_on_from_the_start() {
+    [ -n "$(item_id "$dir")" ] || read_the_item "$1"
+    open_the_work "$1"
+    act_on_it "$1"
+    carry_on_to_a_request "$1"
+}
+
+act_once_a_command_is_named() {
+    [ -n "$host_command" ] || wait_on_the_host "$1"
+    act_again "$1"
+}
+
+# A wait the host must end. It is recorded, so it is never counted against the bound.
+wait_on_the_host() {
+    emit "$dir" pass.waiting item="$1" why=no-command
+    note "the host names no command, so this run waits for one: $dir"
+    exit 44
+}
+
+act_again() {
+    find_the_workspace "$1"
+    act_on_it "$1"
+    carry_on_to_a_request "$1"
+}
+
+carry_on_to_a_request() {
+    pass_the_gates "$1"
+    ask_the_judges "$1"
+    deliver_and_route "$1"
+}
+
+#
+# **`deliver`'s code says who can answer it.** 15, 18 and 32 wait on a person: a clause, a grant,
+# a commit to account for. 19 was a send that failed, and the next wake sends again.
+#
+# Nothing in this run can answer any other code, so the run is let go and the pass selects afresh.
+deliver_and_route() {
+    still_holding_the_host
+    ( deliver "$(the_run_heading "$1")" ) >/dev/null; delivered=$?
+
+    case $delivered in
+        0)        say_it_was_delivered "$1"; return 0 ;;
+        15|18|32) wait_on_a_person "$1" "$delivered" ;;
+        19)       stop_at "$1" deliver 19 ;;
+    esac
+    let_the_run_go "$1" "$delivered"
+    return 1
+}
+
+# The request's title: the first line with words in the item this run read.
+the_run_heading() { title_for "$1" "$(cat "$dir/item.md" 2>/dev/null)"; }
+
+wait_on_a_person() {
+    emit "$dir" pass.waiting item="$1" why=deliver code="$2"
+    note "delivering [$1] waits on a person, $2: $dir"
+    exit 47
+}
+
+# The pass selects afresh after this, so the run is no longer beaten. The host's mark still is.
+let_the_run_go() {
+    emit "$dir" pass.left item="$1" why=deliver code="$2"
+    note "nothing in this run can answer deliver's $2, so this pass lets it go: $dir"
+    let_go_of "$dir"
+
+    stop_beating_the_run
+}
+
+#
+# **At a `judged` stop, the ledger decides, at this commit.** An answer that stops the item lets it
+# go. A refusal is acted on again until that member's rounds are spent. Otherwise the members who
+# have not answered here are asked, which `judged` does alone, and an approval goes on.
+let_the_ledger_decide() {
+    find_the_workspace "$1"
+    answers=$(what_the_bench_said "$(git -C "$tree" rev-parse --verify --quiet HEAD 2>/dev/null)")
+
+    leave_on_an_answer_that_stops "$1" "$answers"
+    answered_by_any "$answers" refused && { act_on_a_refusal "$1" "$answers"; return; }
+
+    ask_the_judges "$1"
+    deliver_and_route "$1"
+}
+
+leave_on_an_answer_that_stops() {
+    answered_by_any "$2" deadlock    && { stop_the_item_here "$1" deadlock; exit 48; }
+    answered_by_any "$2" unavailable && { stop_the_item_here "$1" unavailable; exit 48; }
+    return 0
+}
+
+act_on_a_refusal() {
+    [ -z "$(members_out_of_rounds "$2")" ] || { stop_the_item_here "$1" rounds; exit 48; }
+    act_again "$1"
+}
+
+answered_by_any() { printf '%s\n' "$1" | awk -F'\t' -v want="$2" '$1 == want { found = 1 } END { exit !found }'; }
+
+# Each member of each judged clause, and what it said at this commit: its answer, a tab, the member, a
+# tab, the clause's id. The words are the door's own: approved, refused, silent, deadlock, unavailable.
+what_the_bench_said() {
+    every_judge_record "$(charter_file "$dir")" | while read -r bench_id bench_who bench_command; do
+        [ -n "$bench_who" ] || continue
+        bench_text=$(clause_text "$(charter_file "$dir")" "$bench_id")
+        printf '%s\t%s\t%s\n' "$(answer_at "$1" "$bench_text" "$bench_who")" "$bench_who" "$bench_id"
+    done
+}
+
+# A stopped answer holds whatever charter it met. Any other holds only this charter's, since `judged`
+# asks again a member handed an older bar.
+answer_at() {
+    said=$(last_answer_at "$2" "$1" "$3")
+    case $said in
+        3) printf 'deadlock'; return 0 ;;
+        4) printf 'unavailable'; return 0 ;;
+    esac
+
+    was_handed "$dir" "$2" "$3" "$1" "$(charter_version "$dir")" || { printf 'silent'; return 0; }
+    case $said in
+        0)   printf 'approved' ;;
+        1|2) printf 'refused' ;;
+        *)   printf 'silent' ;;
+    esac
+}
+
+# The code one member last gave on one clause at one commit, or nothing. Only a verdict row: a
+# handoff carries a 0 in the same column, and a member handed the bar has not answered it.
+last_answer_at() {
+    judge=$3 name=$1 awk -F'\t' -v ref="$2" '
+        $2 != "judged"                                  { next }
+        $4 "" != ENVIRON["name"] "" || $6 "" != ref "" { next }
+        $8 "" == ENVIRON["judge"] ""                    { said = $5 }
+        END { print said }' "$(evidence_file "$dir")" 2>/dev/null
+}
+
+#
+# **Revise rounds are counted per member and clause**: the refusals the ledger holds for this run,
+# against that member's `rounds` line, or three where the charter has none.
+members_out_of_rounds() {
+    printf '%s\n' "$1" | awk -F'\t' '$1 == "refused" { print $2 "\t" $3 }' \
+        | while IFS="$(printf '\t')" read -r spent_who spent_id; do
+            spent_limit=$(round_limit "$(charter_file "$dir")" "$spent_id" "$spent_who")
+            is_a_count "$spent_limit" || spent_limit=3
+            spent=$(refusals_by "$(clause_text "$(charter_file "$dir")" "$spent_id")" "$spent_who")
+            [ "$spent" -lt "$spent_limit" ] || printf '%s\n' "$spent_who"
+        done
+}
+
+refusals_by() {
+    judge=$2 name=$1 awk -F'\t' '
+        $2 != "judged"                                             { next }
+        $4 "" != ENVIRON["name"] "" || $8 "" != ENVIRON["judge"] "" { next }
+        $5 == "1" || $5 == "2"                                     { n++ }
+        END { print n + 0 }' "$(evidence_file "$dir")" 2>/dev/null
+}
+
+#
 # The run's workspace: this checkout's own target, at the ref the host stood on. A target Foundry was
 # invoked in needs nobody's grant, so nothing here waits on a person.
 #
 # **A step that refuses is a stop, written in the run**, so the next pass can tell a refusal from a
 # death. Each step runs apart, and leaves by its own code. #884's judge.
 open_the_work() {
-    ( targets add "$(bootstrap_identity "$dir")" "$(bootstrap_ref "$dir")" ) >/dev/null || stop_at "$1" open "$?"
+    still_holding_the_host
+    select_the_checkout "$1"
+    still_holding_the_host
     ( charter derive ) >/dev/null || stop_at "$1" charter "$?"
+    still_holding_the_host
     ( open_workspace ) >/dev/null || stop_at "$1" workspace "$?"
-    tree=$(unit_work_tree "$dir" "$(this_repository)") || { record_the_stop "$1" workspace 16; exit 16; }
+    find_the_workspace "$1"
+}
+
+# A resumed run selected its target already, and `targets add` refuses one twice.
+select_the_checkout() {
+    [ -z "$(list_targets "$(unit_targets_file "$dir")")" ] || return 0
+    ( targets add "$(bootstrap_identity "$dir")" "$(bootstrap_ref "$dir")" ) >/dev/null || stop_at "$1" open "$?"
+}
+
+find_the_workspace() {
+    tree=$(unit_work_tree "$dir" "$(this_repository)") && return 0
+
+    record_the_stop "$1" workspace 16
+    exit 16
 }
 
 stop_at() { record_the_stop "$1" "$2" "$3"; exit "$3"; }
@@ -4099,6 +4834,7 @@ stop_at() { record_the_stop "$1" "$2" "$3"; exit "$3"; }
 #
 # The pass reads back the command's exit and floor's record, never what the command printed.
 act_on_it() {
+    still_holding_the_host
     [ -n "$host_command" ] || { record_the_stop "$1" no-command 44; exit 44; }
 
     run_the_host_command "$1" || { record_the_stop "$1" command-failed 45; exit 45; }
@@ -4185,7 +4921,7 @@ record_observation() {
     shift 2
 
     line=$(printf '%s\t%s\t%s\t%s' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-        "$(one_line "$(recording_host)")" "$(one_line "$event")" "$(one_line "$*")")
+        "$(one_line "$(this_machine)")" "$(one_line "$event")" "$(one_line "$*")")
 
     refuse_a_torn_row "$line"
 
@@ -4195,7 +4931,32 @@ record_observation() {
 
 # `uname -n`, because `hostname` is not POSIX and a machine that answers neither is still a machine
 # whose clock this row belongs to. Unknown is a name; empty is a column nobody can read.
-recording_host() { uname -n 2>/dev/null || printf 'unknown'; }
+this_machine() { uname -n 2>/dev/null || printf 'unknown'; }
+
+#
+# **The name a claim is taken under: the machine and the home.** Two homes on one machine are two
+# hosts, and a claim named for the machine alone let both take one item. Piece 7, 7b.
+this_host() { printf '%s/%s' "$(this_machine)" "$(home_name)"; }
+
+# A home's name, made once and kept. Never its path, since a path can carry an account's name. A home
+# nobody can write is `unnamed`, never blank, since a host's first claim comes before its first run.
+home_name() {
+    [ -s "$HOME_DIR/host-name" ] || name_this_home
+    cat "$HOME_DIR/host-name" 2>/dev/null || printf 'unnamed'
+}
+
+# Linked into place, so two passes naming the home at once keep the one that landed first.
+name_this_home() {
+    mkdir -p "$HOME_DIR" 2>/dev/null
+    printf '%s\n' "$(a_fresh_token)" > "$HOME_DIR/host-name.$$" 2>/dev/null || return 0
+    ln "$HOME_DIR/host-name.$$" "$HOME_DIR/host-name" 2>/dev/null
+    rm -f "$HOME_DIR/host-name.$$"
+}
+
+a_fresh_token() {
+    [ -r /dev/urandom ] && { od -An -N8 -tx1 /dev/urandom 2>/dev/null | tr -d ' \n'; return 0; }
+    printf '%s%s' "$(date -u +%s)" "$$"
+}
 
 #
 # **One line, one write.** POSIX makes an append atomic only under `PIPE_BUF`, which is 4096 at
@@ -7012,9 +7773,8 @@ words_of_item() {
 # late could then age out and be broken mid-work. The first keep reads it, and renews what is old.
 name_a_claim_taken_first() {
     held=$(source_says held "$2" 2>/dev/null) || return 0
-    [ "$(claim_holder "$held")" = "$(recording_host)" ] || return 0
 
-    remember_the_holder "$1"
+    adopt_if_ours "$1" "$(claim_holder "$held")"
 }
 
 #

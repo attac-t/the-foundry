@@ -69,6 +69,9 @@ shell_for() { wiring | awk -F'\t' -v want="$1" '$2 == want { print $3; exit }'; 
 # List every script hooks.json wires.
 wired() { wiring | cut -f2 | sort -u; }
 
+# List every top-level key in hooks.json. They sit one indent in, and nothing else does.
+top_level_keys() { sed -n 's/^  "\([^"]*\)".*/\1/p' "$hooks"; }
+
 # List every hook script the plugin ships. lib/ is left out — those are called by hooks, not by
 # Claude Code, and nothing should wire them.
 shipped_hooks() { find "$root/hooks" -maxdepth 1 -name '*.sh' -type f | sed 's|.*/||' | sort; }
@@ -146,6 +149,20 @@ done
 placeholders=$(grep -cF '${CLAUDE_PLUGIN_ROOT}' "$hooks")
 quoted=$(grep -cF '\"${CLAUDE_PLUGIN_ROOT}' "$hooks")
 is "every plugin root is quoted" "$quoted" "$placeholders"
+
+# --- the file holds hooks and nothing else ---
+#
+# Claude Code reads this file for hooks alone, drops any other top-level key, and says so at every
+# start. kernel carried `outputStyle` here, so every session opened with a warning about a line that
+# did nothing — and a warning that always fires teaches a reader to skip warnings. The README's
+# `.claude/settings.json` line is where that setting works.
+
+for key in $(top_level_keys); do
+  case "$key" in
+    hooks) ok "hooks.json top level — $key" ;;
+    *)     bad "hooks.json carries \"$key\", which Claude Code drops with a warning at every start" ;;
+  esac
+done
 
 # --- the shipped invocation works ---
 # These are the checks the release needed and did not have.

@@ -271,6 +271,7 @@ ${FOUNDRY_HOME:-$HOME/.foundry}/runs/<date>-<slug>-<short id>/
 ├── judged/            what `judged` asked each judge, and what came back — one pair per clause
 ├── observations       what happened, one line each, and nothing granted by any of it
 ├── pass.alive         the time a pass at work last beat, and its beat — absent when no pass is at work
+├── claim.holder       the name this run's claim goes under, kept when the run moves
 ├── asides             what this run could not act on — written by `aside`, read by nothing
 ├── id                 this run's name, so a copied directory still knows it
 ├── gates-tree/        the tree a substituted gate was graded in — absent unless one was
@@ -2046,10 +2047,28 @@ nobody holds. A run holding no item says that nothing it does is exclusive.
 then, the answer says so and names `claim <item>`. A remote that cannot be asked is never *nobody*:
 the GitHub adapter answers 3 for it, and the item reads as held by someone the source could not name.
 
-**The name a claim goes under is the run's.** The run keeps the name the first time it sees its
-claim: when it takes one, or when it binds an item this host already holds. So a run carried to
-another machine, or graded in a container that starts under a new host name, still holds its own
-claim. Bound to another host's item, it keeps no name, and the work is refused.
+**A host is a machine and a home.** A claim goes under `<machine>/<home>`, where the home's name is
+a token it makes once and keeps in `host-name`, beside `runs/`. Never its path. So two homes on one
+machine are two hosts, and one item is never taken by both.
+
+**The name a claim goes under is the run's.** A pass writes it into the run when its claim lands. A
+person's run takes it the first time the source answers, when the claim is under one of this host's
+names. So a run carried to another machine, or graded in a container that starts under a new host
+name, still holds its own claim. Bound to another host's item, it keeps no name, and the work is
+refused.
+
+**Two definitions, and nothing else decides either.** The item a run holds is the one a read bound,
+else the one its pass began. The name it claims under is its own, else this host's. Every claim,
+keep and release asks those two.
+
+**A claim taken before claims named the home carries the machine's name alone.** A run on this
+machine adopts it, and so could a run in another home on the same machine. Such a claim ages out
+within one window.
+
+**A run with no holder that moves before the source first answers is not covered.** Its claim is
+under neither of this host's names, so its keep refuses it, and once the window passes a pass may
+take its item into a second run. Only a person's run, or one from before claims named the home, can
+be in that state.
 
 **The name is a record, not a credential.** It is a file in the run, so a worker that writes the
 holder's name there passes the keep, as one that set its host name always could. #156 owns the
@@ -2094,14 +2113,73 @@ record, not a control, until a worker has its own identity.
 
 **`run.sh pass` takes the first of them this host can claim, and carries it to a request.** An item
 another host holds is passed over and said, and so is one a run here already works on. When every
-item is, that is exit 30. Any run active in this checkout is left alone, exit 43, one holding no item
-included: every verb a pass calls reads the active run first. Nothing offered is exit 42, with the
+item is, that is exit 30. A run a pass began is carried on first, below. A run a person began is left
+alone, exit 43: every verb a pass calls reads the active run first. Nothing offered is exit 42, with the
 reason. **Once a pass begins its run, every verb it calls reads that run**, whatever the checkout
 points at by then, and an item with no words is titled by its id.
 
-**Exclusive between hosts, not within one.** A claim from the same host renews, so two passes in two
-checkouts on one host could both take one item. One live pass per host is the trigger's to keep,
-#997.
+**One live pass per host, taken at the door.** A claim from the same host renews, so two passes in
+two checkouts on one host could both take one item. The door keeps them apart. A host is one home on
+one machine, and its live pass holds the newest number in the home's `pass/` directory.
+
+Before it reads the offer or any run, a pass looks at the newest number, takes the next one with a
+single `ln`, and lists the numbers again:
+
+| It finds | It does |
+|---|---|
+| the newest mark younger than three of its writer's beats | exits 43, naming the mark, its age and its side name |
+| the number it wanted already taken, or a later one on the second look | exits 43: another pass won |
+| its `ln` failed and nothing is there | exits 3, a fault, and never as if it lost |
+| an aged mark, or one that says `ended` | takes the next number, and leaves the old one where it is |
+
+**The mark is beaten from the take until the pass exits**, when it says `ended`. A run the pass
+begins or resumes is beaten by the same beat. **Before each verb, the pass checks the newest number
+is still its own**, by the side name beside it, and stops with 43 when it is not. **A mark nobody can
+read** holds the host for three beats from its side name, and a pass that finds one with no side name
+adds a `.found` one, so no person has to clear it. A winner removes numbers below its own whose side
+names are a day old.
+
+**What the door cannot see.** A command still running after its pass was killed, which #1046 owns. A
+reused process id, which keeps a dead pass's mark fresh until it goes. And a machine that slept past
+three beats: a second pass starts, and one in the same checkout can resume the live pass's own run,
+so two passes work one workspace for up to one verb. That verb can be a resume's own tail. The pass
+that slept may then let go of the run the new holder works, and remove the checkout's pointer. The
+next wake passes the item over as underway, until a person acts.
+
+**Every wake is recorded, whether or not a run is made.** `wakes` in floor's home gets two lines per
+pass, each appended whole: `woke` first, and `ended` at exit with what the pass met and its code.
+`process=` pairs them, with other passes' lines between. The trigger names four fields in
+`FOUNDRY_WAKE`, one token each: `mechanism=`, `cadence=`, `identity=` and `stops=`. Floor adds
+`command=`, the host command's first word and never its arguments. A field nobody named reads
+`unnamed`. `FOUNDRY_WAKE` is read once and unset, so no gate or judge sees it, and `pass.began` and
+`pass.resumed` carry the same fields.
+
+| `read=` | Where the pass ended |
+|---|---|
+| `live:<number>` | the door found a live mark, 43 |
+| `lost:<number>` | the take or the read lost, 43 |
+| `fault` | the take failed with no rival, 3 |
+| `no-source` | the host names no work source, 3 |
+| `superseded:<number>` | a newer pass took the host, 43; mid-claim it reads `superseded` |
+| `nothing-offered` | nothing was offered, 42 |
+| `all-held` | every item offered was held or underway, 30 |
+| `source-unasked` | the source could not be asked, 20 |
+| `offer-failed:<code>` | the offer could not be read |
+| `left-alone:<run>` | a pass at work or a person's run was left alone, 43 |
+| `named-let-go:<run>` | `FOUNDRY_RUN` names a run a pass let go, 43 |
+| `resumed:<run>` | it resumed a run |
+| `took:<item>` | it took an item |
+
+**An open `woke` is a pass at work or one that died**, and the host mark says which. A pass killed
+outright never writes its `ended`. A pass with no work source still records its wake, and ends
+`no-source`.
+
+**A host with no timer of its own can use `bin/wake.sh <seconds>`.** It runs `run.sh pass`, waits,
+and runs it again, until `wake.stop` appears in floor's home. It looks for that file before each
+pass. It keeps nothing and holds no lock. The host names the cadence, and there is no default. A
+cadence past the claim window is refused, exit 2, since a claim would lapse between two passes. It
+runs in a checkout it can write, never floor's read-only `/src`, and refuses anything else with 3.
+cron, a systemd timer or a container loop need nothing from floor but `run.sh pass`.
 
 **The host names the command that does the work, in `FOUNDRY_PASS_COMMAND`.** Floor names no
 harness. The pass opens the run's workspace on this checkout's own target, which needs nobody's
@@ -2129,9 +2207,10 @@ which code: `pass.stopped why=deliver code=18`.
 **A pass at work says so.** As soon as its run exists, a pass writes the time and its beat into
 `pass.alive` every `FOUNDRY_PASS_BEAT` seconds, sixty by default. A second pass could find the run
 without its mark only in the few forks between. Each write lands whole, and the mark goes when the
-pass exits. A second pass on this host may find a mark younger than three of its writer's beats. It
-then says a pass is at work, and leaves the run alone, 43. The claim cannot tell the two apart,
-because it renews for any pass holding the run's name.
+pass exits. A second pass on this host meets the host mark at the door first, and exits 43 there. One
+that took the host past an aged mark reaches this mark next: younger than three of its writer's
+beats, it says a pass is at work in this run, and leaves the run alone, 43. The claim cannot tell
+the two apart, because it renews for any pass holding the run's name.
 
 **The beat holds none of the pass's output**, so a caller reading a pass to its end waits for the
 pass and nothing else, even a pass killed outright. That covers descriptors 0 to 9, as far as POSIX
@@ -2143,6 +2222,52 @@ with a signal it cannot ignore**, so a pass started with TERM ignored still ends
 two workers in one workspace. **What the mark cannot see:** a command, a grade or a judgement still
 running after its pass was killed, which #1046 owns. A reused process id keeps a dead pass's mark
 fresh, so on one host every wake leaves that run alone until the id goes.
+
+**A pass carries on a run a pass began, before it takes anything new.** The run's own record decides,
+read in this order:
+
+| The run | The pass |
+|---|---|
+| a pass at work in it | leaves it, 43 |
+| no line a pass wrote | a person's run: leaves it, 43 |
+| its last pass delivered, or let it go | lets it go, and takes what is offered |
+| a request for its item open on another branch | writes `pass.left why=requested`, lets it go, and takes what is offered |
+| its item claimed by another host | writes `pass.left why=held`, lets it go, and takes what is offered |
+| a source nobody could ask for the claim | exits 20, and writes nothing |
+| anything else | resumes it |
+
+**Letting go moves the checkout's pointer and keeps the claim**, so the item stops on this host. Under
+`FOUNDRY_RUN` the pointer cannot move, so the pass says to unset it, 43.
+
+**A resume says so before any step**, on every wake: `pass.resumed`, naming the line it carries on
+from. It reads the item if no read landed, and opens the work without selecting its target twice.
+After a failed command or failed gates it acts again. At a `judged` stop, the ledger decides:
+
+| At a `judged` stop, at this commit | The pass |
+|---|---|
+| a member deadlocked, or could not be reached | `pass.left why=deadlock` or `why=unavailable`, 48 |
+| a member refused | acts again, until that member's revise rounds are spent: `pass.left why=rounds`, 48 |
+| a member has not answered | asks it, and only it |
+| every member approved | goes on to the request |
+
+**Revise rounds are counted per member and clause**, against that member's `rounds` line, or three
+where the charter has none.
+
+**`deliver`'s code says who can answer it.** 15, 18 and 32 wait on a person: `pass.waiting`, 47. 19 is
+a send that failed, sent again next wake. Nothing in the run can answer any other code, so the run
+is let go with `pass.left why=deliver`, and the pass takes what is offered. A host with no command
+leaves a run waiting too, 44.
+
+**A wait is never counted, and every other resume is.** `FOUNDRY_PASS_TRIES` bounds them, five by
+default. Past it the pass writes `pass.left why=tries`, 46. A wake killed partway still counts,
+because its line was written first. A home that cannot take that line stops the wake before any
+step, 3, and a count nobody could read is past the bound. While the home stays that way, every wake
+stops there, and the claim the door renewed keeps the item on this host, uncounted, as a wait does. Revise rounds are resumes too, so a
+`rounds` limit above the bound is never reached.
+
+**What the bound costs:** a run that needs more than five resumes stops, even if each one moved it
+forward. `run.sh release <item>` on this host frees the item, and the next wake takes it into a new
+run. **A run waiting on a person holds this host**: every wake exits 47 and takes no other work.
 
 **A read that fails after the run is made is a stop.** The pass writes `pass.began` before it reads
 the item a second time, and a read that fails then is `why=read`. #1026. A run whose pointer could
@@ -2244,7 +2369,7 @@ floor's own version. It is floor asking about floor, through a layout the harnes
 
 ## Every setting floor reads
 
-Fourteen, and the page named seven of them a paragraph at a time. **Absent is the ordinary path** — the
+Sixteen, and the page named seven of them a paragraph at a time. **Absent is the ordinary path** — the
 column says what happens then, because that is the case almost every reader is in.
 
 | Setting | Absent | Set |
@@ -2259,6 +2384,8 @@ column says what happens then, because that is the case almost every reader is i
 | `FOUNDRY_CLAIM_FLOOR` | a claim is kept once it is a third of the window old | it is kept at that share instead |
 | `FOUNDRY_PASS_COMMAND` | a pass begins its run and stops, 44 | the pass runs it in the workspace |
 | `FOUNDRY_PASS_BEAT` | a pass at work beats every sixty seconds | it beats that often; anything but one to four digits is named, and sixty kept |
+| `FOUNDRY_PASS_TRIES` | a run is resumed five times before it is let go, 46 | that many; anything but one to four digits is named, and five kept |
+| `FOUNDRY_WAKE` | a wake's four fields read `unnamed` in the host record | a trigger names its mechanism, cadence, identity and what stops it |
 | `FOUNDRY_QUIET_DAYS` | `settled` names a run nothing touched for two days | it uses that many days |
 | `FOUNDRY_BRIEF`, `FOUNDRY_RECEIPT` | nothing — floor sets these when it runs a judge | an adapter reads and writes them |
 | `FOUNDRY_UNDER` | `run.began` records `under=nothing` | it records what the host stated, as one token |

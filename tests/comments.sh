@@ -110,9 +110,15 @@ an_unrendered_comment_is_named_and_not_failed
 #
 # A gate that could not run is not a gate that passed. Exit 3 is this repo's word for it.
 no_gh_reads_nothing() {
-  # Coreutils, and no `gh`. An empty PATH answers 127 for `dirname`, which is a different
-  # finding wearing the same number.
-  no_gh=$(PATH=/usr/bin:/bin sh "$root/bin/comments.sh" 416 >/dev/null 2>&1; printf %s "$?")
+  # `dirname`, the one command it runs before looking for `gh`, and no `gh`. An empty PATH
+  # answers 127 for `dirname`, which is a different finding wearing the same number.
+  #
+  # **Never `PATH=/usr/bin:/bin`.** A host with `gh` there, signed in, inside a clone, finds
+  # it, reads a live thread and answers 0. The first live pass stopped on that, 28 September.
+  mkdir -p "$tmp/nogh"
+  printf '#!/bin/sh\nexec %s "$@"\n' "$(command -v dirname)" > "$tmp/nogh/dirname"
+  chmod +x "$tmp/nogh/dirname"
+  no_gh=$(PATH="$tmp/nogh" "$(command -v sh)" "$root/bin/comments.sh" 416 >/dev/null 2>&1; printf %s "$?")
   is "no gh answers 3" "$no_gh" "3"
   is "and no number answers 3" \
      "$(PATH="$tmp/bin:$PATH" THREAD="$tmp/thread" sh "$root/bin/comments.sh" >/dev/null 2>&1; printf '%s' "$?")" "3"
