@@ -6451,12 +6451,16 @@ a_run_waits_on_the_host_then_a_person() {
   # The command runs a second pass from the same checkout, while the resumed one works. In a
   # subshell, so the worker after it still commits in the workspace.
   second="( cd '$tmp/rsw' && sh '$runner' pass > '$tmp/rsw.second' 2>&1; echo \"exit=\$?\" >> '$tmp/rsw.second' )"
+  # The host's mark answers the second pass, so only this says the resume marked its run.
+  waiting_run=$(floor "$tmp/rsw" path)
+  marked="( [ -f '$waiting_run/pass.alive' ] && echo marked || echo unmarked ) > '$tmp/rsw.mark'"
   # A beat of sixty, so the first pass's host mark cannot age while the second one looks at it.
   is  "the host names its command after more waits than the bound, and the run acts" \
-      "$(FOUNDRY_PASS_COMMAND="$second; $COMMITTING_WORKER" FOUNDRY_PASS_TRIES=2 FOUNDRY_PASS_BEAT=60 \
+      "$(FOUNDRY_PASS_COMMAND="$marked; $second; $COMMITTING_WORKER" FOUNDRY_PASS_TRIES=2 FOUNDRY_PASS_BEAT=60 \
           code_of floor "$tmp/rsw" pass)" "47"
   has "and waits on a person for the grant" "$(last_pass_line_in "$tmp/rsw")" "why=deliver code=18"
   has "a second pass while a resumed one works is told so, at the door" "$(cat "$tmp/rsw.second" 2>/dev/null)" "a pass holds this host"
+  is  "and the run it resumed is marked as worked while it works" "$(cat "$tmp/rsw.mark" 2>/dev/null)" "marked"
   for wake in 1 2 3; do
     is "a wake before the grant waits again, $wake" "$(resume_in "$tmp/rsw")" "47"
   done
