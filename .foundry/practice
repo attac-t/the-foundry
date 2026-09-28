@@ -24,3 +24,13 @@
 
 grade    https://github.com/attac-t/the-foundry.git
 deliver  https://github.com/attac-t/the-foundry.git
+
+# `offer` makes an issue eligible for a pass: `offer <label> <who may put it on>`. A pass takes the
+# oldest such label first. The label means something only from a hand named here, and floor never
+# puts one on itself.
+#
+# Added by a worker at the repository owner's word, 26 September 2026, and not by the owner's own
+# hand. The words: "you have browser access and you can do it yourself, the 'offer' and foundry tag
+# thing."
+
+offer    foundry:go  attac-t
