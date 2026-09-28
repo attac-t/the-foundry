@@ -7374,6 +7374,22 @@ a_change_to_either_setting_reaches_the_next_pass() {
 }
 a_change_to_either_setting_reaches_the_next_pass
 
+# A pass stopped at the door records what it met, and the live pass's two lines hold its lines between.
+a_door_exit_is_recorded() {
+  a_resumable_repo recorded2 641 || { skip "a door exit recorded — git could not make a repo here"; return; }
+  hold_the_host_in "$tmp/recorded2" "$tmp/recorded2.acting"
+  holding=$(last_wake_line woke)
+
+  is  "a pass stopped at the door records its wake too" "$(code_of floor "$tmp/recorded-idle" pass)" "43"
+  has "and ended with the live mark it met" "$(last_wake_line ended)" "read=live:0"
+  wait "$holder"
+
+  is "and the live pass ended after it, paired by process" \
+     "$(grep "process=$(process_of "$holding") read=" "$home/wakes" | grep -c 'read=took:641')" "1"
+}
+
+every_wake_is_recorded
+
 #
 # **A new run begins at the default branch as last fetched.** A host starts on a bar that fails, a
 # person pushes one that passes, and the next new run goes through `gates` on it. #1060's second box.
@@ -7618,22 +7634,6 @@ a_fetch_is_bounded() {
   rm -rf "$src/claims/1611" "$src/labels/1611" "$src/items/1611"
 }
 a_fetch_is_bounded
-
-# A pass stopped at the door records what it met, and the live pass's two lines hold its lines between.
-a_door_exit_is_recorded() {
-  a_resumable_repo recorded2 641 || { skip "a door exit recorded — git could not make a repo here"; return; }
-  hold_the_host_in "$tmp/recorded2" "$tmp/recorded2.acting"
-  holding=$(last_wake_line woke)
-
-  is  "a pass stopped at the door records its wake too" "$(code_of floor "$tmp/recorded-idle" pass)" "43"
-  has "and ended with the live mark it met" "$(last_wake_line ended)" "read=live:0"
-  wait "$holder"
-
-  is "and the live pass ended after it, paired by process" \
-     "$(grep "process=$(process_of "$holding") read=" "$home/wakes" | grep -c 'read=took:641')" "1"
-}
-
-every_wake_is_recorded
 
 #
 # **Two judges on one clause, and every fixture before this had one.** A rule with a single instance
