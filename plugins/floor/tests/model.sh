@@ -7624,8 +7624,9 @@ a_fetch_is_bounded() {
 
   ( unset GIT_TERMINAL_PROMPT GIT_SSH_COMMAND GIT_SSH; floor "$tmp/fetchbound" pass ) >/dev/null 2>&1
   seen=$(cat "$tmp/fetchbound.env" 2>/dev/null)
-  has "a fetch keeps the host's own ssh, and tells it never to ask or to wait for ever" "$seen" \
-      "GIT_SSH_COMMAND=ssh -i fixture-key -o BatchMode=yes -o ConnectTimeout=30 -o ServerAliveInterval=15"
+  has "a fetch keeps the host's own ssh command" "$seen" "GIT_SSH_COMMAND=ssh -i fixture-key"
+  has "and tells it never to ask, or to wait for ever" "$seen" \
+      "-o BatchMode=yes -o ConnectTimeout=30 -o ServerAliveInterval=15"
   has "and gives up on an HTTP transfer that stalls" \
       "$(printf '%s' "$seen" | tr 'A-Z' 'a-z' | tr -d "'")" "http.lowspeedlimit=1000 http.lowspeedtime=60"
   has "and never prompts" "$seen" "GIT_TERMINAL_PROMPT=0"
