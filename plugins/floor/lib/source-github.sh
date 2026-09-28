@@ -223,6 +223,12 @@ questions_asked_on() {
 # **Stderr stays off the answer**, for the reason `delivery_facts` gives. A notice folded in here would
 # read as a comment somebody wrote.
 #
+# **Both reads measured live, 28 September, `gh` 2.94.0, read only.** On #128 `speaker` named the two
+# questions floor had asked there, and `receive` kept 24 of 26 comments, dropping exactly those two.
+#
+# On #373, which holds no marker, `speaker` named no question and `receive` kept every comment. No
+# live read has met a quoted or pasted marker, and the suite's `gh` only emulates one.
+#
 comments_read() {
     said=$(gh issue view "$1" --json comments --jq "$2") && { printf '%s\n' "$said"; return 0; }
 
