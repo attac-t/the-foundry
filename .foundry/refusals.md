@@ -245,6 +245,7 @@ where it is — a key for a one-off buys indirection and saves nothing.
 | `refuse_a_torn_row` | 2 | invariant | an observation must fit one atomic write, and that one is ${#1} long | `record` — the length is the runner's, and a setting could move it. **Whole-or-not-at-all is not a choice any backend has**, or *in the order it happened* is lost |
 | `refuse_an_unnamed_field` | 2 | default | an observation's fields are key=value, and [$pair] is not one | `our-format` |
 | `refuse_floors_own_event` | 2 | default | [$1] is an event floor writes itself, so \`observe\` does not take it | `our-format` — a `pass.` line steers the next pass, so a worker may not write one through this verb |
+| `refuse_to_introduce_a_gate` | 2 | invariant | the base names the gate [$2], so \`charter derive\` pins it — a gate is never introduced | `refusal` — charter A, decision 8: a gate is added by committing it, and derivation pins it |
 | `refuse_unrecordable` | 2 | invariant | record needs a command to run — a result is not something you pass | `evidence` — a worker writing the result of a command nothing ran |
 | `refuse_unrecordable` | 2 | default | record needs a name and a command | `no-field` |
 | `release` | 2 | default | release names an item | `no-field` |
@@ -274,6 +275,10 @@ where it is — a key for a one-off buys indirection and saves nothing.
 | `derive_charter` | 6 | invariant | refusing to drop what no longer derives: | `refusal` |
 | `derive_charter` | 6 | invariant | start a new run — one made before this rule cannot prove what it derived from | `refusal` |
 | `introduce_clause` | 6 | invariant | this clause is already $was — only derivation may make it $kind | `refusal` |
+| `refuse_a_limit_no_charter_may_hold` | 6 | invariant | — | `evidence` — as `derive` refuses it: a limit no charter may hold is a bench nothing could meet |
+| `refuse_a_reach_no_charter_may_hold` | 6 | invariant | — | `evidence` — as `derive` refuses it: a reach no charter may hold is a bench nothing could meet |
+| `refuse_a_run_with_no_base` | 6 | invariant | start a new run — one made before this rule cannot prove what it derived from | `refusal` |
+| `refuse_an_unreadable_base` | 6 | invariant | the base [$1] cannot be read, so nothing can say what it names | `evidence` — a bench or a gate read from a base nobody could read is a guess |
 | `refuse_collision` | 6 | invariant | — | `evidence` — two clauses on one id, so a reader looking it up gets whichever was written last |
 | `refuse_moved_resolution` | 6 | default | — | `charter-drifted` |
 | `refuse_wrong_repository` | 6 | default | run this inside [$boot], not [${here:-nowhere}] | `no-workspace` — wrong directory |
@@ -318,6 +323,7 @@ where it is — a key for a one-off buys indirection and saves nothing.
 | `this_pass_claims` | 20 | answer | the work source could not be asked to claim [$1] | `source` |
 | `refuse_unasked` | 20 | answer | the work source could not be asked for that $2 | `source` |
 | `refuse_unheard` | 20 | answer | the work source could not be asked for \`$1\`, so no answer is read | `source` |
+| `stop_at_the_delivery` | 20 | answer | — | `header` |
 | `ask_the_judge` | 21 | invariant | the judge could not run on this host: $said | `evidence` |
 | `ask_the_judge` | 21 | invariant | the judge was killed by signal $((answered - 128)) | `evidence` |
 | `refuse_a_receipt_nothing_answered` | 21 | invariant |   this is the context the runner wrote before asking, so the round did not happen | `evidence` |
@@ -392,5 +398,9 @@ where it is — a key for a one-off buys indirection and saves nothing.
 | `refuse_with_no_hand` | 49 | invariant | add \`authorise <hand>\` to it, and start a new run: only a new run reads the base | `authority` — charter A, decision 4: a rule names a hand, or nothing is asked |
 | `stop_at_the_workspace` | 49 | answer | — | `header` |
 | `refuse_hands_floor_writes_as` | 50 | invariant | run floor on an account of its own, and answer as yourself | `refusal` — floor skips its own words, so a hand that is only its account could never say yes |
+| `stop_at_the_delivery` | 50 | answer | — | `header` |
 | `refuse_hands_that_wrote_the_questions` | 51 | default | name another hand in .foundry/practice, and start a new run | nobody yet — the charter asks only that floor's account now be skipped, and verdict `a1-spec/005` says this over-refuses a hand that was floor's login on an earlier run. A2 or the parent charter may reopen it |
 | `stop_at_the_workspace` | 51 | answer | — | `header` |
+| `refuse_to_introduce_a_gate` | 55 | invariant | declare it at the base, and start a new run: only a new run reads the base | `refusal` — charter A, decision 8: a gate the base does not declare is refused at introduction, since nothing could meet it |
+| `refuse_a_bench_of_nobody` | 55 | invariant | add \`bench <member>...\` to .foundry/judged, and start a new run: only a new run reads the base | `authority` — charter A, decision 7: the bench is named at the base, and a clause no bench could judge binds nothing |
+| `refuse_a_bench_of_its_proposer` | 55 | invariant | add another member to a \`bench\` line in .foundry/judged, and start a new run: only a new run reads the base | `refusal` — charter A, decision 7: a member who proposed a clause does not judge it |

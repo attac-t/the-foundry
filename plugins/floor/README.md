@@ -769,6 +769,10 @@ grant of its own and absent by default.
 evidence names. That last one is the contract: a head that moved after grading is a tree nothing
 answered for. It also refuses a source that will not take the delivery.
 
+**It grades as `deliver` does, so it hears the item first**, and a yes deleted since `deliver` holds
+it. It asks for its source before that, so a source missing is 3 before any hearing. It hears as
+whoever is signed in, and *Who may answer, and what a yes is* says what that costs.
+
 **Then the checks the target branch requires, asked rather than assumed.** The branch's own rules
 name them; every other check in the rollup belongs to the repository and bars nothing. Each one that
 did not pass is named, and one that never started is named apart from one that came back red.
@@ -841,6 +845,10 @@ judge that has not answered yet.
 **A run `complete` cannot read, `status` cannot either,** and it exits with the same code. Otherwise
 it exits 0, whatever is missing.
 
+**It hears the item once the run and what ran are printed**, when the charter holds a clause nothing
+derived. So a source nobody can ask stops it at 20, and a clash of hands at 49, 50 or 51. The run and
+what ran are shown by then. It writes nothing it heard: it keeps no record of its own.
+
 ---
 ### A delivery names its record
 
@@ -852,6 +860,9 @@ that one commit. A commit landing meanwhile, even from a `pre-push` hook, reache
 Each is named by whom the grader accepted: every judge its panel names, or the kind of row it
 trusts. The record reads no row itself, so it cannot name one the grader skipped. The brief above
 it is its author's words, and may say anything. The adapter adds its marker last. Decided on #736.
+
+**A clause nothing derived also names each yes it stood on**: who said yes, when, and the line. It
+reads the hearing the grade read, never a row, and `status` says the same under *met*.
 
 **A second `deliver` on the same branch pushes the new head, and the request keeps its first
 body.** One run, one delivery: the request is not rewritten, and the run keeps the body it sent.
@@ -929,11 +940,12 @@ the label, reads what it is for, and deletes it. Nothing else has to know it exi
 What must be true for this run to be good. One file, in the run.
 
 ```
-clause  <id>  Gate|Judged|Decided  <text>
-pin     <id>  <target>  <ref>  <source>  <sha>
-gate    <id>  <command...>
-judge   <id>  <who>  <command...>
-rounds  <id>  <who>  <n>
+clause    <id>  Gate|Judged|Decided  <text>
+pin       <id>  <target>  <ref>  <source>  <sha>
+gate      <id>  <command...>
+judge     <id>  <who>  <command...>
+rounds    <id>  <who>  <n>
+proposer  <id>  <who>
 ```
 
 A command is the last field, so spaces and quotes need no parser. One `judge` line per member — a
@@ -960,8 +972,9 @@ One clause may have many pins. A clause whose meaning comes from two repositorie
 its own base ref. Pins are separate records because inline ones make dropping a target and deleting a
 clause the same edit, and monotonicity has to tell those apart.
 
-A clause with no pin is **introduced**. It stays introduced. Re-deriving keeps it and never gives it
-provenance it did not earn.
+A clause with no pin is **introduced**. It stays introduced. Re-deriving keeps it, and its panel with
+it, and never gives it provenance it did not earn. *A clause nothing derived*, below, says how one
+binds.
 
 ### A Gate names a gate
 
@@ -1049,11 +1062,11 @@ took from the base, because that is the likeliest cause and it used to be invisi
 **recorded and never read** — so a gate exiting 0 satisfied a `Judged:` clause, whose whole point is
 that no command can answer it.
 
-| Kind | Answered by | Written by |
-|---|---|---|
-| `Gate` | `machine` | `gates`, and `evidence record` for a name no pin holds |
-| `Judged` | `judged` | `judged`, or `evidence verdict` and `evidence receipt` by hand |
-| `Decided` | `human` | an answer where the item is |
+| Kind | Answered by | Written by | Once a hand says yes to it, nothing derived |
+|---|---|---|---|
+| `Gate` | `machine` | `gates`, and `evidence record` for a name no pin holds | never: a `Gate` is not introduced |
+| `Judged` | `judged` | `judged`, or `evidence verdict` and `evidence receipt` by hand | the bench, less its proposer |
+| `Decided` | `human` | an answer where the item is | `yes <question> <commit>`, recorded at that commit |
 
 **A green gate does not satisfy a `Judged` clause**, whatever name it is recorded under. That is
 what the kinds are for.
@@ -1072,9 +1085,50 @@ in §2.6 marked.
 one — `judge  text` — and this file is the source, so every clause here pins to it.
 
 **A `reach  judge  command...` line beside it says how the runner asks that judge.** A
-`rounds  judge  n` line says how often it may be asked. `reach` and `rounds` are reserved first
-words, so no judge may be called either. Three record kinds in one file need a word to tell them
-apart, and only the first field can carry it. The clause text is already the line's tail.
+`rounds  judge  n` line says how often it may be asked. A `bench  judge...` line names who judges a
+`Judged` clause nothing derived. Each word is a member, a comma parts them too, and more lines add
+members, each once. `reach`, `rounds` and `bench` are reserved first words, so no judge may be called
+any of them. Four record kinds in one file need a word to tell them apart. Only the first field can
+carry it, and the clause text is already the line's tail.
+
+**A judge already called `bench` becomes a bench line.** A run that derived its clause then refuses
+its next `derive` at 6.
+
+### A clause nothing derived
+
+`charter introduce <kind> <text>` adds one. **It stays introduced, and it binds only once a hand's yes
+stands**, as *Who may answer, and what a yes is* says. Then its kind's own answer meets it.
+
+| `introduce` | Answers |
+|---|---|
+| a `Gate` the base names | 2: `charter derive` pins it |
+| a `Gate` the base does not name | 55: nothing could meet it |
+| a `Judged` clause, and no `bench` line at the base | 55 |
+| a `Judged` clause whose bench is only its proposer | 55 |
+| a `Judged` clause | the bench as its panel, and who proposed it |
+
+**55 is one fact with one fix**: nothing at the base could meet the clause. The fix is a line at the
+base, and only a new run reads the base. The kind, one line and a kind change are refused first. A
+run with no base refuses at 6, as `derive` does.
+
+**A `Judged` clause goes to the bench at the base, less the member who proposed it.** `introduce`
+reads the bench, and each member's `reach` and `rounds`, in a checkout of the base. It refuses a
+reach or a limit as `derive` does, 6. It writes one `judge` record a member, and a `rounds` record
+where one is named. `proposer <id> <who>` names the worker `FOUNDRY_WORKER` names. With no worker
+named there is no `proposer`, and the panel is the whole bench. All of it lands in the clause's own
+write.
+
+**The proposer is whoever introduced the words first.** A second `introduce` adds only a member the
+panel lacks, each once, and a proposer only where none is recorded. A clause derivation pinned takes
+no panel from it.
+
+**Re-deriving carries the panel.** Each introduced clause keeps its `judge`, `rounds` and `proposer`
+records through a derivation, since a pass derives again on every resume. A clause derivation pins
+leaves its panel behind: the declaration names its own.
+
+**`check` holds an introduced panel to the bench at the base**, less every member recorded as
+proposing it. A member with no `judge` record is `unresolved`, and introducing the clause again mends
+it. A base `check` cannot read is a finding too, never a bench of nobody.
 
 ### A repository owns the choice of judge, not the code that reaches one
 
@@ -1760,14 +1814,28 @@ to fail today; this is the sentence that fails it.
 | `nothing selected` | no target, so every clause is satisfied over nothing |
 | `unmet` | a clause with no passing record at the delivered ref |
 | `ungradable` | a selected target with no checkout here, so nothing can be evidenced at its ref |
-| `introduced` | a clause resting on no pin, which no ref can satisfy |
+| `introduced` | a clause nothing derived with no yes standing now, or a `Gate` resting on no pin |
 | `unverifiable` | a clause pinned to a repository this checkout is not |
 | `nothing delivered` | this checkout has no commit to be graded at |
 
 The last three are not failures and not passes. **They take different remedies, which is why they are
-different words.** An `introduced` clause was established by nobody, so the answer is a human's, and
-the work source carries one. An `unverifiable` clause belongs to a checkout
+different words.** An `introduced` clause was established by nobody, so the answer is a hand's yes.
+The finding names the verb that asks for one. An `unverifiable` clause belongs to a checkout
 that does — the workspace seam is what turns it into an answer.
+
+**A clause nothing derived is graded once a hand's yes stands.** Then it reads as its kind does. A
+`Judged` one names each member that has not approved. A `Decided` one needs both halves: a `human`
+row at the commit graded, and a yes naming that commit.
+
+| A `Decided` clause | `unmet` says |
+|---|---|
+| its completion never asked | `run.sh source ask completion` asks |
+| no yes naming this commit | the line that completes it here, `yes <question> <commit>` |
+| a yes naming it, and no row | `run.sh source receive completion` writes one |
+
+**A yes deleted is withdrawn at the next read.** `complete`, `status`, `deliver` and `merge` each hear
+the item before they grade, so the four cannot disagree. A clause a yes let bind reads `introduced`
+or `unmet` again.
 
 **It keeps no record of its own.** `new` stamped the selection, the charter holds the clauses, unit 01
 holds the selection, the ledger holds what ran. A second copy of any of them is a second thing to
@@ -1821,7 +1889,8 @@ block. What is missing is the *ask*, which needs a work source to ask through an
 leads to another refusal is worse than one remedy — so the cause always outranks the symptom. An
 emptied selection is a *moved* one, not a bar grading nothing. An introduced clause is stopped for
 its provenance before its coverage, because *declare that gate* would turn a clause nobody authorised
-into a real bar and only then mention it had none.
+into a real bar and only then mention it had none. **`introduce` refuses a `Gate`**, so an introduced
+one now arrives only by a hand in the charter file. The order guards that one way left.
 
 **A code per remedy, never one code for the stage.** One code would say *refused* and leave the
 caller reading prose to find out what to do about it. **The refused run ends.** Re-running planning
@@ -1907,6 +1976,22 @@ yes <run>.authorisation.<clause>
 Delete the line before delivery to withdraw it.
 ````
 
+**A completion yes names its commit: `yes <question> <commit>`.** It is the full commit, as
+`git rev-parse` prints it: 40 or 64 hex digits in lower case. Each stage has one shape. An
+authorisation question with a commit after it is no yes. A completion question with none is *no
+commit named*.
+
+The commit is compared as text with the commit being graded. **A commit, never a tree**, as every row
+in the ledger is keyed. So a rebase that keeps the tree asks again, and a short sha names no commit.
+A moved head meets nothing, and `deliver` refuses with the line for the new head.
+
+**`source ask completion` keeps the caller's words and ends them with floor's paragraph.** That never
+holds a commit, so the question never moves with the head:
+
+```
+A hand named in `.foundry/practice` says it is met with one line: `yes <run>.completion.<clause>`, a space, and the full commit they read. Delete the line before delivery to withdraw it.
+```
+
 Every answer on the item is read once. A line is a yes only when all of these hold:
 
 | It must | Or it is |
@@ -1916,7 +2001,8 @@ Every answer on the item is read once. A line is a yes only when all of these ho
 | sit in a comment with no line starting `floor-<word>: ` | skipped, with its whole comment |
 | answer a question `speaker` lists | *a question nobody asked* |
 | be dated strictly after that question was first asked | *before its question* |
-| be exactly `yes <question>` once spaces and a carriage return at either end, one pair of backticks and the first word's case are set aside | *no whole-line yes* |
+| be exactly `yes <question>`, or at completion `yes <question> <commit>`, once spaces and a carriage return at either end, one pair of backticks and the first word's case are set aside | *no whole-line yes* |
+| at completion, name a commit after the question | *no commit named* |
 
 No question opens or closes a window over the others, so questions asked back to back are each
 answerable. A no, a quote reply, whose line starts with `>`, and a yes followed by a tab and a no are
@@ -1927,16 +2013,51 @@ wrote it, when, and the reason in italics above. `status` prints it. It is never
 because a note there is how floor once read its own words as a yes, #373. **Two stay silent**: a stamped
 comment, dropped before floor learns who wrote it, and a hand skipped as a `speaker` account.
 
+**Each yes floor hears where it acts writes `answer.heard`**, beside `answer.unread`. Its fields are
+who, `0`, when, and the line. Each row is written once, so a yes heard at `deliver` and again at
+`merge` is one row. **No reader decides from a row.** Each hears the source again, so a yes deleted
+since reads as gone.
+
 `source receive <stage> <clause>` hears the same way and prints the yes it heard: who, when and the
-line. At completion it writes the `human` row. A yes to the authorisation question never completes a
-clause, because the question carries its stage.
+line. At completion it writes the `human` row **at the commit each yes names, never the head**, once
+each. A yes to the authorisation question never completes a clause, because the question carries its
+stage.
+
+Every reader that decides whether a yes stands hears the item once, before it grades. It hears only
+when the charter holds a clause nothing derived:
+
+| Reader | Hears | Records |
+|---|---|---|
+| `authorise` | before it asks | yes |
+| `source receive` | always | yes |
+| `complete` | before it grades | no: it keeps no record |
+| `status` | once the run and what ran are printed | no: it keeps no record |
+| `deliver` | after its grant and its ancestry | yes |
+| `merge` | after its grant and its source, as whoever is signed in | yes |
 
 **Floor refuses when nobody may answer**, before it asks anything, and at every read. With no hand named
 it exits 49. When every hand named is an account it skips, it exits 51 if every one wrote its questions,
-and 50 otherwise, naming each hand and why. A pass lets the item go at 49 and 51, whose fix is a line at
-the base, and resumes 50, whose fix is on the host.
+and 50 otherwise, naming each hand and why. A source nobody can ask is 20. `complete`, `status`,
+`deliver` and `merge` stop with the same codes. **`merge` asks for its source first**, so one missing
+is 3 there, before any hearing.
 
-**What this cannot hold.** A hand is a name the source reports; floor cannot prove who typed it, #156. An
+A pass lets the item go at 49 and 51, whose fix is a line at the base, and resumes 50, whose fix is on
+the host. **At `deliver` it resumes 20 and 50, as it resumes 19.** Each resume counts toward
+`FOUNDRY_PASS_TRIES`, so a host never fixed ends at 46.
+
+**`merge` reads the item as whoever is signed in.** Floor skips its own account. So a hand who
+answered, and runs `merge` on their own login, has their yes skipped. That is 15, or 50 when they are
+the only hand, and 50 names a fix that is not theirs. The hand who answered runs `merge` from floor's
+account, or another named hand answers.
+
+**What this cannot hold.** A hand is a name the source reports; floor cannot prove who typed it, #156.
+A proposer is a name the environment gives, `FOUNDRY_WORKER`, and floor cannot prove that either. A
+false one now strikes a member from a panel at `introduce`. Before, it could only lose a verdict.
+A second worker introducing the same words is no proposer, so it may judge a clause it also proposed.
+The panel is asked whether or not a yes stands, so a withdrawn clause can spend a member's rounds. A
+clause introduced after `open` is never asked, since only `authorise` asks. A completion question asked
+before its closing paragraph existed reads as other words when asked again: 17. A `Judged` clause
+introduced before a bench existed has no panel, and reads `unmet` until it is introduced again. An
 edit keeps a comment's author and time, so an account that may edit a hand's comment can make it a yes.
 The forge dates a comment to the second, so a yes in its question's own second is not heard. A reply that
 pastes only the fenced line above a no reads as a yes; pasting the whole question carries floor's stamp,
@@ -2321,9 +2442,10 @@ After a failed command or failed gates it acts again. At a `judged` stop, the le
 where the charter has none.
 
 **`deliver`'s code says who can answer it.** 15, 18 and 32 wait on a person: `pass.waiting`, 47. 19 is
-a send that failed, sent again next wake. Nothing in the run can answer any other code, so the run
-is let go with `pass.left why=deliver`, and the pass takes what is offered. A host with no command
-leaves a run waiting too, 44.
+a send that failed, sent again next wake. **20 and 50 are resumed there too.** A source nobody could
+ask, and floor on a hand's account, are each fixed on the host. Nothing in the run can answer any other
+code, so the run is let go with `pass.left why=deliver`, and the pass takes what is offered. 49 and 51
+are let go that way, as at the workspace. A host with no command leaves a run waiting too, 44.
 
 **Opening the work, 49 and 51 let the item go**: `pass.left why=workspace code=49`, or `code=51`. Only a
 line at the base answers either, and only a new run reads the base. 50 is resumed like every other stop
