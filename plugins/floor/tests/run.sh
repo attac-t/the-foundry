@@ -3245,7 +3245,7 @@ wreck_runner "backticks that are never taken off are caught" \
   backticks '/^    words = unquoted(words)$/d' lib/hearing.awk
 
 wreck_runner "a comment that authorised nothing, left unsaid, is caught" \
-  nounread 's#^        stamp "\$1" answer.unread#        : stamp "$1" answer.unread#'
+  nounread 's#^            unread) record_once#            unread) : record_once#'
 
 wreck_runner "an authorisation yes that completes the clause is caught" \
   stageless '/^receive_answer() {/,/^}/s#question_id "\$dir" "\$stage" "\$clause"#question_id "$dir" authorisation "$clause"#'
@@ -3275,6 +3275,144 @@ wreck_runner "a pass that resumes an item with no hand named is caught" \
 
 wreck_runner "a pass that resumes an item whose hand wrote the questions is caught" \
   resumes51 's#^    \[ "\$2" -eq 51 \] && .*#    :#'
+
+#
+# **The meeting, one rule a break.** A clause nothing derived is met once a hand's yes stands and its
+# kind's own answer holds, and `complete`, `status`, `deliver` and `merge` each hear before they grade.
+# A2's spec names each break, and each goes red on a case of its own.
+#
+wreck_runner "a yes read from the ledger, not the source, is caught" \
+  ledger '/^yes_to() {/,/^}/s#^    printf .%s.n. "\$heard_lines" .$#    grep -F answer.heard "$(evidence_file "$dir")" | awk -F"\\t" -v OFS="\\t" "{ split(\\$7, w, \\" \\"); print \\"heard\\", w[2], \\$4, \\$6, \\$7 }" \\#'
+
+wreck_runner "a hearing inside the capture, where a refusal leaves only the subshell, is caught" \
+  hearinside '/^complete() {/,/^}/s#^    hear_if_introduced "\$dir"$#    :#; s#^    unauthorised_run "\$1"$#    hear_if_introduced "$1"; unauthorised_run "$1"#'
+
+wreck_runner "a delivery that grades without hearing is caught" \
+  deliverdeaf '/^deliver() {/,/^}/s#^    hear_and_record_if_introduced "\$dir"$#    :#'
+
+wreck_runner "a completion that grades without hearing is caught" \
+  completedeaf '/^complete() {/,/^}/s#^    hear_if_introduced "\$dir"$#    :#'
+
+wreck_runner "a status that grades without hearing is caught" \
+  statusdeaf '/^status() {/,/^}/s#^    hear_if_introduced "\$dir"$#    :#'
+
+wreck_runner "a merge that grades without hearing is caught" \
+  mergedeaf '/^merge_delivery() {/,/^}/s#^    hear_and_record_if_introduced "\$dir"$#    :#'
+
+wreck_runner "a merge that hears before it asks for its source is caught" \
+  hearsourceless '/^merge_delivery() {/,/^}/s#^    refuse_missing_source$#    hear_and_record_if_introduced "$dir"; refuse_missing_source#'
+
+wreck_runner "a reader that only hears, writing rows anyway, is caught" \
+  rowsinside 's#^    heard_lines=\$(hear_every_answer)$#    heard_lines=$(hear_every_answer); record_the_hearing "$1"#'
+
+wreck_runner "a yes heard and never written down is caught" \
+  noheardrow 's#^            heard)  record_once#            heard)  : record_once#'
+
+wreck_runner "a yes heard at merge alone, never written down, is caught" \
+  noheardatmerge '/^merge_delivery() {/,/^}/s#^    hear_and_record_if_introduced "\$dir"$#    hear_if_introduced "$dir"#'
+
+wreck_runner "a question built from the stored id, not the text, is caught" \
+  storedid 's@^    may_it_bind=\$(question_id "\$1" authorisation "\$text")$@    may_it_bind=${1##*/}.authorisation.$3@'
+
+wreck_runner "a yes written into the charter as a pin is caught" \
+  yespin 's@^            heard)  record_once@            heard)  printf "pin %s yes\\n" "${heard_a##*.}" >> "$1/charter"; record_once@'
+
+wreck_runner "a question never asked, read as no yes standing, is caught" \
+  nostandsnever '/^what_an_introduced_clause_lacks() {/,/^}/s#^    was_asked "\$may_it_bind" .$#    true \\#'
+
+wreck_runner "a human row written at the head, not at the commit its yes names, is caught" \
+  rowathead 's@"${accepted_line##\* }"@"$(git -C "$(unit_work_tree "$1" "$(this_repository)")" rev-parse HEAD)"@'
+
+wreck_runner "a completion met on its row alone is caught" \
+  rowalone '/^what_a_completion_lacks() {/,/^}/s#^    a_yes_names "\$is_it_met" "\$3" .$#    true \\#'
+
+wreck_runner "a completion met on its yes alone is caught" \
+  yesalone '/^what_a_completion_lacks() {/,/^}/s#^    satisfied "\$1" "\$text" "\$3" human "" .$#    true \\#'
+
+wreck_runner "a completion yes naming no commit, taken, is caught" \
+  nocommit 's#if (commit == "") { owe("no commit named: " question); return 0 }#if (commit == "") return 1#' lib/hearing.awk
+
+wreck_runner "a completion yes naming no commit, given A1's reason, is caught" \
+  a1reason 's#if (commit == "") { owe("no commit named: " question); return 0 }#if (commit == "") return 0#' lib/hearing.awk
+
+wreck_runner "a short sha taken for a commit is caught" \
+  shortsha 's#return length(said) == 40 || length(said) == 64#return 1#' lib/hearing.awk
+
+wreck_runner "an authorisation yes naming a commit, taken, is caught" \
+  authcommit 's#if (!is_a_completion(question)) return commit == ""#if (!is_a_completion(question)) return 1#' lib/hearing.awk
+
+wreck_runner "a yes matched to a commit by its tree is caught" \
+  treematch 's@^        . "${named_by##. }" = "\$2" . .. return 0$@        [ "$(git -C "$tree" rev-parse "${named_by##* }^{tree}" 2>/dev/null)" = "$(git -C "$tree" rev-parse "$2^{tree}" 2>/dev/null)" ] \&\& return 0@'
+
+wreck_runner "a moved head refused with no line for it is caught" \
+  nonewline 's#. A hand completes it here with: yes %s %s\(...\) "\$text" "\$2" "\$3" "\$is_it_met" "\$3"#\1 "$text" "$2" "$3"#'
+
+wreck_runner "a completion question holding the commit is caught" \
+  commitask '/^the_question_put() {/,/^}/s#withdraw it\(....\) "\$2" "\$3"$#withdraw it\1 "$2" "$3 $(unit_head "$dir" "$(this_repository)")"#'
+
+wreck_runner "a completion question with no paragraph of floor's is caught" \
+  noparagraph '/^the_question_put() {/,/^}/s#^    . "\$1" = completion . ||#    false ||#'
+
+wreck_runner "a pass that lets a run go at 20 on delivery is caught" \
+  letgo20 '/^deliver_and_route() {/,/^}/s#^        20|50)    stop_at_the_delivery#        50)       stop_at_the_delivery#'
+
+wreck_runner "a pass that lets a run go at 50 on delivery is caught" \
+  letgo50 '/^deliver_and_route() {/,/^}/s#^        20|50)    stop_at_the_delivery#        20)       stop_at_the_delivery#'
+
+wreck_runner "a bench only the resolver knows is caught" \
+  resolveronly 's#^        reach|rounds|bench) return 0 ;;#        reach|rounds) return 0 ;;#'
+
+wreck_runner "a bench only declares_no_clause knows is caught" \
+  clauseronly 's#\$1 == "reach" || \$1 == "rounds" || \$1 == "bench"#$1 == "reach" || $1 == "rounds"#' lib/detect-judged.sh
+
+wreck_runner "one bench line read alone is caught" \
+  onebench 's#lines_led_by bench | tr#lines_led_by bench | head -n 1 | tr#'
+
+wreck_runner "a bench read from the checkout, not the base, is caught" \
+  checkoutbench 's#^    at_base=\$(judged_at_base "\$bench_base") || return 1$#    at_base=$(detect_judged)#'
+
+wreck_runner "a proposer seated on its own panel is caught" \
+  proposerseated '/^seats_to_write() {/,/^}/s#off_the_bench "\$bench_members" "\$proposers" |#printf "%s\\n" "$bench_members" |#'
+
+wreck_runner "a proposer nobody records is caught" \
+  noproposer 's#^    \[ -z "\$proposer_to_write" \] || print_proposer#    true || print_proposer#'
+
+wreck_runner "a panel a derivation leaves behind is caught" \
+  clausealone 's#{ print; printf "%s", panel\[\$2\] }#{ print }#'
+
+wreck_runner "a panel carried as introduced clauses is caught" \
+  panelinintro 's#^         \$1 == "pin"    { pinned\[\$2\] = 1 }$#         $1 == "pin"    { pinned[$2] = 1 } $1 == "judge" || $1 == "rounds" || $1 == "proposer" { held[$2] = held[$2] "\\n" $0 }#; s#{ print; printf "%s", panel\[\$2\] }#{ print }#'
+
+wreck_runner "a panel dropped at derivation is caught" \
+  dropatderive 's#^    keep_introduced "\$file" "\$draft" >> "\$draft"#    keep_introduced "$file" "$draft" | grep "^clause " >> "$draft"#'
+
+wreck_runner "an introduced panel check never holds is caught" \
+  nobenchcheck 's#^        unbenched_judged "\$file" "\$dir"$#        :#'
+
+wreck_runner "an introduced panel held to the whole bench, proposer and all, is caught" \
+  wholebench 's#off_the_bench "\$bench_members" "\$(proposers_of "\$1" "\$2")" |#printf "%s\\n" "$bench_members" |#'
+
+wreck_runner "a member seated twice by a second introduce is caught" \
+  membertwice 's#^        holds_the_member "\$1" "\$2" "\$member" 2>/dev/null .. continue$#        :#'
+
+wreck_runner "a second worker written as proposer is caught" \
+  secondproposer 's#^    \[ -z "\$proposers" \] || return 0$#    :#'
+
+wreck_runner "a gate the base names, introduced, is caught" \
+  introgate '/^refuse_to_introduce_a_gate() {/,/^}/s#^        exit 2$#        return 0#'
+
+wreck_runner "a gate the base does not name, introduced, is caught" \
+  introgatenone '/^refuse_to_introduce_a_gate() {/,/^}/s#^    exit 55$#    return 0#'
+
+wreck_runner "a Judged clause introduced with no bench is caught" \
+  nobenchintro '/^seat_the_bench() {/,/^}/s#^    refuse_a_bench_of_nobody "\$4"$#    [ -n "$bench_members" ] || return 0#'
+
+wreck_runner "a request that names no yes is caught" \
+  noyesrecord 's#^    has_record "\$stands_in" pin "\$2" .. return 0$#    return 0#'
+
+# From the spec's approval: a base `check` cannot read is a refusal, never a bench of nobody.
+wreck_runner "a bench read as nobody where the base cannot be read is caught" \
+  blindbase 's#read_the_bench_at_base "\$2" || { printf .%s.n. "\$held_to_a_bench" | each_held_to_no_bench; return 0; }#read_the_bench_at_base "$2"#'
 
 # The item proposes and the allowlist decides. A run that took an advised target as authorised would
 # let anyone who can file an item choose what the run may touch.
