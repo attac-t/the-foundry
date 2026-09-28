@@ -9954,10 +9954,12 @@ every_mix_of_hands_and_skipped_accounts() {
   is  "no hand named: 49" "$(code_of hd_through "$mixed" authorise)" "49"
   has "naming the line to add" "$(hd_through_says "$mixed" authorise)" "authorise <hand>"
 
+  # The words before the code: a refusal that says the clash and then asks anyway is a different
+  # break from one that never looks, and each is caught by its own check.
   hearing_in_a_directory hmixnow 722 bot || { skip "floor's own hand — git could not make a repo here"; return; }
-  said=$(hd_through_says "$mixed" authorise)
-  is  "every hand floor's account now: 50" "$(code_of hd_through "$mixed" authorise)" "50"
-  has "naming the hand and why it is skipped" "$said" "bot: floor's account now"
+  has "every hand floor's account now is named, and why it is skipped" \
+      "$(hd_through_says "$mixed" authorise)" "bot: floor's account now"
+  is  "and refused: 50" "$(code_of hd_through "$mixed" authorise)" "50"
   is  "and nothing asked: the check runs before the first ask" "$(questions_in 722)" "0"
 
   hearing_in_a_directory hmixold 723 old && an_earlier_question 723 \
@@ -10133,7 +10135,7 @@ a_pass_lets_go_of_an_item_nobody_may_answer() {
   said=$(FOUNDRY_PASS_TRIES=2 FOUNDRY_PASS_BEAT=1 floor_says "$tmp/hp49" pass; printf '\nexit=%s' "$?")
   has "a resumed pass meets a clause nothing derived, with no hand named: 49" "$said" "exit=49"
   has "naming the line" "$said" "authorise <hand>"
-  has "and lets the item go, saying why" "$(why_it_left "$tmp/hp49" "$let_go_run")" "item=741 why=workspace code=49"
+  has "and lets the item go at 49, saying why" "$(why_it_left "$tmp/hp49" "$let_go_run")" "item=741 why=workspace code=49"
 
   rm -rf "$src/claims/741" "$src/labels/741" "$src/items/741"
 }
@@ -10177,7 +10179,7 @@ a_pass_lets_go_of_an_item_whose_only_hand_wrote_the_questions() {
   said=$(FOUNDRY_PASS_TRIES=2 FOUNDRY_PASS_BEAT=1 floor_through "$wrote" "$tmp/hp51" pass; printf '\nexit=%s' "$?")
   has "a resumed pass meets a hand who wrote floor's questions: 51" "$said" "exit=51"
   has "naming that account and its questions" "$said" "alice: wrote an-earlier-run.authorisation.1"
-  has "and lets the item go, saying why" "$(why_it_left "$tmp/hp51" "$let_go_run")" "item=743 why=workspace code=51"
+  has "and lets the item go at 51, saying why" "$(why_it_left "$tmp/hp51" "$let_go_run")" "item=743 why=workspace code=51"
 
   rm -rf "$src/claims/743" "$src/labels/743" "$src/items/743" "$src/questions/743"
 }
