@@ -28,6 +28,9 @@
 #
 # The URL stays as the fixture set it, so `get-url` still reports its identity, and the helper never
 # reads it. A remote naming no `served-from` is refused, and one naming no `vcs` as it always was.
+#
+# **Nothing narrower serves a fetch.** `insteadOf` would change what `get-url` reports, floor refuses
+# a local origin as an identity, and the allowlist refuses every other transport before any helper.
 
 # Every URL shape the fixtures use. `git@github.com:` is scp-style and carries no scheme, which is
 # why it is listed rather than derived.
