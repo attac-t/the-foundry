@@ -1845,17 +1845,18 @@ is_usable_ref() {
 #
 # What must be true for this run to be good.
 #
-# Five records, sharing an id:
+# Six records, sharing an id:
 #
-#     clause  <id>  Gate|Judged|Decided  <text>
-#     pin     <id>  <target>  <ref>  <source>  <sha>
-#     gate    <id>  <command...>
-#     judge   <id>  <who>  <command...>
-#     rounds  <id>  <who>  <n>
+#     clause    <id>  Gate|Judged|Decided  <text>
+#     pin       <id>  <target>  <ref>  <source>  <sha>
+#     gate      <id>  <command...>
+#     judge     <id>  <who>  <command...>
+#     rounds    <id>  <who>  <n>
+#     proposer  <id>  <who>
 #
-# `print_clause`, `print_pin`, `print_gate`, `print_judge` and `print_rounds` write them, and each is
-# the only writer of its kind. This header said two for long enough that a reader built a design
-# question on the missing pair.
+# `print_clause`, `print_pin`, `print_gate`, `print_judge`, `print_rounds` and `print_proposer` write
+# them, and each is the only writer of its kind. This header said two for long enough that a reader
+# built a design question on the missing pair.
 #
 # A command is the last field on purpose. `pinned_command` strips two and prints the rest, so spaces,
 # quotes and `&&` need no parser and get none. `judge_command` strips three and does the same, which
@@ -8181,8 +8182,11 @@ seats_to_write() {
         print_rounds "$2" "$member" "$(limit_of "$bench_limits" "$member")"
     done
 
-    [ -z "$proposer_to_write" ] || printf 'proposer %s %s\n' "$2" "$proposer_to_write"
+    [ -z "$proposer_to_write" ] || print_proposer "$2" "$proposer_to_write"
 }
+
+# Who introduced a `Judged` clause's words first. Its only writer, and `introduce` its only caller.
+print_proposer() { printf 'proposer %s %s\n' "$1" "$2"; }
 
 #
 # The work source — RFC-001 §2.1. Where a work item comes from, where a delivery is reported, and
