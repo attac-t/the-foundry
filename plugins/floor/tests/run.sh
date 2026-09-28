@@ -2971,6 +2971,29 @@ wreck_runner "a fetch that drops the host's own ssh command is caught" \
   boundkey '/^the_ssh_git_uses() {/,/^}/s#^    git config --get core.sshCommand 2>/dev/null \&\& return 0$#    :#'
 
 #
+# **The move, in the order git makes one, and every way it can stop.** One break per rule the build's
+# review asked for: the order, a refused tree, the tree put back, a tree that cannot go back, a
+# commit landing before the run, and git's own reason in the line. #1060.
+#
+wreck_runner "a branch moved before its tree is caught" \
+  moveorder '/^fast_forward() {/,/^}/s#^    move_the_tree "\$1" "\$2" || return 1$#    move_the_branch "$1" "$2" || return 1#; /^fast_forward() {/,/^}/s#^    move_the_branch "\$1" "\$2" \&\& return 0$#    move_the_tree "$1" "$2" \&\& return 0#'
+
+wreck_runner "a tree git refused to move, read as moved, is caught" \
+  movetreerefused '/^fast_forward() {/,/^}/s#^    move_the_tree "\$1" "\$2" || return 1$#    move_the_tree "$1" "$2"#'
+
+wreck_runner "a tree left at the tip when its branch could not follow is caught" \
+  moveputback '/^fast_forward() {/,/^}/s#^    put_the_tree_back "\$2"$#    :#'
+
+wreck_runner "a tree that could not go back, said to have stayed, is caught" \
+  movestranded '/^put_the_tree_back() {/,/^}/s#^    leave_stranded .*$#    return 1#'
+
+wreck_runner "a run begun at a commit its rule was not read at is caught" \
+  moveheadreread '/^begin_a_run_for() {/,/^}/s#^    still_where_the_rule_was_read$#    :#'
+
+wreck_runner "a checkout git would not move, with git's reason dropped, is caught" \
+  movegitline '/^move_the_checkout_to_the_tip() {/,/^}/s# || leave_in_the_way unmoved "this checkout could not be moved: \[\$git_refused\]"$# || leave_in_the_way unmoved "this checkout could not be moved"#'
+
+#
 # **A pass carries on the run a pass began.** Piece 5b: one break per row the door and the resume
 # route, and one per line a resume writes.
 #

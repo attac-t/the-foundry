@@ -2129,6 +2129,12 @@ default branch, holding nothing uncommitted. Untracked files count too, since th
 committed, or a commit the tip lacks is exit 54. The line names which. Floor never resets, merges
 or stashes, so a person clears it. The new run begins at the fetched tip, where the rule was read.
 
+**The move follows git's own order: the tree first, then the branch.** The branch moves only while
+it still names the commit read. When git refuses either step, that is 54 too, with git's own words.
+A tree whose branch would not follow goes back. One that cannot go back is 54 saying so, since the
+checkout is then not as it was. A commit landing in the checkout before the run is made is 54 as
+well. The run would begin where its rule was not read.
+
 **The run this checkout points at never moves.** The door carries it on first, and a resume never
 fetches, so it keeps its base and its bar. A run whose pointer a person cleared is not carried on,
 so the checkout can move under it. If the move changed a file its bar is read from, derive and the
@@ -2187,7 +2193,7 @@ commit the pass read its rule at. A pass that stopped before reading one says `n
 | `superseded:<number>` | a newer pass took the host, 43; mid-claim it reads `superseded` |
 | `unfetched` | the default branch could not be fetched, 52 |
 | `default-differs` | origin's default is not the branch `origin/HEAD` names, 53 |
-| `in-the-way:<what>` | the checkout could not fast-forward: `detached`, `branch`, `unclean`, `diverged` or `unmoved`, 54 |
+| `in-the-way:<what>` | the checkout could not fast-forward: `detached`, `branch`, `unclean`, `diverged`, `unmoved` or `stranded`. A commit that landed before the run is `moved`. 54 |
 | `nothing-offered` | nothing was offered, 42 |
 | `all-held` | every item offered was held or underway, 30 |
 | `source-unasked` | the source could not be asked, 20 |

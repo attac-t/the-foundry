@@ -104,8 +104,9 @@
 #  53  origin's default branch is not the one this checkout's `origin/HEAD` names, and the line names
 #      both. Floor reads that ref and never writes it, so a person sets it. No new work starts
 #  54  the checkout cannot fast-forward to the fetched tip: it is detached, on another branch, holds
-#      work nobody committed, or is not behind the tip. The line says which. Floor never resets,
-#      merges or stashes, so a person clears it. No new work starts
+#      work nobody committed, is not behind the tip, or git refused the move. Or a commit landed in it
+#      before the run began. The line says which, and whether the checkout is as it was. Floor never
+#      resets, merges or stashes, so a person clears it. No new work starts
 #
 # Eight through twelve are one stage and five remedies: write a requirement down, select a target it
 # governs, or start again. Collapsing them would make the exit code say *authorisation refused* and
@@ -4050,7 +4051,7 @@ move_the_checkout_to_the_tip() {
 
     moved_from=$(git rev-parse -q --verify HEAD 2>/dev/null)
     behind_the_tip || leave_in_the_way diverged "this checkout's [$default_branch] is not behind the fetched tip"
-    at_the_tip || fast_forward "$moved_from" "$fetched_tip" || leave_in_the_way unmoved "this checkout could not be moved"
+    at_the_tip || fast_forward "$moved_from" "$fetched_tip" || leave_in_the_way unmoved "this checkout could not be moved: [$git_refused]"
 
     rule_at=$fetched_tip
 }
@@ -4070,21 +4071,51 @@ behind_the_tip() { git merge-base --is-ancestor "$moved_from" "$fetched_tip" 2>/
 at_the_tip() { [ "$moved_from" = "$fetched_tip" ]; }
 
 #
-# **A fast-forward in two plumbing steps, so nothing here can merge, reset or stash.** The branch moves
-# only while it still names the commit read, and the tree follows it, or the branch goes back.
+# **A fast-forward in the order git makes one: the tree first, then the branch**, and the branch only
+# while it still names the commit read. Nothing here can merge, reset or stash. #1060's build review.
 fast_forward() {
     git update-index -q --refresh >/dev/null 2>&1
-    git update-ref -m "floor: a pass moves to the fetched tip" HEAD "$2" "$1" 2>/dev/null || return 1
-    git read-tree -m -u "$1" "$2" >/dev/null 2>&1 && return 0
+    move_the_tree "$1" "$2" || return 1
+    move_the_branch "$1" "$2" && return 0
 
-    git update-ref -m "floor: a pass moves back" HEAD "$1" "$2" 2>/dev/null
+    put_the_tree_back "$2"
     return 1
 }
+
+# Each step keeps git's first line when it refuses, so the stop names what was in the way.
+move_the_tree() {
+    git_refused=$(git read-tree -m -u "$1" "$2" 2>&1 >/dev/null) && return 0
+    git_refused=$(first_line_of "$git_refused")
+    return 1
+}
+
+move_the_branch() {
+    git_refused=$(git update-ref -m "floor: a pass moves to the fetched tip" HEAD "$2" "$1" 2>&1 >/dev/null) && return 0
+    git_refused=$(first_line_of "$git_refused")
+    return 1
+}
+
+#
+# **The branch did not follow, so the tree goes back to wherever the branch is now.** A tree that
+# cannot go back is said, since the checkout is then not as it was.
+put_the_tree_back() {
+    git_put_back=$(git read-tree -m -u "$1" HEAD 2>&1 >/dev/null) && return 0
+    leave_stranded "this checkout's tree is at the fetched tip and its branch is not: [$git_refused] [$(first_line_of "$git_put_back")]"
+}
+
+first_line_of() { printf '%s\n' "$1" | awk 'NF { print; exit }'; }
 
 # What is in the way, named. Floor never resets, merges or stashes, so a person clears it.
 leave_in_the_way() {
     pass_read="in-the-way:$1"
     note "$2, so it stays where it is and this pass starts nothing new"
+    exit 54
+}
+
+# The one stop where the checkout is not as it was, so it says so rather than that it stayed.
+leave_stranded() {
+    pass_read=in-the-way:stranded
+    note "$1, and the tree could not be put back, so a person must put it right, and this pass starts nothing new"
     exit 54
 }
 
@@ -4627,6 +4658,7 @@ the_heading_of() {
 # without its mark only in the few forks between. 5a's judge.
 begin_a_run_for() {
     still_holding_the_host
+    still_where_the_rule_was_read
     claimed_as=$(claimant_for "$1")
     make_run "$2" >/dev/null
     pin_this_run
@@ -4636,6 +4668,15 @@ begin_a_run_for() {
 
     read_the_item "$1"
     note "this pass took [$1]: $dir"
+}
+
+#
+# **A run begins where its rule was read, or not at all.** A commit landing in the checkout since the
+# move would become the run's base, and the rule was never read there. #1060's build review.
+still_where_the_rule_was_read() {
+    now_at=$(git rev-parse -q --verify HEAD 2>/dev/null)
+    [ "$now_at" = "$rule_at" ] && return 0
+    leave_in_the_way moved "this checkout moved to [${now_at:-nothing}] after its rule was read at [$rule_at]"
 }
 
 read_the_item() {

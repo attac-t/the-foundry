@@ -7637,6 +7637,92 @@ a_fetch_is_bounded() {
 a_fetch_is_bounded
 
 #
+# **A move git refuses starts no new work, and says git's own reason.** The tree moves first, as git
+# moves one, then the branch. A branch that will not follow puts the tree back, and a tree that
+# cannot go back is said, since the checkout is then not as it was. #1060's build review.
+#
+a_move_git_refuses_starts_no_new_work() {
+  a_resumable_repo fetchheld 1613 && a_person_pushes "$tmp/fetchheld" pushed.txt 'theirs' \
+    || { skip "a branch git will not move — git could not make a repo here"; return; }
+  was_at=$(git -C "$tmp/fetchheld" rev-parse HEAD 2>/dev/null)
+  a_hook_refusing_main "$tmp/fetchheld"
+  is  "a branch git will not move starts no new work, 54" "$(code_of floor "$tmp/fetchheld" pass)" "54"
+  is  "and its tree had moved first, as git moves one" "$(cat "$tmp/fetchheld.at-the-branch" 2>/dev/null)" "theirs"
+  is  "and its tree went back to where its branch is" \
+      "$(git -C "$tmp/fetchheld" status --porcelain 2>/dev/null)$(ls "$tmp/fetchheld" | grep -c '^pushed\.txt$')" "0"
+  is  "and its branch never moved" "$(git -C "$tmp/fetchheld" rev-parse HEAD 2>/dev/null)" "$was_at"
+  rm -f "$tmp/fetchheld/.git/hooks/reference-transaction"
+
+  a_resumable_repo fetchlocked 1612 && a_person_pushes "$tmp/fetchlocked" pushed.txt 'theirs' \
+    && : > "$tmp/fetchlocked/.git/index.lock" \
+    || { skip "a held index — git could not make a repo here"; return; }
+  was_at=$(git -C "$tmp/fetchlocked" rev-parse HEAD 2>/dev/null)
+  said=$(floor_says "$tmp/fetchlocked" pass); code=$?
+  is  "a checkout whose index another git holds starts no new work, 54" "$code" "54"
+  has "and says git's own reason" "$said" "index.lock': File exists"
+  is  "and neither its branch nor its tree moved" \
+      "$(git -C "$tmp/fetchlocked" rev-parse HEAD 2>/dev/null) $(ls "$tmp/fetchlocked" | grep -c '^pushed\.txt$')" "$was_at 0"
+  rm -f "$tmp/fetchlocked/.git/index.lock"
+
+  a_resumable_repo fetchstranded 1614 && a_person_pushes "$tmp/fetchstranded" pushed.txt 'theirs' \
+    || { skip "a tree that cannot go back — git could not make a repo here"; return; }
+  a_hook_refusing_main "$tmp/fetchstranded" and-the-index
+  said=$(floor_says "$tmp/fetchstranded" pass); code=$?
+  is    "a tree that cannot go back starts no new work, 54" "$code" "54"
+  has   "and says a person must put it right" "$said" "could not be put back, so a person must put it right"
+  lacks "and never that the checkout stayed where it was" "$said" "stays where it is"
+  rm -f "$tmp/fetchstranded/.git/hooks/reference-transaction" "$tmp/fetchstranded/.git/index.lock"
+
+  rm -rf "$src/claims/1612" "$src/claims/1613" "$src/claims/1614"
+  rm -rf "$src/labels/1612" "$src/labels/1613" "$src/labels/1614" "$src/items/1612" "$src/items/1613" "$src/items/1614"
+}
+
+#
+# A `reference-transaction` hook refusing to move `main`, which says what the tree held when asked. A
+# second argument makes it hold the index as well, as a git dying mid-move would.
+a_hook_refusing_main() {
+  mkdir -p "$1/.git/hooks" && cat > "$1/.git/hooks/reference-transaction" <<HOOK
+#!/bin/sh
+moving=
+while read -r old new ref; do [ "\$ref" = refs/heads/main ] && moving=yes; done
+[ "\$1" = prepared ] && [ -n "\$moving" ] || exit 0
+cat '$1/pushed.txt' > '$1.at-the-branch' 2>/dev/null || echo none > '$1.at-the-branch'
+[ -z '${2:-}' ] || : > '$1/.git/index.lock'
+exit 1
+HOOK
+  chmod +x "$1/.git/hooks/reference-transaction"
+}
+a_move_git_refuses_starts_no_new_work
+
+#
+# **A run begins where its rule was read.** A commit landing in the checkout after the move, here as
+# the item is claimed, would have become the run's base, so no run begins. #1060's build review.
+#
+a_commit_landing_before_the_run_starts_no_new_work() {
+  a_resumable_repo fetchlanded 1615 || { skip "a commit landing mid-pass — git could not make a repo here"; return; }
+  rule_read_at=$(git -C "$tmp/fetchlanded" rev-parse HEAD 2>/dev/null)
+
+  said=$(floor_through "$(a_source_committing_on claim "$tmp/fetchlanded")" "$tmp/fetchlanded" pass); code=$?
+  is  "a commit landing before the run is made starts no new work, 54" "$code" "54"
+  has "and says the rule was read elsewhere" "$said" "after its rule was read at [$rule_read_at]"
+  has "and its record says so" "$(last_wake_line ended)" "read=in-the-way:moved code=54"
+  is  "and no run holds its item" "$(runs_holding 1615)" "0"
+
+  rm -rf "$src/claims/1615" "$src/labels/1615" "$src/items/1615"
+}
+
+# A work source that commits in a checkout when asked one verb, then answers as the directory adapter.
+a_source_committing_on() {
+  cat > "$tmp/commits-on-$1.sh" <<STUB
+#!/bin/sh
+[ "\$1" = $1 ] && git -C '$2' commit -q --allow-empty -m 'landed mid-pass' >/dev/null 2>&1
+exec sh '$dir_source' "\$@"
+STUB
+  printf '%s' "$tmp/commits-on-$1.sh"
+}
+a_commit_landing_before_the_run_starts_no_new_work
+
+#
 # **Two judges on one clause, and every fixture before this had one.** A rule with a single instance
 # is a description of that instance: every refusal floor made was both the rule and its only example.
 #
