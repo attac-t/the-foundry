@@ -2538,7 +2538,7 @@ wreck_runner "a practice line that is never read is caught" \
   offerrule '/^offer_rule() {/,/^}/s#\$1 == "offer"#$1 == "never"#'
 
 wreck_runner "a rule read where a worker commits is caught" \
-  offertip '/^offer() {/,/^}/s#offered_at "\$(fetched_default_tip)"#offered_at "$(git rev-parse HEAD)"#'
+  offertip '/^offer() {/,/^}/s#offered_at "\$(fetched_default_tip)"#offered_at "$(git rev-parse -q --verify HEAD)"#'
 
 wreck_runner "a rule naming no hand that says nothing about it is caught" \
   offernohand '/^the_offer_line() {/,/^}/s#^    \[ "\$\#" -ge 2 \] || { note .*; return 0; }$#    :#'
@@ -2931,8 +2931,11 @@ wreck_runner "a move with no host check before it is caught" \
 wreck_runner "a pass that writes origin/HEAD to follow origin is caught" \
   fetchsethead '/^fetch_the_default_branch() {/,/^}/s#^    \[ "\$default_branch" = "\$checkout_default" \] || leave_on_another_default .*$#    git remote set-head origin "$default_branch" >/dev/null 2>\&1#'
 
-wreck_runner "a checkout moved while detached or on another branch is caught" \
-  movebranch 's#^    on_branch=\$(git symbolic-ref -q --short HEAD 2>/dev/null) || leave_in_the_way .*$#    :#; s#^    \[ "\$on_branch" = "\$default_branch" \] || leave_in_the_way .*$#    :#'
+wreck_runner "a detached checkout read as on its default branch is caught" \
+  movedetached 's#^    on_branch=\$(git symbolic-ref -q --short HEAD 2>/dev/null) || leave_in_the_way .*$#    on_branch=$default_branch#'
+
+wreck_runner "a checkout on another branch, moved anyway, is caught" \
+  movebranch 's#^    \[ "\$on_branch" = "\$default_branch" \] || leave_in_the_way .*$#    :#'
 
 wreck_runner "a checkout holding work nobody committed, moved anyway, is caught" \
   moveunclean '/^move_the_checkout_to_the_tip() {/,/^}/s#^    a_clean_checkout || leave_in_the_way .*$#    :#'
