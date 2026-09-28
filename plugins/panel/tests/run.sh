@@ -91,13 +91,30 @@ echo "audit — break the brief, the suite must notice"
 
 caught_brief() { red_against brief.sh RUNNER="$tmp/$1/bin/brief.sh"; }
 
-# The role and its skills travel with the mutant. `brief.sh` reads them from its own parent, so a
-# copy alone would fail for want of a role rather than for the rule under test.
+# The role, its skills and every file beside it travel with the mutant. `brief.sh` reads all three
+# from its own parent, so a copy missing one fails for want of it, never for the rule under test.
+stage_brief() {
+  rm -rf "${tmp:?}/$1" && mkdir -p "$tmp/$1" \
+    && cp -r "$root/agents" "$root/skills" "$root/bin" "$tmp/$1/"
+}
+
+#
+# The control, run once before any break. An unbroken copy staged as each break is must pass.
+# It once failed nineteen checks for want of `verdicts.sh`, so every break read as caught. #1057.
+#
+refuse_a_staging_that_breaks_the_brief() {
+  stage_brief control || { bad "the brief could not be staged, so no break below proves anything"; return; }
+  caught_brief control
+  [ "$?" -eq 1 ] && { printf '  ok    an unbroken copy, staged as each break is, passes\n'; return; }
+
+  bad "an unbroken copy fails the suite, so no break below proves anything"
+}
+refuse_a_staging_that_breaks_the_brief
+
 wreck_brief() {
   local name="$1" tag="$2" mutation="$3"
 
-  rm -rf "${tmp:?}/$tag" && mkdir -p "$tmp/$tag/bin" || { bad "$name — could not stage"; return; }
-  cp -r "$root/agents" "$root/skills" "$tmp/$tag/" || { bad "$name — could not stage the role"; return; }
+  stage_brief "$tag" || { bad "$name — could not stage"; return; }
   sed "$mutation" "$root/bin/brief.sh" > "$tmp/$tag/bin/brief.sh" \
     || { bad "$name — sed failed, so this proves nothing"; return; }
   [ -s "$tmp/$tag/bin/brief.sh" ] || { bad "$name — the mutant is empty"; return; }
@@ -123,8 +140,8 @@ wreck_brief "a directory passing for a charter is caught" \
   dirbar 's#^    \[ -f "\$2" \] || fail 4 "the \$1 at \[\$2\] is not a file"$#    :#'
 
 #
-# A chain that cannot say which round this is, carrying on anyway. That is the fail-closed rule
-# inverted, and `a chain nobody made stops the brief` is what kills it.
+# A chain that cannot say which round this is, carrying on anyway: the fail-closed rule inverted.
+# `and says the chain could not say which round` kills it. The exit-code check beside it cannot.
 #
 # By pattern, not by line number. It named lines 169 and 172, and 172 had long since stopped being a
 # refusal — a mutant aimed at the wrong line proves whatever that line happens to do.
@@ -136,6 +153,13 @@ wreck_brief "a chain that records nothing answered as a prior round is caught" \
 
 wreck_brief "a role's declared skills quietly dropped is caught" \
   noskills 's#^    declared_skills "\$file" | while IFS= read -r skill; do#    false | while IFS= read -r skill; do#'
+
+#
+# Words asked for after the verdict line. Every word is still in the brief, in the wrong order, so
+# only the check on its last line can see it. #1056.
+wreck_brief "a paragraph asked for after the verdict line is caught" \
+  paraafter '/^    VERDICT: revise$/a\
+Then one paragraph saying why.'
 
 bash "$root/tests/chain.sh" || failed=1
 echo
