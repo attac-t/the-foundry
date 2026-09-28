@@ -28,7 +28,7 @@
 # Foundry takes the stricter bar for itself, because what it judges here is its own runtime. That is
 # this repository's choice and not a rule it ships.
 #
-# Two members now, and they are two models. A role cannot buy a second mind. A second model
+# The bar is two members, and they are two models. A role cannot buy a second mind. A second model
 # can, and that is the whole of what the second one is for.
 #
 # **The reach below names an adapter floor ships, and this repository owns no line of it.** The
@@ -37,21 +37,22 @@
 #
 # Take a new one with `git hash-object --no-filters -- plugins/floor/adapters/<name>/run.sh`.
 #
-# **The second mind is unreachable, and the bar is lower until it returns.** Measured 22 September:
-# the codex adapter answered `you've hit your usage limit ... try again at Sep 27th`. Floor recorded
-# `unavailable`, refused the delivery, and was right to.
+# **The second model was Sol, and it went out on 22 September.** The codex adapter answered `you've
+# hit your usage limit ... try again at Sep 27th`. Floor recorded `unavailable`, refused the
+# delivery, and was right to.
 #
-# **So this repository judges on one model for now, by the owner's decision.** That is the weaker
-# bar the paragraph above describes — a different reader, not a second mind. It is named here rather
-# than left for somebody to infer from a silent file.
+# **It stays out, by the owner's decision of 28 September.** Sol's credits were back that day, and
+# the owner kept Sol for questions of product direction. Judging a run is ground work, and the owner
+# named Fable and Opus 5.5 for it.
+#
+# **So this repository judges on one model until Fable can sit.** That is the weaker bar the
+# paragraph above describes — a different reader, not a second mind. It is named here rather than
+# left for somebody to infer from a silent file.
 #
 # **Both adapters fix their model with `readonly`**, so a second anthropic judge would be a second
-# opus and buy nothing. [#986](https://github.com/attac-t/the-foundry/issues/986) owns that.
-#
-# Put the codex line back when the credits return. It is two lines, and the digest is already here.
+# opus and buy nothing. [#986](https://github.com/attac-t/the-foundry/issues/986) owns that, and with
+# it the seat Fable is to take.
 
-# reach  codex:adversary  @adapter codex ad39b8d163d8589fba3797d62eca45ac6e2c55f8
 reach  anthropic:adversary  @adapter anthropic e73d1c0105b0597b578664e5dcd9920023c6b55f
 
-# codex:adversary  a change to what a run may claim is judged by something that did not write it
 anthropic:adversary  a change to what a run may claim is judged by something that did not write it
