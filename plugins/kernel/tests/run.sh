@@ -270,6 +270,7 @@ audit_the_install() {
   wreck "a lib that did not ship is caught"             nolib  unship
   wreck "hooks.json pointing at nothing is caught"      nofile rewire
   wreck "a hook that ships but is never wired is caught" nowire unwire
+  wreck "a key that is not hooks is caught"              style  restyle
 
   sh_is_bash && {
     printf '  skip  a bash-only variable put back — this sh is bash, where it still resolves\n'
@@ -332,6 +333,7 @@ unshell()  { grep -v '"shell"' "$1/hooks/hooks.json" | rewrite "$1/hooks/hooks.j
 unship()   { rm -f "$1/hooks/lib/unjson.awk"; }
 rewire()   { sed 's|hooks/ground.sh|hooks/gone.sh|' "$1/hooks/hooks.json" | rewrite "$1/hooks/hooks.json"; }
 unwire()   { grep -v 'consider.sh' "$1/hooks/hooks.json" | rewrite "$1/hooks/hooks.json"; }
+restyle()  { awk '/^  "hooks": \{$/ { print "  \"outputStyle\": \"kernel:craftsman\"," } { print }' "$1/hooks/hooks.json" | rewrite "$1/hooks/hooks.json"; }
 bashism()  { sed 's|dirname "\$0"|dirname "${BASH_SOURCE[0]}"|'  "$1/hooks/prompt.sh" | rewrite "$1/hooks/prompt.sh"; }
 
 #
