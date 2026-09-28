@@ -55,6 +55,11 @@ mkdir -p "$tmp/bare"
 # hand.
 [ -n "${FOUNDRY_CASE_STATE:-}" ] || trap 'chmod -R u+rwX "$tmp" 2>/dev/null; rm -rf "$tmp"' EXIT
 
+# **This home's name is pinned**, so a case can plant a claim under this host's name before any pass
+# has asked for it. Floor writes a random one otherwise, once. Piece 7, 7b.
+mkdir -p "$home" && printf 'suite\n' > "$home/host-name"
+this_host() { printf '%s/%s' "$(uname -n)" "$(cat "$home/host-name")"; }
+
 #
 # Git transport isolation, and nothing wider. `tests/isolate.sh` holds the mechanism.
 #
@@ -3928,7 +3933,7 @@ exactly_one_host_takes_an_item() {
   rm -rf "$src/claims/71"
   mkdir -p "$src/claims/71"
   is  "a claim with no stamp in it is taken"  "$(code_of floor "$tmp/clm" claim 71)" "0"
-  has "and this host holds it"                "$(cat "$src/claims/71/held")" "$(uname -n)"
+  is  "and this host holds it"                "$(cut -f2 "$src/claims/71/held")" "$(this_host)"
   is  "and no draft is left beside it"        "$(ls "$src/claims/71")" "held"
 
   # A claim is not authority. It says a host started, never that it may.
@@ -3937,7 +3942,7 @@ exactly_one_host_takes_an_item() {
   # The holder claiming again is the renewal. Without it a claim needs a heartbeat, and a heartbeat
   # is the daemon this refuses to be. `recording_host` is this machine, so a second host is written
   # by hand below — nothing in the environment can pretend to be one.
-  printf '2026-01-01T00:00:00Z\t%s\t1767225600\n' "$(uname -n)" > "$src/claims/71/held"
+  printf '2026-01-01T00:00:00Z\t%s\t1767225600\n' "$(this_host)" > "$src/claims/71/held"
   is "the holder claiming again renews it" "$(code_of floor "$tmp/clm" claim 71)" "0"
   lacks "and the stamp moved" "$(cat "$src/claims/71/held")" "1767225600"
 
@@ -3949,14 +3954,14 @@ exactly_one_host_takes_an_item() {
   # **Young is left alone**, because the github adapter claims by pushing a ref, and asking on every
   # edit would push on every edit.
   floor "$tmp/clm" source read 71 >/dev/null 2>&1
-  printf '2026-01-01T00:00:00Z\t%s\t%s\n' "$(uname -n)" "$(date -u +%s)" > "$src/claims/71/held"
+  printf '2026-01-01T00:00:00Z\t%s\t%s\n' "$(this_host)" "$(date -u +%s)" > "$src/claims/71/held"
   young=$(cat "$src/claims/71/held")
 
   is    "a young claim is left alone"    "$(code_of floor "$tmp/clm" claim)" "0"
   is    "and the stamp did not move"     "$(cat "$src/claims/71/held")"      "$young"
   lacks "and it leaves no line to count" "$(floor "$tmp/clm" observe)"       "claim.renewed"
 
-  printf '2026-01-01T00:00:00Z\t%s\t1767225600\n' "$(uname -n)" > "$src/claims/71/held"
+  printf '2026-01-01T00:00:00Z\t%s\t1767225600\n' "$(this_host)" > "$src/claims/71/held"
 
   #
   # **The local mark is cleared, because this fixture is time passing.** A keep writes
@@ -3977,7 +3982,7 @@ exactly_one_host_takes_an_item() {
   #
   # **The mark is what stops a second read.** A keep that has just settled the question does not
   # ask the source again, and on the github adapter every ask is a push or a fetch.
-  printf '2026-01-01T00:00:00Z\t%s\t1767225600\n' "$(uname -n)" > "$src/claims/71/held"
+  printf '2026-01-01T00:00:00Z\t%s\t1767225600\n' "$(this_host)" > "$src/claims/71/held"
 
   is  "a keep inside the throttle asks nothing" "$(code_of floor "$tmp/clm" claim)" "0"
   has "and the stamp it would have moved stays" "$(cat "$src/claims/71/held")"      "1767225600"
@@ -4026,7 +4031,7 @@ exactly_one_host_takes_an_item() {
 
   has "a claim past the window says what it broke" \
       "$(floor_says "$tmp/clm" claim 71)" "without a word from OtherHost"
-  has "and this host holds it after" "$(cat "$src/claims/71/held")" "$(uname -n)"
+  is  "and this host holds it after" "$(cut -f2 "$src/claims/71/held")" "$(this_host)"
 
   # A claim taken by hand settles the question too, so the loss marked above stops answering.
   is "and a keep after it is no longer a loss" "$(code_of floor "$tmp/clm" claim)" "0"
@@ -4050,7 +4055,7 @@ exactly_one_host_takes_an_item() {
   has "and the claim is still there" "$(cat "$src/claims/71/held")" "OtherHost"
 
   printf '%s	%s	%s
-' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$(uname -n)" "$(date +%s)"       > "$src/claims/71/held"
+' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$(this_host)" "$(date +%s)"       > "$src/claims/71/held"
 
   is "the holder may let go"     "$(code_of floor "$tmp/clm" release 71)" "0"
   is "and nobody holds it after" "$(code_of floor "$tmp/clm" release 71)" "30"
@@ -4127,7 +4132,7 @@ a_run_keeps_the_name_it_claimed_under() {
   lacks "a run worked under a new host name keeps its own claim" \
         "$(PATH="$tmp/hostbin:$PATH" floor_says "$tmp/mvd" gates)" "held by"
   lacks "and records no loss"                       "$(floor "$tmp/mvd" observe)" "claim.lost"
-  has   "and the claim keeps the name it was taken under" "$(cat "$src/claims/74/held")" "$(uname -n)"
+  is    "and the claim keeps the name it was taken under" "$(cut -f2 "$src/claims/74/held")" "$(this_host)"
 
   # **Claimed before the run held the item**, which is the order a pass takes. Binding names it, so
   # a run bound and moved at once, with no keep between, loses nothing. #991's judge.
@@ -4160,7 +4165,7 @@ a_run_keeps_the_name_it_claimed_under() {
   # first keep reads the source and renews a claim past a third of its window. #884's judge.
   printf 'Bound late\n' > "$src/items/77"
   mkdir -p "$src/claims/77"
-  printf '2026-01-01T00:00:00Z\t%s\t%s\n' "$(uname -n)" "$(( $(date -u +%s) - 1500 ))" > "$src/claims/77/held"
+  printf '2026-01-01T00:00:00Z\t%s\t%s\n' "$(this_host)" "$(( $(date -u +%s) - 1500 ))" > "$src/claims/77/held"
   make_repo "$tmp/mvd4" main && set_origin "$tmp/mvd4" 'https://gitlab.com/acme/mvd4.git' \
     || { skip "a claim bound late — git could not make a repo here"; return; }
   floor "$tmp/mvd4" new "Bound late" >/dev/null 2>&1
@@ -4298,8 +4303,10 @@ a_pass_takes_the_first_item_nobody_holds() {
   bar_and_rule "$tmp/pss"
 
   is  "a pass with no command begins the run and waits" "$(code_of floor "$tmp/pss" pass)" "44"
-  has "it passed over the item another host holds, and claimed the next" \
-      "$(cat "$src/claims/92/held")" "$(uname -n)"
+  is  "it passed over the item another host holds, and claimed the next" \
+      "$(cut -f2 "$src/claims/92/held")" "$(this_host)"
+  is  "and its run names the host it claimed under" \
+      "$(cat "$(floor "$tmp/pss" path)/claim.holder")" "$(this_host)"
   has "and its run holds that item"  "$(floor "$tmp/pss" observe)" "item=92"
   has "and says why it stopped"      "$(floor "$tmp/pss" observe)" "why=no-command"
 
@@ -4361,7 +4368,7 @@ a_pass_takes_the_first_item_nobody_holds() {
 deliver https://github.com/acme/pss4.git'
 
   is  "a pass takes a labelled item to a request" \
-      "$(FOUNDRY_PASS_COMMAND=$saw_it code_of floor "$tmp/pss4" pass)" "0"
+      "$(FOUNDRY_WAKE='mechanism=suite cadence=1 identity=leak stops=none' FOUNDRY_PASS_COMMAND=$saw_it code_of floor "$tmp/pss4" pass)" "0"
   has "and the source holds the delivery" "$(ls "$src/deliveries")" "$(basename "$(floor "$tmp/pss4" path)")"
   has "and the run records it"            "$(floor "$tmp/pss4" observe)" "pass.delivered"
   has "and answers to who put the label on" "$(cat "$(floor "$tmp/pss4" path)/authority")" "pat"
@@ -4407,7 +4414,8 @@ a_pass_takes_the_first_item_nobody_holds
 # **Two hosts pass at once, and each takes a different item.** The claim is the one step both go
 # through, so the host that loses an item is refused it and takes the next. #884 asked for this.
 #
-# Every order the two can run in ends the same way, which is why a race can be a case here.
+# Every order the two can run in ends the same way, which is why a race can be a case here. Two hosts
+# are two homes, since one home holds one live pass. Piece 7, 7a.
 two_hosts_pass_at_once() {
   make_repo "$tmp/twa" main && set_origin "$tmp/twa" 'https://gitlab.com/acme/tw.git' \
     && make_repo "$tmp/twb" main && set_origin "$tmp/twb" 'https://gitlab.com/acme/tw.git' \
@@ -4415,6 +4423,7 @@ two_hosts_pass_at_once() {
   a_host_named SecondHost "$tmp/twbin" \
     || { skip "two hosts at once — could not put a uname on the path"; return; }
 
+  mkdir -p "$src/items" "$src/labels" "$src/claims"
   for n in 97 98; do printf 'Race item %s\n' "$n" > "$src/items/$n"; done
   printf 'race\t2026-09-07T00:00:00Z\tpat\n' > "$src/labels/97"
   printf 'race\t2026-09-08T00:00:00Z\tpat\n' > "$src/labels/98"
@@ -4422,15 +4431,22 @@ two_hosts_pass_at_once() {
   bar_and_rule "$tmp/twb" 'offer race pat'
 
   floor "$tmp/twa" pass >/dev/null 2>&1 &
-  PATH="$tmp/twbin:$PATH" floor "$tmp/twb" pass >/dev/null 2>&1 &
+  second_host pass >/dev/null 2>&1 &
   wait
 
   is "two hosts passing at once take two items" \
      "$(cut -f2 "$src/claims/97/held" "$src/claims/98/held" 2>/dev/null | sort -u | grep -c .)" "2"
   differs "and each run holds a different one" \
-     "$(cat "$(floor "$tmp/twa" path)/source")" "$(cat "$(floor "$tmp/twb" path)/source")"
+     "$(cat "$(floor "$tmp/twa" path)/source")" "$(cat "$(second_host path)/source")"
 
   rm -rf "$src/claims/97" "$src/claims/98" "$src/labels/97" "$src/labels/98"
+}
+
+# The second host: another machine's name, in a home of its own, reading this suite's work source.
+second_host() {
+  ( PATH="$tmp/twbin:$PATH" FOUNDRY_SOURCE_DIR="$src"
+    export PATH FOUNDRY_SOURCE_DIR
+    floor_as "$tmp/twb" "$tmp/twhome" "" "$@" )
 }
 two_hosts_pass_at_once
 
@@ -4482,7 +4498,7 @@ a_pass_at_work_is_left_to_work() {
   FOUNDRY_PASS_COMMAND=$second floor "$tmp/alive" pass >/dev/null 2>&1
   run=$(floor "$tmp/alive" path)
 
-  has "a second pass while the first works is told so" "$(cat "$tmp/alive.second" 2>/dev/null)" "a pass is at work in this run now"
+  has "a second pass while the first works is told so, at the door" "$(cat "$tmp/alive.second" 2>/dev/null)" "a pass holds this host"
   has "and leaves the run alone"                       "$(cat "$tmp/alive.second" 2>/dev/null)" "exit=43"
   is  "the mark goes when the pass ends"               "$([ -e "$run/pass.alive" ] && echo there || echo gone)" "gone"
   has "and the stop line carries its code"             "$(floor "$tmp/alive" observe)" "why=deliver code=18"
@@ -4539,8 +4555,10 @@ a_beat_ends_with_its_pass() {
   first=$!
   waited=0
   while [ ! -f "$tmp/alive4.reading" ] && [ "$waited" -lt 60 ]; do sleep 1; waited=$((waited + 1)); done
-  has "a second pass during the item's second read already sees the first at work" \
-      "$(floor_says "$tmp/alive4" pass)" "a pass is at work"
+  has "a second pass during the item's second read already sees the first at work, at the door" \
+      "$(floor_says "$tmp/alive4" pass)" "a pass holds this host"
+  is  "and the first pass's run is marked as worked" \
+      "$(ls "$(floor "$tmp/alive4" path)"/pass.alive 2>/dev/null | grep -c .)" "1"
   wait "$first"
 
   # A pass started with TERM ignored hands that on to its beat, and a TERM then stops nothing.
@@ -4584,8 +4602,9 @@ a_beat_ends_with_its_pass() {
   is  "a caller reading a pass killed outright is done when the pass is" \
       "$([ -f "$tmp/alive7.read" ] && echo done || echo "still reading after $waited seconds")" "done"
 
-  # A beat left holding the pipe ends once its run is gone, so a red case leaves nothing running.
-  [ -f "$tmp/alive7.read" ] || rm -rf "$(floor "$tmp/alive7" path)"
+  # A beat left holding the pipe ends once nothing it beats can be written, the run's mark or the
+  # host's, so a red case leaves nothing running.
+  [ -f "$tmp/alive7.read" ] || rm -rf "$(floor "$tmp/alive7" path)" "$home/pass"
   wait "$caller" 2>/dev/null
   sleep 4
   has "and the dead pass is no pass at work three of its beats later, and its run resumes" \
@@ -4645,7 +4664,7 @@ a_pass_takes_back_a_claim_no_run_holds() {
   printf 'Stale item\n' > "$src/items/89"
   printf 'stale\t2026-09-10T00:00:00Z\tpat\n' > "$src/labels/89"
   mkdir -p "$src/claims/89"
-  printf '%s\t%s\t%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$(uname -n)" "$(date -u +%s)" > "$src/claims/89/held"
+  printf '%s\t%s\t%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$(this_host)" "$(date -u +%s)" > "$src/claims/89/held"
   bar_and_rule "$tmp/stale-claim" 'offer stale pat'
 
   is  "a claim of this host's that no run holds is taken again" \
@@ -4753,7 +4772,7 @@ an_open_request_keeps_its_item() {
 
   # The claim this host took for 64 has aged past the window, so another host could break it.
   mkdir -p "$src/claims/64"
-  printf '2026-01-01T00:00:00Z\t%s\t%s\n' "$(uname -n)" "$(( $(date -u +%s) - 7200 ))" > "$src/claims/64/held"
+  printf '2026-01-01T00:00:00Z\t%s\t%s\n' "$(this_host)" "$(( $(date -u +%s) - 7200 ))" > "$src/claims/64/held"
   a_host_named RequestHost "$tmp/reqbin" || { skip "an open request — could not put a uname on the path"; return; }
 
   is  "a second host's pass, with the claim aged out, takes the next item" \
@@ -4847,6 +4866,14 @@ a_second_read_that_fails_is_a_stop() {
   bar_and_rule "$tmp/reread2" 'offer reread pat'
   is  "a pass in a second checkout passes over an item a run began and never bound" \
       "$(code_of floor "$tmp/reread2" pass)" "30"
+
+  # **The keep asks what the run holds, bound or begun.** Asked by the bind alone, a run that never
+  # bound its item kept nothing, and worked on while another host held it. 7b.
+  printf '2026-01-01T00:00:00Z\tOtherHost\t%s\n' "$(date -u +%s)" > "$src/claims/66/held"
+  is "a run that began an item another host now holds is refused at its keep" \
+     "$(code_of floor "$tmp/reread" claim)" "30"
+  printf '2026-01-01T00:00:00Z\t%s\t%s\n' "$(this_host)" "$(date -u +%s)" > "$src/claims/66/held"
+  rm -f "$(floor "$tmp/reread" path)/claim.lost"
 
   is  "the next wake reads the item it could not, and goes on" "$(code_of floor "$tmp/reread" pass)" "44"
   has "and binds it"                                          "$(floor "$tmp/reread" observe)" "item.read"
@@ -5133,7 +5160,7 @@ HOOK
   # **A renewal that lands after a release brings nothing back.** The holder reads its own tip, and
   # its release lands before the renewal's push connects. #1017 watched a plain push make the ref
   # again. This shim deletes the ref between the read and the push, which is where that release was.
-  mine=$(printf 'claimed by %s\n' "$(uname -n)" | git -C "$work" commit-tree "$tree")
+  mine=$(printf 'claimed by %s\n' "$(this_host)" | git -C "$work" commit-tree "$tree")
   git -C "$work" push -q -f origin "$mine:refs/heads/foundry/claim/71" 2>/dev/null
 
   late="$tmp/gitshim-late"
@@ -6360,13 +6387,26 @@ resume_in() { FOUNDRY_PASS_TRIES=2 FOUNDRY_PASS_BEAT=1 code_of floor "$1" pass; 
 # Appends a line to a file, and commits it through floor, the way a worker would.
 COMMITTING_WORKER="date >> worked && git add worked && sh '$runner' commit 'worked'"
 
-# A pass killed partway with the bound at two. Once its beat of one second has stopped, its mark is
-# aged, so the next wake reads a dead pass whatever the clock did.
+# A pass killed partway with the bound at two. Once its beat of one second has stopped, its marks are
+# aged, the run's and the host's, so the next wake reads a dead pass whatever the clock did.
 kill_and_age_a_pass_in() {
   FOUNDRY_PASS_TRIES=2 kill_a_pass_in "$@"
   sleep 3
   date -u +%s | awk '{ print $1 - 600 }' > "$(floor "$1" path)/pass.alive"
+  age_the_host_mark
 }
+
+# The suite home's newest host mark, aged ten minutes, as a killed pass's reads once its beat stops.
+age_the_host_mark() {
+  newest=$(newest_host_mark)
+  [ -z "$newest" ] || printf '%s 1\n' "$(( $(date -u +%s) - 600 ))" > "$home/pass/$newest"
+}
+
+newest_host_mark() { ls "$home/pass" 2>/dev/null | grep -E '^[0-9]{10}$' | tail -n 1; }
+
+last_wake_line() { grep "	$1	" "$home/wakes" 2>/dev/null | tail -n 1; }
+
+process_of() { printf '%s\n' "$1" | tr ' \t' '\n\n' | sed -n 's/^process=//p'; }
 
 # A work source that hangs on one verb, once the marker says it was reached, and hands every other
 # to the directory adapter.
@@ -6411,10 +6451,16 @@ a_run_waits_on_the_host_then_a_person() {
   # The command runs a second pass from the same checkout, while the resumed one works. In a
   # subshell, so the worker after it still commits in the workspace.
   second="( cd '$tmp/rsw' && sh '$runner' pass > '$tmp/rsw.second' 2>&1; echo \"exit=\$?\" >> '$tmp/rsw.second' )"
+  # The host's mark answers the second pass, so only this says the resume marked its run.
+  waiting_run=$(floor "$tmp/rsw" path)
+  marked="( [ -f '$waiting_run/pass.alive' ] && echo marked || echo unmarked ) > '$tmp/rsw.mark'"
+  # A beat of sixty, so the first pass's host mark cannot age while the second one looks at it.
   is  "the host names its command after more waits than the bound, and the run acts" \
-      "$(FOUNDRY_PASS_COMMAND="$second; $COMMITTING_WORKER" resume_in "$tmp/rsw")" "47"
+      "$(FOUNDRY_PASS_COMMAND="$marked; $second; $COMMITTING_WORKER" FOUNDRY_PASS_TRIES=2 FOUNDRY_PASS_BEAT=60 \
+          code_of floor "$tmp/rsw" pass)" "47"
   has "and waits on a person for the grant" "$(last_pass_line_in "$tmp/rsw")" "why=deliver code=18"
-  has "a second pass while a resumed one works is told so" "$(cat "$tmp/rsw.second" 2>/dev/null)" "a pass is at work in this run now"
+  has "a second pass while a resumed one works is told so, at the door" "$(cat "$tmp/rsw.second" 2>/dev/null)" "a pass holds this host"
+  is  "and the run it resumed is marked as worked while it works" "$(cat "$tmp/rsw.mark" 2>/dev/null)" "marked"
   for wake in 1 2 3; do
     is "a wake before the grant waits again, $wake" "$(resume_in "$tmp/rsw")" "47"
   done
@@ -6480,6 +6526,13 @@ a_code_no_row_names_lets_the_run_go() {
   has "the run says it was let go, and the code" \
       "$(awk -F'\t' '$3 == "pass.left" { print $4 }' "$let_go_run/observations")" "why=deliver code="
   is  "and the checkout no longer points at it" "$(floor "$tmp/rsx" path)" ""
+
+  # **Then it took nothing, and still ended.** The exit action is the door's, so letting a run go
+  # neither replaces it nor leaves the run beaten. Piece 7, 7a.
+  is  "a pass that lets its run go and takes nothing leaves the host's mark ended" \
+      "$(cat "$home/pass/$(newest_host_mark)" 2>/dev/null)" "ended"
+  is  "and the run it let go carries no mark" "$(ls "$let_go_run"/pass.alive 2>/dev/null | grep -c .)" "0"
+  has "and its record ends with what the offer met" "$(last_wake_line ended)" "read=all-held code=30"
 
   rm -rf "$src/claims/504" "$src/labels/504" "$src/items/504"
 }
@@ -6736,6 +6789,570 @@ a_failed_send_is_sent_again() {
   rm -rf "$src/claims/515" "$src/labels/515" "$src/items/515"
 }
 a_failed_send_is_sent_again
+
+#
+# **A claim names its machine and its home**, so two homes on one machine are two hosts. The home's
+# name is a token made once and kept, never its path, and made before the home holds any run. 7b.
+#
+a_claim_names_its_home() {
+  make_repo "$tmp/named" main && set_origin "$tmp/named" 'https://gitlab.com/acme/named.git' \
+    || { skip "a named home — git could not make a repo here"; return; }
+  mkdir -p "$src/items"
+  printf 'Named\n' > "$src/items/621"
+
+  is "a home that does not exist yet takes a claim" "$(code_of claim_from_home "$tmp/newhome")" "0"
+  named=$(cat "$tmp/newhome/host-name" 2>/dev/null)
+  is    "under the machine's name and the name it gave the home" "$(cut -f2 "$src/claims/621/held")" "$(uname -n)/$named"
+  lacks "and a home's name is never its path" "$named" "/"
+
+  is "the same home claiming again renews its own claim" "$(code_of claim_from_home "$tmp/newhome")" "0"
+  is "under the same name"                               "$(cut -f2 "$src/claims/621/held")" "$(uname -n)/$named"
+  is "and another home on this machine is another host"  "$(code_of claim_from_home "$tmp/otherhome")" "30"
+
+  rm -rf "$src/claims/621" "$src/items/621"
+}
+
+# A claim on 621 from another home, through this suite's work source, so two homes share one.
+claim_from_home() { ( FOUNDRY_SOURCE_DIR="$src"; export FOUNDRY_SOURCE_DIR; floor_as "$tmp/named" "$1" "" claim 621 ); }
+a_claim_names_its_home
+
+#
+# **Each way a run holds its item, with the machine renamed past the claim window.** A pass outside the
+# run's checkout passes the item over, and one inside carries it on under the claim's own name.
+#
+# Five review rounds found one fault by five routes: a claim compared with a name other than the one it
+# was taken under. So every member ends the same way, with one run for the item. 7b.
+#
+the_rename_family() {
+  a_host_named RenamedHost "$tmp/renamedbin" \
+    || { skip "the rename family — could not put a uname on the path"; return; }
+
+  a_bound_run_renamed
+  a_begun_run_renamed
+  a_run_with_no_holder_renamed
+  a_run_from_before_7b_renamed
+
+  rm -rf "$src/claims/622" "$src/claims/623" "$src/claims/624" "$src/claims/625"
+  rm -rf "$src/labels/622" "$src/labels/623" "$src/labels/624" "$src/labels/625"
+  rm -rf "$src/items/622" "$src/items/623" "$src/items/624" "$src/items/625"
+}
+
+# **Bound:** a pass took the item and its read bound it.
+a_bound_run_renamed() {
+  a_resumable_repo rnbound 622 || { skip "a bound run renamed — git could not make a repo here"; return; }
+  is "a pass takes an item and binds it" "$(code_of floor "$tmp/rnbound" pass)" "44"
+
+  age_the_claim 622
+  is "renamed past the window, a pass outside passes over a bound run's item" "$(renamed pass_outside rnbound)" "30"
+  is "and the pass inside carries it on"            "$(renamed code_of floor "$tmp/rnbound" pass)" "44"
+  is "under the name its claim was taken under"     "$(cut -f2 "$src/claims/622/held")" "$(this_host)"
+  is "and one run holds the bound item"             "$(runs_holding 622)" "1"
+}
+
+# **Begun:** a pass took the item and its read failed, so nothing bound it.
+a_begun_run_renamed() {
+  a_resumable_repo rnbegun 623 || { skip "a begun run renamed — git could not make a repo here"; return; }
+  is "a pass whose read fails holds the item it began" \
+     "$(code_of floor_through "$(a_source_reading_once)" "$tmp/rnbegun" pass)" "20"
+
+  age_the_claim 623
+  is "renamed past the window, a pass outside passes over a begun run's item" "$(renamed pass_outside rnbegun)" "30"
+  is "and the pass inside carries it on"            "$(renamed code_of floor "$tmp/rnbegun" pass)" "44"
+  is "under the name its claim was taken under"     "$(cut -f2 "$src/claims/623/held")" "$(this_host)"
+  is "and one run holds the begun item"             "$(runs_holding 623)" "1"
+}
+
+# **No holder:** a person's run, bound while the source could not be asked, its claim under this host's
+# name. It keeps its item before it has a holder, and adopts the claim's name once the source answers.
+a_run_with_no_holder_renamed() {
+  a_resumable_repo rnnone 624 || { skip "a run with no holder — git could not make a repo here"; return; }
+  floor "$tmp/rnnone" claim 624 >/dev/null 2>&1
+  floor "$tmp/rnnone" new "No holder" >/dev/null 2>&1
+  floor "$tmp/rnnone" source read 624 >/dev/null 2>&1
+  rm -f "$(floor "$tmp/rnnone" path)/claim.holder"
+
+  is "a pass outside passes over the item of a run with no holder" "$(pass_outside rnnone)" "30"
+  floor "$tmp/rnnone" claim >/dev/null 2>&1
+  is "and the run adopts its claim's name once the source answers" \
+     "$(cat "$(floor "$tmp/rnnone" path)/claim.holder" 2>/dev/null)" "$(this_host)"
+
+  age_the_claim 624
+  is "renamed past the window, a pass outside still passes it over" "$(renamed pass_outside rnnone)" "30"
+  is "and a pass inside leaves a person's run alone"  "$(renamed code_of floor "$tmp/rnnone" pass)" "43"
+  is "and one run holds the item with no holder"      "$(runs_holding 624)" "1"
+}
+
+# **From before 7b:** a pass's run with no holder, its claim under the machine's name alone. A resume
+# adopts that name before it claims, so the run is never refused by its own claim.
+a_run_from_before_7b_renamed() {
+  a_resumable_repo rnold 625 || { skip "a run from before 7b — git could not make a repo here"; return; }
+  is "a pass takes an item" "$(code_of floor "$tmp/rnold" pass)" "44"
+  rm -f "$(floor "$tmp/rnold" path)/claim.holder" "$(floor "$tmp/rnold" path)/claim.kept"
+  printf '2026-01-01T00:00:00Z\t%s\t%s\n' "$(uname -n)" "$(date -u +%s)" > "$src/claims/625/held"
+
+  is "a pass outside passes over the item of a run from before 7b" "$(pass_outside rnold)" "30"
+  is "a resume adopts the machine's name, then claims under it" "$(code_of floor "$tmp/rnold" pass)" "44"
+  is "and the run keeps that name" "$(cat "$(floor "$tmp/rnold" path)/claim.holder" 2>/dev/null)" "$(uname -n)"
+
+  age_the_claim 625
+  is "renamed past the window, a pass outside passes it over" "$(renamed pass_outside rnold)" "30"
+  is "and the pass inside carries it on"            "$(renamed code_of floor "$tmp/rnold" pass)" "44"
+  is "under the machine's name it was taken under"  "$(cut -f2 "$src/claims/625/held")" "$(uname -n)"
+  is "and one run holds the item from before 7b"    "$(runs_holding 625)" "1"
+}
+
+# An item's claim, aged past the window under the name it holds.
+age_the_claim() {
+  printf '2026-01-01T00:00:00Z\t%s\t1767225600\n' "$(cut -f2 "$src/claims/$1/held")" > "$src/claims/$1/held"
+}
+
+# A command run with the machine renamed. The subshell keeps the name from anything after it.
+renamed() { ( PATH="$tmp/renamedbin:$PATH"; export PATH; "$@" ); }
+
+# A pass in a second checkout of the same repository, offered the same item, and its exit code.
+pass_outside() {
+  [ -d "$tmp/$1-outside" ] || a_second_checkout_of "$1" || return 9
+  code_of floor "$tmp/$1-outside" pass
+}
+
+a_second_checkout_of() {
+  make_repo "$tmp/$1-outside" main && set_origin "$tmp/$1-outside" "https://gitlab.com/acme/$1.git" \
+    && bar_and_rule "$tmp/$1-outside" "offer $1 pat"
+}
+
+# How many runs in this suite's home hold an item, by the lines their passes and reads wrote.
+runs_holding() {
+  awk -F'\t' -v held=" item=$1 " '
+    ($3 == "pass.began" || $3 == "item.read") && index(" " $4 " ", held) { print FILENAME }' \
+    "$home"/runs/*/observations 2>/dev/null | sort -u | grep -c .
+}
+the_rename_family
+
+#
+# **The trigger floor ships runs `run.sh pass` until its file says stop, and keeps nothing.** The case
+# wakes a copy of it beside a runner that only records what each pass was handed. 7d.
+#
+a_wake_runs_passes_until_its_file() {
+  make_repo "$tmp/woken" main || { skip "a wake — git could not make a repo here"; return; }
+  mkdir -p "$tmp/wakebin" "$tmp/wakehome"
+  cp "$(dirname "$runner")/wake.sh" "$tmp/wakebin/wake.sh"
+  a_runner_that_records_its_passes "$tmp/wakebin/run.sh" "$tmp/wakehome"
+
+  is "a wake with no cadence is refused"  "$(code_of wake_in "$tmp/woken")" "2"
+  is "and one that is not whole seconds"  "$(code_of wake_in "$tmp/woken" 0)" "2"
+  is "and one past the claim window"      "$(FOUNDRY_CLAIM_TTL=10 code_of wake_in "$tmp/woken" 11)" "2"
+  is "and a wake outside a checkout"      "$(code_of wake_in "$tmp/wakehome" 1)" "3"
+
+  is "a wake runs passes until its file is there" "$(code_of wake_in "$tmp/woken" 1)" "0"
+  is "and ran two, the second making the file"    "$(grep -c . "$tmp/wakehome/passes")" "2"
+  is "each pass handed the wake's four fields" \
+     "$(sed 's/identity=[0-9]*/identity=N/' "$tmp/wakehome/passes" | sort -u)" \
+     "mechanism=wake.sh cadence=1 identity=N stops=wake.stop"
+  is "and it kept nothing of its own"             "$(ls "$tmp/wakehome" | tr '\n' ' ')" "passes wake.stop "
+  is "nor wrote into the checkout"                "$(git -C "$tmp/woken" status --porcelain)" ""
+
+  rm -f "$tmp/wakehome/passes"
+  is "a wake whose file is there already runs no pass" "$(code_of wake_in "$tmp/woken" 1)" "0"
+  is "and never asks the runner for one"               "$(ls "$tmp/wakehome" | tr '\n' ' ')" "wake.stop "
+}
+
+# A runner that answers `home` with the case's home and records each pass's wake fields. The second
+# pass makes the stop file, as a host would.
+a_runner_that_records_its_passes() {
+  cat > "$1" <<STUB
+#!/bin/sh
+[ "\$1" = home ] && { printf '%s\n' '$2'; exit 0; }
+printf '%s\n' "\${FOUNDRY_WAKE:-unset}" >> '$2/passes'
+[ "\$(grep -c . '$2/passes')" -lt 2 ] || : > '$2/wake.stop'
+STUB
+}
+
+# The copy, woken from a checkout, and bounded so a wake that never stops fails rather than hangs.
+wake_in() { dir=$1; shift; ( cd "$dir" && timeout 30 sh "$tmp/wakebin/wake.sh" "$@" ); }
+a_wake_runs_passes_until_its_file
+
+#
+# **One live pass per host, taken at the door.** Each race ends in one run for one item, and each
+# loser's exit is checked. The rename family above is the fifth of the charter's five. Piece 7, 7a.
+#
+one_live_pass_per_host() {
+  a_pass_started_while_another_is_live
+  two_passes_released_together
+  two_passes_released_beside_an_aged_mark
+  a_pass_from_another_home_takes_its_own
+
+  rm -rf "$src/claims/626" "$src/labels/626" "$src/items/626" "$src/claims/627" "$src/labels/627" "$src/items/627"
+  rm -rf "$src/claims/628" "$src/labels/628" "$src/items/628" "$src/claims/629" "$src/labels/629" "$src/items/629"
+}
+
+a_pass_started_while_another_is_live() {
+  a_resumable_repo door 626 && a_second_checkout_of door \
+    || { skip "a pass beside a live one — git could not make a repo here"; return; }
+  hold_the_host_in "$tmp/door" "$tmp/door.acting"
+
+  said=$(floor_says "$tmp/door-outside" pass); code=$?
+  is  "a pass started while another is live exits 43 at the door" "$code" "43"
+  has "and names the mark it met" "$said" "a pass holds this host: mark 0"
+  has "with its age and its side name" "$said" "seconds since it beat, named 0"
+
+  wait "$holder"
+  is  "and one run holds the item it met" "$(runs_holding 626)" "1"
+}
+
+two_passes_released_together() {
+  a_resumable_repo together 627 && a_second_checkout_of together \
+    || { skip "two passes at once — git could not make a repo here"; return; }
+  both_pass_at_once "$tmp/together" "$tmp/together-outside"
+
+  is "two passes released together: exactly one exits 43" "$(printf '%s\n' "$raced" | grep -cx 43)" "1"
+  is "and one run holds the item they raced for" "$(runs_holding 627)" "1"
+}
+
+# **Aged, never removed.** The next pass takes the number after it, and it stays where it was.
+two_passes_released_beside_an_aged_mark() {
+  a_resumable_repo aged 628 && a_second_checkout_of aged \
+    || { skip "two passes beside an aged mark — git could not make a repo here"; return; }
+  aged=$(plant_a_host_mark "$(( $(date -u +%s) - 600 ))" 1)
+  both_pass_at_once "$tmp/aged" "$tmp/aged-outside"
+
+  is "two passes released beside an aged mark: exactly one exits 43" "$(printf '%s\n' "$raced" | grep -cx 43)" "1"
+  is "and one run holds the item" "$(runs_holding 628)" "1"
+  is "and the aged mark was never removed to replace it" "$(ls "$home/pass/$aged" 2>/dev/null | grep -c .)" "1"
+}
+
+# **Another home on this machine is another host**, so it takes its own home's mark. The item is
+# another host's then, and it is passed over at the claim, 30.
+a_pass_from_another_home_takes_its_own() {
+  a_resumable_repo homes 629 && a_second_checkout_of homes \
+    || { skip "a pass from another home — git could not make a repo here"; return; }
+  floor "$tmp/homes" pass >/dev/null 2>&1
+
+  is "a pass from another home on this machine is passed over at the claim" "$(code_of pass_from_another_home)" "30"
+  is "after taking its own home's host" "$(ls "$tmp/secondhome/pass" 2>/dev/null | grep -cE '^[0-9]{10}$')" "1"
+  is "and one run holds the item" "$(runs_holding 629)" "1"
+}
+
+pass_from_another_home() {
+  ( FOUNDRY_SOURCE_DIR="$src"
+    export FOUNDRY_SOURCE_DIR
+    floor_as "$tmp/homes-outside" "$tmp/secondhome" "" pass )
+}
+
+# A pass whose command works for six seconds, started once its marker says another may look.
+hold_the_host_in() {
+  ( cd "$1" && FOUNDRY_HOME="$home" FOUNDRY_RUN="" FOUNDRY_WHO="" FOUNDRY_SOURCE="$dir_source" \
+      FOUNDRY_PASS_BEAT=1 FOUNDRY_PASS_COMMAND="touch '$2'; sleep 6" exec sh "$runner" pass ) >/dev/null 2>&1 &
+  holder=$!
+  waited=0
+  while [ ! -f "$2" ] && [ "$waited" -lt 60 ]; do sleep 1; waited=$((waited + 1)); done
+}
+
+# Two passes in two checkouts of this home, started together. Each works three seconds if it wins.
+both_pass_at_once() {
+  pass_working_a_while "$1" &
+  one=$!
+  pass_working_a_while "$2" &
+  two=$!
+  wait "$one"; first=$?
+  wait "$two"; second=$?
+  raced=$(printf '%s\n%s' "$first" "$second")
+}
+
+pass_working_a_while() {
+  ( cd "$1" && FOUNDRY_HOME="$home" FOUNDRY_RUN="" FOUNDRY_WHO="" FOUNDRY_SOURCE="$dir_source" \
+      FOUNDRY_PASS_BEAT=1 FOUNDRY_PASS_COMMAND="sleep 3" exec sh "$runner" pass ) >/dev/null 2>&1
+}
+
+# A host mark on the next number, written at a time and beat, with its side name. Prints the number.
+plant_a_host_mark() {
+  mkdir -p "$home/pass"
+  planted=$(next_host_number)
+  printf '%s %s\n' "$1" "$2" > "$home/pass/$planted"
+  : > "$home/pass/$planted.$1.$2.99999"
+  printf '%s' "$planted"
+}
+
+next_host_number() {
+  last=$(newest_host_mark)
+  last=${last#"${last%%[!0]*}"}
+  printf '%010d' "$(( ${last:-0} + 1 ))"
+}
+
+# Whatever the case left on the newest number, it ends, so the next case's pass is not held.
+end_the_newest_mark() { printf 'ended\n' > "$home/pass/$(newest_host_mark)"; }
+one_live_pass_per_host
+
+#
+# **The beat starts at the take, not at the run**, so a door held past three beats by a slow source
+# is not overtaken. The source here takes six seconds to list what is marked. Piece 7, 7a.
+#
+a_slow_door_is_not_overtaken() {
+  a_resumable_repo slowdoor 634 && a_second_checkout_of slowdoor \
+    || { skip "a slow door — git could not make a repo here"; return; }
+  ( cd "$tmp/slowdoor" && FOUNDRY_HOME="$home" FOUNDRY_RUN="" FOUNDRY_WHO="" FOUNDRY_PASS_BEAT=1 \
+      FOUNDRY_SOURCE="$(a_source_slow_on find "$tmp/slowdoor.finding" 6)" exec sh "$runner" pass ) >/dev/null 2>&1 &
+  slow=$!
+  waited=0
+  while [ ! -f "$tmp/slowdoor.finding" ] && [ "$waited" -lt 60 ]; do sleep 1; waited=$((waited + 1)); done
+  sleep 4
+
+  is "a pass held past three beats by a slow source is not overtaken" "$(code_of floor "$tmp/slowdoor-outside" pass)" "43"
+  wait "$slow"
+  is "and one run holds the item" "$(runs_holding 634)" "1"
+
+  rm -rf "$src/claims/634" "$src/labels/634" "$src/items/634"
+}
+
+# A work source that waits a number of seconds on one verb, once its marker is written, then answers
+# it as the directory adapter would.
+a_source_slow_on() {
+  cat > "$tmp/slow-$1.sh" <<STUB
+#!/bin/sh
+[ "\$1" = $1 ] && { touch '$2'; sleep $3; }
+exec sh '$dir_source' "\$@"
+STUB
+  printf '%s' "$tmp/slow-$1.sh"
+}
+a_slow_door_is_not_overtaken
+
+#
+# **The take is one `ln`, and what it cannot do it says.** A name already there is a pass that won,
+# 43, and one never made is a fault, 3. Neither loser writes into a mark. Piece 7, 7a.
+#
+the_take_is_one_link() {
+  a_resumable_repo take 635 || { skip "the take — git could not make a repo here"; return; }
+
+  an_ln_for_host_marks "$tmp/lostbin" 'link_first_once "$@"'
+  said=$(PATH="$tmp/lostbin:$PATH" floor_says "$tmp/take" pass); code=$?
+  is  "a pass whose number another pass linked first exits 43, trying no other" "$code" "43"
+  has "and says another pass took the host first" "$said" "another pass took this host first"
+  differs "and never writes into the winner's mark" "$(cat "$home/pass/$(newest_host_mark)")" "ended"
+  has "and its record says it lost" "$(last_wake_line ended)" "read=lost:"
+  end_the_newest_mark
+
+  an_ln_for_host_marks "$tmp/faultbin" 'exit 1'
+  said=$(PATH="$tmp/faultbin:$PATH" floor_says "$tmp/take" pass); code=$?
+  is  "a take that links nothing, with no rival, is a fault" "$code" "3"
+  has "and says so" "$said" "floor could not take a host mark"
+  has "and its record says it faulted" "$(last_wake_line ended)" "read=fault code=3"
+
+  an_ln_for_host_marks "$tmp/pastbin" 'next_past "$@"'
+  said=$(PATH="$tmp/pastbin:$PATH" floor_says "$tmp/take" pass); code=$?
+  is  "a winner whose read finds a later number exits 43" "$code" "43"
+  has "and says a later pass took the host" "$said" "a later pass took this host"
+  has "and its record says it lost to the later one" "$(last_wake_line ended)" "read=lost:"
+  end_the_newest_mark
+
+  is  "and none of the three began a run" "$(runs_holding 635)" "0"
+  rm -rf "$src/claims/635" "$src/labels/635" "$src/items/635"
+}
+
+#
+# An `ln` that runs a line of its own for a host mark, and links everything else as `ln` would.
+# `link_first_once` is a rival that wins one take; `next_past` writes a mark past the one it links.
+an_ln_for_host_marks() {
+  mkdir -p "$1" && real=$(command -v ln) || return 1
+
+  cat > "$1/ln" <<STUB
+#!/bin/sh
+link_first_once() {
+  [ -e "$1/.once" ] && return
+  : > "$1/.once"
+  printf '%s 60\n' "\$(date -u +%s)" > "\$2"
+}
+next_past() {
+  "$real" "\$@" || exit \$?
+  last=\$(basename "\$2"); last=\${last#"\${last%%[!0]*}"}
+  printf '%s 60\n' "\$(date -u +%s)" > "\$(dirname "\$2")/\$(printf '%010d' \$(( \${last:-0} + 1 )))"
+  exit 0
+}
+case \$2 in */pass/[0-9]*) $2 ;; esac
+exec "$real" "\$@"
+STUB
+  chmod +x "$1/ln"
+}
+the_take_is_one_link
+
+#
+# **Before each verb, the host is still the pass's own.** A pass whose mark a later one replaced, as
+# after a machine that slept, stops at its next verb, 43. Piece 7, 7a.
+#
+a_superseded_pass_stops_at_its_next_verb() {
+  a_resumable_repo superseded 636 || { skip "a superseded pass — git could not make a repo here"; return; }
+  printf '%s\n' '#!/bin/sh' 'n=$(ls "$1" | grep -E "^[0-9]{10}$" | tail -n 1); n=${n#"${n%%[!0]*}"}' \
+    'm=$(printf "%010d" $(( n + 1 ))); printf "%s 60\n" "$(date -u +%s)" > "$1/$m"; : > "$1/$m.$(date -u +%s).60.99999"' \
+    > "$tmp/take-past.sh"
+
+  said=$(FOUNDRY_PASS_COMMAND="sh '$tmp/take-past.sh' '$home/pass'" floor_says "$tmp/superseded" pass); code=$?
+  is  "a pass whose mark a later one replaced stops at its next verb, 43" "$code" "43"
+  has "and says a newer pass holds the host" "$said" "a newer pass holds this host now"
+  has "and its record says a newer pass took it" "$(last_wake_line ended)" "read=superseded:"
+  end_the_newest_mark
+
+  rm -rf "$src/claims/636" "$src/labels/636" "$src/items/636"
+}
+a_superseded_pass_stops_at_its_next_verb
+
+#
+# **A mark nobody can read is cleared with no person.** The first pass to find it adds a `.found`
+# name, and three of that pass's beats later a pass takes the host past it. Piece 7, 7a.
+#
+an_unreadable_mark_is_taken_past() {
+  a_resumable_repo unread 637 || { skip "an unreadable mark — git could not make a repo here"; return; }
+  mkdir -p "$home/pass"
+  unread=$(next_host_number)
+  printf 'not a mark\n' > "$home/pass/$unread"
+
+  is "a pass that finds a mark nobody can read waits on it, 43" \
+     "$(FOUNDRY_PASS_BEAT=1 code_of floor "$tmp/unread" pass)" "43"
+  is "and names it found" "$(ls "$home/pass" | grep -c "^$unread\.[0-9]*\.1\.found$")" "1"
+
+  sleep 4
+  is "three of its beats later, a pass takes the host past it" "$(code_of floor "$tmp/unread" pass)" "44"
+  rm -rf "$src/claims/637" "$src/labels/637" "$src/items/637"
+}
+an_unreadable_mark_is_taken_past
+
+#
+# **A mark is aged by its writer's beat, never its reader's.** Written ten seconds ago by a pass that
+# beats every sixty, it is live to a pass that beats every one. Piece 7, 7a.
+#
+a_mark_ages_by_its_writers_beat() {
+  a_resumable_repo writer 638 || { skip "a writer's beat — git could not make a repo here"; return; }
+  plant_a_host_mark "$(( $(date -u +%s) - 10 ))" 60 >/dev/null
+
+  is "a mark ten seconds old at a beat of sixty holds the host against a beat of one" \
+     "$(FOUNDRY_PASS_BEAT=1 code_of floor "$tmp/writer" pass)" "43"
+  end_the_newest_mark
+  rm -rf "$src/claims/638" "$src/labels/638" "$src/items/638"
+}
+a_mark_ages_by_its_writers_beat
+
+#
+# **The sweep.** A winner removes numbers below its own whose side names are a day old, and keeps a
+# younger one, and never touches one above its own. Piece 7, 7a.
+#
+the_sweep_stays_below() {
+  a_resumable_repo swept 639 || { skip "the sweep — git could not make a repo here"; return; }
+  now=$(date -u +%s)
+  old=$(plant_a_host_mark "$(( now - 172800 ))" 1)
+  printf 'ended\n' > "$home/pass/$old"
+  young=$(plant_a_host_mark "$(( now - 60 ))" 1)
+  printf 'ended\n' > "$home/pass/$young"
+  : > "$home/pass/9999999999.$(( now - 172800 )).1.found"
+
+  floor "$tmp/swept" pass >/dev/null 2>&1
+  is "a sweep removes a number below its own whose side names are a day old" \
+     "$(ls "$home/pass" | grep -c "^$old")" "0"
+  is "keeps one whose side name is younger" "$(ls "$home/pass" | grep -c "^$young\$")" "1"
+  is "and never touches a name above its own" "$(ls "$home/pass" | grep -c '^9999999999\.')" "1"
+
+  rm -f "$home/pass/9999999999".*
+  rm -rf "$src/claims/639" "$src/labels/639" "$src/items/639"
+}
+the_sweep_stays_below
+
+#
+# **Every wake is recorded, whether or not a run is made.** `woke` first, `ended` at exit with what the
+# pass met and its code, and `process=` pairs them, with another pass's lines between. Piece 7, 7c.
+#
+every_wake_is_recorded() {
+  a_resumable_repo recorded 640 || { skip "the host record — git could not make a repo here"; return; }
+  FOUNDRY_WAKE='mechanism=cron cadence=300 identity=job7' code_of floor "$tmp/recorded" pass >/dev/null
+  woke=$(last_wake_line woke)
+  ended=$(last_wake_line ended)
+
+  has "a pass says it woke, with the trigger's fields" "$woke" "mechanism=cron cadence=300 identity=job7"
+  has "and a field the trigger did not name reads unnamed" "$woke" "stops=unnamed command=unnamed"
+  has "and it ended with what it took, and its code" "$ended" "read=took:640 code=44"
+  is  "and the two pair by process" "$(process_of "$woke")" "$(process_of "$ended")"
+  has "and its run's first line carries the same fields" "$(floor "$tmp/recorded" observe)" "identity=job7 stops=unnamed"
+
+  make_repo "$tmp/recorded-idle" main && set_origin "$tmp/recorded-idle" 'https://gitlab.com/acme/recorded.git' \
+    || { skip "a wake offered nothing — git could not make a repo here"; return; }
+  bar_and_rule "$tmp/recorded-idle" 'offer nobodymarked pat'
+  # A `run_alive` in the environment names a file the exit would remove. A pass that begins no run
+  # keeps the name to its exit, so only a pass that takes nothing can show it.
+  : > "$tmp/recorded.victim"
+  is  "a pass offered nothing still records its wake" \
+      "$(run_alive="$tmp/recorded.victim" code_of floor "$tmp/recorded-idle" pass)" "42"
+  is  "and leaves alone a file its environment calls run_alive" "$(ls "$tmp" | grep -c '^recorded\.victim$')" "1"
+  has "and ended with what it met" "$(last_wake_line ended)" "read=nothing-offered code=42"
+
+  # A host that names no work source still wakes, so that wake is recorded before the refusal.
+  nosource=$( ( cd "$tmp/recorded-idle" && FOUNDRY_HOME="$home" FOUNDRY_RUN="" FOUNDRY_WHO="" \
+      FOUNDRY_SOURCE="$tmp/no-such-source.sh" sh "$runner" pass ) >/dev/null 2>&1; echo "$?")
+  is  "a pass with no work source refuses, 3" "$nosource" "3"
+  has "and still ended, saying why" "$(last_wake_line ended)" "read=no-source code=3"
+  is  "after a woke of its own" "$(process_of "$(last_wake_line woke)")" "$(process_of "$(last_wake_line ended)")"
+
+  a_door_exit_is_recorded
+  rm -rf "$src/claims/640" "$src/labels/640" "$src/items/640" "$src/claims/641" "$src/labels/641" "$src/items/641"
+}
+
+#
+# **A released item is taken again.** Releasing drops the claim, so the next pass on this host, from
+# another checkout, takes the item into a run of its own. Piece 7, 7b.
+#
+a_released_item_is_taken_again() {
+  a_resumable_repo released 592 && a_second_checkout_of released \
+    || { skip "a released item — git could not make a repo here"; return; }
+
+  is "a pass takes the item, and stops with no command" "$(resume_in "$tmp/released")" "44"
+  floor "$tmp/released" release 592 >/dev/null 2>&1
+  is "a pass from another checkout takes it again once released" "$(resume_in "$tmp/released-outside")" "44"
+  is "into a run of its own" "$(runs_holding 592)" "2"
+
+  rm -rf "$src/claims/592" "$src/labels/592" "$src/items/592"
+}
+a_released_item_is_taken_again
+
+#
+# **A change to either setting reaches the next pass's record.** The host names the cadence, the
+# repository the rule. Each pass reads the rule at the fetched tip, but nothing floor ships fetches:
+# this case moves `origin/HEAD` itself, and #1060 owns the host that never does. #997's fourth box.
+#
+a_change_to_either_setting_reaches_the_next_pass() {
+  make_repo "$tmp/cadenced" main || { skip "a changed cadence — git could not make a repo here"; return; }
+  mkdir -p "$tmp/cadencebin" "$tmp/cadencehome"
+  cp "$(dirname "$runner")/wake.sh" "$tmp/cadencebin/wake.sh"
+  a_runner_that_records_its_passes "$tmp/cadencebin/run.sh" "$tmp/cadencehome"
+
+  # The stub stops the wake at its second line, so the second wake runs one pass and adds a third.
+  ( cd "$tmp/cadenced" && timeout 30 sh "$tmp/cadencebin/wake.sh" 1 ) >/dev/null 2>&1
+  rm -f "$tmp/cadencehome/wake.stop"
+  ( cd "$tmp/cadenced" && timeout 30 sh "$tmp/cadencebin/wake.sh" 2 ) >/dev/null 2>&1
+  is "a host that changes its cadence changes the next pass's record" \
+     "$(sed 's/.* cadence=\([0-9]*\) .*/\1/' "$tmp/cadencehome/passes" | tr '\n' ' ')" "1 1 2 "
+
+  a_resumable_repo changed 594 || { skip "a changed rule — git could not make a repo here"; return; }
+  commit_file "$tmp/changed" .foundry/practice 'offer before pat' && as_fetched "$tmp/changed"
+  is  "a rule offering another label takes nothing" "$(code_of floor "$tmp/changed" pass)" "42"
+
+  commit_file "$tmp/changed" .foundry/practice 'offer changed pat' && as_fetched "$tmp/changed"
+  is  "a person's change to the rule, once fetched, reaches the next pass" \
+      "$(code_of floor "$tmp/changed" pass)" "44"
+  has "which took the item the new rule offers" "$(last_wake_line ended)" "read=took:594"
+
+  rm -rf "$src/claims/594" "$src/labels/594" "$src/items/594"
+}
+a_change_to_either_setting_reaches_the_next_pass
+
+# A pass stopped at the door records what it met, and the live pass's two lines hold its lines between.
+a_door_exit_is_recorded() {
+  a_resumable_repo recorded2 641 || { skip "a door exit recorded — git could not make a repo here"; return; }
+  hold_the_host_in "$tmp/recorded2" "$tmp/recorded2.acting"
+  holding=$(last_wake_line woke)
+
+  is  "a pass stopped at the door records its wake too" "$(code_of floor "$tmp/recorded-idle" pass)" "43"
+  has "and ended with the live mark it met" "$(last_wake_line ended)" "read=live:0"
+  wait "$holder"
+
+  is "and the live pass ended after it, paired by process" \
+     "$(grep "process=$(process_of "$holding") read=" "$home/wakes" | grep -c 'read=took:641')" "1"
+}
+
+every_wake_is_recorded
 
 #
 # **Two judges on one clause, and every fixture before this had one.** A rule with a single instance
@@ -10070,5 +10687,16 @@ a_helper_keeps_the_callers_names() {
   unset dir home_dir run who said identity ref
 }
 a_helper_keeps_the_callers_names
+
+#
+# **Every wake this suite made says where it ended.** Last, so it reads them all. An `ended` reading
+# `unread`, or an offer failing with a code the offer never gives, is an exit with no `read=` row.
+#
+every_wake_says_where_it_ended() {
+  is "no wake in this suite ended unread" "$(grep -c 'read=unread' "$home/wakes" 2>/dev/null)" "0"
+  is "and no offer failed with a code it never gives" \
+     "$(grep 'read=offer-failed:' "$home/wakes" 2>/dev/null | grep -vcE 'read=offer-failed:(1|27) ')" "0"
+}
+every_wake_says_where_it_ended
 
 summary "model"
