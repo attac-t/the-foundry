@@ -2390,7 +2390,9 @@ line names nobody, so it is dropped and said.
 **What this does not prove.** The second adapter has been driven only by a stand-in on the path,
 never by the service — so its own conventions run for real and the service's do not. The stand-in
 answers the two `--jq` reads by emulating them from their own words, so it sees a changed expression,
-and it cannot see whether the service agrees. Both reads were measured live instead.
+and it cannot see whether the service agrees. Both reads were measured live instead: 28 September,
+`gh` 2.94.0, on #128 and #373. `source-github.sh` says what each returned, beside `comments_read`. No
+live read has met a quoted or pasted marker.
 
 **Who answered is the source's to say, and a hand's to be.** A comment is attributed by the forge's own
 author field, and a directory line by its first field. Floor compares that name with the hands the base

@@ -5037,9 +5037,10 @@ every_adapter_answers_only_what_core_calls() {
       "$(verbs_answered_by "$tmp/planted-verb-adapter/source-dir.sh" | grep -vxF "$core_calls")" "label"
 }
 
-# Every verb core asks a work source for, wherever in floor's shipped code it asks.
+# Every verb core asks a work source for, wherever in floor's shipped code it asks. `source_hears` is
+# the one door `receive` and `speaker` go through, and it hands `source_says` the verb as a variable.
 verbs_core_calls() {
-  grep -rhoE 'source_says [a-z]+' "$1/bin" "$1/hooks" "$1/lib/source.sh" 2>/dev/null | cut -d' ' -f2 | LC_ALL=C sort -u
+  grep -rhoE 'source_(says|hears) [a-z]+' "$1/bin" "$1/hooks" "$1/lib/source.sh" 2>/dev/null | cut -d' ' -f2 | LC_ALL=C sort -u
 }
 
 # The verbs an adapter's own dispatch answers.
