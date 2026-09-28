@@ -5,8 +5,8 @@
 # Needs `gh`, which floor does not declare — so floor reaches this only where the remote is GitHub
 # *and* `gh` is there, and `source-dir.sh` answers otherwise. §3's level 1, both halves.
 #
-# A question is a comment; its answer is what people wrote after it. The human is asked where they
-# already are, and one marker line addresses one question among many:
+# A question is a comment, and an answer is any comment a person writes on the item. The human is
+# asked where they already are, and one marker line addresses one question among many:
 #
 #     floor-question: <question> <digest of the words>
 #
@@ -14,8 +14,8 @@
 # and different words are refused, and comparing them means recovering the first ones out of a
 # transcript GitHub formats however it likes. A digest needs no recovery and no parser.
 #
-# Only the question is marked. An answer is whatever a person wrote next — a marker they have to
-# type is a command language, and the first person who met one answered and went unheard.
+# Only the question is marked. An answer carries no marker: the line that says yes is printed in the
+# question, fenced, so a person copies it rather than learning a command language.
 #
 # Usage: sh source-github.sh read    <issue>
 #        sh source-github.sh kind    <issue>
@@ -26,7 +26,8 @@
 #        sh source-github.sh release <issue> <host>
 #        sh source-github.sh publish <issue> <run> <branch> <title> [word] [brief]
 #        sh source-github.sh ask     <issue> <question> <text>
-#        sh source-github.sh receive <issue> <question>
+#        sh source-github.sh receive <issue>
+#        sh source-github.sh speaker <issue>
 #        sh source-github.sh state   <run>
 #        sh source-github.sh land    <run>
 #        sh source-github.sh find    <label>
@@ -135,20 +136,30 @@ without_trailing_blanks() {
                for (i = 1; i <= last; i++) print held[i] }'
 }
 
+#
+# Asked means `speaker` lists it, and nothing else does. **One reader holds the rule**: a line that
+# starts with the marker. A quote reply left after a delete is no ask, so the question goes out again.
+#
+# A read that failed is not a question nobody asked. Empty is what this reads as *not asked yet*, and
+# it answers by asking — so a resumed run whose lookup hit a network put the question to the human twice.
+#
 put_question() {
-    asked=$(after_marker "$1" "floor-question: $2 ") || return 3
+    asked=$(questions_asked_on "$1") || return 3
     said=$(digest "$3")
 
-    [ -z "$asked" ] && { post_question "$1" "$2" "$said" "$3"; return $?; }
+    listed "$asked" "$2" || { post_question "$1" "$2" "$said" "$3"; return $?; }
 
-    [ "$asked" = "$said" ] || return 4
+    first=$(digest_asked "$1" "$2") || return 3
+    [ "$first" = "$said" ] || return 4
 }
+
+listed() { printf '%s\n' "$1" | awk -F'\t' -v question="$2" '$2 == question { found = 1 } END { exit !found }'; }
 
 #
 # Every comment floor writes carries the run that wrote it.
 #
 # The account is not provenance. Two people can share one, and a run can post
-# under another. A stamp says which run, and `said_after` reads it first.
+# under another. A stamp says which run, and `receive` drops a stamped comment whole.
 #
 # The run is already the first field of the question id, so nothing new has to
 # be threaded down here to know it.
@@ -160,105 +171,72 @@ $4" >/dev/null || return 3
 }
 
 #
-# A human's answer, as they wrote it. Nothing here reads it — what an answer means belongs to whoever
-# asked, and a transport that decided would be answering for them.
+# Every comment on the item but a stamped one, a line at a time: who wrote it, when, and the line, tab
+# apart. **`who` and `when` are the forge's own fields**, read for each comment, so no body can change
+# whose words follow it. Nothing here reads the words — what an answer means belongs to whoever asked.
 #
-read_answer() {
-    said=$(said_after "$1" "floor-question: $2 ") || return 3
+# The stamp is tested on the whole comment, before the split. The join is a raw tab and never `@tsv`:
+# gojq's `@tsv` writes a carriage return as the two characters `\r`, which no trim removes.
+#
+read_answers() {
+    shape='.comments[] | select(.body | test("(^|\n)floor-[a-z]+: ") | not)
+  | .author.login as $a | .createdAt as $t
+  | .body | split("\n")[] | $a + "\t" + $t + "\t" + .'
+
+    said=$(comments_read "$1" "$shape") || return 3
     [ -n "$said" ] || return 1
 
     printf '%s\n' "$said"
 }
 
-
 #
-# Every comment on the item, as bodies, with a boundary this file chose.
+# The account floor writes as now, alone on the first line, then each question asked on the item: who
+# first wrote it, the question, and when. It fails closed, because a reader that cannot tell floor's
+# words from a person's must not read at all.
 #
-# `--comments` is `gh`'s human transcript, and a layout is not a contract. It changes without
-# notice, and on a client old enough for GitHub to reject its GraphQL it stopped being fetchable at
-# all — `projectCards`, which nothing here asked for. `--json comments` returns the field on every
-# client tested, and `--jq` is `gh`'s own, so this declares no parser.
-#
-# A body holding a line that is exactly the boundary spoofs one. The transcript had the same
-# exposure through `author:` and its rule line; the difference is that this line is ours to change.
-#
-# Captured before it is handed anywhere: a pipeline reports its last stage, and `awk` succeeds on
-# nothing at all.
-#
-comments_of() {
-    # The `|` here is jq's, not the shell's — named so the line that runs `gh` holds no pipe at all,
-    # which is the only thing `bin/shell.sh` can tell apart without a parser.
-    shape='.comments[] | "floor-comment: " + .author.login, .body'
-
-    seen=$(gh issue view "$1" --json comments --jq "$shape" 2>&1) || {
-        printf 'source-github: could not read the comments: %s\n' "$seen" >&2
-        return 3
-    }
-
-    printf '%s\n' "$seen"
-}
-
-#
-# The words after a marker, in the first comment carrying it. No boundary is needed — the first line
-# holding the mark is the one.
-#
-# A read that failed is not a question nobody asked. Empty is what `put_question` reads as *not
-# asked yet*, and it answers by asking — so a resumed run whose lookup hit a network put the question
-# to the human twice.
-#
-after_marker() {
-    seen=$(comments_of "$1") || return 3
-
-    printf '%s\n' "$seen" \
-        | awk -v mark="$2" 'index($0, mark) { print substr($0, index($0, mark) + length(mark)); exit }'
-}
-
-#
-# What people said after this question, and never another question.
-#
-# The marked comment holds the ask, so its own body is skipped — reading it would authorise a clause
-# with the words that asked about it. The answer is whatever the next comment says.
-#
-# Questions bound this at both ends. One is asked per unauthorised clause, so several stand open at
-# once, and the next one beginning means this one was passed over rather than answered.
-#
-said_after() {
-    seen=$(comments_of "$1") || return 3
+speakers_on() {
     self=$(posting_as) || return 3
+    asked=$(questions_asked_on "$1") || return 3
 
-    printf '%s\n' "$seen" \
-        | awk -v mark="$2" -v self="$self" '
-            /^floor-comment: / { decide(); who = substr($0, 16); next }
-            /^floor-question: / { decide(); mine = index($0, mark) > 0; open = 0; next }
-            { held[++n] = $0 }
-            END { decide() }
+    printf '%s\n' "$self"
+    [ -z "$asked" ] || printf '%s\n' "$asked"
+}
 
-            # One comment, judged whole. A stamp sits anywhere in the body, so
-            # no line is printed before the last one has been read.
-            function decide() {
-                if (open && n) judge()
-                open = open || mine; mine = 0; n = 0
-            }
+#
+# The first comment carrying each question's marker, as `<author>\t<question>\t<when>`. Taken in comment
+# order with `reduce`, because a sort is never trusted to keep it. The capture is anchored as the select
+# is, so a quote reply, whose line starts with `>`, is no ask here or in `put_question`.
+#
+questions_asked_on() {
+    shape='reduce (.comments[] | select(.body | test("(^|\n)floor-question: "))
+        | {q: (.body | capture("(^|\n)floor-question: (?<q>[^ \n]+)").q), a: .author.login, t: .createdAt}) as $c
+  ({}; if has($c.q) then . else .[$c.q] = $c end)
+  | to_entries[] | .value.a + "\t" + .key + "\t" + .value.t'
 
-            # The stamp decides, then the account. An account is shared and
-            # borrowed; a stamp says which run wrote the words.
-            function judge(   i) {
-                if (stamped()) { skipped("this run wrote it"); return }
-                if (who == self) { skipped("it came from [" who "], the account this run posts as"); return }
+    comments_read "$1" "$shape"
+}
 
-                for (i = 1; i <= n; i++) if (held[i] ~ /[^ \t]/) print held[i]
-            }
+#
+# One read of the comments, shaped by `gh`'s own `--jq`, so this declares no parser. `--comments` is a
+# transcript whose layout changes without notice; `--json comments` returns the field on every client.
+#
+# **Stderr stays off the answer**, for the reason `delivery_facts` gives. A notice folded in here would
+# read as a comment somebody wrote.
+#
+comments_read() {
+    said=$(gh issue view "$1" --json comments --jq "$2") && { printf '%s\n' "$said"; return 0; }
 
-            function stamped(   i) {
-                for (i = 1; i <= n; i++) if (held[i] ~ /^floor-[a-z]+: /) return 1
-                return 0
-            }
+    printf 'source-github: could not read the comments\n' >&2
+    return 3
+}
 
-            # A dropped comment is the one thing a caller cannot infer. It sees an
-            # unanswered clause, and an answer nobody wrote reads like a refusal.
-            function skipped(why) {
-                printf "source-github: skipped a comment — %s\n", why > "/dev/stderr"
-            }'
+# The digest the question first went out with, from the first line starting with its marker. The same
+# rule `speaker` reads, so a quote reply never answers for the words.
+digest_asked() {
+    seen=$(comments_read "$1" '.comments[].body') || return 3
+
+    printf '%s\n' "$seen" | awk -v mark="floor-question: $2 " '
+        index($0, mark) == 1 { said = substr($0, length(mark) + 1); sub(/\r$/, "", said); print said; exit }'
 }
 
 #
@@ -685,10 +663,11 @@ case "${1:-}" in
     release) shift; drop_claim       "${1:-}" "${2:-}" ;;
     publish) shift; publish_delivery "${1:-}" "${2:-}" "${3:-}" "${4:-}" "${5:-}" "${6:-}" ;;
     ask)     shift; put_question     "${1:-}" "${2:-}" "${3:-}" ;;
-    receive) shift; read_answer      "${1:-}" "${2:-}" ;;
+    receive) shift; read_answers     "${1:-}" ;;
+    speaker) shift; speakers_on      "${1:-}" ;;
     state)   shift; delivery_state   "${1:-}" ;;
     land)    shift; land_delivery    "${1:-}" ;;
     find)    shift; find_marked      "${1:-}" ;;
-    *)       echo "source-github: read <issue> | kind <issue> | find <label> | claim <issue> <host> | held <issue> | release <issue> <host> | publish <issue> <run> <branch> <title> [word] [brief] | ask <issue> <question> <text> | receive <issue> <question> | state <run> | land <run>" >&2
+    *)       echo "source-github: read <issue> | kind <issue> | find <label> | claim <issue> <host> | held <issue> | release <issue> <host> | publish <issue> <run> <branch> <title> [word] [brief] | ask <issue> <question> <text> | receive <issue> | speaker <issue> | state <run> | land <run>" >&2
              exit 2 ;;
 esac
