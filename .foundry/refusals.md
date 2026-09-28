@@ -386,3 +386,6 @@ where it is — a key for a one-off buys indirection and saves nothing.
 | `wait_on_a_person` | 47 | answer | delivering [$1] waits on a person, $2: $dir | `header` |
 | `leave_on_an_answer_that_stops` | 48 | answer | — | `header` |
 | `act_on_a_refusal` | 48 | default | — | three rounds where the charter pins none, a number somebody chose. A `rounds` line names another |
+| `leave_unfetched` | 52 | answer | $1, so this pass starts nothing new | `header` |
+| `leave_on_another_default` | 53 | answer | origin's default branch is [$1] and this checkout's origin/HEAD names [$2], so this pass starts nothing new | `header` |
+| `leave_in_the_way` | 54 | answer | $2, so it stays where it is and this pass starts nothing new | `header` |
