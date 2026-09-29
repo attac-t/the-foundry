@@ -3788,7 +3788,7 @@ wreck_runner "a gate answering for a judge is caught" \
 # The reader half. The writer half cannot be observed today: the only comment
 # floor writes is a question, and `floor-question:` already bounds one.
 wreck_runner "a reader blind to the stamp is caught" \
-  blindstamp 's#held\[i\] ~ /\^floor-\[a-z\]+: /#held[i] ~ /^never-matches-this: /#' lib/source-github.sh
+  blindstamp 's#floor-\[a-z\]+: ") | not)#never-matches-this: ") | not)#' lib/source-github.sh
 
 # The seam adds the reference. Stop dropping the one a brief wrote and the
 # pull request names its item twice.
