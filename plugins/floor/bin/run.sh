@@ -4845,6 +4845,7 @@ let_the_run_go() {
 # have not answered here are asked, which `judged` does alone, and an approval goes on.
 let_the_ledger_decide() {
     find_the_workspace "$1"
+    hear_at_the_judged_stop "$1"
     answers=$(what_the_bench_said "$(git -C "$tree" rev-parse --verify --quiet HEAD 2>/dev/null)")
 
     leave_on_an_answer_that_stops "$1" "$answers"
@@ -4852,6 +4853,21 @@ let_the_ledger_decide() {
 
     ask_the_judges "$1"
     deliver_and_route "$1"
+}
+
+# **The pass hears here as `judged` does, when the panel proposed a clause**, so a struck clause is
+# passed over. In a capture whose code it reads: a refusal on the way is a stop at `judged`.
+hear_at_the_judged_stop() {
+    [ -n "$(panel_clauses "$dir")" ] || return 0
+
+    heard_lines=$(hear_and_say_what_was_heard "$dir") || stop_at "$1" judged "$?"
+}
+
+# It acts on what it heard, so it records it, then hands the lines back to the pass's own shell.
+hear_and_say_what_was_heard() {
+    hear_the_item "$1"
+    record_the_hearing "$1"
+    printf '%s\n' "$heard_lines"
 }
 
 leave_on_an_answer_that_stops() {
@@ -4867,11 +4883,16 @@ act_on_a_refusal() {
 
 answered_by_any() { printf '%s\n' "$1" | awk -F'\t' -v want="$2" '$1 == want { found = 1 } END { exit !found }'; }
 
+#
 # Each member of each judged clause, and what it said at this commit: its answer, a tab, the member, a
 # tab, the clause's id. The words are the door's own: approved, refused, silent, deadlock, unavailable.
+#
+# **A clause a hand struck is passed over**, so its refusals spend no rounds and let nothing go.
+#
 what_the_bench_said() {
     every_judge_record "$(charter_file "$dir")" | while read -r bench_id bench_who bench_command; do
         [ -n "$bench_who" ] || continue
+        a_hand_struck_the_clause "$dir" "$bench_id" && continue
         bench_text=$(clause_text "$(charter_file "$dir")" "$bench_id")
         printf '%s\t%s\t%s\n' "$(answer_at "$1" "$bench_text" "$bench_who")" "$bench_who" "$bench_id"
     done
