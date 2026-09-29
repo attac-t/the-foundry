@@ -1119,8 +1119,9 @@ named there is no `proposer`, and the panel is the whole bench. All of it lands 
 write.
 
 **The proposer is whoever introduced the words first.** A second `introduce` adds only a member the
-panel lacks, each once, and a proposer only where none is recorded. A clause derivation pinned takes
-no panel from it.
+panel lacks, each once, and a proposer only where none is recorded. **It never seats a member recorded
+as proposing the clause**, whoever wrote that record: a panel's `charter shape` may record several. A
+clause derivation pinned takes no panel from it.
 
 **Re-deriving carries the panel.** Each introduced clause keeps its `judge`, `rounds` and `proposer`
 records through a derivation, since a pass derives again on every resume. A clause derivation pins

@@ -10657,6 +10657,28 @@ a_second_introduce_adds_only_what_is_missing() {
 a_second_introduce_adds_only_what_is_missing
 
 #
+# **The writer holds every recorded proposer off the panel, whoever wrote them.** A panel's `charter
+# shape` may record several when two members propose the same words. Here two are written by hand, then
+# a worker introduces the words: the panel stays as it was, and neither proposer is seated.
+#
+every_proposer_recorded_is_held_off_the_panel() {
+  meeting mtshaped 1229 pat 'bench alice bob carol dave' \
+    || { skip "several proposers — git could not make a repo here"; return; }
+  mtf charter introduce Judged 'the queue is fair' >/dev/null
+  id=$(clause_of 'the queue is fair') held=$(charter_of "$mtrun")
+  awk -v id="$id" '!($1 == "judge" && $2 == id && ($3 == "alice" || $3 == "carol"))' "$held" > "$held.shaped" \
+    && mv "$held.shaped" "$held"
+  printf 'proposer %s alice\nproposer %s carol\n' "$id" "$id" >> "$held"
+
+  mtf_by bob charter introduce Judged 'the queue is fair' >/dev/null
+  is "a worker's introduce leaves the panel as it was" \
+     "$(awk -v id="$id" '$1 == "judge" && $2 == id { print $3 }' "$held" | tr '\n' ' ')" "bob dave "
+  is "and records no proposer of its own" \
+     "$(awk -v id="$id" '$1 == "proposer" && $2 == id { print $3 }' "$held" | tr '\n' ' ')" "alice carol "
+}
+every_proposer_recorded_is_held_off_the_panel
+
+#
 # **The ledger names every yes floor heard where it acted**: one `answer.heard` row a yes, with who,
 # when and the line, however often it was heard. The request names the same, read from the hearing
 # the grade read.

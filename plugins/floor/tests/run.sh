@@ -3398,6 +3398,10 @@ wreck_runner "a member seated twice by a second introduce is caught" \
 wreck_runner "a second worker written as proposer is caught" \
   secondproposer 's#^    \[ -z "\$proposers" \] || return 0$#    :#'
 
+# B2's panel may record several proposers for one clause, and the writer must hold every one off.
+wreck_runner "a writer that holds the first proposer alone off the panel is caught" \
+  firstproposer '/^seats_to_write() {/,/^}/s#off_the_bench "\$bench_members" "\$proposers" |#off_the_bench "$bench_members" "$(printf "%s\\n" "$proposers" | head -n 1)" |#'
+
 wreck_runner "a gate the base names, introduced, is caught" \
   introgate '/^refuse_to_introduce_a_gate() {/,/^}/s#^        exit 2$#        return 0#'
 

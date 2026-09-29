@@ -8128,7 +8128,8 @@ judged_at_base() {
 
 #
 # **Who proposed it is whoever introduced the words first**: the worker `FOUNDRY_WORKER` names, when
-# none is recorded yet. A later worker is no proposer, so the first stays and is never seated.
+# none is recorded yet. A later worker is no proposer. **Every proposer recorded is held off the panel**,
+# whoever wrote it, since a panel's `charter shape` may record several for one clause.
 #
 propose() {
     proposer_to_write=
