@@ -13299,8 +13299,13 @@ sp_pass() {
 # The run the checkout points at, kept as `sp_run` for the shaping helpers that read one.
 sp_points_at() { sp_run=$(floor "$sp_repo" path); }
 
-# A pass through the plugin tree, killed with the member call it waits on once `$1` names that call's
-# process, since the call would outlive the pass and write its row. Then its marks are aged.
+#
+# A pass through the plugin tree, killed once `$1` names the member call it waits on, and the call too.
+# Killed alone, the pass leaves its shaping running, #1046, which records the call's answer.
+#
+# Killed with it, the call's attempt reads missing, so the next wake asks that member again. Then the
+# pass's marks are aged, so the next wake reads a pass that died.
+#
 kill_a_shaping_pass() {
   rm -f "$1"
   ( cd "$sp_repo" || exit 9

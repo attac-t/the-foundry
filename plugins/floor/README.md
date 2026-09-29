@@ -1312,14 +1312,19 @@ between the charter's write and the rows strands nothing.
 no contribution is 21, and so is a proposal with no row, and each message says which. A run never
 shaped goes on as it did.
 
+**A pass killed mid-shaping leaves the shaping running**, #1046. The call in flight still answers, and
+the shaping records it: a row the next wake reads. It then asks each member left on the list it read
+before its loop, so it can ask one the next wake has recorded since, and write that row too. If each
+member is then recorded, it enters what the panel may and writes the proposal rows, beside whatever the
+next wake is doing.
+
 **What this cannot hold.** A member and a proposer are names a record reports, and floor proves
-neither, #156. A call that outlives its shaping writes into an attempt nothing reads, #1046. A failure
-the entry point does not know, inside a result at `"is_error":false`, reads as prose and is refused;
-the file keeps the words. A person may skip `charter shape` or run it after `open`, and `authorise`
-refuses only a shaping that began and did not finish. A judge that answered before a late strike had
-the struck clause in its brief, and its answer stands at that commit. One shipped entry point and
-floor's fixtures prove the seam, and no second vendor does, #1084. A worker can write `shaped/` as the
-same user, #419.
+neither, #156. A failure the entry point does not know, inside a result at `"is_error":false`, reads
+as prose and is refused; the file keeps the words. A person may skip `charter shape` or run it after
+`open`, and `authorise` refuses only a shaping that began and did not finish. A judge that answered
+before a late strike had the struck clause in its brief, and its answer stands at that commit. One
+shipped entry point and floor's fixtures prove the seam, and no second vendor does, #1084. A worker can
+write `shaped/` as the same user, #419.
 
 ### A repository owns the choice of judge, not the code that reaches one
 
@@ -2566,7 +2571,8 @@ read** holds the host for three beats from its side name, and a pass that finds 
 adds a `.found` one, so no person has to clear it. A winner removes numbers below its own whose side
 names are a day old.
 
-**What the door cannot see.** A command still running after its pass was killed, which #1046 owns. A
+**What the door cannot see.** A command or a shaping still running after its pass was killed, which
+#1046 owns: a shaping left running writes attempt rows and can ask a member the next wake recorded. A
 reused process id, which keeps a dead pass's mark fresh until it goes. And a machine that slept past
 three beats: a second pass starts, and one in the same checkout can resume the live pass's own run,
 so two passes work one workspace for up to one verb. That verb can be a resume's own tail. The pass
@@ -2646,8 +2652,8 @@ the function call: there, dash keeps a copy of each for as long as the function 
 with a signal it cannot ignore**, so a pass started with TERM ignored still ends.
 
 **A mark nobody can age reads as live.** Leaving a dead run costs a wake. Resuming a live one puts
-two workers in one workspace. **What the mark cannot see:** a command, a grade or a judgement still
-running after its pass was killed, which #1046 owns. A reused process id keeps a dead pass's mark
+two workers in one workspace. **What the mark cannot see:** a command, a shaping, a grade or a judgement
+still running after its pass was killed, which #1046 owns. A reused process id keeps a dead pass's mark
 fresh, so on one host every wake leaves that run alone until the id goes.
 
 **A pass carries on a run a pass began, before it takes anything new.** The run's own record decides,
