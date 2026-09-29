@@ -3774,7 +3774,7 @@ wreck_runner "a member handed its caller's FOUNDRY_RUN is caught" \
   memberrun 's#cd "\$member_room" \&\& unset FOUNDRY_RUN \&\& #cd "$member_room" \&\& #'
 
 wreck_runner "a clause line decoded on its way into the charter is caught" \
-  putdecodes 's#^    line=\$line beside=\${5:-} awk -v id="\$2" #    beside=${5:-} awk -v id="$2" -v line="$line" #; s#print ENVIRON\["line"\]#print line#g'
+  putdecodes 's#^    line=\$line beside=\${5:-} unseated=\${6:-} awk -v id="\$2" #    beside=${5:-} unseated=${6:-} awk -v id="$2" -v line="$line" #; s#print ENVIRON\["line"\]#print line#g'
 
 wreck_runner "a clause's text read one space apart is caught" \
   collapsetext 's#{ print substr(\$0, 10 + length(\$2) + length(\$3)); exit }#{ $1 = ""; $2 = ""; $3 = ""; sub(/^ +/, ""); print; exit }#'
