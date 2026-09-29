@@ -105,6 +105,14 @@
 #      now. The fix is on the host: floor on an account of its own
 #  51  every hand named wrote floor's questions on this item, so floor cannot tell their yes from its
 #      own. The fix is another hand, named at the base
+#  52  a pass could not fetch the default branch: origin could not be asked, named none, or the
+#      fetch failed. No new work starts, and a run already begun is untouched
+#  53  origin's default branch is not the one this checkout's `origin/HEAD` names, and the line names
+#      both. Floor reads that ref and never writes it, so a person sets it. No new work starts
+#  54  the checkout cannot fast-forward to the fetched tip: it is detached, on another branch, holds
+#      work nobody committed, is not behind the tip, or git refused the move. Or a commit landed in it
+#      before the run began. The line says which, and whether the checkout is as it was. Floor never
+#      resets, merges or stashes, so a person clears it. No new work starts
 #
 # Eight through twelve are one stage and five remedies: write a requirement down, select a target it
 # governs, or start again. Collapsing them would make the exit code say *authorisation refused* and
@@ -240,7 +248,7 @@ usage_work() {
   run.sh claim [item]             take it, or keep the one this run holds; 30 if another host has it
   run.sh release <item>           let it go, if this host took it
   run.sh offer                    what a pass may take, oldest mark first
-  run.sh pass                     carry on a run a pass began, or take the first item offered, to a request — exit 42 to 48
+  run.sh pass                     carry on a run a pass began, or take the first item offered, to a request — exit 42 to 48, 52 to 54
   run.sh observe [event] [k=v...] record that something happened, or print what did
   run.sh observed [event]         every run's observations, with the run named
   run.sh merge                    land what was graded, or say why it may not be
@@ -3771,9 +3779,16 @@ release() {
 # and so is one put on by a hand the rule does not name. Floor never puts the label on.
 offer() {
     [ "$#" -eq 0 ] || { usage; exit 2; }
+    offered_at "$(fetched_default_tip)"
+}
+
+#
+# What the rule read at one commit offers. `offer` reads where the last fetch left `origin/HEAD`, and
+# a pass reads where it fetched to, so its record names the commit its rule was read at. #1060.
+offered_at() {
     refuse_missing_source
 
-    rule=$(the_offer_line) || exit 1
+    rule=$(the_offer_line "$1") || exit 1
     [ -n "$rule" ] || return 0
 
     set -f; set -- $rule; set +f
@@ -3784,14 +3799,14 @@ offer() {
 }
 
 #
-# The `offer` line, read where no worker commits, when it names a hand. Nothing, and said why, when
-# there is none to follow; 1 when the practice itself cannot be read.
+# The `offer` line at the commit handed in, when it names a hand. Nothing, and said why, when there is
+# no commit or no line to follow; 1 when the practice itself cannot be read.
 the_offer_line() {
-    tip=$(fetched_default_tip) || {
+    [ -n "$1" ] || {
         note "the rule is read at \`origin/HEAD\`, and this checkout has none, so nothing is offered"
         return 0
     }
-    line=$(offer_rule "$tip") || return 1
+    line=$(offer_rule "$1") || return 1
     [ -n "$line" ] || { note "no \`offer\` line in .foundry/practice, so nothing is offered"; return 0; }
 
     set -f; set -- $line; set +f
@@ -3865,7 +3880,7 @@ kept_by_who_put_it_on() {
 # trigger wakes it, #997.
 #
 # **A run a pass began is carried on first**, from the line its last pass wrote. Only a pass that
-# finds none takes the first item offered that this host can claim.
+# finds none fetches, moves its checkout to the fetched tip, and takes the first item it can claim.
 #
 # **It never chooses.** The order is the rule's, and an item another host holds is passed over,
 # never taken. A run a person began is left alone, because one pass takes one item.
@@ -3879,6 +3894,9 @@ pass() {
     leave_with_no_source
     take_the_host
     carry_on_a_run_a_pass_began && return 0
+
+    fetch_the_default_branch
+    move_the_checkout_to_the_tip
 
     select_an_item
     answer_to_the_applier "$taken" "$items"
@@ -3902,7 +3920,10 @@ keep_the_host_command_to_itself() {
 #
 # **Every wake is recorded, whether or not a run is made**: a `woke` line first and an `ended` line at
 # exit, in `<floor home>/wakes`. `process=` pairs the two, with other passes' lines between. Piece 7, 7c.
+#
+# No rule is read yet, and a `rule_at` the caller's environment holds is never this pass's. #1060.
 say_this_pass_woke() {
+    rule_at=
     read_the_wake
     record_the_wake woke "process=$$ $wake_fields"
 }
@@ -3937,7 +3958,8 @@ record_the_wake() {
         >> "$HOME_DIR/wakes" 2>/dev/null
 }
 
-say_this_pass_ended() { record_the_wake ended "process=$$ read=$2 code=$1"; }
+# `rule-at=` names the commit the pass read its rule at, or `none` when it stopped before reading one.
+say_this_pass_ended() { record_the_wake ended "process=$$ read=$2 code=$1 rule-at=${rule_at:-none}"; }
 
 # A wake with no source to ask is still a wake, so it leaves its record before it refuses.
 leave_with_no_source() {
@@ -3946,6 +3968,161 @@ leave_with_no_source() {
     say_this_pass_ended 3 no-source
     note "no work source at [$(source_resolver)]"
     exit 3
+}
+
+#
+# **A pass fetches the default branch before it selects, and only then.** The door has carried on the
+# run this checkout points at, and a resume keeps its base, so the move reaches no such run. #1060.
+#
+# **origin's default is read, and `origin/HEAD` never written.** That ref is a person's, and git lets
+# them keep it where they set it. When the two name different branches, no new work starts.
+fetch_the_default_branch() {
+    still_holding_the_host
+    default_branch=$(the_remotes_default) || leave_unfetched "origin could not be asked for its default branch"
+    [ -n "$default_branch" ] || leave_unfetched "origin names no default branch"
+
+    checkout_default=$(the_checkouts_default)
+    [ "$default_branch" = "$checkout_default" ] || leave_on_another_default "$default_branch" "${checkout_default:-nothing}"
+
+    fetch_the_branch "$default_branch" || leave_unfetched "origin's [$default_branch] could not be fetched"
+    fetched_tip=$(git rev-parse -q --verify "refs/remotes/origin/$default_branch^{commit}" 2>/dev/null) \
+        || leave_unfetched "origin's [$default_branch] was fetched and cannot be read"
+}
+
+# The branch origin's `HEAD` names. Nothing when it names none: an empty repository, or a `HEAD` naming
+# a branch that is not there. 1 when origin could not be asked.
+the_remotes_default() {
+    advertised=$(bounded_git ls-remote --symref origin HEAD 2>/dev/null) || return 1
+    printf '%s\n' "$advertised" | awk '$1 == "ref:" && $3 == "HEAD" { sub(/^refs\/heads\//, "", $2); print $2; exit }'
+}
+
+# The branch this checkout's `origin/HEAD` names, or nothing when it names none.
+the_checkouts_default() {
+    origin_head=$(git symbolic-ref -q refs/remotes/origin/HEAD 2>/dev/null) || return 0
+    printf '%s' "${origin_head#refs/remotes/origin/}"
+}
+
+# The branch alone, into its remote-tracking ref: no tags, and `origin/HEAD` as a person left it.
+fetch_the_branch() {
+    bounded_git fetch --quiet --no-tags origin "+refs/heads/$1:refs/remotes/origin/$1" >/dev/null 2>&1
+}
+
+#
+# **A pass's calls to origin, bounded on both transports.** HTTP gives up on a transfer that stalls,
+# ssh never asks and gives up on a host gone quiet, and nothing prompts. #1016 owns floor's others.
+bounded_git() {
+    GIT_TERMINAL_PROMPT=0 GIT_SSH_COMMAND=$(bounded_ssh) \
+        git -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=60 "$@"
+}
+
+# The ssh git would use here, told never to ask, and to give up on a host that stops answering.
+bounded_ssh() {
+    printf '%s -o BatchMode=yes -o ConnectTimeout=30 -o ServerAliveInterval=15' "$(the_ssh_git_uses)"
+}
+
+#
+# git's own order: the variable, the setting, the older variable, then `ssh`. A key or program a person
+# chose survives. The options are OpenSSH's, so an ssh that is not, such as plink, refuses them.
+the_ssh_git_uses() {
+    [ -z "${GIT_SSH_COMMAND:-}" ] || { printf '%s' "$GIT_SSH_COMMAND"; return 0; }
+    git config --get core.sshCommand 2>/dev/null && return 0
+    [ -z "${GIT_SSH:-}" ] || { printf "'%s'" "$GIT_SSH"; return 0; }
+    printf 'ssh'
+}
+
+# **A fetch that fails starts no new work**, since a rule a person changed may be why it mattered.
+leave_unfetched() {
+    pass_read=unfetched
+    note "$1, so this pass starts nothing new"
+    exit 52
+}
+
+# Both names, since either may be the stale one and only a person knows which.
+leave_on_another_default() {
+    pass_read=default-differs
+    note "origin's default branch is [$1] and this checkout's origin/HEAD names [$2], so this pass starts nothing new"
+    exit 53
+}
+
+#
+# **The checkout moves to the fetched tip by a fast-forward, or not at all**: from the default branch,
+# holding nothing uncommitted. Anything else is a person's to clear, and no new work starts.
+#
+# Untracked files count, since the detector reads a `Makefile` or `.foundry/gates` wherever it stands.
+move_the_checkout_to_the_tip() {
+    still_holding_the_host
+    on_branch=$(git symbolic-ref -q --short HEAD 2>/dev/null) || leave_in_the_way detached "this checkout is detached"
+    [ "$on_branch" = "$default_branch" ] || leave_in_the_way branch "this checkout is on [$on_branch], not [$default_branch]"
+    a_clean_checkout || leave_in_the_way unclean "this checkout holds work nobody committed: [$(first_uncommitted)]"
+
+    moved_from=$(git rev-parse -q --verify HEAD 2>/dev/null)
+    behind_the_tip || leave_in_the_way diverged "this checkout's [$default_branch] is not behind the fetched tip"
+    at_the_tip || fast_forward "$moved_from" "$fetched_tip" || leave_in_the_way unmoved "this checkout could not be moved: [$git_refused]"
+
+    rule_at=$fetched_tip
+}
+
+# `--no-optional-locks`, so reading the checkout takes no lock a person's own git may want.
+a_clean_checkout() {
+    uncommitted=$(git --no-optional-locks status --porcelain --untracked-files=normal 2>/dev/null) || return 1
+    [ -z "$uncommitted" ]
+}
+
+# The first path `status` named. Each line is two letters of state, a space, then the path.
+first_uncommitted() { printf '%s\n' "$uncommitted" | awk 'NF { print substr($0, 4); exit }'; }
+
+# The tip itself, or a commit behind it. A checkout holding a commit the tip does not is neither.
+behind_the_tip() { git merge-base --is-ancestor "$moved_from" "$fetched_tip" 2>/dev/null; }
+
+at_the_tip() { [ "$moved_from" = "$fetched_tip" ]; }
+
+#
+# **A fast-forward in the order git makes one: the tree first, then the branch**, and the branch only
+# while it still names the commit read. Nothing here can merge, reset or stash. #1060's build review.
+fast_forward() {
+    git update-index -q --refresh >/dev/null 2>&1
+    move_the_tree "$1" "$2" || return 1
+    move_the_branch "$1" "$2" && return 0
+
+    put_the_tree_back "$2"
+    return 1
+}
+
+# Each step keeps git's first line when it refuses, so the stop names what was in the way.
+move_the_tree() {
+    git_refused=$(git read-tree -m -u "$1" "$2" 2>&1 >/dev/null) && return 0
+    git_refused=$(first_line_of "$git_refused")
+    return 1
+}
+
+move_the_branch() {
+    git_refused=$(git update-ref -m "floor: a pass moves to the fetched tip" HEAD "$2" "$1" 2>&1 >/dev/null) && return 0
+    git_refused=$(first_line_of "$git_refused")
+    return 1
+}
+
+#
+# **The branch did not follow, so the tree goes back to wherever the branch is now.** A tree that
+# cannot go back is said, since the checkout is then not as it was.
+put_the_tree_back() {
+    git_put_back=$(git read-tree -m -u "$1" HEAD 2>&1 >/dev/null) && return 0
+    leave_stranded "this checkout's tree is at the fetched tip and its branch is not: [$git_refused] [$(first_line_of "$git_put_back")]"
+}
+
+first_line_of() { printf '%s\n' "$1" | awk 'NF { print; exit }'; }
+
+# What is in the way, named. Floor never resets, merges or stashes, so a person clears it.
+leave_in_the_way() {
+    pass_read="in-the-way:$1"
+    note "$2, so it stays where it is and this pass starts nothing new"
+    exit 54
+}
+
+# The one stop where the checkout is not as it was, so it says so rather than that it stayed.
+leave_stranded() {
+    pass_read=in-the-way:stranded
+    note "$1, and the tree could not be put back, so a person must put it right, and this pass starts nothing new"
+    exit 54
 }
 
 # The offer, then the first item this host can claim. What a pass that took nothing met is its code's.
@@ -4157,9 +4334,9 @@ still_holding_the_host() {
     exit 43
 }
 
-# What `offer` lists. An empty list is an answer, and a pass has nothing to act on.
+# What the rule at the fetched tip offers. An empty list is an answer, and a pass has nothing to act on.
 what_is_offered() {
-    items=$(offer) || exit "$?"
+    items=$(offered_at "$rule_at") || exit "$?"
     [ -n "$items" ] || { note "nothing is offered, so this pass takes nothing"; exit 42; }
 
     printf '%s\n' "$items"
@@ -4487,15 +4664,25 @@ the_heading_of() {
 # without its mark only in the few forks between. 5a's judge.
 begin_a_run_for() {
     still_holding_the_host
+    still_where_the_rule_was_read
     claimed_as=$(claimant_for "$1")
     make_run "$2" >/dev/null
     pin_this_run
     remember_the_holder "$dir" "$claimed_as"
     say_this_pass_is_alive
-    emit "$dir" pass.began item="$1" "process=$$ $wake_fields"
+    emit "$dir" pass.began item="$1" "process=$$ $wake_fields" "rule-at=$rule_at"
 
     read_the_item "$1"
     note "this pass took [$1]: $dir"
+}
+
+#
+# **A run begins where its rule was read, or not at all.** A commit landing in the checkout since the
+# move would become the run's base, and the rule was never read there. #1060's build review.
+still_where_the_rule_was_read() {
+    now_at=$(git rev-parse -q --verify HEAD 2>/dev/null)
+    [ "$now_at" = "$rule_at" ] && return 0
+    leave_in_the_way moved "this checkout moved to [${now_at:-nothing}] after its rule was read at [$rule_at]"
 }
 
 read_the_item() {
