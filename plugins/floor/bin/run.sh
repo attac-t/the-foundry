@@ -8869,7 +8869,7 @@ enter_each_that_may() {
         weigh_the_proposal "$1" "$proposal_kind" "$proposal_text" "$proposal_by"
         [ "$proposal_enters" = now ] || continue
 
-        introduce_clause "$1" Judged "$proposal_text" "$proposal_by"
+        introduce_clause "$1" "$proposal_kind" "$proposal_text" "$proposal_by"
     done <<PROPOSALS
 $2
 PROPOSALS

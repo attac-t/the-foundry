@@ -3420,6 +3420,255 @@ wreck_runner "a request that names no yes is caught" \
 wreck_runner "a bench read as nobody where the base cannot be read is caught" \
   blindbase 's#read_the_bench_at_base "\$2" || { printf .%s.n. "\$held_to_a_bench" | each_held_to_no_bench; return 0; }#read_the_bench_at_base "$2"#'
 
+#
+# **The shaping, one rule a break.** Members a `shape` line names at the base propose clauses before any
+# work, through an entry point pinned apart from the judge. The spec for B names each break, and each
+# goes red on a case of its own, in the order the model suite runs them.
+#
+wreck_runner "a shape line read from the checkout, not the base, is caught" \
+  shapecheckout 's#^    shape_declared=\$(sh "\$(judged_resolver)" "\$shape_checkout"); shape_read=\$?$#    shape_declared=$(detect_judged); shape_read=$?#'
+
+wreck_runner "a base nobody could read, read as naming no member, is caught" \
+  unreadbase '/^read_the_shape_at_base() {/,/^}/s#^        || refuse_an_unreadable_base "\$shape_base"$#        || :#'
+
+wreck_runner "a labelled line refused for counting shape out of its words is caught" \
+  shapecounted 's@\[ "\$#" -ge 5 \] && \[ "\$#" -le 6 \]@[ "$#" -ge 5 ] \&\& [ "$#" -le 5 ]@'
+
+wreck_runner "a shape line only the resolver knows is caught" \
+  resolverknows '/^declares_no_clause() {/,/^}/s#^        shape) return 0 ;;#        shape) return 1 ;;#'
+
+wreck_runner "a shape line only declares_no_clause knows is caught" \
+  declaresknows 's# || \$1 == "shape")#)#' lib/detect-judged.sh
+
+wreck_runner "a member seated on its last line, not its first, is caught" \
+  lastline 's#awk .NF \&\& !seen\[\$2 ""\]++.#awk "NF { last[\\$2] = \\$0; if (!(\\$2 in order)) order[\\$2] = ++n } END { for (m in order) line[order[m]] = last[m]; for (i = 1; i <= n; i++) print line[i] }"#'
+
+wreck_runner "a labelled member seated whoever put its label on is caught" \
+  anyhandlabel 's#^    a_hand_the_base_names "\$put_on_by" \&\& {#    [ -n "$put_on_by" ] \&\& {#'
+
+wreck_runner "a labelled member seated with no label on the item is caught" \
+  nolabelseat 's#^a_hand_the_base_names() { \[ -n "\$1" \] \&\& #a_hand_the_base_names() { [ -z "$1" ] || #'
+
+wreck_runner "seats decided again on each wake are caught" \
+  seatseachwake '/^seat_the_members_once() {/,/^}/s#^    \[ -f "\$(seats_file "\$1")" \] \&\& return 0$#    :#'
+
+wreck_runner "a shape line of the wrong shape taken is caught" \
+  shapeanyshape '/^refuse_a_shape_no_run_may_use() {/,/^}/s#^    \[ -z "\$unusable" \] \&\& return 0$#    return 0#'
+
+wreck_runner "a source that cannot list labels, read as no label, is caught" \
+  labelsunlisted 's#^    \[ "\$shape_found" -ne 2 \] || refuse_a_source_that_cannot_list_labels$#    :#'
+
+# The entry point: the path floor builds, the pin it checks, and when it checks it.
+wreck_runner "a shaping entry point built to the judge's run.sh is caught" \
+  runpath 's#^entry_point_file() { printf .%s/adapters/%s/shape.sh.#entry_point_file() { printf "%s/adapters/%s/run.sh"#'
+
+wreck_runner "a shaping entry point run without its pin checked is caught" \
+  nopincheck 's#^    refuse_an_entry_point_nobody_authorised "\$shaping_adapter" .*#    :#'
+
+wreck_runner "a member asked before each entry point is checked is caught" \
+  callfirst 's#^    check_each_entry_point_first "\$1"$#    :#'
+
+#
+# The shipped entry point. **Its stub table is the check**, and the model suite reads each row of it by
+# name, so each break goes red on the row it breaks.
+#
+wreck_runner "an entry point that needs a file beside it is caught" \
+  sourcesfile 's#^main() {$#main() { [ -r "$here/run.sh" ] || return 1#' adapters/anthropic/shape.sh
+
+wreck_runner "an entry point saying 0 on each harness exit of 0 is caught" \
+  zeroiszero 's#^    say_the_result "\$said"$#    printf "%s" "$said"#' adapters/anthropic/shape.sh
+
+wreck_runner "an entry point saying 1 on each answer is caught" \
+  oneisone 's#^    say_the_result "\$said"$#    say_the_result "$said"; return 1#' adapters/anthropic/shape.sh
+
+wreck_runner "an entry point that leaves the harness its built-in tools is caught" \
+  droptools 's# --tools ""##' adapters/anthropic/shape.sh
+
+wreck_runner "an entry point that leaves the JSON escapes as written is caught" \
+  rawescapes 's#if (e in plain) return plain\[e\]#if (e in plain) return "\\\\" e#' adapters/anthropic/shape.sh
+
+wreck_runner "a stub table left out of the adapter's audit is caught" \
+  nosharedaudit 's#^bash "\$(dirname "\$0")/shape.sh" \&\& ok#true \&\& ok#' adapters/anthropic/tests/judge.sh
+
+# Where a member runs, and what it is handed.
+wreck_runner "a member asked from the checkout is caught" \
+  roomcheckout 's#attempt_said=\$(cd "\$member_room" \&\& #attempt_said=$(#'
+
+wreck_runner "a member's room left behind is caught" \
+  roomkept 's#^    rm -rf "\$member_room"$#    :#'
+
+wreck_runner "what a member printed, kept less its last blank line, is caught" \
+  trimlast 's#^    rm -rf "\$member_room"$#    rm -rf "$member_room"; sed -i "\\$ { /^\\$/d; }" "$1.returned"#'
+
+wreck_runner "a brief built from the live charter, not the bar, is caught" \
+  livebar '/^write_the_members_brief() {/,/^}/s#^    cat "\$(bar_file "\$1")"$#    the_charter_and_the_item "$1"#'
+
+wreck_runner "proposals entered before each seated member is recorded are caught" \
+  earlyenter '/^shape_the_charter() {/,/^}/s#^    refuse_a_member_with_no_contribution "\$1"$#    enter_what_the_panel_may "$1"; refuse_a_member_with_no_contribution "$1"#'
+
+# The grammar. One reader holds it, `lib/contribution.awk`, and each break loosens one rule of it.
+wreck_runner "a line opening with a word none of the seven, taken, is caught" \
+  anyword 's#if (!(word in seven)) return 0#if (!(word in seven)) return 1#' lib/contribution.awk
+
+wreck_runner "a why before the first proposal, taken, is caught" \
+  whyfirst 's#^    return named > 0$#    return 1#' lib/contribution.awk
+
+wreck_runner "nothing beside a proposal, taken, is caught" \
+  nothingbeside 's#if (said_nothing) return 0#if (0) return 0#; s#if (rest != "" || named > 0) return 0#if (rest != "") return 0#' lib/contribution.awk
+
+wreck_runner "nothing beside an unknown, refused, is caught" \
+  nothingalone 's#if (word == "objection" || word == "unknown") return 1#if (word == "objection" || word == "unknown") return !said_nothing#' lib/contribution.awk
+
+wreck_runner "a kind read in any case is caught" \
+  anycasekind 's#if (rest !~ /^(Gate|Judged|Decided) ./) return 0#if (tolower(rest) !~ /^(gate|judged|decided) ./) return 0#' lib/contribution.awk
+
+wreck_runner "a proposal with no text, taken, is caught" \
+  notext 's#if (rest !~ /^(Gate|Judged|Decided) ./) return 0#if (rest !~ /^(Gate|Judged|Decided)/) return 0#' lib/contribution.awk
+
+wreck_runner "a carriage return no longer trimmed is caught" \
+  keepcr 's#sub(/^\[ \\r\]+/, "", said)#sub(/^ +/, "", said)#; s#sub(/\[ \\r\]+\$/, "", said)#sub(/ +$/, "", said)#' lib/contribution.awk
+
+wreck_runner "a line out of shape dropped, and the rest kept, is caught" \
+  droplines 's#if (!in_shape(word, rest)) { refuse(); return }#if (!in_shape(word, rest)) return#' lib/contribution.awk
+
+# The attempts, and the row that decides each.
+wreck_runner "a contribution decided from its file, not its row, is caught" \
+  filedecides 's#^        \[ -n "\$(contribution_row "\$1" "\$waiting_member")" \] || printf .%s\\n. "\$waiting_member"$#        ls "$1/shaped/$(path_safe "$waiting_member")"-*.returned >/dev/null 2>\&1 || printf "%s\\n" "$waiting_member"#'
+
+wreck_runner "an attempt numbered from the rows, not the briefs, is caught" \
+  rowsnumber 's#^briefs_of() {#briefs_of() { awk -F"\\t" -v m="$2" "\\$2 == \\"shape.attempt\\" \&\& \\$4 == m { n++ } END { print n + 0 }" "$(evidence_file "$1")"; return 0;#'
+
+wreck_runner "a missing attempt with no row is caught" \
+  norowmissing 's#^    stamp "\$1" shape.attempt#    case $attempt_why in missing*) return 0 ;; esac; stamp "$1" shape.attempt#'
+
+wreck_runner "a member asked again once its row says recorded is caught" \
+  askagain 's#^        \[ -n "\$(contribution_row "\$1" "\$waiting_member")" \] || printf#        printf#'
+
+wreck_runner "no lines at 0, read as a contribution, are caught" \
+  nolineszero 's#\[ "\$answer_code" -eq 4 \] \&\& { printf .missing: no lines.; return 0; }#[ "$answer_code" -eq 4 ] \&\& { printf recorded; return 0; }#'
+
+wreck_runner "prose at 0, read as missing, is caught" \
+  prosemissing 's#^    printf .refused: line %s: %s. #    printf "missing: prose at line %s: %s" #'
+
+wreck_runner "a refused contribution let go on is caught" \
+  refusedgoeson '/^shape_the_charter() {/,/^}/s#^    refuse_a_refused_contribution "\$1"$#    :#'
+
+wreck_runner "a missing contribution answered with 56 is caught" \
+  missing56 '/^refuse_a_member_with_no_contribution() {/,/^}/s#^    exit 21$#    exit 56#'
+
+wreck_runner "a shaping that stops at the first missing member is caught" \
+  stopfirst 's#^        ask_the_member "\$1" "\$asked_member"$#        ask_the_member "$1" "$asked_member"; [ -n "$(contribution_row "$1" "$asked_member")" ] || break#'
+
+# What enters, and its row. A second panel write on a resume has no break here: shaping's weighing and
+# `introduce`'s own writer each hold it, so breaking shaping's half alone changes nothing a case sees.
+wreck_runner "a Decided proposal entered is caught" \
+  enterdecided 's#^    \[ "\$2" = Decided \] \&\& {#    [ "$2" = Nonesuch ] \&\& {#'
+
+wreck_runner "a Gate proposal entered is caught" \
+  entergate 's#^    \[ "\$2" = Gate \] \&\& {#    [ "$2" = Nonesuch ] \&\& {#'
+
+wreck_runner "a Judged proposal entered with no bench is caught" \
+  enternobench 's#\[ -n "\$bench_members" \] || { proposal_why=.the base names no bench.; return 0; }#[ -n "$bench_members" ] || { proposal_enters=now; proposal_why=introduced; return 0; }#'
+
+wreck_runner "a Judged proposal entered on a bench of only its proposers is caught" \
+  enteronlyproposers 's#\[ -n "\$proposal_panel" \] || { proposal_why=.only its proposers sit on the bench.; return 0; }#:#'
+
+wreck_runner "a Judged proposal entered with a panel member no pass can ask is caught" \
+  enternoreach 's#^    \[ -z "\$proposal_unreached" \] || .*#    :#'
+
+wreck_runner "a writer that records the first proposer alone is caught" \
+  firstproposeronly 's#^print_proposer() { printf .%s\\n. "\$2" |#print_proposer() { printf "%s\\n" "$2" | head -n 1 |#'
+
+wreck_runner "a derivation that carries the first proposer alone is caught" \
+  carryfirst 's#if (\$1 == "judge" || \$1 == "rounds" || \$1 == "proposer") panel\[\$2\] = panel\[\$2\] \$0 "\\n"; next#if ($1 == "judge" || $1 == "rounds" || ($1 == "proposer" \&\& !kept[$2]++)) panel[$2] = panel[$2] $0 "\\n"; next#'
+
+wreck_runner "a panel held at check to the bench less the first proposer alone is caught" \
+  checkfirst 's#off_the_bench "\$bench_members" "\$(proposers_of "\$1" "\$2")" |#off_the_bench "$bench_members" "$(proposers_of "$1" "$2" | head -n 1)" |#'
+
+wreck_runner "a proposal's row written twice is caught" \
+  rowtwice 's#^proposal_has_a_row() {#proposal_has_a_row() { return 1;#'
+
+wreck_runner "a proposal's row written with no reason is caught" \
+  noreason 's#"\$(joined "\$3" ,)" "\$proposal_why"$#"$(joined "$3" ,)" ""#'
+
+wreck_runner "a run called shaped once each member is recorded, rows or not, is caught" \
+  shapedearly 's#^    write_the_bar_once "\$1"$#    write_the_bar_once "$1"; [ -n "$(members_with_no_contribution "$1")" ] || return 0#'
+
+wreck_runner "shaping's own clause read as the charter already holding its words is caught" \
+  ownasheld 's#^    \[ "\$proposal_held" = "Judged \$2" \] || return 0$#    return 0#'
+
+# The question in the panel's words.
+wreck_runner "a member's lines printed without their indent are caught" \
+  noindent 's#printf "    %s %s\\n", \$2, \$3#printf "%s %s\\n", $2, $3#'
+
+wreck_runner "an objection naming one proposal printed in each question is caught" \
+  objectioneach 's#\$1 == 0 \&\& \$2 != "nothing"#$2 == "objection" || $2 == "unknown"#'
+
+wreck_runner "a line naming no proposal printed in one question alone is caught" \
+  noneonlyx 's#^    say_what_names_no_proposal "\$1"$#    [ "$2" != "$(panel_clauses "$1" | head -n 1)" ] || say_what_names_no_proposal "$1"#'
+
+wreck_runner "the proposals that did not enter, left out of the question, are caught" \
+  noleftout 's#^    say_what_did_not_enter "\$1"$#    :#'
+
+wreck_runner "a no line put in a worker clause's question is caught" \
+  workerno 's#^    is_a_panel_clause "\$3" "\$1" \&\& {#    true \&\& {#'
+
+wreck_runner "the panel's lines ordered by when each member answered are caught" \
+  seatsorder '/^say_who_proposed_it() {/,/^}/s#members_who_sat "\$1" |#awk -F"\\t" "\\$2 == \\"shape.attempt\\" \&\& \\$7 ~ /^(recorded|refused)/ { print \\$4 }" "$(evidence_file "$1")" |#'
+
+# The strike. A no is read as a yes is, and only a clause the panel proposed takes one.
+wreck_runner "a line that only contains its no, taken for one, is caught" \
+  nocontains 's#struck = words ~ /^no #struck = match(words, /no #; s#\$/ \&\& (substr(words, 4) in strikable)#$/) \&\& (substr(words, RSTART + 3) in strikable)#; s#if (a_strike(words)) return substr(words, 4)#if (a_strike(words)) return substr(words, RSTART + 3)#' lib/hearing.awk
+
+wreck_runner "a no from a hand the base does not name is caught" \
+  anyhandno 's#if (!(who in hand)) return#if (!(who in hand) \&\& plainly(words) !~ /^no /) return#' lib/hearing.awk
+
+wreck_runner "a no from an account floor skips is caught" \
+  speakerno 's#if (who in skipped) return#if (who in skipped \&\& plainly(words) !~ /^no /) return#' lib/hearing.awk
+
+wreck_runner "a no dated before its question is caught" \
+  nobeforeq 's#if (!after_its_question(question, when))#if (!struck \&\& !after_its_question(question, when))#' lib/hearing.awk
+
+wreck_runner "a yes beside a no that wins is caught" \
+  yeswins 's#^    struck_by_a_hand "\$1" "\$text" \&\& return 0$#    struck_by_a_hand "$1" "$text" \&\& ! heard_a_yes_to "$(question_id "$1" authorisation "$text")" \&\& return 0#'
+
+wreck_runner "a worker's clause struck is caught" \
+  strikeworker 's#^    panel_clauses "\$1" | while IFS= read -r strikable_text; do$#    introduced_clauses "$(charter_file "$1")" | cut -d" " -f4- | while IFS= read -r strikable_text; do#'
+
+wreck_runner "a struck clause judged all the same is caught" \
+  judgedasks 's#^        passed_over_as_struck "\$dir" "\$id" "\$who" \&\& continue$#        :#'
+
+wreck_runner "a judge handed the charter with no word of a strike is caught" \
+  briefnostrike 's#^    say_what_a_hand_struck "\$1"$#    :#'
+
+wreck_runner "a struck clause printed under met is caught" \
+  metstruck 's#^        a_hand_struck_the_clause "\$1" "\$status_id" \&\& continue$#        :#'
+
+wreck_runner "a no with no answer.heard row is caught" \
+  nonorow 's#^            struck) record_once#            struck) : record_once#'
+
+wreck_runner "a judged that acts on a no and writes no row is caught" \
+  nojudgedrow '/^hear_and_record_if_the_panel_proposed() {/,/^}/s#^    record_the_hearing "\$1"$#    :#'
+
+wreck_runner "a strike read from the ledger, not the source, is caught" \
+  strikeledger '/^no_to() {/,/^}/s#^    printf .%s.n. "\$heard_lines" .$#    grep -F answer.heard "$(evidence_file "$dir")" | awk -F"\\t" -v OFS="\\t" "\\$7 ~ /^no / { split(\\$7, w, \\" \\"); print \\"struck\\", w[2], \\$4, \\$6, \\$7 }" \\#'
+
+wreck_runner "a judged that hears in a run no member shaped is caught" \
+  hearsunshaped '/^hear_and_record_if_the_panel_proposed() {/,/^}/s#^    \[ -n "\$(panel_clauses "\$1")" \] || return 0$#    :#'
+
+# A person's path, and what `status` and the request say.
+wreck_runner "an authorise that skips an unfinished shaping is caught" \
+  noshapecheck 's#^    refuse_while_shaping_is_unfinished "\$run_dir"$#    :#'
+
+wreck_runner "shaped/ written for a base that names no member is caught" \
+  shapedforall 's#^    \[ -n "\$shape_lines" \] || return 0$#    :#'
+
+wreck_runner "decided printed for a run never shaped is caught" \
+  decidedalways '/^say_what_was_decided() {/,/^}/s#^    \[ -f "\$(seats_file "\$1")" \] || return 0$#    :#'
+
+wreck_runner "decided that leaves the left-out members out is caught" \
+  noleftmembers 's#^         \$2 == "left" { printf "  left out#         $2 == "nonesuch" { printf "  left out#'
+
 # The item proposes and the allowlist decides. A run that took an advised target as authorised would
 # let anyone who can file an item choose what the run may touch.
 wreck_runner "an advised target that skips the allowlist is caught" \
