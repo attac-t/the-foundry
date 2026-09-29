@@ -99,6 +99,12 @@
 #  47  a resumed run waits on a person: a clause, a grant or a commit `deliver` named
 #  48  a pass let its run go: a member's revise rounds are spent, or a judge was deadlocked or could
 #      not be reached. The line says which, and the item stops on this host
+#  49  a clause nothing derived needs a yes, and `.foundry/practice` at the base names no hand who may
+#      give one. The fix is a line at the base, which only a new run reads
+#  50  every hand named is an account floor skips, and one or more is only the account floor writes as
+#      now. The fix is on the host: floor on an account of its own
+#  51  every hand named wrote floor's questions on this item, so floor cannot tell their yes from its
+#      own. The fix is another hand, named at the base
 #  52  a pass could not fetch the default branch: origin could not be asked, named none, or the
 #      fetch failed. No new work starts, and a run already begun is untouched
 #  53  origin's default branch is not the one this checkout's `origin/HEAD` names, and the line names
@@ -249,7 +255,7 @@ usage_work() {
   run.sh reconcile [accept <sha> <reason>]
                                   what else is open, or a person accounting for a stray commit
   run.sh authorise                refuse a run describing no work, or whose selection moved —
-                                  exit 1, 5, 8, 9, 10, 11 or 12
+                                  exit 1, 5, 8, 9, 10, 11, 12, 17, 20, 27, 49, 50 or 51
 EOF
 }
 
@@ -277,7 +283,7 @@ usage_source() {
   run.sh source ask <stage> <clause> <question>
                                   ask a human about one clause, and print the question's identity
   run.sh source receive <stage> <clause>
-                                  print the answer to that question, or exit 1
+                                  print the yes a named hand gave that question, or exit 1
 EOF
 }
 
@@ -4991,8 +4997,26 @@ open_the_work() {
     still_holding_the_host
     ( charter derive ) >/dev/null || stop_at "$1" charter "$?"
     still_holding_the_host
-    ( open_workspace ) >/dev/null || stop_at "$1" workspace "$?"
+    ( open_workspace ) >/dev/null || stop_at_the_workspace "$1" "$?"
     find_the_workspace "$1"
+}
+
+#
+# **A line at the base is the fix for 49 and 51, and only a new run reads the base**, so the item is let
+# go and the claim kept. Every other stop here is resumed, 50 among them: its fix is on the host, and
+# the bound counts each resume.
+#
+stop_at_the_workspace() {
+    [ "$2" -eq 49 ] && { let_go_for_a_line_at_the_base "$1" 49; exit 49; }
+    [ "$2" -eq 51 ] && { let_go_for_a_line_at_the_base "$1" 51; exit 51; }
+
+    stop_at "$1" workspace "$2"
+}
+
+let_go_for_a_line_at_the_base() {
+    emit "$dir" pass.left item="$1" why=workspace code="$2"
+    note "only a line at the base answers $2, and only a new run reads the base, so this pass lets [$1] go: $dir"
+    let_go_of "$dir"
 }
 
 # A resumed run selected its target already, and `targets add` refuses one twice.
@@ -5766,9 +5790,9 @@ spaced() { printf '%s' "$1" | awk '{ $1 = $1; print }' | tr '
 # One row per kind, and no order over them. RFC-001 says the kinds are not a
 # scale: a judgement raised to a gate wants a command that cannot exist.
 #
-# **`human` is only as true as the guard behind it.** `said_after` drops any comment written as the
-# account this run posts under, and `posting_as` refuses to guess when it cannot read that account.
-# Without both, a note the run wrote reads back as a person saying yes to it.
+# **`human` is only as true as the guard behind it.** The hearing skips every account `speaker` names,
+# and a source that cannot name them stops the read at 20. Without both, a note the run wrote reads
+# back as a person saying yes to it.
 answers_for() {
     case "$1" in
         Gate)    printf 'machine' ;;
@@ -6557,10 +6581,14 @@ authorise() {
     # clause nobody authorised into a real bar, then tell them afterwards it had no provenance.
     # Provenance is the earlier question.
     #
+    # **Who may answer is heard before anything is asked**, so floor's own first question never makes
+    # a hand an author. Only a run holding a clause nothing derived needs a hand at all.
+    #
+    [ -z "$(introduced_clauses "$charter_path")" ] || hear_the_item "$run_dir"
     introduced=$(unauthorised_clauses "$run_dir" "$charter_path")
     [ -z "$introduced" ] || {
         ask_about_each "$run_dir" "$introduced" || exit 1
-        note "a human owns this. Answer where the item is, naming the clause, and authorise again"
+        note "a human owns this. Answer where the item is, with the line the question prints, and authorise again"
         exit 11
     }
 
@@ -7422,17 +7450,192 @@ unauthorised_clauses() {
 # nothing and no second ledger appears — §2.2 refuses one, and an answer that outlived its run is
 # what a stored pending question would let through.
 #
-# The answer names the clause or it authorises nothing. Silence is not approval and neither is a
-# decline; both leave the run exactly where it was.
+# A yes to this clause's own question, or it authorises nothing. Silence is not approval and neither
+# is a decline; both leave the run exactly where it was.
 #
 authorised_by_a_human() {
-    said=$(source_says receive "$(item_id "$1")" "$(question_id "$1" authorisation "$2")" 2>/dev/null) || return 1
+    heard_a_yes_to "$(question_id "$1" authorisation "$2")"
+}
 
-    case "$said" in
-        *"$(clause_id "$2")"*) return 0 ;;
-    esac
+heard_a_yes_to() { yes_to "$1" | grep -q .; }
 
-    return 1
+# Each yes the hearing heard to one question: who, when and the words, tab apart.
+yes_to() {
+    printf '%s\n' "$heard_lines" \
+        | awk -F'\t' -v question="$1" '$1 == "heard" && $2 == question { print $3 "\t" $4 "\t" $5 }'
+}
+
+#
+# **Every answer, heard once, against who may answer.** Both readers come through here, `authorise`
+# and `source receive`: the hands the base names, then whom floor skips, then every answer at once. No
+# question opens or closes a window over them, so questions asked back to back are each answerable.
+#
+# Called, never captured: every refusal on the way exits, and an exit inside a command substitution
+# leaves only the subshell.
+#
+hear_the_item() {
+    heard_hands=$(hands_named "$1")
+    refuse_with_no_hand "$heard_hands"
+
+    speakers_of "$(item_id "$1")"
+    refuse_when_every_hand_is_skipped "$heard_hands" "$heard_speakers"
+
+    answers_to "$(item_id "$1")"
+    heard_lines=$(hear_every_answer)
+    record_what_went_unread "$1" "$heard_lines"
+}
+
+#
+# The hands a repository names to answer: every `authorise` line in `.foundry/practice`, read at the
+# run's base as grants are, so a worker's own commit names nobody. One a line, each once, folded.
+#
+hands_named() {
+    base=$(bootstrap_base "$1") || return 0
+
+    practice_at_base "$base" | awk '$1 == "authorise" { for (i = 2; i <= NF; i++) print $i }' \
+        | accounts_folded | awk '!seen[$0]++'
+}
+
+# Accounts compare folded, here and nowhere else. A forge keeps one spelling of a name and a person may
+# type another, and `Pat` and `pat` are one hand.
+accounts_folded() { awk -F'\t' -v OFS='\t' '{ $1 = tolower($1); print }'; }
+
+refuse_with_no_hand() {
+    [ -n "$1" ] && return 0
+
+    note "nobody may answer here — .foundry/practice at the base names no hand"
+    note "add \`authorise <hand>\` to it, and start a new run: only a new run reads the base"
+    exit 49
+}
+
+#
+# The accounts floor skips, and when each question was first asked. A source that could not say stops
+# the read at 20: answers read without the skip and the bound are answers nobody checked.
+#
+speakers_of() {
+    source_hears speaker "$1"
+    [ "$heard" -eq 0 ] || refuse_unheard speaker
+
+    heard_speakers=$(printf '%s\n' "$source_heard" | accounts_folded)
+}
+
+# Every answer on the item. Nothing there, 1, is an item nobody has answered yet.
+answers_to() {
+    source_hears receive "$1"
+    [ "$heard" -le 1 ] || refuse_unheard receive
+
+    heard_answers=$(printf '%s\n' "$source_heard" | accounts_folded)
+}
+
+#
+# **The one door `receive` and `speaker` go through**, so every reader meets the same refusal. A source
+# that knows neither is refused by name, 27: it answers the old way, or cannot say who wrote an answer.
+#
+source_hears() {
+    source_heard=$(source_says "$1" "$2"); heard=$?
+
+    [ "$heard" -ne 2 ] || refuse_a_source_that_cannot_hear "$1"
+}
+
+refuse_a_source_that_cannot_hear() {
+    note "the work source at [$(source_resolver)] does not know \`$1 <item>\`, so it cannot say who wrote an answer"
+    note "use a source that answers \`receive <item>\` and \`speaker <item>\` — the README names both"
+    exit 27
+}
+
+refuse_unheard() {
+    note "the work source could not be asked for \`$1\`, so no answer is read"
+    exit 20
+}
+
+#
+# **Floor refuses whenever no named hand is outside the accounts it skips**, because then it could never
+# hear a yes. 51 when every hand wrote floor's questions: only another hand frees the run. 50 otherwise,
+# because fixing the host frees each hand that is only floor's account now.
+#
+refuse_when_every_hand_is_skipped() {
+    skipped=$(every_hand_skipped "$1" "$2")
+    [ -n "$skipped" ] || return 0
+
+    refuse_hands_that_wrote_the_questions "$skipped"
+    refuse_hands_floor_writes_as "$skipped"
+}
+
+refuse_hands_that_wrote_the_questions() {
+    [ "$(printf '%s\n' "$1" | sed -n 1p)" = 51 ] || return 0
+
+    note "every hand named wrote floor's questions here — $(each_hand_and_why "$1") — so floor cannot tell its yes from its own"
+    note "name another hand in .foundry/practice, and start a new run"
+    exit 51
+}
+
+refuse_hands_floor_writes_as() {
+    note "every hand named is skipped — $(each_hand_and_why "$1") — so floor could never hear a yes"
+    note "run floor on an account of its own, and answer as yourself"
+    exit 50
+}
+
+#
+# Nothing when a hand is outside the accounts floor skips. Otherwise the code, 50 or 51, then each hand
+# and why it is skipped: floor's account now, the questions it wrote, or both.
+#
+every_hand_skipped() {
+    hands=$1 awk -F'\t' -v writes_now="floor's account now" '
+        BEGIN { n = split(ENVIRON["hands"], hand, "\n") }
+        NR == 1 { now = $0; next }
+        $1 != "" { wrote[$1] = wrote[$1] " " $2 }
+        END { judge() }
+
+        function judge(   i, code) {
+            code = 51
+            for (i = 1; i <= n; i++) {
+                if (hand[i] != now && !(hand[i] in wrote)) return
+                if (!(hand[i] in wrote)) code = 50
+            }
+            print code
+            for (i = 1; i <= n; i++) print hand[i] ": " why(hand[i])
+        }
+
+        function why(h,   said) {
+            if (h == now) said = writes_now
+            if (h in wrote) said = said (said == "" ? "" : ", and ") "wrote" wrote[h]
+            return said
+        }' <<SPEAKERS
+$2
+SPEAKERS
+}
+
+each_hand_and_why() { printf '%s\n' "$1" | awk 'NR > 1 { printf "%s%s", sep, $0; sep = "; " }'; }
+
+# Every yes, and every named hand's comment that answered nothing, from one reading of every answer.
+hear_every_answer() {
+    [ -n "$heard_answers" ] || return 0
+
+    printf '%s\n' "$heard_answers" \
+        | hands="$heard_hands" speakers="$heard_speakers" awk -f "$PLUGIN_ROOT/lib/hearing.awk"
+}
+
+#
+# A named hand's comment that authorised nothing, as a row in the ledger: who, when, and why. Once each,
+# so a run heard again never piles them up. **Never a note on the item** — a note there is how floor once
+# read its own words as a yes, #373.
+#
+record_what_went_unread() {
+    while IFS="$TAB" read -r heard_kind unread_who unread_when unread_why; do
+        [ "$heard_kind" = unread ] || continue
+        recorded_unread "$1" "$unread_who" "$unread_when" "$unread_why" && continue
+
+        stamp "$1" answer.unread "$unread_who" 1 "$unread_when" "$unread_why"
+    done <<LINES
+$2
+LINES
+}
+
+recorded_unread() {
+    who=$2 when=$3 why=$4 awk -F'\t' '
+        $2 != "answer.unread" { next }
+        $4 "" == ENVIRON["who"] "" && $6 "" == ENVIRON["when"] "" && $7 "" == ENVIRON["why"] "" { found = 1 }
+        END { exit !found }' "$(evidence_file "$1")" 2>/dev/null
 }
 
 #
@@ -7454,11 +7657,12 @@ CLAUSES
 # Put the question where the human already is. Asking twice with the same words is one question, so
 # a blocked run that authorises again does not pile them up.
 ask_to_authorise() {
-    said=$(source_says ask "$(item_id "$1")" "$(question_id "$1" authorisation "$2")" \
-        "May this clause exist? Nothing derives it: $2. Answer with $(clause_id "$2") to authorise it." 2>&1)
+    asked_about=$(question_id "$1" authorisation "$2")
+    said=$(source_says ask "$(item_id "$1")" "$asked_about" "$(the_authorisation_question "$2" "$asked_about")" 2>&1)
     asked=$?
 
     [ "$asked" -eq 0 ] && return 0
+    [ "$asked" -eq 4 ] && refuse_a_question_in_other_words "$2"
 
     # This one blocks rather than exits, because authorisation names every introduced clause before
     # it stops and a reader needs all of them.
@@ -7469,6 +7673,22 @@ ask_to_authorise() {
 
     note "the work source could not carry that question: $said"
     return 1
+}
+
+#
+# The question, then the one line that answers it, fenced so a copy is exact. The words say who may
+# answer, and how an answer is taken back.
+#
+the_authorisation_question() {
+    printf 'May this clause exist? Nothing derives it: %s.\n\nA hand named in `.foundry/practice` authorises it with this line alone:\n\n```\nyes %s\n```\n\nDelete the line before delivery to withdraw it.\n' "$1" "$2"
+}
+
+# The source holds this question in other words, and will not put it twice. A run that asked before
+# the words changed meets this at every ask after.
+refuse_a_question_in_other_words() {
+    note "the source holds the question about [$1] in other words, and will not put it twice"
+    note "delete the old question where the item is, or start a new run"
+    exit 17
 }
 
 #
@@ -7839,8 +8059,8 @@ introduce_clause() {
 # the stage that asked it, and §2.5 keeps those two apart by which store the record lands in.
 #
 # **Nothing here authorises anything.** An answer arriving widens no allowlist, moves no clause and
-# selects no target. Reading one is the authorisation stage's, and that stage does not read one yet —
-# `evidence record` shipped the same way, one stage ahead of the gate that consumes it.
+# selects no target. Reading one is the authorisation stage's, and `receive` reads through the same
+# hearing `authorise` does, so the two cannot disagree about what a person said.
 #
 # The rename guard, because a question's identity is the run's name: a renamed run derives a
 # different question and asks a human the same thing twice.
@@ -8152,14 +8372,13 @@ ask_about() {
 }
 
 #
-# The answer a human left, and no reading of it.
+# The yes a named hand gave one question, heard the way `authorise` hears every answer.
 #
 # **There is no parameter for the answer.** A worker puts one here only by putting it where a human's
 # answer lives, which is the gap §2.5 names for the evidence ledger and closes no further.
 #
-# Silence never comes back as an answer: nothing on stdout and a code that says nothing is there. A
-# refusal comes back exactly as an approval does, because deciding which one it is belongs to
-# whoever asked — a transport that read the words would be answering for the human.
+# Silence never comes back as an answer: nothing on stdout and a code that says nothing is there. A no
+# never does either. What prints is who said yes, when, and the line they wrote.
 #
 receive_answer() {
     dir=$1; stage=${2:-}; clause=${3:-}
@@ -8167,32 +8386,24 @@ receive_answer() {
     [ "$#" -le 3 ] || { note "receive names a stage and a clause — an answer is not something you pass"; exit 2; }
     refuse_impossible_question "$dir" "$stage" "$clause"
 
-    said=$(source_says receive "$(item_id "$dir")" "$(question_id "$dir" "$stage" "$clause")"); code=$?
-    refuse_unasked "$code" answer
-    [ "$code" -eq 0 ] || exit 1
+    hear_the_item "$dir"
+    said=$(yes_to "$(question_id "$dir" "$stage" "$clause")")
+    [ -n "$said" ] || exit 1
     printf '%s\n' "$said"
 
-    [ "$stage" = completion ] && accept_answer "$dir" "$clause" "$said"
+    [ "$stage" = completion ] && accept_answer "$dir" "$clause" "$(printf '%s\n' "$said" | sed -n 1p)"
     return 0
 }
 
 #
-# §2.5's `human` evidence, and the only writer of it. The stage already decided the meaning — an
-# answer read at completion says the clause was met, where the same answer read at authorisation says
-# only that it may exist.
+# §2.5's `human` evidence, and the only writer of it. The stage already decided the meaning — a yes
+# heard at completion says the clause was met, where one heard at authorisation says only that it may
+# exist.
 #
-# **The answer names the clause or it is not one.** `receive` carries whatever a human wrote, "no"
-# included, so an answer that satisfied by merely existing would turn every reply into a yes. Naming
-# the id is the difference between deciding and being present.
+# **The yes names its question, and the question carries its stage**, so a yes that authorised a
+# clause never completes it. The row keeps who said it, when, and the line.
 #
 accept_answer() {
-    id=$(clause_id "$2")
-
-    case "$3" in
-        *"$id"*) ;;
-        *) note "the answer does not name [$id], so nothing here says the clause was met"; return 0 ;;
-    esac
-
     enter_work_tree "$1"
     stamp "$1" human "$2" 0 "$(delivered_ref)" "$3"
 }

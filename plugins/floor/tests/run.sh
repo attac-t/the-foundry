@@ -2380,11 +2380,6 @@ wreck_runner "a read that lets the caller say what the item holds is caught" \
 wreck_runner "a receive that takes an answer is caught" \
   srcanswer 's#-le 3 \] || { note "receive#-le 9 ] || { note "receive#'
 
-# An answer satisfying by merely existing. `receive` carries whatever a human wrote, "no" included,
-# so the clause's own id is what separates a decision from a presence.
-wreck_runner "an answer that satisfies without naming the clause is caught" \
-  anyanswer 's#        \*"$id"\*) ;;#        *) ;;#'
-
 #
 # A question is `run + stage + clause`. Each term keeps one wrong answer away from a reader, so each
 # gets its own break — dropping the run lets a later run derive an earlier one's question, and the
@@ -3170,23 +3165,11 @@ audit_the_missing_half
 wreck_runner "a question rewritten under a human is caught" \
   dirwords 's#same_question "$file" "$3" || return 4#:#' lib/source-dir.sh
 
-wreck_runner "silence answered as an answer is caught" \
-  dirsilence 's#\[ -f "$root/answers/$1/$2" \] || return 1#\[ -f "$root/answers/$1/$2" \] || return 0#' lib/source-dir.sh
-
 
 # Which adapter answers, decided by whatever the machine has installed. The suite's own checks
 # changed answer on a machine with `gh`, and nothing said so — #176.
 wreck_runner "a work source that cannot be named is caught" \
   namedsource 's#"${FOUNDRY_SOURCE:-$SELF_DIR/../lib/source.sh}"#"$SELF_DIR/../lib/source.sh"#'
-# The question names the clause it asks about, so a reader that starts at the marker hands the question
-# back as its answer — and a human who has not replied yet reads as having agreed.
-wreck_runner "a question answering itself is caught" \
-  ghself 's#mine = index($0, mark) > 0; open = 0#mine = 1; open = 1#' lib/source-github.sh
-# The author is the only thing telling the run's own words from a person's. A reader that ignores it
-# hands back a note the run wrote — which is exactly what #373 was, and it stamped a
-# human answer nobody gave.
-wreck_runner "a run answering its own question is caught" \
-  ghauthor 's#if (who == self) { skipped(#if (0) { skipped(#' lib/source-github.sh
 
 # A lookup that could not answer, read as a delivery that is not there — whose remedy is to open one.
 # The run lives in the body so that one run cannot open a second delivery, and this is the check that
@@ -3197,7 +3180,7 @@ wreck_runner "a failed lookup passing for an absence is caught" \
 # The same read one function over. Empty is what `put_question` reads as *not asked yet*, and it
 # answers by asking — so a resumed run whose lookup failed put the question to the human twice.
 wreck_runner "a question lookup that failed asking again is caught" \
-  ghasked 's#asked=$(after_marker "$1" "floor-question: $2 ") || return 3#asked=$(after_marker "$1" "floor-question: $2 ")#' lib/source-github.sh
+  ghasked '/^put_question() {/,/^}/s#asked=$(questions_asked_on "$1") || return 3#asked=$(questions_asked_on "$1")#' lib/source-github.sh
 
 #
 # The record is read before the source is asked, and written when the source answers.
@@ -3211,22 +3194,13 @@ wreck_runner "a question lookup that failed asking again is caught" \
 
 
 #
-# The boundary between two comments is the adapter's, not `gh`'s.
-#
-# Without it `said_after` cannot tell where the question's own body ends, and reads either nothing or
-# the words that asked. The layout it used to recognise — `author:` and a rule — is what GitHub
-# stopped serving to an older client at all.
-#
-wreck_runner "a comment boundary read out of a rendering is caught" \
-  noboundary 's#"floor-comment: " + .author.login, .body#.body#' lib/source-github.sh
-#
 # A question a human can act on, and one only its own run can read.
 #
 # Condition 3 asking is not broken separately: `alwaysask` above makes every authorise ask, and the
 # check that counts questions after a condition-3 refusal goes red with it.
 #
 wreck_runner "a question carrying nothing a human can act on is caught" \
-  blankask 's#"May this clause exist?.*to authorise it."#"Please answer."#'
+  blankask 's#printf .May this clause exist?.*#printf "Please answer."#'
 
 wreck_runner "a question any run can answer is caught" \
   sharedask 's@printf .%s.%s.%s. "${1##\*/}"@printf "%s.%s.%s" "shared"@'
@@ -3293,20 +3267,99 @@ wreck_runner "a stage that reports asking without asking is caught" \
   silentask 's#        ask_about_each "$run_dir" "$introduced" || exit 1#        ask_about_each "$run_dir" "$introduced"#'
 
 #
-# The authorisation join, and its three claims are three breaks: the stage asks, an answer that does
-# not name the clause authorises nothing, and an unanswered clause still blocks.
-#
-# `anyword` is the one that matters. `receive` carries whatever a human wrote, "no" included, so a
-# run that took any answer as approval would read a refusal as a yes.
+# The authorisation join: the stage asks, and an unanswered clause still blocks. What counts as a yes
+# is the hearing's, and its rules are broken one at a time below.
 #
 wreck_runner "a stage that blocks without asking is caught" \
   silentblock 's#        ask_to_authorise "$1" "$text" || return 1#        :#'
 
-wreck_runner "an answer that authorises without naming the clause is caught" \
-  anyword 's#        \*"$(clause_id "$2")"\*) return 0 ;;#        *) return 0 ;;#'
-
 wreck_runner "an unanswered clause that authorises anyway is caught" \
-  nowordneeded 's#    said=$(source_says receive "$(item_id "$1")" "$(question_id "$1" authorisation "$2")" 2>/dev/null) || return 1#    return 0#'
+  nowordneeded 's#    heard_a_yes_to "$(question_id "$1" authorisation "$2")"#    return 0#'
+
+#
+# **The hearing, one rule a break.** A clause nothing derived binds a run only on a whole line, `yes`
+# and its question, from a hand the base names, dated strictly after the question was first asked, and
+# never from an account floor skips. The spec names each break, and each has a case of its own.
+#
+# `.n` stands for jq's `\n` wherever a pattern must name it. GNU sed 4.9 reads `\\n` in a pattern as
+# something other than a backslash and an `n`, and the break then applies nowhere.
+#
+wreck_runner "a question closed by the next one asked is caught" \
+  window 's#return when > asked\[question\]#for (other in asked) if (asked[other] > asked[question] \&\& asked[other] < when) return 0; return when > asked[question]#' lib/hearing.awk
+
+wreck_runner "a line that only contains the yes, taken for one, is caught" \
+  contains '/^function the_question_in/,/^}/s#^    if (words !~ .*#    for (other in asked) if (index(words, other)) return other; return ""#' lib/hearing.awk
+
+wreck_runner "a yes from a hand nobody named is caught" \
+  anyhand '/if (!(who in hand)) return/d' lib/hearing.awk
+
+wreck_runner "a yes from an account floor skips is caught" \
+  speakers '/if (who in skipped) return/d' lib/hearing.awk
+
+wreck_runner "an author read from the words is caught" \
+  textwho 's#^    who = \$1$#    who = $(NF - 2)#; s#^    when = \$2$#    when = $(NF - 1)#; s#^    words = after_two_tabs(\$0)$#    words = $NF#' lib/hearing.awk
+
+wreck_runner "a yes under a login floor has left is caught" \
+  oldlogin '/^        skipped\[field\[1\]\] = 1$/d' lib/hearing.awk
+
+wreck_runner "a read that carries on when speaker cannot say is caught" \
+  unskipped 's#^    \[ "\$heard" -eq 0 \] || refuse_unheard speaker$#    :#'
+
+wreck_runner "a run with no hand named that does not refuse is caught" \
+  nohand '/^refuse_with_no_hand() {/,/^}/s#^    \[ -n "\$1" \] && return 0$#    return 0#'
+
+wreck_runner "every hand floor's own account, not refused, is caught" \
+  ownhand '/^refuse_hands_floor_writes_as() {/,/^}/s#^    exit 50$#    return 0#'
+
+wreck_runner "every hand an author of floor's questions, not refused, is caught" \
+  authorhand 's#^    refuse_hands_that_wrote_the_questions "\$skipped"$#    :#'
+
+wreck_runner "every hand skipped, and floor asking anyway, is caught" \
+  asksanyway 's#^    \[ -n "\$skipped" \] || return 0$#    return 0#'
+
+wreck_runner "a hand who pastes the question, counted as its author, is caught" \
+  pasteauthor 's#if has(\$c.q) then . else .\[\$c.q\] = \$c end#.[$c.q] = $c#' lib/source-github.sh
+
+wreck_runner "the words read as the third field alone are caught" \
+  thirdfield 's#^    words = after_two_tabs(\$0)$#    words = $3#' lib/hearing.awk
+
+wreck_runner "a line naming nobody, taken, is caught" \
+  nobody '/if (who == "") { drop/d' lib/hearing.awk
+
+wreck_runner "backticks that are never taken off are caught" \
+  backticks '/^    words = unquoted(words)$/d' lib/hearing.awk
+
+wreck_runner "a comment that authorised nothing, left unsaid, is caught" \
+  nounread 's#^        stamp "\$1" answer.unread#        : stamp "$1" answer.unread#'
+
+wreck_runner "an authorisation yes that completes the clause is caught" \
+  stageless '/^receive_answer() {/,/^}/s#question_id "\$dir" "\$stage" "\$clause"#question_id "$dir" authorisation "$clause"#'
+
+wreck_runner "a yes written before its question is caught" \
+  nobound 's#return when > asked\[question\]#return 1#' lib/hearing.awk
+
+wreck_runner "a yes in its question's own second is caught" \
+  notstrict 's#return when > asked\[question\]#return when >= asked[question]#' lib/hearing.awk
+
+wreck_runner "a yes to a question speaker does not list is caught" \
+  unlisted '/if (!(question in asked)) { owe/d' lib/hearing.awk
+
+wreck_runner "a marker anywhere in a line, read as the ask, is caught" \
+  anymarker 's#test("(^|.n)floor-question: ")#test("floor-question: ")#; s#capture("(^|.n)floor-question: #capture("floor-question: #' lib/source-github.sh
+
+wreck_runner "a row that never says why is caught" \
+  noreason 's#this_when, reason()#this_when, ""#' lib/hearing.awk
+
+wreck_runner "a time in any shape is caught" \
+  whenshape '/if (!is_a_time(when)) { drop/d' lib/hearing.awk
+
+# 49 and 51 want a line at the base, and only a new run reads it. A pass that resumed them would spend
+# its bound on a fix no resume can make.
+wreck_runner "a pass that resumes an item with no hand named is caught" \
+  resumes49 's#^    \[ "\$2" -eq 49 \] && .*#    :#'
+
+wreck_runner "a pass that resumes an item whose hand wrote the questions is caught" \
+  resumes51 's#^    \[ "\$2" -eq 51 \] && .*#    :#'
 
 # The item proposes and the allowlist decides. A run that took an advised target as authorised would
 # let anyone who can file an item choose what the run may touch.
@@ -3682,7 +3735,7 @@ wreck_runner "a gate answering for a judge is caught" \
 # The reader half. The writer half cannot be observed today: the only comment
 # floor writes is a question, and `floor-question:` already bounds one.
 wreck_runner "a reader blind to the stamp is caught" \
-  blindstamp 's#held\[i\] ~ /\^floor-\[a-z\]+: /#held[i] ~ /^never-matches-this: /#' lib/source-github.sh
+  blindstamp 's#floor-\[a-z\]+: ") | not)#never-matches-this: ") | not)#' lib/source-github.sh
 
 # The seam adds the reference. Stop dropping the one a brief wrote and the
 # pull request names its item twice.

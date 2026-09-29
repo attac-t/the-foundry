@@ -9,12 +9,13 @@
 # Every path here is a plain file, so a person reads a question with an editor and answers it by
 # writing one. That is the whole of the ask channel: no terminal, no daemon, no inbox.
 #
-#     items/<item>                   what someone wants
-#     claims/<item>/held             which host took it, and when
-#     deliveries/<run>               what one run published
-#     questions/<item>/<question>    what a run asked
-#     answers/<item>/<question>      what a human answered
-#     labels/<item>                  one line per label: the label, when it went on, who put it on
+#     items/<item>                        what someone wants
+#     claims/<item>/held                  which host took it, and when
+#     deliveries/<run>                    what one run published
+#     questions/<item>/<question>         what a run asked
+#     questions/<item>/<question>.when    when it was first asked, UTC to the second
+#     answers/<item>/<any file>           one line per answer: who, when and the words, tab apart
+#     labels/<item>                       one line per label: the label, when it went on, who put it on
 #
 # Usage: sh source-dir.sh read    <item>
 #        sh source-dir.sh kind    <item>
@@ -24,7 +25,8 @@
 #        sh source-dir.sh release <item> <host>
 #        sh source-dir.sh publish <item> <run> <branch> <title> [word] [brief]
 #        sh source-dir.sh ask     <item> <question> <text>
-#        sh source-dir.sh receive <item> <question>
+#        sh source-dir.sh receive <item>
+#        sh source-dir.sh speaker <item>
 #        sh source-dir.sh find    <label>
 #
 # Exit: 0 answered · 1 nothing there · 2 asked for something this does not do · 3 it could not
@@ -93,9 +95,19 @@ delivered() { [ "$(awk 'NR == 1 { print $1 }' "$1")" = "$2" ]; }
 put_question() {
     file="$root/questions/$1/$2"
 
-    [ -f "$file" ] || record_question "$1" "$file" "$3" || return 3
+    [ -f "$file" ] || ask_afresh "$1" "$file" "$3" || return 3
     [ -r "$file" ] || return 3
     same_question "$file" "$3" || return 4
+
+    # Put before times were written down, so this ask is the first that counts. Its bound starts here.
+    [ -f "$file.when" ] || record_when "$file.when"
+}
+
+# The words and the time together. A time left behind by a deleted question would bound the new
+# ask by the old one.
+ask_afresh() {
+    record_question "$1" "$2" "$3" || return 3
+    record_when "$2.when"
 }
 
 record_question() {
@@ -103,16 +115,56 @@ record_question() {
     printf '%s\n' "$3" > "$2" || return 3
 }
 
+# UTC to the second, the shape a forge writes, so a reader compares two times as text.
+record_when() {
+    when=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+    [ -n "$when" ] || return 3
+
+    printf '%s\n' "$when" > "$1" || return 3
+}
+
 same_question() { [ "$(cat "$1")" = "$2" ]; }
 
-# A human's answer, as they left it. Nothing here reads it — what an answer means belongs
-# to whoever asked, and a transport that decided would answer for them. One that
-# cannot be read is not a human who has not replied.
-read_answer() {
-    [ -f "$root/answers/$1/$2" ] || return 1
-    [ -r "$root/answers/$1/$2" ] || return 3
+#
+# Every answer line on the item, as people left them: who, when and the words, tab apart. Any file
+# under `answers/<item>/`, in name order. Nothing here reads a line — what it means belongs to whoever
+# asked, and a transport that decided would answer for them.
+#
+# One that cannot be read is not a human who has not replied.
+#
+read_answers() {
+    an_answer_is_in "$root/answers/$1" || return 1
 
-    cat "$root/answers/$1/$2"
+    for file in "$root/answers/$1"/*; do
+        [ -f "$file" ] || continue
+        [ -r "$file" ] || return 3
+
+        # `awk`, never `cat`: a file with no last newline would run into the next file's first line.
+        awk 1 "$file" || return 3
+    done
+}
+
+an_answer_is_in() {
+    for file in "$1"/*; do [ -f "$file" ] && return 0; done
+    return 1
+}
+
+#
+# The account floor writes as, and each question put here with when it was first put.
+#
+# A directory has no accounts, so the first line is empty and so is each question's author. A question
+# with no time was put before times were kept. It is not listed until an ask records one.
+#
+speakers_on() {
+    printf '\n'
+
+    for asked in "$root/questions/$1"/*.when; do
+        [ -f "$asked" ] && [ -f "${asked%.when}" ] || continue
+        [ -r "$asked" ] || return 3
+
+        question=${asked##*/}
+        printf '\t%s\t%s\n' "${question%.when}" "$(cat "$asked")"
+    done
 }
 
 #
@@ -242,8 +294,9 @@ case "${1:-}" in
     release) shift; drop_claim       "${1:-}" "${2:-}" ;;
     publish) shift; publish_delivery "${1:-}" "${2:-}" "${3:-}" "${4:-}" "${5:-}" "${6:-}" ;;
     ask)     shift; put_question     "${1:-}" "${2:-}" "${3:-}" ;;
-    receive) shift; read_answer      "${1:-}" "${2:-}" ;;
+    receive) shift; read_answers     "${1:-}" ;;
+    speaker) shift; speakers_on      "${1:-}" ;;
     find)    shift; find_marked      "${1:-}" ;;
-    *)       echo "source-dir: read <item> | find <label> | claim <item> <host> | held <item> | release <item> <host> | publish <item> <run> <branch> <title> [word] [brief] | ask <item> <question> <text> | receive <item> <question>" >&2
+    *)       echo "source-dir: read <item> | find <label> | claim <item> <host> | held <item> | release <item> <host> | publish <item> <run> <branch> <title> [word] [brief] | ask <item> <question> <text> | receive <item> | speaker <item>" >&2
              exit 2 ;;
 esac

@@ -1808,7 +1808,13 @@ block. What is missing is the *ask*, which needs a work source to ask through an
 | this run has no charter | there is nothing to authorise yet | 1 |
 | the detector yields a gate the charter holds no clause for | condition 3 — re-derive | 12 |
 | the charter holds no clause | nothing is described | 8 |
-| a clause is introduced | condition 1 — nobody authorised it, and there is nowhere to ask | 11 |
+| a clause is introduced, and `.foundry/practice` at the base names no hand | nobody may answer. Add `authorise <hand>`; only a new run reads it | 49 |
+| every hand named is skipped, one or more being floor's account now | floor could never hear a yes. Run floor on an account of its own | 50 |
+| every hand named wrote floor's questions on this item | floor cannot tell their yes from its own. Name another hand | 51 |
+| the source knows neither `receive <item>` nor `speaker <item>` | it cannot say who wrote an answer | 27 |
+| the source could not say whom floor skips, or what was answered | answers read unchecked are no answers | 20 |
+| the source holds the clause's question in other words | delete the old question, or start a new run | 17 |
+| a clause is introduced, and no named hand has said yes | condition 1 — the question is asked, and a person owns the answer | 11 |
 | a clause grades no selected target | a bar that grades nothing is no bar | 9 |
 
 **In that order, and the order carries meaning.** Each refusal names a remedy, and a remedy that
@@ -1871,17 +1877,71 @@ Condition 3 is `underived_gates`, which `check` already reports. Condition 4 is 
 through the read-side check. Authorisation asks neither question a second time — a third writing of
 either is the tell that the boundary is wrong.
 
-**Condition 1 blocks rather than asking.** An introduced clause is a bar nobody authorised, and this
-stage does not put the question. A channel exists — `source ask` — and nothing here reads an answer
-back, so the run stops visibly with the clause named rather than proceeding on a bar it wrote itself.
+**Condition 1 asks, then blocks.** An introduced clause is a bar nobody authorised. The stage reads
+every answer first, asks about each clause no named hand has said yes to, and stops at 11 with each
+one named. It never proceeds on a bar the run wrote itself.
 
 **Condition 2 collapses into it.** No judge exists, so nothing reaches the semantic path: every
 clause the mechanical path cannot establish arrives as introduced instead. The gate therefore blocks
 more often than it eventually will, never less. Nothing durable records the ambiguity, because there
 is nothing yet that could answer it.
 
-**Not here yet:** reading an answer. `source ask` carries a question and `source receive` brings one
-back; nothing in this stage looks.
+### Who may answer, and what a yes is
+
+A line in `.foundry/practice` names who may answer: `authorise <hand>...`. More lines add hands. It is
+read at the run's base, as grants are, so a worker's own commit names nobody. Names compare in any case,
+so `Pat` at the base and `pat` on a comment are one hand.
+
+**A yes is one whole line, `yes <question>`**, where the question is `run.stage.clause`. The question
+prints the line fenced, so a copy is exact:
+
+````
+May this clause exist? Nothing derives it: <text>.
+
+A hand named in `.foundry/practice` authorises it with this line alone:
+
+```
+yes <run>.authorisation.<clause>
+```
+
+Delete the line before delivery to withdraw it.
+````
+
+Every answer on the item is read once. A line is a yes only when all of these hold:
+
+| It must | Or it is |
+|---|---|
+| come from a hand the base names | read past |
+| not come from an account `speaker` names: floor's now, or the first author of any of its questions here | skipped |
+| sit in a comment with no line starting `floor-<word>: ` | skipped, with its whole comment |
+| answer a question `speaker` lists | *a question nobody asked* |
+| be dated strictly after that question was first asked | *before its question* |
+| be exactly `yes <question>` once spaces and a carriage return at either end, one pair of backticks and the first word's case are set aside | *no whole-line yes* |
+
+No question opens or closes a window over the others, so questions asked back to back are each
+answerable. A no, a quote reply, whose line starts with `>`, and a yes followed by a tab and a no are
+none of them a yes.
+
+**A named hand's comment that authorises nothing writes a row in the ledger**, `answer.unread`: who
+wrote it, when, and the reason in italics above. `status` prints it. It is never a note on the item,
+because a note there is how floor once read its own words as a yes, #373. **Two stay silent**: a stamped
+comment, dropped before floor learns who wrote it, and a hand skipped as a `speaker` account.
+
+`source receive <stage> <clause>` hears the same way and prints the yes it heard: who, when and the
+line. At completion it writes the `human` row. A yes to the authorisation question never completes a
+clause, because the question carries its stage.
+
+**Floor refuses when nobody may answer**, before it asks anything, and at every read. With no hand named
+it exits 49. When every hand named is an account it skips, it exits 51 if every one wrote its questions,
+and 50 otherwise, naming each hand and why. A pass lets the item go at 49 and 51, whose fix is a line at
+the base, and resumes 50, whose fix is on the host.
+
+**What this cannot hold.** A hand is a name the source reports; floor cannot prove who typed it, #156. An
+edit keeps a comment's author and time, so an account that may edit a hand's comment can make it a yes.
+The forge dates a comment to the second, so a yes in its question's own second is not heard. A reply that
+pastes only the fenced line above a no reads as a yes; pasting the whole question carries floor's stamp,
+and is skipped. A question deleted and asked again starts its bound again, and a whole paste of it left
+behind becomes its first marker, so the pasting hand reads as a `speaker` until it goes.
 
 ---
 
@@ -1889,7 +1949,7 @@ back; nothing in this stage looks.
 
 Where a work item comes from, where a delivery is reported, and where a human is asked.
 
-Five verbs, and **transport is nearly all they are**. What an item means is planning's. What an
+Six verbs, and **transport is nearly all they are**. What an item means is planning's. What an
 answer means belongs to the stage that asked — this carries the words and reads none of them.
 
 | Verb | Carries | Refuses |
@@ -1897,8 +1957,15 @@ answer means belongs to the stage that asked — this carries the words and read
 | `read` | the item's words, into the run | a second, different item |
 | `publish` | this run's delivery, and the word it answers the item with | a second, different branch |
 | `ask` | a question about one clause | the same question in other words |
-| `receive` | the answer, or nothing | an answer handed to it |
+| `receive` | every answer line on the item, `<who>\t<when>\t<words>`, but a stamped comment's | an answer handed to it |
+| `speaker` | the account floor writes as now, then each question's first author, the question and when | nothing: one that cannot say exits 3 |
 | `claim` | that one host started | a second host |
+
+**`who` and `when` are the source's own record, never text.** Every `<when>` is UTC to the second,
+`YYYY-MM-DDTHH:MM:SSZ`, as a forge writes it, and two compare as text. A line with no `who`, or a time in
+any other shape, is dropped and said, and the rest are still read. **A source that knows neither verb is
+refused by name, 27**, in the one place core asks for either, and a `speaker` that cannot say stops the
+read at 20.
 
 
 ### An absence is observed, never assumed
@@ -1913,12 +1980,12 @@ missing tool otherwise reads as a missing item.
 
 ### There is no parameter for what a human supplies
 
-`read` names an item and never says what it holds. `receive` names a question and never says what
-came back. That is `evidence record`'s shape one stage over: a worker produces a human's answer only
+`read` names an item and never says what it holds. `receive` names an item and never says what came
+back. That is `evidence record`'s shape one stage over: a worker produces a human's answer only
 by writing it where a human's answer lives, and §2.5 already says what that gap is worth.
 
-Silence never returns as an answer — nothing on stdout, and a code saying nothing is there. A refusal
-comes back exactly as an approval does, because deciding which one it is belongs to whoever asked.
+The source returns every line, a no as plainly as a yes, because deciding which one it is belongs to
+whoever asked. `source receive` prints only the yes it heard, and nothing, exit 1, when it heard none.
 
 ### A question is derived, never issued
 
@@ -2291,6 +2358,10 @@ a send that failed, sent again next wake. Nothing in the run can answer any othe
 is let go with `pass.left why=deliver`, and the pass takes what is offered. A host with no command
 leaves a run waiting too, 44.
 
+**Opening the work, 49 and 51 let the item go**: `pass.left why=workspace code=49`, or `code=51`. Only a
+line at the base answers either, and only a new run reads the base. 50 is resumed like every other stop
+there, because its fix is on the host, and the bound counts each resume.
+
 **A wait is never counted, and every other resume is.** `FOUNDRY_PASS_TRIES` bounds them, five by
 default. Past it the pass writes `pass.left why=tries`, 46. A wake killed partway still counts,
 because its line was written first. A home that cannot take that line stops the wake before any
@@ -2343,15 +2414,22 @@ names the source rather than a fault to retry.
 `source.sh` never chooses it. A repository opts in by naming it in `FOUNDRY_SOURCE`, because a source
 that cannot be asked is a decision rather than a fallback.
 
-**What this does not prove.** The second adapter has been driven only by a stand-in on the path,
-never by the service — so its own conventions run for real and the service's do not. And an answer
-there is one line where a directory holds a whole file: the contract says nothing about an answer's
-shape, and the two adapters do not agree on one.
+**The directory adapter's answers are files a person writes.** Any file under `answers/<item>/`, one
+answer a line: who, a tab, when, a tab, and the words. It records when it first put each question in
+`questions/<item>/<question>.when`, and a question put before that time was kept is listed once an ask
+in the same words records one. The question says to answer with the line alone; on this source a bare
+line names nobody, so it is dropped and said.
 
-**Who answered is not checked.** RFC-001 §2.1 wants an attributed answer and §7 names one person who
-may give it — whoever selected the work item. Attribution is the source's: a file is attributed by
-who may write it, a comment by whoever left it, and neither is the identity `authority` records. So
-floor carries the words and adds nothing, and the rule lands with the stage that reads them.
+**What this does not prove.** The second adapter has been driven only by a stand-in on the path,
+never by the service — so its own conventions run for real and the service's do not. The stand-in
+answers the two `--jq` reads by emulating them from their own words, so it sees a changed expression,
+and it cannot see whether the service agrees. Both reads were measured live instead: 28 September,
+`gh` 2.94.0, on #128 and #373. `source-github.sh` says what each returned, beside `comments_read`. No
+live read has met a quoted or pasted marker.
+
+**Who answered is the source's to say, and a hand's to be.** A comment is attributed by the forge's own
+author field, and a directory line by its first field. Floor compares that name with the hands the base
+names and hears nobody else. It cannot prove who typed it: #156.
 
 ---
 
@@ -2650,7 +2728,7 @@ The mutant is caught only when its own assertion flips. Anything else red beside
 
 `tests/cases.sh` holds the cases and the bindings. `tests/mutants/` holds the patches.
 
-**Eight cases exist, and the audit above still runs all 197 breaks.** Nothing was moved out of it,
+**Eight cases exist, and the audit above still runs every break.** Nothing was moved out of it,
 so each of the eight is still a `sed` break as well. This is the seam, proved on eight — not the
 rebuilt audit.
 
