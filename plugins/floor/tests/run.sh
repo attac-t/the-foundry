@@ -3700,6 +3700,10 @@ wreck_runner "a struck clause's refusals counted at a judged stop are caught" \
 wreck_runner "a judged stop that acts on a no and writes no row is caught" \
   norowatstop '/^hear_and_say_what_was_heard() {/,/^}/s#^    record_the_hearing "\$1"$#    :#'
 
+# A run nobody shaped hears nowhere new, so the pass hears at a judged stop only for a panel clause.
+wreck_runner "a pass that hears at a judged stop in a run nobody shaped is caught" \
+  stophearsunshaped '/^hear_at_the_judged_stop() {/,/^}/s#^    \[ -n "\$(panel_clauses "\$dir")" \] || return 0$#    :#'
+
 # The item proposes and the allowlist decides. A run that took an advised target as authorised would
 # let anyone who can file an item choose what the run may touch.
 wreck_runner "an advised target that skips the allowlist is caught" \

@@ -6789,6 +6789,25 @@ a_pass_killed_in_deliver_is_let_go() {
 a_pass_killed_in_deliver_is_let_go
 
 #
+# **A pass at a `judged` stop hears nothing in a run no member shaped.** Its practice names no hand, so a
+# hearing would stop the next wake at 49. It acts on the refusal again instead, and stops at 39.
+#
+a_judged_stop_in_a_run_no_member_shaped_hears_nothing() {
+  mkdir -p "$src/items" "$src/labels" "$src/claims"
+  a_judged_pass "$tmp/rsunshaped" rsunshaped reject 596 \
+    || { skip "a judged stop nobody shaped — git could not make a repo here"; return; }
+
+  is    "a refusal stops a pass nobody shaped at judged"           "$(FOUNDRY_PASS_COMMAND=true resume_in "$tmp/rsunshaped")" "39"
+  said=$(FOUNDRY_PASS_TRIES=2 FOUNDRY_PASS_BEAT=1 FOUNDRY_PASS_COMMAND=true floor_says "$tmp/rsunshaped" pass; printf '\nexit=%s' "$?")
+  has   "the next wake resumes at that judged stop"                "$said" "this pass resumes [596] after [pass.stopped judged]"
+  lacks "and hears nothing there, so no missing hand stops it"     "$said" "nobody may answer here"
+  has   "it acts on the refusal again, and stops at 39"            "$said" "exit=39"
+
+  rm -rf "$src/claims/596" "$src/labels/596" "$src/items/596"
+}
+a_judged_stop_in_a_run_no_member_shaped_hears_nothing
+
+#
 # **A step that fails on every wake is let go past the bound**: gates that keep failing under a
 # committing worker, and a judge that cannot run here.
 a_step_failing_on_every_wake_is_let_go() {
