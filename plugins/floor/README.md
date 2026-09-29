@@ -1184,6 +1184,9 @@ that fits:**
 It refuses first as `derive` and `authorise` do. No charter or no item is 1. The wrong repository or
 no base is 6. No resolver is 3, and a declaration nobody can read is 22.
 
+**A pass runs `charter shape` between `charter derive` and `open`**, so shaping needs no command of its
+own. *What a pass may take* says how a pass routes each code.
+
 **Each entry point is checked before any member is asked**, so one drifted pin never spends another
 member's call. An entry point the plugin does not ship is 21. One that is not what the pin says is 40.
 
@@ -2256,12 +2259,14 @@ when the charter holds a clause nothing derived:
 | `deliver` | after its grant and its ancestry | yes |
 | `merge` | after its grant and its source, as whoever is signed in | yes |
 | `judged` | when the panel proposed a clause, before it asks any judge | yes |
+| a pass at a `judged` stop | when the panel proposed a clause, before the ledger decides | yes |
 
 **`judged` hears only when a `shape.proposal` row says a clause entered**, since only then can a hand
 have struck one, so a run nobody shaped hears nowhere new. It hears in its own shell, and stops with
 20, 27, 49, 50 or 51 as any hearing does. A no it acted on and a person later deleted leaves its
 `answer.heard` row, which explains the bench `judged` skipped. `deliver` then refuses at 15, and a
-person runs `judged` in the run.
+person runs `judged` in the run. **A pass at a `judged` stop hears on the same terms.** It hears in a
+capture whose code it reads, and a refusal there is a stop at `judged`, resumed and counted.
 
 **Floor refuses when nobody may answer**, before it asks anything, and at every read. With no hand named
 it exits 49. When every hand named is an account it skips, it exits 51 if every one wrote its questions,
@@ -2270,8 +2275,9 @@ and 50 otherwise, naming each hand and why. A source nobody can ask is 20. `comp
 is 3 there, before any hearing.
 
 A pass lets the item go at 49 and 51, whose fix is a line at the base, and resumes 50, whose fix is on
-the host. **At `deliver` it resumes 20 and 50, as it resumes 19.** Each resume counts toward
-`FOUNDRY_PASS_TRIES`, so a host never fixed ends at 46.
+the host. **At `open` it waits on 11, 47, uncounted**, since a named hand can answer. **At `deliver`
+it resumes 20 and 50, as it resumes 19.** Each resume counts toward `FOUNDRY_PASS_TRIES`, so a host
+never fixed ends at 46.
 
 **`merge` reads the item as whoever is signed in.** Floor skips its own account. So a hand who
 answered, and runs `merge` on their own login, has their yes skipped. That is 15, or 50 when they are
@@ -2283,7 +2289,8 @@ A proposer is a name the environment gives, `FOUNDRY_WORKER`, and floor cannot p
 false one now strikes a member from a panel at `introduce`. Before, it could only lose a verdict.
 A second worker introducing the same words is no proposer, so it may judge a clause it also proposed.
 The panel is asked whether or not a yes stands, so a withdrawn clause can spend a member's rounds. A
-clause introduced after `open` is never asked, since only `authorise` asks. A completion question asked
+clause introduced after `open` is never asked, since only `authorise` asks. A pass then waits at
+`deliver` on a person nobody asked, #1080. A completion question asked
 before its closing paragraph existed reads as other words when asked again: 17. A `Judged` clause
 introduced before a bench existed has no panel, and reads `unmet` until it is introduced again. An
 edit keeps a comment's author and time, so an account that may edit a hand's comment can make it a yes.
@@ -2670,18 +2677,42 @@ After a failed command or failed gates it acts again. At a `judged` stop, the le
 | a member has not answered | asks it, and only it |
 | every member approved | goes on to the request |
 
+**The pass hears first there, when the panel proposed a clause**, as `judged` does, and records what
+it heard. It hears in a capture whose code it reads. A refusal on the way is a stop at `judged`,
+resumed and counted. **A clause a hand struck is passed over**: its refusals spend no rounds, and its
+deadlock or silence lets nothing go.
+
 **Revise rounds are counted per member and clause**, against that member's `rounds` line, or three
 where the charter has none.
 
-**`deliver`'s code says who can answer it.** 15, 18 and 32 wait on a person: `pass.waiting`, 47. 19 is
-a send that failed, sent again next wake. **20 and 50 are resumed there too.** A source nobody could
-ask, and floor on a hand's account, are each fixed on the host. Nothing in the run can answer any other
-code, so the run is let go with `pass.left why=deliver`, and the pass takes what is offered. 49 and 51
-are let go that way, as at the workspace. A host with no command leaves a run waiting too, 44.
+**`deliver`'s code says who can answer it.** 15, 18 and 32 wait on a person, 47, with
+`pass.waiting why=deliver`. 19 is a send that failed, sent again next wake. **20 and 50 are resumed
+there too.** A source nobody could ask, and floor on a hand's account, are each fixed on the host.
+Nothing in the run can answer any other code, so the run is let go with `pass.left why=deliver`, and
+the pass takes what is offered. 49 and 51 are let go that way, as at the workspace. A host with no
+command leaves a run waiting too, 44.
 
-**Opening the work, 49 and 51 let the item go**: `pass.left why=workspace code=49`, or `code=51`. Only a
-line at the base answers either, and only a new run reads the base. 50 is resumed like every other stop
-there, because its fix is on the host, and the bound counts each resume.
+**The pass shapes before it opens the work.** It runs `charter shape` between `charter derive` and
+`open`, on every wake that starts the run over. On a run already shaped, that asks nobody and writes
+nothing. A refused contribution is the member's, and nothing in the run can answer it:
+`pass.left why=shape code=56`, 48. Any other code is `pass.stopped why=shape`, which the next wake
+starts over and counts. So a member missing past `FOUNDRY_PASS_TRIES` wakes ends the item at 46, its
+claim held.
+
+**Opening the work, 11 is a wait**: `pass.waiting why=workspace code=11`, 47, never counted.
+`authorise` reaches 11 only once the hearing passed and each question was put, so a named hand can
+answer. The answer resumes the same run. The next wake derives, shapes, which asks nobody, and opens,
+and `authorise` hears the yes or the no. The checkout still points at the run, so no second run is
+made.
+
+**49 and 51 let the item go**: `pass.left why=workspace code=49`, or `code=51`. Only a line at the base
+answers either, and only a new run reads the base. 50 is resumed like every other stop there, because
+its fix is on the host, and the bound counts each resume.
+
+**What shaping costs a pass.** Each wake that opens work checks out the base once more, to learn
+whether it names a member. Nothing records that. A member missing for two wakes spends two resumes. A
+run a pass began before shaping shipped, and past `open`, is never shaped: it resumes from its line.
+`run.sh release <item>` frees the item, and the next run is shaped.
 
 **A wait is never counted, and every other resume is.** `FOUNDRY_PASS_TRIES` bounds them, five by
 default. Past it the pass writes `pass.left why=tries`, 46. A wake killed partway still counts,
@@ -2692,7 +2723,9 @@ stops there, and the claim the door renewed keeps the item on this host, uncount
 
 **What the bound costs:** a run that needs more than five resumes stops, even if each one moved it
 forward. `run.sh release <item>` on this host frees the item, and the next wake takes it into a new
-run. **A run waiting on a person holds this host**: every wake exits 47 and takes no other work.
+run. **A run waiting on a person holds this host**: every wake exits 47 and takes no other work. That
+holds at `open` as at `deliver`. A named hand's silence on a clause asked there stalls the checkout,
+not only the run.
 
 **A read that fails after the run is made is a stop.** The pass writes `pass.began` before it reads
 the item a second time, and a read that fails then is `why=read`. #1026. A run whose pointer could
