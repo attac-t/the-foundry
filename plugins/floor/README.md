@@ -2160,8 +2160,8 @@ items carrying that label, and who put it on each, and when. It prints them olde
 
 **The line is read at `origin/HEAD`**, where the default branch stood at the last fetch. A worker's
 commit moves `HEAD` and never that, so it grants nothing. A hand that rewrites the ref does reach it,
-and that is the actor question #156 owns. A checkout that has not fetched since a person changed the
-line reads the old one.
+and that is the actor question #156 owns. `run.sh offer` reads the line where the last fetch left it.
+A pass fetches first, below, so a person's change reaches the next pass that selects.
 
 **A line must name a hand.** One naming none would take a label anyone put on, and an issue form can
 put a label on every issue it opens. No fetched default branch, no line, or no hand, and nothing is
@@ -2184,6 +2184,35 @@ item is, that is exit 30. A run a pass began is carried on first, below. A run a
 alone, exit 43: every verb a pass calls reads the active run first. Nothing offered is exit 42, with the
 reason. **Once a pass begins its run, every verb it calls reads that run**, whatever the checkout
 points at by then, and an item with no words is titled by its id.
+
+**A pass fetches the default branch before it selects, and only then.** It asks origin which branch
+is its default and fetches that branch alone. It never writes `origin/HEAD`. That ref is a person's,
+so when origin names another branch the pass starts nothing new, 53, and names both. A fetch that
+fails starts nothing new either, 52.
+
+**Then the checkout moves to the fetched tip, by a fast-forward or not at all.** It must be on the
+default branch, holding nothing uncommitted. Untracked files count too, since the detector reads a
+`Makefile` or `.foundry/gates` wherever it stands. A detached checkout, another branch, work nobody
+committed, or a commit the tip lacks is exit 54. The line names which. Floor never resets, merges
+or stashes, so a person clears it. The new run begins at the fetched tip, where the rule was read.
+
+**The move follows git's own order: the tree first, then the branch.** The branch moves only while
+it still names the commit read. When git refuses either step, that is 54 too, with git's own words.
+A tree whose branch would not follow goes back. One that cannot go back is 54 saying so, since the
+checkout is then not as it was. A commit landing in the checkout before the run is made is 54 as
+well. The run would begin where its rule was not read.
+
+**The run this checkout points at never moves.** The door carries it on first, and a resume never
+fetches, so it keeps its base and its bar. A run whose pointer a person cleared is not carried on,
+so the checkout can move under it. If the move changed a file its bar is read from, derive and the
+grade refuse it. The host is checked before the fetch and again before the move. A pass that slept
+and lost the host moves nothing.
+
+Each call to origin is bounded. HTTP gives up on a transfer under 1000 bytes a second for a minute.
+ssh runs with `BatchMode=yes`, a 30-second connect timeout and a 15-second keepalive, added to the ssh
+the host names. Those are OpenSSH's options, so plink refuses them. Nothing prompts, though a
+credential helper that opens a window can still wait for a person. **What it costs:** one fetch per
+pass that selects. A host on a detached or non-default checkout takes no new work.
 
 **One live pass per host, taken at the door.** A claim from the same host renews, so two passes in
 two checkouts on one host could both take one item. The door keeps them apart. A host is one home on
@@ -2219,7 +2248,8 @@ pass, each appended whole: `woke` first, and `ended` at exit with what the pass 
 `FOUNDRY_WAKE`, one token each: `mechanism=`, `cadence=`, `identity=` and `stops=`. Floor adds
 `command=`, the host command's first word and never its arguments. A field nobody named reads
 `unnamed`. `FOUNDRY_WAKE` is read once and unset, so no gate or judge sees it, and `pass.began` and
-`pass.resumed` carry the same fields.
+`pass.resumed` carry the same fields. `pass.began` and the `ended` line also carry `rule-at=`: the
+commit the pass read its rule at. A pass that stopped before reading one says `none`.
 
 | `read=` | Where the pass ended |
 |---|---|
@@ -2228,6 +2258,9 @@ pass, each appended whole: `woke` first, and `ended` at exit with what the pass 
 | `fault` | the take failed with no rival, 3 |
 | `no-source` | the host names no work source, 3 |
 | `superseded:<number>` | a newer pass took the host, 43; mid-claim it reads `superseded` |
+| `unfetched` | the default branch could not be fetched, 52 |
+| `default-differs` | origin's default is not the branch `origin/HEAD` names, 53 |
+| `in-the-way:<what>` | the checkout could not fast-forward: `detached`, `branch`, `unclean`, `diverged`, `unmoved` or `stranded`. A commit that landed before the run is `moved`. 54 |
 | `nothing-offered` | nothing was offered, 42 |
 | `all-held` | every item offered was held or underway, 30 |
 | `source-unasked` | the source could not be asked, 20 |
