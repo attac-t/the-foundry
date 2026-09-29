@@ -59,7 +59,7 @@ what a gate read.
 
 **The hook is lint.** The worker holds the same account and can edit it, so it closes the easy path
 and nothing more. `ticks.sh` still reports after the merge, and that remains the audit.
-**`ticks.sh` hears one closing word of nine, in the body alone**, and #1033 owns that.
+**It reads a merge as the hook does**: all nine words, in the body, the title and each commit.
 
 ## A box that cannot be met yet
 
