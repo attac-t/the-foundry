@@ -8158,13 +8158,13 @@ members_short_of_the_bench() {
 
 # `$4` is the first word of the clause, so a finding used to name half its own subject.
 #
-# `+` for the same reason `pinned_command` has it: blanking three fields of a three-field record —
-# a clause with no text — leaves two spaces, not three, and a fixed count returns them as the name.
+# **Read as written, by `substr`, as `clause_kind_and_text` reads it.** Blanking three fields rebuilt
+# the line one space apart, so a text holding two in a row read two ways and `judged` missed its strike.
 #
-# `forged_ids` does not cover it, though it looks as though it should: `clause_id ""` is a value like
-# any other, so a clause whose id was made from no text is not forged and `check` passes it.
+# A clause with no text reads as nothing, and `forged_ids` passes it: `clause_id ""` is a value like
+# any other, so a clause whose id was made from no text is not forged.
 clause_text() {
-    awk -v id="$2" '$1 == "clause" && $2 == id { $1 = ""; $2 = ""; $3 = ""; sub(/^ +/, ""); print; exit }' \
+    awk -v id="$2" '$1 == "clause" && $2 == id { print substr($0, 10 + length($2) + length($3)); exit }' \
         "$1" 2>/dev/null
 }
 

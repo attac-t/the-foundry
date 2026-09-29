@@ -12560,7 +12560,7 @@ why readers leave
 a_contribution_out_of_shape_is_refused_whole
 
 # Each way a line is out of shape refuses its contribution, 56: a `why` before any proposal, `nothing`
-# beside a proposal, a kind in lower case, a proposal's text holding a tab, and a proposal with no text.
+# beside a proposal, a kind in lower case, and a proposal's text holding a tab, missing, or spaced off.
 each_line_out_of_shape_refuses_its_contribution() {
   a_plugin_shaping shp17 || { skip "lines out of shape — the plugin could not be copied"; return; }
   a_shaped_repo shp17 1317 "$(shape_line why:first shp17)
@@ -12568,6 +12568,7 @@ $(shape_line nothing:beside shp17)
 $(shape_line kind:lower shp17)
 $(shape_line text:tab shp17)
 $(shape_line text:none shp17)
+$(shape_line text:spaced shp17)
 " || { skip "lines out of shape — git could not make a repo here"; return; }
   member_says shp17 why:first 'why it matters
 propose Judged the page is readable
@@ -12581,6 +12582,8 @@ propose Judged the page is readable
 "
   member_says shp17 text:none 'propose Judged
 '
+  member_says shp17 text:spaced 'propose Judged  the page is readable
+'
   said=$(spf_says charter shape; printf '\nexit=%s' "$?")
 
   has "a why before any proposal is refused"       "$(sp_row_of why:first)" "refused: line 1"
@@ -12588,6 +12591,7 @@ propose Judged the page is readable
   has "and a kind in lower case"                   "$(sp_row_of kind:lower)" "refused: line 1"
   has "and a proposal whose text holds a tab"      "$(sp_row_of text:tab)" "refused: line 1"
   has "and a proposal with no text"                "$(sp_row_of text:none)" "refused: line 1"
+  has "and a proposal whose text opens with a space" "$(sp_row_of text:spaced)" "refused: line 1"
   has "each is 56"                                 "$said" "exit=56"
 }
 each_line_out_of_shape_refuses_its_contribution
@@ -13258,6 +13262,32 @@ reach  cat:judge  sh bin/bench.sh
   is "and check finds nothing forged"     "$(code_of spf charter check)" "0"
 }
 a_proposal_enters_byte_for_byte
+
+#
+# **A clause is its text, two spaces and all.** A hand strikes a proposal holding two spaces in a row,
+# and `judged` reads the strike under the same words, so its bench is never asked the struck clause.
+#
+a_struck_clause_keeps_its_spacing() {
+  a_plugin_shaping shp43 || { skip "spacing — the plugin could not be copied"; return; }
+  a_shaped_repo shp43 1343 "$(shape_line ann:spaced shp43)
+bench  cat:judge
+reach  cat:judge  sh bin/bench.sh
+" || { skip "spacing — git could not make a repo here"; return; }
+  member_says shp43 ann:spaced 'propose Judged the page  loads fast
+propose Judged the log is quiet
+'
+  spf charter shape >/dev/null
+  spf authorise >/dev/null
+  sp_answers strike pat 2999-01-01T00:00:00Z "no $(sp_asks authorisation 'the page  loads fast')"
+  sp_answers keep pat 2999-01-01T00:00:01Z "yes $(sp_asks authorisation 'the log is quiet')"
+  sp_opens
+
+  is    "judged reads a strike on a clause holding two spaces in a row" "$(code_of spf judged)" "0"
+  lacks "and never asks the bench it"                                   "$(cat "$tmp/shp43.asked" 2>/dev/null)" "loads fast"
+  has   "while it asks the other"                                       "$(cat "$tmp/shp43.asked" 2>/dev/null)" "the log is quiet"
+  is    "and complete finds nothing missing"                            "$(code_of spf complete)" "0"
+}
+a_struck_clause_keeps_its_spacing
 
 #
 # **Every wake this suite made says where it ended.** Last, so it reads them all. An `ended` reading

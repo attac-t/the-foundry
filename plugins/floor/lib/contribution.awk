@@ -53,10 +53,11 @@ function in_shape(word, rest) {
     return named > 0
 }
 
-# A clause: its kind exactly, a space, then text holding no tab or carriage return.
+# A clause: its kind exactly, one space, then text holding no tab or carriage return. A text opening
+# with a space would read two ways, since `read` drops that space and `substr` keeps it.
 function a_proposal(rest) {
     if (said_nothing) return 0
-    if (rest !~ /^(Gate|Judged|Decided) ./) return 0
+    if (rest !~ /^(Gate|Judged|Decided) [^ ]/) return 0
     if (rest ~ /[\t\r]/) return 0
 
     named++

@@ -3520,10 +3520,10 @@ wreck_runner "nothing beside an unknown, refused, is caught" \
   nothingalone 's#if (word == "objection" || word == "unknown") return 1#if (word == "objection" || word == "unknown") return !said_nothing#' lib/contribution.awk
 
 wreck_runner "a kind read in any case is caught" \
-  anycasekind 's#if (rest !~ /^(Gate|Judged|Decided) ./) return 0#if (tolower(rest) !~ /^(gate|judged|decided) ./) return 0#' lib/contribution.awk
+  anycasekind 's#if (rest !~ /^(Gate|Judged|Decided) \[^ \]/) return 0#if (tolower(rest) !~ /^(gate|judged|decided) [^ ]/) return 0#' lib/contribution.awk
 
 wreck_runner "a proposal with no text, taken, is caught" \
-  notext 's#if (rest !~ /^(Gate|Judged|Decided) ./) return 0#if (rest !~ /^(Gate|Judged|Decided)/) return 0#' lib/contribution.awk
+  notext 's#if (rest !~ /^(Gate|Judged|Decided) \[^ \]/) return 0#if (rest !~ /^(Gate|Judged|Decided)/) return 0#' lib/contribution.awk
 
 wreck_runner "a carriage return no longer trimmed is caught" \
   keepcr 's#sub(/^\[ \\r\]+/, "", said)#sub(/^ +/, "", said)#; s#sub(/\[ \\r\]+\$/, "", said)#sub(/ +$/, "", said)#' lib/contribution.awk
@@ -3674,6 +3674,12 @@ wreck_runner "a member handed its caller's FOUNDRY_RUN is caught" \
 
 wreck_runner "a clause line decoded on its way into the charter is caught" \
   putdecodes 's#^    line=\$line beside=\${5:-} awk -v id="\$2" #    beside=${5:-} awk -v id="$2" -v line="$line" #; s#print ENVIRON\["line"\]#print line#g'
+
+wreck_runner "a clause's text read one space apart is caught" \
+  collapsetext 's#{ print substr(\$0, 10 + length(\$2) + length(\$3)); exit }#{ $1 = ""; $2 = ""; $3 = ""; sub(/^ +/, ""); print; exit }#'
+
+wreck_runner "a proposal whose text opens with a space, taken, is caught" \
+  spacedkind 's#if (rest !~ /^(Gate|Judged|Decided) \[^ \]/) return 0#if (rest !~ /^(Gate|Judged|Decided) ./) return 0#' lib/contribution.awk
 
 # The item proposes and the allowlist decides. A run that took an advised target as authorised would
 # let anyone who can file an item choose what the run may touch.
