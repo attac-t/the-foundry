@@ -3430,7 +3430,7 @@ wreck_runner "a bench read as nobody where the base cannot be read is caught" \
 #
 # In the order the model suite runs, three go red first on an older case, and each still fails one of
 # the shaping's own cases after it: `checkfirst` on a_member_who_proposes_a_clause_never_judges_it,
-# `workerno` on authorisation_asks_and_hears, and `hearsunshaped` on the_brief_a_judge_is_handed.
+# `workerno` on authorisation_asks_and_hears, and `hearsunshaped` on a_pass_takes_the_first_item_nobody_holds.
 #
 wreck_runner "a shape line read from the checkout, not the base, is caught" \
   shapecheckout 's#^    shape_declared=\$(sh "\$(judged_resolver)" "\$shape_checkout"); shape_read=\$?$#    shape_declared=$(detect_judged); shape_read=$?#'
