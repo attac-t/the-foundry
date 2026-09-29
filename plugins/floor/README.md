@@ -2712,7 +2712,12 @@ its fix is on the host, and the bound counts each resume.
 **What shaping costs a pass.** Each wake that opens work checks out the base once more, to learn
 whether it names a member. Nothing records that. A member missing for two wakes spends two resumes. A
 run a pass began before shaping shipped, and past `open`, is never shaped: it resumes from its line.
-`run.sh release <item>` frees the item, and the next run is shaped.
+
+**`run.sh release <item>` does not end that run.** It frees the claim alone. The checkout still points
+at the run, so the next wake resumes it and claims the item again. Only a pass letting the run go ends
+it, by the table above: its last line delivered or let it go, another host holds the item, or a request
+for it is open elsewhere. Once a pass has let the run go, `release` frees the item, and the next run is
+shaped.
 
 **A wait is never counted, and every other resume is.** `FOUNDRY_PASS_TRIES` bounds them, five by
 default. Past it the pass writes `pass.left why=tries`, 46. A wake killed partway still counts,

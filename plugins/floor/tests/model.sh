@@ -13726,6 +13726,45 @@ $(a_bench_judge "$tmp/psh14.asked")" && as_fetched "$tmp/psh14" \
 a_pass_resumes_each_stop_at_deliver
 
 #
+# **`release` frees the claim alone.** A run begun before its base named a member stops past `open`, and
+# the checkout still points at it, so the next wake resumes it, claims the item again, and never shapes.
+#
+# The bound letting the run go is what ends it. Then `release` frees the item, and the next run shapes.
+#
+a_released_item_stays_with_the_run_the_checkout_points_at() {
+  a_plugin_shaping psh15 || { skip "a released item — the plugin could not be copied"; return; }
+  a_shaping_pass psh15 1415 'bench  cat:judge
+reach  cat:judge  sh bin/bench.sh
+' || { skip "a released item — git could not make a repo here"; return; }
+  member_says psh15 ann:late 'nothing
+'
+
+  has "a pass whose command fails stops past open, 45"           "$(FOUNDRY_PASS_TRIES=1 FOUNDRY_PASS_COMMAND='exit 7' sp_pass)" "exit=45"
+  sp_points_at
+  commit_file "$tmp/psh15" .foundry/judged "$(shape_line ann:late psh15)
+bench  cat:judge
+reach  cat:judge  sh bin/bench.sh
+" && as_fetched "$tmp/psh15" || { skip "a released item — git could not name a member at the base"; return; }
+
+  floor "$sp_repo" release 1415 >/dev/null 2>&1
+  absent "release frees the claim alone"                         "$src/claims/1415/held"
+  said=$(FOUNDRY_PASS_TRIES=1 FOUNDRY_PASS_COMMAND='exit 7' sp_pass)
+  has    "the next wake resumes the run the checkout points at"  "$said" "this pass resumes [1415] after [pass.stopped command-failed]"
+  exists "and claims the item again"                             "$src/claims/1415/held"
+  absent "and a run begun before its base named a member never shapes" "$sp_run/shaped"
+
+  has "the bound lets that run go, which ends it"                "$(FOUNDRY_PASS_TRIES=1 FOUNDRY_PASS_COMMAND='exit 7' sp_pass)" "exit=46"
+  floor "$sp_repo" release 1415 >/dev/null 2>&1
+  has "then release frees the item, and the next wake takes it into a new run" "$(FOUNDRY_PASS_COMMAND=true sp_pass)" "exit=0"
+  sp_points_at
+  is  "so the item has had two runs"                             "$(runs_for_item 1415 | grep -c .)" "2"
+  is  "and the new one shaped, its member seated"                "$(cat "$sp_run/shaped/seats" 2>/dev/null)" "ann:late sat"
+  is  "and asked once"                                           "$(times_asked psh15 ann:late)" "1"
+  sp_leaves 1415
+}
+a_released_item_stays_with_the_run_the_checkout_points_at
+
+#
 # **Every wake this suite made says where it ended.** Last, so it reads them all. An `ended` reading
 # `unread`, or an offer failing with a code the offer never gives, is an exit with no `read=` row.
 #
