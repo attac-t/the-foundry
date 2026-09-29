@@ -10,9 +10,13 @@
 # `nothing` may stand beside objections and unknowns that name no proposal, and never beside a
 # `propose` line, whichever of the two comes first.
 #
-# **A line is read as A1 reads a yes, and no further**: spaces and a carriage return go at either end,
-# and the first word is read in any case. A blank line is no line. A proposal's text holds no tab or
-# carriage return, as `is_one_line` reads a clause, so what this takes `introduce` takes too.
+# **A line is read as A1 reads a yes, less its backticks**: spaces and a carriage return go at either
+# end, and the first word is read in any case. A yes also loses one pair of backticks, since a person
+# may copy it from a rendered question. A member prints its lines, and each must open with one of the
+# seven words, so a line wrapped in backticks is out of shape, and it is refused, never unwrapped.
+#
+# A blank line is no line. A proposal's text holds no tab or carriage return, as `is_one_line` reads a
+# clause, so what this takes `introduce` takes too.
 #
 # Prints `<proposal>\t<word>\t<text>` for each line: the proposal it names, 0 for none, the word
 # folded, and the rest of the line. The first line out of shape prints alone, as `<number>\t<line>`,
@@ -53,10 +57,11 @@ function in_shape(word, rest) {
     return named > 0
 }
 
-# A clause: its kind exactly, a space, then text holding no tab or carriage return.
+# A clause: its kind exactly, one space, then text holding no tab or carriage return. A text opening
+# with a space would read two ways, since `read` drops that space and `substr` keeps it.
 function a_proposal(rest) {
     if (said_nothing) return 0
-    if (rest !~ /^(Gate|Judged|Decided) ./) return 0
+    if (rest !~ /^(Gate|Judged|Decided) [^ ]/) return 0
     if (rest ~ /[\t\r]/) return 0
 
     named++

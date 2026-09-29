@@ -1257,8 +1257,10 @@ a_charter_derives_from_the_repository_it_is_run_in() {
     || { skip "charter — git could not make a repo here"; return; }
 
   chrun=$(floor "$tmp/ch" new "Charter")
-  floor "$tmp/ch" charter derive >/dev/null 2>&1
+  said=$(floor_says "$tmp/ch" charter derive)
 
+  # A `bench` line names who judges and derives no clause, so it never stops the judged half.
+  lacks "a charter derives past a bench line" "$said" "judged half stopped"
   exists "the charter is a file in the run" "$(charter_of "$chrun")"
 
   # `absent "$home/charter"` passed against the one mutation aimed at this, which writes
@@ -2790,7 +2792,8 @@ completion_refuses_what_is_only_vacuously_true
 #
 # A clause nothing pinned is invariant 1's *introduced*, and only a hand's yes lets it bind. This
 # base names no hand, so nobody could give one: `complete` hears the item first and refuses at 49,
-# where it once graded the clause and said 15.
+# where it once graded the clause and said 15. Each is read on its own, so a grade before the
+# hearing, a refusal naming another fix and an exit left inside a capture each fail where they happen.
 #
 an_introduced_clause_holds_delivery() {
   make_repo "$tmp/cs" main && set_origin "$tmp/cs" 'https://github.com/acme/cs.git' \
@@ -2808,10 +2811,11 @@ an_introduced_clause_holds_delivery() {
   is "every derived clause evidenced, it may deliver" "$(code_of floor "$tmp/cs" complete)" "0"
 
   floor "$tmp/cs" charter introduce Decided "ship on friday" >/dev/null 2>&1
+  said=$(floor_says "$tmp/cs" complete)
 
-  is  "and a clause nothing derived, with no hand named, holds it at 49, where it said 15" \
-      "$(code_of floor "$tmp/cs" complete)" "49"
-  has "naming the line a hand needs" "$(floor_says "$tmp/cs" complete)" "authorise <hand>"
+  lacks "a clause nothing derived is heard before it is graded" "$said" "introduced: [ship on friday]"
+  has   "and with no hand named, the refusal names the line a hand needs" "$said" "authorise <hand>"
+  is    "and holds it at 49, where it said 15" "$(code_of floor "$tmp/cs" complete)" "49"
 }
 an_introduced_clause_holds_delivery
 
@@ -3828,21 +3832,26 @@ deriving_from_a_subdirectory_is_the_same_answer() {
 deriving_from_a_subdirectory_is_the_same_answer
 a_tampered_charter_is_visible
 
+#
 # `introduce` replaces the record for a meaning. Appending left the first one winning for every
 # reader, so the second was accepted and changed nothing. Its panel is written once too, and the
-# member who proposed it sits on none of it.
+# member who proposed it sits on none of it. Each is read on its own, so each fault fails on its own.
+#
 introducing_twice_leaves_one_record() {
   [ -n "${chrun:-}" ] || { skip "one record — no charter run"; return; }
 
   floor_worked "$tmp/ch" alice charter introduce Judged 'said once' >/dev/null 2>&1
   floor_worked "$tmp/ch" alice charter introduce Judged 'said once' >/dev/null 2>&1
+  id=$(clause_of 'said once') held=$(charter_of "$chrun")
+  seated=$(awk -v id="$id" '$1 == "judge" && $2 == id { print $3 }' "$held")
+  proposed=$(awk -v id="$id" '$1 == "proposer" && $2 == id { print $3 }' "$held")
 
-  is "the same clause twice is one record" \
-     "$(awk -v id="$(clause_of 'said once')" '$1 == "clause" && $2 == id' "$(charter_of "$chrun")" | grep -c .)" "1"
-  is "one judge record per member, and none for the member who proposed it" \
-     "$(awk -v id="$(clause_of 'said once')" '$1 == "judge" && $2 == id { print $3 }' "$(charter_of "$chrun")" | tr '\n' ' ')" "reviewer "
-  is "and one proposer" \
-     "$(awk -v id="$(clause_of 'said once')" '$1 == "proposer" && $2 == id { print $3 }' "$(charter_of "$chrun")")" "alice"
+  is "the same clause twice is one record" "$(awk -v id="$id" '$1 == "clause" && $2 == id' "$held" | grep -c .)" "1"
+  is "introduced twice, its proposer holds no judge record" "$(printf '%s\n' "$seated" | grep -cx alice)" "0"
+  is "no member is seated twice"                            "$(printf '%s\n' "$seated" | sort | uniq -d)" ""
+  is "the panel is the bench less its proposer"             "$(printf '%s\n' "$seated" | tr '\n' ' ')" "reviewer "
+  is "the proposer is the worker who introduced it"         "$(printf '%s\n' "$proposed" | sort -u)" "alice"
+  is "and it is recorded once"                              "$(printf '%s\n' "$proposed" | grep -c .)" "1"
 }
 introducing_twice_leaves_one_record
 
@@ -4369,11 +4378,38 @@ an_offer_is_a_named_mark_oldest_first() {
   has "and it says so" "$(floor_says "$tmp/elg" offer)" "names no hand"
 }
 
-# The fixture's own commit, held the way a clone that had just fetched it would hold it.
+#
+# The fixture's own commit, pushed to the remote the suite serves it from and fetched back, the way a
+# clone holds a merge it fetched. A pass fetches before it selects, #1060, so the remote must hold it.
 as_fetched() {
-  git -C "$1" update-ref refs/remotes/origin/main HEAD >/dev/null 2>&1 \
+  serve_the_origin_of "$1" \
+    && git -C "$1" push -q -f "$1.remote.git" HEAD:refs/heads/main >/dev/null 2>&1 \
+    && git -C "$1" fetch -q --no-tags origin '+refs/heads/main:refs/remotes/origin/main' >/dev/null 2>&1 \
     && git -C "$1" symbolic-ref refs/remotes/origin/HEAD refs/remotes/origin/main >/dev/null 2>&1
 }
+
+#
+# **A bare repository beside the checkout, served as its origin by `isolate.sh`'s own transport.** The
+# origin's URL is left as the fixture set it, so its identity is what it always was.
+serve_the_origin_of() {
+  [ -d "$1.remote.git" ] || git init -q --bare "$1.remote.git" >/dev/null 2>&1 || return 1
+  git -C "$1.remote.git" symbolic-ref HEAD refs/heads/main \
+    && git -C "$1" config remote.origin.vcs fixture \
+    && git -C "$1" config remote.origin.served-from "$1.remote.git"
+}
+
+#
+# **A person's change, landed on the fixture's remote and nowhere else**: a file committed in a clone of
+# it and pushed there. The checkout is untouched, so only a pass's fetch can bring it the change.
+a_person_pushes() {
+  rm -rf "$1.person"
+  git clone -q "$1.remote.git" "$1.person" >/dev/null 2>&1 || return 1
+  mkdir -p "$(dirname "$1.person/$2")"
+  commit_file "$1.person" "$2" "$3" && git -C "$1.person" push -q origin HEAD:refs/heads/main >/dev/null 2>&1
+}
+
+# Where the fixture's remote holds its default branch now.
+pushed_tip() { git -C "$1.remote.git" rev-parse --verify -q refs/heads/main 2>/dev/null; }
 
 elg_floor() { floor "$tmp/elg" "$@"; }
 elg_says()  { floor_says "$tmp/elg" "$@"; }
@@ -4434,6 +4470,7 @@ a_pass_takes_the_first_item_nobody_holds() {
      "$( cd "$tmp/pss" && FOUNDRY_HOME="$home" FOUNDRY_RUN="" FOUNDRY_WHO="" FOUNDRY_SOURCE="$tmp/no-such" \
          sh "$runner" pass >/dev/null 2>&1; printf '%s' "$?" )" "3"
 
+  commit_file "$tmp/pss" README 'pss' && as_fetched "$tmp/pss"
   is "a pass with no rule takes nothing" "$(code_of floor "$tmp/pss" pass)" "42"
 
   bar_and_rule "$tmp/pss"
@@ -7433,6 +7470,12 @@ every_wake_is_recorded() {
   is  "and the two pair by process" "$(process_of "$woke")" "$(process_of "$ended")"
   has "and its run's first line carries the same fields" "$(floor "$tmp/recorded" observe)" "identity=job7 stops=unnamed"
 
+  # **Each pass's record names the commit it read its rule at**, the tip it fetched. #1060's fourth box.
+  rule_read_at=$(git -C "$tmp/recorded" rev-parse HEAD 2>/dev/null)
+  has "and its run's first line names the commit its rule was read at" \
+      "$(floor "$tmp/recorded" observe)" "rule-at=$rule_read_at"
+  has "and so does its ended line" "$ended" "rule-at=$rule_read_at"
+
   make_repo "$tmp/recorded-idle" main && set_origin "$tmp/recorded-idle" 'https://gitlab.com/acme/recorded.git' \
     || { skip "a wake offered nothing — git could not make a repo here"; return; }
   bar_and_rule "$tmp/recorded-idle" 'offer nobodymarked pat'
@@ -7449,6 +7492,7 @@ every_wake_is_recorded() {
       FOUNDRY_SOURCE="$tmp/no-such-source.sh" sh "$runner" pass ) >/dev/null 2>&1; echo "$?")
   is  "a pass with no work source refuses, 3" "$nosource" "3"
   has "and still ended, saying why" "$(last_wake_line ended)" "read=no-source code=3"
+  has "and that it read no rule" "$(last_wake_line ended)" "rule-at=none"
   is  "after a woke of its own" "$(process_of "$(last_wake_line woke)")" "$(process_of "$(last_wake_line ended)")"
 
   a_door_exit_is_recorded
@@ -7474,8 +7518,8 @@ a_released_item_is_taken_again
 
 #
 # **A change to either setting reaches the next pass's record.** The host names the cadence, the
-# repository the rule. Each pass reads the rule at the fetched tip, but nothing floor ships fetches:
-# this case moves `origin/HEAD` itself, and #1060 owns the host that never does. #997's fourth box.
+# repository the rule. A person pushes the rule after the host started and moves no ref by hand, and
+# the next pass fetches it before it selects. #997's fourth box, and #1060's first.
 #
 a_change_to_either_setting_reaches_the_next_pass() {
   make_repo "$tmp/cadenced" main || { skip "a changed cadence — git could not make a repo here"; return; }
@@ -7494,8 +7538,9 @@ a_change_to_either_setting_reaches_the_next_pass() {
   commit_file "$tmp/changed" .foundry/practice 'offer before pat' && as_fetched "$tmp/changed"
   is  "a rule offering another label takes nothing" "$(code_of floor "$tmp/changed" pass)" "42"
 
-  commit_file "$tmp/changed" .foundry/practice 'offer changed pat' && as_fetched "$tmp/changed"
-  is  "a person's change to the rule, once fetched, reaches the next pass" \
+  a_person_pushes "$tmp/changed" .foundry/practice 'offer changed pat' \
+    || { skip "a changed rule — git could not push here"; return; }
+  is  "a person's change to the rule, pushed after the host started, reaches the next pass" \
       "$(code_of floor "$tmp/changed" pass)" "44"
   has "which took the item the new rule offers" "$(last_wake_line ended)" "read=took:594"
 
@@ -7518,6 +7563,338 @@ a_door_exit_is_recorded() {
 }
 
 every_wake_is_recorded
+
+#
+# **A new run begins at the default branch as last fetched.** A host starts on a bar that fails, a
+# person pushes one that passes, and the next new run goes through `gates` on it. #1060's second box.
+#
+a_pushed_bar_reaches_the_next_new_run() {
+  make_repo "$tmp/fetchbar" main && set_origin "$tmp/fetchbar" 'https://gitlab.com/acme/fetchbar.git' \
+    || { skip "a pushed bar — git could not make a repo here"; return; }
+  mkdir -p "$src/items" "$src/labels" "$src/claims" "$tmp/fetchbar/.foundry"
+  commit_file "$tmp/fetchbar" .foundry/gates 'tests  false'
+  commit_file "$tmp/fetchbar" .foundry/practice 'offer fetchbar pat' && as_fetched "$tmp/fetchbar"
+  is "a host started on a failing bar takes nothing while nothing is offered" "$(code_of floor "$tmp/fetchbar" pass)" "42"
+
+  a_person_pushes "$tmp/fetchbar" .foundry/gates 'tests  true' \
+    || { skip "a pushed bar — git could not push here"; return; }
+  printf 'Pushed bar item\n' > "$src/items/1601"
+  printf 'fetchbar\t2026-09-26T00:00:00Z\tpat\n' > "$src/labels/1601"
+
+  is  "a bar pushed after the host started carries the next new run through gates" \
+      "$(FOUNDRY_PASS_COMMAND=$COMMITTING_WORKER code_of floor "$tmp/fetchbar" pass)" "18"
+  is  "and that run begins at the fetched tip" \
+      "$(awk '{ print $3 }' "$(floor "$tmp/fetchbar" path)/bootstrap" 2>/dev/null)" "$(pushed_tip "$tmp/fetchbar")"
+  is  "and the checkout moved there" "$(git -C "$tmp/fetchbar" rev-parse HEAD 2>/dev/null)" "$(pushed_tip "$tmp/fetchbar")"
+
+  rm -rf "$src/claims/1601" "$src/labels/1601" "$src/items/1601"
+}
+a_pushed_bar_reaches_the_next_new_run
+
+#
+# **A checkout that cannot fast-forward starts no new work, and its code names why.** Work nobody
+# committed, an untracked file the detector reads, a detached head, another branch, and a commit the
+# fetched tip lacks. Floor never resets, merges or stashes, so each is left as it was. #1060.
+#
+a_checkout_in_the_way_starts_no_new_work() {
+  a_resumable_repo fetchdirty 1602 && printf '# edited\n' >> "$tmp/fetchdirty/.foundry/practice" \
+    || { skip "a dirty checkout — git could not make a repo here"; return; }
+  starts_no_new_work fetchdirty 1602 "a checkout holding work nobody committed" \
+    "holds work nobody committed: [.foundry/practice]" unclean
+  has "and says it read no rule" "$(last_wake_line ended)" "code=54 rule-at=none"
+
+  a_resumable_repo fetchloose 1603 && printf 'all:\n\ttrue\n' > "$tmp/fetchloose/Makefile" \
+    || { skip "an untracked detector file — git could not make a repo here"; return; }
+  starts_no_new_work fetchloose 1603 "a checkout holding an untracked Makefile" "committed: [Makefile]" unclean
+
+  a_resumable_repo fetchdetached 1604 && git -C "$tmp/fetchdetached" checkout -q --detach \
+    || { skip "a detached checkout — git could not make a repo here"; return; }
+  starts_no_new_work fetchdetached 1604 "a detached checkout" "this checkout is detached" detached
+  git -C "$tmp/fetchdetached" checkout -q -b elsewhere \
+    || { skip "a checkout on another branch — git could not branch here"; return; }
+  starts_no_new_work fetchdetached 1604 "a checkout on another branch" "is on [elsewhere], not [main]" branch
+
+  a_resumable_repo fetchforked 1605 && a_person_pushes "$tmp/fetchforked" README 'theirs' \
+    && commit_file "$tmp/fetchforked" LOCAL 'ours' \
+    || { skip "a diverged checkout — git could not make a repo here"; return; }
+  starts_no_new_work fetchforked 1605 "a checkout holding a commit the fetched tip lacks" "is not behind the fetched tip" diverged
+
+  rm -rf "$src/claims/1602" "$src/claims/1603" "$src/claims/1604" "$src/claims/1605"
+  rm -rf "$src/labels/1602" "$src/labels/1603" "$src/labels/1604" "$src/labels/1605"
+  rm -rf "$src/items/1602" "$src/items/1603" "$src/items/1604" "$src/items/1605"
+}
+
+# One pass in a checkout something is in the way of: 54, the reason named, `HEAD` where it was, no run.
+starts_no_new_work() {
+  was_at=$(git -C "$tmp/$1" rev-parse HEAD 2>/dev/null)
+  said=$(floor_says "$tmp/$1" pass); code=$?
+  is  "$3 starts no new work, 54" "$code" "54"
+  has "and says why" "$said" "$4"
+  has "and its record names what was in the way" "$(last_wake_line ended)" "read=in-the-way:$5 code=54"
+  is  "and its HEAD is where it was" "$(git -C "$tmp/$1" rev-parse HEAD 2>/dev/null)" "$was_at"
+  is  "and no run holds its item" "$(runs_holding "$2")" "0"
+}
+a_checkout_in_the_way_starts_no_new_work
+
+#
+# **origin's default is read, and `origin/HEAD` never written.** When origin names another branch
+# than the checkout's `origin/HEAD` does, or that names none, no new work starts, and both are said.
+#
+a_default_elsewhere_starts_no_new_work() {
+  a_resumable_repo fetchdefault 1606 \
+    && git -C "$tmp/fetchdefault.remote.git" update-ref refs/heads/trunk refs/heads/main \
+    && git -C "$tmp/fetchdefault.remote.git" symbolic-ref HEAD refs/heads/trunk \
+    || { skip "a default elsewhere — git could not make a repo here"; return; }
+
+  said=$(floor_says "$tmp/fetchdefault" pass); code=$?
+  is  "origin naming another default branch starts no new work, 53" "$code" "53"
+  has "and names both" "$said" "origin's default branch is [trunk] and this checkout's origin/HEAD names [main]"
+  is  "and origin/HEAD stays where the person left it" \
+      "$(git -C "$tmp/fetchdefault" symbolic-ref -q refs/remotes/origin/HEAD)" "refs/remotes/origin/main"
+  is  "and no run holds the item" "$(runs_holding 1606)" "0"
+
+  git -C "$tmp/fetchdefault" symbolic-ref -d refs/remotes/origin/HEAD
+  has "a checkout whose origin/HEAD names nothing is told so" \
+      "$(floor_says "$tmp/fetchdefault" pass)" "this checkout's origin/HEAD names [nothing]"
+
+  rm -rf "$src/claims/1606" "$src/labels/1606" "$src/items/1606"
+}
+a_default_elsewhere_starts_no_new_work
+
+#
+# **A fetch that fails starts no new work, and says so.** Once origin cannot be asked at all, and once
+# it names its default and then fails the fetch itself. #1060.
+#
+a_fetch_that_fails_starts_no_new_work() {
+  a_resumable_repo fetchfail 1607 || { skip "a failed fetch — git could not make a repo here"; return; }
+
+  mv "$tmp/fetchfail.remote.git" "$tmp/fetchfail.remote.gone"
+  said=$(floor_says "$tmp/fetchfail" pass); code=$?
+  is  "an origin nobody can ask starts no new work, 52" "$code" "52"
+  has "and says so" "$said" "origin could not be asked for its default branch"
+  mv "$tmp/fetchfail.remote.gone" "$tmp/fetchfail.remote.git"
+
+  printf '%s\n' '#!/bin/sh' "[ -f '$tmp/fetchfail.served' ] && exit 1" ": > '$tmp/fetchfail.served'" \
+    > "$tmp/fetchfail-once.sh"
+  git -C "$tmp/fetchfail" config remote.origin.on-serve "sh '$tmp/fetchfail-once.sh'"
+  said=$(floor_says "$tmp/fetchfail" pass); code=$?
+  is  "a fetch that fails once origin named its default starts no new work, 52" "$code" "52"
+  has "and says the fetch failed" "$said" "origin's [main] could not be fetched"
+  has "and its record says so" "$(last_wake_line ended)" "read=unfetched code=52"
+  is  "and no run holds the item" "$(runs_holding 1607)" "0"
+
+  git -C "$tmp/fetchfail" config --unset remote.origin.on-serve
+  rm -rf "$src/claims/1607" "$src/labels/1607" "$src/items/1607"
+}
+a_fetch_that_fails_starts_no_new_work
+
+#
+# **A run already begun keeps its base.** It stopped at `gates`, a person pushed a bar that passes,
+# and the resume grades it against its own base with the checkout's `HEAD` unmoved. #1060's third box.
+#
+a_run_begun_keeps_its_base() {
+  make_repo "$tmp/fetchresume" main && set_origin "$tmp/fetchresume" 'https://gitlab.com/acme/fetchresume.git' \
+    || { skip "a run begun — git could not make a repo here"; return; }
+  mkdir -p "$src/items" "$src/labels" "$src/claims" "$tmp/fetchresume/.foundry"
+  commit_file "$tmp/fetchresume" .foundry/gates 'tests  false'
+  commit_file "$tmp/fetchresume" .foundry/practice 'offer fetchresume pat' && as_fetched "$tmp/fetchresume"
+  printf 'Resumed past a push\n' > "$src/items/1608"
+  printf 'fetchresume\t2026-09-26T00:00:00Z\tpat\n' > "$src/labels/1608"
+  began_at=$(git -C "$tmp/fetchresume" rev-parse HEAD 2>/dev/null)
+
+  is "a run stops at its gates" "$(FOUNDRY_PASS_COMMAND=$COMMITTING_WORKER code_of floor "$tmp/fetchresume" pass)" "14"
+  a_person_pushes "$tmp/fetchresume" .foundry/gates 'tests  true' \
+    || { skip "a run begun — git could not push here"; return; }
+
+  is  "a bar pushed while it waits leaves its resume on its own bar, which fails again" \
+      "$(FOUNDRY_PASS_COMMAND=$COMMITTING_WORKER code_of floor "$tmp/fetchresume" pass)" "14"
+  is  "and the checkout's HEAD where the run began" "$(git -C "$tmp/fetchresume" rev-parse HEAD 2>/dev/null)" "$began_at"
+  is  "and nothing was fetched" "$(git -C "$tmp/fetchresume" rev-parse refs/remotes/origin/main 2>/dev/null)" "$began_at"
+  is  "and the run's base is where it began" \
+      "$(awk '{ print $3 }' "$(floor "$tmp/fetchresume" path)/bootstrap" 2>/dev/null)" "$began_at"
+
+  rm -rf "$src/claims/1608" "$src/labels/1608" "$src/items/1608"
+}
+a_run_begun_keeps_its_base
+
+#
+# **The host is checked before the fetch.** A resume that lets its run go falls through to select, and
+# a pass that slept may have lost the host by then. It stops, and fetches and moves nothing. #1060.
+#
+a_host_lost_before_the_fetch_moves_nothing() {
+  a_resumable_repo fetchlost 1609 || { skip "a host lost at the door — git could not make a repo here"; return; }
+  is "a pass takes an item, and waits for a command" "$(code_of floor "$tmp/fetchlost" pass)" "44"
+  began_at=$(git -C "$tmp/fetchlost" rev-parse HEAD 2>/dev/null)
+
+  printf 'The work for 1609.\n' > "$tmp/fetchlost-brief"
+  ( FOUNDRY_SOURCE_DIR="$src" sh "$dir_source" publish 1609 a-request-for-1609 work/fetchlost-1609 'Resumed item 1609' \
+      Refs "$tmp/fetchlost-brief" ) >/dev/null 2>&1
+  a_person_pushes "$tmp/fetchlost" README 'pushed while the host slept' \
+    || { skip "a host lost at the door — git could not push here"; return; }
+
+  said=$(floor_through "$(a_source_taking_the_host_on open)" "$tmp/fetchlost" pass); code=$?
+  is  "a pass that lets its run go after losing the host stops before the fetch, 43" "$code" "43"
+  is  "and fetched nothing" "$(git -C "$tmp/fetchlost" rev-parse refs/remotes/origin/main 2>/dev/null)" "$began_at"
+  is  "and moved nothing" "$(git -C "$tmp/fetchlost" rev-parse HEAD 2>/dev/null)" "$began_at"
+
+  end_the_newest_mark
+  rm -f "$src/deliveries/a-request-for-1609" "$src/deliveries/a-request-for-1609.brief"
+  rm -rf "$src/claims/1609" "$src/labels/1609" "$src/items/1609"
+}
+
+# A work source that, asked one verb, takes the host past the pass asking, then answers as the
+# directory adapter would: what a pass that slept finds when it wakes.
+a_source_taking_the_host_on() {
+  cat > "$tmp/takes-on-$1.sh" <<STUB
+#!/bin/sh
+[ "\$1" = $1 ] && sh '$(a_rival_for_the_host)' '$home/pass'
+exec sh '$dir_source' "\$@"
+STUB
+  printf '%s' "$tmp/takes-on-$1.sh"
+}
+
+# A script taking the host past whichever pass holds it: the next number, and a side name for it.
+a_rival_for_the_host() {
+  printf '%s\n' '#!/bin/sh' 'n=$(ls "$1" | grep -E "^[0-9]{10}$" | tail -n 1); n=${n#"${n%%[!0]*}"}' \
+    'm=$(printf "%010d" $(( n + 1 ))); printf "%s 60\n" "$(date -u +%s)" > "$1/$m"; : > "$1/$m.$(date -u +%s).60.99999"' \
+    > "$tmp/rival-for-the-host.sh"
+  printf '%s' "$tmp/rival-for-the-host.sh"
+}
+a_host_lost_before_the_fetch_moves_nothing
+
+#
+# **The host is checked again before the move.** A rival takes the host while the pass talks to
+# origin, so the fetch lands and the checkout stays where it was. #1060.
+#
+a_host_lost_while_fetching_moves_nothing() {
+  a_resumable_repo fetchrival 1610 && a_person_pushes "$tmp/fetchrival" README 'pushed before a rival woke' \
+    || { skip "a host lost mid-fetch — git could not make a repo here"; return; }
+  began_at=$(git -C "$tmp/fetchrival" rev-parse HEAD 2>/dev/null)
+  git -C "$tmp/fetchrival" config remote.origin.on-serve "sh '$(a_rival_for_the_host)' '$home/pass'"
+
+  is  "a pass that lost the host while it fetched stops before the move, 43" \
+      "$(code_of floor "$tmp/fetchrival" pass)" "43"
+  is  "and the fetch landed" \
+      "$(git -C "$tmp/fetchrival" rev-parse refs/remotes/origin/main 2>/dev/null)" "$(pushed_tip "$tmp/fetchrival")"
+  is  "and the checkout stayed where it was" "$(git -C "$tmp/fetchrival" rev-parse HEAD 2>/dev/null)" "$began_at"
+  is  "and no run holds the item" "$(runs_holding 1610)" "0"
+
+  git -C "$tmp/fetchrival" config --unset remote.origin.on-serve
+  end_the_newest_mark
+  rm -rf "$src/claims/1610" "$src/labels/1610" "$src/items/1610"
+}
+a_host_lost_while_fetching_moves_nothing
+
+#
+# **A pass's calls to origin are bounded, and ask nobody.** The host's own ssh gains OpenSSH's three
+# options, HTTP gains its low-speed limit, and git is told never to prompt. #1060, round two.
+#
+# The suite exports `GIT_TERMINAL_PROMPT` itself, so the pass runs without it, and without an ssh
+# variable a caller might hold, which would stand in front of the host's own setting.
+a_fetch_is_bounded() {
+  a_resumable_repo fetchbound 1611 || { skip "a bounded fetch — git could not make a repo here"; return; }
+  git -C "$tmp/fetchbound" config core.sshCommand 'ssh -i fixture-key'
+  git -C "$tmp/fetchbound" config remote.origin.on-serve "env > '$tmp/fetchbound.env'"
+
+  ( unset GIT_TERMINAL_PROMPT GIT_SSH_COMMAND GIT_SSH; floor "$tmp/fetchbound" pass ) >/dev/null 2>&1
+  seen=$(cat "$tmp/fetchbound.env" 2>/dev/null)
+  has "a fetch keeps the host's own ssh command" "$seen" "GIT_SSH_COMMAND=ssh -i fixture-key"
+  has "and tells it never to ask, or to wait for ever" "$seen" \
+      "-o BatchMode=yes -o ConnectTimeout=30 -o ServerAliveInterval=15"
+  has "and gives up on an HTTP transfer that stalls" \
+      "$(printf '%s' "$seen" | tr 'A-Z' 'a-z' | tr -d "'")" "http.lowspeedlimit=1000 http.lowspeedtime=60"
+  has "and never prompts" "$seen" "GIT_TERMINAL_PROMPT=0"
+
+  git -C "$tmp/fetchbound" config --unset remote.origin.on-serve
+  rm -rf "$src/claims/1611" "$src/labels/1611" "$src/items/1611"
+}
+a_fetch_is_bounded
+
+#
+# **A move git refuses starts no new work, and says git's own reason.** The tree moves first, as git
+# moves one, then the branch. A branch that will not follow puts the tree back, and a tree that
+# cannot go back is said, since the checkout is then not as it was. #1060's build review.
+#
+a_move_git_refuses_starts_no_new_work() {
+  a_resumable_repo fetchheld 1613 && a_person_pushes "$tmp/fetchheld" pushed.txt 'theirs' \
+    || { skip "a branch git will not move — git could not make a repo here"; return; }
+  was_at=$(git -C "$tmp/fetchheld" rev-parse HEAD 2>/dev/null)
+  a_hook_refusing_main "$tmp/fetchheld"
+  is  "a branch git will not move starts no new work, 54" "$(code_of floor "$tmp/fetchheld" pass)" "54"
+  is  "and its tree had moved first, as git moves one" "$(cat "$tmp/fetchheld.at-the-branch" 2>/dev/null)" "theirs"
+  is  "and its tree went back to where its branch is" \
+      "$(git -C "$tmp/fetchheld" status --porcelain 2>/dev/null)$(ls "$tmp/fetchheld" | grep -c '^pushed\.txt$')" "0"
+  is  "and its branch never moved" "$(git -C "$tmp/fetchheld" rev-parse HEAD 2>/dev/null)" "$was_at"
+  rm -f "$tmp/fetchheld/.git/hooks/reference-transaction"
+
+  a_resumable_repo fetchlocked 1612 && a_person_pushes "$tmp/fetchlocked" pushed.txt 'theirs' \
+    && : > "$tmp/fetchlocked/.git/index.lock" \
+    || { skip "a held index — git could not make a repo here"; return; }
+  was_at=$(git -C "$tmp/fetchlocked" rev-parse HEAD 2>/dev/null)
+  said=$(floor_says "$tmp/fetchlocked" pass); code=$?
+  is  "a checkout whose index another git holds starts no new work, 54" "$code" "54"
+  has "and says git's own reason" "$said" "index.lock': File exists"
+  is  "and neither its branch nor its tree moved" \
+      "$(git -C "$tmp/fetchlocked" rev-parse HEAD 2>/dev/null) $(ls "$tmp/fetchlocked" | grep -c '^pushed\.txt$')" "$was_at 0"
+  rm -f "$tmp/fetchlocked/.git/index.lock"
+
+  a_resumable_repo fetchstranded 1614 && a_person_pushes "$tmp/fetchstranded" pushed.txt 'theirs' \
+    || { skip "a tree that cannot go back — git could not make a repo here"; return; }
+  a_hook_refusing_main "$tmp/fetchstranded" and-the-index
+  said=$(floor_says "$tmp/fetchstranded" pass); code=$?
+  is    "a tree that cannot go back starts no new work, 54" "$code" "54"
+  has   "and says a person must put it right" "$said" "could not be put back, so a person must put it right"
+  lacks "and never that the checkout stayed where it was" "$said" "stays where it is"
+  rm -f "$tmp/fetchstranded/.git/hooks/reference-transaction" "$tmp/fetchstranded/.git/index.lock"
+
+  rm -rf "$src/claims/1612" "$src/claims/1613" "$src/claims/1614"
+  rm -rf "$src/labels/1612" "$src/labels/1613" "$src/labels/1614" "$src/items/1612" "$src/items/1613" "$src/items/1614"
+}
+
+#
+# A `reference-transaction` hook refusing to move `main`, which says what the tree held when asked. A
+# second argument makes it hold the index as well, as a git dying mid-move would.
+a_hook_refusing_main() {
+  mkdir -p "$1/.git/hooks" && cat > "$1/.git/hooks/reference-transaction" <<HOOK
+#!/bin/sh
+moving=
+while read -r old new ref; do [ "\$ref" = refs/heads/main ] && moving=yes; done
+[ "\$1" = prepared ] && [ -n "\$moving" ] || exit 0
+cat '$1/pushed.txt' > '$1.at-the-branch' 2>/dev/null || echo none > '$1.at-the-branch'
+[ -z '${2:-}' ] || : > '$1/.git/index.lock'
+exit 1
+HOOK
+  chmod +x "$1/.git/hooks/reference-transaction"
+}
+a_move_git_refuses_starts_no_new_work
+
+#
+# **A run begins where its rule was read.** A commit landing in the checkout after the move, here as
+# the item is claimed, would have become the run's base, so no run begins. #1060's build review.
+#
+a_commit_landing_before_the_run_starts_no_new_work() {
+  a_resumable_repo fetchlanded 1615 || { skip "a commit landing mid-pass — git could not make a repo here"; return; }
+  rule_read_at=$(git -C "$tmp/fetchlanded" rev-parse HEAD 2>/dev/null)
+
+  said=$(floor_through "$(a_source_committing_on claim "$tmp/fetchlanded")" "$tmp/fetchlanded" pass); code=$?
+  is  "a commit landing before the run is made starts no new work, 54" "$code" "54"
+  has "and says the rule was read elsewhere" "$said" "after its rule was read at [$rule_read_at]"
+  has "and its record says so" "$(last_wake_line ended)" "read=in-the-way:moved code=54"
+  is  "and no run holds its item" "$(runs_holding 1615)" "0"
+
+  rm -rf "$src/claims/1615" "$src/labels/1615" "$src/items/1615"
+}
+
+# A work source that commits in a checkout when asked one verb, then answers as the directory adapter.
+a_source_committing_on() {
+  cat > "$tmp/commits-on-$1.sh" <<STUB
+#!/bin/sh
+[ "\$1" = $1 ] && git -C '$2' commit -q --allow-empty -m 'landed mid-pass' >/dev/null 2>&1
+exec sh '$dir_source' "\$@"
+STUB
+  printf '%s' "$tmp/commits-on-$1.sh"
+}
+a_commit_landing_before_the_run_starts_no_new_work
 
 #
 # **Two judges on one clause, and every fixture before this had one.** A rule with a single instance
@@ -8175,7 +8552,8 @@ a_plugin_shaping() {
 #
 # A shaping member for this suite. It reads which member it is from its brief, keeps that brief and
 # where it ran, then answers as its case wrote: `<member>.says` on stdout, `<member>.err` on stderr,
-# `<member>.code` as its exit. While `<member>.hold` is there it first writes its own process to
+# `<member>.code` as its exit. It writes down the `FOUNDRY_RUN` it was handed, or `unset`, so a case
+# sees what a member could read. While `<member>.hold` is there it first writes its own process to
 # `<member>.held`, whole, and waits five seconds.
 #
 a_member_answering_from() {
@@ -8187,6 +8565,7 @@ a_member_answering_from() {
   n=\$(grep -c . "\$d/\$m.calls")
   cp "\$FOUNDRY_BRIEF" "\$d/\$m.handed-\$n"
   { pwd; printf 'holds [%s]\n' "\$(ls -A)"; git rev-parse --git-dir; } > "\$d/\$m.room-\$n" 2>&1
+  printf '%s\n' "\${FOUNDRY_RUN-unset}" > "\$d/\$m.run-\$n"
   [ ! -f "\$d/\$m.hold" ] || { printf '%s\n' "\$\$" > "\$d/\$m.held.new" && mv "\$d/\$m.held.new" "\$d/\$m.held"; sleep 5; }
   [ ! -f "\$d/\$m.err" ] || cat "\$d/\$m.err" >&2
   [ ! -f "\$d/\$m.says" ] || cat "\$d/\$m.says"
@@ -10366,13 +10745,19 @@ forget_the_delivery() { rm -f "$src/deliveries/$(basename "$1")" "$src/deliverie
 #
 # **One table, four readers.** A clause met at a commit, then its completion yes changed one term at a
 # time: the run, the stage, the clause's text, the commit. Each change meets nothing at `complete`,
-# `status`, `deliver` and `merge`, and the yes itself meets it at all four.
+# `status`, `deliver` and `merge`, and the yes itself meets it at all four. First, the yes is no pin,
+# and it is read from the source: with every `answer.heard` row struck, it still meets the clause.
 #
 each_reader_meets_only_the_whole_yes() {
   meeting mtwhole 1201 pat || { skip "the whole yes — git could not make a repo here"; return; }
   met_at_the_head 'the page ships'
   printf '%s\n' "$(mt_head)" > "$tmp/mtwhole.head"
   whole="yes $(mt_asks completion 'the page ships') $(mt_head)"
+
+  is "a yes heard pins nothing, so the clause stays introduced" \
+     "$(awk -v id="$(clause_of 'the page ships')" '$1 == "pin" && $2 == id' "$(charter_of "$mtrun")" | grep -c .)" "0"
+  awk -F'\t' '$2 != "answer.heard"' "$mtrun/evidence" > "$mtrun/evidence.struck" && mv "$mtrun/evidence.struck" "$mtrun/evidence"
+  is "a yes is read from the source, whatever the ledger holds" "$(code_of mtf complete)" "0"
 
   for changed in "yes 2026-01-01-another-run-0000.completion.$(clause_of 'the page ships') $(mt_head)" \
       "yes $(mt_asks authorisation 'the page ships') $(mt_head)" \
@@ -10409,10 +10794,10 @@ a_withdrawn_authorisation_holds_the_delivery() {
 
   rm -f "$src/answers/1202/may"
   withdrawn="introduced: [a stranger can follow it] — no yes to $(mt_asks authorisation 'a stranger can follow it') stands now"
-  is  "the yes deleted, deliver refuses" "$(code_of mtf deliver 'Meet it')" "15"
-  has "and the clause reads introduced"   "$(mtf_says deliver 'Meet it')" "$withdrawn"
-  is  "complete refuses too"              "$(code_of mtf complete)" "15"
-  has "with the same finding"             "$(mtf_says complete)" "$withdrawn"
+  is  "the yes deleted, deliver refuses"                  "$(code_of mtf deliver 'Meet it')" "15"
+  has "and the clause reads introduced"                   "$(mtf_says deliver 'Meet it')" "$withdrawn"
+  is  "complete refuses the withdrawn authorisation too"  "$(code_of mtf complete)" "15"
+  has "naming the authorisation no yes stands to"         "$(mtf_says complete)" "$withdrawn"
 }
 a_withdrawn_authorisation_holds_the_delivery
 
@@ -10426,8 +10811,8 @@ a_withdrawn_completion_holds_the_delivery() {
   gone="unmet: [the copy is signed off] at $(mt_here) — no yes names this commit"
   is  "the completion yes deleted, deliver refuses though its row stands" "$(code_of mtf deliver 'Meet it')" "15"
   has "naming the commit no yes names"                                   "$(mtf_says deliver 'Meet it')" "$gone"
-  is  "complete refuses too"                                             "$(code_of mtf complete)" "15"
-  has "with the same finding"                                            "$(mtf_says complete)" "$gone"
+  is  "complete refuses the withdrawn completion too"                   "$(code_of mtf complete)" "15"
+  has "naming the commit no yes names, as deliver does"                 "$(mtf_says complete)" "$gone"
 }
 a_withdrawn_completion_holds_the_delivery
 
@@ -10435,7 +10820,7 @@ a_withdrawn_completion_holds_the_delivery
 a_yes_withdrawn_after_delivery_holds_the_merge() {
   meeting mtafter 1204 pat || { skip "a yes withdrawn after delivery — git could not make a repo here"; return; }
   met_at_the_head 'the launch is approved'
-  is "it delivers" "$(code_of mtf deliver 'Meet it')" "0"
+  is "it delivers while the yes stands" "$(code_of mtf deliver 'Meet it')" "0"
   printf '%s\n' "$(mt_head)" > "$tmp/mtafter.head"
 
   rm -f "$src/answers/1204/met"
@@ -10443,7 +10828,7 @@ a_yes_withdrawn_after_delivery_holds_the_merge() {
   has    "complete names what the deleted yes leaves"    "$finding" "no yes names this commit"
   is     "the yes deleted after deliver, merge refuses"  "$(code_of mtf merge)" "15"
   has    "with complete's finding"                       "$(mtf_says merge)" "$finding"
-  absent "and nothing lands"                             "$tmp/mtafter.landed"
+  absent "and nothing lands once the yes is gone"        "$tmp/mtafter.landed"
   forget_the_delivery "$mtrun"
 }
 a_yes_withdrawn_after_delivery_holds_the_merge
@@ -10452,8 +10837,10 @@ a_yes_withdrawn_after_delivery_holds_the_merge
 a_second_hands_yes_is_heard_once_at_the_merge() {
   meeting mtsecond 1205 'pat sam' || { skip "a second hand's yes — git could not make a repo here"; return; }
   met_at_the_head 'the terms are agreed'
-  is "it delivers" "$(code_of mtf deliver 'Meet it')" "0"
+  is "it delivers on the first hand's yeses" "$(code_of mtf deliver 'Meet it')" "0"
   printf '%s\n' "$(mt_head)" > "$tmp/mtsecond.head"
+  is "each of them has its one answer.heard row" \
+     "$(mtf evidence | awk -F'\t' '$2 == "answer.heard" && $4 == "pat"' | grep -c .)" "2"
 
   mt_answers also sam 2999-01-02T00:00:00Z "yes $(mt_asks completion 'the terms are agreed') $(mt_head)"
   is "a yes standing at merge lands it" "$(code_of mtf merge)" "0"
@@ -10679,8 +11066,8 @@ a_panel_survives_the_next_derivation
 
 #
 # **`check` holds an introduced panel to the bench at the base.** A `judge` line struck is `unresolved`
-# there and at `complete`, and introducing the clause again mends it. A base `check` cannot read is a
-# refusal, never a bench of nobody that passes the panel.
+# there and at `complete`, and introducing the clause again mends it. A member the checkout adds is no
+# member. A base `check` cannot read is a refusal, never a bench of nobody that passes the panel.
 #
 a_struck_judge_line_is_unresolved() {
   meeting mtstruck 1218 pat 'bench alice bob' || { skip "a struck judge line — git could not make a repo here"; return; }
@@ -10692,10 +11079,14 @@ a_struck_judge_line_is_unresolved() {
   has "check names the struck member unresolved" "$said" "unresolved: Judged the queue drains [bob]"
   has "and refuses"                              "$said" "exit=7"
   is  "complete refuses"                         "$(code_of mtf complete)" "15"
-  has "with the same finding"                    "$(mtf_says complete)" "unresolved: Judged the queue drains [bob]"
+  has "naming the struck member, as check does"  "$(mtf_says complete)" "unresolved: Judged the queue drains [bob]"
 
   mtf charter introduce Judged 'the queue drains' >/dev/null
   is "introducing it again mends it" "$(code_of mtf charter check)" "0"
+
+  commit_file "$mt" .foundry/judged 'bench alice bob carol' \
+    || { skip "a member the checkout adds — git could not commit here"; return; }
+  is "check reads the bench at the base, never the checkout's" "$(code_of mtf charter check)" "0"
 
   cp "$mtrun/bootstrap" "$mtrun/bootstrap.keep"
   awk '{ $3 = "0000000000000000000000000000000000000000"; print }' "$mtrun/bootstrap.keep" > "$mtrun/bootstrap"
@@ -10748,6 +11139,24 @@ every_proposer_recorded_is_held_off_the_panel() {
 every_proposer_recorded_is_held_off_the_panel
 
 #
+# **A member recorded as proposer later leaves its seat.** An `introduce` naming no worker seats the
+# whole bench. A later one naming a member records it as proposer, and in that same write its `judge`
+# and `rounds` records go, so it is never asked.
+#
+a_later_proposer_leaves_its_seat() {
+  meeting mtlater 1230 pat 'bench alice bob carol' \
+    || { skip "a later proposer — git could not make a repo here"; return; }
+  mtf charter introduce Judged 'the search is quick' >/dev/null
+  mtf_by alice charter introduce Judged 'the search is quick' >/dev/null
+  id=$(clause_of 'the search is quick') held=$(charter_of "$mtrun")
+
+  is "a member recorded as proposer later holds no seat" \
+     "$(awk -v id="$id" '($1 == "judge" || $1 == "rounds") && $2 == id && $3 == "alice"' "$held" | grep -c .)" "0"
+  is "and check holds what is left to the bench less its proposer" "$(code_of mtf charter check)" "0"
+}
+a_later_proposer_leaves_its_seat
+
+#
 # **The ledger names every yes floor heard where it acted**: one `answer.heard` row a yes, with who,
 # when and the line, however often it was heard. The request names the same, read from the hearing
 # the grade read.
@@ -10757,7 +11166,7 @@ a_delivered_run_records_each_yes_once() {
   met_at_the_head 'the backup restores'
   may=$(mt_asks authorisation 'the backup restores') met=$(mt_asks completion 'the backup restores') head=$(mt_head)
   mtf authorise >/dev/null
-  is "it delivers" "$(code_of mtf deliver 'Meet it')" "0"
+  is "it delivers, hearing each yes" "$(code_of mtf deliver 'Meet it')" "0"
 
   is "one answer.heard row for each yes: who, when and the line" \
      "$(mtf evidence | awk -F'\t' '$2 == "answer.heard" { print $4 " " $6 " " $7 }')" \
@@ -10851,7 +11260,7 @@ a_gate_is_never_introduced
 a_judged_clause_wants_a_bench_at_the_base() {
   meeting mtnobench 1225 pat || { skip "no bench — git could not make a repo here"; return; }
   is  "with no bench at the base: 55" "$(code_of mtf charter introduce Judged 'the docs are kind')" "55"
-  has "naming the line"               "$(mtf_says charter introduce Judged 'the docs are kind')" "bench <member>"
+  has "naming the bench line to add"  "$(mtf_says charter introduce Judged 'the docs are kind')" "bench <member>"
 
   commit_file "$mt" .foundry/judged 'bench reviewer' \
     || { skip "a bench in the checkout — git could not commit here"; return; }
@@ -10859,7 +11268,7 @@ a_judged_clause_wants_a_bench_at_the_base() {
 
   meeting mtlonebench 1226 pat 'bench alice' || { skip "a lone bench — git could not make a repo here"; return; }
   is  "with a bench of only its proposer: 55" "$(code_of mtf_by alice charter introduce Judged 'the docs are kind')" "55"
-  has "naming the line"                       "$(mtf_by alice charter introduce Judged 'the docs are kind')" \
+  has "naming the bench of only its proposer" "$(mtf_by alice charter introduce Judged 'the docs are kind')" \
       "the bench names only [alice], who proposed"
 }
 a_judged_clause_wants_a_bench_at_the_base
@@ -10894,14 +11303,14 @@ two_bench_lines_seat_their_members_and_no_more
 a_hand_who_merges_as_themselves_is_floors_account() {
   meeting mtself 1228 pat || { skip "a hand merging as themselves — git could not make a repo here"; return; }
   met_at_the_head 'the rollout is staged'
-  is "it delivers" "$(code_of mtf deliver 'Meet it')" "0"
+  is "it delivers while floor has an account of its own" "$(code_of mtf deliver 'Meet it')" "0"
   printf '%s\n' "$(mt_head)" > "$tmp/mtself.head"
 
   printf 'pat\n' > "$tmp/mtself.floor"
   said=$(mtf_says merge; printf '\nexit=%s' "$?")
   has    "the only hand merging as themselves is floor's account: 50" "$said" "exit=50"
-  has    "naming the clash"                                          "$said" "pat: floor's account now"
-  absent "and nothing lands"                                         "$tmp/mtself.landed"
+  has    "naming the hand's own login as the clash"                   "$said" "pat: floor's account now"
+  absent "and nothing lands from the hand's own login"                "$tmp/mtself.landed"
   forget_the_delivery "$mtrun"
 }
 a_hand_who_merges_as_themselves_is_floors_account
@@ -10993,13 +11402,13 @@ a_pass_on_a_repository_naming_no_member_waits_at_11
 #
 a_pass_delivers_a_clause_its_bench_approved() {
   a_bench_pass bpdeliver 1231 || { skip "a benched pass — git could not make a repo here"; return; }
-  has "the next pass opens the work again and asks" "$(bench_pass "$tmp/bpdeliver")" "exit=47"
+  has "the next pass asks before a yes" "$(bench_pass "$tmp/bpdeliver")" "exit=47"
   the_hand_authorises_the_benched_clause 1231
 
-  has "a pass after the yes delivers" "$(FOUNDRY_PASS_COMMAND=true bench_pass "$tmp/bpdeliver")" "exit=0"
-  has "and the run records it"        "$(last_pass_line_in "$tmp/bpdeliver")" "pass.delivered item=1231"
-  has "the request names the bench"   "$(cat "$bprun/body" 2>/dev/null)" "judged by reviewer"
-  has "and the yes"                   "$(cat "$bprun/body" 2>/dev/null)" \
+  has "a pass after the yes delivers"     "$(FOUNDRY_PASS_COMMAND=true bench_pass "$tmp/bpdeliver")" "exit=0"
+  has "and the run records the delivery"  "$(last_pass_line_in "$tmp/bpdeliver")" "pass.delivered item=1231"
+  has "the request names the bench"       "$(cat "$bprun/body" 2>/dev/null)" "judged by reviewer"
+  has "and the yes"                       "$(cat "$bprun/body" 2>/dev/null)" \
       "yes from pat at 2999-01-01T00:00:00Z: \`yes $(basename "$bprun").authorisation.$(clause_of 'a stranger can follow it')\`"
   leave_the_bench_pass 1231
 }
@@ -11011,7 +11420,7 @@ a_pass_delivers_a_clause_its_bench_approved
 #
 a_pass_resumes_a_delivery_nobody_could_hear() {
   a_bench_pass bpcut 1232 || { skip "a pass cut off at deliver — git could not make a repo here"; return; }
-  has "the next pass opens the work again and asks" "$(bench_pass "$tmp/bpcut")" "exit=47"
+  has "the next pass asks before the source is cut" "$(bench_pass "$tmp/bpcut")" "exit=47"
   the_hand_authorises_the_benched_clause 1232
 
   has    "the source cut off at deliver stops it at 20" \
@@ -11021,8 +11430,8 @@ a_pass_resumes_a_delivery_nobody_could_hear() {
 
   rm -f "$tmp/bpcut.cut"
   said=$(bench_pass "$tmp/bpcut")
-  has "the next pass resumes it"               "$said" "this pass resumes [1232] after [pass.stopped deliver]"
-  has "and delivers once the source answers"   "$said" "exit=0"
+  has "the next pass resumes the delivery nobody could hear" "$said" "this pass resumes [1232] after [pass.stopped deliver]"
+  has "and delivers once the source answers"                 "$said" "exit=0"
   leave_the_bench_pass 1232
 }
 a_pass_resumes_a_delivery_nobody_could_hear
@@ -11033,14 +11442,14 @@ a_pass_resumes_a_delivery_nobody_could_hear
 #
 a_pass_resumes_a_delivery_whose_hand_became_floors_login() {
   a_bench_pass bplogin 1233 || { skip "a pass on floor's own login — git could not make a repo here"; return; }
-  has "the next pass opens the work again and asks" "$(bench_pass "$tmp/bplogin")" "exit=47"
+  has "the next pass asks before the login moves" "$(bench_pass "$tmp/bplogin")" "exit=47"
   the_hand_authorises_the_benched_clause 1233
 
   said=$(FOUNDRY_PASS_COMMAND="printf 'pat\\n' > '$tmp/bplogin.floor'" bench_pass "$tmp/bplogin")
   has "the login moved onto the only hand, deliver stops at 50" "$said" "exit=50"
-  has "naming the clash"                                        "$said" "pat: floor's account now"
+  has "naming the clash the moved login makes"                  "$said" "pat: floor's account now"
 
-  has "the next pass resumes it" "$(bench_pass "$tmp/bplogin")" "this pass resumes [1233] after [pass.stopped deliver]"
+  has "the next pass resumes the delivery the login stopped" "$(bench_pass "$tmp/bplogin")" "this pass resumes [1233] after [pass.stopped deliver]"
   leave_the_bench_pass 1233
 }
 a_pass_resumes_a_delivery_whose_hand_became_floors_login
@@ -12199,7 +12608,7 @@ ends_with_file() { tail -c "$(wc -c < "$2" | tr -d ' ')" "$1" 2>/dev/null | cmp 
 # The ledger's rows of one kind, as `name\tresult\tref\twhy`, and what one member's attempts came to.
 sp_rows()    { awk -F'\t' -v kind="$1" '$2 == kind { print $4 "\t" $5 "\t" $6 "\t" $7 }' "$sp_run/evidence" 2>/dev/null; }
 sp_row_of()  { sp_rows shape.attempt | awk -F'\t' -v who="$1" '$1 == who { print $4 }'; }
-sp_took()    { sp_rows shape.proposal | awk -F'\t' -v said="$1" '$1 == said { print $2 "\t" $4 }'; }
+sp_took()    { sp_rows shape.proposal | said=$1 awk -F'\t' '$1 "" == ENVIRON["said"] "" { print $2 "\t" $4 }'; }
 
 # The ledger less every row of kind `$1` naming `$2`, as a kill before those rows were written leaves it.
 sp_forgets() {
@@ -12472,6 +12881,22 @@ a_member_runs_in_an_empty_room() {
 a_member_runs_in_an_empty_room
 
 #
+# **A member is handed no run.** `spf` exports the case's run into every call, as floor's README tells
+# a person to, and the member's entry point finds no `FOUNDRY_RUN` all the same.
+#
+a_member_is_handed_no_run() {
+  a_plugin_shaping shp41 || { skip "no run handed — the plugin could not be copied"; return; }
+  a_shaped_repo shp41 1341 "$(shape_line ann:runless shp41)
+" || { skip "no run handed — git could not make a repo here"; return; }
+  member_says shp41 ann:runless 'nothing
+'
+  spf charter shape >/dev/null
+  is "a member finds no FOUNDRY_RUN, though its caller exported one" \
+     "$(cat "$(member_file shp41 ann:runless run-1)" 2>/dev/null)" "unset"
+}
+a_member_is_handed_no_run
+
+#
 # **Each member is handed the same bar, apart.** Each brief ends in the bar, byte for byte, and names its
 # own member, and neither holds the other's lines. What each printed is kept whole, down to a blank last line.
 #
@@ -12603,7 +13028,7 @@ why readers leave
 a_contribution_out_of_shape_is_refused_whole
 
 # Each way a line is out of shape refuses its contribution, 56: a `why` before any proposal, `nothing`
-# beside a proposal, a kind in lower case, a proposal's text holding a tab, and a proposal with no text.
+# beside a proposal, a kind in lower case, and a proposal's text holding a tab, missing, or spaced off.
 each_line_out_of_shape_refuses_its_contribution() {
   a_plugin_shaping shp17 || { skip "lines out of shape — the plugin could not be copied"; return; }
   a_shaped_repo shp17 1317 "$(shape_line why:first shp17)
@@ -12611,6 +13036,7 @@ $(shape_line nothing:beside shp17)
 $(shape_line kind:lower shp17)
 $(shape_line text:tab shp17)
 $(shape_line text:none shp17)
+$(shape_line text:spaced shp17)
 " || { skip "lines out of shape — git could not make a repo here"; return; }
   member_says shp17 why:first 'why it matters
 propose Judged the page is readable
@@ -12624,6 +13050,8 @@ propose Judged the page is readable
 "
   member_says shp17 text:none 'propose Judged
 '
+  member_says shp17 text:spaced 'propose Judged  the page is readable
+'
   said=$(spf_says charter shape; printf '\nexit=%s' "$?")
 
   has "a why before any proposal is refused"       "$(sp_row_of why:first)" "refused: line 1"
@@ -12631,6 +13059,7 @@ propose Judged the page is readable
   has "and a kind in lower case"                   "$(sp_row_of kind:lower)" "refused: line 1"
   has "and a proposal whose text holds a tab"      "$(sp_row_of text:tab)" "refused: line 1"
   has "and a proposal with no text"                "$(sp_row_of text:none)" "refused: line 1"
+  has "and a proposal whose text opens with a space" "$(sp_row_of text:spaced)" "refused: line 1"
   has "each is 56"                                 "$said" "exit=56"
 }
 each_line_out_of_shape_refuses_its_contribution
@@ -13787,6 +14216,54 @@ reach  cat:judge  sh bin/bench.sh
   sp_leaves 1415
 }
 a_released_item_stays_with_the_run_the_checkout_points_at
+
+#
+# **A proposal enters as the one line its member wrote**, backslashes and all. Its clause holds the
+# bytes of the words, its row says it was introduced, and `check` finds nothing forged.
+#
+a_proposal_enters_byte_for_byte() {
+  a_plugin_shaping shp42 || { skip "byte for byte — the plugin could not be copied"; return; }
+  a_shaped_repo shp42 1342 "$(shape_line ann:bytes shp42)
+bench  cat:judge
+reach  cat:judge  sh bin/bench.sh
+" || { skip "byte for byte — git could not make a repo here"; return; }
+  written='the log says a\nb, a\tc and a\\d'
+  member_says shp42 ann:bytes "propose Judged $written
+"
+  spf charter shape >/dev/null
+
+  is "a proposal holding backslashes enters as its member wrote it" \
+     "$(grep -cxF -e "clause $(clause_of "$written") Judged $written" "$sp_run/charter")" "1"
+  is "and its row says it was introduced" "$(sp_took "Judged $written")" "$(printf '0\tintroduced, proposed by ann:bytes')"
+  is "and check finds nothing forged"     "$(code_of spf charter check)" "0"
+}
+a_proposal_enters_byte_for_byte
+
+#
+# **A clause is its text, two spaces and all.** A hand strikes a proposal holding two spaces in a row,
+# and `judged` reads the strike under the same words, so its bench is never asked the struck clause.
+#
+a_struck_clause_keeps_its_spacing() {
+  a_plugin_shaping shp43 || { skip "spacing — the plugin could not be copied"; return; }
+  a_shaped_repo shp43 1343 "$(shape_line ann:spaced shp43)
+bench  cat:judge
+reach  cat:judge  sh bin/bench.sh
+" || { skip "spacing — git could not make a repo here"; return; }
+  member_says shp43 ann:spaced 'propose Judged the page  loads fast
+propose Judged the log is quiet
+'
+  spf charter shape >/dev/null
+  spf authorise >/dev/null
+  sp_answers strike pat 2999-01-01T00:00:00Z "no $(sp_asks authorisation 'the page  loads fast')"
+  sp_answers keep pat 2999-01-01T00:00:01Z "yes $(sp_asks authorisation 'the log is quiet')"
+  sp_opens
+
+  is    "judged reads a strike on a clause holding two spaces in a row" "$(code_of spf judged)" "0"
+  lacks "and never asks the bench it"                                   "$(cat "$tmp/shp43.asked" 2>/dev/null)" "loads fast"
+  has   "while it asks the other"                                       "$(cat "$tmp/shp43.asked" 2>/dev/null)" "the log is quiet"
+  is    "and complete finds nothing missing"                            "$(code_of spf complete)" "0"
+}
+a_struck_clause_keeps_its_spacing
 
 #
 # **Every wake this suite made says where it ended.** Last, so it reads them all. An `ended` reading
