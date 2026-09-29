@@ -2537,7 +2537,7 @@ wreck_runner "a practice line that is never read is caught" \
   offerrule '/^offer_rule() {/,/^}/s#\$1 == "offer"#$1 == "never"#'
 
 wreck_runner "a rule read where a worker commits is caught" \
-  offertip '/^the_offer_line() {/,/^}/s#tip=\$(fetched_default_tip) ||#tip=$(git rev-parse HEAD) ||#'
+  offertip '/^offer() {/,/^}/s#offered_at "\$(fetched_default_tip)"#offered_at "$(git rev-parse -q --verify HEAD)"#'
 
 wreck_runner "a rule naming no hand that says nothing about it is caught" \
   offernohand '/^the_offer_line() {/,/^}/s#^    \[ "\$\#" -ge 2 \] || { note .*; return 0; }$#    :#'
@@ -2774,7 +2774,7 @@ wreck_runner "a pass offered nothing that says something else is caught" \
 # that carries a code up to `pass`. #884's judge, round five.
 #
 wreck_runner "a source that cannot list what is marked, read as nothing offered, is caught" \
-  offercode '/^what_is_offered() {/,/^}/s#^    items=\$(offer) || exit "\$?"$#    items=$(offer)#'
+  offercode '/^what_is_offered() {/,/^}/s#^    items=\$(offered_at "\$rule_at") || exit "\$?"$#    items=$(offered_at "$rule_at")#'
 
 wreck_runner "a pass that drops the code of what it was offered is caught" \
   passcode '/^select_an_item() {/,/^}/s#^    items=\$(what_is_offered) || leave_with_no_item "\$?"$#    items=$(what_is_offered)#'
@@ -2875,7 +2875,7 @@ wreck_runner "an item a request is open for, offered anyway, is caught" \
   offerrequested '/^not_yet_requested() {/,/^}/s#^        index(requested, " " \$1 " ") { say(\$1); next }$#        0 { next }#'
 
 wreck_runner "an offer that never asks what is requested is caught" \
-  offeropen '/^offer() {/,/^}/s#^    requested=\$(items_with_an_open_request) || exit "\$?"$#    requested=#'
+  offeropen '/^offered_at() {/,/^}/s#^    requested=\$(items_with_an_open_request) || exit "\$?"$#    requested=#'
 
 wreck_runner "a directory source that names no item for a request is caught" \
   openitem 's#^delivered_item() { .*}$#delivered_item() { :; }#' lib/source-dir.sh
@@ -2896,7 +2896,7 @@ wreck_runner "a second read that fails and leaves no stop is caught" \
   passreadstop '/^read_the_item() {/,/^}/s#|| stop_at "\$1" read "\$?"$#|| exit "$?"#'
 
 wreck_runner "a run that never says the pass began is caught" \
-  passbegan '/^begin_a_run_for() {/,/^}/s#^    emit "\$dir" pass.began item="\$1" "process=\$\$ \$wake_fields"$#    :#'
+  passbegan '/^begin_a_run_for() {/,/^}/s#^    emit "\$dir" pass.began item="\$1" "process=\$\$ \$wake_fields" "rule-at=\$rule_at"$#    :#'
 
 wreck_runner "a pass that takes an argument is caught" \
   passargs '/^pass() {/,/^}/s#^    \[ "\$\#" -eq 0 \] || { usage; exit 2; }$#    :#'
@@ -2906,6 +2906,91 @@ wreck_runner "a source that cannot be asked to list, read as nothing marked, is 
 
 wreck_runner "a reconcile that reads the item as part of where is caught" \
   reconcilecols '/^report_clashes() {/,/^}/s#read -r branch identity _; do#read -r branch identity; do#'
+
+#
+# **A pass fetches before it selects, and only then.** One break per rule, each red on its own case:
+# the fetch, a failed one, its place below the door, both host checks, the default read and never
+# written, the move's four conditions and the move itself, `rule-at=`, and the bound. #1060.
+#
+wreck_runner "a pass that never fetches is caught" \
+  fetchgone '/^fetch_the_default_branch() {/,/^}/s#^    fetch_the_branch "\$default_branch" || leave_unfetched .*$#    :#'
+
+wreck_runner "a fetch that fails and starts new work anyway is caught" \
+  fetchfailed '/^fetch_the_default_branch() {/,/^}/s#^    fetch_the_branch "\$default_branch" || leave_unfetched .*$#    fetch_the_branch "$default_branch"#'
+
+wreck_runner "a fetch above the door is caught" \
+  fetchabove '/^pass() {/,/^}/s#^    carry_on_a_run_a_pass_began \&\& return 0$#    fetch_the_default_branch; move_the_checkout_to_the_tip; carry_on_a_run_a_pass_began \&\& return 0#'
+
+wreck_runner "a fetch with no host check before it is caught" \
+  fetchhostfirst '/^fetch_the_default_branch() {/,/^}/s#^    still_holding_the_host$#    :#'
+
+wreck_runner "a move with no host check before it is caught" \
+  fetchhostmove '/^move_the_checkout_to_the_tip() {/,/^}/s#^    still_holding_the_host$#    :#'
+
+wreck_runner "a pass that writes origin/HEAD to follow origin is caught" \
+  fetchsethead '/^fetch_the_default_branch() {/,/^}/s#^    \[ "\$default_branch" = "\$checkout_default" \] || leave_on_another_default .*$#    git remote set-head origin "$default_branch" >/dev/null 2>\&1#'
+
+wreck_runner "a detached checkout read as on its default branch is caught" \
+  movedetached 's#^    on_branch=\$(git symbolic-ref -q --short HEAD 2>/dev/null) || leave_in_the_way .*$#    on_branch=$default_branch#'
+
+wreck_runner "a checkout on another branch, moved anyway, is caught" \
+  movebranch 's#^    \[ "\$on_branch" = "\$default_branch" \] || leave_in_the_way .*$#    :#'
+
+wreck_runner "a checkout holding work nobody committed, moved anyway, is caught" \
+  moveunclean '/^move_the_checkout_to_the_tip() {/,/^}/s#^    a_clean_checkout || leave_in_the_way .*$#    :#'
+
+wreck_runner "an untracked detector file read as clean is caught" \
+  moveuntracked '/^a_clean_checkout() {/,/^}/s#--untracked-files=normal#--untracked-files=no#'
+
+wreck_runner "a checkout not behind the tip, moved anyway, is caught" \
+  movediverged '/^move_the_checkout_to_the_tip() {/,/^}/s#^    behind_the_tip || leave_in_the_way .*$#    :#'
+
+wreck_runner "a pass that fetches and never moves its checkout is caught" \
+  movenever '/^move_the_checkout_to_the_tip() {/,/^}/s#^    at_the_tip || fast_forward .*$#    :#'
+
+wreck_runner "a run whose first line names no rule-at is caught" \
+  ruleatbegan '/^begin_a_run_for() {/,/^}/s# "rule-at=\$rule_at"$##'
+
+wreck_runner "an ended line that names no rule-at is caught" \
+  ruleatended '/^say_this_pass_ended() {/s# rule-at=\${rule_at:-none}"; }$#"; }#'
+
+wreck_runner "a rule-at named before the checkout could move is caught" \
+  ruleatearly '/^move_the_checkout_to_the_tip() {/,/^}/s#^    still_holding_the_host$#    rule_at=$fetched_tip; still_holding_the_host#'
+
+wreck_runner "a fetch whose ssh may ask, or wait for ever, is caught" \
+  boundssh '/^bounded_ssh() {/,/^}/s# -o BatchMode=yes -o ConnectTimeout=30 -o ServerAliveInterval=15##'
+
+wreck_runner "a fetch that waits on a stalled HTTP transfer is caught" \
+  boundhttp '/^bounded_git() {/,/^}/s#git -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=60 "\$@"#git "$@"#'
+
+wreck_runner "a fetch that may prompt is caught" \
+  boundprompt '/^bounded_git() {/,/^}/s#GIT_TERMINAL_PROMPT=0 ##'
+
+wreck_runner "a fetch that drops the host's own ssh command is caught" \
+  boundkey '/^the_ssh_git_uses() {/,/^}/s#^    git config --get core.sshCommand 2>/dev/null \&\& return 0$#    :#'
+
+#
+# **The move, in the order git makes one, and every way it can stop.** One break per rule the build's
+# review asked for: the order, a refused tree, the tree put back, a tree that cannot go back, a
+# commit landing before the run, and git's own reason in the line. #1060.
+#
+wreck_runner "a branch moved before its tree is caught" \
+  moveorder '/^fast_forward() {/,/^}/s#^    move_the_tree "\$1" "\$2" || return 1$#    move_the_branch "$1" "$2" || return 1#; /^fast_forward() {/,/^}/s#^    move_the_branch "\$1" "\$2" \&\& return 0$#    move_the_tree "$1" "$2" \&\& return 0#'
+
+wreck_runner "a tree git refused to move, read as moved, is caught" \
+  movetreerefused '/^fast_forward() {/,/^}/s#^    move_the_tree "\$1" "\$2" || return 1$#    move_the_tree "$1" "$2"#'
+
+wreck_runner "a tree left at the tip when its branch could not follow is caught" \
+  moveputback '/^fast_forward() {/,/^}/s#^    put_the_tree_back "\$2"$#    :#'
+
+wreck_runner "a tree that could not go back, said to have stayed, is caught" \
+  movestranded '/^put_the_tree_back() {/,/^}/s#^    leave_stranded .*$#    return 1#'
+
+wreck_runner "a run begun at a commit its rule was not read at is caught" \
+  moveheadreread '/^begin_a_run_for() {/,/^}/s#^    still_where_the_rule_was_read$#    :#'
+
+wreck_runner "a checkout git would not move, with git's reason dropped, is caught" \
+  movegitline '/^move_the_checkout_to_the_tip() {/,/^}/s# || leave_in_the_way unmoved "this checkout could not be moved: \[\$git_refused\]"$# || leave_in_the_way unmoved "this checkout could not be moved"#'
 
 #
 # **A pass carries on the run a pass began.** Piece 5b: one break per row the door and the resume
@@ -3283,7 +3368,7 @@ wreck_runner "a pass that resumes an item whose hand wrote the questions is caug
 #
 # **The meeting, one rule a break.** A clause nothing derived is met once a hand's yes stands and its
 # kind's own answer holds, and `complete`, `status`, `deliver` and `merge` each hear before they grade.
-# A2's spec names each break, and each goes red on a case of its own.
+# Each rule has its break, and in the audit's own order each goes red first on a check of its own.
 #
 wreck_runner "a yes read from the ledger, not the source, is caught" \
   ledger '/^yes_to() {/,/^}/s#^    printf .%s.n. "\$heard_lines" .$#    grep -F answer.heard "$(evidence_file "$dir")" | awk -F"\\t" -v OFS="\\t" "{ split(\\$7, w, \\" \\"); print \\"heard\\", w[2], \\$4, \\$6, \\$7 }" \\#'
@@ -3345,8 +3430,10 @@ wreck_runner "a short sha taken for a commit is caught" \
 wreck_runner "an authorisation yes naming a commit, taken, is caught" \
   authcommit 's#if (!is_a_completion(question)) return commit == ""#if (!is_a_completion(question)) return 1#' lib/hearing.awk
 
+# The workspace by name, never `$tree`: `status` reads a yes where nothing has set it, and there a
+# tree read as nothing would match every commit.
 wreck_runner "a yes matched to a commit by its tree is caught" \
-  treematch 's@^        . "${named_by##. }" = "\$2" . .. return 0$@        [ "$(git -C "$tree" rev-parse "${named_by##* }^{tree}" 2>/dev/null)" = "$(git -C "$tree" rev-parse "$2^{tree}" 2>/dev/null)" ] \&\& return 0@'
+  treematch 's@^        . "${named_by##. }" = "\$2" . .. return 0$@        [ "$(git -C "$(unit_work_tree "$dir" "$(this_repository)")" rev-parse --verify --quiet "${named_by##* }^{tree}")" = "$(git -C "$(unit_work_tree "$dir" "$(this_repository)")" rev-parse --verify --quiet "$2^{tree}")" ] \&\& return 0@'
 
 wreck_runner "a moved head refused with no line for it is caught" \
   nonewline 's#. A hand completes it here with: yes %s %s\(...\) "\$text" "\$2" "\$3" "\$is_it_met" "\$3"#\1 "$text" "$2" "$3"#'
@@ -3404,9 +3491,16 @@ wreck_runner "a member seated twice by a second introduce is caught" \
 wreck_runner "a second worker written as proposer is caught" \
   secondproposer 's#^    \[ -z "\$proposers" \] || return 0$#    :#'
 
-# B2's panel may record several proposers for one clause, and the writer must hold every one off.
+# B2's panel may record several proposers for one clause, and the writer and `check` must each hold
+# every one off.
 wreck_runner "a writer that holds the first proposer alone off the panel is caught" \
   firstproposer '/^seats_to_write() {/,/^}/s#off_the_bench "\$bench_members" "\$proposers" |#off_the_bench "$bench_members" "$(printf "%s\\n" "$proposers" | head -n 1)" |#'
+
+wreck_runner "a check that holds the first proposer alone off the bench is caught" \
+  checkfirstproposer '/^members_short_of_the_bench() {/,/^}/s#"\$(proposers_of "\$1" "\$2")"#"$(proposers_of "$1" "$2" | head -n 1)"#'
+
+wreck_runner "a member recorded as proposer later that keeps its seat is caught" \
+  keptseat 's#^    put_clause "\$file" "\$id" "\$kind" "\$text" "\$seated" "\$proposer_to_write"$#    put_clause "$file" "$id" "$kind" "$text" "$seated"#'
 
 wreck_runner "a gate the base names, introduced, is caught" \
   introgate '/^refuse_to_introduce_a_gate() {/,/^}/s#^        exit 2$#        return 0#'
