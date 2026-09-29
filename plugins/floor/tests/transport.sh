@@ -55,6 +55,10 @@ a_fixture() {
     git -C "$1/w" remote add scpssh git@github.com:acme/tp.git
     git -C "$1/w" remote add urlssh ssh://git@github.com/acme/tp.git
     git -C "$1/w" remote add odd    sentinel://acme/tp.git
+
+    git -C "$1/w" remote add served https://github.com/acme/served.git
+    git -C "$1/w" config remote.served.vcs fixture
+    git -C "$1/w" config remote.served.served-from "$1/remotes/acme/tp.git"
 }
 
 # The helper git would run for `sentinel://`. It writes a file and nothing else, so its absence
@@ -80,7 +84,7 @@ the_contract_holds() {
 
     isolate_git_transport "$home"
 
-    for shape in https scpssh urlssh; do
+    for shape in https scpssh urlssh served; do
         git -C "$home/w" push -q "$shape" "HEAD:refs/heads/$shape" >/dev/null 2>&1
         is "a $shape push is redirected to the local bare repository" "$(landed "$home" "$shape")" landed
     done
@@ -92,6 +96,16 @@ the_contract_holds() {
     is "get-url still reports the repository's own identity" \
         "$(git -C "$home/w" remote get-url https 2>/dev/null)" \
         'https://github.com/acme/tp.git'
+
+    is "a remote the suite serves is read from its bare repository" \
+        "$(git -C "$home/w" ls-remote served refs/heads/https 2>/dev/null | cut -f1)" \
+        "$(git -C "$home/w" rev-parse HEAD 2>/dev/null)"
+    is "and get-url still reports its identity" \
+        "$(git -C "$home/w" remote get-url served 2>/dev/null)" 'https://github.com/acme/served.git'
+
+    git -C "$home/w" config --unset remote.served.served-from
+    is "a served remote naming no bare repository reaches nothing" \
+        "$(git -C "$home/w" ls-remote served >/dev/null 2>&1 && echo reached || echo refused)" refused
 
     said=$(PATH="$home/bin:$PATH" git -C "$home/w" push odd HEAD:refs/heads/odd 2>&1)
 
@@ -125,6 +139,7 @@ without() {
            unset GIT_CONFIG_KEY_0 GIT_CONFIG_VALUE_0
            unset GIT_CONFIG_KEY_1 GIT_CONFIG_VALUE_1
            unset GIT_CONFIG_KEY_2 GIT_CONFIG_VALUE_2
+           PATH=$(path_without_fixture_helpers)
 
            . "$home/isolate.sh"
            isolate_git_transport "$home" >/dev/null 2>&1
@@ -138,6 +153,14 @@ without() {
     is "$name" "$got" "$want"
 }
 
+# The path with every fixture helper taken off it, a parent's included, for the reason above.
+path_without_fixture_helpers() {
+    kept=$(printf '%s\n' "$PATH" | tr ':' '\n' | while IFS= read -r entry; do
+        [ -e "$entry/git-remote-fixture" ] || printf '%s:' "$entry"
+    done)
+    printf '%s' "${kept%:}"
+}
+
 # --- run them ---
 
 . "$root/tests/isolate.sh"
@@ -147,7 +170,14 @@ the_contract_holds
 # Without the allowlist, git chooses the sentinel helper and it runs. Nothing else is needed to
 # show the guarantee is gone.
 without "removing the transport allowlist is caught" \
-    '/^    GIT_ALLOW_PROTOCOL=file$/d' https "the helper ran"
+    '/^    GIT_ALLOW_PROTOCOL=file:fixture$/d' https "the helper ran"
+
+# Without its helper, or off the allowlist, a served remote is refused, so nothing arrives.
+without "removing the fixture transport's helper is caught" \
+    '/^    serve_fixture_remotes "\$1" || return 1$/d' served "did not land"
+
+without "leaving the fixture transport off the allowlist is caught" \
+    's#^    GIT_ALLOW_PROTOCOL=file:fixture$#    GIT_ALLOW_PROTOCOL=file#' served "did not land"
 
 # Without a redirect, that shape is refused rather than redirected, so nothing arrives.
 without "removing the https redirect is caught" \

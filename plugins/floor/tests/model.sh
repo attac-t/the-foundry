@@ -4378,11 +4378,38 @@ an_offer_is_a_named_mark_oldest_first() {
   has "and it says so" "$(floor_says "$tmp/elg" offer)" "names no hand"
 }
 
-# The fixture's own commit, held the way a clone that had just fetched it would hold it.
+#
+# The fixture's own commit, pushed to the remote the suite serves it from and fetched back, the way a
+# clone holds a merge it fetched. A pass fetches before it selects, #1060, so the remote must hold it.
 as_fetched() {
-  git -C "$1" update-ref refs/remotes/origin/main HEAD >/dev/null 2>&1 \
+  serve_the_origin_of "$1" \
+    && git -C "$1" push -q -f "$1.remote.git" HEAD:refs/heads/main >/dev/null 2>&1 \
+    && git -C "$1" fetch -q --no-tags origin '+refs/heads/main:refs/remotes/origin/main' >/dev/null 2>&1 \
     && git -C "$1" symbolic-ref refs/remotes/origin/HEAD refs/remotes/origin/main >/dev/null 2>&1
 }
+
+#
+# **A bare repository beside the checkout, served as its origin by `isolate.sh`'s own transport.** The
+# origin's URL is left as the fixture set it, so its identity is what it always was.
+serve_the_origin_of() {
+  [ -d "$1.remote.git" ] || git init -q --bare "$1.remote.git" >/dev/null 2>&1 || return 1
+  git -C "$1.remote.git" symbolic-ref HEAD refs/heads/main \
+    && git -C "$1" config remote.origin.vcs fixture \
+    && git -C "$1" config remote.origin.served-from "$1.remote.git"
+}
+
+#
+# **A person's change, landed on the fixture's remote and nowhere else**: a file committed in a clone of
+# it and pushed there. The checkout is untouched, so only a pass's fetch can bring it the change.
+a_person_pushes() {
+  rm -rf "$1.person"
+  git clone -q "$1.remote.git" "$1.person" >/dev/null 2>&1 || return 1
+  mkdir -p "$(dirname "$1.person/$2")"
+  commit_file "$1.person" "$2" "$3" && git -C "$1.person" push -q origin HEAD:refs/heads/main >/dev/null 2>&1
+}
+
+# Where the fixture's remote holds its default branch now.
+pushed_tip() { git -C "$1.remote.git" rev-parse --verify -q refs/heads/main 2>/dev/null; }
 
 elg_floor() { floor "$tmp/elg" "$@"; }
 elg_says()  { floor_says "$tmp/elg" "$@"; }
@@ -4443,6 +4470,7 @@ a_pass_takes_the_first_item_nobody_holds() {
      "$( cd "$tmp/pss" && FOUNDRY_HOME="$home" FOUNDRY_RUN="" FOUNDRY_WHO="" FOUNDRY_SOURCE="$tmp/no-such" \
          sh "$runner" pass >/dev/null 2>&1; printf '%s' "$?" )" "3"
 
+  commit_file "$tmp/pss" README 'pss' && as_fetched "$tmp/pss"
   is "a pass with no rule takes nothing" "$(code_of floor "$tmp/pss" pass)" "42"
 
   bar_and_rule "$tmp/pss"
@@ -7423,6 +7451,12 @@ every_wake_is_recorded() {
   is  "and the two pair by process" "$(process_of "$woke")" "$(process_of "$ended")"
   has "and its run's first line carries the same fields" "$(floor "$tmp/recorded" observe)" "identity=job7 stops=unnamed"
 
+  # **Each pass's record names the commit it read its rule at**, the tip it fetched. #1060's fourth box.
+  rule_read_at=$(git -C "$tmp/recorded" rev-parse HEAD 2>/dev/null)
+  has "and its run's first line names the commit its rule was read at" \
+      "$(floor "$tmp/recorded" observe)" "rule-at=$rule_read_at"
+  has "and so does its ended line" "$ended" "rule-at=$rule_read_at"
+
   make_repo "$tmp/recorded-idle" main && set_origin "$tmp/recorded-idle" 'https://gitlab.com/acme/recorded.git' \
     || { skip "a wake offered nothing — git could not make a repo here"; return; }
   bar_and_rule "$tmp/recorded-idle" 'offer nobodymarked pat'
@@ -7439,6 +7473,7 @@ every_wake_is_recorded() {
       FOUNDRY_SOURCE="$tmp/no-such-source.sh" sh "$runner" pass ) >/dev/null 2>&1; echo "$?")
   is  "a pass with no work source refuses, 3" "$nosource" "3"
   has "and still ended, saying why" "$(last_wake_line ended)" "read=no-source code=3"
+  has "and that it read no rule" "$(last_wake_line ended)" "rule-at=none"
   is  "after a woke of its own" "$(process_of "$(last_wake_line woke)")" "$(process_of "$(last_wake_line ended)")"
 
   a_door_exit_is_recorded
@@ -7464,8 +7499,8 @@ a_released_item_is_taken_again
 
 #
 # **A change to either setting reaches the next pass's record.** The host names the cadence, the
-# repository the rule. Each pass reads the rule at the fetched tip, but nothing floor ships fetches:
-# this case moves `origin/HEAD` itself, and #1060 owns the host that never does. #997's fourth box.
+# repository the rule. A person pushes the rule after the host started and moves no ref by hand, and
+# the next pass fetches it before it selects. #997's fourth box, and #1060's first.
 #
 a_change_to_either_setting_reaches_the_next_pass() {
   make_repo "$tmp/cadenced" main || { skip "a changed cadence — git could not make a repo here"; return; }
@@ -7484,8 +7519,9 @@ a_change_to_either_setting_reaches_the_next_pass() {
   commit_file "$tmp/changed" .foundry/practice 'offer before pat' && as_fetched "$tmp/changed"
   is  "a rule offering another label takes nothing" "$(code_of floor "$tmp/changed" pass)" "42"
 
-  commit_file "$tmp/changed" .foundry/practice 'offer changed pat' && as_fetched "$tmp/changed"
-  is  "a person's change to the rule, once fetched, reaches the next pass" \
+  a_person_pushes "$tmp/changed" .foundry/practice 'offer changed pat' \
+    || { skip "a changed rule — git could not push here"; return; }
+  is  "a person's change to the rule, pushed after the host started, reaches the next pass" \
       "$(code_of floor "$tmp/changed" pass)" "44"
   has "which took the item the new rule offers" "$(last_wake_line ended)" "read=took:594"
 
@@ -7508,6 +7544,338 @@ a_door_exit_is_recorded() {
 }
 
 every_wake_is_recorded
+
+#
+# **A new run begins at the default branch as last fetched.** A host starts on a bar that fails, a
+# person pushes one that passes, and the next new run goes through `gates` on it. #1060's second box.
+#
+a_pushed_bar_reaches_the_next_new_run() {
+  make_repo "$tmp/fetchbar" main && set_origin "$tmp/fetchbar" 'https://gitlab.com/acme/fetchbar.git' \
+    || { skip "a pushed bar — git could not make a repo here"; return; }
+  mkdir -p "$src/items" "$src/labels" "$src/claims" "$tmp/fetchbar/.foundry"
+  commit_file "$tmp/fetchbar" .foundry/gates 'tests  false'
+  commit_file "$tmp/fetchbar" .foundry/practice 'offer fetchbar pat' && as_fetched "$tmp/fetchbar"
+  is "a host started on a failing bar takes nothing while nothing is offered" "$(code_of floor "$tmp/fetchbar" pass)" "42"
+
+  a_person_pushes "$tmp/fetchbar" .foundry/gates 'tests  true' \
+    || { skip "a pushed bar — git could not push here"; return; }
+  printf 'Pushed bar item\n' > "$src/items/1601"
+  printf 'fetchbar\t2026-09-26T00:00:00Z\tpat\n' > "$src/labels/1601"
+
+  is  "a bar pushed after the host started carries the next new run through gates" \
+      "$(FOUNDRY_PASS_COMMAND=$COMMITTING_WORKER code_of floor "$tmp/fetchbar" pass)" "18"
+  is  "and that run begins at the fetched tip" \
+      "$(awk '{ print $3 }' "$(floor "$tmp/fetchbar" path)/bootstrap" 2>/dev/null)" "$(pushed_tip "$tmp/fetchbar")"
+  is  "and the checkout moved there" "$(git -C "$tmp/fetchbar" rev-parse HEAD 2>/dev/null)" "$(pushed_tip "$tmp/fetchbar")"
+
+  rm -rf "$src/claims/1601" "$src/labels/1601" "$src/items/1601"
+}
+a_pushed_bar_reaches_the_next_new_run
+
+#
+# **A checkout that cannot fast-forward starts no new work, and its code names why.** Work nobody
+# committed, an untracked file the detector reads, a detached head, another branch, and a commit the
+# fetched tip lacks. Floor never resets, merges or stashes, so each is left as it was. #1060.
+#
+a_checkout_in_the_way_starts_no_new_work() {
+  a_resumable_repo fetchdirty 1602 && printf '# edited\n' >> "$tmp/fetchdirty/.foundry/practice" \
+    || { skip "a dirty checkout — git could not make a repo here"; return; }
+  starts_no_new_work fetchdirty 1602 "a checkout holding work nobody committed" \
+    "holds work nobody committed: [.foundry/practice]" unclean
+  has "and says it read no rule" "$(last_wake_line ended)" "code=54 rule-at=none"
+
+  a_resumable_repo fetchloose 1603 && printf 'all:\n\ttrue\n' > "$tmp/fetchloose/Makefile" \
+    || { skip "an untracked detector file — git could not make a repo here"; return; }
+  starts_no_new_work fetchloose 1603 "a checkout holding an untracked Makefile" "committed: [Makefile]" unclean
+
+  a_resumable_repo fetchdetached 1604 && git -C "$tmp/fetchdetached" checkout -q --detach \
+    || { skip "a detached checkout — git could not make a repo here"; return; }
+  starts_no_new_work fetchdetached 1604 "a detached checkout" "this checkout is detached" detached
+  git -C "$tmp/fetchdetached" checkout -q -b elsewhere \
+    || { skip "a checkout on another branch — git could not branch here"; return; }
+  starts_no_new_work fetchdetached 1604 "a checkout on another branch" "is on [elsewhere], not [main]" branch
+
+  a_resumable_repo fetchforked 1605 && a_person_pushes "$tmp/fetchforked" README 'theirs' \
+    && commit_file "$tmp/fetchforked" LOCAL 'ours' \
+    || { skip "a diverged checkout — git could not make a repo here"; return; }
+  starts_no_new_work fetchforked 1605 "a checkout holding a commit the fetched tip lacks" "is not behind the fetched tip" diverged
+
+  rm -rf "$src/claims/1602" "$src/claims/1603" "$src/claims/1604" "$src/claims/1605"
+  rm -rf "$src/labels/1602" "$src/labels/1603" "$src/labels/1604" "$src/labels/1605"
+  rm -rf "$src/items/1602" "$src/items/1603" "$src/items/1604" "$src/items/1605"
+}
+
+# One pass in a checkout something is in the way of: 54, the reason named, `HEAD` where it was, no run.
+starts_no_new_work() {
+  was_at=$(git -C "$tmp/$1" rev-parse HEAD 2>/dev/null)
+  said=$(floor_says "$tmp/$1" pass); code=$?
+  is  "$3 starts no new work, 54" "$code" "54"
+  has "and says why" "$said" "$4"
+  has "and its record names what was in the way" "$(last_wake_line ended)" "read=in-the-way:$5 code=54"
+  is  "and its HEAD is where it was" "$(git -C "$tmp/$1" rev-parse HEAD 2>/dev/null)" "$was_at"
+  is  "and no run holds its item" "$(runs_holding "$2")" "0"
+}
+a_checkout_in_the_way_starts_no_new_work
+
+#
+# **origin's default is read, and `origin/HEAD` never written.** When origin names another branch
+# than the checkout's `origin/HEAD` does, or that names none, no new work starts, and both are said.
+#
+a_default_elsewhere_starts_no_new_work() {
+  a_resumable_repo fetchdefault 1606 \
+    && git -C "$tmp/fetchdefault.remote.git" update-ref refs/heads/trunk refs/heads/main \
+    && git -C "$tmp/fetchdefault.remote.git" symbolic-ref HEAD refs/heads/trunk \
+    || { skip "a default elsewhere — git could not make a repo here"; return; }
+
+  said=$(floor_says "$tmp/fetchdefault" pass); code=$?
+  is  "origin naming another default branch starts no new work, 53" "$code" "53"
+  has "and names both" "$said" "origin's default branch is [trunk] and this checkout's origin/HEAD names [main]"
+  is  "and origin/HEAD stays where the person left it" \
+      "$(git -C "$tmp/fetchdefault" symbolic-ref -q refs/remotes/origin/HEAD)" "refs/remotes/origin/main"
+  is  "and no run holds the item" "$(runs_holding 1606)" "0"
+
+  git -C "$tmp/fetchdefault" symbolic-ref -d refs/remotes/origin/HEAD
+  has "a checkout whose origin/HEAD names nothing is told so" \
+      "$(floor_says "$tmp/fetchdefault" pass)" "this checkout's origin/HEAD names [nothing]"
+
+  rm -rf "$src/claims/1606" "$src/labels/1606" "$src/items/1606"
+}
+a_default_elsewhere_starts_no_new_work
+
+#
+# **A fetch that fails starts no new work, and says so.** Once origin cannot be asked at all, and once
+# it names its default and then fails the fetch itself. #1060.
+#
+a_fetch_that_fails_starts_no_new_work() {
+  a_resumable_repo fetchfail 1607 || { skip "a failed fetch — git could not make a repo here"; return; }
+
+  mv "$tmp/fetchfail.remote.git" "$tmp/fetchfail.remote.gone"
+  said=$(floor_says "$tmp/fetchfail" pass); code=$?
+  is  "an origin nobody can ask starts no new work, 52" "$code" "52"
+  has "and says so" "$said" "origin could not be asked for its default branch"
+  mv "$tmp/fetchfail.remote.gone" "$tmp/fetchfail.remote.git"
+
+  printf '%s\n' '#!/bin/sh' "[ -f '$tmp/fetchfail.served' ] && exit 1" ": > '$tmp/fetchfail.served'" \
+    > "$tmp/fetchfail-once.sh"
+  git -C "$tmp/fetchfail" config remote.origin.on-serve "sh '$tmp/fetchfail-once.sh'"
+  said=$(floor_says "$tmp/fetchfail" pass); code=$?
+  is  "a fetch that fails once origin named its default starts no new work, 52" "$code" "52"
+  has "and says the fetch failed" "$said" "origin's [main] could not be fetched"
+  has "and its record says so" "$(last_wake_line ended)" "read=unfetched code=52"
+  is  "and no run holds the item" "$(runs_holding 1607)" "0"
+
+  git -C "$tmp/fetchfail" config --unset remote.origin.on-serve
+  rm -rf "$src/claims/1607" "$src/labels/1607" "$src/items/1607"
+}
+a_fetch_that_fails_starts_no_new_work
+
+#
+# **A run already begun keeps its base.** It stopped at `gates`, a person pushed a bar that passes,
+# and the resume grades it against its own base with the checkout's `HEAD` unmoved. #1060's third box.
+#
+a_run_begun_keeps_its_base() {
+  make_repo "$tmp/fetchresume" main && set_origin "$tmp/fetchresume" 'https://gitlab.com/acme/fetchresume.git' \
+    || { skip "a run begun — git could not make a repo here"; return; }
+  mkdir -p "$src/items" "$src/labels" "$src/claims" "$tmp/fetchresume/.foundry"
+  commit_file "$tmp/fetchresume" .foundry/gates 'tests  false'
+  commit_file "$tmp/fetchresume" .foundry/practice 'offer fetchresume pat' && as_fetched "$tmp/fetchresume"
+  printf 'Resumed past a push\n' > "$src/items/1608"
+  printf 'fetchresume\t2026-09-26T00:00:00Z\tpat\n' > "$src/labels/1608"
+  began_at=$(git -C "$tmp/fetchresume" rev-parse HEAD 2>/dev/null)
+
+  is "a run stops at its gates" "$(FOUNDRY_PASS_COMMAND=$COMMITTING_WORKER code_of floor "$tmp/fetchresume" pass)" "14"
+  a_person_pushes "$tmp/fetchresume" .foundry/gates 'tests  true' \
+    || { skip "a run begun — git could not push here"; return; }
+
+  is  "a bar pushed while it waits leaves its resume on its own bar, which fails again" \
+      "$(FOUNDRY_PASS_COMMAND=$COMMITTING_WORKER code_of floor "$tmp/fetchresume" pass)" "14"
+  is  "and the checkout's HEAD where the run began" "$(git -C "$tmp/fetchresume" rev-parse HEAD 2>/dev/null)" "$began_at"
+  is  "and nothing was fetched" "$(git -C "$tmp/fetchresume" rev-parse refs/remotes/origin/main 2>/dev/null)" "$began_at"
+  is  "and the run's base is where it began" \
+      "$(awk '{ print $3 }' "$(floor "$tmp/fetchresume" path)/bootstrap" 2>/dev/null)" "$began_at"
+
+  rm -rf "$src/claims/1608" "$src/labels/1608" "$src/items/1608"
+}
+a_run_begun_keeps_its_base
+
+#
+# **The host is checked before the fetch.** A resume that lets its run go falls through to select, and
+# a pass that slept may have lost the host by then. It stops, and fetches and moves nothing. #1060.
+#
+a_host_lost_before_the_fetch_moves_nothing() {
+  a_resumable_repo fetchlost 1609 || { skip "a host lost at the door — git could not make a repo here"; return; }
+  is "a pass takes an item, and waits for a command" "$(code_of floor "$tmp/fetchlost" pass)" "44"
+  began_at=$(git -C "$tmp/fetchlost" rev-parse HEAD 2>/dev/null)
+
+  printf 'The work for 1609.\n' > "$tmp/fetchlost-brief"
+  ( FOUNDRY_SOURCE_DIR="$src" sh "$dir_source" publish 1609 a-request-for-1609 work/fetchlost-1609 'Resumed item 1609' \
+      Refs "$tmp/fetchlost-brief" ) >/dev/null 2>&1
+  a_person_pushes "$tmp/fetchlost" README 'pushed while the host slept' \
+    || { skip "a host lost at the door — git could not push here"; return; }
+
+  said=$(floor_through "$(a_source_taking_the_host_on open)" "$tmp/fetchlost" pass); code=$?
+  is  "a pass that lets its run go after losing the host stops before the fetch, 43" "$code" "43"
+  is  "and fetched nothing" "$(git -C "$tmp/fetchlost" rev-parse refs/remotes/origin/main 2>/dev/null)" "$began_at"
+  is  "and moved nothing" "$(git -C "$tmp/fetchlost" rev-parse HEAD 2>/dev/null)" "$began_at"
+
+  end_the_newest_mark
+  rm -f "$src/deliveries/a-request-for-1609" "$src/deliveries/a-request-for-1609.brief"
+  rm -rf "$src/claims/1609" "$src/labels/1609" "$src/items/1609"
+}
+
+# A work source that, asked one verb, takes the host past the pass asking, then answers as the
+# directory adapter would: what a pass that slept finds when it wakes.
+a_source_taking_the_host_on() {
+  cat > "$tmp/takes-on-$1.sh" <<STUB
+#!/bin/sh
+[ "\$1" = $1 ] && sh '$(a_rival_for_the_host)' '$home/pass'
+exec sh '$dir_source' "\$@"
+STUB
+  printf '%s' "$tmp/takes-on-$1.sh"
+}
+
+# A script taking the host past whichever pass holds it: the next number, and a side name for it.
+a_rival_for_the_host() {
+  printf '%s\n' '#!/bin/sh' 'n=$(ls "$1" | grep -E "^[0-9]{10}$" | tail -n 1); n=${n#"${n%%[!0]*}"}' \
+    'm=$(printf "%010d" $(( n + 1 ))); printf "%s 60\n" "$(date -u +%s)" > "$1/$m"; : > "$1/$m.$(date -u +%s).60.99999"' \
+    > "$tmp/rival-for-the-host.sh"
+  printf '%s' "$tmp/rival-for-the-host.sh"
+}
+a_host_lost_before_the_fetch_moves_nothing
+
+#
+# **The host is checked again before the move.** A rival takes the host while the pass talks to
+# origin, so the fetch lands and the checkout stays where it was. #1060.
+#
+a_host_lost_while_fetching_moves_nothing() {
+  a_resumable_repo fetchrival 1610 && a_person_pushes "$tmp/fetchrival" README 'pushed before a rival woke' \
+    || { skip "a host lost mid-fetch — git could not make a repo here"; return; }
+  began_at=$(git -C "$tmp/fetchrival" rev-parse HEAD 2>/dev/null)
+  git -C "$tmp/fetchrival" config remote.origin.on-serve "sh '$(a_rival_for_the_host)' '$home/pass'"
+
+  is  "a pass that lost the host while it fetched stops before the move, 43" \
+      "$(code_of floor "$tmp/fetchrival" pass)" "43"
+  is  "and the fetch landed" \
+      "$(git -C "$tmp/fetchrival" rev-parse refs/remotes/origin/main 2>/dev/null)" "$(pushed_tip "$tmp/fetchrival")"
+  is  "and the checkout stayed where it was" "$(git -C "$tmp/fetchrival" rev-parse HEAD 2>/dev/null)" "$began_at"
+  is  "and no run holds the item" "$(runs_holding 1610)" "0"
+
+  git -C "$tmp/fetchrival" config --unset remote.origin.on-serve
+  end_the_newest_mark
+  rm -rf "$src/claims/1610" "$src/labels/1610" "$src/items/1610"
+}
+a_host_lost_while_fetching_moves_nothing
+
+#
+# **A pass's calls to origin are bounded, and ask nobody.** The host's own ssh gains OpenSSH's three
+# options, HTTP gains its low-speed limit, and git is told never to prompt. #1060, round two.
+#
+# The suite exports `GIT_TERMINAL_PROMPT` itself, so the pass runs without it, and without an ssh
+# variable a caller might hold, which would stand in front of the host's own setting.
+a_fetch_is_bounded() {
+  a_resumable_repo fetchbound 1611 || { skip "a bounded fetch — git could not make a repo here"; return; }
+  git -C "$tmp/fetchbound" config core.sshCommand 'ssh -i fixture-key'
+  git -C "$tmp/fetchbound" config remote.origin.on-serve "env > '$tmp/fetchbound.env'"
+
+  ( unset GIT_TERMINAL_PROMPT GIT_SSH_COMMAND GIT_SSH; floor "$tmp/fetchbound" pass ) >/dev/null 2>&1
+  seen=$(cat "$tmp/fetchbound.env" 2>/dev/null)
+  has "a fetch keeps the host's own ssh command" "$seen" "GIT_SSH_COMMAND=ssh -i fixture-key"
+  has "and tells it never to ask, or to wait for ever" "$seen" \
+      "-o BatchMode=yes -o ConnectTimeout=30 -o ServerAliveInterval=15"
+  has "and gives up on an HTTP transfer that stalls" \
+      "$(printf '%s' "$seen" | tr 'A-Z' 'a-z' | tr -d "'")" "http.lowspeedlimit=1000 http.lowspeedtime=60"
+  has "and never prompts" "$seen" "GIT_TERMINAL_PROMPT=0"
+
+  git -C "$tmp/fetchbound" config --unset remote.origin.on-serve
+  rm -rf "$src/claims/1611" "$src/labels/1611" "$src/items/1611"
+}
+a_fetch_is_bounded
+
+#
+# **A move git refuses starts no new work, and says git's own reason.** The tree moves first, as git
+# moves one, then the branch. A branch that will not follow puts the tree back, and a tree that
+# cannot go back is said, since the checkout is then not as it was. #1060's build review.
+#
+a_move_git_refuses_starts_no_new_work() {
+  a_resumable_repo fetchheld 1613 && a_person_pushes "$tmp/fetchheld" pushed.txt 'theirs' \
+    || { skip "a branch git will not move — git could not make a repo here"; return; }
+  was_at=$(git -C "$tmp/fetchheld" rev-parse HEAD 2>/dev/null)
+  a_hook_refusing_main "$tmp/fetchheld"
+  is  "a branch git will not move starts no new work, 54" "$(code_of floor "$tmp/fetchheld" pass)" "54"
+  is  "and its tree had moved first, as git moves one" "$(cat "$tmp/fetchheld.at-the-branch" 2>/dev/null)" "theirs"
+  is  "and its tree went back to where its branch is" \
+      "$(git -C "$tmp/fetchheld" status --porcelain 2>/dev/null)$(ls "$tmp/fetchheld" | grep -c '^pushed\.txt$')" "0"
+  is  "and its branch never moved" "$(git -C "$tmp/fetchheld" rev-parse HEAD 2>/dev/null)" "$was_at"
+  rm -f "$tmp/fetchheld/.git/hooks/reference-transaction"
+
+  a_resumable_repo fetchlocked 1612 && a_person_pushes "$tmp/fetchlocked" pushed.txt 'theirs' \
+    && : > "$tmp/fetchlocked/.git/index.lock" \
+    || { skip "a held index — git could not make a repo here"; return; }
+  was_at=$(git -C "$tmp/fetchlocked" rev-parse HEAD 2>/dev/null)
+  said=$(floor_says "$tmp/fetchlocked" pass); code=$?
+  is  "a checkout whose index another git holds starts no new work, 54" "$code" "54"
+  has "and says git's own reason" "$said" "index.lock': File exists"
+  is  "and neither its branch nor its tree moved" \
+      "$(git -C "$tmp/fetchlocked" rev-parse HEAD 2>/dev/null) $(ls "$tmp/fetchlocked" | grep -c '^pushed\.txt$')" "$was_at 0"
+  rm -f "$tmp/fetchlocked/.git/index.lock"
+
+  a_resumable_repo fetchstranded 1614 && a_person_pushes "$tmp/fetchstranded" pushed.txt 'theirs' \
+    || { skip "a tree that cannot go back — git could not make a repo here"; return; }
+  a_hook_refusing_main "$tmp/fetchstranded" and-the-index
+  said=$(floor_says "$tmp/fetchstranded" pass); code=$?
+  is    "a tree that cannot go back starts no new work, 54" "$code" "54"
+  has   "and says a person must put it right" "$said" "could not be put back, so a person must put it right"
+  lacks "and never that the checkout stayed where it was" "$said" "stays where it is"
+  rm -f "$tmp/fetchstranded/.git/hooks/reference-transaction" "$tmp/fetchstranded/.git/index.lock"
+
+  rm -rf "$src/claims/1612" "$src/claims/1613" "$src/claims/1614"
+  rm -rf "$src/labels/1612" "$src/labels/1613" "$src/labels/1614" "$src/items/1612" "$src/items/1613" "$src/items/1614"
+}
+
+#
+# A `reference-transaction` hook refusing to move `main`, which says what the tree held when asked. A
+# second argument makes it hold the index as well, as a git dying mid-move would.
+a_hook_refusing_main() {
+  mkdir -p "$1/.git/hooks" && cat > "$1/.git/hooks/reference-transaction" <<HOOK
+#!/bin/sh
+moving=
+while read -r old new ref; do [ "\$ref" = refs/heads/main ] && moving=yes; done
+[ "\$1" = prepared ] && [ -n "\$moving" ] || exit 0
+cat '$1/pushed.txt' > '$1.at-the-branch' 2>/dev/null || echo none > '$1.at-the-branch'
+[ -z '${2:-}' ] || : > '$1/.git/index.lock'
+exit 1
+HOOK
+  chmod +x "$1/.git/hooks/reference-transaction"
+}
+a_move_git_refuses_starts_no_new_work
+
+#
+# **A run begins where its rule was read.** A commit landing in the checkout after the move, here as
+# the item is claimed, would have become the run's base, so no run begins. #1060's build review.
+#
+a_commit_landing_before_the_run_starts_no_new_work() {
+  a_resumable_repo fetchlanded 1615 || { skip "a commit landing mid-pass — git could not make a repo here"; return; }
+  rule_read_at=$(git -C "$tmp/fetchlanded" rev-parse HEAD 2>/dev/null)
+
+  said=$(floor_through "$(a_source_committing_on claim "$tmp/fetchlanded")" "$tmp/fetchlanded" pass); code=$?
+  is  "a commit landing before the run is made starts no new work, 54" "$code" "54"
+  has "and says the rule was read elsewhere" "$said" "after its rule was read at [$rule_read_at]"
+  has "and its record says so" "$(last_wake_line ended)" "read=in-the-way:moved code=54"
+  is  "and no run holds its item" "$(runs_holding 1615)" "0"
+
+  rm -rf "$src/claims/1615" "$src/labels/1615" "$src/items/1615"
+}
+
+# A work source that commits in a checkout when asked one verb, then answers as the directory adapter.
+a_source_committing_on() {
+  cat > "$tmp/commits-on-$1.sh" <<STUB
+#!/bin/sh
+[ "\$1" = $1 ] && git -C '$2' commit -q --allow-empty -m 'landed mid-pass' >/dev/null 2>&1
+exec sh '$dir_source' "\$@"
+STUB
+  printf '%s' "$tmp/commits-on-$1.sh"
+}
+a_commit_landing_before_the_run_starts_no_new_work
 
 #
 # **Two judges on one clause, and every fixture before this had one.** A rule with a single instance
