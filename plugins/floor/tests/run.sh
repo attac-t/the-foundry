@@ -3522,9 +3522,10 @@ wreck_runner "a bench read as nobody where the base cannot be read is caught" \
 # **The shaping, one rule a break.** Members a `shape` line names at the base propose clauses before any
 # work, through an entry point pinned apart from the judge. The spec for B names each break.
 #
-# In the order the model suite runs, three go red first on an older case, and each still fails one of
-# the shaping's own cases after it: `checkfirst` on a_member_who_proposes_a_clause_never_judges_it,
-# `workerno` on authorisation_asks_and_hears, and `hearsunshaped` on a_pass_takes_the_first_item_nobody_holds.
+# In the order the model suite runs, two go red first on an older case, and each still fails one of
+# the shaping's own cases after it: `workerno` on authorisation_asks_and_hears, and `hearsunshaped` on
+# a_pass_takes_the_first_item_nobody_holds. A2's `checkfirstproposer` makes the mutant a second
+# proposer's check needs, so no break here makes it again.
 #
 wreck_runner "a shape line read from the checkout, not the base, is caught" \
   shapecheckout 's#^    shape_declared=\$(sh "\$(judged_resolver)" "\$shape_checkout"); shape_read=\$?$#    shape_declared=$(detect_judged); shape_read=$?#'
@@ -3682,9 +3683,6 @@ wreck_runner "a writer that records the first proposer alone is caught" \
 
 wreck_runner "a derivation that carries the first proposer alone is caught" \
   carryfirst 's#if (\$1 == "judge" || \$1 == "rounds" || \$1 == "proposer") panel\[\$2\] = panel\[\$2\] \$0 "\\n"; next#if ($1 == "judge" || $1 == "rounds" || ($1 == "proposer" \&\& !kept[$2]++)) panel[$2] = panel[$2] $0 "\\n"; next#'
-
-wreck_runner "a panel held at check to the bench less the first proposer alone is caught" \
-  checkfirst 's#off_the_bench "\$bench_members" "\$(proposers_of "\$1" "\$2")" |#off_the_bench "$bench_members" "$(proposers_of "$1" "$2" | head -n 1)" |#'
 
 wreck_runner "a proposal's row written twice is caught" \
   rowtwice 's#^proposal_has_a_row() {#proposal_has_a_row() { return 1;#'
