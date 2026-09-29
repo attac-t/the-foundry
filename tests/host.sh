@@ -401,8 +401,8 @@ grep -v '^[[:space:]]*#' "$root/bin/host.sh" | grep -q 'FOUNDRY_EPHEMERAL' \
 # went with the container, and a pass on #1078 lost the only record of why its grade stopped. #1108.
 #
 # A copy of `gates.sh` alone in a directory: every gate it names is missing and fails at once, so the
-# real `keep` runs and nothing stands in for it. Floor's runner says where the log belongs, so the two
-# answers cannot drift apart.
+# real `keep` runs and nothing stands in for it. Floor's runner says where the log belongs, asked in
+# the two homes the legs below grade in: `HOME` alone, and `HOME` with `FOUNDRY_HOME` named.
 #
 red_grade_under() {
   rm -rf "$tmp/lab" && mkdir -p "$tmp/lab/bin" && cp "$1" "$tmp/lab/bin/gates.sh" || return 1
