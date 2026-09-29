@@ -8128,17 +8128,57 @@ the_runner_believes_no_more_than_a_person
 # two words there and nowhere else, so a fixture without one would leave that untested on every
 # machine anybody develops on.
 a_plugin_shipping() {
-  [ -d "$tmp/a plugin/bin" ] || {
-    mkdir -p "$tmp/a plugin" \
-      && cp -R "$(dirname "$runner")" "$tmp/a plugin/bin" \
-      && cp -R "$(dirname "$runner")/../lib" "$tmp/a plugin/lib" || return 1
-  }
+  a_plugin_tree || return 1
 
   mkdir -p "$tmp/a plugin/adapters/$1" && printf '%s' "$2" > "$tmp/a plugin/adapters/$1/run.sh"
 }
 
+# The tree both siblings add an adapter's file to, made once from the runner under test.
+a_plugin_tree() {
+  [ -d "$tmp/a plugin/bin" ] && return 0
+
+  mkdir -p "$tmp/a plugin" \
+    && cp -R "$(dirname "$runner")" "$tmp/a plugin/bin" \
+    && cp -R "$(dirname "$runner")/../lib" "$tmp/a plugin/lib"
+}
+
+#
+# **The sibling that writes an adapter's shaping entry point**, beside its judge's `run.sh`. The entry
+# point answers from `$tmp/$1.members`, one set of files a member, as `a_member_answering_from` says.
+#
+a_plugin_shaping() {
+  a_plugin_tree || return 1
+
+  mkdir -p "$tmp/a plugin/adapters/$1" "$tmp/$1.members" \
+    && a_member_answering_from "$tmp/$1.members" > "$tmp/a plugin/adapters/$1/shape.sh"
+}
+
+#
+# A shaping member for this suite. It reads which member it is from its brief, keeps that brief and
+# where it ran, then answers as its case wrote: `<member>.says` on stdout, `<member>.err` on stderr,
+# `<member>.code` as its exit. It waits five seconds first while `<member>.hold` is there.
+#
+a_member_answering_from() {
+  cat <<STUB
+#!/bin/sh
+  d='$1'
+  m=\$(awk '\$1 == "member" { print \$2; exit }' "\$FOUNDRY_BRIEF" | tr ':' '-')
+  printf 'called\n' >> "\$d/\$m.calls"
+  n=\$(grep -c . "\$d/\$m.calls")
+  cp "\$FOUNDRY_BRIEF" "\$d/\$m.handed-\$n"
+  { pwd; printf 'holds [%s]\n' "\$(ls -A)"; git rev-parse --git-dir; } > "\$d/\$m.room-\$n" 2>&1
+  [ ! -f "\$d/\$m.hold" ] || { : > "\$d/\$m.held"; sleep 5; }
+  [ ! -f "\$d/\$m.err" ] || cat "\$d/\$m.err" >&2
+  [ ! -f "\$d/\$m.says" ] || cat "\$d/\$m.says"
+  exit "\$(cat "\$d/\$m.code" 2>/dev/null || printf 0)"
+STUB
+}
+
 # What a shipped adapter is pinned to: the content, as git names it.
 pin_of() { git hash-object --no-filters -- "$tmp/a plugin/adapters/$1/run.sh" 2>/dev/null; }
+
+# What a `shape` line pins an adapter's shaping entry point to, the same way.
+shape_pin_of() { git hash-object --no-filters -- "$tmp/a plugin/adapters/$1/shape.sh" 2>/dev/null; }
 
 # `floor`, through the plugin tree above. An adapter resolves under the runner's own plugin root, so
 # a check about one needs a root it can put an adapter in.
@@ -12008,6 +12048,1164 @@ a_helper_keeps_the_callers_names() {
   unset dir home_dir run who said identity ref
 }
 a_helper_keeps_the_callers_names
+
+# --- the shaping ---
+#
+# **Before any work, the members a `shape` line names at the run's base propose clauses**, each
+# through an entry point pinned apart from its judge, and a named hand takes or strikes each clause
+# that enters. These drive `charter shape` by hand, a wake at a time. The pass that runs it comes after.
+
+#
+# A repository whose `.foundry/judged` is `$3`, and a run on it that read item `$2`, derived its charter
+# and selected itself, with the grants `deliver` needs. Its practice is `$4`, or a line naming `pat`, and
+# `bin/bench.sh` judges as `a_bench_judge` does, refusing the clause `$5`. Each verb goes through the plugin tree.
+#
+a_shaped_repo() {
+  make_repo "$tmp/$1" main && set_origin "$tmp/$1" "https://github.com/acme/$1.git" \
+    && mkdir -p "$tmp/$1/.foundry" "$tmp/$1/bin" \
+    && commit_file "$tmp/$1" .foundry/gates 'tests  true
+' && commit_file "$tmp/$1" .foundry/practice "${4:-authorise pat}" \
+    && commit_file "$tmp/$1" bin/bench.sh "$(a_bench_judge "$tmp/$1.asked" "${5:-}")" \
+    && commit_file "$tmp/$1" .foundry/judged "$3" || return 1
+  git init -q --bare "$tmp/remotes/acme/$1.git" 2>/dev/null || return 1
+
+  sp_repo=$tmp/$1 sp_item=$2 sp_source=$dir_source sp_run=
+  mkdir -p "$src/items" && printf 'Shape item %s\n' "$2" > "$src/items/$2" || return 1
+  sp_run=$(floor_new_as "$sp_repo" ada@example.com "Shaping $1") && [ -n "$sp_run" ] || return 1
+
+  for step in "source read $2" "charter derive" "policy authorize https://github.com/acme/$1.git" \
+      "policy deliver-to https://github.com/acme/$1.git" "targets add https://github.com/acme/$1.git main"; do
+    spf $step >/dev/null || return 1
+  done
+}
+
+#
+# A judge for a shaping case's bench. It writes each clause it is asked into `$1`, keeps its brief beside
+# its receipt, and refuses the clause `$2` while approving every other: a bench that would refuse a
+# clause a hand struck, and so shows whether it was ever asked.
+#
+a_bench_judge() {
+  cat <<JUDGE
+#!/bin/sh
+  asked=\$(sed -n '2s/^clause //p' "\$FOUNDRY_BRIEF")
+  printf '%s\n' "\$asked" >> '$1'
+  cp "\$FOUNDRY_BRIEF" "\${FOUNDRY_RECEIPT%.receipt}.handed"
+  verdict=approve
+  [ "\$asked" != '${2:-}' ] || verdict=reject
+  printf 'the fixture bench read [%s]\n' "\$FOUNDRY_BRIEF" > "\${FOUNDRY_RECEIPT%.receipt}.report"
+  printf 'adapter a-fixture\nrequested_model a-model\ncontext a-thread\nfresh yes\n' >> "\$FOUNDRY_RECEIPT"
+  printf 'report %s\ntime 2026-09-05T00:00:00Z\nverdict %s\n' "\$(cksum < "\${FOUNDRY_RECEIPT%.receipt}.report" | awk '{ print \$1 }')" "\$verdict" >> "\$FOUNDRY_RECEIPT"
+JUDGE
+}
+
+# `floor`, through the plugin tree, on the case's run and source, and what it said.
+spf() {
+  ( cd "$sp_repo" && FOUNDRY_HOME="$home" FOUNDRY_RUN="$sp_run" FOUNDRY_WHO="" FOUNDRY_SOURCE="$sp_source" \
+      sh "$tmp/a plugin/bin/run.sh" "$@" 2>/dev/null )
+}
+
+spf_says() {
+  ( cd "$sp_repo" && FOUNDRY_HOME="$home" FOUNDRY_RUN="$sp_run" FOUNDRY_WHO="" FOUNDRY_SOURCE="$sp_source" \
+      sh "$tmp/a plugin/bin/run.sh" "$@" 2>&1 )
+}
+
+# The same, as the worker a host names.
+spf_by() {
+  local worked=$1; shift
+  ( cd "$sp_repo" && FOUNDRY_HOME="$home" FOUNDRY_RUN="$sp_run" FOUNDRY_WHO="" FOUNDRY_SOURCE="$sp_source" \
+      FOUNDRY_WORKER="$worked" sh "$tmp/a plugin/bin/run.sh" "$@" 2>/dev/null )
+}
+
+# One `shape` line: member `$1`, reached through adapter `$2` at its digest, and label `$3` when given.
+shape_line() { printf 'shape  %s  @adapter %s %s%s\n' "$1" "$2" "$(shape_pin_of "$2")" "${3:+ $3}"; }
+
+# A member's files under the adapter that answers for it. A colon in its name is a hyphen there.
+member_file()  { printf '%s/%s.%s' "$tmp/$1.members" "$(printf '%s' "$2" | tr ':' '-')" "$3"; }
+member_says()  { printf '%s' "$3" > "$(member_file "$1" "$2" says)"; }
+member_exits() { printf '%s\n' "$3" > "$(member_file "$1" "$2" code)"; }
+
+times_asked() {
+  [ -f "$(member_file "$1" "$2" calls)" ] || { printf 0; return; }
+  grep -c . "$(member_file "$1" "$2" calls)"
+}
+
+# What attempt `$2` of member `$1` was handed or printed, as the run keeps it.
+attempt_file() { printf '%s/shaped/%s-%s.%s' "$sp_run" "$(clause_of "$1")" "$2" "$3"; }
+
+# Whether file `$1` ends with file `$2`, byte for byte.
+ends_with_file() { tail -c "$(wc -c < "$2" | tr -d ' ')" "$1" 2>/dev/null | cmp -s - "$2" && printf same; }
+
+# The ledger's rows of one kind, as `name\tresult\tref\twhy`, and what one member's attempts came to.
+sp_rows()    { awk -F'\t' -v kind="$1" '$2 == kind { print $4 "\t" $5 "\t" $6 "\t" $7 }' "$sp_run/evidence" 2>/dev/null; }
+sp_row_of()  { sp_rows shape.attempt | awk -F'\t' -v who="$1" '$1 == who { print $4 }'; }
+sp_took()    { sp_rows shape.proposal | awk -F'\t' -v said="$1" '$1 == said { print $2 "\t" $4 }'; }
+
+# The ledger less every row of kind `$1` naming `$2`, as a kill before those rows were written leaves it.
+sp_forgets() {
+  awk -F'\t' -v kind="$1" -v named="$2" '!($2 == kind && $4 == named)' "$sp_run/evidence" > "$sp_run/evidence.cut" \
+    && mv "$sp_run/evidence.cut" "$sp_run/evidence"
+}
+
+# The question this run asks about a clause, what it put on the item, and a person's answer there.
+sp_asks()     { printf '%s.%s.%s' "$(basename "$sp_run")" "$1" "$(clause_of "$2")"; }
+sp_question() { cat "$src/questions/$sp_item/$(sp_asks authorisation "$1")" 2>/dev/null; }
+sp_answers()  { mkdir -p "$src/answers/$sp_item" && printf '%s\t%s\t%s\n' "$2" "$3" "$4" > "$src/answers/$sp_item/$1"; }
+
+# A label on the item, as the directory source keeps one: the label, when, and who put it on.
+sp_labels() { mkdir -p "$src/labels" && printf '%s\t%s\t%s\n' "$1" "$2" "$3" >> "$src/labels/$sp_item"; }
+
+# Opened and graded, as a run is once its hands have answered.
+sp_opens() { spf open >/dev/null && spf gates >/dev/null; }
+
+# What `status` says a hand said about one clause, under *decided*.
+sp_decided() { spf_says status | awk -v said="  Judged \`$1\`, " 'index($0, said) == 1'; }
+
+# The clauses the panel's words became, by kind, one a line.
+sp_clauses() { awk -v kind="$1" '$1 == "clause" && $3 == kind { $1 = ""; $2 = ""; $3 = ""; sub(/^ +/, ""); print }' "$sp_run/charter"; }
+
+# The members one clause records under a kind of record, in the order the charter holds them.
+sp_records() { awk -v kind="$1" -v id="$(clause_of "$2")" '$1 == kind && $2 == id { print $3 }' "$sp_run/charter" | tr '\n' ' '; }
+
+#
+# **Both readers of the reserved words know `shape`.** The resolver passes the line through as written,
+# and derivation skips it. So a `shape` line beside a judged clause derives nothing of its own, `check`
+# finds nothing, and `charter shape` reads the member it names. First, because every later case needs both.
+#
+both_readers_know_a_shape_line() {
+  a_plugin_shaping shp01 || { skip "both readers — the plugin could not be copied"; return; }
+  make_repo "$tmp/shp01" main && set_origin "$tmp/shp01" 'https://github.com/acme/shp01.git' \
+    && mkdir -p "$tmp/shp01/.foundry" && commit_file "$tmp/shp01" .foundry/gates 'tests  true
+' && commit_file "$tmp/shp01" .foundry/practice 'authorise pat' \
+    && commit_file "$tmp/shp01" .foundry/judged "$(shape_line ann:reader shp01)
+reach  cat:judge  sh bin/judge.sh
+cat:judge  the page is readable
+" || { skip "both readers — git could not make a repo here"; return; }
+
+  sp_repo=$tmp/shp01 sp_item=1301 sp_source=$dir_source
+  mkdir -p "$src/items" && printf 'Shape item 1301\n' > "$src/items/1301"
+  sp_run=$(floor_new_as "$sp_repo" ada@example.com "Both readers")
+  spf source read 1301 >/dev/null
+
+  is  "a shape line beside a judged clause lets the charter derive" "$(code_of spf charter derive)" "0"
+  is  "and derives nothing of its own: the gate and the judged clause" \
+      "$(awk '$1 == "clause" { print $3 }' "$sp_run/charter" | tr '\n' ' ')" "Gate Judged "
+  is  "and check finds nothing" "$(code_of spf charter check)" "0"
+
+  spf charter shape >/dev/null
+  is  "and charter shape reads the member it names" "$(cat "$sp_run/shaped/seats" 2>/dev/null)" "ann:reader sat"
+}
+both_readers_know_a_shape_line
+
+#
+# **A `shape` line no run may use is refused at 6, and each is named**: four words, seven, a third word
+# other than `@adapter`, a name that is no adapter, and a pin that is no digest. Wrong on every host.
+#
+a_shape_line_no_run_may_use_is_refused() {
+  a_plugin_shaping shp02 || { skip "an unusable shape line — the plugin could not be copied"; return; }
+  shaping_pin=$(shape_pin_of shp02)
+  a_shaped_repo shp02 1302 "shape  ann:four  @adapter shp02
+shape  bob:seven  @adapter shp02 $shaping_pin a-label one-more
+shape  cat:custom  @custom shp02 $shaping_pin
+shape  dan:path  @adapter ../shp02 $shaping_pin
+shape  eve:tagged  @adapter shp02 v1.2.3
+" || { skip "an unusable shape line — git could not make a repo here"; return; }
+
+  said=$(spf_says charter shape; printf '\nexit=%s' "$?")
+  has    "a shape line no run may use is refused at 6"  "$said" "exit=6"
+  has    "naming one of four words"                     "$said" "[shape  ann:four  @adapter shp02] holds 4 words"
+  has    "and one of seven"                             "$said" "bob:seven  @adapter shp02 $shaping_pin a-label one-more] holds 7 words"
+  has    "and one that reaches by another word"         "$said" "reaches by [@custom]"
+  has    "and one that names no adapter"                "$said" "@adapter ../shp02 $shaping_pin] names no adapter"
+  has    "and one that pins what is no digest"          "$said" "pins [v1.2.3], which is not a digest"
+  absent "and nobody is seated"                         "$sp_run/shaped/seats"
+}
+a_shape_line_no_run_may_use_is_refused
+
+#
+# **A worker's commit seats nobody.** `shape` lines are read at the run's base, so one the checkout alone
+# holds names no member, and the run is shaped by nobody.
+#
+a_shape_line_the_checkout_alone_holds_seats_nobody() {
+  a_plugin_shaping shp03 || { skip "a checkout's shape line — the plugin could not be copied"; return; }
+  a_shaped_repo shp03 1303 'bench  cat:judge
+' || { skip "a checkout's shape line — git could not make a repo here"; return; }
+  shape_line ann:worker shp03 >> "$tmp/shp03/.foundry/judged"
+  git -C "$tmp/shp03" add .foundry/judged >/dev/null 2>&1 && git -C "$tmp/shp03" commit -qm 'name a member' >/dev/null 2>&1
+
+  is     "a shape line only the worker committed is read by nobody" "$(code_of spf charter shape)" "0"
+  absent "so nobody is seated"                                    "$sp_run/shaped"
+  is     "and the member it names is never asked"                 "$(times_asked shp03 ann:worker)" "0"
+}
+a_shape_line_the_checkout_alone_holds_seats_nobody
+
+#
+# **A base that cannot be read is refused at 6, as `derive` refuses one**, and never read as a base
+# naming no member. `derive` passed before the base went, so the refusal is the shaping's own.
+#
+a_base_nobody_can_read_seats_nobody() {
+  a_plugin_shaping shp04 || { skip "an unreadable base — the plugin could not be copied"; return; }
+  a_shaped_repo shp04 1304 "$(shape_line ann:reader shp04)
+" || { skip "an unreadable base — git could not make a repo here"; return; }
+  cp "$sp_run/bootstrap" "$sp_run/bootstrap.keep"
+  awk '{ $3 = "0000000000000000000000000000000000000000"; print }' "$sp_run/bootstrap.keep" > "$sp_run/bootstrap"
+
+  said=$(spf_says charter shape; printf '\nexit=%s' "$?")
+  has    "a base that cannot be read is refused at 6"   "$said" "exit=6"
+  has    "and says so, never that it names no member"  "$said" "cannot be read"
+  absent "and nobody is seated"                        "$sp_run/shaped/seats"
+  cp "$sp_run/bootstrap.keep" "$sp_run/bootstrap"
+}
+a_base_nobody_can_read_seats_nobody
+
+#
+# **Each member shapes through its own entry point, pinned apart from its judge.** An adapter whose
+# `run.sh` is edited after the base pinned both files still shapes, and its judge is refused at 40.
+# Then its `shape.sh` instead: shaping is refused at 40 before any member is asked, and the judge runs.
+#
+the_entry_point_is_pinned_apart_from_the_judge() {
+  a_plugin_shaping shp05 && a_plugin_shipping shp05 "$(a_judge_that_approves)" && a_plugin_shaping shp05b \
+    || { skip "two pins — the plugin could not be copied"; return; }
+  a_shaped_repo shp05 1305 "$(shape_line ann:early shp05b)
+$(shape_line bob:late shp05)
+reach  cat:judge  @adapter shp05 $(pin_of shp05)
+cat:judge  the page is readable
+" || { skip "two pins — git could not make a repo here"; return; }
+  member_exits shp05b ann:early 1
+  member_exits shp05 bob:late 1
+  sp_opens || { skip "two pins — the run could not be opened"; return; }
+
+  printf '\n# edited\n' >> "$tmp/a plugin/adapters/shp05/run.sh"
+  spf charter shape >/dev/null
+  is "an edited judge moves no shaping pin, so its member is asked" "$(times_asked shp05 bob:late)" "1"
+  is "and the judge is refused at 40"                               "$(code_of spf judged)" "40"
+
+  a_plugin_shipping shp05 "$(a_judge_that_approves)"
+  printf '\n# edited\n' >> "$tmp/a plugin/adapters/shp05/shape.sh"
+  is "an edited entry point is refused at 40"                       "$(code_of spf charter shape)" "40"
+  is "before any member is asked, its own or another's"             "$(times_asked shp05b ann:early)" "1"
+  is "and the judge runs"                                           "$(code_of spf judged)" "0"
+}
+the_entry_point_is_pinned_apart_from_the_judge
+
+#
+# **A label seats its member only when a named hand put it on**, and a line of six words is read with its
+# label. Put on by `pat`, the member sits. Put on by a hand the base does not name, or not on the item at
+# all, it is left out, and *decided* names the label that left it out.
+#
+a_label_seats_a_member_only_from_a_named_hand() {
+  a_plugin_shaping shp06 || { skip "labels — the plugin could not be copied"; return; }
+  a_shaped_repo shp06 1306 "$(shape_line ann:named shp06 needs-ann)
+$(shape_line bob:unnamed shp06 needs-bob)
+$(shape_line cat:unlabelled shp06 needs-cat)
+" || { skip "labels — git could not make a repo here"; return; }
+  sp_labels needs-ann 2026-09-01T00:00:00Z pat
+  sp_labels needs-bob 2026-09-01T00:00:00Z mallory
+  member_says shp06 ann:named 'nothing
+'
+  spf charter shape >/dev/null
+
+  is  "a labelled line of six words is read, and its label taken" "$(grep -c . "$sp_run/shaped/seats" 2>/dev/null)" "3"
+  is  "a label a named hand put on seats its member"            "$(sed -n 1p "$sp_run/shaped/seats")" "ann:named sat"
+  is  "one an unnamed hand put on leaves its member out"        "$(sed -n 2p "$sp_run/shaped/seats")" "bob:unnamed left needs-bob"
+  is  "and one not on the item leaves its member out too"       "$(sed -n 3p "$sp_run/shaped/seats")" "cat:unlabelled left needs-cat"
+  is  "only the member that sat is asked" \
+      "$(times_asked shp06 ann:named)$(times_asked shp06 bob:unnamed)$(times_asked shp06 cat:unlabelled)" "100"
+  has "and decided names the label that left a member out" "$(spf_says status)" "left out  bob:unnamed: no label [needs-bob]"
+}
+a_label_seats_a_member_only_from_a_named_hand
+
+# A member named twice sits once, on its first line, as `reach_of` reads a reach. The second line is
+# never read, even when the first names a label nobody put on.
+a_member_named_twice_sits_on_its_first_line() {
+  a_plugin_shaping shp07 || { skip "a member named twice — the plugin could not be copied"; return; }
+  a_shaped_repo shp07 1307 "$(shape_line ann:twice shp07 needs-ann)
+$(shape_line ann:twice shp07)
+" || { skip "a member named twice — git could not make a repo here"; return; }
+  spf charter shape >/dev/null
+
+  is "a member named twice sits on its first line, which leaves it out" "$(cat "$sp_run/shaped/seats")" "ann:twice left needs-ann"
+  is "and its second line is never read"                              "$(times_asked shp07 ann:twice)" "0"
+}
+a_member_named_twice_sits_on_its_first_line
+
+# **Who sits is decided once a run.** A label a named hand puts on after the first shaping seats nobody,
+# since each later wake reads the seats and never the labels.
+a_label_put_on_after_the_first_shaping_seats_nobody() {
+  a_plugin_shaping shp08 || { skip "a late label — the plugin could not be copied"; return; }
+  a_shaped_repo shp08 1308 "$(shape_line ann:early shp08)
+$(shape_line bob:late shp08 needs-bob)
+" || { skip "a late label — git could not make a repo here"; return; }
+  member_exits shp08 ann:early 1
+  spf charter shape >/dev/null
+  sp_labels needs-bob 2026-09-02T00:00:00Z pat
+  spf charter shape >/dev/null
+
+  is "a label put on after the first shaping seats nobody" "$(sed -n 2p "$sp_run/shaped/seats")" "bob:late left needs-bob"
+  is "so its member is never asked"                       "$(times_asked shp08 bob:late)" "0"
+}
+a_label_put_on_after_the_first_shaping_seats_nobody
+
+# Each member labelled, and no label on the item: nobody is asked, *decided* names each label, and the
+# run goes on to `deliver` with nothing asked of a hand.
+each_member_labelled_and_no_label_asks_nobody() {
+  a_plugin_shaping shp09 || { skip "no member sits — the plugin could not be copied"; return; }
+  a_shaped_repo shp09 1309 "$(shape_line ann:one shp09 needs-ann)
+$(shape_line bob:two shp09 needs-bob)
+" || { skip "no member sits — git could not make a repo here"; return; }
+
+  is  "a shaping where no member sits answers 0"  "$(code_of spf charter shape)" "0"
+  is  "and asks nobody"                          "$(times_asked shp09 ann:one)$(times_asked shp09 bob:two)" "00"
+  said=$(spf_says status)
+  has "decided names one label"                  "$said" "left out  ann:one: no label [needs-ann]"
+  has "and the other"                            "$said" "left out  bob:two: no label [needs-bob]"
+  sp_opens
+  is  "and the run goes on to deliver"           "$(code_of spf deliver 'Shaped by nobody')" "0"
+}
+each_member_labelled_and_no_label_asks_nobody
+
+# A source that cannot say which items carry a label is 27, and one nobody could ask is 20, as at the
+# offer. A labelled member is never seated on a guess.
+a_source_that_cannot_list_labels_is_refused() {
+  a_plugin_shaping shp10 || { skip "a source with no labels — the plugin could not be copied"; return; }
+  a_shaped_repo shp10 1310 "$(shape_line ann:labelled shp10 needs-ann)
+" || { skip "a source with no labels — git could not make a repo here"; return; }
+  printf '#!/bin/sh\n[ "$1" = find ] && exit 3\nexec sh %s "$@"\n' "'$dir_source'" > "$tmp/shp10-unasked.sh"
+
+  sp_source="$tmp/a plugin/lib/source-read-only.sh"
+  is     "a source that cannot list labels is refused at 27" "$(code_of spf charter shape)" "27"
+  sp_source="$tmp/shp10-unasked.sh"
+  is     "and one nobody could ask at 20"                    "$(code_of spf charter shape)" "20"
+  absent "and nobody is seated on a guess"                   "$sp_run/shaped/seats"
+  sp_source=$dir_source
+}
+a_source_that_cannot_list_labels_is_refused
+
+#
+# **A member runs where it can read nothing but its brief**: a room floor made, outside every
+# repository, empty while it ran and gone once the call ended.
+#
+a_member_runs_in_an_empty_room() {
+  a_plugin_shaping shp11 || { skip "the room — the plugin could not be copied"; return; }
+  a_shaped_repo shp11 1311 "$(shape_line ann:roomy shp11)
+" || { skip "the room — git could not make a repo here"; return; }
+  member_says shp11 ann:roomy 'nothing
+'
+  spf charter shape >/dev/null
+  room_record=$(cat "$(member_file shp11 ann:roomy room-1)" 2>/dev/null)
+  room_path=$(printf '%s\n' "$room_record" | sed -n 1p)
+
+  matches "a member runs in a room floor made"           "$room_path" '/floor-shape-[0-9]+$'
+  is      "and the room holds nothing while it runs"      "$(printf '%s\n' "$room_record" | sed -n 2p)" "holds []"
+  has     "and no repository answers there"               "$(printf '%s\n' "$room_record" | sed -n 3p)" "not a git repository"
+  absent  "and the room is gone once the call ends"       "$room_path"
+}
+a_member_runs_in_an_empty_room
+
+#
+# **Each member is handed the same bar, apart.** Each brief ends in the bar, byte for byte, and names its
+# own member, and neither holds the other's lines. What each printed is kept whole, down to a blank last line.
+#
+two_members_are_handed_the_same_bar_apart() {
+  a_plugin_shaping shp12 || { skip "the same bar — the plugin could not be copied"; return; }
+  a_shaped_repo shp12 1312 "$(shape_line ann:first shp12)
+$(shape_line bob:second shp12)
+" || { skip "the same bar — git could not make a repo here"; return; }
+  member_says shp12 ann:first 'unknown whether the page has a fold
+
+'
+  member_says shp12 bob:second 'objection the item names no reader
+'
+  spf charter shape >/dev/null
+
+  is    "a member's brief ends in the bar, byte for byte"  "$(ends_with_file "$(attempt_file ann:first 1 brief)" "$sp_run/shaped/bar")" "same"
+  is    "and so does the other member's"                  "$(ends_with_file "$(attempt_file bob:second 1 brief)" "$sp_run/shaped/bar")" "same"
+  is    "each brief names its own member" \
+        "$(sed -n 2p "$(attempt_file ann:first 1 brief)") $(sed -n 2p "$(attempt_file bob:second 1 brief)")" "member ann:first member bob:second"
+  lacks "and no brief holds another member's lines"       "$(cat "$(attempt_file bob:second 1 brief)")" "whether the page has a fold"
+  is    "what each printed is kept whole"                 "$(cmp -s "$(attempt_file ann:first 1 returned)" "$(member_file shp12 ann:first says)" && echo whole)" "whole"
+}
+two_members_are_handed_the_same_bar_apart
+
+# With one member's contribution missing, nothing enters and nothing is asked: 21, naming it. Each member
+# is asked once all the same, the silent one first.
+two_members_one_saying_1_enter_nothing() {
+  a_plugin_shaping shp13 || { skip "one missing — the plugin could not be copied"; return; }
+  a_shaped_repo shp13 1313 "$(shape_line ann:silent shp13)
+$(shape_line bob:ready shp13)
+bench  cat:judge
+reach  cat:judge  sh bin/bench.sh
+" || { skip "one missing — git could not make a repo here"; return; }
+  member_exits shp13 ann:silent 1
+  member_says shp13 bob:ready 'propose Judged the page is readable
+'
+  said=$(spf_says charter shape; printf '\nexit=%s' "$?")
+
+  is  "each member is asked once, the silent one too" "$(times_asked shp13 ann:silent)$(times_asked shp13 bob:ready)" "11"
+  has "one member saying 1 is 21"                      "$said" "exit=21"
+  has "naming it"                                      "$said" "no contribution yet from [ann:silent]"
+  is  "and nothing the panel proposed enters"          "$(sp_clauses Judged)" ""
+}
+two_members_one_saying_1_enter_nothing
+
+#
+# **A member asked on a later wake reads the bar the first wake wrote.** `bob` sat first and answers
+# second: his second brief holds `ann`'s bar and none of her lines. The clause both proposed is asked
+# about with their lines in the order they sat, never the order they answered.
+#
+a_member_asked_again_reads_the_first_bar() {
+  a_plugin_shaping shp14 || { skip "a later wake — the plugin could not be copied"; return; }
+  a_shaped_repo shp14 1314 "$(shape_line bob:later shp14)
+$(shape_line ann:sooner shp14)
+bench  cat:judge
+reach  cat:judge  sh bin/bench.sh
+" || { skip "a later wake — git could not make a repo here"; return; }
+  member_says shp14 ann:sooner 'propose Judged the page loads fast
+why ann has watched readers leave
+'
+  member_says shp14 bob:later 'propose Judged the page loads fast
+why bob has timed it
+'
+  member_exits shp14 bob:later 1
+  spf charter shape >/dev/null
+  member_exits shp14 bob:later 0
+  spf charter shape >/dev/null
+
+  is    "a member asked on a later wake reads the first bar"  "$(ends_with_file "$(attempt_file bob:later 2 brief)" "$sp_run/shaped/bar")" "same"
+  lacks "and none of the lines another member gave"          "$(cat "$(attempt_file bob:later 2 brief)")" "ann has watched readers leave"
+  spf authorise >/dev/null
+  is    "the panel's lines are asked in the order the members sat" \
+        "$(sp_question 'the page loads fast' | grep '^Proposed by' | tr '\n' '|')" "Proposed by bob:later:|Proposed by ann:sooner:|"
+}
+a_member_asked_again_reads_the_first_bar
+
+# A clause entered by hand between two wakes changes no bar: the member asked on the second wake reads
+# what the first wake wrote, and never the clause.
+a_clause_entered_between_two_wakes_changes_no_bar() {
+  a_plugin_shaping shp15 || { skip "a clause between wakes — the plugin could not be copied"; return; }
+  a_shaped_repo shp15 1315 "$(shape_line ann:first shp15)
+$(shape_line bob:second shp15)
+" || { skip "a clause between wakes — git could not make a repo here"; return; }
+  member_says shp15 ann:first 'nothing
+'
+  member_exits shp15 bob:second 1
+  spf charter shape >/dev/null
+  spf charter introduce Decided 'a person signs the copy off' >/dev/null
+  member_says shp15 bob:second 'nothing
+'
+  member_exits shp15 bob:second 0
+  spf charter shape >/dev/null
+
+  is    "the member asked on the second wake reads the first bar" "$(ends_with_file "$(attempt_file bob:second 2 brief)" "$sp_run/shaped/bar")" "same"
+  lacks "and never the clause entered by hand since"             "$(cat "$(attempt_file bob:second 2 brief)")" "a person signs the copy off"
+}
+a_clause_entered_between_two_wakes_changes_no_bar
+
+#
+# **A contribution with a line out of shape is refused whole**, and nothing of it becomes a clause. Prose
+# alone, and prose among lines in shape: neither is read as recorded, the row names the line, the file is
+# kept, the charter is as it was, and no proposal has a row.
+#
+a_contribution_out_of_shape_is_refused_whole() {
+  a_plugin_shaping shp16 || { skip "prose — the plugin could not be copied"; return; }
+  a_shaped_repo shp16 1316 "$(shape_line ann:alone shp16)
+$(shape_line bob:among shp16)
+bench  cat:judge
+reach  cat:judge  sh bin/bench.sh
+" || { skip "prose — git could not make a repo here"; return; }
+  member_says shp16 ann:alone 'I think the page is fine as it is.
+'
+  member_says shp16 bob:among 'propose Judged the page is readable
+I think the page is fine as it is.
+why readers leave
+'
+  before=$(cksum < "$sp_run/charter")
+  said=$(spf_says charter shape; printf '\nexit=%s' "$?")
+
+  lacks "prose alone is never read as recorded"          "$(sp_row_of ann:alone)" "recorded"
+  lacks "nor prose among lines in shape"                 "$(sp_row_of bob:among)" "recorded"
+  has   "the row names the line out of shape"            "$(sp_row_of bob:among)" "refused: line 2: I think the page is fine as it is."
+  has   "a refused contribution is 56"                   "$said" "exit=56"
+  is    "the file is kept whole"                         "$(cmp -s "$(attempt_file bob:among 1 returned)" "$(member_file shp16 bob:among says)" && echo whole)" "whole"
+  is    "the charter is as it was"                       "$(cksum < "$sp_run/charter")" "$before"
+  is    "and no proposal has a row"                      "$(sp_rows shape.proposal | grep -c .)" "0"
+}
+a_contribution_out_of_shape_is_refused_whole
+
+# Each way a line is out of shape refuses its contribution, 56: a `why` before any proposal, `nothing`
+# beside a proposal, a kind in lower case, a proposal's text holding a tab, and a proposal with no text.
+each_line_out_of_shape_refuses_its_contribution() {
+  a_plugin_shaping shp17 || { skip "lines out of shape — the plugin could not be copied"; return; }
+  a_shaped_repo shp17 1317 "$(shape_line why:first shp17)
+$(shape_line nothing:beside shp17)
+$(shape_line kind:lower shp17)
+$(shape_line text:tab shp17)
+$(shape_line text:none shp17)
+" || { skip "lines out of shape — git could not make a repo here"; return; }
+  member_says shp17 why:first 'why it matters
+propose Judged the page is readable
+'
+  member_says shp17 nothing:beside 'nothing
+propose Judged the page is readable
+'
+  member_says shp17 kind:lower 'propose judged the page is readable
+'
+  member_says shp17 text:tab "$(printf 'propose Judged the page\tis readable')
+"
+  member_says shp17 text:none 'propose Judged
+'
+  said=$(spf_says charter shape; printf '\nexit=%s' "$?")
+
+  has "a why before any proposal is refused"       "$(sp_row_of why:first)" "refused: line 1"
+  has "and nothing beside a proposal"              "$(sp_row_of nothing:beside)" "refused: line 2"
+  has "and a kind in lower case"                   "$(sp_row_of kind:lower)" "refused: line 1"
+  has "and a proposal whose text holds a tab"      "$(sp_row_of text:tab)" "refused: line 1"
+  has "and a proposal with no text"                "$(sp_row_of text:none)" "refused: line 1"
+  has "each is 56"                                 "$said" "exit=56"
+}
+each_line_out_of_shape_refuses_its_contribution
+
+# Lines as a person or a model writes them are in shape: a carriage return at each end, blank lines
+# between, and a first word in capitals.
+lines_as_people_write_them_are_recorded() {
+  a_plugin_shaping shp18 || { skip "loose lines — the plugin could not be copied"; return; }
+  a_shaped_repo shp18 1318 "$(shape_line ann:loose shp18)
+" || { skip "loose lines — git could not make a repo here"; return; }
+  member_says shp18 ann:loose "$(printf 'PROPOSE Gate lint passes\r\n\r\n   \r\nWhy style matters  \r\n  unknown whether ci runs it\r')
+"
+  spf charter shape >/dev/null
+
+  is "carriage returns, blank lines and a word in capitals are recorded" "$(sp_row_of ann:loose)" "recorded"
+}
+lines_as_people_write_them_are_recorded
+
+#
+# **A row decides, never a file being there.** One member's attempt left what it printed and no row, as a
+# kill after its call leaves it: it is asked again, as attempt 2. The other has its row, and is never
+# asked again, so a resumed shaping asks only the member with no contribution.
+#
+a_row_decides_and_a_file_does_not() {
+  a_plugin_shaping shp19 || { skip "a row decides — the plugin could not be copied"; return; }
+  a_shaped_repo shp19 1319 "$(shape_line ann:rowed shp19)
+$(shape_line bob:unrowed shp19)
+" || { skip "a row decides — git could not make a repo here"; return; }
+  member_says shp19 ann:rowed 'nothing
+'
+  member_says shp19 bob:unrowed 'nothing
+'
+  spf charter shape >/dev/null
+  sp_forgets shape.attempt bob:unrowed
+  spf charter shape >/dev/null
+
+  is     "a member whose attempt left a file and no row is asked again" "$(times_asked shp19 bob:unrowed)" "2"
+  exists "as attempt 2"                                                "$(attempt_file bob:unrowed 2 brief)"
+  is     "and a member with its row is never asked again"              "$(times_asked shp19 ann:rowed)" "1"
+}
+a_row_decides_and_a_file_does_not
+
+#
+# **A shaping killed while one member's call runs asks only that member next**, as attempt 2. Attempt 1's
+# brief is kept, and the member recorded before the kill is not asked again.
+#
+a_killed_shaping_asks_only_the_member_it_cut_short() {
+  a_plugin_shaping shp20 || { skip "a killed shaping — the plugin could not be copied"; return; }
+  a_shaped_repo shp20 1320 "$(shape_line ann:done shp20)
+$(shape_line bob:cut shp20)
+" || { skip "a killed shaping — git could not make a repo here"; return; }
+  member_says shp20 ann:done 'nothing
+'
+  member_says shp20 bob:cut 'nothing
+'
+  : > "$(member_file shp20 bob:cut hold)"
+  ( cd "$sp_repo" && FOUNDRY_HOME="$home" FOUNDRY_RUN="$sp_run" FOUNDRY_WHO="" FOUNDRY_SOURCE="$dir_source" \
+      exec sh "$tmp/a plugin/bin/run.sh" charter shape ) >/dev/null 2>&1 &
+  shaping=$!
+  waited=0
+  while [ ! -f "$(member_file shp20 bob:cut held)" ] && [ "$waited" -lt 60 ]; do sleep 1; waited=$((waited + 1)); done
+  kill -9 "$shaping" 2>/dev/null
+  wait "$shaping" 2>/dev/null
+  rm -f "$(member_file shp20 bob:cut hold)"
+  spf charter shape >/dev/null
+
+  exists "a member a kill cut short keeps its first brief"   "$(attempt_file bob:cut 1 brief)"
+  exists "and is asked again, as attempt 2"                  "$(attempt_file bob:cut 2 brief)"
+  is     "and the member recorded before the kill is not"    "$(times_asked shp20 ann:done)" "1"
+}
+a_killed_shaping_asks_only_the_member_it_cut_short
+
+# A member that would give new words on a second call is never asked again: its first words are its
+# contribution, and the clause.
+a_member_that_would_change_its_words_is_asked_once() {
+  a_plugin_shaping shp21 || { skip "new words — the plugin could not be copied"; return; }
+  a_shaped_repo shp21 1321 "$(shape_line ann:fickle shp21)
+bench  cat:judge
+reach  cat:judge  sh bin/bench.sh
+" || { skip "new words — git could not make a repo here"; return; }
+  member_says shp21 ann:fickle 'propose Judged the page loads in one second
+'
+  spf charter shape >/dev/null
+  member_says shp21 ann:fickle 'propose Judged the page loads in two seconds
+'
+  spf charter shape >/dev/null
+
+  is  "a recorded member is asked once, whatever it would say next" "$(times_asked shp21 ann:fickle)" "1"
+  has "its first words are its contribution"                       "$(cat "$(attempt_file ann:fickle 1 returned)")" "one second"
+  is  "and the clause"                                             "$(sp_clauses Judged)" "the page loads in one second"
+}
+a_member_that_would_change_its_words_is_asked_once
+
+# A member silent on one wake and answering on the next leaves two attempt rows and one contribution,
+# and the run goes on to `deliver` with nothing asked of a hand.
+a_member_silent_then_answering_leaves_one_contribution() {
+  a_plugin_shaping shp22 || { skip "silent then answering — the plugin could not be copied"; return; }
+  a_shaped_repo shp22 1322 "$(shape_line ann:late shp22)
+" || { skip "silent then answering — git could not make a repo here"; return; }
+  member_exits shp22 ann:late 1
+  spf charter shape >/dev/null
+  member_says shp22 ann:late 'nothing
+'
+  member_exits shp22 ann:late 0
+  spf charter shape >/dev/null
+
+  is "a member silent then answering leaves two attempt rows" "$(sp_row_of ann:late | grep -c .)" "2"
+  is "and one contribution"                                 "$(sp_row_of ann:late | grep -c '^recorded')" "1"
+  is "authorise asks nothing"                               "$(code_of spf authorise)" "0"
+  is "so no question is on the item"                        "$(questions_in 1322)" "0"
+  sp_opens
+  is "and the run goes on to deliver"                       "$(code_of spf deliver 'Silent, then answering')" "0"
+}
+a_member_silent_then_answering_leaves_one_contribution
+
+# A harness failing in words, with 1, is missing: the row says so, carries the failure's last line, and
+# the next wake asks again.
+a_failure_in_words_is_missing_and_asked_again() {
+  a_plugin_shaping shp23 || { skip "a failure in words — the plugin could not be copied"; return; }
+  a_shaped_repo shp23 1323 "$(shape_line ann:failing shp23)
+" || { skip "a failure in words — git could not make a repo here"; return; }
+  member_says shp23 ann:failing 'Not logged in. Please run /login
+'
+  printf 'shape: no model answered: not logged in\n' > "$(member_file shp23 ann:failing err)"
+  member_exits shp23 ann:failing 1
+  spf charter shape >/dev/null
+
+  has "a failure in words with 1 is missing"          "$(sp_row_of ann:failing)" "missing: no model answered"
+  has "and the row carries its last word on stderr"   "$(sp_row_of ann:failing)" "shape: no model answered: not logged in"
+  spf charter shape >/dev/null
+  is  "and the next wake asks it again"               "$(times_asked shp23 ann:failing)" "2"
+}
+a_failure_in_words_is_missing_and_asked_again
+
+# A member writing `nothing` has a contribution, proposing nothing, and the run goes on.
+nothing_is_a_contribution() {
+  a_plugin_shaping shp24 || { skip "nothing — the plugin could not be copied"; return; }
+  a_shaped_repo shp24 1324 "$(shape_line ann:content shp24)
+" || { skip "nothing — git could not make a repo here"; return; }
+  member_says shp24 ann:content 'nothing
+'
+  is "a member writing nothing is recorded"  "$(code_of spf charter shape)$(sp_row_of ann:content)" "0recorded"
+  is "and the run goes on, asking nobody"    "$(code_of spf authorise)" "0"
+}
+nothing_is_a_contribution
+
+# An answer with no lines is missing whatever code came with it, and the member is asked again.
+no_lines_is_missing_at_either_code() {
+  a_plugin_shaping shp25 || { skip "no lines — the plugin could not be copied"; return; }
+  a_shaped_repo shp25 1325 "$(shape_line blank:zero shp25)
+$(shape_line blank:one shp25)
+" || { skip "no lines — git could not make a repo here"; return; }
+  member_says shp25 blank:zero "$(printf '\n  \n\r')
+"
+  member_exits shp25 blank:one 1
+  spf charter shape >/dev/null
+
+  is "no lines with 0 is missing"   "$(sp_row_of blank:zero)" "missing: no lines"
+  is "and no lines with 1"          "$(sp_row_of blank:one)" "missing: no model answered"
+  spf charter shape >/dev/null
+  is "and each is asked again"      "$(times_asked shp25 blank:zero)$(times_asked shp25 blank:one)" "22"
+}
+no_lines_is_missing_at_either_code
+
+#
+# **The shipped entry point's stub table runs inside its adapter's own audit**, after the judge's, and
+# the audit fails when either does. Each row is read here by name, so a break in the entry point goes
+# red on the row it breaks. The adapter is the runner's own, so an audit sees its break.
+#
+the_adapters_audit_runs_both_tables() {
+  shipped_adapter="$(dirname "$runner")/../adapters/anthropic"
+  audit=$(sh "$shipped_adapter/run.sh" audit 2>&1; printf '\nexit=%s' "$?")
+
+  has "the adapter's audit runs the judge's table"   "$audit" "anthropic — "
+  has "and then the shaping entry point's"           "$audit" "anthropic shape — "
+  for row in "a failure the harness prints as text at 0 is 1" \
+      "an error the harness reports inside its JSON at 0 is 1" "empty output at 0 is 1" \
+      "an empty result at 0 is 1" "prose at 0 is 0, since a model answered" \
+      "and it prints the prose for floor to refuse" "the line nothing at 0 is 0" "lines in shape at 0 are 0" \
+      "and each escape is printed as its bytes" "a harness that exits 1 is 1, whatever it printed" \
+      "no claude on the path is 1" "no brief is 2" "and a brief that is not there is 2" \
+      "it asks for one JSON object" "with no built-in tool" "and no MCP server from a config file" \
+      "and no session kept on disk" "in print mode" "and the directory it ran in holds nothing" \
+      "and the brief travels whole, after the frame" \
+      "copied alone into an empty directory, it still says 0 on lines in shape"; do
+    has "the shaping table holds: $row" "$audit" "  ok    $row"
+  done
+  has "and the audit passes when both do"            "$audit" "exit=0"
+
+  rm -rf "$tmp/shp26-adapter" && cp -R "$shipped_adapter" "$tmp/shp26-adapter" && printf 'exit 0\n' > "$tmp/shp26-adapter/shape.sh"
+  is  "an audit whose shaping table fails, fails"    "$(code_of sh "$tmp/shp26-adapter/run.sh" audit)" "1"
+}
+the_adapters_audit_runs_both_tables
+
+#
+# **One table of proposals, one row a reason.** Only a `Judged` proposal whose panel is each reached at
+# the base enters. The rest say why not, and each prints in the question about the one that entered.
+# A second shaping writes no row again. A base naming no bench is its own repository.
+#
+each_proposal_is_weighed_by_what_a_pass_can_meet() {
+  a_plugin_shaping shp27 || { skip "the table of proposals — the plugin could not be copied"; return; }
+  a_shaped_repo shp27 1327 "$(shape_line ann:x shp27)
+$(shape_line bob:y shp27)
+bench  ann:x bob:y
+reach  ann:x  sh bin/bench.sh
+" || { skip "the table of proposals — git could not make a repo here"; return; }
+  member_says shp27 ann:x 'propose Judged the log is quiet
+why quiet logs get read
+propose Judged the queue is fair
+propose Gate lint passes
+evidence ci runs it
+propose Judged tests
+'
+  member_says shp27 bob:y 'propose Judged the page loads fast
+why readers leave
+objection it is hard to measure
+propose Judged the queue is fair
+propose Decided the owner signs off
+'
+  said=$(spf_says charter shape; printf '\nexit=%s' "$?")
+
+  lacks "no Gate the panel proposed reaches introduce"      "$said" "names no gate"
+  lacks "nor a Judged clause only its proposers could judge" "$said" "names only"
+  has   "what may enter enters, and shaping answers 0"       "$said" "exit=0"
+  is    "a Gate says why it never enters" \
+        "$(sp_took 'Gate lint passes')" "1	a Gate is never introduced: charter derive pins the gates the base declares"
+  is    "a Decided clause says why" \
+        "$(sp_took 'Decided the owner signs off')" "1	a Decided clause needs a person to complete it, and no pass does that: #1061"
+  is    "a bench of only its proposers says why" "$(sp_took 'Judged the queue is fair')" "1	only its proposers sit on the bench"
+  is    "a panel member with no reach says why" \
+        "$(sp_took 'Judged the log is quiet')" "1	no pass can ask bob:y: the base gives it no reach"
+  is    "words the charter holds already say why" \
+        "$(sp_took 'Judged tests')" "1	the charter already holds a clause under its id"
+  is    "and the one a pass can meet enters" "$(sp_took 'Judged the page loads fast')" "0	introduced, proposed by bob:y"
+
+  spf charter shape >/dev/null
+  is    "a shaping already done writes no row again"         "$(sp_rows shape.proposal | grep -c .)" "6"
+  spf authorise >/dev/null
+  question=$(sp_question 'the page loads fast')
+  has   "the one that entered is asked, a member's lines indented four spaces" "$question" "
+    why readers leave
+"
+  has   "and the others print in its question, with why"    "$question" "Did not enter, from ann:x (a Gate is never introduced"
+  has   "each under its member"                             "$question" "Did not enter, from bob:y (a Decided clause needs a person"
+
+  a_plugin_shaping shp27b && a_shaped_repo shp27b 1344 "$(shape_line ann:alone shp27b)
+" || { skip "a base naming no bench — git could not make a repo here"; return; }
+  member_says shp27b ann:alone 'propose Judged the api is small
+'
+  spf charter shape >/dev/null
+  is    "and a base naming no bench says why"               "$(sp_took 'Judged the api is small')" "1	the base names no bench"
+}
+each_proposal_is_weighed_by_what_a_pass_can_meet
+
+# The same kinds of proposal with nothing entering: no question, the rows keep each, and the run goes on
+# to `deliver`.
+nothing_entering_asks_nothing() {
+  a_plugin_shaping shp28 || { skip "nothing enters — the plugin could not be copied"; return; }
+  a_shaped_repo shp28 1328 "$(shape_line ann:x shp28)
+" || { skip "nothing enters — git could not make a repo here"; return; }
+  member_says shp28 ann:x 'propose Gate lint passes
+propose Decided the owner signs off
+propose Judged the api is small
+'
+  spf charter shape >/dev/null
+
+  is "with nothing entering, authorise asks nothing"  "$(code_of spf authorise)" "0"
+  is "so no question is on the item"                  "$(questions_in 1328)" "0"
+  is "and the rows keep each proposal"                "$(sp_rows shape.proposal | grep -c '	1	')" "3"
+  sp_opens
+  is "and the run goes on to deliver"                 "$(code_of spf deliver 'Nothing entered')" "0"
+}
+nothing_entering_asks_nothing
+
+# `nothing` may stand beside an unknown. The member is recorded, and the unknown prints under *names no
+# proposal* in the question about another member's clause.
+nothing_beside_an_unknown_is_recorded() {
+  a_plugin_shaping shp29 || { skip "nothing beside an unknown — the plugin could not be copied"; return; }
+  a_shaped_repo shp29 1329 "$(shape_line ann:quiet shp29)
+$(shape_line bob:keen shp29)
+bench  cat:judge
+reach  cat:judge  sh bin/bench.sh
+" || { skip "nothing beside an unknown — git could not make a repo here"; return; }
+  member_says shp29 ann:quiet 'nothing
+unknown whether mobile counts
+'
+  member_says shp29 bob:keen 'propose Judged the page loads fast
+'
+  spf charter shape >/dev/null
+  spf authorise >/dev/null
+
+  is  "nothing beside an unknown is recorded"          "$(sp_row_of ann:quiet)" "recorded"
+  has "and the unknown prints under names no proposal" "$(sp_question 'the page loads fast')" "Names no proposal, from ann:quiet:
+
+    unknown whether mobile counts"
+}
+nothing_beside_an_unknown_is_recorded
+
+#
+# **Two members proposing the same words both stay off its panel.** One clause, two proposer records, a
+# panel of the third alone, and `check` finds nothing. Then the question waits at 11, a derivation carries
+# both proposers, the panel stays the third alone, and `check` still finds nothing.
+#
+two_members_proposing_one_clause_both_stay_off_its_panel() {
+  a_plugin_shaping shp30 || { skip "two proposers — the plugin could not be copied"; return; }
+  a_shaped_repo shp30 1330 "$(shape_line ann:x shp30)
+$(shape_line bob:y shp30)
+bench  ann:x bob:y cat:z
+reach  ann:x  sh bin/bench.sh
+reach  bob:y  sh bin/bench.sh
+reach  cat:z  sh bin/bench.sh
+" || { skip "two proposers — git could not make a repo here"; return; }
+  member_says shp30 ann:x 'propose Judged the api is small
+'
+  member_says shp30 bob:y 'propose Judged the api is small
+'
+  spf charter shape >/dev/null
+
+  is "two members proposing one clause make one clause"  "$(sp_clauses Judged)" "the api is small"
+  is "and two proposer records"                          "$(sp_records proposer 'the api is small')" "ann:x bob:y "
+  is "and a panel of the third alone"                    "$(sp_records judge 'the api is small')" "cat:z "
+  is "and check finds nothing"                           "$(code_of spf charter check)" "0"
+
+  is "the question waits at 11"                          "$(code_of spf authorise)" "11"
+  spf charter derive >/dev/null
+  is "a derivation carries both proposers"               "$(sp_records proposer 'the api is small')" "ann:x bob:y "
+  is "the panel is still the third alone"                "$(sp_records judge 'the api is small')" "cat:z "
+  is "and check still finds nothing"                     "$(code_of spf charter check)" "0"
+}
+two_members_proposing_one_clause_both_stay_off_its_panel
+
+#
+# **A kill between the charter's write and the rows strands nothing.** The next wake writes the rows, the
+# clause shaping wrote counts as entered, and it is asked with the panel's lines and the no line. A no
+# strikes it.
+#
+a_kill_between_the_charter_and_the_rows_strands_nothing() {
+  a_plugin_shaping shp31 || { skip "a kill before the rows — the plugin could not be copied"; return; }
+  a_shaped_repo shp31 1331 "$(shape_line ann:x shp31)
+bench  cat:judge
+reach  cat:judge  sh bin/bench.sh
+" || { skip "a kill before the rows — git could not make a repo here"; return; }
+  member_says shp31 ann:x 'propose Judged the page loads fast
+why readers leave
+'
+  spf charter shape >/dev/null
+  sp_forgets shape.proposal 'Judged the page loads fast'
+  spf charter shape >/dev/null
+
+  is  "the next wake writes the row a kill left out"   "$(sp_rows shape.proposal | grep -c .)" "1"
+  is  "and it says introduced"                          "$(sp_took 'Judged the page loads fast')" "0	introduced, proposed by ann:x"
+  spf authorise >/dev/null
+  question=$(sp_question 'the page loads fast')
+  has "the clause is asked with the panel's lines"      "$question" "    why readers leave"
+  has "and the no line"                                 "$question" "no $(sp_asks authorisation 'the page loads fast')"
+  sp_answers strike pat 2999-01-01T00:00:00Z "no $(sp_asks authorisation 'the page loads fast')"
+  has "and a no strikes it"                             "$(sp_decided 'the page loads fast')" "struck by pat at 2999-01-01T00:00:00Z"
+}
+a_kill_between_the_charter_and_the_rows_strands_nothing
+
+# A kill between two clauses' writes, then a wake: each clause once, one `judge` record a member, and one
+# `proposer` a proposer.
+a_kill_between_two_clauses_writes_each_once() {
+  a_plugin_shaping shp32 || { skip "a kill between clauses — the plugin could not be copied"; return; }
+  a_shaped_repo shp32 1332 "$(shape_line ann:x shp32)
+bench  cat:judge dan:judge
+reach  cat:judge  sh bin/bench.sh
+reach  dan:judge  sh bin/bench.sh
+" || { skip "a kill between clauses — git could not make a repo here"; return; }
+  member_says shp32 ann:x 'propose Judged the page loads fast
+propose Judged the log is quiet
+'
+  spf charter shape >/dev/null
+  awk -v id="$(clause_of 'the log is quiet')" '$2 != id' "$sp_run/charter" > "$sp_run/charter.cut" && mv "$sp_run/charter.cut" "$sp_run/charter"
+  sp_forgets shape.proposal 'Judged the page loads fast'
+  sp_forgets shape.proposal 'Judged the log is quiet'
+  spf charter shape >/dev/null
+
+  is "each clause is written once"            "$(sp_clauses Judged | tr '\n' '|')" "the page loads fast|the log is quiet|"
+  is "with one judge record a member"         "$(sp_records judge 'the page loads fast')$(sp_records judge 'the log is quiet')" "cat:judge dan:judge cat:judge dan:judge "
+  is "and one proposer a proposer"            "$(sp_records proposer 'the page loads fast')$(sp_records proposer 'the log is quiet')" "ann:x ann:x "
+  is "and one row a proposal"                 "$(sp_rows shape.proposal | grep -c .)" "2"
+}
+a_kill_between_two_clauses_writes_each_once
+
+#
+# **Nothing is asked of a hand while a shaping is unfinished.** Shaping cut short, then a clause entered by
+# hand, then `authorise`: 21, and no question. With a contribution refused, 56. With every member answered
+# and a proposal's row missing, 21, naming the proposal.
+#
+nothing_is_asked_while_shaping_is_unfinished() {
+  a_plugin_shaping shp33 || { skip "an unfinished shaping — the plugin could not be copied"; return; }
+  a_shaped_repo shp33 1333 "$(shape_line ann:silent shp33)
+$(shape_line bob:ready shp33)
+bench  cat:judge
+reach  cat:judge  sh bin/bench.sh
+" || { skip "an unfinished shaping — git could not make a repo here"; return; }
+  member_exits shp33 ann:silent 1
+  member_says shp33 bob:ready 'propose Judged the page loads fast
+'
+  spf charter shape >/dev/null
+  spf charter introduce Decided 'a person signs the copy off' >/dev/null
+
+  is  "shaping cut short, then a clause by hand: authorise is 21"  "$(code_of spf authorise)" "21"
+  is  "and no question is on the item"                             "$(questions_in 1333)" "0"
+  member_says shp33 ann:silent 'I will not answer in lines.
+'
+  member_exits shp33 ann:silent 0
+  spf charter shape >/dev/null
+  is  "with a contribution refused, 56"                             "$(code_of spf authorise)" "56"
+
+  a_plugin_shaping shp33b && a_shaped_repo shp33b 1345 "$(shape_line ann:x shp33b)
+bench  cat:judge
+reach  cat:judge  sh bin/bench.sh
+" || { skip "a row missing — git could not make a repo here"; return; }
+  member_says shp33b ann:x 'propose Judged the log is quiet
+'
+  spf charter shape >/dev/null
+  sp_forgets shape.proposal 'Judged the log is quiet'
+  said=$(spf_says authorise; printf '\nexit=%s' "$?")
+  has "with every member answered and a row missing, 21"           "$said" "exit=21"
+  has "naming the proposal whose row is missing"                   "$said" "the panel proposed [Judged the log is quiet], and no row says what became of it"
+}
+nothing_is_asked_while_shaping_is_unfinished
+
+# An objection naming proposal X prints in X's question alone, and one naming none prints in each. Both
+# print under the member who wrote them.
+an_objection_prints_where_it_names() {
+  a_plugin_shaping shp34 || { skip "objections — the plugin could not be copied"; return; }
+  a_shaped_repo shp34 1334 "$(shape_line ann:x shp34)
+$(shape_line bob:y shp34)
+bench  cat:judge
+reach  cat:judge  sh bin/bench.sh
+" || { skip "objections — git could not make a repo here"; return; }
+  member_says shp34 ann:x 'objection the item is vague
+propose Judged the page loads fast
+objection it is hard to measure
+'
+  member_says shp34 bob:y 'propose Judged the log is quiet
+'
+  spf charter shape >/dev/null
+  spf authorise >/dev/null
+
+  has   "an objection naming a proposal prints in its question" "$(sp_question 'the page loads fast')" "    objection it is hard to measure"
+  lacks "and in no other"                                      "$(sp_question 'the log is quiet')" "objection it is hard to measure"
+  has   "one naming none prints in each question, under its member" \
+        "$(sp_question 'the page loads fast')" "Names no proposal, from ann:x:
+
+    objection the item is vague"
+  has   "the other as well"                                    "$(sp_question 'the log is quiet')" "Names no proposal, from ann:x:
+
+    objection the item is vague"
+}
+an_objection_prints_where_it_names
+
+#
+# **One struck clause, walked through each reader.** Two proposals asked; a hand strikes one and says yes
+# to the other, and the bench would refuse the struck one. `authorise` stops waiting, the no has its row,
+# the bench is never asked it, the judge's brief names it, and it lacks nothing. It is never under *met*,
+# *decided* says who struck it, `deliver` goes on, the request names the strike, and `check`, a
+# derivation and the charter all keep it.
+#
+a_struck_clause_through_each_reader() {
+  a_plugin_shaping shp35 || { skip "a struck clause — the plugin could not be copied"; return; }
+  a_shaped_repo shp35 1335 "$(shape_line ann:x shp35)
+bench  cat:judge
+reach  cat:judge  sh bin/bench.sh
+" 'authorise pat' 'the page loads fast' || { skip "a struck clause — git could not make a repo here"; return; }
+  member_says shp35 ann:x 'propose Judged the page loads fast
+propose Judged the log is quiet
+'
+  spf charter shape >/dev/null
+  spf authorise >/dev/null
+  struck_asked=$(sp_asks authorisation 'the page loads fast')
+  sp_answers strike pat 2999-01-01T00:00:00Z "no $struck_asked"
+  sp_answers keep pat 2999-01-01T00:00:01Z "yes $(sp_asks authorisation 'the log is quiet')"
+
+  is  "authorise answers 0 once a hand strikes one and says yes to the other" "$(code_of spf authorise)" "0"
+  is  "and asks nothing again"                                             "$(questions_in 1335)" "2"
+  is  "one answer.heard row for the no: who, when and the line" \
+      "$(sp_rows answer.heard | grep -c "^pat	0	2999-01-01T00:00:00Z	no $struck_asked\$")" "1"
+  sp_opens
+  is  "judged answers 0"                                                   "$(code_of spf judged)" "0"
+  lacks "and the bench is never asked the struck clause"                   "$(cat "$tmp/shp35.asked" 2>/dev/null)" "the page loads fast"
+  has "the judge's brief names it after the charter, as no part of the bar" \
+      "$(cat "$sp_run"/judged/*.handed 2>/dev/null)" "--- a clause a hand struck ---
+the page loads fast
+A hand struck this clause from this run. It is no part of the bar"
+  is  "it lacks nothing, so complete names nothing"                        "$(code_of spf complete)" "0"
+  said=$(spf_says status)
+  lacks "it is never under met"         "$(printf '%s\n' "$said" | sed -n '/^met/,/^missing/p')" "the page loads fast"
+  has "decided says who struck it, and when" "$said" "Judged \`the page loads fast\`, proposed by ann:x: struck by pat at 2999-01-01T00:00:00Z"
+  has "and who said yes to the other"   "$said" "Judged \`the log is quiet\`, proposed by ann:x: yes by pat at 2999-01-01T00:00:01Z"
+  is  "the run delivers"                "$(code_of spf deliver 'One struck')" "0"
+  has "the request names who sat"       "$(cat "$sp_run/body" 2>/dev/null)" "- shaped by ann:x"
+  has "and the strike"                  "$(cat "$sp_run/body" 2>/dev/null)" "\`the page loads fast\`: struck by pat at 2999-01-01T00:00:00Z"
+  has "and each panel clause's proposers" "$(cat "$sp_run/body" 2>/dev/null)" "; proposed by ann:x"
+  is  "check holds it to the bench and finds nothing" "$(code_of spf charter check)" "0"
+  spf charter derive >/dev/null
+  is  "a derivation carries it with its proposer" "$(sp_records proposer 'the page loads fast')" "ann:x "
+  has "and the charter printed still holds it"    "$(spf charter)" "Judged the page loads fast"
+}
+a_struck_clause_through_each_reader
+
+#
+# **A no `judged` acted on, then deleted before `deliver`**, leaves the row `judged` wrote, which explains
+# the bench it skipped. The yes stands again, so `deliver` refuses at 15: no judge was asked.
+#
+a_no_judged_acted_on_then_deleted() {
+  a_plugin_shaping shp36 || { skip "a no judged acted on — the plugin could not be copied"; return; }
+  a_shaped_repo shp36 1336 "$(shape_line ann:x shp36)
+bench  cat:judge
+reach  cat:judge  sh bin/bench.sh
+" || { skip "a no judged acted on — git could not make a repo here"; return; }
+  member_says shp36 ann:x 'propose Judged the page loads fast
+'
+  spf charter shape >/dev/null
+  spf authorise >/dev/null
+  asked_first=$(sp_asks authorisation 'the page loads fast')
+  sp_answers keep pat 2999-01-01T00:00:00Z "yes $asked_first"
+  sp_opens || { skip "a no judged acted on — the run could not be opened"; return; }
+  sp_answers strike pat 2999-01-01T00:00:01Z "no $asked_first"
+
+  is  "judged passes a struck clause over"                   "$(code_of spf judged)" "0"
+  is  "and writes the row that explains the bench it skipped" \
+      "$(sp_rows answer.heard | grep -c "	no $asked_first\$")" "1"
+  rm -f "$src/answers/1336/strike"
+  is  "the no deleted before deliver, the yes stands and deliver refuses at 15" "$(code_of spf deliver 'A no withdrawn')" "15"
+}
+a_no_judged_acted_on_then_deleted
+
+#
+# **A no wins whatever yes stands beside it**, from one hand or two. A yes then a no from one hand strikes,
+# and so does a yes and a no from two. A line that only contains the no, a no from a hand the base does
+# not name, one from an account floor skips, and one dated before its question strike nothing.
+#
+a_no_wins_whatever_yes_stands_beside_it() {
+  a_plugin_shaping shp37 || { skip "a no beside a yes — the plugin could not be copied"; return; }
+  a_shaped_repo shp37 1337 "$(shape_line ann:x shp37)
+bench  cat:judge
+reach  cat:judge  sh bin/bench.sh
+" 'authorise pat sam bot' || { skip "a no beside a yes — git could not make a repo here"; return; }
+  printf 'bot\n\n' > "$tmp/shp37.accounts"
+  sp_source=$(a_source_with_accounts shp37)
+  member_says shp37 ann:x 'propose Judged one hand said yes then no
+propose Judged two hands disagree
+propose Judged a no only quoted
+propose Judged a no from a stranger
+propose Judged a no from floor
+propose Judged a no before its question
+'
+  spf charter shape >/dev/null
+  spf authorise >/dev/null
+  n=0
+  for clause in 'one hand said yes then no' 'two hands disagree' 'a no only quoted' 'a no from a stranger' \
+      'a no from floor' 'a no before its question'; do
+    n=$((n + 1))
+    sp_answers "yes$n" pat 2999-01-01T00:00:00Z "yes $(sp_asks authorisation "$clause")"
+  done
+  sp_answers no1 pat     2999-01-01T00:00:01Z "no $(sp_asks authorisation 'one hand said yes then no')"
+  sp_answers no2 sam     2999-01-01T00:00:01Z "no $(sp_asks authorisation 'two hands disagree')"
+  sp_answers no3 pat     2999-01-01T00:00:01Z "I would say no $(sp_asks authorisation 'a no only quoted')"
+  sp_answers no4 mallory 2999-01-01T00:00:01Z "no $(sp_asks authorisation 'a no from a stranger')"
+  sp_answers no5 bot     2999-01-01T00:00:01Z "no $(sp_asks authorisation 'a no from floor')"
+  sp_answers no6 pat     2000-01-01T00:00:00Z "no $(sp_asks authorisation 'a no before its question')"
+
+  lacks "a line that only contains the no strikes nothing"   "$(sp_decided 'a no only quoted')" "struck"
+  lacks "nor a no from a hand the base does not name"       "$(sp_decided 'a no from a stranger')" "struck"
+  lacks "nor one from an account floor skips"               "$(sp_decided 'a no from floor')" "struck"
+  lacks "nor one dated before its question"                 "$(sp_decided 'a no before its question')" "struck"
+  has   "a yes then a no from one hand strikes"             "$(sp_decided 'one hand said yes then no')" "struck by pat"
+  has   "and a yes and a no from two hands"                 "$(sp_decided 'two hands disagree')" "struck by sam"
+  sp_opens && spf judged >/dev/null
+  is    "so a yes beside a no binds nothing at the grade"   "$(code_of spf complete)" "0"
+}
+a_no_wins_whatever_yes_stands_beside_it
+
+# A no deleted while the run waits: the clause needs a yes again, so `authorise` waits on it again.
+a_no_deleted_needs_a_yes_again() {
+  a_plugin_shaping shp38 || { skip "a no deleted — the plugin could not be copied"; return; }
+  a_shaped_repo shp38 1338 "$(shape_line ann:x shp38)
+bench  cat:judge
+reach  cat:judge  sh bin/bench.sh
+" || { skip "a no deleted — git could not make a repo here"; return; }
+  member_says shp38 ann:x 'propose Judged the page loads fast
+'
+  spf charter shape >/dev/null
+  spf authorise >/dev/null
+  sp_answers strike pat 2999-01-01T00:00:00Z "no $(sp_asks authorisation 'the page loads fast')"
+
+  is "a struck clause is not waited on"                  "$(code_of spf authorise)" "0"
+  rm -f "$src/answers/1338/strike"
+  is "the no deleted, it needs a yes again, and authorise waits" "$(code_of spf authorise)" "11"
+}
+a_no_deleted_needs_a_yes_again
+
+# A no to a worker's clause, and a no to a completion question, strike nothing. Each reads *no whole-line
+# yes*, as it always has.
+a_no_to_anything_else_strikes_nothing() {
+  a_plugin_shaping shp39 || { skip "a no to anything else — the plugin could not be copied"; return; }
+  a_shaped_repo shp39 1339 "$(shape_line ann:x shp39)
+bench  cat:judge
+reach  cat:judge  sh bin/bench.sh
+" || { skip "a no to anything else — git could not make a repo here"; return; }
+  member_says shp39 ann:x 'nothing
+'
+  spf charter shape >/dev/null
+  spf_by wk charter introduce Judged 'the worker says it is fast' >/dev/null
+  spf charter introduce Decided 'a person signs the copy off' >/dev/null
+  spf authorise >/dev/null
+  sp_answers worker pat 2999-01-01T00:00:00Z "no $(sp_asks authorisation 'the worker says it is fast')"
+  sp_answers allowed pat 2999-01-01T00:00:01Z "yes $(sp_asks authorisation 'a person signs the copy off')"
+  spf source ask completion 'a person signs the copy off' 'Is it signed off?' >/dev/null
+  sp_answers completed pat 2999-01-01T00:00:02Z "no $(sp_asks completion 'a person signs the copy off')"
+
+  is  "a no to a worker's clause strikes nothing"          "$(code_of spf authorise)" "11"
+  is  "and reads no whole-line yes, as it always has"      "$(sp_rows answer.unread | grep -c '2999-01-01T00:00:00Z	no whole-line yes$')" "1"
+  is  "and a no to a completion question reads the same"   "$(sp_rows answer.unread | grep -c '2999-01-01T00:00:02Z	no whole-line yes$')" "1"
+}
+a_no_to_anything_else_strikes_nothing
+
+#
+# **A repository naming no member is shaped by nobody.** `charter shape` answers 0 and says nothing, no
+# `shaped/` and no row appear, `status` holds no *decided*, a worker's clause is asked in the plain words
+# with no no line, and a judge's brief is as it was.
+#
+a_repository_naming_no_member_is_shaped_by_nobody() {
+  a_plugin_shaping shp40 || { skip "no member — the plugin could not be copied"; return; }
+  a_shaped_repo shp40 1340 'bench  cat:judge
+reach  cat:judge  sh bin/bench.sh
+' || { skip "no member — git could not make a repo here"; return; }
+
+  is     "a repository naming no member is shaped with nothing said" "$(spf_says charter shape; printf 'exit=%s' "$?")" "exit=0"
+  absent "and nothing written"                                     "$sp_run/shaped"
+  is     "and no shaping row"                                      "$(grep -c '	shape\.' "$sp_run/evidence")" "0"
+  lacks  "status holds no decided"                                 "$(spf_says status)" "decided"
+  spf_by wk charter introduce Judged 'the worker says it is fast' >/dev/null
+  spf authorise >/dev/null
+  question=$(sp_question 'the worker says it is fast')
+  has    "a worker's clause is asked in the plain words"           "$question" "Delete the line before delivery to withdraw it."
+  lacks  "with no no line"                                         "$question" "Or a hand strikes it"
+  sp_answers keep pat 2999-01-01T00:00:00Z "yes $(sp_asks authorisation 'the worker says it is fast')"
+  sp_opens && spf judged >/dev/null
+  lacks  "and a judge's brief is as it was"                        "$(cat "$sp_run"/judged/*.handed 2>/dev/null)" "a clause a hand struck"
+}
+a_repository_naming_no_member_is_shaped_by_nobody
 
 #
 # **Every wake this suite made says where it ended.** Last, so it reads them all. An `ended` reading

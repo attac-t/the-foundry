@@ -8443,7 +8443,7 @@ seats_to_write() {
 
 # Who introduced a `Judged` clause's words first, one record a proposer. Its only writer, and
 # `introduce` its only caller.
-print_proposer() { printf '%s\n' "$2" | awk -v id="$1" 'NF { print "proposer", id, $1 }'; }
+print_proposer() { printf '%s\n' "$2" | awk -v id="$1" 'NF { print "proposer", id, $0 }'; }
 
 # --- shaping ---
 #
