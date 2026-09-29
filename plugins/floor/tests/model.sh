@@ -11377,7 +11377,7 @@ a_pass_on_a_repository_naming_no_member_waits_at_11() {
   has    "writing the wait on the workspace, with its code"        "$(last_pass_line_of "$bprun")" "pass.waiting item=1234 why=workspace code=11"
   is     "and the checkout still points at the run that waits"     "$(floor "$tmp/bpnone" path)" "$bprun"
   absent "a pass naming no member writes nothing for shaping"      "$bprun/shaped"
-  is     "and the ledger holds no shaping row"                     "$(grep -c '	shape\.' "$bprun/evidence")" "0"
+  is     "and the ledger holds no shaping row"                     "$(cat "$bprun/evidence" 2>/dev/null | grep -c '	shape\.')" "0"
   question=$(cat "$src/questions/1234/$(basename "$bprun").authorisation.$(clause_of 'a stranger can follow it')" 2>/dev/null)
   has    "the worker's clause is asked in A1's words"              "$question" "Delete the line before delivery to withdraw it."
   lacks  "and its question has no no line"                         "$question" "Or a hand strikes it"
