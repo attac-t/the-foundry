@@ -13193,7 +13193,8 @@ a_no_to_anything_else_strikes_nothing
 #
 # **A repository naming no member is shaped by nobody.** `charter shape` answers 0 and says nothing, no
 # `shaped/` and no row appear, `status` holds no *decided*, a worker's clause is asked in the plain words
-# with no no line, and a judge's brief is as it was.
+# with no no line, and `judged` hears nothing: a source that cannot say stops none of it, and the judge's
+# brief is as it was.
 #
 a_repository_naming_no_member_is_shaped_by_nobody() {
   a_plugin_shaping shp40 || { skip "no member — the plugin could not be copied"; return; }
@@ -13211,7 +13212,9 @@ reach  cat:judge  sh bin/bench.sh
   has    "a worker's clause is asked in the plain words"           "$question" "Delete the line before delivery to withdraw it."
   lacks  "with no no line"                                         "$question" "Or a hand strikes it"
   sp_answers keep pat 2999-01-01T00:00:00Z "yes $(sp_asks authorisation 'the worker says it is fast')"
-  sp_opens && spf judged >/dev/null
+  sp_opens
+  sp_source=$(a_source_that_lands shp40) && : > "$tmp/shp40.cut"
+  is     "judged hears nothing, so a source that cannot say stops none of it" "$(code_of spf judged)" "0"
   lacks  "and a judge's brief is as it was"                        "$(cat "$sp_run"/judged/*.handed 2>/dev/null)" "a clause a hand struck"
 }
 a_repository_naming_no_member_is_shaped_by_nobody
