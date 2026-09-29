@@ -98,9 +98,11 @@
 #  45  the pass command failed. The run records the stop, and the next pass reads it
 #  46  a pass let its run go, resumed more often than `FOUNDRY_PASS_TRIES` allows. The claim stays,
 #      so the item stops on this host
-#  47  a resumed run waits on a person: a clause, a grant or a commit `deliver` named
-#  48  a pass let its run go: a member's revise rounds are spent, or a judge was deadlocked or could
-#      not be reached. The line says which, and the item stops on this host
+#  47  a pass's run waits on a person: a clause, a grant or a commit `deliver` named, or a clause asked
+#      at `open` that a named hand can answer. The wait is recorded and never counted
+#  48  a pass let its run go: a member's revise rounds are spent, a judge was deadlocked or could not be
+#      reached, or a shaping member's contribution was refused. The line says which, and the item
+#      stops on this host
 #  49  a clause nothing derived needs a yes, and `.foundry/practice` at the base names no hand who may
 #      give one. The fix is a line at the base, which only a new run reads
 #  50  every hand named is an account floor skips, and one or more is only the account floor writes as
@@ -4745,11 +4747,11 @@ carry_on_from_the_line() {
 
 carry_on_from_the_stop() {
     case $resumed_why in
-        read|open|charter|workspace) carry_on_from_the_start "$1" ;;
-        no-command)                  act_once_a_command_is_named "$1" ;;
-        command-failed|gates)        act_again "$1" ;;
-        judged)                      let_the_ledger_decide "$1" ;;
-        deliver)                     deliver_and_route "$1" ;;
+        read|open|charter|shape|workspace) carry_on_from_the_start "$1" ;;
+        no-command)                        act_once_a_command_is_named "$1" ;;
+        command-failed|gates)              act_again "$1" ;;
+        judged)                            let_the_ledger_decide "$1" ;;
+        deliver)                           deliver_and_route "$1" ;;
         *) note "no pass carries on from a stop at [$resumed_why], so this one leaves the run alone: $dir"; exit 43 ;;
     esac
 }
@@ -4797,7 +4799,7 @@ deliver_and_route() {
 
     case $delivered in
         0)        say_it_was_delivered "$1"; return 0 ;;
-        15|18|32) wait_on_a_person "$1" "$delivered" ;;
+        15|18|32) wait_on_a_person "$1" deliver "$delivered" ;;
         19)       stop_at "$1" deliver 19 ;;
         20|50)    stop_at_the_delivery "$1" "$delivered" ;;
     esac
@@ -4820,9 +4822,11 @@ stop_at_the_delivery() {
 # The request's title: the first line with words in the item this run read.
 the_run_heading() { title_for "$1" "$(cat "$dir/item.md" 2>/dev/null)"; }
 
+# A wait a person ends, named for the step that asked: `deliver`, or `workspace` at `open`. It is
+# recorded, so it is never counted against the bound.
 wait_on_a_person() {
-    emit "$dir" pass.waiting item="$1" why=deliver code="$2"
-    note "delivering [$1] waits on a person, $2: $dir"
+    emit "$dir" pass.waiting item="$1" why="$2" code="$3"
+    note "[$1] waits on a person at $2, $3: $dir"
     exit 47
 }
 
@@ -4922,8 +4926,8 @@ refusals_by() {
 }
 
 #
-# The run's workspace: this checkout's own target, at the ref the host stood on. A target Foundry was
-# invoked in needs nobody's grant, so nothing here waits on a person.
+# The charter, shaped, then the run's workspace: this checkout's own target, at the ref the host stood
+# on. The target needs nobody's grant, and a clause nothing derived waits on a hand at `open`.
 #
 # **A step that refuses is a stop, written in the run**, so the next pass can tell a refusal from a
 # death. Each step runs apart, and leaves by its own code. #884's judge.
@@ -4933,16 +4937,37 @@ open_the_work() {
     still_holding_the_host
     ( charter derive ) >/dev/null || stop_at "$1" charter "$?"
     still_holding_the_host
+    ( charter shape ) >/dev/null || stop_at_the_shaping "$1" "$?"
+    still_holding_the_host
     ( open_workspace ) >/dev/null || stop_at_the_workspace "$1" "$?"
     find_the_workspace "$1"
 }
 
+# **A pass shapes before `open`.** A refused contribution is the member's, and nothing in the run can
+# answer it: the run is let go, 48. Any other code is a stop the next wake starts over, and counts.
+stop_at_the_shaping() {
+    [ "$2" -eq 56 ] && { let_go_of_a_refused_contribution "$1"; exit 48; }
+
+    stop_at "$1" shape "$2"
+}
+
+# The item stops on this host, and the line says why. The claim stays, so no pass here takes it again.
+let_go_of_a_refused_contribution() {
+    emit "$dir" pass.left item="$1" why=shape code=56
+    note "a member's contribution was refused whole, so this pass lets [$1] go: $dir"
+    let_go_of "$dir"
+}
+
+#
+# **11 is a wait.** `authorise` reaches it only once the hearing passed, so a named hand can answer,
+# and the answer resumes this run. Nothing counts the wait, and no second run is made.
 #
 # **A line at the base is the fix for 49 and 51, and only a new run reads the base**, so the item is let
 # go and the claim kept. Every other stop here is resumed, 50 among them: its fix is on the host, and
 # the bound counts each resume.
 #
 stop_at_the_workspace() {
+    [ "$2" -eq 11 ] && wait_on_a_person "$1" workspace 11
     [ "$2" -eq 49 ] && { let_go_for_a_line_at_the_base "$1" 49; exit 49; }
     [ "$2" -eq 51 ] && { let_go_for_a_line_at_the_base "$1" 51; exit 51; }
 

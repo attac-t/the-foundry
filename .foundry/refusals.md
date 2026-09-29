@@ -399,9 +399,10 @@ where it is — a key for a one-off buys indirection and saves nothing.
 | `wait_on_the_host` | 44 | answer | the host names no command, so this run waits for one: $dir | `header` |
 | `run_the_host_command` | 45 | answer | — | `header` |
 | `let_go_past_the_bound` | 46 | default | — | five resumes, a number somebody chose. `FOUNDRY_PASS_TRIES` names another |
-| `wait_on_a_person` | 47 | answer | delivering [$1] waits on a person, $2: $dir | `header` |
+| `wait_on_a_person` | 47 | answer | [$1] waits on a person at $2, $3: $dir | `header` — at `deliver` on 15, 18 or 32, and at `open` on 11, where a named hand can answer |
 | `leave_on_an_answer_that_stops` | 48 | answer | — | `header` |
 | `act_on_a_refusal` | 48 | default | — | three rounds where the charter pins none, a number somebody chose. A `rounds` line names another |
+| `stop_at_the_shaping` | 48 | answer | — | `header` — a contribution refused whole, 56, lets the run go |
 | `refuse_with_no_hand` | 49 | invariant | add \`authorise <hand>\` to it, and start a new run: only a new run reads the base | `authority` — charter A, decision 4: a rule names a hand, or nothing is asked |
 | `stop_at_the_workspace` | 49 | answer | — | `header` |
 | `refuse_hands_floor_writes_as` | 50 | invariant | run floor on an account of its own, and answer as yourself | `refusal` — floor skips its own words, so a hand that is only its account could never say yes |
