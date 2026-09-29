@@ -15,7 +15,8 @@
 # transcript GitHub formats however it likes. A digest needs no recovery and no parser.
 #
 # Only the question is marked. An answer carries no marker: the line that says yes is printed in the
-# question, fenced, so a person copies it rather than learning a command language.
+# question, fenced, so a person copies it rather than learning a command language. A completion
+# question ends in floor's own paragraph instead, since its line ends in a commit no question holds.
 #
 # Usage: sh source-github.sh read    <issue>
 #        sh source-github.sh kind    <issue>

@@ -92,6 +92,9 @@ delivered() { [ "$(awk 'NR == 1 { print $1 }' "$1")" = "$2" ]; }
 # Put a question where the human already is, once. A resumed run derives the same identity
 # and asks again with the same words, and that stays one question. Different words
 # under one identity are refused: someone may be holding the first.
+#
+# A completion question's words end in floor's own paragraph, which holds no commit, so a head that
+# moves never makes them other words.
 put_question() {
     file="$root/questions/$1/$2"
 

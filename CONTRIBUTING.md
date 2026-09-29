@@ -337,6 +337,7 @@ runs, and **`bin/audited.sh` itself, because a check that waives the bar sits un
 thing it grades did not. The runner prints that, and nobody types it:
 
 ```
+  PASS  floor — declined its audit: no file it reads changed
 ALL GREEN. 24 graded. 1 declined: floor, no file it reads changed.
 ```
 

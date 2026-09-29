@@ -152,7 +152,7 @@ gate() {
     [ "$mode" = list ] && { printf '%s\n' "$name"; return; }
 
     rehearsed=''
-    runs_against_a_stand_in "$name" && rehearsed=" — its own audit, not a live read"
+    runs_against_a_stand_in "$name" && rehearsed=" — against a stand-in, not the live service"
 
     ran=$((ran + 1))
 
@@ -168,7 +168,7 @@ gate() {
     # **It is not exit 3.** That one says the suite could not run and should have, and it still
     # fails. One code carrying both facts is how a skipped grade lands as a clean pass.
     [ "$code" -eq 4 ] && {
-        printf '  PASS  %s — ran, and graded a smaller claim\n' "$name"
+        printf '  PASS  %s — declined its audit: no file it reads changed\n' "$name"
         lessened="$lessened $name"
         return
     }
