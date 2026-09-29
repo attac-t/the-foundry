@@ -2968,7 +2968,7 @@ wreck_runner "a wait on the host with no line is caught" \
   hostwaitline '/^wait_on_the_host() {/,/^}/s#^    emit "\$dir" pass.waiting item="\$1" why=no-command$#    :#'
 
 wreck_runner "a wait on a person with no line is caught" \
-  personwaitline '/^wait_on_a_person() {/,/^}/s#^    emit "\$dir" pass.waiting item="\$1" why=deliver code="\$2"$#    :#'
+  personwaitline '/^wait_on_a_person() {/,/^}/s#^    emit "\$dir" pass.waiting item="\$1" why="\$2" code="\$3"$#    :#'
 
 wreck_runner "a grant deliver asks for, read as nothing a person can answer, is caught" \
   deliverperson '/^deliver_and_route() {/,/^}/s#^        15|18|32) wait_on_a_person#        15|32) wait_on_a_person#'
@@ -3668,6 +3668,37 @@ wreck_runner "decided printed for a run never shaped is caught" \
 
 wreck_runner "decided that leaves the left-out members out is caught" \
   noleftmembers 's#^         \$2 == "left" { printf "  left out#         $2 == "nonesuch" { printf "  left out#'
+
+#
+# **A pass shapes before it opens, one rule a break.** The spec's breaks for the pass, and the two it
+# names at a `judged` stop. Each goes red on a check of its own, in the order the model suite runs them.
+#
+wreck_runner "a pass that shapes after it opens the work is caught" \
+  shapeafteropen 's#^    ( charter shape ) >/dev/null || stop_at_the_shaping "\$1" "\$?"$#    :#; s#^    ( open_workspace ) >/dev/null || stop_at_the_workspace "\$1" "\$?"$#&; ( charter shape ) >/dev/null || stop_at_the_shaping "$1" "$?"#'
+
+wreck_runner "a pass that lets the item go at 21 is caught" \
+  letgo21 's#^    \[ "\$2" -eq 56 \] && {#    [ "$2" -eq 56 ] || [ "$2" -eq 21 ] \&\& {#'
+
+wreck_runner "a pass that starts a refused contribution over is caught" \
+  restart56 '/^stop_at_the_shaping() {/,/^}/s#^    \[ "\$2" -eq 56 \] && .*#    :#'
+
+wreck_runner "a wait at 11 counted against the bound is caught" \
+  countwait11 '/^resumes_counted() {/,/^}/s#open \&\& \$3 != "pass.waiting"#open \&\& ($3 != "pass.waiting" || $4 ~ /why=workspace/)#'
+
+wreck_runner "a pass that stops at 11, as it did, is caught" \
+  stop11 's#^    \[ "\$2" -eq 11 \] && wait_on_a_person "\$1" workspace 11$#    :#'
+
+wreck_runner "a stop at shape the next wake cannot carry on from is caught" \
+  noshaperesume '/^carry_on_from_the_stop() {/,/^}/s#read|open|charter|shape|workspace)#read|open|charter|workspace)#'
+
+wreck_runner "a wait at 11 that lets its run go, so the answer makes a second run, is caught" \
+  secondrun 's#^    \[ "\$2" -eq 11 \] && wait_on_a_person#    [ "$2" -eq 11 ] \&\& ( release "$1" ) >/dev/null 2>\&1; [ "$2" -eq 11 ] \&\& let_go_of "$dir" \&\& wait_on_a_person#'
+
+wreck_runner "a struck clause's refusals counted at a judged stop are caught" \
+  countstruck 's#^        a_hand_struck_the_clause "\$dir" "\$bench_id" && continue$#        :#'
+
+wreck_runner "a judged stop that acts on a no and writes no row is caught" \
+  norowatstop '/^hear_and_say_what_was_heard() {/,/^}/s#^    record_the_hearing "\$1"$#    :#'
 
 # The item proposes and the allowlist decides. A run that took an advised target as authorised would
 # let anyone who can file an item choose what the run may touch.
