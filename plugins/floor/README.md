@@ -1206,14 +1206,21 @@ claude -p --model opus --output-format json --tools "" --strict-mcp-config --no-
 | Flag | Gives | Does not give |
 |---|---|---|
 | `--tools ""` | no built-in tool: no file write, no edit, no shell | MCP tools, which stay loaded |
-| `--strict-mcp-config`, naming no config | no MCP server from any config file | account connectors, which have a switch of their own. Whether they drop is unverified |
-| `--no-session-persistence` | no session kept on disk | anything about what loads |
+| `--strict-mcp-config`, naming no config | no MCP server from any config file | account connectors, which have a switch of their own |
+| `--no-session-persistence` | no transcript kept on disk | anything about what loads |
+
+**Measured once, on 29 September 2026**, on Claude Code 2.1.284, signed in with a login whose
+sessions carry account connectors. The call's `system/init` event listed no tool and no MCP server.
+**Which flag dropped the connectors is not measured.** Eight start hooks ran before the model
+answered. The harness also made an empty `memory` folder under `~/.claude/projects`, named for the
+room's path, and that path changes with each call.
 
 **What still loads.** Without `--bare`, `claude -p` loads what an interactive session would, from the
 working directory and from `~/.claude`. The directory is empty, and `~/.claude` is the host's: its
 CLAUDE.md, auto memory, plugins, skills and hooks all load. **So the claim is narrower than *writes
 nothing*.** The model has no built-in tool and no MCP server from a config file. Whether a connector
-hands it a tool that writes is unverified, and the host's hooks and plugins are the host's own code.
+can hand it a tool that writes, on another host or version, is unverified. The host's hooks and
+plugins are the host's own code.
 
 **Why not `--bare`.** It skips all of that, and it reads an API key and never a login. On a host that
 signs in with a login every call would then be missing. The vendor says `--bare` will become the

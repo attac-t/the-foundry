@@ -15,8 +15,9 @@
 #     claude -p --model opus --output-format json --tools "" --strict-mcp-config --no-session-persistence
 #
 # `--tools ""` drops each built-in tool, and MCP tools stay loaded. `--strict-mcp-config`, naming no
-# config, loads no MCP server from any file. Whether account connectors drop too is unverified, and
-# so is what a plugin's own server does under it. `--no-session-persistence` keeps no session on disk.
+# config, loads no MCP server from any file. Once, on 2.1.284 with account connectors signed in, the
+# call listed no tool and no MCP server. Which flag dropped the connectors is unmeasured, and so is
+# what a plugin's own server does. `--no-session-persistence` keeps no session on disk.
 #
 # **Without `--bare`, the host's CLAUDE.md, auto memory, plugins, skills and hooks all load.** Floor
 # runs this in an empty directory, and `~/.claude` is still the host's. `--bare` would skip them, but
