@@ -8,7 +8,6 @@ plugins/floor/tests/host.sh	# Whole field, never a substring. `.foundry` sits in
 plugins/floor/tests/host.sh	# Both variables go. Unsetting `HOME` alone leaves whatever the shell running this
 plugins/floor/tests/model.sh	  # Recording that a gate finished says a gate finished. Completion still refuses,
 plugins/floor/tests/model.sh	# How far each run got, from files other verbs already wrote. The only verb not scoped
-plugins/floor/tests/model.sh	# The run's own words, in the same place a person's would land. Only a test that means to
 plugins/floor/tests/model.sh	  # The other half of the same verb.  already exits 19 when the push is refused; the
 plugins/floor/tests/model.sh	  # A second run, its own delivery, and the first one may not land it. The adapter finds
 plugins/kernel/tests/run.sh	# macOS ships no timeout unless someone installed the GNU tools, so without

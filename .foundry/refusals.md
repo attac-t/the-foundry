@@ -290,7 +290,7 @@ where it is — a key for a one-off buys indirection and saves nothing.
 | `run_pinned_gates` | 8 | default | this charter pins no gate, so it grades nothing mechanically | nobody yet — the person who could want it otherwise is a repository whose bar is entirely human-judged, so no gate is pinned, and then a Gate clause would read as met with nothing having run it |
 | `authorise` | 9 | invariant | clause $id grades no selected target, so it is no bar | `evidence` |
 | `refuse_moved_selection` | 10 | invariant | — | `refusal` |
-| `authorise` | 11 | invariant | a human owns this. Answer where the item is, naming the clause, and authorise again | `escalate` |
+| `authorise` | 11 | invariant | a human owns this. Answer where the item is, with the line the question prints, and authorise again | `escalate` |
 | `authorise` | 12 | default | re-derive, or stop the artifact declaring it | `charter-drifted` — the code's own comment calls re-deriving the remedy |
 | `refuse_renamed_run` | 13 | invariant | move it back, or start a new run — authority a human gave is not renamed with a directory | `authority` |
 | `complete` | 15 | answer | — | `header` |
@@ -312,10 +312,12 @@ where it is — a key for a one-off buys indirection and saves nothing.
 | `find_the_workspace` | 16 | default | — | `no-workspace` |
 | `refuse_another_item` | 17 | default | start a new run — one item has many runs, and a second item is one of them | `one-item` |
 | `refuse_unless_answered` | 17 | invariant | send the one it sent, or start a new run | `refusal` |
+| `refuse_a_question_in_other_words` | 17 | invariant | delete the old question where the item is, or start a new run | `refusal` — someone may be holding the first words, and an answer authorises one text |
 | `refuse_ungranted_delivery` | 18 | invariant | nobody said this run may deliver to [$2] — \`policy deliver-to\` is what says so | `refusal` |
 | `push_workspace` | 19 | answer | could not deliver [$3] to [$2]: $why | `source` |
 | `this_pass_claims` | 20 | answer | the work source could not be asked to claim [$1] | `source` |
 | `refuse_unasked` | 20 | answer | the work source could not be asked for that $2 | `source` |
+| `refuse_unheard` | 20 | answer | the work source could not be asked for \`$1\`, so no answer is read | `source` |
 | `ask_the_judge` | 21 | invariant | the judge could not run on this host: $said | `evidence` |
 | `ask_the_judge` | 21 | invariant | the judge was killed by signal $((answered - 128)) | `evidence` |
 | `refuse_a_receipt_nothing_answered` | 21 | invariant |   this is the context the runner wrote before asking, so the round did not happen | `evidence` |
@@ -334,6 +336,7 @@ where it is — a key for a one-off buys indirection and saves nothing.
 | `source_says` | 25 | answer | — | `source` |
 | `marked_by_the_rule` | 27 | answer | this work source cannot say which items carry a label | `source` |
 | `refuse_unless_answered` | 27 | answer | this work source can only be read, so nothing here can carry a $2 | `source` |
+| `refuse_a_source_that_cannot_hear` | 27 | answer | use a source that answers \`receive <item>\` and \`speaker <item>\` — the README names both | `source` |
 | `refuse_the_source_as_advice` | 28 | invariant | a human naming it with \`targets add\` still can | `refusal` |
 | `claim` | 30 | answer | — | `header` |
 | `claim_the_first_offered` | 30 | answer | every item offered is held by another host or underway here, so this pass takes nothing | `header` |
@@ -386,3 +389,8 @@ where it is — a key for a one-off buys indirection and saves nothing.
 | `wait_on_a_person` | 47 | answer | delivering [$1] waits on a person, $2: $dir | `header` |
 | `leave_on_an_answer_that_stops` | 48 | answer | — | `header` |
 | `act_on_a_refusal` | 48 | default | — | three rounds where the charter pins none, a number somebody chose. A `rounds` line names another |
+| `refuse_with_no_hand` | 49 | invariant | add \`authorise <hand>\` to it, and start a new run: only a new run reads the base | `authority` — charter A, decision 4: a rule names a hand, or nothing is asked |
+| `stop_at_the_workspace` | 49 | answer | — | `header` |
+| `refuse_hands_floor_writes_as` | 50 | invariant | run floor on an account of its own, and answer as yourself | `refusal` — floor skips its own words, so a hand that is only its account could never say yes |
+| `refuse_hands_that_wrote_the_questions` | 51 | default | name another hand in .foundry/practice, and start a new run | nobody yet — the charter asks only that floor's account now be skipped, and verdict `a1-spec/005` says this over-refuses a hand that was floor's login on an earlier run. A2 or the parent charter may reopen it |
+| `stop_at_the_workspace` | 51 | answer | — | `header` |

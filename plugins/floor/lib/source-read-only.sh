@@ -41,6 +41,6 @@ cannot() {
 
 case "${1:-}" in
     read)                      shift; read_item "${1:-}" ;;
-    publish|ask|receive|kind|claim|held|release)  cannot ;;
+    publish|ask|receive|speaker|kind|claim|held|release)  cannot ;;
     *)                         echo "source-read-only: read <item>" >&2; exit 2 ;;
 esac
