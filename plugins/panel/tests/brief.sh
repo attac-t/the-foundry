@@ -164,4 +164,40 @@ the_round_before_comes_from_the_chain() {
 }
 the_round_before_comes_from_the_chain
 
+#
+# The commit, never the worktree alone. A judge reads files there for as long as it works, and a
+# commit landing meanwhile changes what it reads — one verdict named three heads over seventeen
+# minutes, and the judge only knew from the reflog.
+#
+a_brief_names_the_commit_it_was_built_from() {
+  tree=$tmp/tree
+  mkdir -p "$tree"
+  git -C "$tree" init -q >/dev/null 2>&1
+  printf 'one\n' > "$tree/file"
+  git -C "$tree" add -A >/dev/null 2>&1
+  git -C "$tree" -c user.email=a@b.c -c user.name=a commit -qm one >/dev/null 2>&1
+  head=$(git -C "$tree" rev-parse HEAD 2>/dev/null)
+
+  said=$(brief adversary 'a clause' --verdicts "$tmp/empty" --review R1 --worktree "$tree")
+  has "the brief names the commit it was built from" "$said" "$head"
+  has "and the worktree that commit is in"           "$said" "$tree"
+  has "and says the recorder is told the same"       "$said" "refuses your verdict"
+
+  # Absent is legal here as it is for the bar. Silent is not: a brief naming no tree leaves nobody
+  # able to say afterwards whether one moved.
+  bare=$(brief adversary 'a clause' --verdicts "$tmp/empty" --review R1)
+  has "a brief naming no tree says so" "$bare" "NOT SUPPLIED"
+
+  # A directory with no commit in it is not a worktree, and a brief that printed an empty commit
+  # would hand the recorder nothing to check.
+  mkdir -p "$tmp/norepo"
+  is "a worktree that is no checkout is refused" \
+     "$(code_of brief adversary 'a clause' --verdicts "$tmp/empty" --review R1 --worktree "$tmp/norepo")" "6"
+  is "a worktree that is not there is refused" \
+     "$(code_of brief adversary 'a clause' --verdicts "$tmp/empty" --review R1 --worktree "$tmp/nowhere")" "6"
+  is "a worktree flag with no value is refused" \
+     "$(code_of brief adversary 'a clause' --verdicts "$tmp/empty" --review R1 --worktree)" "2"
+}
+a_brief_names_the_commit_it_was_built_from
+
 summary "brief"

@@ -29,6 +29,7 @@
 #   0  answered
 #   1  a prior round was claimed and no verdict stamps it — fail closed
 #   2  asked for something this does not do
+#   3  the branch left the tree the brief handed over
 
 set -u
 
@@ -40,7 +41,7 @@ main() {
         next)   next_slot   "${1:-}" ;;
         round)  next_round  "${1:-}" "${2:-}" ;;
         prior)  prior_round "${1:-}" "${2:-}" "${3:-}" ;;
-        record) record_verdict "${1:-}" "${2:-}" "${3:-}" ;;
+        record) record_verdict "$@" ;;
         *)     usage; exit 2 ;;
     esac
 }
@@ -52,7 +53,8 @@ panel verdicts — the review chain.
   verdicts.sh next   <dir>                     the slot the next record takes
   verdicts.sh round  <dir> <review>            the round that review writes next
   verdicts.sh prior  <dir> <round> <review>    the verdict round-1 must read, or exit 1
-  verdicts.sh record <dir> <role> <review>     write what a judge returned, on stdin
+  verdicts.sh record <dir> <role> <review> [--worktree <dir> --commit <sha>]
+                                               write what a judge returned, on stdin
 EOF
 }
 
@@ -139,8 +141,9 @@ rounds_of() {
 # **The round comes first here and the review second**, which is why a caller can split the two with
 # `${stamp%% *}` and `${stamp#* }` and still hand back a review with spaces in it.
 #
-# A comma opens a note the recorder never writes, and six of the sixteen records here carry one. It
-# is cut, and `refuse_unless_a_review` keeps a comma out of a name so nothing else is cut with it.
+# A comma opens a note. The recorder writes the commit there, and six of the sixteen records here
+# carry a hand-written one. It is cut, and `refuse_unless_a_review` keeps a comma out of a name so
+# nothing else is cut with it.
 the_stamp() {
     awk '
         NR > 3 { exit }
@@ -227,6 +230,41 @@ verdict_at_round() {
     return 1
 }
 
+# --- the tree ---
+
+#
+# The tree a commit names, or nothing.
+#
+# **`^{tree}` and never the commit itself.** A commit that only renamed itself — an amend, a rebase,
+# a merge changing no file — left every byte the judge read where it was. Refusing that refuses
+# honest work, and the author who amends after a judge starts is the common case, not the rare one.
+tree_at() { git -C "$1" rev-parse --verify --quiet "$2^{tree}" 2>/dev/null; }
+
+#
+# The brief hands a judge one commit. The judge reads that worktree for as long as it works, and a
+# commit landing meanwhile changes what it reads — one verdict here named three heads over
+# seventeen minutes.
+#
+# So a verdict is refused unless the branch still holds that commit's tree. **Both are named**,
+# because the remedy turns on which of the two is the surprise: a judge sent the wrong commit, or an
+# author who committed while it read.
+refuse_unless_the_branch_holds() {
+    where=$1; commit=$2
+
+    [ -d "$where" ] || { note "no directory at [$where] — the worktree the judge read is not there"; exit 2; }
+
+    judged=$(tree_at "$where" "$commit")
+    [ -n "$judged" ] || { note "no commit [$commit] in [$where] — a brief stamps the commit it handed over"; exit 2; }
+
+    head=$(git -C "$where" rev-parse --verify --quiet HEAD 2>/dev/null)
+    [ -n "$head" ] || { note "no commit to read at [$where] — a worktree is a checkout"; exit 2; }
+
+    [ "$judged" = "$(tree_at "$where" "$head")" ] && return 0
+
+    note "the judge read [$commit] and [$where] is now at [$head] — a different tree, so this verdict judges neither"
+    exit 3
+}
+
 # --- the record ---
 
 #
@@ -239,15 +277,20 @@ verdict_at_round() {
 # The body is never interpreted. A recorder that edits a verdict is a second author.
 #
 record_verdict() {
-    dir=$1; role=$2; review=$3
+    dir=${1:-}; role=${2:-}; review=${3:-}
 
     [ -n "$dir" ] && [ -n "$role" ] && [ -n "$review" ] \
         || { note "record needs a directory, a role and a review"; exit 2; }
+
+    [ "$#" -ge 3 ] && shift 3
+    read_the_commit "$@"
 
     case "$role" in
         *[!A-Za-z0-9-]*) note "a role is a plain name, not [$role]"; exit 2 ;;
     esac
     refuse_unless_a_review "$review"
+
+    [ -n "$commit" ] && refuse_unless_the_branch_holds "$worktree" "$commit"
 
     # An `exit` inside `$( )` ends the subshell, never this. Without these, a refusal either of them
     # made would come back as an empty number and get written — `Judged: <review> R`, unfindable.
@@ -260,12 +303,44 @@ record_verdict() {
     # Everything is staged before the record exists. A refusal leaves the chain as it was.
     {
         printf '# Verdict %s — %s\n\n' "$slot" "$role"
-        printf 'Judged: %s R%s\n\n' "$review" "$round"
+        printf 'Judged: %s R%s' "$review" "$round"
+        [ -n "$commit" ] && printf ', at %s' "$commit"
+        printf '\n\n'
         cat
     } > "$file.part" || { rm -f "$file.part"; note "could not write $file"; exit 2; }
 
     mv "$file.part" "$file" || { rm -f "$file.part"; note "could not write $file"; exit 2; }
     printf '%s\n' "$file"
+}
+
+#
+# The commit the brief handed over, and the worktree it named. Both, or neither.
+#
+# **Neither is guessed.** A commit with no worktree would be checked against whatever directory the
+# convener happened to be standing in, and a convener records from anywhere. A wrong answer there is
+# silent, which is the shape this whole refusal exists to close.
+#
+# The empty guard comes before the shift, as it does in `brief.sh`: a flag with nothing after it
+# leaves `shift 2` short, and the loop never ends.
+read_the_commit() {
+    commit=
+    worktree=
+
+    while [ "$#" -gt 0 ]; do
+        case $1 in
+            --commit)   commit=${2:-};   [ -n "$commit" ]   || { note "--commit names a commit"; exit 2; } ;;
+            --worktree) worktree=${2:-}; [ -n "$worktree" ] || { note "--worktree names a checkout"; exit 2; } ;;
+            *) note "unknown argument [$1]"; exit 2 ;;
+        esac
+        shift 2
+    done
+
+    [ -n "$commit" ] && [ -z "$worktree" ] \
+        && { note "a commit names no checkout to read it in — pass --worktree too"; exit 2; }
+    [ -n "$worktree" ] && [ -z "$commit" ] \
+        && { note "a worktree says nothing on its own — pass --commit too"; exit 2; }
+
+    return 0
 }
 
 #

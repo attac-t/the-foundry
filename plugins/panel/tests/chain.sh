@@ -315,4 +315,70 @@ the_caller_does_not_write_the_round() {
 }
 the_caller_does_not_write_the_round
 
+#
+# The commit the brief handed over, and whether the branch still holds its tree.
+#
+# A judge reads a worktree for as long as it works. Two test-only commits landed under one
+# seventeen-minute read, and that verdict names three heads.
+#
+a_verdict_is_refused_when_the_branch_left_that_tree() {
+  work=$tmp/work
+  mkdir -p "$work"
+  git -C "$work" init -q >/dev/null 2>&1
+  printf 'one\n' > "$work/file"
+  git -C "$work" add -A >/dev/null 2>&1
+  git -C "$work" -c user.email=a@b.c -c user.name=a commit -qm one >/dev/null 2>&1
+  judged=$(git -C "$work" rev-parse HEAD 2>/dev/null)
+
+  c=$tmp/commits
+  mkdir -p "$c"
+
+  #
+  # The same tree under a new hash. An amend renames a commit and moves not one byte the judge read,
+  # and so do a rebase and a merge that changes no file. Comparing hashes would refuse all three.
+  #
+  git -C "$work" -c user.email=a@b.c -c user.name=a commit -q --amend -m two >/dev/null 2>&1
+  renamed=$(git -C "$work" rev-parse HEAD 2>/dev/null)
+  differs "an amend gives the same tree a new hash" "$renamed" "$judged"
+
+  is "a verdict on that same tree is recorded" \
+     "$(code_of sh "$runner" record "$c" adversary 'review A' --worktree "$work" --commit "$judged" </dev/null)" "0"
+
+  # The stamp already carries a note after a comma, so the commit lands there and the round still
+  # reads back. A second line would put the round where the judge's body starts.
+  has "the record stamps the commit it judged" "$(cat "$c"/001-adversary-verdict.md)" "at $judged"
+  is  "and the round still reads from that stamp" "$(chain round "$c" 'review A')" "2"
+
+  # A commit landing under the judge. The tree is another tree, so the verdict is over neither.
+  printf 'two\n' > "$work/file"
+  git -C "$work" add -A >/dev/null 2>&1
+  git -C "$work" -c user.email=a@b.c -c user.name=a commit -qm three >/dev/null 2>&1
+  moved=$(git -C "$work" rev-parse HEAD 2>/dev/null)
+
+  is "a verdict recorded after the branch moved is refused" \
+     "$(code_of sh "$runner" record "$c" adversary 'review A' --worktree "$work" --commit "$judged" </dev/null)" "3"
+
+  # Both, because the remedy turns on which of the two is the surprise.
+  said=$(sh "$runner" record "$c" adversary 'review A' --worktree "$work" --commit "$judged" 2>&1 </dev/null)
+  has "and it names the commit the judge read" "$said" "$judged"
+  has "and the one the branch is on now"       "$said" "$moved"
+  is  "and the refusal wrote nothing"          "$(ls "$c" | wc -l | tr -d ' ')" "1"
+
+  # Neither is guessed. A commit checked against whatever directory the convener stood in is a
+  # wrong answer nobody hears.
+  is "a commit with no worktree is refused" \
+     "$(code_of sh "$runner" record "$c" adversary 'review A' --commit "$judged" </dev/null)" "2"
+  is "a worktree with no commit is refused" \
+     "$(code_of sh "$runner" record "$c" adversary 'review A' --worktree "$work" </dev/null)" "2"
+  is "a commit that checkout never had is refused" \
+     "$(code_of sh "$runner" record "$c" adversary 'review A' --worktree "$work" --commit 0123456 </dev/null)" "2"
+  is "an argument nobody defined is refused" \
+     "$(code_of sh "$runner" record "$c" adversary 'review A' --wat x </dev/null)" "2"
+
+  # Neither, and the recorder is what it was. Every caller that predates this flag still records.
+  is "a record naming no commit still writes" \
+     "$(code_of sh "$runner" record "$c" adversary 'review B' </dev/null)" "0"
+}
+a_verdict_is_refused_when_the_branch_left_that_tree
+
 summary "chain"
