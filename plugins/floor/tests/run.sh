@@ -3688,7 +3688,7 @@ wreck_runner "a proposal's row written twice is caught" \
   rowtwice 's#^proposal_has_a_row() {#proposal_has_a_row() { return 1;#'
 
 wreck_runner "a proposal's row written with no reason is caught" \
-  noreason 's#"\$(joined "\$3" ,)" "\$proposal_why"$#"$(joined "$3" ,)" ""#'
+  nowhyrow 's#"\$(joined "\$3" ,)" "\$proposal_why"$#"$(joined "$3" ,)" ""#'
 
 wreck_runner "a run called shaped once each member is recorded, rows or not, is caught" \
   shapedearly 's#^    write_the_bar_once "\$1"$#    write_the_bar_once "$1"; [ -n "$(members_with_no_contribution "$1")" ] || return 0#'
