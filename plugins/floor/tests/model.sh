@@ -1257,8 +1257,10 @@ a_charter_derives_from_the_repository_it_is_run_in() {
     || { skip "charter — git could not make a repo here"; return; }
 
   chrun=$(floor "$tmp/ch" new "Charter")
-  floor "$tmp/ch" charter derive >/dev/null 2>&1
+  said=$(floor_says "$tmp/ch" charter derive)
 
+  # A `bench` line names who judges and derives no clause, so it never stops the judged half.
+  lacks "a charter derives past a bench line" "$said" "judged half stopped"
   exists "the charter is a file in the run" "$(charter_of "$chrun")"
 
   # `absent "$home/charter"` passed against the one mutation aimed at this, which writes
@@ -2790,7 +2792,8 @@ completion_refuses_what_is_only_vacuously_true
 #
 # A clause nothing pinned is invariant 1's *introduced*, and only a hand's yes lets it bind. This
 # base names no hand, so nobody could give one: `complete` hears the item first and refuses at 49,
-# where it once graded the clause and said 15.
+# where it once graded the clause and said 15. Each is read on its own, so a grade before the
+# hearing, a refusal naming another fix and an exit left inside a capture each fail where they happen.
 #
 an_introduced_clause_holds_delivery() {
   make_repo "$tmp/cs" main && set_origin "$tmp/cs" 'https://github.com/acme/cs.git' \
@@ -2808,10 +2811,11 @@ an_introduced_clause_holds_delivery() {
   is "every derived clause evidenced, it may deliver" "$(code_of floor "$tmp/cs" complete)" "0"
 
   floor "$tmp/cs" charter introduce Decided "ship on friday" >/dev/null 2>&1
+  said=$(floor_says "$tmp/cs" complete)
 
-  is  "and a clause nothing derived, with no hand named, holds it at 49, where it said 15" \
-      "$(code_of floor "$tmp/cs" complete)" "49"
-  has "naming the line a hand needs" "$(floor_says "$tmp/cs" complete)" "authorise <hand>"
+  lacks "a clause nothing derived is heard before it is graded" "$said" "introduced: [ship on friday]"
+  has   "and with no hand named, the refusal names the line a hand needs" "$said" "authorise <hand>"
+  is    "and holds it at 49, where it said 15" "$(code_of floor "$tmp/cs" complete)" "49"
 }
 an_introduced_clause_holds_delivery
 
@@ -3828,21 +3832,26 @@ deriving_from_a_subdirectory_is_the_same_answer() {
 deriving_from_a_subdirectory_is_the_same_answer
 a_tampered_charter_is_visible
 
+#
 # `introduce` replaces the record for a meaning. Appending left the first one winning for every
 # reader, so the second was accepted and changed nothing. Its panel is written once too, and the
-# member who proposed it sits on none of it.
+# member who proposed it sits on none of it. Each is read on its own, so each fault fails on its own.
+#
 introducing_twice_leaves_one_record() {
   [ -n "${chrun:-}" ] || { skip "one record — no charter run"; return; }
 
   floor_worked "$tmp/ch" alice charter introduce Judged 'said once' >/dev/null 2>&1
   floor_worked "$tmp/ch" alice charter introduce Judged 'said once' >/dev/null 2>&1
+  id=$(clause_of 'said once') held=$(charter_of "$chrun")
+  seated=$(awk -v id="$id" '$1 == "judge" && $2 == id { print $3 }' "$held")
+  proposed=$(awk -v id="$id" '$1 == "proposer" && $2 == id { print $3 }' "$held")
 
-  is "the same clause twice is one record" \
-     "$(awk -v id="$(clause_of 'said once')" '$1 == "clause" && $2 == id' "$(charter_of "$chrun")" | grep -c .)" "1"
-  is "one judge record per member, and none for the member who proposed it" \
-     "$(awk -v id="$(clause_of 'said once')" '$1 == "judge" && $2 == id { print $3 }' "$(charter_of "$chrun")" | tr '\n' ' ')" "reviewer "
-  is "and one proposer" \
-     "$(awk -v id="$(clause_of 'said once')" '$1 == "proposer" && $2 == id { print $3 }' "$(charter_of "$chrun")")" "alice"
+  is "the same clause twice is one record" "$(awk -v id="$id" '$1 == "clause" && $2 == id' "$held" | grep -c .)" "1"
+  is "introduced twice, its proposer holds no judge record" "$(printf '%s\n' "$seated" | grep -cx alice)" "0"
+  is "no member is seated twice"                            "$(printf '%s\n' "$seated" | sort | uniq -d)" ""
+  is "the panel is the bench less its proposer"             "$(printf '%s\n' "$seated" | tr '\n' ' ')" "reviewer "
+  is "the proposer is the worker who introduced it"         "$(printf '%s\n' "$proposed" | sort -u)" "alice"
+  is "and it is recorded once"                              "$(printf '%s\n' "$proposed" | grep -c .)" "1"
 }
 introducing_twice_leaves_one_record
 
@@ -10306,13 +10315,19 @@ forget_the_delivery() { rm -f "$src/deliveries/$(basename "$1")" "$src/deliverie
 #
 # **One table, four readers.** A clause met at a commit, then its completion yes changed one term at a
 # time: the run, the stage, the clause's text, the commit. Each change meets nothing at `complete`,
-# `status`, `deliver` and `merge`, and the yes itself meets it at all four.
+# `status`, `deliver` and `merge`, and the yes itself meets it at all four. First, the yes is no pin,
+# and it is read from the source: with every `answer.heard` row struck, it still meets the clause.
 #
 each_reader_meets_only_the_whole_yes() {
   meeting mtwhole 1201 pat || { skip "the whole yes — git could not make a repo here"; return; }
   met_at_the_head 'the page ships'
   printf '%s\n' "$(mt_head)" > "$tmp/mtwhole.head"
   whole="yes $(mt_asks completion 'the page ships') $(mt_head)"
+
+  is "a yes heard pins nothing, so the clause stays introduced" \
+     "$(awk -v id="$(clause_of 'the page ships')" '$1 == "pin" && $2 == id' "$(charter_of "$mtrun")" | grep -c .)" "0"
+  awk -F'\t' '$2 != "answer.heard"' "$mtrun/evidence" > "$mtrun/evidence.struck" && mv "$mtrun/evidence.struck" "$mtrun/evidence"
+  is "a yes is read from the source, whatever the ledger holds" "$(code_of mtf complete)" "0"
 
   for changed in "yes 2026-01-01-another-run-0000.completion.$(clause_of 'the page ships') $(mt_head)" \
       "yes $(mt_asks authorisation 'the page ships') $(mt_head)" \
@@ -10349,10 +10364,10 @@ a_withdrawn_authorisation_holds_the_delivery() {
 
   rm -f "$src/answers/1202/may"
   withdrawn="introduced: [a stranger can follow it] — no yes to $(mt_asks authorisation 'a stranger can follow it') stands now"
-  is  "the yes deleted, deliver refuses" "$(code_of mtf deliver 'Meet it')" "15"
-  has "and the clause reads introduced"   "$(mtf_says deliver 'Meet it')" "$withdrawn"
-  is  "complete refuses too"              "$(code_of mtf complete)" "15"
-  has "with the same finding"             "$(mtf_says complete)" "$withdrawn"
+  is  "the yes deleted, deliver refuses"                  "$(code_of mtf deliver 'Meet it')" "15"
+  has "and the clause reads introduced"                   "$(mtf_says deliver 'Meet it')" "$withdrawn"
+  is  "complete refuses the withdrawn authorisation too"  "$(code_of mtf complete)" "15"
+  has "naming the authorisation no yes stands to"         "$(mtf_says complete)" "$withdrawn"
 }
 a_withdrawn_authorisation_holds_the_delivery
 
@@ -10366,8 +10381,8 @@ a_withdrawn_completion_holds_the_delivery() {
   gone="unmet: [the copy is signed off] at $(mt_here) — no yes names this commit"
   is  "the completion yes deleted, deliver refuses though its row stands" "$(code_of mtf deliver 'Meet it')" "15"
   has "naming the commit no yes names"                                   "$(mtf_says deliver 'Meet it')" "$gone"
-  is  "complete refuses too"                                             "$(code_of mtf complete)" "15"
-  has "with the same finding"                                            "$(mtf_says complete)" "$gone"
+  is  "complete refuses the withdrawn completion too"                   "$(code_of mtf complete)" "15"
+  has "naming the commit no yes names, as deliver does"                 "$(mtf_says complete)" "$gone"
 }
 a_withdrawn_completion_holds_the_delivery
 
@@ -10375,7 +10390,7 @@ a_withdrawn_completion_holds_the_delivery
 a_yes_withdrawn_after_delivery_holds_the_merge() {
   meeting mtafter 1204 pat || { skip "a yes withdrawn after delivery — git could not make a repo here"; return; }
   met_at_the_head 'the launch is approved'
-  is "it delivers" "$(code_of mtf deliver 'Meet it')" "0"
+  is "it delivers while the yes stands" "$(code_of mtf deliver 'Meet it')" "0"
   printf '%s\n' "$(mt_head)" > "$tmp/mtafter.head"
 
   rm -f "$src/answers/1204/met"
@@ -10383,7 +10398,7 @@ a_yes_withdrawn_after_delivery_holds_the_merge() {
   has    "complete names what the deleted yes leaves"    "$finding" "no yes names this commit"
   is     "the yes deleted after deliver, merge refuses"  "$(code_of mtf merge)" "15"
   has    "with complete's finding"                       "$(mtf_says merge)" "$finding"
-  absent "and nothing lands"                             "$tmp/mtafter.landed"
+  absent "and nothing lands once the yes is gone"        "$tmp/mtafter.landed"
   forget_the_delivery "$mtrun"
 }
 a_yes_withdrawn_after_delivery_holds_the_merge
@@ -10392,8 +10407,10 @@ a_yes_withdrawn_after_delivery_holds_the_merge
 a_second_hands_yes_is_heard_once_at_the_merge() {
   meeting mtsecond 1205 'pat sam' || { skip "a second hand's yes — git could not make a repo here"; return; }
   met_at_the_head 'the terms are agreed'
-  is "it delivers" "$(code_of mtf deliver 'Meet it')" "0"
+  is "it delivers on the first hand's yeses" "$(code_of mtf deliver 'Meet it')" "0"
   printf '%s\n' "$(mt_head)" > "$tmp/mtsecond.head"
+  is "each of them has its one answer.heard row" \
+     "$(mtf evidence | awk -F'\t' '$2 == "answer.heard" && $4 == "pat"' | grep -c .)" "2"
 
   mt_answers also sam 2999-01-02T00:00:00Z "yes $(mt_asks completion 'the terms are agreed') $(mt_head)"
   is "a yes standing at merge lands it" "$(code_of mtf merge)" "0"
@@ -10619,8 +10636,8 @@ a_panel_survives_the_next_derivation
 
 #
 # **`check` holds an introduced panel to the bench at the base.** A `judge` line struck is `unresolved`
-# there and at `complete`, and introducing the clause again mends it. A base `check` cannot read is a
-# refusal, never a bench of nobody that passes the panel.
+# there and at `complete`, and introducing the clause again mends it. A member the checkout adds is no
+# member. A base `check` cannot read is a refusal, never a bench of nobody that passes the panel.
 #
 a_struck_judge_line_is_unresolved() {
   meeting mtstruck 1218 pat 'bench alice bob' || { skip "a struck judge line — git could not make a repo here"; return; }
@@ -10632,10 +10649,14 @@ a_struck_judge_line_is_unresolved() {
   has "check names the struck member unresolved" "$said" "unresolved: Judged the queue drains [bob]"
   has "and refuses"                              "$said" "exit=7"
   is  "complete refuses"                         "$(code_of mtf complete)" "15"
-  has "with the same finding"                    "$(mtf_says complete)" "unresolved: Judged the queue drains [bob]"
+  has "naming the struck member, as check does"  "$(mtf_says complete)" "unresolved: Judged the queue drains [bob]"
 
   mtf charter introduce Judged 'the queue drains' >/dev/null
   is "introducing it again mends it" "$(code_of mtf charter check)" "0"
+
+  commit_file "$mt" .foundry/judged 'bench alice bob carol' \
+    || { skip "a member the checkout adds — git could not commit here"; return; }
+  is "check reads the bench at the base, never the checkout's" "$(code_of mtf charter check)" "0"
 
   cp "$mtrun/bootstrap" "$mtrun/bootstrap.keep"
   awk '{ $3 = "0000000000000000000000000000000000000000"; print }' "$mtrun/bootstrap.keep" > "$mtrun/bootstrap"
@@ -10715,7 +10736,7 @@ a_delivered_run_records_each_yes_once() {
   met_at_the_head 'the backup restores'
   may=$(mt_asks authorisation 'the backup restores') met=$(mt_asks completion 'the backup restores') head=$(mt_head)
   mtf authorise >/dev/null
-  is "it delivers" "$(code_of mtf deliver 'Meet it')" "0"
+  is "it delivers, hearing each yes" "$(code_of mtf deliver 'Meet it')" "0"
 
   is "one answer.heard row for each yes: who, when and the line" \
      "$(mtf evidence | awk -F'\t' '$2 == "answer.heard" { print $4 " " $6 " " $7 }')" \
@@ -10809,7 +10830,7 @@ a_gate_is_never_introduced
 a_judged_clause_wants_a_bench_at_the_base() {
   meeting mtnobench 1225 pat || { skip "no bench — git could not make a repo here"; return; }
   is  "with no bench at the base: 55" "$(code_of mtf charter introduce Judged 'the docs are kind')" "55"
-  has "naming the line"               "$(mtf_says charter introduce Judged 'the docs are kind')" "bench <member>"
+  has "naming the bench line to add"  "$(mtf_says charter introduce Judged 'the docs are kind')" "bench <member>"
 
   commit_file "$mt" .foundry/judged 'bench reviewer' \
     || { skip "a bench in the checkout — git could not commit here"; return; }
@@ -10817,7 +10838,7 @@ a_judged_clause_wants_a_bench_at_the_base() {
 
   meeting mtlonebench 1226 pat 'bench alice' || { skip "a lone bench — git could not make a repo here"; return; }
   is  "with a bench of only its proposer: 55" "$(code_of mtf_by alice charter introduce Judged 'the docs are kind')" "55"
-  has "naming the line"                       "$(mtf_by alice charter introduce Judged 'the docs are kind')" \
+  has "naming the bench of only its proposer" "$(mtf_by alice charter introduce Judged 'the docs are kind')" \
       "the bench names only [alice], who proposed"
 }
 a_judged_clause_wants_a_bench_at_the_base
@@ -10852,14 +10873,14 @@ two_bench_lines_seat_their_members_and_no_more
 a_hand_who_merges_as_themselves_is_floors_account() {
   meeting mtself 1228 pat || { skip "a hand merging as themselves — git could not make a repo here"; return; }
   met_at_the_head 'the rollout is staged'
-  is "it delivers" "$(code_of mtf deliver 'Meet it')" "0"
+  is "it delivers while floor has an account of its own" "$(code_of mtf deliver 'Meet it')" "0"
   printf '%s\n' "$(mt_head)" > "$tmp/mtself.head"
 
   printf 'pat\n' > "$tmp/mtself.floor"
   said=$(mtf_says merge; printf '\nexit=%s' "$?")
   has    "the only hand merging as themselves is floor's account: 50" "$said" "exit=50"
-  has    "naming the clash"                                          "$said" "pat: floor's account now"
-  absent "and nothing lands"                                         "$tmp/mtself.landed"
+  has    "naming the hand's own login as the clash"                   "$said" "pat: floor's account now"
+  absent "and nothing lands from the hand's own login"                "$tmp/mtself.landed"
   forget_the_delivery "$mtrun"
 }
 a_hand_who_merges_as_themselves_is_floors_account
@@ -10910,13 +10931,13 @@ leave_the_bench_pass() {
 #
 a_pass_delivers_a_clause_its_bench_approved() {
   a_bench_pass bpdeliver 1231 || { skip "a benched pass — git could not make a repo here"; return; }
-  has "the next pass opens the work again and asks" "$(bench_pass "$tmp/bpdeliver")" "exit=11"
+  has "the next pass asks before a yes" "$(bench_pass "$tmp/bpdeliver")" "exit=11"
   the_hand_authorises_the_benched_clause 1231
 
-  has "a pass after the yes delivers" "$(FOUNDRY_PASS_COMMAND=true bench_pass "$tmp/bpdeliver")" "exit=0"
-  has "and the run records it"        "$(last_pass_line_in "$tmp/bpdeliver")" "pass.delivered item=1231"
-  has "the request names the bench"   "$(cat "$bprun/body" 2>/dev/null)" "judged by reviewer"
-  has "and the yes"                   "$(cat "$bprun/body" 2>/dev/null)" \
+  has "a pass after the yes delivers"     "$(FOUNDRY_PASS_COMMAND=true bench_pass "$tmp/bpdeliver")" "exit=0"
+  has "and the run records the delivery"  "$(last_pass_line_in "$tmp/bpdeliver")" "pass.delivered item=1231"
+  has "the request names the bench"       "$(cat "$bprun/body" 2>/dev/null)" "judged by reviewer"
+  has "and the yes"                       "$(cat "$bprun/body" 2>/dev/null)" \
       "yes from pat at 2999-01-01T00:00:00Z: \`yes $(basename "$bprun").authorisation.$(clause_of 'a stranger can follow it')\`"
   leave_the_bench_pass 1231
 }
@@ -10928,7 +10949,7 @@ a_pass_delivers_a_clause_its_bench_approved
 #
 a_pass_resumes_a_delivery_nobody_could_hear() {
   a_bench_pass bpcut 1232 || { skip "a pass cut off at deliver — git could not make a repo here"; return; }
-  has "the next pass opens the work again and asks" "$(bench_pass "$tmp/bpcut")" "exit=11"
+  has "the next pass asks before the source is cut" "$(bench_pass "$tmp/bpcut")" "exit=11"
   the_hand_authorises_the_benched_clause 1232
 
   has    "the source cut off at deliver stops it at 20" \
@@ -10938,8 +10959,8 @@ a_pass_resumes_a_delivery_nobody_could_hear() {
 
   rm -f "$tmp/bpcut.cut"
   said=$(bench_pass "$tmp/bpcut")
-  has "the next pass resumes it"               "$said" "this pass resumes [1232] after [pass.stopped deliver]"
-  has "and delivers once the source answers"   "$said" "exit=0"
+  has "the next pass resumes the delivery nobody could hear" "$said" "this pass resumes [1232] after [pass.stopped deliver]"
+  has "and delivers once the source answers"                 "$said" "exit=0"
   leave_the_bench_pass 1232
 }
 a_pass_resumes_a_delivery_nobody_could_hear
@@ -10950,14 +10971,14 @@ a_pass_resumes_a_delivery_nobody_could_hear
 #
 a_pass_resumes_a_delivery_whose_hand_became_floors_login() {
   a_bench_pass bplogin 1233 || { skip "a pass on floor's own login — git could not make a repo here"; return; }
-  has "the next pass opens the work again and asks" "$(bench_pass "$tmp/bplogin")" "exit=11"
+  has "the next pass asks before the login moves" "$(bench_pass "$tmp/bplogin")" "exit=11"
   the_hand_authorises_the_benched_clause 1233
 
   said=$(FOUNDRY_PASS_COMMAND="printf 'pat\\n' > '$tmp/bplogin.floor'" bench_pass "$tmp/bplogin")
   has "the login moved onto the only hand, deliver stops at 50" "$said" "exit=50"
-  has "naming the clash"                                        "$said" "pat: floor's account now"
+  has "naming the clash the moved login makes"                  "$said" "pat: floor's account now"
 
-  has "the next pass resumes it" "$(bench_pass "$tmp/bplogin")" "this pass resumes [1233] after [pass.stopped deliver]"
+  has "the next pass resumes the delivery the login stopped" "$(bench_pass "$tmp/bplogin")" "this pass resumes [1233] after [pass.stopped deliver]"
   leave_the_bench_pass 1233
 }
 a_pass_resumes_a_delivery_whose_hand_became_floors_login

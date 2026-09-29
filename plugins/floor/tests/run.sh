@@ -3279,7 +3279,7 @@ wreck_runner "a pass that resumes an item whose hand wrote the questions is caug
 #
 # **The meeting, one rule a break.** A clause nothing derived is met once a hand's yes stands and its
 # kind's own answer holds, and `complete`, `status`, `deliver` and `merge` each hear before they grade.
-# A2's spec names each break, and each goes red on a case of its own.
+# Each rule has its break, and in the audit's own order each goes red first on a check of its own.
 #
 wreck_runner "a yes read from the ledger, not the source, is caught" \
   ledger '/^yes_to() {/,/^}/s#^    printf .%s.n. "\$heard_lines" .$#    grep -F answer.heard "$(evidence_file "$dir")" | awk -F"\\t" -v OFS="\\t" "{ split(\\$7, w, \\" \\"); print \\"heard\\", w[2], \\$4, \\$6, \\$7 }" \\#'
@@ -3341,8 +3341,10 @@ wreck_runner "a short sha taken for a commit is caught" \
 wreck_runner "an authorisation yes naming a commit, taken, is caught" \
   authcommit 's#if (!is_a_completion(question)) return commit == ""#if (!is_a_completion(question)) return 1#' lib/hearing.awk
 
+# The workspace by name, never `$tree`: `status` reads a yes where nothing has set it, and there a
+# tree read as nothing would match every commit.
 wreck_runner "a yes matched to a commit by its tree is caught" \
-  treematch 's@^        . "${named_by##. }" = "\$2" . .. return 0$@        [ "$(git -C "$tree" rev-parse "${named_by##* }^{tree}" 2>/dev/null)" = "$(git -C "$tree" rev-parse "$2^{tree}" 2>/dev/null)" ] \&\& return 0@'
+  treematch 's@^        . "${named_by##. }" = "\$2" . .. return 0$@        [ "$(git -C "$(unit_work_tree "$dir" "$(this_repository)")" rev-parse --verify --quiet "${named_by##* }^{tree}")" = "$(git -C "$(unit_work_tree "$dir" "$(this_repository)")" rev-parse --verify --quiet "$2^{tree}")" ] \&\& return 0@'
 
 wreck_runner "a moved head refused with no line for it is caught" \
   nonewline 's#. A hand completes it here with: yes %s %s\(...\) "\$text" "\$2" "\$3" "\$is_it_met" "\$3"#\1 "$text" "$2" "$3"#'
