@@ -11,9 +11,9 @@
 # Self-development symlink (created during plugin development)
 .claude/plugins/
 
-# Run artefacts. These belong under `~/.foundry-runs`, and this line is for the one case that
-# cannot reach it: `bin/gates.sh` keeps a failing gate's output beside the checkout when the
-# environment has no `$HOME`. Losing the output is worse than an ignored directory.
+# A failing gate's output belongs under floor's home, and this line is for the one case that has
+# none: `bin/gates.sh` keeps it beside the checkout when neither `FOUNDRY_HOME` nor `HOME` is set.
+# Losing the output is worse than an ignored directory.
 .foundry-runs/
 
 # IDE and editor files

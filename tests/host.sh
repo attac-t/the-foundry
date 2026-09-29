@@ -395,6 +395,42 @@ grep -v '^[[:space:]]*#' "$root/bin/host.sh" | grep -q 'FOUNDRY_EPHEMERAL' \
   || ok  "and this lane never says it"
 
 #
+# --- where this lane keeps a red grade's log ---
+#
+# **Under floor's home, because that is the one directory this lane mounts.** Kept anywhere else, it
+# went with the container, and a pass on #1078 lost the only record of why its grade stopped. #1108.
+#
+# A copy of `gates.sh` alone in a directory: every gate it names is missing and fails at once, so the
+# real `keep` runs and nothing stands in for it. Floor's runner says where the log belongs, so the two
+# answers cannot drift apart.
+#
+red_grade_under() {
+  rm -rf "$tmp/lab" && mkdir -p "$tmp/lab/bin" && cp "$root/bin/gates.sh" "$tmp/lab/bin/" || return 1
+
+  ( cd "$tmp/lab" && unset FOUNDRY_EPHEMERAL && HOME=$1 FOUNDRY_HOME=$2 sh bin/gates.sh 2>&1 )
+}
+
+floors_home_under() { HOME=$1 FOUNDRY_HOME=$2 sh "$root/plugins/floor/bin/run.sh" home 2>/dev/null; }
+
+# The directory the last line names: under that home's `gates/`, and holding the logs.
+kept_where_floor_lives() {
+  local named wanted
+  named=$(red_grade_under "$1" "$2" | sed -n 's/^kept in //p')
+  wanted=$(floors_home_under "$1" "$2")
+
+  case $named in "$wanted/gates/"?*) ;; *) return 1 ;; esac
+  ls "$named"/*.log >/dev/null 2>&1
+}
+
+kept_where_floor_lives "$tmp/grade-home" '' \
+  && ok  "a red grade keeps its log under floor's home, and says where" \
+  || bad "a red grade keeps its log under floor's home, and says where — it did not"
+
+kept_where_floor_lives "$tmp/grade-home" "$tmp/grade-floor" \
+  && ok  "and under FOUNDRY_HOME when one is named" \
+  || bad "and under FOUNDRY_HOME when one is named — it did not"
+
+#
 # --- a worker carries Foundry ---
 #
 # **Every name comes from the checkout the host started in.** So this builds one with names no real
