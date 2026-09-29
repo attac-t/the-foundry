@@ -1196,6 +1196,8 @@ read, and no brief holds another member's words.
 **A member runs where it can read nothing but its brief.** Floor makes `${TMPDIR:-/tmp}/floor-shape-<pid>`
 fresh, runs the entry point there with stdin closed, and removes it after. What it prints lands whole
 in `shaped/<member>-<n>.returned`, and the last line it writes on stderr rides the attempt's row.
+**A shaping killed mid-call leaves its room behind**, and no later shaping removes it, since each
+names its own pid.
 
 The anthropic entry point asks with no built-in tool, and no MCP server from a config file:
 
