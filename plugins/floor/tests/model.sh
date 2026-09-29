@@ -10538,9 +10538,9 @@ the_completion_question_never_moves_with_the_head() {
   mtf source ask completion 'the guide is current' 'Is the guide current?' >/dev/null
   words=$(cat "$src/questions/1213/$met" 2>/dev/null)
 
-  is    "the question ends in floor's paragraph" "$(printf '%s\n' "$words" | tail -n 1)" \
+  lacks "the question holds no commit" "$words" "$(mt_head)"
+  is    "and ends in floor's paragraph" "$(printf '%s\n' "$words" | tail -n 1)" \
         "A hand named in \`.foundry/practice\` says it is met with one line: \`yes $met\`, a space, and the full commit they read. Delete the line before delivery to withdraw it."
-  lacks "and holds no commit"                    "$words" "$(mt_head)"
 
   mt_moves_on 'the guide grew'
   is "asked again after the head moved, it is one question: no 17" \
@@ -10593,7 +10593,8 @@ a_member_who_proposes_a_clause_never_judges_it
 
 #
 # A pass derives again on every resume, so a panel is only a panel if a derivation carries it. Its
-# `judge`, `rounds` and `proposer` records survive one, and `authorise` still asks one question.
+# `rounds` and `proposer` records survive one, then its `judge` records, the members themselves, and
+# `authorise` still asks one question. Each is read on its own, so each loss fails where it happens.
 #
 a_panel_survives_the_next_derivation() {
   meeting mtcarry 1217 pat 'bench reviewer
@@ -10606,9 +10607,13 @@ rounds reviewer 2' || { skip "a carried panel — git could not make a repo here
   is "introduce writes its judge, rounds and proposer records" \
      "$(printf '%s\n' "$panel" | awk '{ print $1 }' | tr '\n' ' ')" "judge rounds proposer "
   mtf charter derive >/dev/null
-  is "a derivation carries every one" "$(awk -v id="$id" '$2 == id && $1 != "clause"' "$(charter_of "$mtrun")")" "$panel"
-  is "and authorise asks"             "$(code_of mtf authorise)" "11"
-  is "its one question"               "$(questions_in 1217)" "1"
+  carried=$(awk -v id="$id" '$2 == id && $1 != "clause"' "$(charter_of "$mtrun")")
+  is "a derivation carries its rounds and its proposer" \
+     "$(printf '%s\n' "$carried" | awk '$1 != "judge"')" "$(printf '%s\n' "$panel" | awk '$1 != "judge"')"
+  is "and its members, each judge record" \
+     "$(printf '%s\n' "$carried" | awk '$1 == "judge"')" "$(printf '%s\n' "$panel" | awk '$1 == "judge"')"
+  is "and authorise asks" "$(code_of mtf authorise)" "11"
+  is "its one question"   "$(questions_in 1217)" "1"
 }
 a_panel_survives_the_next_derivation
 
@@ -10641,7 +10646,11 @@ a_struck_judge_line_is_unresolved() {
 }
 a_struck_judge_line_is_unresolved
 
-# A second `introduce` adds only what is missing: each member once, and the first proposer stays.
+#
+# A second `introduce` adds only what is missing: the first proposer stays, and each member is seated
+# once. The proposer is read first, so a writer that names a later worker fails on it, and one that
+# seats a member twice fails on the panel.
+#
 a_second_introduce_adds_only_what_is_missing() {
   meeting mttwice 1219 pat 'bench alice bob carol' || { skip "a second introduce — git could not make a repo here"; return; }
   mtf_by alice charter introduce Judged 'the cache is warm' >/dev/null
@@ -10649,10 +10658,10 @@ a_second_introduce_adds_only_what_is_missing() {
   mtf_by bob charter introduce Judged 'the cache is warm' >/dev/null
   id=$(clause_of 'the cache is warm')
 
-  is "one judge record per member, the first proposer on none" \
-     "$(awk -v id="$id" '$1 == "judge" && $2 == id { print $3 }' "$(charter_of "$mtrun")" | tr '\n' ' ')" "bob carol "
-  is "and one proposer, the first" \
+  is "one proposer, the first" \
      "$(awk -v id="$id" '$1 == "proposer" && $2 == id { print $3 }' "$(charter_of "$mtrun")" | tr '\n' ' ')" "alice "
+  is "and one judge record per member, the first proposer on none" \
+     "$(awk -v id="$id" '$1 == "judge" && $2 == id { print $3 }' "$(charter_of "$mtrun")" | tr '\n' ' ')" "bob carol "
 }
 a_second_introduce_adds_only_what_is_missing
 
@@ -10812,9 +10821,9 @@ bench carol,dave
   is "check finds nothing"                    "$(code_of floor "$tmp/mtbenches" charter check)" "0"
 
   floor "$tmp/mtbenches" charter introduce Judged 'the signup is short' >/dev/null
-  is "the panel is their members, no more" \
-     "$(awk -v id="$(clause_of 'the signup is short')" '$1 == "judge" && $2 == id { print $3 }' "$(charter_of "$benchrun")" | tr '\n' ' ')" \
-     "alice bob carol dave "
+  seated=$(awk -v id="$(clause_of 'the signup is short')" '$1 == "judge" && $2 == id { print $3 }' "$(charter_of "$benchrun")")
+  is "the panel seats every member of both lines" "$(printf '%s\n' "$seated" | grep -cxE 'alice|bob|carol|dave')" "4"
+  is "and no one else"                            "$(printf '%s\n' "$seated" | grep -c .)" "4"
 }
 two_bench_lines_seat_their_members_and_no_more
 

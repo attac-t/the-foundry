@@ -3383,8 +3383,10 @@ wreck_runner "a panel a derivation leaves behind is caught" \
 wreck_runner "a panel carried as introduced clauses is caught" \
   panelinintro 's#^         \$1 == "pin"    { pinned\[\$2\] = 1 }$#         $1 == "pin"    { pinned[$2] = 1 } $1 == "judge" || $1 == "rounds" || $1 == "proposer" { held[$2] = held[$2] "\\n" $0 }#; s#{ print; printf "%s", panel\[\$2\] }#{ print }#'
 
-wreck_runner "a panel dropped at derivation is caught" \
-  dropatderive 's#^    keep_introduced "\$file" "\$draft" >> "\$draft"#    keep_introduced "$file" "$draft" | grep "^clause " >> "$draft"#'
+# The members alone, at the call: `clausealone` drops every panel record inside `keep_introduced`, so
+# each fails its own check. `sed` rather than `grep`, which exits 1 on nothing and stopped `derive`.
+wreck_runner "a derivation that drops a panel's members is caught" \
+  dropatderive 's#^    keep_introduced "\$file" "\$draft" >> "\$draft"#    keep_introduced "$file" "$draft" | sed "/^judge /d" >> "$draft"#'
 
 wreck_runner "an introduced panel check never holds is caught" \
   nobenchcheck 's#^        unbenched_judged "\$file" "\$dir"$#        :#'
