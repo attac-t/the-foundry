@@ -4,14 +4,18 @@
 # the base names, one a line. `ENVIRON["speakers"]` holds `speaker`'s lines: the account floor writes as
 # now, then `<author>\t<question>\t<when>` for each question asked. Every account arrives folded.
 #
-# Prints `heard\t<question>\t<who>\t<when>\t<words>` for each yes it hears, and
-# `unread\t<who>\t<when>\t<why>` for each named hand's comment that authorises nothing. A line it drops is
-# said on stderr, and one bad line never stops the rest.
+# `ENVIRON["strikable"]` holds the questions a no may strike, one a line: the authorisation questions
+# of the clauses a panel proposed. A no to any other question is no yes, as it always was.
+#
+# Prints `heard\t<question>\t<who>\t<when>\t<words>` for each yes it hears, `struck` in the same fields
+# for each no, and `unread\t<who>\t<when>\t<why>` for each named hand's comment that authorises nothing.
+# A line it drops is said on stderr, and one bad line never stops the rest.
 
 BEGIN {
     FS = "\t"
     name_the_hands(ENVIRON["hands"])
     name_the_speakers(ENVIRON["speakers"])
+    name_the_strikable(ENVIRON["strikable"])
 }
 
 $0 == "" { next }
@@ -23,6 +27,11 @@ END { close_the_comment() }
 function name_the_hands(said,   n, i, line) {
     n = split(said, line, "\n")
     for (i = 1; i <= n; i++) if (line[i] != "") hand[line[i]] = 1
+}
+
+function name_the_strikable(said,   n, i, line) {
+    n = split(said, line, "\n")
+    for (i = 1; i <= n; i++) if (line[i] != "") strikable[line[i]] = 1
 }
 
 #
@@ -101,7 +110,7 @@ function weigh(who, when, words,   question) {
     if (!shaped_for_its_stage(question)) return
 
     answered = 1
-    printf "heard\t%s\t%s\t%s\t%s\n", question, who, when, words
+    printf "%s\t%s\t%s\t%s\t%s\n", (struck ? "struck" : "heard"), question, who, when, words
 }
 
 #
@@ -111,6 +120,7 @@ function weigh(who, when, words,   question) {
 #
 function the_question_in(words,   space) {
     commit = ""
+    if (a_strike(words)) return substr(words, 4)
     if (words !~ /^yes [a-z0-9-]+[.][a-z]+[.][0-9]+( [0-9a-f]+)?$/) return ""
 
     words = substr(words, 5)
@@ -119,6 +129,15 @@ function the_question_in(words,   space) {
 
     commit = substr(words, space + 1)
     return substr(words, 1, space - 1)
+}
+
+#
+# **A no is the whole line `no <question>`**, read as a yes is, and it strikes only a question floor
+# named as one a no may strike. Past this it is weighed as a yes: a named hand, after its question.
+#
+function a_strike(words) {
+    struck = words ~ /^no [a-z0-9-]+[.][a-z]+[.][0-9]+$/ && (substr(words, 4) in strikable)
+    return struck
 }
 
 #

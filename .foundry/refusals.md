@@ -333,6 +333,7 @@ where it is — a key for a one-off buys indirection and saves nothing.
 | `stamp_command` | 21 | invariant | [$name] could not run on this host: $why | `evidence` |
 | `stamp_command` | 21 | invariant | [$name] was killed by signal $((result - 128)), so nothing was graded | `evidence` |
 | `refuse_a_member_with_no_contribution` | 21 | invariant | \`charter shape\` asks each again, and nothing the panel proposed enters until each has answered | `evidence` — charter *a panel shapes the charter*, decision 4: nothing is asked while one member's contribution is missing |
+| `refuse_a_proposal_with_no_row` | 21 | invariant | each member answered: \`charter shape\` writes the row, and nothing is asked of a hand until it has | `evidence` — charter *a panel shapes the charter*, decision 4: a run is shaped once each proposal has its row, and nothing is asked before |
 | `refuse_an_entry_point_this_plugin_does_not_ship` | 21 | default | looked at [$2] and nowhere else — update the plugin, or name an adapter that ships one | `no-home` — as a judge's adapter: the plugin root is the one place looked, and the lookup is not the policy |
 | `refuse_unreadable_declaration` | 22 | invariant | the bar this repository declares cannot be read | `evidence` |
 | `refuse_ungranted_merge` | 23 | invariant | nobody said this run may merge into [$2] — \`policy merge-to\` is what says so | `refusal` |

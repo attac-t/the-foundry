@@ -44,7 +44,9 @@
 #      before it could, or it ran and left the receipt exactly as the runner wrote it. Nothing was
 #      graded and nothing is recorded. Not 14: that is a gate answering, and its answer stands at
 #      that ref for good. Not 37: that is a receipt saying something unreadable, and this is one
-#      saying nothing at all
+#      saying nothing at all. A shaping member no model answered for is 21 too: the attempt is kept
+#      and no contribution. So is `authorise` while a shaping is unfinished, and it says which: a
+#      member with no contribution, or a proposal whose row `charter shape` has not written
 #  23  nobody said this run may merge into that repository. `policy deliver-to` grants proposing,
 #      and landing work in the trunk is a third act a human takes
 #  24  the delivery is not the thing that was graded, or the source will not take it. An answer
@@ -108,6 +110,9 @@
 #  55  `charter introduce` found nothing at the base that could meet the clause: a `Gate` the base
 #      does not name, a `Judged` clause with no bench, or a bench of only the member who proposed it.
 #      The fix is a line at the base, which only a new run reads
+#  56  a member's contribution holds a line out of shape, so floor kept it whole and refused it, at
+#      `charter shape` and at `authorise`. Not 21: that is no model answering, and this is one that
+#      answered outside the seven words a contribution is written in
 #
 # Eight through twelve are one stage and five remedies: write a requirement down, select a target it
 # governs, or start again. Collapsing them would make the exit code say *authorisation refused* and
@@ -251,7 +256,7 @@ usage_work() {
   run.sh reconcile [accept <sha> <reason>]
                                   what else is open, or a person accounting for a stray commit
   run.sh authorise                refuse a run describing no work, or whose selection moved —
-                                  exit 1, 5, 8, 9, 10, 11, 12, 17, 20, 27, 49, 50 or 51
+                                  exit 1, 5, 8, 9, 10, 11, 12, 17, 20, 21, 27, 49, 50, 51 or 56
 EOF
 }
 
@@ -2502,7 +2507,18 @@ judged() {
     refuse_an_item_another_host_holds "$dir"
 
     check_charter "$dir"
+    hear_and_record_if_the_panel_proposed "$dir"
     ask_pinned_judges "$dir"
+}
+
+#
+# **`judged` hears only when the panel proposed a clause**, since only then can a hand have struck one.
+# It acts on what it heard, so it records it, and a refusal on the way exits with its own code.
+#
+hear_and_record_if_the_panel_proposed() {
+    [ -n "$(panel_clauses "$1")" ] || return 0
+    hear_the_item "$1"
+    record_the_hearing "$1"
 }
 
 #
@@ -2526,6 +2542,7 @@ ask_pinned_judges() {
     # the only thing this loop produces that the caller needs.
     while read -r id who command; do
         [ -n "$who" ] || continue
+        passed_over_as_struck "$dir" "$id" "$who" && continue
         judge_or_recount "$dir" "$ref" "$id" "$who" "$command" || unmet=$((unmet + 1))
     done <<EOF
 $bench
@@ -2534,6 +2551,12 @@ EOF
     [ "$unmet" -eq 0 ] && return 0
     note "judged clauses no judge approved: $unmet"
     return 39
+}
+
+# A clause a hand struck is no part of the bar, so its bench is passed over, and that is said.
+passed_over_as_struck() {
+    a_hand_struck_the_clause "$1" "$2" || return 1
+    note "a hand struck [$(clause_text "$(charter_file "$1")" "$2")], so [$3] was not asked it"
 }
 
 #
@@ -2883,6 +2906,7 @@ write_brief() {
     printf 'run %s\nclause %s\ncandidate %s\nbase %s\njudge %s\nround %s\n\n' \
         "$(recorded_id "$1")" "$2" "$3" "$(bootstrap_base "$1")" "$4" "$(next_round "$1" "$2" "$4")"
     say_the_charter "$1"
+    say_what_a_hand_struck "$1"
 
     hand_over_the_item "$1"
 
@@ -2900,6 +2924,18 @@ write_brief() {
 say_the_charter() {
     printf -- '--- the charter this work is graded against ---\n'
     cat "$(charter_file "$1")"
+}
+
+#
+# **A clause a hand struck is named after the charter**, which still holds it, since a no never changes
+# the file. Only a run holding a struck clause gets these lines, so any other brief is as it was.
+#
+say_what_a_hand_struck() {
+    panel_clauses "$1" | while IFS= read -r struck_text; do
+        struck_by_a_hand "$1" "$struck_text" || continue
+        printf '\n--- a clause a hand struck ---\n%s\n' "$struck_text"
+        printf 'A hand struck this clause from this run. It is no part of the bar, whatever the charter above holds.\n'
+    done
 }
 
 # What a shaping member reads, as a judge is handed it: the charter, then the item fenced as data.
@@ -3143,9 +3179,50 @@ status() {
     say_the_run "$dir"
     say_what_ran "$dir"
     hear_if_introduced "$dir"
+    say_what_was_decided "$dir"
     say_what_met "$dir" "$here" "$read_at"
     say_what_is_missing "$dir" "$read_at"
 }
+
+#
+# **What a person decided, for a run that was shaped**: who sat and who a missing label left out, then
+# each clause nothing derived, who proposed it, and what a hand said. Derived clauses stay under *met*.
+#
+say_what_was_decided() {
+    [ -f "$(seats_file "$1")" ] || return 0
+
+    printf '\ndecided\n'
+    say_who_sat "$1"
+    say_each_clause_a_hand_decides "$1"
+}
+
+say_who_sat() {
+    awk '$2 == "sat"  { printf "  sat       %s\n", $1 }
+         $2 == "left" { printf "  left out  %s: no label [%s] a named hand put on the item\n", $1, $3 }' "$(seats_file "$1")"
+}
+
+say_each_clause_a_hand_decides() {
+    introduced_clauses "$(charter_file "$1")" | while read -r _ decided_id decided_kind decided_text; do
+        printf '  %s `%s`, proposed by %s: %s\n' "$decided_kind" "$decided_text" \
+            "$(or_none "$(joined "$(proposers_of "$(charter_file "$1")" "$decided_id")" ', ')")" \
+            "$(what_a_hand_said "$1" "$decided_text")"
+    done
+}
+
+#
+# One of four, from the hearing `status` already made: a no stands, a yes stands, the question is out
+# and neither stands, or no question for it is on the item.
+#
+what_a_hand_said() {
+    decided_asked=$(question_id "$1" authorisation "$2")
+    struck_by_a_hand "$1" "$2" && { no_to "$decided_asked" | who_said_it struck; return 0; }
+    heard_a_yes_to "$decided_asked" && { yes_to "$decided_asked" | who_said_it yes; return 0; }
+    was_asked "$decided_asked" && { printf 'asked, no answer yet'; return 0; }
+
+    printf 'never asked'
+}
+
+who_said_it() { awk -F'\t' -v said="$1" '{ printf "%s%s by %s at %s", sep, said, $1, $2; sep = "; " }'; }
 
 say_the_run() {
     printf 'run       %s\n' "$(recorded_id "$1")"
@@ -3174,6 +3251,7 @@ say_what_met() {
     status_met=
     for status_id in $(clause_ids_in "$status_file"); do
         [ -z "$(what_it_lacks "$1" "$status_file" "$status_id" "$2" "$3")" ] || continue
+        a_hand_struck_the_clause "$1" "$status_id" && continue
         clause_and_what_met_it "$1" "$status_id"
         status_met=yes
     done
@@ -5318,8 +5396,20 @@ what_floor_recorded() {
     printf '\n**What floor recorded.**\n\n'
     printf -- '- run `%s`\n' "$(recorded_id "$1")"
     printf -- '- commit `%s`\n' "$2"
+    say_who_shaped_it "$1"
     printf -- '- charter `%s`, each clause beside what met it:\n' "$(charter_version "$1")"
     each_clause_and_what_met_it "$1"
+}
+
+# One line for a run that was shaped: who sat, and who a missing label left out.
+say_who_shaped_it() {
+    [ -f "$(seats_file "$1")" ] || return 0
+
+    printf -- '- shaped by %s%s\n' "$(or_none "$(joined "$(members_who_sat "$1")" ', ')")" "$(who_a_label_left_out "$1")"
+}
+
+who_a_label_left_out() {
+    awk '$2 == "left" { printf "%s%s, no label [%s]", (n++ ? "; " : "; left out: "), $1, $3 }' "$(seats_file "$1")"
 }
 
 #
@@ -5339,8 +5429,29 @@ clause_ids_in() { awk '$1 == "clause" { print $2 }' "$1" 2>/dev/null; }
 # One clause of the run `$1`, and what met it.
 clause_and_what_met_it() {
     met_in=$(charter_file "$1")
-    printf '  - %s `%s`: %s%s\n' "$(clause_kind "$met_in" "$2")" "$(clause_text "$met_in" "$2")" \
-        "$(what_met "$met_in" "$2")" "$(each_yes_it_stands_on "$1" "$2")"
+    printf '  - %s `%s`: %s\n' "$(clause_kind "$met_in" "$2")" "$(clause_text "$met_in" "$2")" \
+        "$(what_a_clause_stands_on "$1" "$2")"
+}
+
+#
+# What met a clause, each yes it stands on, and who proposed it when the panel did. **A clause a hand
+# struck stands on the strike alone**: nothing met it, and nothing had to.
+#
+what_a_clause_stands_on() {
+    a_hand_struck_the_clause "$1" "$2" && { each_strike_of "$1" "$2"; return 0; }
+    printf '%s%s%s' "$(what_met "$(charter_file "$1")" "$2")" "$(each_yes_it_stands_on "$1" "$2")" \
+        "$(who_proposed_a_panel_clause "$1" "$2")"
+}
+
+each_strike_of() {
+    no_to "$(question_id "$1" authorisation "$(clause_text "$(charter_file "$1")" "$2")")" \
+        | awk -F'\t' '{ printf "%sstruck by %s at %s: `%s`", sep, $1, $2, $3; sep = "; " }'
+}
+
+# Who proposed a clause the panel proposed. Nothing for any other: a worker's clause is no panel's.
+who_proposed_a_panel_clause() {
+    is_a_panel_clause "$1" "$(clause_text "$(charter_file "$1")" "$2")" || return 0
+    printf '; proposed by %s' "$(joined "$(proposers_of "$(charter_file "$1")" "$2")" ', ')"
 }
 
 #
@@ -5529,7 +5640,10 @@ what_its_answerer_lacks() {
 # It reads the hearing its caller heard before the capture. It never asks the source, because an exit
 # in here would leave only the capture, and it never takes a yes from the ledger.
 #
+# **A clause a hand struck lacks nothing, and binds nothing**, whatever yes stands beside the no.
+#
 what_an_introduced_clause_lacks() {
+    struck_by_a_hand "$1" "$text" && return 0
     [ "$(clause_kind "$2" "$3")" = Gate ] \
         && { printf 'introduced: [%s] rests on no pin, so no ref can satisfy it\n' "$text"; return; }
 
@@ -6521,6 +6635,7 @@ authorise() {
     # **Who may answer is heard before anything is asked**, so floor's own first question never makes
     # a hand an author. Only a run holding a clause nothing derived needs a hand at all.
     #
+    refuse_while_shaping_is_unfinished "$run_dir"
     hear_and_record_if_introduced "$run_dir"
     introduced=$(unauthorised_clauses "$run_dir" "$charter_path")
     [ -z "$introduced" ] || {
@@ -7381,8 +7496,12 @@ introduced_clauses() {
 
 # Introduced, and still unanswered. §2.2's authorisation answer says the clause may exist — nothing
 # about whether it was met, which is completion's and arrives through the same channel.
+#
+# A clause a hand struck is not waited on, and not asked again: nothing is left for a yes to decide.
+#
 unauthorised_clauses() {
     introduced_clauses "$2" | while read -r _ id _ text; do
+        struck_by_a_hand "$1" "$text" && continue
         authorised_by_a_human "$1" "$text" || printf '%s %s\n' "$id" "$text"
     done
 }
@@ -7407,6 +7526,44 @@ yes_to() {
         | awk -F'\t' -v question="$1" '$1 == "heard" && $2 == question { print $3 "\t" $4 "\t" $5 }'
 }
 
+# Each no the hearing heard to one question, in the same shape.
+no_to() {
+    printf '%s\n' "$heard_lines" \
+        | awk -F'\t' -v question="$1" '$1 == "struck" && $2 == question { print $3 "\t" $4 "\t" $5 }'
+}
+
+#
+# **A clause a hand struck binds nothing in this run**: the panel proposed it, and a no to its question
+# stands in what was heard. Read from the hearing and never the ledger, so a no deleted reads as gone.
+#
+struck_by_a_hand() {
+    is_a_panel_clause "$1" "$2" || return 1
+    no_to "$(question_id "$1" authorisation "$2")" | grep -q .
+}
+
+# The same, of a clause the charter holds under an id. One derivation pinned is never struck.
+a_hand_struck_the_clause() {
+    has_record "$(charter_file "$1")" pin "$2" && return 1
+    struck_by_a_hand "$1" "$(clause_text "$(charter_file "$1")" "$2")"
+}
+
+#
+# **Only a clause the panel proposed takes a no**: one a `shape.proposal` row says entered. So a run no
+# member shaped hears as it always did, and a no to a worker's clause is no yes.
+#
+questions_a_no_may_strike() {
+    panel_clauses "$1" | while IFS= read -r strikable_text; do
+        printf '%s\n' "$(question_id "$1" authorisation "$strikable_text")"
+    done
+}
+
+# The words of each clause a panel proposed and the charter took, one a line, from the rows.
+panel_clauses() {
+    awk -F'\t' '$2 == "shape.proposal" && $5 == "0" { sub(/^[^ ]+ /, "", $4); print $4 }' "$(evidence_file "$1")" 2>/dev/null
+}
+
+is_a_panel_clause() { panel_clauses "$1" | grep -qxF -e "$2"; }
+
 #
 # **Every answer, heard once, against who may answer**: the hands the base names, then whom floor
 # skips, then every answer at once. No question opens or closes a window over them, so questions asked
@@ -7426,6 +7583,7 @@ hear_the_item() {
     refuse_when_every_hand_is_skipped "$heard_hands" "$heard_speakers"
 
     answers_to "$(item_id "$1")"
+    heard_strikable=$(questions_a_no_may_strike "$1")
     heard_lines=$(hear_every_answer)
 }
 
@@ -7576,20 +7734,24 @@ hear_every_answer() {
     [ -n "$heard_answers" ] || return 0
 
     printf '%s\n' "$heard_answers" \
-        | hands="$heard_hands" speakers="$heard_speakers" awk -f "$PLUGIN_ROOT/lib/hearing.awk"
+        | hands="$heard_hands" speakers="$heard_speakers" strikable="$heard_strikable" \
+            awk -f "$PLUGIN_ROOT/lib/hearing.awk"
 }
 
 #
-# What the hearing heard, as rows in the ledger: `answer.heard` for each yes, with who, when and the
-# line, and `answer.unread` for each named hand's comment that authorised nothing, with who, when and
-# why. **Never a note on the item** — a note there is how floor once read its own words as a yes, #373.
+# What the hearing heard, as rows in the ledger: `answer.heard` for each yes and each no, with who, when
+# and the line, and `answer.unread` for each named hand's comment that authorised nothing, with who,
+# when and why. **Never a note on the item** — a note there is how floor once read its own words as a
+# yes, #373.
 #
-# **No reader decides from a row.** Each hears the source again, so a yes deleted since reads as gone.
+# **No reader decides from a row.** Each hears the source again, so a yes or a no deleted since reads
+# as gone.
 #
 record_the_hearing() {
     while IFS="$TAB" read -r heard_kind heard_a heard_b heard_c heard_d; do
         case $heard_kind in
             heard)  record_once "$1" answer.heard  "$heard_b" 0 "$heard_c" "$heard_d" ;;
+            struck) record_once "$1" answer.heard  "$heard_b" 0 "$heard_c" "$heard_d" ;;
             unread) record_once "$1" answer.unread "$heard_a" 1 "$heard_b" "$heard_c" ;;
         esac
     done <<LINES
@@ -7631,7 +7793,7 @@ CLAUSES
 # a blocked run that authorises again does not pile them up.
 ask_to_authorise() {
     asked_about=$(question_id "$1" authorisation "$2")
-    said=$(source_says ask "$(item_id "$1")" "$asked_about" "$(the_authorisation_question "$2" "$asked_about")" 2>&1)
+    said=$(source_says ask "$(item_id "$1")" "$asked_about" "$(the_authorisation_question "$2" "$asked_about" "$1")" 2>&1)
     asked=$?
 
     [ "$asked" -eq 0 ] && return 0
@@ -7650,10 +7812,81 @@ ask_to_authorise() {
 
 #
 # The question, then the one line that answers it, fenced so a copy is exact. The words say who may
-# answer, and how an answer is taken back.
+# answer, and how an answer is taken back. A clause the panel proposed asks in the panel's words.
 #
 the_authorisation_question() {
+    is_a_panel_clause "$3" "$1" && { the_panel_question "$3" "$1" "$2"; return 0; }
     printf 'May this clause exist? Nothing derives it: %s.\n\nA hand named in `.foundry/practice` authorises it with this line alone:\n\n```\nyes %s\n```\n\nDelete the line before delivery to withdraw it.\n' "$1" "$2"
+}
+
+#
+# **A clause the panel proposed asks in more words**: what the panel said about it, then the yes, then
+# the no that strikes it. The words are fixed once the run is shaped, so a resume asks the same question.
+#
+the_panel_question() {
+    printf 'May this clause exist? Nothing derives it: %s.\n\n' "$2"
+    what_the_panel_said "$1" "$2"
+    printf 'A hand named in `.foundry/practice` authorises it with this line alone:\n\n```\nyes %s\n```\n\n' "$3"
+    printf 'Or a hand strikes it from this run with this line alone:\n\n```\nno %s\n```\n\n' "$3"
+    printf 'A no strikes it whatever yes stands beside it. Delete a yes before delivery to withdraw it. A no holds until it is deleted.\n'
+}
+
+#
+# In the order `shaped/seats` holds the members: who proposed it and their lines, each line that names
+# no proposal, and each proposal that did not enter, with why. **A member's line is printed as read,
+# indented four spaces**, so it renders as code, and no member can open a line with floor's marker.
+#
+what_the_panel_said() {
+    say_who_proposed_it "$1" "$2"
+    say_what_names_no_proposal "$1"
+    say_what_did_not_enter "$1"
+}
+
+say_who_proposed_it() {
+    members_who_sat "$1" | while IFS= read -r said_member; do
+        said_lines=$(the_lines_of "$1" "$said_member" | lines_proposing "$2")
+        [ -n "$said_lines" ] || continue
+        printf 'Proposed by %s:\n\n%s\n\n' "$said_member" "$said_lines"
+    done
+}
+
+say_what_names_no_proposal() {
+    members_who_sat "$1" | while IFS= read -r said_member; do
+        said_lines=$(the_lines_of "$1" "$said_member" | awk -F'\t' '$1 == 0 && $2 != "nothing" { printf "    %s %s\n", $2, $3 }')
+        [ -n "$said_lines" ] || continue
+        printf 'Names no proposal, from %s:\n\n%s\n\n' "$said_member" "$said_lines"
+    done
+}
+
+say_what_did_not_enter() {
+    members_who_sat "$1" | while IFS= read -r said_member; do
+        member_said=$(the_lines_of "$1" "$said_member")
+        printf '%s\n' "$member_said" | awk -F'\t' '$2 == "propose" { print $1 "\t" $3 }' \
+            | while IFS="$TAB" read -r left_number left_words; do
+                left_why=$(why_it_did_not_enter "$1" "$left_words") || continue
+                printf 'Did not enter, from %s (%s):\n\n' "$said_member" "$left_why"
+                printf '%s\n' "$member_said" | lines_of_proposal "$left_number"
+                printf '\n'
+            done
+    done
+}
+
+# A member's contribution, read through the one grammar: `<proposal>\t<word>\t<text>` a line.
+the_lines_of() { awk -f "$PLUGIN_ROOT/lib/contribution.awk" "$(contribution_file "$1" "$2")" 2>/dev/null; }
+
+# The lines of each proposal holding these words, in any kind, indented as read.
+lines_proposing() {
+    words=$1 awk -F'\t' '
+        $2 == "propose" { t = $3; sub(/^[^ ]+ /, "", t); if (t "" == ENVIRON["words"] "") mine[$1] = 1 }
+        $1 in mine      { printf "    %s %s\n", $2, $3 }'
+}
+
+lines_of_proposal() { awk -F'\t' -v n="$1" '$1 == n { printf "    %s %s\n", $2, $3 }'; }
+
+# Why a proposal did not enter, from its row. Nothing, and 1, for one that entered.
+why_it_did_not_enter() {
+    words=$2 awk -F'\t' '$2 == "shape.proposal" && $4 "" == ENVIRON["words"] "" && $5 == "1" { print $7; found = 1; exit }
+                         END { exit !found }' "$(evidence_file "$1")" 2>/dev/null
 }
 
 # The source holds this question in other words, and will not put it twice. A run that asked before
@@ -8606,9 +8839,8 @@ enter_what_the_panel_may() {
 # Every proposal a seated member made, as `<member>\t<kind>\t<text>`, in the order the members sat.
 every_proposal() {
     members_who_sat "$1" | while IFS= read -r proposing_member; do
-        awk -f "$PLUGIN_ROOT/lib/contribution.awk" "$(contribution_file "$1" "$proposing_member")" \
-            | member=$proposing_member awk -F'\t' '$2 == "propose" {
-                  kind = $3; sub(/ .*/, "", kind); print ENVIRON["member"] "\t" kind "\t" substr($3, length(kind) + 2) }'
+        the_lines_of "$1" "$proposing_member" | member=$proposing_member awk -F'\t' '$2 == "propose" {
+            kind = $3; sub(/ .*/, "", kind); print ENVIRON["member"] "\t" kind "\t" substr($3, length(kind) + 2) }'
     done
 }
 
@@ -8712,6 +8944,29 @@ members_no_pass_can_ask() {
 
 # Lines one after another, with `$2` between each.
 joined() { printf '%s\n' "$1" | by=$2 awk 'NF { printf "%s%s", sep, $0; sep = ENVIRON["by"] }'; }
+
+#
+# **Nothing is asked of a hand while a shaping is unfinished.** A run whose members sat is shaped once
+# each has a contribution, none refused, and each proposal its row. `charter shape` finishes either.
+#
+refuse_while_shaping_is_unfinished() {
+    [ -f "$(seats_file "$1")" ] || return 0
+
+    refuse_a_refused_contribution "$1"
+    refuse_a_member_with_no_contribution "$1"
+    refuse_a_proposal_with_no_row "$1"
+}
+
+# 21 as well, and it says which: here every member answered, and the row shaping owes is missing.
+refuse_a_proposal_with_no_row() {
+    panel_said=$(every_proposal "$1")
+    rowless=$(proposals_without_a_row "$1" | head -n 1 | tr '\t' ' ')
+    [ -z "$rowless" ] && return 0
+
+    note "the panel proposed [$rowless], and no row says what became of it, so this run is not shaped yet"
+    note "each member answered: \`charter shape\` writes the row, and nothing is asked of a hand until it has"
+    exit 21
+}
 
 #
 # The work source — RFC-001 §2.1. Where a work item comes from, where a delivery is reported, and
