@@ -24,7 +24,8 @@
 #      none that names a judge
 #   9  a clause grades no selected target, so it is no bar
 #  10  the selection moved after it was authorised — that is a new run, not this one
-#  11  a clause is introduced and nothing can ask a human to authorise it
+#  11  a clause is introduced and a human owns it: its question is on the item, and a named hand
+#      answers where the item is, with the line the question prints
 #  12  the detector yields a gate the charter holds no clause for — re-derive
 #  13  the run directory was renamed, so the grants a human gave it are not there
 #  14  a gate the charter pins did not pass — an answer, not a refusal
