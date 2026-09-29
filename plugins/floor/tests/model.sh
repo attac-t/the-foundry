@@ -8156,7 +8156,8 @@ a_plugin_shaping() {
 #
 # A shaping member for this suite. It reads which member it is from its brief, keeps that brief and
 # where it ran, then answers as its case wrote: `<member>.says` on stdout, `<member>.err` on stderr,
-# `<member>.code` as its exit. It waits five seconds first while `<member>.hold` is there.
+# `<member>.code` as its exit. While `<member>.hold` is there it first writes its own process to
+# `<member>.held`, whole, and waits five seconds.
 #
 a_member_answering_from() {
   cat <<STUB
@@ -8167,7 +8168,7 @@ a_member_answering_from() {
   n=\$(grep -c . "\$d/\$m.calls")
   cp "\$FOUNDRY_BRIEF" "\$d/\$m.handed-\$n"
   { pwd; printf 'holds [%s]\n' "\$(ls -A)"; git rev-parse --git-dir; } > "\$d/\$m.room-\$n" 2>&1
-  [ ! -f "\$d/\$m.hold" ] || { : > "\$d/\$m.held"; sleep 5; }
+  [ ! -f "\$d/\$m.hold" ] || { printf '%s\n' "\$\$" > "\$d/\$m.held.new" && mv "\$d/\$m.held.new" "\$d/\$m.held"; sleep 5; }
   [ ! -f "\$d/\$m.err" ] || cat "\$d/\$m.err" >&2
   [ ! -f "\$d/\$m.says" ] || cat "\$d/\$m.says"
   exit "\$(cat "\$d/\$m.code" 2>/dev/null || printf 0)"
@@ -10925,6 +10926,47 @@ leave_the_bench_pass() {
   rm -rf "$src/claims/$1" "$src/labels/$1" "$src/items/$1" "$src/answers/$1" "$src/questions/$1"
 }
 
+# The last line a pass wrote in run `$1`, read from its own file, so a run the checkout let go answers.
+last_pass_line_of() { awk -F'\t' '$3 ~ /^pass\./ { last = $3 " " $4 } END { print last }' "$1/observations" 2>/dev/null; }
+
+# Every run in this suite's home that read item `$1`, one a line.
+runs_for_item() {
+  for read_by in "$home"/runs/*/source; do
+    [ "$(sed -n 1p "$read_by" 2>/dev/null)" != "$1" ] || printf '%s\n' "${read_by%/source}"
+  done
+}
+
+#
+# **A repository naming no member is shaped by nobody, and its pass changes one way: 11 at `open` waits.**
+# The worker's clause is asked in A1's words, nothing is written for shaping, and the brief is as it was.
+#
+a_pass_on_a_repository_naming_no_member_waits_at_11() {
+  a_bench_pass bpnone 1234 || { skip "a pass naming no member — git could not make a repo here"; return; }
+  said=$(bench_pass "$tmp/bpnone")
+
+  is     "a pass naming no member asks the clause at open"         "$(questions_in 1234)" "1"
+  has    "and waits on it, 47, where it stopped at 11"             "$said" "exit=47"
+  has    "writing the wait on the workspace, with its code"        "$(last_pass_line_of "$bprun")" "pass.waiting item=1234 why=workspace code=11"
+  is     "and the checkout still points at the run that waits"     "$(floor "$tmp/bpnone" path)" "$bprun"
+  absent "a pass naming no member writes nothing for shaping"      "$bprun/shaped"
+  is     "and the ledger holds no shaping row"                     "$(grep -c '	shape\.' "$bprun/evidence")" "0"
+  question=$(cat "$src/questions/1234/$(basename "$bprun").authorisation.$(clause_of 'a stranger can follow it')" 2>/dev/null)
+  has    "the worker's clause is asked in A1's words"              "$question" "Delete the line before delivery to withdraw it."
+  lacks  "and its question has no no line"                         "$question" "Or a hand strikes it"
+  is     "status for a run no member shaped goes from ran to met, with no decided" \
+         "$(floor "$tmp/bpnone" status | grep -xE 'ran|decided|met|missing' | tr '\n' ' ')" "ran met missing "
+
+  the_hand_authorises_the_benched_clause 1234
+  said=$(FOUNDRY_PASS_COMMAND=true bench_pass "$tmp/bpnone")
+  has    "the yes resumes the run that waited at the workspace"    "$said" "this pass resumes [1234] after [pass.waiting workspace]"
+  has    "and delivers it"                                         "$said" "exit=0"
+  is     "so the item had one run"                                 "$(runs_for_item 1234 | grep -c .)" "1"
+  has    "the judge was handed the charter"                        "$(cat "$bprun"/judged/*.brief 2>/dev/null)" "--- the charter this work is graded against ---"
+  lacks  "and nothing in its brief named as struck"                "$(cat "$bprun"/judged/*.brief 2>/dev/null)" "a clause a hand struck"
+  leave_the_bench_pass 1234
+}
+a_pass_on_a_repository_naming_no_member_waits_at_11
+
 #
 # **A pass meets a `Judged` clause a hand said yes to, with no operator verb.** The clause carries its
 # bench as plain `judge` records, so `judged` asks them, and `deliver` hears the yes still standing. The
@@ -10932,7 +10974,7 @@ leave_the_bench_pass() {
 #
 a_pass_delivers_a_clause_its_bench_approved() {
   a_bench_pass bpdeliver 1231 || { skip "a benched pass — git could not make a repo here"; return; }
-  has "the next pass opens the work again and asks" "$(bench_pass "$tmp/bpdeliver")" "exit=11"
+  has "the next pass opens the work again and asks" "$(bench_pass "$tmp/bpdeliver")" "exit=47"
   the_hand_authorises_the_benched_clause 1231
 
   has "a pass after the yes delivers" "$(FOUNDRY_PASS_COMMAND=true bench_pass "$tmp/bpdeliver")" "exit=0"
@@ -10950,7 +10992,7 @@ a_pass_delivers_a_clause_its_bench_approved
 #
 a_pass_resumes_a_delivery_nobody_could_hear() {
   a_bench_pass bpcut 1232 || { skip "a pass cut off at deliver — git could not make a repo here"; return; }
-  has "the next pass opens the work again and asks" "$(bench_pass "$tmp/bpcut")" "exit=11"
+  has "the next pass opens the work again and asks" "$(bench_pass "$tmp/bpcut")" "exit=47"
   the_hand_authorises_the_benched_clause 1232
 
   has    "the source cut off at deliver stops it at 20" \
@@ -10972,7 +11014,7 @@ a_pass_resumes_a_delivery_nobody_could_hear
 #
 a_pass_resumes_a_delivery_whose_hand_became_floors_login() {
   a_bench_pass bplogin 1233 || { skip "a pass on floor's own login — git could not make a repo here"; return; }
-  has "the next pass opens the work again and asks" "$(bench_pass "$tmp/bplogin")" "exit=11"
+  has "the next pass opens the work again and asks" "$(bench_pass "$tmp/bplogin")" "exit=47"
   the_hand_authorises_the_benched_clause 1233
 
   said=$(FOUNDRY_PASS_COMMAND="printf 'pat\\n' > '$tmp/bplogin.floor'" bench_pass "$tmp/bplogin")
@@ -13218,6 +13260,470 @@ reach  cat:judge  sh bin/bench.sh
   lacks  "and a judge's brief is as it was"                        "$(cat "$sp_run"/judged/*.handed 2>/dev/null)" "a clause a hand struck"
 }
 a_repository_naming_no_member_is_shaped_by_nobody
+
+# --- a pass shapes before it opens ---
+#
+# **A pass runs `charter shape` between `charter derive` and `open`, and routes its code.** Each case here
+# drives `run.sh pass` a wake at a time, through the plugin tree, on a repository offering its item.
+
+#
+# A repository a pass carries through shaping, on a source that can land. Its practice offers item `$2`,
+# labelled `$1` by `pat`, names `pat` to answer and grants delivery, or holds `$4` instead.
+#
+# Its judged file is `$3`, and `bin/bench.sh` refuses the clause `$5`.
+#
+a_shaping_pass() {
+  mkdir -p "$src/items" "$src/labels" "$src/claims"
+  make_repo "$tmp/$1" main && set_origin "$tmp/$1" "https://github.com/acme/$1.git" \
+    && git init -q --bare "$tmp/remotes/acme/$1.git" 2>/dev/null \
+    && mkdir -p "$tmp/$1/.foundry" "$tmp/$1/bin" \
+    && commit_file "$tmp/$1" .foundry/gates 'tests  true
+' && commit_file "$tmp/$1" bin/bench.sh "$(a_bench_judge "$tmp/$1.asked" "${5:-}")" \
+    && commit_file "$tmp/$1" .foundry/judged "$3" \
+    && commit_file "$tmp/$1" .foundry/practice "${4:-offer $1 pat
+authorise pat
+deliver https://github.com/acme/$1.git}" && as_fetched "$tmp/$1" || return 1
+
+  printf 'Shaped item %s\n' "$2" > "$src/items/$2"
+  printf '%s\t2026-09-29T00:00:00Z\tpat\n' "$1" > "$src/labels/$2"
+  sp_repo=$tmp/$1 sp_item=$2 sp_source=$(a_source_that_lands "$1") sp_run=
+}
+
+# A pass through the plugin tree, on the case's repository and source, and its exit on the last line.
+sp_pass() {
+  ( cd "$sp_repo" && FOUNDRY_HOME="$home" FOUNDRY_RUN="" FOUNDRY_WHO="" FOUNDRY_SOURCE="$sp_source" \
+      FOUNDRY_PASS_TRIES="${FOUNDRY_PASS_TRIES:-9}" FOUNDRY_PASS_BEAT=1 sh "$tmp/a plugin/bin/run.sh" pass 2>&1 )
+  printf '\nexit=%s' "$?"
+}
+
+# The run the checkout points at, kept as `sp_run` for the shaping helpers that read one.
+sp_points_at() { sp_run=$(floor "$sp_repo" path); }
+
+# A pass through the plugin tree, killed with the member call it waits on once `$1` names that call's
+# process, since the call would outlive the pass and write its row. Then its marks are aged.
+kill_a_shaping_pass() {
+  rm -f "$1"
+  ( cd "$sp_repo" || exit 9
+    FOUNDRY_HOME="$home" FOUNDRY_RUN="" FOUNDRY_WHO="" FOUNDRY_SOURCE="$sp_source" \
+      FOUNDRY_PASS_BEAT=1 FOUNDRY_PASS_COMMAND=true exec sh "$tmp/a plugin/bin/run.sh" pass ) >/dev/null 2>&1 &
+  killed=$!
+
+  waited=0
+  while [ ! -s "$1" ] && [ "$waited" -lt 60 ]; do sleep 1; waited=$((waited + 1)); done
+  kill -9 "$killed" 2>/dev/null
+  kill -9 "$(cat "$1" 2>/dev/null)" 2>/dev/null
+  wait "$killed" 2>/dev/null
+
+  sleep 3
+  date -u +%s | awk '{ print $1 - 600 }' > "$(floor "$sp_repo" path)/pass.alive"
+  age_the_host_mark
+}
+
+# The case's source, answering `receive` once. Asked for it again, nobody can reach it.
+a_source_heard_once() {
+  rm -f "$tmp/$1.received"
+  cat > "$tmp/$1-heard-once.sh" <<STUB
+#!/bin/sh
+[ "\$1" != receive ] || [ ! -f '$tmp/$1.received' ] || exit 3
+[ "\$1" != receive ] || : > '$tmp/$1.received'
+exec sh '$2' "\$@"
+STUB
+  printf '%s' "$tmp/$1-heard-once.sh"
+}
+
+# What a case leaves behind: its delivery, and everything the source keeps for its item.
+sp_leaves() {
+  [ -z "$sp_run" ] || forget_the_delivery "$sp_run"
+  rm -rf "$src/claims/$1" "$src/labels/$1" "$src/items/$1" "$src/answers/$1" "$src/questions/$1"
+}
+
+# **A member that says 1 stops the pass at `shape`, before any work.** The next wake starts it over, and
+# the member writes `nothing`: two attempts, one contribution, and `deliver` with no question.
+a_pass_starts_over_a_member_that_said_1() {
+  a_plugin_shaping psh01 || { skip "a pass and a member that said 1 — the plugin could not be copied"; return; }
+  a_shaping_pass psh01 1401 "$(shape_line ann:late psh01)
+bench  cat:judge
+reach  cat:judge  sh bin/bench.sh
+" || { skip "a pass and a member that said 1 — git could not make a repo here"; return; }
+  member_exits psh01 ann:late 1
+
+  said=$(FOUNDRY_PASS_COMMAND=true sp_pass)
+  sp_points_at
+  has "a member that says 1 stops the pass at shape, 21"         "$said" "exit=21"
+  has "and the pass writes that stop, for the next wake"         "$(last_pass_line_of "$sp_run")" "pass.stopped item=1401 why=shape code=21"
+  is  "the pass shapes before it opens any workspace"            "$(only_slot "$sp_run/units/01/workspace")" ""
+
+  member_says psh01 ann:late 'nothing
+'
+  member_exits psh01 ann:late 0
+  said=$(FOUNDRY_PASS_COMMAND=true sp_pass)
+  has "the next wake resumes after the stop at shape"             "$said" "this pass resumes [1401] after [pass.stopped shape]"
+  has "and, once the member answers, goes on to deliver"         "$said" "exit=0"
+  is  "a pass leaves the member two attempts"                    "$(sp_row_of ann:late | grep -c .)" "2"
+  is  "and one contribution, recorded on the second"             "$(sp_row_of ann:late | sed -n 2p)" "recorded"
+  is  "and asks nothing of a hand"                               "$(questions_in 1401)" "0"
+  sp_leaves 1401
+}
+a_pass_starts_over_a_member_that_said_1
+
+# **A contribution refused lets the run go, 48**: the member answered in prose, and nothing in the run
+# can answer that. The line says why, and nothing another member proposed enters or is asked.
+a_pass_lets_the_run_go_when_a_contribution_is_refused() {
+  a_plugin_shaping psh02 || { skip "a pass and a refused contribution — the plugin could not be copied"; return; }
+  a_shaping_pass psh02 1402 "$(shape_line ann:prose psh02)
+$(shape_line bob:ready psh02)
+bench  cat:judge
+reach  cat:judge  sh bin/bench.sh
+" || { skip "a pass and a refused contribution — git could not make a repo here"; return; }
+  member_says psh02 ann:prose 'I think the page is fine as it is.
+'
+  member_says psh02 bob:ready 'propose Judged the page loads fast
+'
+
+  said=$(FOUNDRY_PASS_COMMAND=true sp_pass)
+  sp_run=$(runs_for_item 1402)
+  has "a contribution in prose lets the pass's run go, 48"       "$said" "exit=48"
+  has "with a line naming shaping and its code"                  "$(last_pass_line_of "$sp_run")" "pass.left item=1402 why=shape code=56"
+  is  "and the checkout no longer points at the refused run"     "$(floor "$sp_repo" path)" ""
+  is  "nothing the other member proposed enters"                 "$(sp_clauses Judged)" ""
+  is  "and nothing is asked of a hand after a refusal"           "$(questions_in 1402)" "0"
+  sp_leaves 1402
+}
+a_pass_lets_the_run_go_when_a_contribution_is_refused
+
+# **A missing contribution is a stop the next wake starts over, and counts.** No lines at 0, a 2, a 3
+# and a member killed each stop the pass at `shape`. Past the bound the item is let go, 46.
+a_pass_starts_over_each_missing_contribution_until_the_bound() {
+  a_plugin_shaping psh03 || { skip "a pass and missing contributions — the plugin could not be copied"; return; }
+  a_shaping_pass psh03 1403 "$(shape_line ann:gone psh03)
+" || { skip "a pass and missing contributions — git could not make a repo here"; return; }
+  member_says psh03 ann:gone "$(printf '\n  \n')
+"
+
+  has "a member printing no lines stops the pass at shape"       "$(FOUNDRY_PASS_TRIES=3 FOUNDRY_PASS_COMMAND=true sp_pass)" "exit=21"
+  sp_points_at
+  member_exits psh03 ann:gone 2
+  has "and the next wake, where it says 2, stops it again"       "$(FOUNDRY_PASS_TRIES=3 FOUNDRY_PASS_COMMAND=true sp_pass)" "exit=21"
+  member_exits psh03 ann:gone 3
+  has "and the next, where it exits 3"                           "$(FOUNDRY_PASS_TRIES=3 FOUNDRY_PASS_COMMAND=true sp_pass)" "exit=21"
+  member_exits psh03 ann:gone 137
+  has "and the next, where it is killed"                         "$(FOUNDRY_PASS_TRIES=3 FOUNDRY_PASS_COMMAND=true sp_pass)" "exit=21"
+  is  "each attempt is missing, and says why" "$(sp_row_of ann:gone | tr '\n' '|')" \
+      "missing: no lines|missing: floor handed it nothing|missing: exited 3|missing: killed by signal 9|"
+
+  has "past the bound the pass lets the item go, 46"             "$(FOUNDRY_PASS_TRIES=3 FOUNDRY_PASS_COMMAND=true sp_pass)" "exit=46"
+  has "saying the bound let it go"                               "$(last_pass_line_of "$sp_run")" "pass.left item=1403 why=tries"
+  is  "and the member was asked once a wake, until then"         "$(times_asked psh03 ann:gone)" "4"
+  sp_leaves 1403
+}
+a_pass_starts_over_each_missing_contribution_until_the_bound
+
+# A resumed pass asks only the member with no contribution: `ann` answered on the first wake and is never
+# called again, and `bob`, silent then, is called on the next.
+a_resumed_pass_asks_only_the_member_it_missed() {
+  a_plugin_shaping psh05 || { skip "a resumed pass and two members — the plugin could not be copied"; return; }
+  a_shaping_pass psh05 1405 "$(shape_line ann:done psh05)
+$(shape_line bob:late psh05)
+" || { skip "a resumed pass and two members — git could not make a repo here"; return; }
+  member_says psh05 ann:done 'nothing
+'
+  member_exits psh05 bob:late 1
+
+  has "one member missing stops the pass at shape too"           "$(FOUNDRY_PASS_COMMAND=true sp_pass)" "exit=21"
+  sp_points_at
+  member_says psh05 bob:late 'nothing
+'
+  member_exits psh05 bob:late 0
+  has "the resumed pass goes on to deliver"                      "$(FOUNDRY_PASS_COMMAND=true sp_pass)" "exit=0"
+  is  "calling only the member it missed: the other ran once"    "$(times_asked psh05 ann:done) $(times_asked psh05 bob:late)" "1 2"
+  sp_leaves 1405
+}
+a_resumed_pass_asks_only_the_member_it_missed
+
+#
+# **A pass killed while a member's call runs asks only that member next, as attempt 2.** Attempt 1's
+# brief is kept, and the member recorded before the kill is not called again.
+#
+a_pass_killed_mid_shaping_asks_the_member_it_cut_short() {
+  a_plugin_shaping psh06 || { skip "a pass killed mid-shaping — the plugin could not be copied"; return; }
+  a_shaping_pass psh06 1406 "$(shape_line ann:done psh06)
+$(shape_line bob:cut psh06)
+" || { skip "a pass killed mid-shaping — git could not make a repo here"; return; }
+  member_says psh06 ann:done 'nothing
+'
+  member_says psh06 bob:cut 'nothing
+'
+  : > "$(member_file psh06 bob:cut hold)"
+  kill_a_shaping_pass "$(member_file psh06 bob:cut held)"
+  rm -f "$(member_file psh06 bob:cut hold)"
+  sp_points_at
+
+  has    "the wake after a pass killed mid-shaping goes on to deliver" "$(FOUNDRY_PASS_COMMAND=true sp_pass)" "exit=0"
+  exists "the member the killed pass cut short keeps its first brief"  "$(attempt_file bob:cut 1 brief)"
+  exists "and is called again as attempt 2"                           "$(attempt_file bob:cut 2 brief)"
+  is     "and the member recorded before the kill is never called again" "$(times_asked psh06 ann:done)" "1"
+  sp_leaves 1406
+}
+a_pass_killed_mid_shaping_asks_the_member_it_cut_short
+
+# **A clause asked at `open` is a wait, 47, never counted.** A no struck one of two proposals and was
+# deleted, so it needs a yes again. Wakes past the bound wait, and the yeses resume the same run.
+a_pass_waits_uncounted_on_proposals_asked_at_open() {
+  a_plugin_shaping psh04 || { skip "a pass waiting at open — the plugin could not be copied"; return; }
+  a_shaping_pass psh04 1404 "$(shape_line ann:keen psh04)
+bench  cat:judge
+reach  cat:judge  sh bin/bench.sh
+" || { skip "a pass waiting at open — git could not make a repo here"; return; }
+  member_says psh04 ann:keen 'propose Judged the page loads fast
+propose Judged the log is quiet
+'
+
+  said=$(FOUNDRY_PASS_TRIES=2 FOUNDRY_PASS_COMMAND=true sp_pass)
+  sp_points_at
+  is  "a pass asks each proposal that entered, at open"          "$(questions_in 1404)" "2"
+  has "and waits on them, 47"                                    "$said" "exit=47"
+  has "writing the wait on the workspace, with 11"               "$(last_pass_line_of "$sp_run")" "pass.waiting item=1404 why=workspace code=11"
+
+  sp_answers strike pat 2999-01-01T00:00:00Z "no $(sp_asks authorisation 'the page loads fast')"
+  has "one struck and one unanswered, the next wake waits"       "$(FOUNDRY_PASS_TRIES=2 FOUNDRY_PASS_COMMAND=true sp_pass)" "exit=47"
+  rm -f "$src/answers/1404/strike"
+  sp_answers other pat 2999-01-01T00:00:01Z "yes $(sp_asks authorisation 'the log is quiet')"
+  has "the no deleted, its clause needs a yes again, so a wake waits" "$(FOUNDRY_PASS_TRIES=2 FOUNDRY_PASS_COMMAND=true sp_pass)" "exit=47"
+  has "and a wake past the bound waits too, uncounted"           "$(FOUNDRY_PASS_TRIES=2 FOUNDRY_PASS_COMMAND=true sp_pass)" "exit=47"
+
+  sp_answers keep pat 2999-01-01T00:00:02Z "yes $(sp_asks authorisation 'the page loads fast')"
+  said=$(FOUNDRY_PASS_TRIES=2 FOUNDRY_PASS_COMMAND=true sp_pass)
+  has "a yes resumes the run that waited"                        "$said" "this pass resumes [1404] after [pass.waiting workspace]"
+  has "and goes on to deliver it"                                "$said" "exit=0"
+  is  "one run for the item, however long it waited"             "$(runs_for_item 1404 | grep -c .)" "1"
+  is  "and its member was asked once"                            "$(times_asked psh04 ann:keen)" "1"
+  sp_leaves 1404
+}
+a_pass_waits_uncounted_on_proposals_asked_at_open
+
+# **Two members proposing one clause stay off its panel through a wait.** The next wake derives again:
+# both proposers carried, the third member its panel, and `check` finding nothing.
+a_pass_carries_both_proposers_through_a_wait() {
+  a_plugin_shaping psh07 || { skip "two proposers and a wait — the plugin could not be copied"; return; }
+  a_shaping_pass psh07 1407 "$(shape_line ann:x psh07)
+$(shape_line bob:y psh07)
+bench  ann:x bob:y cat:z
+reach  ann:x  sh bin/bench.sh
+reach  bob:y  sh bin/bench.sh
+reach  cat:z  sh bin/bench.sh
+" || { skip "two proposers and a wait — git could not make a repo here"; return; }
+  member_says psh07 ann:x 'propose Judged the api is small
+'
+  member_says psh07 bob:y 'propose Judged the api is small
+'
+
+  has "a clause two members proposed is asked, and the pass waits" "$(FOUNDRY_PASS_COMMAND=true sp_pass)" "exit=47"
+  sp_points_at
+  has "the next wake derives again, and waits again"             "$(FOUNDRY_PASS_COMMAND=true sp_pass)" "exit=47"
+  is  "both proposer records survive the derivation"             "$(sp_records proposer 'the api is small')" "ann:x bob:y "
+  is  "the panel is still the third member alone"                "$(sp_records judge 'the api is small')" "cat:z "
+  is  "and check finds nothing after the wait"                   "$(code_of spf charter check)" "0"
+  sp_leaves 1407
+}
+a_pass_carries_both_proposers_through_a_wait
+
+# **A hand strikes one of two proposals: the pass goes on to `deliver`**, and the bench, which would refuse
+# the struck clause, is never asked it.
+a_pass_goes_on_when_a_hand_strikes_one_of_two() {
+  a_plugin_shaping psh08 || { skip "a pass and a strike — the plugin could not be copied"; return; }
+  a_shaping_pass psh08 1408 "$(shape_line ann:x psh08)
+bench  cat:judge
+reach  cat:judge  sh bin/bench.sh
+" '' 'the page loads fast' || { skip "a pass and a strike — git could not make a repo here"; return; }
+  member_says psh08 ann:x 'propose Judged the page loads fast
+propose Judged the log is quiet
+'
+
+  has   "two proposals asked, the pass waits on them"            "$(FOUNDRY_PASS_COMMAND=true sp_pass)" "exit=47"
+  sp_points_at
+  sp_answers strike pat 2999-01-01T00:00:00Z "no $(sp_asks authorisation 'the page loads fast')"
+  sp_answers keep pat 2999-01-01T00:00:01Z "yes $(sp_asks authorisation 'the log is quiet')"
+  has   "a strike and a yes: the pass goes on to deliver"        "$(FOUNDRY_PASS_COMMAND=true sp_pass)" "exit=0"
+  has   "the bench was asked the clause that stands"             "$(cat "$tmp/psh08.asked" 2>/dev/null)" "the log is quiet"
+  lacks "and never the struck one"                               "$(cat "$tmp/psh08.asked" 2>/dev/null)" "the page loads fast"
+  has   "and the pass's request names the strike"                "$(cat "$sp_run/body" 2>/dev/null)" \
+        "\`the page loads fast\`: struck by pat at 2999-01-01T00:00:00Z"
+  sp_leaves 1408
+}
+a_pass_goes_on_when_a_hand_strikes_one_of_two
+
+# **A `Judged` proposal whose bench is only its proposer never enters.** Nothing is asked, the pass goes
+# on to `deliver`, and the row says why.
+a_pass_never_enters_a_proposal_only_its_proposer_could_judge() {
+  a_plugin_shaping psh09 || { skip "a pass and a bench of the proposer — the plugin could not be copied"; return; }
+  a_shaping_pass psh09 1409 "$(shape_line ann:x psh09)
+bench  ann:x
+reach  ann:x  sh bin/bench.sh
+" || { skip "a pass and a bench of the proposer — git could not make a repo here"; return; }
+  member_says psh09 ann:x 'propose Judged the api is small
+'
+
+  has "a proposal only its proposer could judge: the pass goes on to deliver" "$(FOUNDRY_PASS_COMMAND=true sp_pass)" "exit=0"
+  sp_points_at
+  is  "the row says why it never entered"                        "$(sp_took 'Judged the api is small')" "1	only its proposers sit on the bench"
+  is  "and nothing was asked of a hand"                          "$(questions_in 1409)" "0"
+  sp_leaves 1409
+}
+a_pass_never_enters_a_proposal_only_its_proposer_could_judge
+
+# **At a `judged` stop the pass hears first.** A hand struck the clause the bench refused, so the next
+# wake records the no and passes the refusal over. `judged` cannot hear after it: 20, then `deliver`.
+a_pass_at_a_judged_stop_passes_a_struck_clause_over() {
+  a_plugin_shaping psh10 || { skip "a struck clause at a judged stop — the plugin could not be copied"; return; }
+  a_shaping_pass psh10 1410 "$(shape_line ann:x psh10)
+bench  cat:judge
+reach  cat:judge  sh bin/bench.sh
+" '' 'the page loads fast' || { skip "a struck clause at a judged stop — git could not make a repo here"; return; }
+  member_says psh10 ann:x 'propose Judged the page loads fast
+'
+
+  has "a proposal the bench will refuse is asked first"          "$(FOUNDRY_PASS_COMMAND=true sp_pass)" "exit=47"
+  sp_points_at
+  struck_asked=$(sp_asks authorisation 'the page loads fast')
+  sp_answers keep pat 2999-01-01T00:00:00Z "yes $struck_asked"
+  has "after the yes the bench refuses it: a judged stop"        "$(FOUNDRY_PASS_COMMAND=true sp_pass)" "exit=39"
+  sp_answers strike pat 2999-01-01T00:00:01Z "no $struck_asked"
+
+  landing=$sp_source
+  sp_source=$(a_source_heard_once psh10 "$landing")
+  said=$(FOUNDRY_PASS_COMMAND="touch '$tmp/psh10.acted-again'" sp_pass)
+  is     "a pass at a judged stop records the no it acted on" \
+         "$(sp_rows answer.heard | grep -c "^pat	0	2999-01-01T00:00:01Z	no $struck_asked\$")" "1"
+  absent "and passes the struck clause's refusal over, never acting again" "$tmp/psh10.acted-again"
+  has    "then judged, which cannot hear, stops the pass at 20"  "$said" "exit=20"
+
+  sp_source=$landing
+  said=$(FOUNDRY_PASS_COMMAND="touch '$tmp/psh10.acted-again'" sp_pass)
+  has    "the wake after passes it over again, and delivers"     "$said" "exit=0"
+  absent "still never acting again for the struck clause"        "$tmp/psh10.acted-again"
+  is     "and the bench was asked the struck clause only before the no" "$(grep -c 'the page loads fast' "$tmp/psh10.asked")" "1"
+  sp_leaves 1410
+}
+a_pass_at_a_judged_stop_passes_a_struck_clause_over
+
+# **No hand named, and a proposal enters: the pass lets the item go, 49.** Only a line at the base answers
+# that, and only a new run reads the base.
+a_pass_lets_go_a_proposal_nobody_may_answer() {
+  a_plugin_shaping psh11 || { skip "a pass with no hand — the plugin could not be copied"; return; }
+  a_shaping_pass psh11 1411 "$(shape_line ann:x psh11)
+bench  cat:judge
+reach  cat:judge  sh bin/bench.sh
+" "offer psh11 pat
+deliver https://github.com/acme/psh11.git" || { skip "a pass with no hand — git could not make a repo here"; return; }
+  member_says psh11 ann:x 'propose Judged the page loads fast
+'
+
+  said=$(FOUNDRY_PASS_COMMAND=true sp_pass)
+  sp_run=$(runs_for_item 1411)
+  has "a proposal with no hand to answer it lets the item go, 49" "$said" "exit=49"
+  has "and the pass writes why it let 1411 go"                   "$(last_pass_line_of "$sp_run")" "pass.left item=1411 why=workspace code=49"
+  sp_leaves 1411
+}
+a_pass_lets_go_a_proposal_nobody_may_answer
+
+# **Each hand named wrote floor's questions, and a proposal enters: the pass lets the item go, 51.** Only
+# another hand, named at the base, frees it.
+a_pass_lets_go_a_proposal_whose_hand_wrote_the_questions() {
+  a_plugin_shaping psh12 || { skip "a pass whose hand wrote the questions — the plugin could not be copied"; return; }
+  a_shaping_pass psh12 1412 "$(shape_line ann:x psh12)
+bench  cat:judge
+reach  cat:judge  sh bin/bench.sh
+" "offer psh12 pat
+authorise alice
+deliver https://github.com/acme/psh12.git" && an_earlier_question 1412 \
+    || { skip "a pass whose hand wrote the questions — git could not make a repo here"; return; }
+  sp_source=$(a_source_with_accounts psh12)
+  printf 'bot\nalice\n' > "$tmp/psh12.accounts"
+  member_says psh12 ann:x 'propose Judged the page loads fast
+'
+
+  said=$(FOUNDRY_PASS_COMMAND=true sp_pass)
+  sp_run=$(runs_for_item 1412)
+  has "a proposal whose only hand wrote floor's questions lets the item go, 51" "$said" "exit=51"
+  has "and the pass writes why it let 1412 go"                   "$(last_pass_line_of "$sp_run")" "pass.left item=1412 why=workspace code=51"
+  sp_leaves 1412
+}
+a_pass_lets_go_a_proposal_whose_hand_wrote_the_questions
+
+# **At `open`, 27, 20, 50 and 17 each stop the pass, and the next wake starts it over.** A source that
+# cannot say who answered, one nobody can ask, floor's login, and a question in other words.
+a_pass_starts_over_each_stop_at_open() {
+  a_plugin_shaping psh13 || { skip "a pass stopped at open — the plugin could not be copied"; return; }
+  a_shaping_pass psh13 1413 "$(shape_line ann:x psh13)
+bench  cat:judge
+reach  cat:judge  sh bin/bench.sh
+" || { skip "a pass stopped at open — git could not make a repo here"; return; }
+  member_says psh13 ann:x 'propose Judged the page loads fast
+'
+  landing=$sp_source
+
+  sp_source=$(a_source_answering speaker 2)
+  has "a source that cannot say who answered stops the pass at open, 27" "$(FOUNDRY_PASS_COMMAND=true sp_pass)" "exit=27"
+  sp_points_at
+  has "writing the stop at open, with its code"                  "$(last_pass_line_of "$sp_run")" "pass.stopped item=1413 why=workspace code=27"
+
+  sp_source=$landing
+  : > "$tmp/psh13.cut"
+  said=$(FOUNDRY_PASS_COMMAND=true sp_pass)
+  has "the next wake resumes after the stop at open"              "$said" "this pass resumes [1413] after [pass.stopped workspace]"
+  has "and a source nobody can ask stops it again, 20"           "$said" "exit=20"
+  rm -f "$tmp/psh13.cut"
+
+  printf 'pat\n' > "$tmp/psh13.floor"
+  has "floor's login on the only hand stops the next wake, 50"   "$(FOUNDRY_PASS_COMMAND=true sp_pass)" "exit=50"
+  rm -f "$tmp/psh13.floor"
+
+  other_words=$(sp_asks authorisation 'the page loads fast')
+  mkdir -p "$src/questions/1413" && printf 'May it exist, in other words?\n' > "$src/questions/1413/$other_words" \
+    && printf '2026-09-29T00:00:00Z\n' > "$src/questions/1413/$other_words.when"
+  has "the question on the item in other words stops the next, 17" "$(FOUNDRY_PASS_COMMAND=true sp_pass)" "exit=17"
+  rm -f "$src/questions/1413/$other_words" "$src/questions/1413/$other_words.when"
+
+  has "once each is fixed, the pass asks, and waits"             "$(FOUNDRY_PASS_COMMAND=true sp_pass)" "exit=47"
+  sp_leaves 1413
+}
+a_pass_starts_over_each_stop_at_open
+
+#
+# **At `deliver`, 20 and 50 are stops the next wake resumes.** The source is cut off after `judged`, then
+# floor's login moves onto the only hand. Once both are fixed, the pass delivers.
+#
+a_pass_resumes_each_stop_at_deliver() {
+  a_plugin_shaping psh14 || { skip "a pass stopped at deliver — the plugin could not be copied"; return; }
+  a_shaping_pass psh14 1414 "$(shape_line ann:x psh14)
+bench  cat:judge
+reach  cat:judge  sh bin/bench.sh
+" && commit_file "$tmp/psh14" bin/bench.sh "#!/bin/sh
+[ ! -f '$tmp/psh14.cut-after' ] || : > '$tmp/psh14.cut'
+$(a_bench_judge "$tmp/psh14.asked")" && as_fetched "$tmp/psh14" \
+    || { skip "a pass stopped at deliver — git could not make a repo here"; return; }
+  member_says psh14 ann:x 'propose Judged the page loads fast
+'
+
+  has "a proposal asked, the pass waits before it delivers"      "$(FOUNDRY_PASS_COMMAND=true sp_pass)" "exit=47"
+  sp_points_at
+  sp_answers keep pat 2999-01-01T00:00:00Z "yes $(sp_asks authorisation 'the page loads fast')"
+
+  : > "$tmp/psh14.cut-after"
+  has "the source cut off after judged stops the pass at deliver, 20" "$(FOUNDRY_PASS_COMMAND=true sp_pass)" "exit=20"
+  has "writing the stop at deliver, with its code"               "$(last_pass_line_of "$sp_run")" "pass.stopped item=1414 why=deliver code=20"
+  rm -f "$tmp/psh14.cut-after" "$tmp/psh14.cut"
+
+  printf 'pat\n' > "$tmp/psh14.floor"
+  said=$(FOUNDRY_PASS_COMMAND=true sp_pass)
+  has "the next wake resumes the delivery"                       "$said" "this pass resumes [1414] after [pass.stopped deliver]"
+  has "and floor's login on the only hand stops it there, 50"    "$said" "exit=50"
+  rm -f "$tmp/psh14.floor"
+
+  has "once both are fixed, the next wake delivers"              "$(FOUNDRY_PASS_COMMAND=true sp_pass)" "exit=0"
+  sp_leaves 1414
+}
+a_pass_resumes_each_stop_at_deliver
 
 #
 # **Every wake this suite made says where it ended.** Last, so it reads them all. An `ended` reading
