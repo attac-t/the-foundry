@@ -10688,6 +10688,24 @@ every_proposer_recorded_is_held_off_the_panel() {
 every_proposer_recorded_is_held_off_the_panel
 
 #
+# **A member recorded as proposer later leaves its seat.** An `introduce` naming no worker seats the
+# whole bench. A later one naming a member records it as proposer, and in that same write its `judge`
+# and `rounds` records go, so it is never asked.
+#
+a_later_proposer_leaves_its_seat() {
+  meeting mtlater 1230 pat 'bench alice bob carol' \
+    || { skip "a later proposer — git could not make a repo here"; return; }
+  mtf charter introduce Judged 'the search is quick' >/dev/null
+  mtf_by alice charter introduce Judged 'the search is quick' >/dev/null
+  id=$(clause_of 'the search is quick') held=$(charter_of "$mtrun")
+
+  is "a member recorded as proposer later holds no seat" \
+     "$(awk -v id="$id" '($1 == "judge" || $1 == "rounds") && $2 == id && $3 == "alice"' "$held" | grep -c .)" "0"
+  is "and check holds what is left to the bench less its proposer" "$(code_of mtf charter check)" "0"
+}
+a_later_proposer_leaves_its_seat
+
+#
 # **The ledger names every yes floor heard where it acted**: one `answer.heard` row a yes, with who,
 # when and the line, however often it was heard. The request names the same, read from the hearing
 # the grade read.

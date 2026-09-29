@@ -1121,7 +1121,8 @@ write.
 **The proposer is whoever introduced the words first.** A second `introduce` adds only a member the
 panel lacks, each once, and a proposer only where none is recorded. **It never seats a member recorded
 as proposing the clause**, whoever wrote that record: a panel's `charter shape` may record several. A
-clause derivation pinned takes no panel from it.
+member it records as proposer leaves its seat in that same write, since an `introduce` naming no
+worker seats the whole bench. A clause derivation pinned takes no panel from it.
 
 **Re-deriving carries the panel.** Each introduced clause keeps its `judge`, `rounds` and `proposer`
 records through a derivation, since a pass derives again on every resume. A clause derivation pins
@@ -2055,6 +2056,8 @@ account, or another named hand answers.
 A proposer is a name the environment gives, `FOUNDRY_WORKER`, and floor cannot prove that either. A
 false one now strikes a member from a panel at `introduce`. Before, it could only lose a verdict.
 A second worker introducing the same words is no proposer, so it may judge a clause it also proposed.
+A `proposer` record written by hand leaves its member's seat standing, and `check` never asks whether
+a proposer holds one.
 The panel is asked whether or not a yes stands, so a withdrawn clause can spend a member's rounds. A
 clause introduced after `open` is never asked, since only `authorise` asks. A completion question asked
 before its closing paragraph existed reads as other words when asked again: 17. A `Judged` clause

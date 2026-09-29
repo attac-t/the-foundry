@@ -6724,15 +6724,17 @@ refuse_collision() {
     }
 }
 
-# `$5` is any records the clause takes beside it, its panel, landed in the same write.
+# `$5` is any records the clause takes beside it, its panel, and `$6` a member now recorded as proposing
+# it, whose `judge` and `rounds` records on it go. All of it lands in the same write.
 put_clause() {
     file=$1
     line="clause $2 $3 $4"
 
     refuse_collision "$file" "$2" "$4" || exit 6
 
-    beside=${5:-} awk -v id="$2" -v line="$line" \
+    beside=${5:-} unseated=${6:-} awk -v id="$2" -v line="$line" \
         '$1 == "clause" && $2 == id { print line; replaced = 1; next }
+         ENVIRON["unseated"] != "" && ($1 == "judge" || $1 == "rounds") && $2 == id && $3 "" == ENVIRON["unseated"] "" { next }
          { print }
          END { if (!replaced) print line; if (ENVIRON["beside"] != "") print ENVIRON["beside"] }' "$file" 2>/dev/null > "$file.put" \
         || die_unwritable "$file"
@@ -8038,12 +8040,12 @@ introduce_clause() {
         exit 6
     }
 
-    seated=
+    seated= proposer_to_write=
     [ "$kind" = Gate ] && refuse_to_introduce_a_gate "$dir" "$text"
     [ "$kind" = Judged ] && seat_the_bench "$dir" "$file" "$id" "$text"
 
     [ -f "$file" ] || : > "$file" || die_unwritable "$file"
-    put_clause "$file" "$id" "$kind" "$text" "$seated"
+    put_clause "$file" "$id" "$kind" "$text" "$seated" "$proposer_to_write"
 }
 
 #
@@ -8130,6 +8132,9 @@ judged_at_base() {
 # **Who proposed it is whoever introduced the words first**: the worker `FOUNDRY_WORKER` names, when
 # none is recorded yet. A later worker is no proposer. **Every proposer recorded is held off the panel**,
 # whoever wrote it, since a panel's `charter shape` may record several for one clause.
+#
+# **A proposer recorded now leaves its seat in the same write.** A first `introduce` that named no
+# worker seated the whole bench, so the member recorded later may hold one, and must not judge.
 #
 propose() {
     proposer_to_write=

@@ -3404,6 +3404,9 @@ wreck_runner "a second worker written as proposer is caught" \
 wreck_runner "a writer that holds the first proposer alone off the panel is caught" \
   firstproposer '/^seats_to_write() {/,/^}/s#off_the_bench "\$bench_members" "\$proposers" |#off_the_bench "$bench_members" "$(printf "%s\\n" "$proposers" | head -n 1)" |#'
 
+wreck_runner "a member recorded as proposer later that keeps its seat is caught" \
+  keptseat 's#^    put_clause "\$file" "\$id" "\$kind" "\$text" "\$seated" "\$proposer_to_write"$#    put_clause "$file" "$id" "$kind" "$text" "$seated"#'
+
 wreck_runner "a gate the base names, introduced, is caught" \
   introgate '/^refuse_to_introduce_a_gate() {/,/^}/s#^        exit 2$#        return 0#'
 
