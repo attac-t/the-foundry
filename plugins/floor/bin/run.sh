@@ -7166,10 +7166,11 @@ write_the_pin_once() {
 }
 
 # The first words that are not a judge. Each says something about members rather than naming a
-# clause, so a line beginning with one derives none. The resolver passes the same three through whole.
+# clause, so a line beginning with one derives none. The resolver passes the same four through whole.
 declares_no_clause() {
     case "$1" in
         reach|rounds|bench) return 0 ;;
+        shape) return 0 ;;
     esac
     return 1
 }
