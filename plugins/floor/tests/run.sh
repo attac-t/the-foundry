@@ -2229,13 +2229,17 @@ wreck_runner "a gate with no command recorded as a pass is caught" \
 # The count that made `emptycmd` equivalent. Blanking two fields of a two-field record leaves one
 # space, `check` read it as a command, and the spurious drift refused the run before the guard above
 # could — a mutant killed by a refusal that had nothing to do with it.
-# Two functions strip the same way, so each break names the field count before it. Matching
-# `sub(/^ +/` alone would blank both and prove whichever failure the suite noticed first.
+# The break names the field count before the strip, so it reaches only the readers that blank two.
 wreck_runner "a pinned command read as a space when it is empty is caught" \
   spacecmd 's#$2 = ""; sub(/^ +/, "")#$2 = ""; sub(/^  /, "")#'
 
-wreck_runner "a clause read as spaces when it has no text is caught" \
-  spacetext 's#$2 = ""; $3 = ""; sub(/^ +/, "")#$2 = ""; $3 = ""; sub(/^   /, "")#'
+# **`clause_text` reads by `substr`, so this break names its function.** A clause with no text read as
+# a space passes the guard `noname` breaks, and its gate runs under a name of one space.
+#
+# `judge_command` still strips three fields and has no break: its one caller reads nothing and two
+# spaces alike, so no case could tell a mutant from the code.
+wreck_runner "a clause read as a space when it has no text is caught" \
+  spacetext '/^clause_text() {/,/^}/s#print substr(\$0, 10 + length(\$2) + length(\$3))#print substr($0, 10 + length($2) + length($3) - (NF == 3))#'
 
 # One appended line, no pin edited. `check` compares the first record for an id and never sees the
 # second, so without this the charter reads clean and runs a command nothing validated.
