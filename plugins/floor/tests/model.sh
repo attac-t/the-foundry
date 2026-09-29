@@ -13694,7 +13694,7 @@ reach  cat:judge  sh bin/bench.sh
 
   is     "a repository naming no member is shaped with nothing said" "$(spf_says charter shape; printf 'exit=%s' "$?")" "exit=0"
   absent "and nothing written"                                     "$sp_run/shaped"
-  is     "and no shaping row"                                      "$(grep -c '	shape\.' "$sp_run/evidence")" "0"
+  is     "and no shaping row"                                      "$(cat "$sp_run/evidence" 2>/dev/null | grep -c '	shape\.')" "0"
   lacks  "status holds no decided"                                 "$(spf_says status)" "decided"
   spf_by wk charter introduce Judged 'the worker says it is fast' >/dev/null
   spf authorise >/dev/null
