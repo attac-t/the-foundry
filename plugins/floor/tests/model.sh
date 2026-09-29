@@ -12140,7 +12140,7 @@ ends_with_file() { tail -c "$(wc -c < "$2" | tr -d ' ')" "$1" 2>/dev/null | cmp 
 # The ledger's rows of one kind, as `name\tresult\tref\twhy`, and what one member's attempts came to.
 sp_rows()    { awk -F'\t' -v kind="$1" '$2 == kind { print $4 "\t" $5 "\t" $6 "\t" $7 }' "$sp_run/evidence" 2>/dev/null; }
 sp_row_of()  { sp_rows shape.attempt | awk -F'\t' -v who="$1" '$1 == who { print $4 }'; }
-sp_took()    { sp_rows shape.proposal | awk -F'\t' -v said="$1" '$1 == said { print $2 "\t" $4 }'; }
+sp_took()    { sp_rows shape.proposal | said=$1 awk -F'\t' '$1 "" == ENVIRON["said"] "" { print $2 "\t" $4 }'; }
 
 # The ledger less every row of kind `$1` naming `$2`, as a kill before those rows were written leaves it.
 sp_forgets() {
@@ -13236,6 +13236,28 @@ reach  cat:judge  sh bin/bench.sh
   lacks  "and a judge's brief is as it was"                        "$(cat "$sp_run"/judged/*.handed 2>/dev/null)" "a clause a hand struck"
 }
 a_repository_naming_no_member_is_shaped_by_nobody
+
+#
+# **A proposal enters as the one line its member wrote**, backslashes and all. Its clause holds the
+# bytes of the words, its row says it was introduced, and `check` finds nothing forged.
+#
+a_proposal_enters_byte_for_byte() {
+  a_plugin_shaping shp42 || { skip "byte for byte — the plugin could not be copied"; return; }
+  a_shaped_repo shp42 1342 "$(shape_line ann:bytes shp42)
+bench  cat:judge
+reach  cat:judge  sh bin/bench.sh
+" || { skip "byte for byte — git could not make a repo here"; return; }
+  written='the log says a\nb, a\tc and a\\d'
+  member_says shp42 ann:bytes "propose Judged $written
+"
+  spf charter shape >/dev/null
+
+  is "a proposal holding backslashes enters as its member wrote it" \
+     "$(grep -cxF -e "clause $(clause_of "$written") Judged $written" "$sp_run/charter")" "1"
+  is "and its row says it was introduced" "$(sp_took "Judged $written")" "$(printf '0\tintroduced, proposed by ann:bytes')"
+  is "and check finds nothing forged"     "$(code_of spf charter check)" "0"
+}
+a_proposal_enters_byte_for_byte
 
 #
 # **Every wake this suite made says where it ended.** Last, so it reads them all. An `ended` reading

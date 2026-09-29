@@ -3672,6 +3672,9 @@ wreck_runner "decided that leaves the left-out members out is caught" \
 wreck_runner "a member handed its caller's FOUNDRY_RUN is caught" \
   memberrun 's#cd "\$member_room" \&\& unset FOUNDRY_RUN \&\& #cd "$member_room" \&\& #'
 
+wreck_runner "a clause line decoded on its way into the charter is caught" \
+  putdecodes 's#^    line=\$line beside=\${5:-} awk -v id="\$2" #    beside=${5:-} awk -v id="$2" -v line="$line" #; s#print ENVIRON\["line"\]#print line#g'
+
 # The item proposes and the allowlist decides. A run that took an advised target as authorised would
 # let anyone who can file an item choose what the run may touch.
 wreck_runner "an advised target that skips the allowlist is caught" \

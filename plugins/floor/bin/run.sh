@@ -6855,16 +6855,19 @@ refuse_collision() {
 }
 
 # `$5` is any records the clause takes beside it, its panel, landed in the same write.
+#
+# **The line reaches awk through the environment, as `beside` does.** `-v` decodes escapes, so a
+# member's `\n` split its clause in two, and the id no longer named the text it was made from.
 put_clause() {
     file=$1
     line="clause $2 $3 $4"
 
     refuse_collision "$file" "$2" "$4" || exit 6
 
-    beside=${5:-} awk -v id="$2" -v line="$line" \
-        '$1 == "clause" && $2 == id { print line; replaced = 1; next }
+    line=$line beside=${5:-} awk -v id="$2" \
+        '$1 == "clause" && $2 == id { print ENVIRON["line"]; replaced = 1; next }
          { print }
-         END { if (!replaced) print line; if (ENVIRON["beside"] != "") print ENVIRON["beside"] }' "$file" 2>/dev/null > "$file.put" \
+         END { if (!replaced) print ENVIRON["line"]; if (ENVIRON["beside"] != "") print ENVIRON["beside"] }' "$file" 2>/dev/null > "$file.put" \
         || die_unwritable "$file"
 
     mv "$file.put" "$file" || die_unwritable "$file"
