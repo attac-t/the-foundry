@@ -28,6 +28,10 @@ unset FOUNDRY_PASS_BEAT
 # The rounds case reaches its limit inside the default bound, which a host's own bound would move.
 unset FOUNDRY_PASS_TRIES
 
+# A pass hands its command these three, and a worker grading from inside one hands them on to this
+# suite. `passplace` took an inherited workspace for the one floor hands over, and lived. #1107.
+unset FOUNDRY_PASS_ITEM FOUNDRY_PASS_WORKSPACE FOUNDRY_PASS_ITEM_FILE
+
 here="$(cd "$(dirname "$0")/.." && pwd)"
 . "$here/tests/lib.sh"
 
@@ -443,6 +447,18 @@ said_by() {
 }
 
 #
+# What a suite started here kept of a pass's variables: each name still holding a value, one a line.
+# The first case below starts a second suite this way, to read what the clearing at the top missed.
+#
+say_what_it_kept() {
+  [ "${1:-}" = --kept ] || return 0
+
+  env | sed -n 's/^\(FOUNDRY_PASS_[A-Z_]*\)=..*/\1/p' | LC_ALL=C sort
+  exit 0
+}
+say_what_it_kept "$@"
+
+#
 # One case, alone, on state the clean runner built.
 #
 # `--checkpoint` builds what a case starts from; `--case` runs the case against whatever `RUNNER`
@@ -459,12 +475,43 @@ answer_a_case_request() {
     '')           return 0 ;;
   esac
 
-  printf 'model.sh takes --checkpoint <case> or --case <case>, or no argument at all\n' >&2
+  printf 'model.sh takes --checkpoint <case>, --case <case> or --kept, or no argument at all\n' >&2
   exit 2
 }
 answer_a_case_request "$@"
 
 echo "model"
+
+# --- a pass around the suite ---
+
+#
+# **A suite started inside a pass keeps none of the pass's variables.** A worker grading from inside
+# one hands this suite every `FOUNDRY_PASS_*` it was given, and the top of this file clears them.
+#
+# Each name floor's code holds is set, and a second suite starts under them. **It is the suite beside
+# the runner under test**, as `dir_source` is the adapter beside it. The audit breaks a copy of the
+# plugin and runs this file against it, so a clearing taken out of that copy shows only there. #1107.
+#
+suite_beside_the_runner="$(dirname "$runner")/../tests/model.sh"
+
+a_suite_started_inside_a_pass_keeps_none_of_it() {
+  local bait kept
+  bait=$(left_by_a_pass)
+  [ -n "$bait" ] || { broke "a suite inside a pass — floor's code names no pass variable"; return; }
+
+  # Unquoted on purpose: one `NAME=value` a word, and neither half holds a space.
+  kept=$(env $bait bash "$suite_beside_the_runner" --kept 2>/dev/null) \
+    || { broke "a suite inside a pass — the suite beside the runner would not start"; return; }
+
+  is "a suite started inside a pass keeps none of its variables" "$kept" ""
+}
+
+# Each `FOUNDRY_PASS_` name floor's own code holds, set the way a pass would leave it.
+left_by_a_pass() {
+  grep -ohE 'FOUNDRY_PASS_[A-Z_]+' "$here"/bin/*.sh "$here"/lib/*.sh "$here"/hooks/*.sh 2>/dev/null \
+    | LC_ALL=C sort -u | sed 's/$/=left-by-a-pass/'
+}
+a_suite_started_inside_a_pass_keeps_none_of_it
 
 # --- the home ---
 

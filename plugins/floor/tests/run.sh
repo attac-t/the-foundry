@@ -2822,6 +2822,16 @@ wreck_runner "a command that is not handed the item is caught" \
 wreck_runner "a command that is not handed its workspace is caught" \
   passplace '/^run_the_host_command() {/,/^}/s#FOUNDRY_PASS_WORKSPACE="\$tree" ##'
 
+#
+# **The suite's clearing, not the runner's.** A worker grading inside a pass hands the model suite
+# that pass's variables, and `passplace` lived on the workspace among them. #1107.
+#
+# A copy's `tests/model.sh` is read only through the runner it is handed: the suite's first case
+# starts the suite beside that runner, and this takes the clearing out of it.
+#
+wreck_runner "a suite that keeps what a pass left it is caught" \
+  passkept 's#^unset FOUNDRY_PASS_.*#:#' tests/model.sh
+
 wreck_runner "a selection exported to everything the pass runs is caught" \
   passunwho 's#^answer_to_the_applier() { unset FOUNDRY_WHO; FOUNDRY_WHO=\$(applier_of "\$1" "\$2"); }$#answer_to_the_applier() { FOUNDRY_WHO=$(applier_of "$1" "$2"); export FOUNDRY_WHO; }#'
 
@@ -4197,6 +4207,47 @@ wreck_runner "a reading that writes into the run is caught" \
   statuswrites '/^status() {/,/^}/s@^    say_the_run "\$dir"$@    say_the_run "$dir"; : > "$dir/status.read"@'
 
 report_breaks
+
+#
+# **Inside a pass, `passplace` still dies at its own check.** #1107: a worker grading from inside a
+# pass handed the model suite that pass's `FOUNDRY_PASS_WORKSPACE`. `passplace` took it for the
+# workspace floor hands over, and lived.
+#
+# So its mutation runs once more, with a pass's workspace exported as bait. **Here, never in a case.**
+# A case starts after the suite has cleared what it inherited, and only whoever starts the suite
+# chooses what that is. The suite's own first case holds the clearing, for every name floor uses.
+#
+# Shaped like a workspace a real pass hands over. A bait the check would refuse is a bait nothing
+# could be fooled by.
+#
+passplace_inside_a_pass() {
+  local checks="$tmp/inside-a-pass.check" answer
+  local bait="$tmp/a-pass/runs/its-run/units/01/workspace/its-slot"
+
+  : > "$checks"
+  a_copy_with_passplace "$tmp/inside-a-pass" || return
+
+  ( FOUNDRY_PASS_WORKSPACE=$bait; export FOUNDRY_PASS_WORKSPACE; model_caught "$tmp/inside-a-pass" )
+  answer=$?
+
+  [ "$answer" -eq 2 ] && { out_of_clock "passplace inside a pass"; return; }
+  [ "$answer" -eq 0 ] || { bad "passplace inside a pass lived — the suite took the pass's workspace for floor's"; return; }
+
+  same "passplace inside a pass dies at its own check" "$(killed_by "$checks")" "and the workspace it runs in"
+}
+
+# `passplace`'s own mutation, declared above, on a copy made the way `break_verdict` makes one.
+a_copy_with_passplace() {
+  rm -rf "${1:?}" && cp -R "$root" "$1" \
+    && sed '/^run_the_host_command() {/,/^}/s#FOUNDRY_PASS_WORKSPACE="\$tree" ##' "$root/bin/run.sh" > "$1/bin/run.sh" \
+    || { moot "passplace inside a pass — the copy could not be made"; return 1; }
+
+  cmp -s "$1/bin/run.sh" "$root/bin/run.sh" || return 0
+
+  moot "passplace inside a pass — the mutation changed nothing"
+  return 1
+}
+passplace_inside_a_pass
 
 # --- break the install ---
 
