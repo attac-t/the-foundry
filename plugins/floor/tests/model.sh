@@ -8156,7 +8156,8 @@ a_plugin_shaping() {
 #
 # A shaping member for this suite. It reads which member it is from its brief, keeps that brief and
 # where it ran, then answers as its case wrote: `<member>.says` on stdout, `<member>.err` on stderr,
-# `<member>.code` as its exit. It waits five seconds first while `<member>.hold` is there.
+# `<member>.code` as its exit. It waits five seconds first while `<member>.hold` is there. It writes
+# down the `FOUNDRY_RUN` it was handed, or `unset`, so a case sees what a member could read.
 #
 a_member_answering_from() {
   cat <<STUB
@@ -8167,6 +8168,7 @@ a_member_answering_from() {
   n=\$(grep -c . "\$d/\$m.calls")
   cp "\$FOUNDRY_BRIEF" "\$d/\$m.handed-\$n"
   { pwd; printf 'holds [%s]\n' "\$(ls -A)"; git rev-parse --git-dir; } > "\$d/\$m.room-\$n" 2>&1
+  printf '%s\n' "\${FOUNDRY_RUN-unset}" > "\$d/\$m.run-\$n"
   [ ! -f "\$d/\$m.hold" ] || { : > "\$d/\$m.held"; sleep 5; }
   [ ! -f "\$d/\$m.err" ] || cat "\$d/\$m.err" >&2
   [ ! -f "\$d/\$m.says" ] || cat "\$d/\$m.says"
@@ -12409,6 +12411,22 @@ a_member_runs_in_an_empty_room() {
   absent  "and the room is gone once the call ends"       "$room_path"
 }
 a_member_runs_in_an_empty_room
+
+#
+# **A member is handed no run.** `spf` exports the case's run into every call, as floor's README tells
+# a person to, and the member's entry point finds no `FOUNDRY_RUN` all the same.
+#
+a_member_is_handed_no_run() {
+  a_plugin_shaping shp41 || { skip "no run handed — the plugin could not be copied"; return; }
+  a_shaped_repo shp41 1341 "$(shape_line ann:runless shp41)
+" || { skip "no run handed — git could not make a repo here"; return; }
+  member_says shp41 ann:runless 'nothing
+'
+  spf charter shape >/dev/null
+  is "a member finds no FOUNDRY_RUN, though its caller exported one" \
+     "$(cat "$(member_file shp41 ann:runless run-1)" 2>/dev/null)" "unset"
+}
+a_member_is_handed_no_run
 
 #
 # **Each member is handed the same bar, apart.** Each brief ends in the bar, byte for byte, and names its

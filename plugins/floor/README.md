@@ -1194,8 +1194,11 @@ is **written once**, at the first shaping. So a member asked on a later wake rea
 read, and no brief holds another member's words.
 
 **A member runs where it can read nothing but its brief.** Floor makes `${TMPDIR:-/tmp}/floor-shape-<pid>`
-fresh, runs the entry point there with stdin closed, and removes it after. What it prints lands whole
-in `shaped/<member>-<n>.returned`, and the last line it writes on stderr rides the attempt's row.
+fresh, runs the entry point there with stdin closed and `FOUNDRY_RUN` unset, and removes it after.
+Exported, as this page tells a person to, the run reached the host's hooks in the member's session.
+Kernel's read the run's memory in, and floor's can write into the run. **Every other variable still passes
+through**, and the judge's call keeps `FOUNDRY_RUN` too: #1102 owns both. What it prints lands
+whole in `shaped/<member>-<n>.returned`, and the last line it writes on stderr rides the attempt's row.
 **A shaping killed mid-call leaves its room behind**, and no later shaping removes it, since each
 names its own pid.
 

@@ -3669,6 +3669,9 @@ wreck_runner "decided printed for a run never shaped is caught" \
 wreck_runner "decided that leaves the left-out members out is caught" \
   noleftmembers 's#^         \$2 == "left" { printf "  left out#         $2 == "nonesuch" { printf "  left out#'
 
+wreck_runner "a member handed its caller's FOUNDRY_RUN is caught" \
+  memberrun 's#cd "\$member_room" \&\& unset FOUNDRY_RUN \&\& #cd "$member_room" \&\& #'
+
 # The item proposes and the allowlist decides. A run that took an advised target as authorised would
 # let anyone who can file an item choose what the run may touch.
 wreck_runner "an advised target that skips the allowlist is caught" \

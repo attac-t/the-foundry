@@ -8750,11 +8750,14 @@ briefs_of() {
 # **The call runs where it can read nothing but its brief**: a fresh directory outside every
 # repository, stdin closed, and removed after. What it prints lands whole, beside its brief.
 #
+# **And with no `FOUNDRY_RUN`**, which floor tells a person to export. Inherited, it handed the run to
+# the host's hooks in the member's session: kernel's read its memory in, and floor's can write to it.
+#
 call_from_an_empty_room() {
     member_room="${TMPDIR:-/tmp}/floor-shape-$$"
     rm -rf "$member_room" && mkdir "$member_room" || die_unwritable "$member_room"
 
-    attempt_said=$(cd "$member_room" && FOUNDRY_BRIEF="$1.brief" sh "$ENTRY_POINT" </dev/null 2>&1 >"$1.returned"); attempt_code=$?
+    attempt_said=$(cd "$member_room" && unset FOUNDRY_RUN && FOUNDRY_BRIEF="$1.brief" sh "$ENTRY_POINT" </dev/null 2>&1 >"$1.returned"); attempt_code=$?
     rm -rf "$member_room"
 }
 
