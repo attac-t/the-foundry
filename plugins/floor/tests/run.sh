@@ -3400,9 +3400,13 @@ wreck_runner "a member seated twice by a second introduce is caught" \
 wreck_runner "a second worker written as proposer is caught" \
   secondproposer 's#^    \[ -z "\$proposers" \] || return 0$#    :#'
 
-# B2's panel may record several proposers for one clause, and the writer must hold every one off.
+# B2's panel may record several proposers for one clause, and the writer and `check` must each hold
+# every one off.
 wreck_runner "a writer that holds the first proposer alone off the panel is caught" \
   firstproposer '/^seats_to_write() {/,/^}/s#off_the_bench "\$bench_members" "\$proposers" |#off_the_bench "$bench_members" "$(printf "%s\\n" "$proposers" | head -n 1)" |#'
+
+wreck_runner "a check that holds the first proposer alone off the bench is caught" \
+  checkfirstproposer '/^members_short_of_the_bench() {/,/^}/s#"\$(proposers_of "\$1" "\$2")"#"$(proposers_of "$1" "$2" | head -n 1)"#'
 
 wreck_runner "a member recorded as proposer later that keeps its seat is caught" \
   keptseat 's#^    put_clause "\$file" "\$id" "\$kind" "\$text" "\$seated" "\$proposer_to_write"$#    put_clause "$file" "$id" "$kind" "$text" "$seated"#'
