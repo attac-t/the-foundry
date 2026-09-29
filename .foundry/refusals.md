@@ -181,6 +181,7 @@ where it is — a key for a one-off buys indirection and saves nothing.
 | `ask_about_each` | 1 | default | — | `nothing-held` |
 | `authorise` | 1 | default | this run has no charter — run \`charter derive\` first | `nothing-held` |
 | `check_charter` | 1 | default | this run has no charter | `nothing-held` |
+| `refuse_a_run_with_no_charter` | 1 | default | this run has no charter — run \`charter derive\` first, then shape it | `nothing-held` |
 | `derive_charter` | 1 | default |   one is written from an origin remote and a first commit. Add whichever is missing | `nothing-held` |
 | `the_offer_line` | 1 | default | — | `nothing-held` |
 | `print_bootstrap` | 1 | default | — | `nothing-held` |
@@ -278,7 +279,8 @@ where it is — a key for a one-off buys indirection and saves nothing.
 | `refuse_a_limit_no_charter_may_hold` | 6 | invariant | — | `evidence` — as `derive` refuses it: a limit no charter may hold is a bench nothing could meet |
 | `refuse_a_reach_no_charter_may_hold` | 6 | invariant | — | `evidence` — as `derive` refuses it: a reach no charter may hold is a bench nothing could meet |
 | `refuse_a_run_with_no_base` | 6 | invariant | start a new run — one made before this rule cannot prove what it derived from | `refusal` |
-| `refuse_an_unreadable_base` | 6 | invariant | the base [$1] cannot be read, so nothing can say what it names | `evidence` — a bench or a gate read from a base nobody could read is a guess |
+| `refuse_a_shape_no_run_may_use` | 6 | invariant | a \`shape\` line no run may use: | `pin` — charter *a panel shapes the charter*, B1: a `shape` line no run could use is wrong on every host, as a reach is |
+| `refuse_an_unreadable_base` | 6 | invariant | the base [$1] cannot be read, so nothing can say what it names | `evidence` — a bench, a gate or a `shape` line read from a base nobody could read is a guess |
 | `refuse_collision` | 6 | invariant | — | `evidence` — two clauses on one id, so a reader looking it up gets whichever was written last |
 | `refuse_moved_resolution` | 6 | default | — | `charter-drifted` |
 | `refuse_wrong_repository` | 6 | default | run this inside [$boot], not [${here:-nowhere}] | `no-workspace` — wrong directory |
@@ -330,6 +332,8 @@ where it is — a key for a one-off buys indirection and saves nothing.
 | `refuse_an_adapter_this_plugin_does_not_ship` | 21 | default |   looked at [$2] and nowhere else — update the plugin, or declare a custom command | `no-home` — the message already offers a custom command, so the lookup is not the policy |
 | `stamp_command` | 21 | invariant | [$name] could not run on this host: $why | `evidence` |
 | `stamp_command` | 21 | invariant | [$name] was killed by signal $((result - 128)), so nothing was graded | `evidence` |
+| `refuse_a_member_with_no_contribution` | 21 | invariant | \`charter shape\` asks each again, and nothing the panel proposed enters until each has answered | `evidence` — charter *a panel shapes the charter*, decision 4: nothing is asked while one member's contribution is missing |
+| `refuse_an_entry_point_this_plugin_does_not_ship` | 21 | default | looked at [$2] and nowhere else — update the plugin, or name an adapter that ships one | `no-home` — as a judge's adapter: the plugin root is the one place looked, and the lookup is not the policy |
 | `refuse_unreadable_declaration` | 22 | invariant | the bar this repository declares cannot be read | `evidence` |
 | `refuse_ungranted_merge` | 23 | invariant | nobody said this run may merge into [$2] — \`policy merge-to\` is what says so | `refusal` |
 | `land_what_was_graded` | 24 | default | this run has delivered nothing, so there is nothing to merge | `nothing-held` |
@@ -343,6 +347,7 @@ where it is — a key for a one-off buys indirection and saves nothing.
 | `marked_by_the_rule` | 27 | answer | this work source cannot say which items carry a label | `source` |
 | `refuse_unless_answered` | 27 | answer | this work source can only be read, so nothing here can carry a $2 | `source` |
 | `refuse_a_source_that_cannot_hear` | 27 | answer | use a source that answers \`receive <item>\` and \`speaker <item>\` — the README names both | `source` |
+| `refuse_a_source_that_cannot_list_labels` | 27 | answer | this work source cannot say which items carry a label, so no labelled member can sit | `source` |
 | `refuse_the_source_as_advice` | 28 | invariant | a human naming it with \`targets add\` still can | `refusal` |
 | `claim` | 30 | answer | — | `header` |
 | `claim_the_first_offered` | 30 | answer | every item offered is held by another host or underway here, so this pass takes nothing | `header` |
@@ -376,6 +381,7 @@ where it is — a key for a one-off buys indirection and saves nothing.
 | `refuse_a_pin_the_charter_did_not_give` | 40 | invariant | [$3] is reached at [${given:-no pin at all}] and this receipt answers for [${4:-none}] | `refusal` |
 | `refuse_an_adapter_name_this_cannot_resolve` | 40 | default | [$1] is not an adapter name — lowercase letters, digits and hyphens, and no path in it | `no-field` — a name format |
 | `refuse_an_adapter_nobody_authorised` | 40 | invariant |   or declare a command of your own with \`@custom\` | `refusal` |
+| `refuse_an_entry_point_nobody_authorised` | 40 | invariant | read the new one, then commit its digest on the \`shape\` line: git hash-object --no-filters -- $3 | `refusal` — as a judge's pin: a shaping entry point the repository did not authorise never runs |
 | `refuse_an_adapter_that_moved` | 40 | invariant | $1 authorises adapter [$pin] and [$ran] is what answered | `refusal` |
 | `say_nothing_here_can_find_it_again` | 41 | answer | so tell every later command which run: export FOUNDRY_RUN=$dir | `header` |
 | `what_is_offered` | 42 | answer | nothing is offered, so this pass takes nothing | `header` |
@@ -404,3 +410,4 @@ where it is — a key for a one-off buys indirection and saves nothing.
 | `refuse_to_introduce_a_gate` | 55 | invariant | declare it at the base, and start a new run: only a new run reads the base | `refusal` — charter A, decision 8: a gate the base does not declare is refused at introduction, since nothing could meet it |
 | `refuse_a_bench_of_nobody` | 55 | invariant | add \`bench <member>...\` to .foundry/judged, and start a new run: only a new run reads the base | `authority` — charter A, decision 7: the bench is named at the base, and a clause no bench could judge binds nothing |
 | `refuse_a_bench_of_its_proposer` | 55 | invariant | add another member to a \`bench\` line in .foundry/judged, and start a new run: only a new run reads the base | `refusal` — charter A, decision 7: a member who proposed a clause does not judge it |
+| `refuse_a_refused_contribution` | 56 | invariant | it is kept at [$refused_file], and nothing in it enters the charter | charter *a panel shapes the charter*, decision 2: a contribution with a line out of shape is refused whole, and never repaired |
