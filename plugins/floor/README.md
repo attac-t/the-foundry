@@ -1272,9 +1272,11 @@ one reader, and `charter shape`, the question and `status` each read through it.
 
 A field line names the proposal nearest above it. So a `why`, `evidence` or `recommend` line above
 every proposal is out of shape, and an `objection` or `unknown` there names none. `nothing` may stand
-beside those, and never beside a `propose` line. A line is read as a yes is, and no further. Spaces
-and a carriage return go at either end, and the first word is read in any case. A blank line is no
-line. A proposal's text holds no tab or carriage return, as `introduce` takes a clause. One space
+beside those, and never beside a `propose` line. A line is read as a yes is, less its backticks.
+Spaces and a carriage return go at either end, and the first word is read in any case. **Backticks
+stay.** A yes loses one pair, since a person may copy it from a rendered question. A member prints its
+lines, and each must open with one of the seven words. So a line wrapped in backticks is out of shape.
+A blank line is no line. A proposal's text holds no tab or carriage return, as `introduce` takes a clause. One space
 parts it from its kind, since a text opening with a space would read two ways. **Any other line
 refuses the whole contribution, and nothing is repaired.** The word is `propose` and not *claim*,
 since *claim* already means taking an item.
