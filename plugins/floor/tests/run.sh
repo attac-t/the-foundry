@@ -215,6 +215,53 @@ for suite in "$root"/adapters/*/tests/*.sh; do
     || bad "${suite#"$root/"} runs checks below its exit, and nothing counts them"
 done
 
+# A tool finds a break by its tag and drives the first it meets, so a shared tag hides a break.
+# Five were shared until #1106, and on 29 September a break reported as lived had never run.
+#
+# A tag is the first word after a break's description, on that line or the next.
+break_tags() {
+  awk '
+    held { print $1; held = 0; next }
+
+    /^[ \t]*wreck[a-z_]*[ \t]+"/ {
+      sub(/^[^"]*"[^"]*"[ \t]*/, "")
+      if ($0 == "\\") { held = 1; next }
+      print $1
+    }' "$1"
+}
+
+tags_used_twice() { break_tags "$1" | LC_ALL=C sort | uniq -d; }
+
+refuse_a_tag_used_twice() {
+  local twice
+  twice=$(tags_used_twice "$1" | tr '\n' ' ')
+
+  [ -n "$twice" ] || {
+    printf '  ok    each of the %s break tags names one break\n' "$(break_tags "$1" | grep -c .)"
+    return
+  }
+  bad "each of these tags names more than one break, so a break found by its tag may be the wrong one: ${twice% }"
+}
+
+# Driven the way a break is: faults put into a copy, and the check must go red naming each. One is
+# #1106's own, a runner and a join under `noauthority`, and `oneanswer` is the one-line form.
+a_tag_used_twice_is_refused() {
+  local said left
+  sed 's/^  unstamped /  noauthority /; s/ verdictset "/ oneanswer "/' \
+    "$root/tests/run.sh" > "$tmp/tags-twice.sh"
+  cmp -s "$tmp/tags-twice.sh" "$root/tests/run.sh" \
+    && { moot "a tag used twice — the plant changed nothing, so this proves nothing"; return; }
+
+  said=$( failed=0; refuse_a_tag_used_twice "$tmp/tags-twice.sh"; exit "$failed" )
+  left=$?
+
+  [ "$left" -eq 1 ] && [ "${said##*: }" = 'noauthority oneanswer' ] \
+    && { printf '  ok    a tag used twice is refused, and each one is named\n'; return; }
+  bad "a tag planted twice was not refused by name — it left $left and said [$said]"
+}
+a_tag_used_twice_is_refused
+refuse_a_tag_used_twice "$root/tests/run.sh"
+
 #
 # Floor core names no vendor, and the adapters directory is where every vendor is — #512.
 #
