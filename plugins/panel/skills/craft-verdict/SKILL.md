@@ -65,7 +65,16 @@ sh "${CLAUDE_PLUGIN_ROOT}/bin/verdicts.sh" round <dir> <review>
 
 # the record before it — exit 1 when nothing stamps one
 sh "${CLAUDE_PLUGIN_ROOT}/bin/verdicts.sh" prior <dir> <round> <review>
+
+# the commit the judge is reading, and the refusal if the branch leaves it
+git -C <worktree> rev-parse HEAD
+sh "${CLAUDE_PLUGIN_ROOT}/bin/verdicts.sh" record <dir> <role> <review> \
+  --worktree <worktree> --commit <sha>
 ```
+
+**Take that commit before the judge starts, and hand it the same one.** A judge reads a worktree for
+as long as it works, and a commit landing meanwhile changes what it reads. `record` then refuses,
+exit 3, and names both commits.
 
 **That `bin/` is Panel's, never the project you are reviewing.** Installed, your working directory
 is the user's repository, and a bare `bin/verdicts.sh` finds their script or none. Unset, the

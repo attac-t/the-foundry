@@ -7,7 +7,8 @@
 # and whoever convenes the panel writes the reviewer's instructions — a quieter way of writing its
 # verdict.
 #
-#   sh bin/brief.sh adversary "a clause" --charter FILE --work FILE --verdicts DIR --review ID
+#   sh bin/brief.sh adversary "a clause" --charter FILE --work FILE --verdicts DIR --review ID \
+#       --worktree DIR
 #
 # **A path is not a handoff.** Every part is read here and printed, so what the judge was given is
 # what this command emitted. An audit reads one stream, never a directory it hopes was reachable.
@@ -16,6 +17,7 @@
 #
 # Exit: 0 printed. 2 called wrongly. 3 no such role. 4 a named file could not be read.
 #       5 the chain has no record of the round before this one.
+#       6 the worktree named is not a checkout with a commit in it.
 
 set -u
 
@@ -24,11 +26,13 @@ root=$(cd "$(dirname "$0")/.." && pwd)
 main() {
     read_arguments "$@"
     locate_role
+    locate_the_commit
     locate_the_prior
 
     say_the_role
     say_the_skills
     say_the_bar
+    say_the_tree
     say_the_work
     say_the_prior
     say_the_clause
@@ -45,6 +49,7 @@ read_arguments() {
     verdicts=
     round=
     review=
+    worktree=
 
     [ -n "$role" ] && [ -n "$clause" ] || fail 2 'name a role and the clause it answers'
     [ "$#" -ge 2 ] && shift 2
@@ -55,6 +60,7 @@ read_arguments() {
             --work)    work=${2:-};    refuse_unreadable work "$work" ;;
             --verdicts) verdicts=${2:-}; [ -n "$verdicts" ] || fail 2 "verdicts names a directory" ;;
             --review)  review=${2:-}; [ -n "$review" ] || fail 2 "review names the chain" ;;
+            --worktree) worktree=${2:-}; [ -n "$worktree" ] || fail 2 "worktree names a checkout" ;;
             *)         fail 2 "unknown argument [$1]" ;;
         esac
         shift 2
@@ -125,6 +131,39 @@ say_the_bar() {
     printf '\n---\n\n# The charter this run answers to\n\n```\n'
     cat "$charter"
     printf '```\n'
+}
+
+#
+# The commit the judge reads, taken once, before a word is printed.
+#
+# **A brief names a worktree, and a worktree is not a commit.** A judge reads files there for as
+# long as it works, and a commit landing meanwhile changes what it reads. One did on 24 September:
+# seventeen minutes, two commits, and a verdict naming three heads.
+#
+# Read here and never by the judge. A judge told to go and look reads whatever is there when it
+# looks, which is the fault rather than the fix.
+locate_the_commit() {
+    commit=
+    [ -n "$worktree" ] || return 0
+
+    [ -d "$worktree" ] || fail 6 "the worktree at [$worktree] is not a directory"
+
+    commit=$(git -C "$worktree" rev-parse --verify --quiet HEAD 2>/dev/null)
+    [ -n "$commit" ] || fail 6 "no commit to read at [$worktree] — a worktree is a checkout"
+}
+
+#
+# Absent is legal and it is said out loud, like the bar above. A brief naming no tree leaves nobody
+# able to say afterwards whether the tree moved — not the judge, and not the recorder.
+say_the_tree() {
+    [ -n "$worktree" ] || { printf '\n---\n\n# The tree you read\n\nNOT SUPPLIED. Nobody named the checkout, so nothing can say whether it moved.\n'; return; }
+
+    printf '\n---\n\n# The tree you read\n\n    %s\n' "$worktree"
+    printf '    commit %s\n\n' "$commit"
+    printf 'That commit is the work. A commit landing while you read changes the files under you,\n'
+    printf 'and a verdict spanning two trees judges neither.\n\n'
+    printf 'Your recorder is told the same commit, and refuses your verdict if that branch has\n'
+    printf 'since moved to another tree.\n'
 }
 
 say_the_work() {

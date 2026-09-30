@@ -99,6 +99,9 @@ Structural     no judge holds a tool that writes or runs a command.
 
 Mechanical     bin/verdicts.sh refuses a round claiming a prior verdict
                that no file stamps for that review. Fail closed, exit 1.
+               It refuses a verdict too, exit 3, when the branch has left
+               the tree the brief handed over — trees, never hashes, so an
+               amend or a rebase that moved no byte is still recorded.
                Run by bin/brief.sh off-host, by /verdict in session.
                By no judge: none of them holds a tool that runs a command.
 
@@ -244,8 +247,12 @@ refuses a review claiming a round nothing stamps. Across sessions, nothing ever 
 
 ---
 
-Needs: Claude Code CLI, `sh`, `awk`, `sed`, `find`, `sort`. No `git`, no Python, no Node,
+Needs: Claude Code CLI, `sh`, `awk`, `sed`, `find`, `sort` and `git`. No Python, no Node,
 no `jq`.
+
+**`git` is read by two commands and only when asked.** `brief.sh --worktree` takes the commit a
+judge is handed, and `record --worktree --commit` compares that commit's tree against the branch.
+Every other command answers without it.
 
 ## License
 
