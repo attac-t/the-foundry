@@ -395,6 +395,62 @@ grep -v '^[[:space:]]*#' "$root/bin/host.sh" | grep -q 'FOUNDRY_EPHEMERAL' \
   || ok  "and this lane never says it"
 
 #
+# --- where this lane keeps a red grade's log ---
+#
+# **Under floor's home, because that is the one directory this lane mounts.** Kept anywhere else, it
+# went with the container, and a pass on #1078 lost the only record of why its grade stopped. #1108.
+#
+# A copy of `gates.sh` alone in a directory: every gate it names is missing and fails at once, so the
+# real `keep` runs and nothing stands in for it. Floor's runner says where the log belongs, asked in
+# the two homes the legs below grade in: `HOME` alone, and `HOME` with `FOUNDRY_HOME` named.
+#
+red_grade_under() {
+  rm -rf "$tmp/lab" && mkdir -p "$tmp/lab/bin" && cp "$1" "$tmp/lab/bin/gates.sh" || return 1
+
+  ( cd "$tmp/lab" && unset FOUNDRY_EPHEMERAL && HOME=$2 FOUNDRY_HOME=$3 sh bin/gates.sh 2>&1 )
+}
+
+floors_home_under() { HOME=$1 FOUNDRY_HOME=$2 sh "$root/plugins/floor/bin/run.sh" home 2>/dev/null; }
+
+# The directory the last line names, when that `gates.sh` grades in that home: under the home's
+# `gates/`, and holding the logs.
+kept_where_floor_lives() {
+  local named wanted
+  named=$(red_grade_under "$1" "$2" "$3" | sed -n 's/^kept in //p')
+  wanted=$(floors_home_under "$2" "$3")
+
+  case $named in "$wanted/gates/"?*) ;; *) return 1 ;; esac
+  ls "$named"/*.log >/dev/null 2>&1
+}
+
+kept_where_floor_lives "$root/bin/gates.sh" "$tmp/grade-home" '' \
+  && ok  "a red grade keeps its log under floor's home, and says where" \
+  || bad "a red grade keeps its log under floor's home, and says where — it did not"
+
+kept_where_floor_lives "$root/bin/gates.sh" "$tmp/grade-home" "$tmp/grade-floor" \
+  && ok  "and under FOUNDRY_HOME when one is named" \
+  || bad "and under FOUNDRY_HOME when one is named — it did not"
+
+#
+# **A plant proves the check can see a log kept elsewhere.** This copy's `floors_home` answers the
+# home a red log used before #1108, and no container host mounts that one.
+#
+# It must keep its log there, too. A plant that kept nothing would fail the check for another reason.
+#
+sed 's#^floors_home() {$#floors_home() { printf "%s/.foundry-runs" "$HOME"; return 0;#' \
+  "$root/bin/gates.sh" > "$tmp/planted-gates.sh"
+
+if cmp -s "$tmp/planted-gates.sh" "$root/bin/gates.sh"; then
+  bad "and a log kept under the old home is caught — the plant changed nothing"
+elif kept_where_floor_lives "$tmp/planted-gates.sh" "$tmp/grade-home" ''; then
+  bad "and a log kept under the old home is caught — the check cannot see one"
+elif ! ls "$tmp/grade-home/.foundry-runs/gates"/*/*.log >/dev/null 2>&1; then
+  bad "and a log kept under the old home is caught — the plant kept no log at all"
+else
+  ok  "and a log kept under the old home is caught"
+fi
+
+#
 # --- a worker carries Foundry ---
 #
 # **Every name comes from the checkout the host started in.** So this builds one with names no real

@@ -215,6 +215,54 @@ for suite in "$root"/adapters/*/tests/*.sh; do
     || bad "${suite#"$root/"} runs checks below its exit, and nothing counts them"
 done
 
+# A tool finds a break by its tag and drives the first it meets, so a shared tag hides a break.
+# Five were shared until #1106, and on 29 September a break reported as lived had never run.
+#
+# A tag is the first word after a break's description, on that line or the next. A break declared
+# behind a guard is read too, and its guard's own quotes are never taken for the description.
+break_tags() {
+  awk '
+    held { print $1; held = 0; next }
+
+    /(^|&&|\|\||;)[ \t]*wreck[a-z_]*[ \t]+"/ {
+      sub(/^.*wreck[a-z_]*[ \t]+"[^"]*"[ \t]*/, "")
+      if ($0 == "\\") { held = 1; next }
+      print $1
+    }' "$1"
+}
+
+tags_used_twice() { break_tags "$1" | LC_ALL=C sort | uniq -d; }
+
+refuse_a_tag_used_twice() {
+  local twice
+  twice=$(tags_used_twice "$1" | tr '\n' ' ')
+
+  [ -n "$twice" ] || {
+    printf '  ok    each of the %s break tags names one break\n' "$(break_tags "$1" | grep -c .)"
+    return
+  }
+  bad "each of these tags names more than one break, so a break found by its tag may be the wrong one: ${twice% }"
+}
+
+# Driven the way a break is: faults put into a copy, and the check must go red naming each. One is
+# #1106's own, `oneanswer` is the one-line form, and `secondref` is repeated behind a guard.
+a_tag_used_twice_is_refused() {
+  local said left
+  sed 's/^  unstamped /  noauthority /; s/ verdictset "/ oneanswer "/; s/^  spins /  secondref /' \
+    "$root/tests/run.sh" > "$tmp/tags-twice.sh"
+  cmp -s "$tmp/tags-twice.sh" "$root/tests/run.sh" \
+    && { moot "a tag used twice — the plant changed nothing, so this proves nothing"; return; }
+
+  said=$( failed=0; refuse_a_tag_used_twice "$tmp/tags-twice.sh"; exit "$failed" )
+  left=$?
+
+  [ "$left" -eq 1 ] && [ "${said##*: }" = 'noauthority oneanswer secondref' ] \
+    && { printf '  ok    a tag used twice is refused, and each one is named\n'; return; }
+  bad "a tag planted twice was not refused by name — it left $left and said [$said]"
+}
+a_tag_used_twice_is_refused
+refuse_a_tag_used_twice "$root/tests/run.sh"
+
 #
 # Floor core names no vendor, and the adapters directory is where every vendor is — #512.
 #
@@ -1505,6 +1553,21 @@ model_caught() {
 }
 
 #
+# **A runner break is decided at its killer's case alone first**, and by the whole suite only when
+# that case misses. `tests/alone.sh` holds every rule of it, so the model suite can break each one,
+# and `tests/killer-cases.tsv` names each break's case. #1112.
+#
+. "$root/tests/alone.sh"
+killer_cases=$root/tests/killer-cases.tsv
+alone_records=$tmp/alone
+alone_suite=$root/tests/model.sh
+mkdir -p "$alone_records"
+
+# The two runs `decide_a_break` asks for. Each reads `mutant` and `checks` from the break it decides.
+run_alone()    { run_the_case_alone "$1" "$mutant" "$2" "$checks.alone"; }
+caught_whole() { model_caught "$mutant"; }
+
+#
 # Break one rule in the runner — or in a file the runner resolves through — and require the model
 # suite to notice. It speaks and does not count: `bad`'s counter dies with the process, so the line
 # it prints is the whole of what a break returns.
@@ -1517,22 +1580,41 @@ model_caught() {
 # caller can break is one the adapter is free to drop.
 #
 # The killer is written beside the verdict and before it, so a worker killed mid-break leaves the
-# `MOOT` that was there first and no killer to be grouped by. A verdict on disk always has one.
+# `MOOT` that was there first and no killer to be grouped by. A verdict on disk always has one. So
+# is what decided it, which `report_verdict` words and the sample counts.
 #
 break_verdict() {
   local slot="$1" name="$2" tag="$3" mutation="$4" file="${5:-bin/run.sh}"
-  local mutant="$tmp/$slot-$tag" checks="$tmp/$slot-$tag.check"
+  local mutant="$tmp/$slot-$tag" checks="$tmp/$slot-$tag.check" how
 
   rm -rf "${mutant:?}" && cp -R "$root" "$mutant" || { moot "$name — could not copy the plugin"; return; }
   sed "$mutation" "$root/$file" > "$mutant/$file" || { moot "$name — sed failed, so this proves nothing"; return; }
   [ -s "$mutant/$file" ] || { moot "$name — the mutant is empty, so the suite failed for the wrong reason"; return; }
   cmp -s "$mutant/$file" "$root/$file" && { moot "$name — the break did not apply, so this proves nothing"; return; }
-  model_caught "$mutant"; local answer=$?
+  decide_a_break "$tag" "$(sampled_or_not "$slot")"; local answer=$?
+  printf '%s\n' "$how" > "$tmp/verdict/$slot.how"
   [ "$answer" -eq 2 ] && { out_of_clock "$name"; return; }
-  [ "$answer" -eq 0 ] || { bad "$name — the suite passed against a broken runner"; return; }
+  [ "$answer" -eq 0 ] || { bad "$name — $(the_miss_in_words)"; return; }
 
-  killed_by "$checks" > "$tmp/verdict/$slot.killer"
+  killed_by "$(checks_that_decided)" > "$tmp/verdict/$slot.killer"
   printf '  ok    %s\n' "$name"
+}
+
+sampled_or_not() { chosen_for_the_sample "$1" "$sample_tenth" && printf 'sampled'; }
+
+# A split is the whole suite missing a break its case caught alone, and that is a mask, not a pass.
+the_miss_in_words() {
+  [ "$how" = split ] \
+    && { printf 'its case caught it alone and the whole suite, sampled, did not: an earlier case hides it'; return; }
+  printf 'the suite passed against a broken runner'
+}
+
+# The checks of the run that decided the break. A sample's whole run confirms, and names nothing.
+checks_that_decided() {
+  case $how in
+    alone|sampled) printf '%s.alone' "$checks" ;;
+    *)             printf '%s' "$checks" ;;
+  esac
 }
 
 #
@@ -1573,7 +1655,7 @@ report_verdict() {
   case "$verdict" in
       '  ok    '*) killer=$(cat "$tmp/verdict/$1.killer")
                    remember_the_killer model "$killer" "${verdict#  ok    }"
-                   verdict="$verdict — killed by [$killer]" ;;
+                   verdict="$verdict — $(killed_how "$1") [$killer]" ;;
       '  MOOT  '*) [ "$failed" -eq 0 ] && failed=3
                    never_ran=$((never_ran + 1))
                    the_clock_took_it "$verdict" \
@@ -1582,6 +1664,19 @@ report_verdict() {
   esac
 
   printf '%s\n' "$verdict"
+}
+
+#
+# Which run the killer came from. A break with a row is decided at its case, so its killer is that
+# case's first red and not the suite-order first red, and anything grouping breaks by killer reads
+# a new grouping. The verdict says which rule wrote each one. #1112.
+#
+killed_how() {
+  case $(cat "$tmp/verdict/$1.how" 2>/dev/null) in
+    alone)   printf 'killed alone by' ;;
+    sampled) printf 'killed alone, and whole for the sample, by' ;;
+    *)       printf 'killed by' ;;
+  esac
 }
 
 #
@@ -1699,8 +1794,8 @@ report_breaks() {
 #
 # Start a break, once a worker is free. A break's verdict rests on nothing another break did, which
 # is what lets them run at once — and the slot it is handed, rather than its tag, is what keeps its
-# mutant its own. Two breaks are tagged `elsewhere`, and one directory for two workers is one worker
-# reading a tree the other is deleting.
+# mutant its own. Two breaks were tagged `elsewhere` until #1106, and one directory for two workers
+# is one worker reading a tree the other is deleting.
 #
 # The verdict on disk reads *reported nothing* until the break replaces it, and the replacement is a
 # rename, so it lands whole or not at all. A worker killed at any point leaves the first verdict
@@ -1710,11 +1805,76 @@ wreck_runner() {
   await_a_free_worker
 
   queued=$((queued + 1))
+  [ -n "$(row_for "$2")" ] || rowless=$((rowless + 1))
   printf '  MOOT  %s — the break reported nothing\n' "$1" > "$tmp/verdict/$queued"
 
   ( break_verdict "$queued" "$@" > "$tmp/verdict/$queued.said" 2>&1
     mv "$tmp/verdict/$queued.said" "$tmp/verdict/$queued" ) &
 }
+
+rowless=0
+
+#
+# **Each case the table names runs alone and clean once, before any break is queued.** A break
+# decided at a case that fails clean alone would be decided by the case and never by the break, so
+# that case is named and its breaks run the whole suite. The clock the audit reports starts here.
+#
+run_each_killer_case_clean_alone() {
+  local named
+  began_alone=$(date +%s)
+  sample_tenth=$(sample_tenth_of "$(git -C "$root" rev-parse HEAD 2>/dev/null)")
+  printf 'audit — each killer'\''s case runs alone and clean first. The sample takes every slot ending in %s.\n' \
+         "$(( (10 - sample_tenth) % 10 ))"
+
+  cases_in "$root/tests/model.sh" | LC_ALL=C sort > "$tmp/cases"
+  name_each_row_that_names_no_case
+  for named in $(killer_cases_in_the_suite); do
+    await_a_free_worker
+    run_one_case_clean_alone "$named" &
+  done
+  wait
+
+  name_each_case_that_failed_clean_alone
+}
+
+killer_cases_named()        { awk -F'\t' '!/^#/ && NF >= 2 { print $2 }' "$killer_cases" | LC_ALL=C sort -u; }
+killer_cases_in_the_suite() { killer_cases_named | LC_ALL=C comm -12 - "$tmp/cases"; }
+
+# A row naming no case is a table kept by hand that went stale. Its breaks lose time and never a
+# verdict, so it is named and not red.
+name_each_row_that_names_no_case() {
+  local gone
+  for gone in $(killer_cases_named | LC_ALL=C comm -23 - "$tmp/cases"); do
+    printf 'audit — tests/killer-cases.tsv names %s, which is no case of tests/model.sh,' "$gone"
+    printf ' so its breaks run the whole suite\n'
+  done
+}
+
+# Clean, so against this tree's own runner, and under the whole suite's deadline: alone is less. The
+# command and its status are both `tests/alone.sh`'s, where the model suite can break them.
+run_one_case_clean_alone() {
+  keep_what_it_answered "$1" run_the_case_alone "$1" "$root" "$deadline" "$alone_records/$1.check"
+}
+
+name_each_case_that_failed_clean_alone() {
+  local named ran_clean=0 all=0
+  for named in $(killer_cases_in_the_suite); do
+    all=$((all + 1))
+    clean_alone "$named" && { ran_clean=$((ran_clean + 1)); continue; }
+    printf 'audit — %s fails clean alone at [%s], so its breaks run the whole suite\n' \
+           "$named" "$(first_red_alone "$named")"
+  done
+  printf 'audit — %s of %s killer cases ran clean alone, in %ss\n' \
+         "$ran_clean" "$all" "$(seconds_since "$began_alone")"
+}
+
+# What a case failed at alone: its first red check, else the clock, else its exit.
+first_red_alone() {
+  [ -s "$alone_records/$1.check" ] && { head -n 1 "$alone_records/$1.check"; return; }
+  [ "$(clean_run_field "$1" 1)" = 2 ] && { printf 'the clock, at %ss' "$deadline"; return; }
+  printf 'no check, exit %s' "$(clean_run_field "$1" 1)"
+}
+run_each_killer_case_clean_alone
 
 #
 # Three breaks on one claim, and they are three: this one blinds it to everything, `notatomic` to a
@@ -1888,7 +2048,7 @@ wreck_runner "a selection line that is not a repo and a ref is caught" \
 # A pin captured somewhere the gates will never run. The charter reads as provenanced throughout —
 # a real artifact at a real commit — so nothing downstream can tell.
 wreck_runner "a bar derived off the graded ref is caught" \
-  elsewhere 's#    refuse_second_ref "$dir" "$identity" "$ref"#    :#'
+  secondref 's#    refuse_second_ref "$dir" "$identity" "$ref"#    :#'
 
 #
 # Authorisation refuses a run that describes no work. Two refusals, two breaks: an empty charter
@@ -2216,7 +2376,7 @@ wreck_runner "a gate run that answers 0 whatever happened is caught" \
 
 # `%` for the delimiter: the argument count holds the one sed would otherwise end on.
 wreck_runner "a gate run that takes a command from the caller is caught" \
-  callercmd 's%    \[ "$#" -eq 0 \] || { usage; exit 2; }%%'
+  gateargs 's%    \[ "$#" -eq 0 \] || { usage; exit 2; }%%'
 
 # Two guards, two breaks. A record with no name cannot be matched to a bar; a record with no command
 # is a pass for having run nothing. One mutant each, or whichever fires first hides the other.
@@ -2263,7 +2423,7 @@ wreck_runner "a gate run against a repository it was not pinned to is caught" \
 # The whole of what the completion invariant adds. Gates could pass at commit N, three commits land,
 # and delivery proceed on evidence that no longer applied.
 wreck_runner "evidence that no longer applies to the delivered ref is caught" \
-  staleref 's# || $6 "" != ref ""##'
+  staleevidence 's# || $6 "" != ref ""##'
 
 # `satisfying` evidence is a record whose answer is yes. A record that a gate failed is a record.
 wreck_runner "a failing gate counted as satisfying its clause is caught" \
@@ -2356,7 +2516,7 @@ wreck_runner "a workspace assembled in the slot rather than published into it is
 # Invariant 4 describes a stamp. A run whose selection nobody recorded is a run the work source
 # cannot ask, because there is no one it may ask.
 wreck_runner "a run that records nobody selecting it is caught" \
-  noauthority 's#    stamp_selection "$dir" "$(selector)" "$id"##'
+  unstamped 's#    stamp_selection "$dir" "$(selector)" "$id"##'
 
 # §2.5 keeps the two apart by shape, and the shape only holds if they are kept apart by store. Three
 # fields in the pool completion reads existentially would be a record with no ref, satisfying nothing
@@ -2825,6 +2985,16 @@ wreck_runner "a command that is not handed the item is caught" \
 
 wreck_runner "a command that is not handed its workspace is caught" \
   passplace '/^run_the_host_command() {/,/^}/s#FOUNDRY_PASS_WORKSPACE="\$tree" ##'
+
+#
+# **The suite's clearing, not the runner's.** A worker grading inside a pass hands the model suite
+# that pass's variables, and `passplace` lived on the workspace among them. #1107.
+#
+# A copy's `tests/model.sh` is read only through the runner it is handed: the suite's first case
+# starts the suite beside that runner, and this takes the clearing out of it.
+#
+wreck_runner "a suite that keeps what a pass left it is caught" \
+  passkept 's#^unset FOUNDRY_PASS_.*#:#' tests/model.sh
 
 wreck_runner "a selection exported to everything the pass runs is caught" \
   passunwho 's#^answer_to_the_applier() { unset FOUNDRY_WHO; FOUNDRY_WHO=\$(applier_of "\$1" "\$2"); }$#answer_to_the_applier() { FOUNDRY_WHO=$(applier_of "$1" "$2"); export FOUNDRY_WHO; }#'
@@ -4457,7 +4627,7 @@ wreck_runner "a file named with nothing saying what writes it is caught" \
 # **The boundary itself.** `- 1` is the whole of what makes `+2879` mean 48 hours, and a fixture
 # months past the bar holds none of it. Move it by one and a run quiet 47 hours is named.
 wreck_runner "a bar that fires an hour early is caught" \
-  offbyone 's@[$][(][(][$]1 [*] 1440 - 1[)][)]@$(($1 * 1440 - 61))@'
+  hourearly 's@[$][(][(][$]1 [*] 1440 - 1[)][)]@$(($1 * 1440 - 61))@'
 
 #
 # **A directory of that name would enter the quiet set.** `-type f` is what keeps the list about
@@ -4650,7 +4820,63 @@ wreck_runner "a missing part that reads the head a second time is caught" \
 wreck_runner "a reading that writes into the run is caught" \
   statuswrites '/^status() {/,/^}/s@^    say_the_run "\$dir"$@    say_the_run "$dir"; : > "$dir/status.read"@'
 
+#
+# **How a runner break is decided, broken one rule at a time.** Each breaks one rule in the copy's
+# `tests/alone.sh`, which the model suite reads beside the runner, and each dies at a check of its
+# own: `--only` in `a_suite_run_with_only_runs_the_cases_it_names`, and every other one in
+# `a_break_is_decided_at_its_killers_case_first`. #1112.
+#
+wreck_runner "an --only that runs a case it was not given is caught" \
+  onlyall 's#{ print ":"; next }#{ print; next }#' tests/alone.sh
+
+wreck_runner "a case that passes against its break read as a catch is caught" \
+  passcaught 's#^  \[ "\$said" -eq 0 \] \&\& return 1$#  :#' tests/alone.sh
+
+wreck_runner "a break its case missed that never reaches the whole suite is caught" \
+  nofallback 's#^  caught_alone "\$killer_case" || { caught_whole; return; }$#  caught_alone "$killer_case" || return#' tests/alone.sh
+
+wreck_runner "a break with no row decided without the whole suite is caught" \
+  rowlesscaught 's#^  \[ -n "\$killer_case" \]  *|| { caught_whole; return; }$#  [ -n "$killer_case" ] || return 0#' tests/alone.sh
+
+wreck_runner "a case that failed clean alone still deciding its breaks is caught" \
+  noguard 's#^  clean_alone "\$killer_case"  *|| { caught_whole; return; }$#  :#' tests/alone.sh
+
+wreck_runner "a break caught alone and missed whole read as green is caught" \
+  splitgreen '/^read_the_sample() {/,/^}/s#^  return 1$#  return 0#' tests/alone.sh
+
+wreck_runner "a sample of none read as green is caught" \
+  samplenone 's#^  \[ "\$1" -gt 0 \]$#  true#' tests/alone.sh
+
+# The status a clean alone run is kept under, read as clean whatever the run answered.
+wreck_runner "a case red clean alone kept as clean is caught" \
+  keptclean '/^keep_what_it_answered() {/,/^}/s#^  said=\$?$#  said=0#' tests/alone.sh
+
+# The one command both alone runs are built from, naming a case it was not handed.
+wreck_runner "an alone run of a case it was not handed is caught" \
+  othercase '/^run_the_case_alone() {/,/^}/s#--only "\$1"$#--only "$2"#' tests/alone.sh
+
 report_breaks
+
+#
+# How the runner breaks were decided: how many had no row, how many the sample ran whole, and the
+# clock from the first clean alone run to the last verdict read. A sample of none is red. #1112.
+#
+say_how_the_runner_breaks_were_decided() {
+  printf 'audit — %s of %s breaks had no row in tests/killer-cases.tsv, and ran the whole suite\n' \
+         "$rowless" "$queued"
+  say_the_sample "$(breaks_decided sampled split)" "$(breaks_decided alone sampled split)" \
+    || bad "the sample ran no break through the whole suite, so nothing looked for a mask"
+  printf 'audit — the runner breaks took %ss, from the first clean alone run to the last verdict read\n' \
+         "$(seconds_since "$began_alone")"
+}
+
+# How many breaks were decided in any of the ways named.
+breaks_decided() {
+  local ways
+  ways=$(printf '%s|' "$@")
+  cat "$tmp"/verdict/*.how 2>/dev/null | grep -cxE "${ways%|}"
+}
+say_how_the_runner_breaks_were_decided
 
 # --- break the install ---
 

@@ -28,7 +28,26 @@ unset FOUNDRY_PASS_BEAT
 # The rounds case reaches its limit inside the default bound, which a host's own bound would move.
 unset FOUNDRY_PASS_TRIES
 
+# A pass hands its command these three, and a worker grading from inside one hands them on to this
+# suite. `passplace` took an inherited workspace for the one floor hands over, and lived. #1107.
+unset FOUNDRY_PASS_ITEM FOUNDRY_PASS_WORKSPACE FOUNDRY_PASS_ITEM_FILE
+
 here="$(cd "$(dirname "$0")/.." && pwd)"
+
+#
+# `--only <case>...` runs those cases alone: every other case call is skipped, and nothing else
+# changes. This file's own text, those calls made `:`, is run here, so `$0` and the plugin it finds
+# stay this file's. A name that is no case is refused before anything runs. `tests/alone.sh` says
+# what a case is. #1112.
+#
+[ "${1:-}" = --only ] && {
+  shift
+  only_text=$( . "$here/tests/alone.sh" && only_these "$0" "$@" ) || exit 2
+  set --
+  eval "$only_text"
+  exit
+}
+
 . "$here/tests/lib.sh"
 
 runner="${RUNNER:-$here/bin/run.sh}"
@@ -443,7 +462,20 @@ said_by() {
 }
 
 #
-# One case, alone, on state the clean runner built.
+# What a suite started here kept of a pass's variables: each name still holding a value, one a line.
+# The first case below starts a second suite this way, to read what the clearing at the top missed.
+#
+say_what_it_kept() {
+  [ "${1:-}" = --kept ] || return 0
+
+  env | sed -n 's/^\(FOUNDRY_PASS_[A-Z_]*\)=..*/\1/p' | LC_ALL=C sort
+  exit 0
+}
+say_what_it_kept "$@"
+
+#
+# One `tests/cases.sh` id, on state the clean runner built. Its noun is an id and never a case of
+# this file: `--only`, at the top, runs those, and builds nothing.
 #
 # `--checkpoint` builds what a case starts from; `--case` runs the case against whatever `RUNNER`
 # names. The audit restores the same bytes to the same pathname before each, so a mutant answers
@@ -459,12 +491,47 @@ answer_a_case_request() {
     '')           return 0 ;;
   esac
 
-  printf 'model.sh takes --checkpoint <case> or --case <case>, or no argument at all\n' >&2
+  printf 'model.sh takes no argument, or one of:\n' >&2
+  printf '  --only <case>...   cases of this file, alone: functions it calls once, bare\n' >&2
+  printf '  --case <id>        one tests/cases.sh id, on the state --checkpoint <id> built\n' >&2
+  printf '  --checkpoint <id>  build that state\n' >&2
+  printf '  --kept             the pass variables a suite started here kept\n' >&2
   exit 2
 }
 answer_a_case_request "$@"
 
 echo "model"
+
+# --- a pass around the suite ---
+
+#
+# **A suite started inside a pass keeps none of the pass's variables.** A worker grading from inside
+# one hands this suite every `FOUNDRY_PASS_*` it was given, and the top of this file clears them.
+#
+# Each name floor's code holds is set, and a second suite starts under them. **It is the suite beside
+# the runner under test**, as `dir_source` is the adapter beside it. The audit breaks a copy of the
+# plugin and runs this file against it, so a clearing taken out of that copy shows only there. #1107.
+#
+suite_beside_the_runner="$(dirname "$runner")/../tests/model.sh"
+
+a_suite_started_inside_a_pass_keeps_none_of_it() {
+  local bait kept
+  bait=$(left_by_a_pass)
+  [ -n "$bait" ] || { broke "a suite inside a pass — floor's code names no pass variable"; return; }
+
+  # Unquoted on purpose: one `NAME=value` a word, and neither half holds a space.
+  kept=$(env $bait bash "$suite_beside_the_runner" --kept 2>/dev/null) \
+    || { broke "a suite inside a pass — the suite beside the runner would not start"; return; }
+
+  is "a suite started inside a pass keeps none of its variables" "$kept" ""
+}
+
+# Each `FOUNDRY_PASS_` name floor's own code holds, set the way a pass would leave it.
+left_by_a_pass() {
+  grep -ohE 'FOUNDRY_PASS_[A-Z_]+' "$here"/bin/*.sh "$here"/lib/*.sh "$here"/hooks/*.sh 2>/dev/null \
+    | LC_ALL=C sort -u | sed 's/$/=left-by-a-pass/'
+}
+a_suite_started_inside_a_pass_keeps_none_of_it
 
 # --- the home ---
 
@@ -589,23 +656,29 @@ two_checkouts_on_one_branch_name() {
 two_checkouts_on_one_branch_name
 
 # --- what outranks what ---
+#
+# A case of its own, in the place these checks always ran. They read the checkout `the_pointer`
+# makes, so a suite run with `--only` and without that case skips them rather than failing them.
+#
+a_named_run_outranks_the_pointer() {
+  is "FOUNDRY_RUN outranks the pointer" \
+     "$(floor_as "$tmp/repo" "$home" "$first" path)" "$first"
 
-is "FOUNDRY_RUN outranks the pointer" \
-   "$(floor_as "$tmp/repo" "$home" "$first" path)" "$first"
+  # kernel checks `-d` before it moves memory. floor must agree, or it calls a run active that kernel
+  # has already fallen back from.
+  is "a variable pointing at nothing falls through to the pointer" \
+     "$(floor_as "$tmp/repo" "$home" "$tmp/never" path)" "$(floor "$tmp/repo" path)"
 
-# kernel checks `-d` before it moves memory. floor must agree, or it calls a run active that kernel
-# has already fallen back from.
-is "a variable pointing at nothing falls through to the pointer" \
-   "$(floor_as "$tmp/repo" "$home" "$tmp/never" path)" "$(floor "$tmp/repo" path)"
+  is "and with no pointer either, it is no run" \
+     "$(floor_as "$tmp/bare" "$home" "$tmp/never" path)" ""
 
-is "and with no pointer either, it is no run" \
-   "$(floor_as "$tmp/bare" "$home" "$tmp/never" path)" ""
-
-# A path a person typed may end in a slash, and twelve places read the last segment with
-# `${x##*/}` — which returns nothing when it does. `basename` strips one first and that does
-# not, so the run answered to a name of its own and refused its own grants.
-is "a run named with a trailing slash is the same run" \
-   "$(floor_as "$tmp/repo" "$home" "$first/" path)" "$first"
+  # A path a person typed may end in a slash, and twelve places read the last segment with
+  # `${x##*/}` — which returns nothing when it does. `basename` strips one first and that does
+  # not, so the run answered to a name of its own and refused its own grants.
+  is "a run named with a trailing slash is the same run" \
+     "$(floor_as "$tmp/repo" "$home" "$first/" path)" "$first"
+}
+a_named_run_outranks_the_pointer
 
 
 #
@@ -14264,6 +14337,124 @@ propose Judged the log is quiet
   is    "and complete finds nothing missing"                            "$(code_of spf complete)" "0"
 }
 a_struck_clause_keeps_its_spacing
+
+# --- a case run alone ---
+#
+# `--only`, read from the copy beside the runner under test as `suite_beside_the_runner` is, so a
+# break of what a case is, or of skipping one, goes red here. It cuts a three-function stand-in and
+# never this file, whose every other case would run inside the check. #1112.
+#
+alone_beside_the_runner="$(dirname "$runner")/../tests/alone.sh"
+
+a_suite_run_with_only_runs_the_cases_it_names() {
+  printf 'named() { :; }\nnamed\nunnamed() { :; }\nunnamed\nhelper() { :; }\nhelper\nhelper\n' \
+    > "$tmp/only-three-functions.sh"
+  kept=$( . "$alone_beside_the_runner" && only_these "$tmp/only-three-functions.sh" named )
+
+  is "--only keeps the call of the case it names" "$(printf '%s\n' "$kept" | grep -cx named)"   "1"
+  is "--only skips every case it was not given"   "$(printf '%s\n' "$kept" | grep -cx unnamed)" "0"
+  is "--only leaves a helper called twice to run" "$(printf '%s\n' "$kept" | grep -cx helper)"  "2"
+  is "--only refuses a helper, which is no case"  "$(refused_by_only "$tmp/only-three-functions.sh" helper)" "2"
+
+  said=$(bash "$suite_beside_the_runner" --only no_case_is_named_this 2>&1); code=$?
+  is    "model.sh --only answers 2 for a name that is no case" "$code" "2"
+  has   "and names it"                                          "$said" "no_case_is_named_this is no case"
+  lacks "and runs no check before it refuses"                   "$said" "  ok  "
+
+  # The stranger's guess: `--case`, handed a case of this file rather than a `tests/cases.sh` id.
+  said=$(bash "$suite_beside_the_runner" --case a_named_run_outranks_the_pointer 2>&1)
+  has "--case given a case of this file points at --only" \
+      "$said" "model.sh --only a_named_run_outranks_the_pointer"
+}
+
+refused_by_only() { ( . "$alone_beside_the_runner" && only_these "$@" ) >/dev/null 2>&1; printf '%s' "$?"; }
+a_suite_run_with_only_runs_the_cases_it_names
+
+#
+# How the audit decides a runner break, one rule a check. The order is the point: each rule's break
+# goes red at its own check, and at none above it.
+#
+a_break_is_decided_at_its_killers_case_first() {
+  is "a break its case catches alone is caught there, and the whole suite never runs" \
+     "$(decided the-case 0 1 0)" "alone@150 alone 0"
+  is "a case the clock stops is a miss, and the whole suite's answer stands" \
+     "$(decided the-case 0 2 1)" "alone@150 whole whole 1"
+  is "a case that passes against its break is a miss, never a catch" \
+     "$(decided the-case 0 0 0)" "alone@150 whole whole 0"
+  is "a break with no row is decided by the whole suite, as before" \
+     "$(decided '' 0 1 1)" "whole whole 1"
+  is "a case that failed clean alone hands its breaks to the whole suite" \
+     "$(decided the-case 1 1 1)" "whole whole 1"
+  is "a case red clean alone is kept red, so its breaks run the whole suite" "$(kept_after false)" "1"
+  is "and a case that ran clean alone is kept clean"                         "$(kept_after true)"  "0"
+  is "a case runs alone as itself, fail-fast, under the runner and deadline it is handed" \
+     "$(alone_command)" \
+     "150 env RUNNER=/a/plugin/bin/run.sh FOUNDRY_FAIL_FAST=1 FOUNDRY_CHECK=/a/check bash /a/suite --only the-case"
+  is "a break caught alone that the sample's whole suite misses is a split, and red" \
+     "$(decided the-case 0 1 1 sampled)" "alone@150 whole split 1"
+  is "a break caught alone that the sample's whole suite catches stays caught" \
+     "$(decided the-case 0 1 0 sampled)" "alone@150 whole sampled 0"
+
+  is "an alone run's deadline is never under two minutes" "$(from_alone alone_deadline 3)" "120"
+  is "a sample of none is red"                             "$(code_of from_alone say_the_sample 0 12)" "1"
+  is "the sample takes one slot in ten, and its tenth says which" "$(slots_chosen 3)" "7 17 "
+}
+
+#
+# One break decided by the rules beside the runner, against stand-ins for both runs. It prints each
+# run as it starts, the case's with its deadline, then `how` and the answer, so a rule that skips a
+# run reads as plainly as one that answers wrong.
+#
+# Its arguments: the break's case or nothing, that case's clean alone exit, what the case alone
+# answers as `bounded` does, what the whole suite answers as `model_caught` does, and `sampled` when
+# the sample chose it. The case took 30 seconds clean alone, so its deadline is 150.
+#
+decided() {
+  ( row=$1 clean=$2 alone_answer=$3 whole_answer=$4
+    killer_cases=$tmp/decided.tsv alone_records=$tmp/decided
+    . "$alone_beside_the_runner" || exit 9
+    rm -rf "$alone_records" && mkdir -p "$alone_records" || exit 9
+    printf 'another-break\tthe-case\n' > "$killer_cases"
+    [ -z "$row" ] || printf 'a-break\t%s\n' "$row" >> "$killer_cases"
+    keep_the_clean_run the-case "$clean" 30
+
+    run_alone()    { printf 'alone@%s ' "$2"; return "$alone_answer"; }
+    caught_whole() { printf 'whole '; return "$whole_answer"; }
+
+    decide_a_break a-break "${5:-}"
+    said=$?
+    printf '%s %s' "$how" "$said" )
+}
+
+from_alone() { ( . "$alone_beside_the_runner" && "$@" ); }
+
+# The command a case runs alone under, as the rule beside the runner builds it, `bounded` stood in.
+alone_command() {
+  ( alone_suite=/a/suite
+    . "$alone_beside_the_runner" || exit 9
+    bounded() { printf '%s' "$*"; }
+    run_the_case_alone the-case /a/plugin 150 /a/check )
+}
+
+# The status a case's clean alone run is kept under, once the rule beside the runner has run a stand-in.
+kept_after() {
+  ( alone_records=$tmp/kept
+    . "$alone_beside_the_runner" || exit 9
+    rm -rf "$alone_records" && mkdir -p "$alone_records" || exit 9
+    keep_what_it_answered the-case "$@" >/dev/null 2>&1
+    clean_run_field the-case 1 )
+}
+
+# The slots of the first twenty the sample takes, under one tenth.
+slots_chosen() {
+  ( . "$alone_beside_the_runner" || exit 9
+    slot=1
+    while [ "$slot" -le 20 ]; do
+      chosen_for_the_sample "$slot" "$1" && printf '%s ' "$slot"
+      slot=$((slot + 1))
+    done )
+}
+a_break_is_decided_at_its_killers_case_first
 
 #
 # **Every wake this suite made says where it ended.** Last, so it reads them all. An `ended` reading

@@ -32,18 +32,16 @@ sh bin/host.sh sh -c 'git config --global --add safe.directory "*"
 container runs as `forge`. The `safe.directory` line answers both.
 
 **Write the log into `/home/forge/.foundry`.** That is the host's own directory. The file then
-outlives `--rm`, a killed client, and a machine short of memory. The runner keeps its own record under
-`/home/forge/.foundry-runs`, which is **not** mounted, and `--rm` takes it.
+outlives `--rm`, a killed client, and a machine short of memory.
 
-**Give the grade its own `HOME`, under the mount.** One variable answers two of the three.
+**Give the grade its own `HOME`, under the mount.**
 
 `bin/host.sh` mounts the host's own home on purpose, and floor's suite refuses to leave a run in the
 live home. Inside this lane those are the same place. **Two grades went red on that check.** A run
 opened on the host during a grade still turns it red, and the failure now names that run.
 
-**And a red gate's reason is kept under `$HOME/.foundry-runs`, which nothing mounts.** One grade
-reported `FAIL floor` and `--rm` destroyed the directory that said why. Setting `HOME` under the
-mount puts the grade's own home and its kept output on this machine's disk.
+**A red gate's reason is kept under floor's home, in `gates/`**, so it lands on the mount as well.
+The last line of the log names the directory.
 
 **What it bought, 11 September 2026.** Floor's suites are green in every lane — 1,218 assertions. Its
 audit had never finished on this machine: four attempts under WSL, each stopped for low memory. **It

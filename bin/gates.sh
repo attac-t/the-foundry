@@ -5,7 +5,7 @@
 # sh bin/gates.sh         run them here sh bin/gates.sh linux   run them where `sh` is dash sh
 # bin/gates.sh list    name them, run nothing
 #
-# A failing gate's output is kept under `~/.foundry-runs/gates`, one directory per run. Not under
+# A failing gate's output is kept under floor's home, in `gates/`, one directory per run. Not under
 # `linux`: that container is `--rm`, so `FOUNDRY_EPHEMERAL` tells the run inside to keep nothing.
 #
 # No `set -e`: a gate that fails must not stop the ones after it. One red square names one gate.
@@ -81,16 +81,26 @@ why_failed() {
     esac
 }
 
-# One directory per run, under the live run home — or the checkout, when a stripped environment has
-# no `$HOME`. #40 folds `~/.foundry-runs` into `~/.foundry`, and `gates/` moves with it.
+# One directory per run, under floor's home. A container host mounts that home and nothing else, so
+# a log kept anywhere else went with the container. #1108. Beside the checkout when there is no home.
 #
 # Named for when it failed, the commit it graded and the run's own pid — two runs failing in the
 # same second would otherwise overwrite one another, and `mkdir -p` would say nothing.
 log_dir() {
     when=$(date -u +%Y%m%dT%H%M%SZ)
     commit=$(git rev-parse --short HEAD 2>/dev/null || echo no-commit)
+    home=$(floors_home) || home=$root/.foundry-runs
 
-    printf '%s/.foundry-runs/gates/%s-%s-%s' "${HOME:-$root}" "$when" "$commit" "$$"
+    printf '%s/gates/%s-%s-%s' "$home" "$when" "$commit" "$$"
+}
+
+# `FOUNDRY_HOME`, else `$HOME/.foundry`: floor's own answer, written here rather than asked of its
+# runner, because a grade can be red for that runner. `tests/host.sh` holds the two to one answer.
+floors_home() {
+    [ -n "${FOUNDRY_HOME:-}" ] && { printf '%s' "$FOUNDRY_HOME"; return 0; }
+    [ -n "${HOME:-}" ]         && { printf '%s/.foundry' "$HOME"; return 0; }
+
+    return 1
 }
 
 # What the gate said, one file per gate. Made on the first failure and never before, which is why
