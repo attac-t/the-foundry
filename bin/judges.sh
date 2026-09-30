@@ -38,8 +38,6 @@ cd "$(dirname "$0")/.." || exit 3
 # the second. A gate grading both under one name is what `vocabulary.md` refuses.
 JUDGES='codex|openai|anthropic|gemini'
 
-CORE='plugins/floor/bin plugins/floor/lib plugins/floor/hooks'
-
 ALLOWED=''
 
 say()  { printf '%s\n' "$1"; }
@@ -48,7 +46,11 @@ fail() { printf 'judges: %s\n' "$1" >&2; exit 3; }
 main() {
     [ "$#" -eq 0 ] || fail 'takes no arguments'
 
-    core_is_here || fail 'floor ships no bin, lib or hooks here'
+    # Missing and saying nothing are one answer here: either way this gate has no core to read.
+    CORE=$(grep '^[^#]' bin/core.dirs 2>/dev/null) \
+        || fail 'bin/core.dirs is missing, or names no directory'
+
+    core_is_here || fail 'bin/core.dirs names a directory that is not here'
 
     caught=$(judge_names_in_code)
 

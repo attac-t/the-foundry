@@ -12,8 +12,8 @@
 # **A comment may name a host. Code may not.** Those two sentences are the fixture: a check that
 # reads them as violations gates the opposite of what is wanted.
 #
-# Core is what floor ships and runs — `bin`, `lib` and `hooks`. Not `tests`, which stands hosts up
-# on purpose, and not the other plugins, which have no such boundary to keep.
+# `bin/core.dirs` says what core is, and this reads it rather than keeping a copy. Every gate that
+# refuses a word in core reads that one file, so a directory added there moves all of them at once.
 #
 # Usage: sh bin/hosts.sh
 #
@@ -28,15 +28,17 @@ cd "$(dirname "$0")/.." || exit 3
 # repository has already spent a day on one.
 HOSTS='docker|container|podman|kubernetes|lxc|chroot'
 
-CORE='plugins/floor/bin plugins/floor/lib plugins/floor/hooks'
-
 say()  { printf '%s\n' "$1"; }
 fail() { printf 'hosts: %s\n' "$1" >&2; exit 3; }
 
 main() {
     [ "$#" -eq 0 ] || fail 'takes no arguments'
 
-    core_is_here || fail 'floor ships no bin, lib or hooks here'
+    # Missing and saying nothing are one answer here: either way this gate has no core to read.
+    CORE=$(grep '^[^#]' bin/core.dirs 2>/dev/null) \
+        || fail 'bin/core.dirs is missing, or names no directory'
+
+    core_is_here || fail 'bin/core.dirs names a directory that is not here'
 
     caught=$(host_words_in_code)
 

@@ -28,8 +28,6 @@ cd "$(dirname "$0")/.." || exit 3
 # hiding inside an ordinary one has already cost this repository a day.
 VENDORS='github|gitlab|bitbucket|jira|linear|gerrit'
 
-CORE='plugins/floor/bin plugins/floor/lib plugins/floor/hooks'
-
 ALLOWED='source.sh source-github.sh'
 
 say()  { printf '%s\n' "$1"; }
@@ -38,7 +36,11 @@ fail() { printf 'providers: %s\n' "$1" >&2; exit 3; }
 main() {
     [ "$#" -eq 0 ] || fail 'takes no arguments'
 
-    core_is_here || fail 'floor ships no bin, lib or hooks here'
+    # Missing and saying nothing are one answer here: either way this gate has no core to read.
+    CORE=$(grep '^[^#]' bin/core.dirs 2>/dev/null) \
+        || fail 'bin/core.dirs is missing, or names no directory'
+
+    core_is_here || fail 'bin/core.dirs names a directory that is not here'
 
     caught=$(vendor_names_in_code)
 

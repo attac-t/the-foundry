@@ -1,0 +1,13 @@
+# What floor's core is. Every gate that refuses a word in core reads this file and no other.
+#
+# Core is what floor ships and runs. Not `tests`, which stands a host up on purpose, and not the
+# other plugins, which have no such boundary to keep.
+#
+# Each gate held its own copy of this list, word for word, and nothing made the copies agree. A
+# directory added to one left the other gates green over code they had never read.
+#
+# A `#` line is prose. Every other line is one directory, from the repository root.
+
+plugins/floor/bin
+plugins/floor/lib
+plugins/floor/hooks

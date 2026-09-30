@@ -154,6 +154,20 @@ every_break() {
         'a_judge_name >> plugins/floor/lib/detect-judged.sh' \
         'sh bin/judges.sh'
 
+    # One directory added to the one definition of core, driven once per gate that reads it. A gate
+    # still holding a private copy of the list goes green here, and that is the whole of the catch.
+    drive core-hosts bin/core.dirs \
+        'a_wider_core >> bin/core.dirs' \
+        'sh bin/hosts.sh'
+
+    drive core-providers bin/core.dirs \
+        'a_wider_core >> bin/core.dirs' \
+        'sh bin/providers.sh'
+
+    drive core-judges bin/core.dirs \
+        'a_wider_core >> bin/core.dirs' \
+        'sh bin/judges.sh'
+
     # A value baked into a layer. Deleting it later leaves it in the layer that added it, which is
     # the one mistake a recipe cannot be edited out of.
     drive secrets bin/gates.Dockerfile \
@@ -310,6 +324,10 @@ a_host() { printf '\n[ -f /.dockerenv ] && inside_a_container=1\n'; }
 a_vendor() { printf '\ncase $remote in *github.com*) : ;; esac\n'; }
 
 a_judge_name() { printf '\ncase $reach in anthropic) : ;; esac\n'; }
+
+# `bin`, because every gate keeps its own forbidden words there as code — a line of `bin/hosts.sh`
+# names six hosts. So a gate that follows this definition into `bin` refuses on its own word list.
+a_wider_core() { printf '\nbin\n'; }
 
 # A directive, never a comment. The header of `secrets.sh` names a secret four times over, and a
 # break planting prose would go green against a gate working perfectly.
