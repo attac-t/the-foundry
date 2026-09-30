@@ -4845,9 +4845,9 @@ wreck_runner "a judge named without the worker beside it is caught" \
 wreck_runner "a report changed since its receipt that is carried is caught" \
   stampunchecked 's@^    stamped_as_it_stands "\$1" "\$2" "\$3" || .*@    :@'
 
-# A report judged at a commit the head has left, carried as though it judged the one delivered.
-wreck_runner "a report its receipt judged at another commit that is carried is caught" \
-  candidatecheck 's@^    \[ "\$judged_at" = "\$4" \] || .*@    :@'
+# A report last asked about a commit the head has left, carried as though it were about the one delivered.
+wreck_runner "a report last asked about another commit that is carried is caught" \
+  candidatecheck 's@^    \[ "\$last_asked" = "\$4" \] || .*@    :@'
 
 wreck_runner "a report with nothing above its verdict that is fenced anyway is caught" \
   nothingabove 's@^    anything_in_the_first "\$1/\$report_at" "\$above_verdict" \\$@    true \\@'

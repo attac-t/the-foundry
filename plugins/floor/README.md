@@ -900,7 +900,7 @@ verdict line. #1075.
 these reads as one line saying which it is:
 
 - a report that no longer matches
-- a report its receipt judged at a commit other than the one delivered, naming both
+- a report whose judge was last asked about a commit other than the one delivered, naming both
 - a report with nothing above its verdict line
 - a receipt with no report beside it
 - a judge with no receipt in the run
@@ -932,11 +932,14 @@ item can hold it.
 them with their fences.** A text over a bound is cut at its last whole line under it. One line names
 its file by the run's id and a path inside the run.
 
-**A body stays under 65,000 bytes.** GitHub refuses one over 65,536 characters, and no text holds
-more characters than bytes. The rest is room for the source's footer. So the texts share what the
-brief, the record and floor's own lines leave under the cap. They never share more than 48,000. Floor
-never cuts a brief. One that alone passes the cap leaves the texts nothing, and GitHub refuses it, as
-it always did.
+**A body stays under about 65,000 bytes.** GitHub refuses one over 65,536 characters, and no text
+holds more characters than bytes. The rest is room for the source's footer. The texts share what the
+brief, the record and floor's own lines leave under the cap. They never share more than 48,000.
+
+**Floor never cuts the brief, the record or its own lines.** Its own lines are each judge's heading,
+and each line that stands in for a report. When those pass the cap, the texts get nothing, and GitHub
+refuses the body after the push. A cut line can also run four bytes past what the measure allowed, so
+the cap is about 65,000, not exactly.
 
 **A second `deliver` on the same branch pushes the new head, and the request keeps its first
 body.** One run, one delivery: the request is not rewritten, and the run keeps the body it sent.

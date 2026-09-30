@@ -3194,8 +3194,8 @@ carried_text_is_cut_at_its_bounds() {
 carried_text_is_cut_at_its_bounds
 
 #
-# A report is carried only when its receipt judged the commit delivered. Here a judge approved at one
-# commit and answered again at a later one, and the head went back, so the files hold the later round.
+# A report is carried only when its judge was last asked about the commit delivered. A judge approved
+# at one commit and answered again at a later one, then the head went back, so the later round stands.
 #
 a_report_judged_at_another_commit_is_not_carried() {
   printf 'Found at the first commit.\nVERDICT: approve\n' > "$tmp/judged-elsewhere-one.said"
@@ -3213,8 +3213,8 @@ a_report_judged_at_another_commit_is_not_carried() {
   floor "$tmp/judged-elsewhere" deliver 'a change' >/dev/null 2>&1
   elsewhere=$(cat "$(floor "$tmp/judged-elsewhere" path)/body" 2>/dev/null)
 
-  has   "a report its receipt judged at another commit reads as one line naming both" "$elsewhere" \
-        "Its report is not carried: it judged \`$judged_later\`, and this request delivers \`$judged_first\`."
+  has   "a report whose judge was last asked about another commit reads as one line naming both" "$elsewhere" \
+        "Its report is not carried: it was last asked about \`$judged_later\`, and this request delivers \`$judged_first\`."
   lacks "and none of it is carried" "$elsewhere" "Found at the later commit."
 }
 a_report_judged_at_another_commit_is_not_carried

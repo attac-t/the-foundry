@@ -5825,15 +5825,15 @@ what_one_judge_found() {
 }
 
 #
-# A judge's report, or the one line that stands in for it. It is carried only when its receipt judged
-# the commit delivered, `$4`, and as that receipt stamped it. The verdict line stays behind.
+# A judge's report, or the one line that stands in for it. It is carried only when its judge was last
+# asked about the commit delivered, `$4`, and as its receipt stamped it. The verdict line stays behind.
 #
 its_report() {
     report_at=$(report_inside "$2" "$3")
     [ -f "$(receipt_for "$1" "$2" "$3")" ] || { printf 'No receipt stands for %s here, so no report is carried.\n' "$3"; return 0; }
     [ -f "$1/$report_at" ] || { printf 'No report stands beside %s'\''s receipt.\n' "$3"; return 0; }
-    judged_at=$(said_in "$(receipt_for "$1" "$2" "$3")" candidate)
-    [ "$judged_at" = "$4" ] || { say_it_judged_another_commit "$1" "$report_at" "$judged_at" "$4"; return 0; }
+    last_asked=$(said_in "$(receipt_for "$1" "$2" "$3")" candidate)
+    [ "$last_asked" = "$4" ] || { say_it_was_last_asked_about_another_commit "$1" "$report_at" "$last_asked" "$4"; return 0; }
     stamped_as_it_stands "$1" "$2" "$3" || { say_it_no_longer_matches "$1" "$report_at"; return 0; }
 
     above_verdict=$(lines_above_its_verdict "$1/$report_at")
@@ -5853,9 +5853,10 @@ say_it_no_longer_matches() {
         "$2" "$(recorded_id "$1")"
 }
 
-# A judge's last round can be at a commit the head has since left, so its report says nothing of this one.
-say_it_judged_another_commit() {
-    printf 'Its report is not carried: it judged `%s`, and this request delivers `%s`. It is `%s` in run `%s`.\n' \
+# A judge's last round can be at a commit the head has since left. The receipt names that commit before
+# the judge is asked, so the line says asked, never judged: that round may have been killed or unavailable.
+say_it_was_last_asked_about_another_commit() {
+    printf 'Its report is not carried: it was last asked about `%s`, and this request delivers `%s`. It is `%s` in run `%s`.\n' \
         "$3" "$4" "$2" "$(recorded_id "$1")"
 }
 
