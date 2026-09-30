@@ -3124,8 +3124,7 @@ its case caught and the whole suite missed turns the audit red: an earlier case 
 none is red too. The verdict says `killed alone by` when the case decided it.
 
 **Outside the sampled tenth, a break hidden that way reads `ok`.** Its case catches it alone, and
-the whole suite never runs to show the case that hides it. Each tree samples a different tenth. This
-is a known gap, and #1116 owns it.
+the whole suite never runs to show the case that hides it. That is a known gap, and #1116 owns it.
 
 `model.sh` calls the runner. `install.sh` reads the command out of `hooks/hooks.json` and hands it
 to a shell — because a suite that calls the scripts itself proves only that the scripts work, never

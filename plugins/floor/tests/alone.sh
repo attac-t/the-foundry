@@ -186,9 +186,8 @@ keep_what_it_answered() {
 }
 
 #
-# The sample. One slot in ten runs the whole suite as well, and the tree's commit says which tenth, so
-# over many trees every slot takes a turn. A break caught alone that no sample ever reaches is a mask
-# nobody looked for.
+# The sample. One slot in ten runs the whole suite as well, and the tree's commit says which tenth.
+# A break its case caught alone outside that tenth is not looked at again, and #1116 owns that gap.
 #
 sample_tenth_of()       { printf '%s' "$1" | cksum | awk '{ print $1 % 10 }'; }
 chosen_for_the_sample() { [ $(( ($1 + $2) % 10 )) -eq 0 ]; }
