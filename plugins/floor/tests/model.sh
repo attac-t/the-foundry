@@ -33,6 +33,21 @@ unset FOUNDRY_PASS_TRIES
 unset FOUNDRY_PASS_ITEM FOUNDRY_PASS_WORKSPACE FOUNDRY_PASS_ITEM_FILE
 
 here="$(cd "$(dirname "$0")/.." && pwd)"
+
+#
+# `--only <case>...` runs those cases alone: every other case call is skipped, and nothing else
+# changes. This file's own text, those calls made `:`, is run here, so `$0` and the plugin it finds
+# stay this file's. A name that is no case is refused before anything runs. `tests/alone.sh` says
+# what a case is. #1112.
+#
+[ "${1:-}" = --only ] && {
+  shift
+  only_text=$( . "$here/tests/alone.sh" && only_these "$0" "$@" ) || exit 2
+  set --
+  eval "$only_text"
+  exit
+}
+
 . "$here/tests/lib.sh"
 
 runner="${RUNNER:-$here/bin/run.sh}"
@@ -459,7 +474,8 @@ say_what_it_kept() {
 say_what_it_kept "$@"
 
 #
-# One case, alone, on state the clean runner built.
+# One `tests/cases.sh` id, on state the clean runner built. Its noun is an id and never a case of
+# this file: `--only`, at the top, runs those, and builds nothing.
 #
 # `--checkpoint` builds what a case starts from; `--case` runs the case against whatever `RUNNER`
 # names. The audit restores the same bytes to the same pathname before each, so a mutant answers
@@ -475,7 +491,11 @@ answer_a_case_request() {
     '')           return 0 ;;
   esac
 
-  printf 'model.sh takes --checkpoint <case>, --case <case> or --kept, or no argument at all\n' >&2
+  printf 'model.sh takes no argument, or one of:\n' >&2
+  printf '  --only <case>...   cases of this file, alone: functions it calls once, bare\n' >&2
+  printf '  --case <id>        one tests/cases.sh id, on the state --checkpoint <id> built\n' >&2
+  printf '  --checkpoint <id>  build that state\n' >&2
+  printf '  --kept             the pass variables a suite started here kept\n' >&2
   exit 2
 }
 answer_a_case_request "$@"
@@ -636,23 +656,29 @@ two_checkouts_on_one_branch_name() {
 two_checkouts_on_one_branch_name
 
 # --- what outranks what ---
+#
+# A case of its own, in the place these checks always ran. They read the checkout `the_pointer`
+# makes, so a suite run with `--only` and without that case skips them rather than failing them.
+#
+a_named_run_outranks_the_pointer() {
+  is "FOUNDRY_RUN outranks the pointer" \
+     "$(floor_as "$tmp/repo" "$home" "$first" path)" "$first"
 
-is "FOUNDRY_RUN outranks the pointer" \
-   "$(floor_as "$tmp/repo" "$home" "$first" path)" "$first"
+  # kernel checks `-d` before it moves memory. floor must agree, or it calls a run active that kernel
+  # has already fallen back from.
+  is "a variable pointing at nothing falls through to the pointer" \
+     "$(floor_as "$tmp/repo" "$home" "$tmp/never" path)" "$(floor "$tmp/repo" path)"
 
-# kernel checks `-d` before it moves memory. floor must agree, or it calls a run active that kernel
-# has already fallen back from.
-is "a variable pointing at nothing falls through to the pointer" \
-   "$(floor_as "$tmp/repo" "$home" "$tmp/never" path)" "$(floor "$tmp/repo" path)"
+  is "and with no pointer either, it is no run" \
+     "$(floor_as "$tmp/bare" "$home" "$tmp/never" path)" ""
 
-is "and with no pointer either, it is no run" \
-   "$(floor_as "$tmp/bare" "$home" "$tmp/never" path)" ""
-
-# A path a person typed may end in a slash, and twelve places read the last segment with
-# `${x##*/}` — which returns nothing when it does. `basename` strips one first and that does
-# not, so the run answered to a name of its own and refused its own grants.
-is "a run named with a trailing slash is the same run" \
-   "$(floor_as "$tmp/repo" "$home" "$first/" path)" "$first"
+  # A path a person typed may end in a slash, and twelve places read the last segment with
+  # `${x##*/}` — which returns nothing when it does. `basename` strips one first and that does
+  # not, so the run answered to a name of its own and refused its own grants.
+  is "a run named with a trailing slash is the same run" \
+     "$(floor_as "$tmp/repo" "$home" "$first/" path)" "$first"
+}
+a_named_run_outranks_the_pointer
 
 
 #
@@ -14311,6 +14337,33 @@ propose Judged the log is quiet
   is    "and complete finds nothing missing"                            "$(code_of spf complete)" "0"
 }
 a_struck_clause_keeps_its_spacing
+
+# --- a case run alone ---
+#
+# `--only`, read from the copy beside the runner under test as `suite_beside_the_runner` is, so a
+# break of what a case is, or of skipping one, goes red here. It cuts a three-function stand-in and
+# never this file, whose every other case would run inside the check. #1112.
+#
+alone_beside_the_runner="$(dirname "$runner")/../tests/alone.sh"
+
+a_suite_run_with_only_runs_the_cases_it_names() {
+  printf 'named() { :; }\nnamed\nunnamed() { :; }\nunnamed\nhelper() { :; }\nhelper\nhelper\n' \
+    > "$tmp/only-three-functions.sh"
+  kept=$( . "$alone_beside_the_runner" && only_these "$tmp/only-three-functions.sh" named )
+
+  is "--only keeps the call of the case it names" "$(printf '%s\n' "$kept" | grep -cx named)"   "1"
+  is "--only skips every case it was not given"   "$(printf '%s\n' "$kept" | grep -cx unnamed)" "0"
+  is "--only leaves a helper called twice to run" "$(printf '%s\n' "$kept" | grep -cx helper)"  "2"
+  is "--only refuses a helper, which is no case"  "$(refused_by_only "$tmp/only-three-functions.sh" helper)" "2"
+
+  said=$(bash "$suite_beside_the_runner" --only no_case_is_named_this 2>&1); code=$?
+  is    "model.sh --only answers 2 for a name that is no case" "$code" "2"
+  has   "and names it"                                          "$said" "no_case_is_named_this is no case"
+  lacks "and runs no check before it refuses"                   "$said" "  ok  "
+}
+
+refused_by_only() { ( . "$alone_beside_the_runner" && only_these "$@" ) >/dev/null 2>&1; printf '%s' "$?"; }
+a_suite_run_with_only_runs_the_cases_it_names
 
 #
 # **Every wake this suite made says where it ended.** Last, so it reads them all. An `ended` reading
