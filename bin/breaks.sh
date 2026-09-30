@@ -95,8 +95,10 @@ say_what_drives_itself() {
 # of them is a gate nobody has proved can fail. That state was invisible: the header said five, the
 # file drove nine, and a reader subtracting one from the other got four gates wrong.
 #
-# Typed, because a `drive` line carries a break name and `shell` has two of them. A derived list
-# would have to guess which gate `shell-taper` belongs to, and guessing is what this refuses.
+# Typed, because a `drive` line carries a break name and a break name is not a gate name.
+# `shell-taper` belongs to `taper`, and `hosts`, `providers` and `judges` are each driven twice —
+# once on their own word list and once on the definition of core the three of them share. A derived
+# list would have to guess, and guessing is what this refuses.
 ACCOUNTED="frontmatter versions repeats shell taper hosts providers secrets hooks judged
 bytes comments codex host judges anthropic stale basing durable unnamed
 kernel signal panel floor
@@ -152,6 +154,23 @@ every_break() {
     # it an exit code, and the file that decides about judges is the one it would land in.
     drive judges plugins/floor/lib/detect-judged.sh \
         'a_judge_name >> plugins/floor/lib/detect-judged.sh' \
+        'sh bin/judges.sh'
+
+    # One directory added to the one definition of core, driven once per gate that reads it. A gate
+    # still holding a private copy of the list goes green here, and that is the whole of the catch.
+    #
+    # **Floor's own suite is the fourth reader and is not driven from here.** It ships, so it proves
+    # itself — `floor_runs_no_harness` widens a planted core and watches the check follow.
+    drive core-hosts plugins/floor/core.dirs \
+        'a_wider_core >> plugins/floor/core.dirs' \
+        'sh bin/hosts.sh'
+
+    drive core-providers plugins/floor/core.dirs \
+        'a_wider_core >> plugins/floor/core.dirs' \
+        'sh bin/providers.sh'
+
+    drive core-judges plugins/floor/core.dirs \
+        'a_wider_core >> plugins/floor/core.dirs' \
         'sh bin/judges.sh'
 
     # A value baked into a layer. Deleting it later leaves it in the layer that added it, which is
@@ -310,6 +329,14 @@ a_host() { printf '\n[ -f /.dockerenv ] && inside_a_container=1\n'; }
 a_vendor() { printf '\ncase $remote in *github.com*) : ;; esac\n'; }
 
 a_judge_name() { printf '\ncase $reach in anthropic) : ;; esac\n'; }
+
+# This repository's own `bin`, reached from floor's root, because the definition is written from
+# there. It is the one directory whose code names a host, a provider and a judge at once: every
+# gate keeps its forbidden words there, and `bin/hosts.sh` alone names six hosts.
+#
+# **Nothing under `plugins/floor` would do.** No file outside core names a host in code — checked —
+# so a break staying inside the plugin would prove `hosts` nothing.
+a_wider_core() { printf '\n../../bin\n'; }
 
 # A directive, never a comment. The header of `secrets.sh` names a secret four times over, and a
 # break planting prose would go green against a gate working perfectly.

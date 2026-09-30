@@ -38,9 +38,11 @@ cd "$(dirname "$0")/.." || exit 3
 # the second. A gate grading both under one name is what `vocabulary.md` refuses.
 JUDGES='codex|openai|anthropic|gemini'
 
-CORE='plugins/floor/bin plugins/floor/lib plugins/floor/hooks'
-
 ALLOWED=''
+
+# Floor's core, named from floor's own root. The file says which directories and why it ships with
+# the plugin rather than living here; this prefixes each with the directory the file sits in.
+readonly CORE_DIRS=plugins/floor/core.dirs
 
 say()  { printf '%s\n' "$1"; }
 fail() { printf 'judges: %s\n' "$1" >&2; exit 3; }
@@ -48,7 +50,12 @@ fail() { printf 'judges: %s\n' "$1" >&2; exit 3; }
 main() {
     [ "$#" -eq 0 ] || fail 'takes no arguments'
 
-    core_is_here || fail 'floor ships no bin, lib or hooks here'
+    # Missing and saying nothing are one answer here: either way this gate has no core to read.
+    CORE=$(grep '^[^#]' "$CORE_DIRS" 2>/dev/null | sed "s|^|${CORE_DIRS%/*}/|")
+    [ -n "$CORE" ] || fail "$CORE_DIRS is missing, or names no directory"
+
+    absent=$(core_that_is_not_here)
+    [ -z "$absent" ] || fail "$CORE_DIRS names a directory that is not here: ${absent% }"
 
     caught=$(judge_names_in_code)
 
@@ -57,9 +64,11 @@ main() {
     say "judges     core names no judge"
 }
 
-core_is_here() {
+# Named rather than counted. The old message listed all three whatever was absent, so a gate that
+# could not read one directory said nothing about which.
+core_that_is_not_here() {
     for dir in $CORE; do
-        [ -d "$dir" ] || return 1
+        [ -d "$dir" ] || printf '%s ' "$dir"
     done
 }
 

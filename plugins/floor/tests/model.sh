@@ -5164,16 +5164,20 @@ every_adapter_answers_only_what_core_calls() {
 # Every verb core asks a work source for, wherever in floor's shipped code it asks. `source_hears` is
 # the one door `receive` and `speaker` go through, and it hands `source_says` the verb as a variable.
 verbs_core_calls() {
-  grep -rhoE 'source_(says|hears) [a-z]+' "$1/bin" "$1/hooks" "$1/lib/source.sh" 2>/dev/null | cut -d' ' -f2 | LC_ALL=C sort -u
+  # shellcheck disable=SC2046
+  grep -rhoE 'source_(says|hears) [a-z]+' $(core_dirs_in "$1") 2>/dev/null | cut -d' ' -f2 | LC_ALL=C sort -u
 }
 
 # The verbs an adapter's own dispatch answers.
 verbs_answered_by() { awk '/^case "\$\{1:-\}" in$/,/^esac$/' "$1" | sed -n 's/^    \([a-z]*\)).*/\1/p'; }
 
-# Floor's shipped code, copied, with one line added to its runner.
+# Floor's shipped code, copied, with one line added to its runner. The definition comes too: a
+# plant with no `core.dirs` is a plant every check below reads as empty.
 plant_in() {
-  mkdir -p "$1" && cp -R "$(dirname "$runner")/../bin" "$(dirname "$runner")/../lib" \
-    "$(dirname "$runner")/../hooks" "$1/" 2>/dev/null || return 1
+  local from="$(dirname "$runner")/.."
+  mkdir -p "$1" && cp "$from/core.dirs" "$1/" 2>/dev/null || return 1
+  # shellcheck disable=SC2046
+  cp -R $(core_dirs_in "$from") "$1/" 2>/dev/null || return 1
   printf '    %s\n' "$2" >> "$1/bin/run.sh"
 }
 
@@ -5184,7 +5188,8 @@ CALL_POSITION='(^[[:space:]]*|[;&|({`][[:space:]]*|\$\([[:space:]]*|(if|while|un
 
 # Every shipped line calling one of these commands, joined first where a backslash continues it.
 calls_of() {
-  find "$1/bin" "$1/lib" "$1/hooks" -type f 2>/dev/null | while IFS= read -r file; do
+  # shellcheck disable=SC2046
+  find $(core_dirs_in "$1") -type f 2>/dev/null | while IFS= read -r file; do
     joined_lines_of "$file" | grep -E "$CALL_POSITION($2)\"?([[:space:]]|\$)" \
       | grep -vE '^[[:space:]]*#' | sed "s|^|${file##*/}: |"
   done
@@ -5206,6 +5211,21 @@ floor_runs_no_harness() {
     || { skip "a planted harness call — could not copy floor"; return; }
   has "and a planted one is found, behind a path and an if" \
       "$(harness_calls_in "$tmp/planted-harness")" 'bin/claude'
+
+  # **What core is, is read and not typed.** This check is the fourth to refuse a word in core, and
+  # the three in `bin/` are gates of this repository that a consumer never runs. One definition is
+  # only one if a line added to it moves every reader, so here is this reader, moved.
+  plant_in "$tmp/widened-core" ':' \
+    || { skip "a widened core — could not copy floor"; return; }
+  mkdir -p "$tmp/widened-core/extra"
+  printf '#!/bin/sh\nclaude -p "$1"\n' > "$tmp/widened-core/extra/reach.sh"
+
+  is "a harness outside the definition is not core's to answer for" \
+     "$(harness_calls_in "$tmp/widened-core")" ""
+
+  printf 'extra\n' >> "$tmp/widened-core/core.dirs"
+  has "and one line in the definition moves what this check reads" \
+      "$(harness_calls_in "$tmp/widened-core")" 'reach.sh: claude'
 }
 
 harness_calls_in() { calls_of "$1" 'claude|codex|gemini|aider|cursor-agent|opencode|goose|qwen|copilot'; }
@@ -9534,12 +9554,45 @@ two_deliveries_reconcile_or_say_they_cannot
 # portability already leaked — which is the thing to catch rather than the thing to hope for.
 #
 the_providers_prefix_lives_in_one_file() {
-  leaked=$(grep -rl 'foundry:' "$here/bin" "$here/lib" "$here/hooks" 2>/dev/null \
+  # shellcheck disable=SC2046
+  leaked=$(grep -rl 'foundry:' $(core_dirs_in "$here") 2>/dev/null \
              | grep -v 'source-github\.sh')
 
   is "the provider's label prefix lives in one file" "$leaked" ""
 }
 the_providers_prefix_lives_in_one_file
+
+#
+# **One definition is one only while nothing else holds the list.** Eight places held it word for
+# word and two more held part of it, and nothing made any of them agree. A copy is silent: it goes
+# green over the directory somebody added to `core.dirs` and never told it about.
+#
+# A line of code naming every directory `core.dirs` names is that copy. Nothing else needs the whole
+# set on one line, so the shape is the tell and no exception list is wanted.
+#
+# **A comment may name them**, for the reason `bin/hosts.sh` gives about a host: the sentence
+# explaining core is the sentence that has to say what core is.
+#
+# **The whole set, never a subset.** `install.sh`'s `runtime_scripts` names `hooks` and `bin` and
+# means it — hooks and the CLI, not core. A check flagging two of three would be judging intent,
+# and it would be wrong there. So a copy that drops a directory reads as clean here, and a person
+# reading the two lines together is the only thing that finds one.
+#
+# **It reads the plugin and nothing above it.** A copy written in a repository's own gates is out
+# of reach, because floor's suite ships to machines that have no such gates to read. That half is
+# a repository gate's, and there is not one.
+the_core_list_lives_in_one_file() {
+  held=$(find "$here" -name core.dirs -prune -o -name '*.sh' -type f -print | while IFS= read -r file; do
+    lines=$(grep -vE '^[[:space:]]*#' "$file")
+    for dir in $(grep '^[^#]' "$here/core.dirs"); do
+      lines=$(printf '%s\n' "$lines" | grep -E "(^|[^a-z-])$dir([^a-z-]|$)") || { lines=''; break; }
+    done
+    [ -z "$lines" ] || printf '%s\n' "${file#"$here"/}"
+  done)
+
+  is "no shipped file but core.dirs holds the list of core's directories" "$held" ""
+}
+the_core_list_lives_in_one_file
 
 #
 # §2.5's `human` evidence, and the stage is what makes it that. The same answer read at authorisation

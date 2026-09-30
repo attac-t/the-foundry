@@ -1,0 +1,27 @@
+# What floor's core is. Every check that refuses a word in core reads this file and no other.
+#
+# Core is what floor ships and runs. Not `tests`, which stands a host up on purpose, and not the
+# other plugins, which have no such boundary to keep.
+#
+# **Each directory is named from floor's own root, never from a repository's.** Two kinds of reader
+# stand in different places. This repository's gates stand at the repository root and prefix
+# `plugins/floor/`. Floor's own suite stands at the plugin root, and reads a planted copy of it as
+# often as the real one. A list written from either place is unreadable from the other.
+#
+# **So it lives in the plugin and not in `bin/`.** A file under `bin/` belongs to this repository,
+# and floor's suite ships to machines this repository is not on.
+#
+# **Eight places held this list, word for word, and two more held part of it.** Nothing made any of
+# them agree, so a directory added to one left the rest green over code they had never read. One of
+# the two partials was already wrong: floor's own `core_names_no_vendor` read `bin` and `lib` and
+# never `hooks`, from the day it was written.
+#
+# **What holds this is a check inside floor, and it reads floor only.** `the_core_list_lives_in_one_file`
+# refuses a second copy anywhere in the plugin. A copy written in a repository's own gates is out
+# of its reach, and no gate holds that half today.
+#
+# A `#` line is prose. Every other line is one directory, and it starts in column zero.
+
+bin
+lib
+hooks

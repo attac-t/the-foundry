@@ -6,6 +6,13 @@
 # inside it. A shared helper one directory up would make this suite unrunnable for anyone who
 # installed only floor.
 
+# The directories `<root>/core.dirs` names, each put back behind the root it was read from.
+#
+# **This is the same file `bin/hosts.sh` reads**, and it ships with the plugin so that a consumer
+# running floor's own suite has one definition rather than a copy of this repository's. A plant
+# carries its own, so widening a plant's core widens only that plant.
+core_dirs_in() { sed -n "s|^[^#]|$1/&|p" "$1/core.dirs" 2>/dev/null; }
+
 passed=0
 failed=0
 skipped=0
