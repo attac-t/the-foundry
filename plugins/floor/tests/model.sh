@@ -2800,7 +2800,7 @@ a_request_names_what_the_grader_accepts
 
 #
 # A run in a repository of its own, begun by the worker `$2` names, or by none when it is empty. Its
-# gate and its one judged clause are met, and a push lands in a bare remote beside it.
+# gate is met and its one judged clause waits for `a-reviewer`, whom the case asks by hand.
 #
 # Only a repository git could not make fails here. What floor did is the case's to read, since a
 # break that stopped a step would otherwise be counted as a skip.
@@ -2815,15 +2815,19 @@ a_judged_run_begun_by() {
 
   ( cd "$tmp/$1" && FOUNDRY_HOME="$home" FOUNDRY_RUN="" FOUNDRY_WHO=ada@example.com FOUNDRY_WORKER="$2" \
       sh "$runner" new "Begun by ${2:-nobody}" >/dev/null 2>&1 )
-  for step in "charter derive" "policy authorize https://github.com/acme/$1.git" \
-      "policy deliver-to https://github.com/acme/$1.git" "targets add https://github.com/acme/$1.git main" open gates; do
-    floor "$tmp/$1" $step >/dev/null 2>&1
+  deliverable_from "$tmp/$1" "$1"
+  return 0
+}
+
+# Every step between a run and a delivery, and its push sent to the bare remote beside the repository.
+deliverable_from() {
+  for step in "charter derive" "policy authorize https://github.com/acme/$2.git" \
+      "policy deliver-to https://github.com/acme/$2.git" "targets add https://github.com/acme/$2.git main" open gates; do
+    floor "$1" $step >/dev/null 2>&1
   done
 
-  begun_slot=$(only_slot "$(floor "$tmp/$1" path)/units/01/workspace") \
-    && git -C "$begun_slot" config "url.$tmp/$1-remote.git.pushInsteadOf" "https://github.com/acme/$1.git"
-  judged "$tmp/$1" 'a stranger can read it' a-reviewer approve 'reads fine' >/dev/null 2>&1
-  return 0
+  deliverable_slot=$(only_slot "$(floor "$1" path)/units/01/workspace") \
+    && git -C "$deliverable_slot" config "url.$tmp/$2-remote.git.pushInsteadOf" "https://github.com/acme/$2.git"
 }
 
 #
@@ -2838,6 +2842,7 @@ a_request_names_the_worker_its_run_began_with() {
     || { skip "the worker a request names — git could not make a repo here"; return; }
 
   for begun in begun-by-one begun-by-none; do
+    judged "$tmp/$begun" 'a stranger can read it' a-reviewer approve 'reads fine' >/dev/null 2>&1
     ( FOUNDRY_WORKER=another-worker; floor "$tmp/$begun" deliver 'a change' ) >/dev/null 2>&1
   done
   by_one=$(cat "$(floor "$tmp/begun-by-one" path)/body" 2>/dev/null)
@@ -2848,17 +2853,33 @@ a_request_names_the_worker_its_run_began_with() {
   has   "and a run that recorded none says so, and that nothing checked" "$by_none" \
         "Judged \`a stranger can read it\`: judged by a-reviewer; this run records no worker, so nothing checked that its judge did not write the work"
   lacks "and neither names the worker of the shell that delivered it" "$by_one$by_none" "another-worker"
+
+  # A verdict typed by hand leaves no receipt, so what the judge found is one line saying why.
+  has   "a judge with no receipt in the run reads as one line saying so" "$by_one" \
+        "No receipt stands for a-reviewer here, so no report is carried."
 }
 a_request_names_the_worker_its_run_began_with
 
 #
-# #1076, where `status` reads a run. *met* prints each clause through the reader the request uses, so
-# it names the same worker from the same record, whatever worker the shell reading it names.
+# #1076, where `status` reads a run. Under *run* it names the worker `run.began` recorded, before any
+# panel clause is met. *met* prints each clause through the reader the request uses, so it names the
+# same worker from the same record, whatever worker the shell reading it names.
 #
 status_names_the_worker_its_run_began_with() {
   a_judged_run_begun_by read-begun-by-one 'Some Model 9' && a_judged_run_begun_by read-begun-by-none '' \
     || { skip "the worker status names — git could not make a repo here"; return; }
 
+  unmet_one=$(FOUNDRY_WORKER=another-worker; floor_says "$tmp/read-begun-by-one" status)
+  unmet_none=$(FOUNDRY_WORKER=another-worker; floor_says "$tmp/read-begun-by-none" status)
+
+  has   "status names the worker under run, before its panel clause is met" "$unmet_one" "worker    Some Model 9"
+  lacks "while nothing a panel met is under met yet" "$unmet_one" "  - Judged"
+  has   "and under run says a run recorded none, and that nothing checked" "$unmet_none" \
+        "worker    none recorded, so nothing checked that its judge did not write the work"
+
+  for begun in read-begun-by-one read-begun-by-none; do
+    judged "$tmp/$begun" 'a stranger can read it' a-reviewer approve 'reads fine' >/dev/null 2>&1
+  done
   read_one=$(FOUNDRY_WORKER=another-worker; floor_says "$tmp/read-begun-by-one" status)
   read_none=$(FOUNDRY_WORKER=another-worker; floor_says "$tmp/read-begun-by-none" status)
 
@@ -2866,9 +2887,308 @@ status_names_the_worker_its_run_began_with() {
         "  - Judged \`a stranger can read it\`: judged by a-reviewer; worker Some Model 9"
   has   "and says a run recorded none, and that nothing checked" "$read_none" \
         "  - Judged \`a stranger can read it\`: judged by a-reviewer; this run records no worker, so nothing checked that its judge did not write the work"
-  lacks "and neither names the worker of the shell reading it" "$read_one$read_none" "another-worker"
+  lacks "and no reading names the worker of the shell reading it" "$unmet_one$unmet_none$read_one$read_none" "another-worker"
 }
 status_names_the_worker_its_run_began_with
+
+#
+# A run in a repository of its own that can deliver: a gate, and no judge. `$2`, when it is not empty,
+# is the practice at its base. A push lands in a bare remote beside it.
+#
+a_run_to_deliver() {
+  git init -q --bare "$tmp/$1-remote.git" 2>/dev/null \
+    && make_repo "$tmp/$1" main && set_origin "$tmp/$1" "https://github.com/acme/$1.git" \
+    && mkdir -p "$tmp/$1/.foundry" \
+    && commit_file "$tmp/$1" .foundry/gates 'tests  true
+' || return 1
+  [ -z "$2" ] || commit_file "$tmp/$1" .foundry/practice "$2" || return 1
+
+  floor_new_as "$tmp/$1" ada@example.com "Delivers $1" >/dev/null
+  deliverable_from "$tmp/$1" "$1"
+  return 0
+}
+
+# A commit through floor, so the run records it, carrying the message `$2`. The gate runs again there.
+a_commit_in() {
+  commit_slot=$(only_slot "$(floor "$1" path)/units/01/workspace") || return 1
+
+  printf '%s\n' "$2" >> "$commit_slot/changes.txt" \
+    && git -C "$commit_slot" add changes.txt >/dev/null 2>&1 \
+    && floor "$1" commit "$2" >/dev/null 2>&1 \
+    && floor "$1" gates >/dev/null 2>&1
+}
+
+#
+# A run whose one judged clause a panel meets. Each member after `$2` is reached by a judge reporting
+# the file `$tmp/$1-<member>.said`, which the case writes first. `$2` names the worker `new` records.
+#
+a_panel_run() {
+  git init -q --bare "$tmp/$1-remote.git" 2>/dev/null \
+    && make_repo "$tmp/$1" main && set_origin "$tmp/$1" "https://github.com/acme/$1.git" \
+    && mkdir -p "$tmp/$1/.foundry" "$tmp/$1/bin" \
+    && commit_file "$tmp/$1" .foundry/gates 'tests  true
+' || return 1
+
+  panel_of=$1 panel_worker=$2; shift 2
+  for member in "$@"; do
+    commit_file "$tmp/$panel_of" "bin/judge-$member.sh" "$(a_judge_reporting "$tmp/$panel_of-$member.said")" || return 1
+  done
+  commit_file "$tmp/$panel_of" .foundry/judged "$(the_panel_declared "$@")
+" || return 1
+
+  ( cd "$tmp/$panel_of" && FOUNDRY_HOME="$home" FOUNDRY_RUN="" FOUNDRY_WHO=ada@example.com \
+      FOUNDRY_WORKER="$panel_worker" sh "$runner" new "Judged by a panel" >/dev/null 2>&1 )
+  deliverable_from "$tmp/$panel_of" "$panel_of"
+  return 0
+}
+
+# Each member reached by a judge of its own, and all of them on one clause.
+the_panel_declared() {
+  for member in "$@"; do printf 'reach  %s  sh bin/judge-%s.sh\n' "$member" "$member"; done
+  printf '%s  a stranger can read it' "$(printf '%s,' "$@" | sed 's/,$//')"
+}
+
+# A judge that reports the words in the file `$1`, and approves, stamping the report as it wrote it.
+a_judge_reporting() {
+  printf '#!/bin/sh
+cat %s > "${FOUNDRY_RECEIPT%%.receipt}.report"
+printf "adapter a-fixture\\n" >> "$FOUNDRY_RECEIPT"
+printf "report %%s\\ntime 2026-09-05T00:00:00Z\\nverdict approve\\n" \\
+  "$(cksum < "${FOUNDRY_RECEIPT%%.receipt}.report" | awk "{ print \\$1 }")" >> "$FOUNDRY_RECEIPT"
+' "'$1'"
+}
+
+# Where a member's report lands, named from inside the run as floor names it.
+report_of() { printf 'judged/%s-%s.report' "$(clause_of 'a stranger can read it')" "$(clause_of "$1")"; }
+
+#
+# #1077. A delivery handed no brief opens with the delivered commit's message, fenced, then floor's
+# record, and `deliver` says so. Two commits sit above the base, and the last one's message is carried.
+#
+a_request_handed_no_brief_opens_with_its_commits_message() {
+  a_run_to_deliver no-brief '' || { skip "a request with no brief — git could not make a repo here"; return; }
+  a_commit_in "$tmp/no-brief" "$(printf 'feat: the first change\n\nIt began the work.')"
+  a_commit_in "$tmp/no-brief" "$(printf 'feat: the last change\n\nIt finished the work.')"
+
+  said=$(floor_says "$tmp/no-brief" deliver 'a change')
+  opened=$(cat "$(floor "$tmp/no-brief" path)/body" 2>/dev/null)
+
+  has   "deliver says the commit's message stands where a brief would" "$said" \
+        "no brief, so this delivery carries its commit's message where a brief would stand"
+  is    "the request opens with the delivered commit's message, fenced" \
+        "$(printf '%s\n' "$opened" | sed -n '1,5p')" "$(printf '```\nfeat: the last change\n\nIt finished the work.\n```')"
+  lacks "and never an earlier commit's" "$opened" "feat: the first change"
+  is    "then one line says how many commits it is the last of, and floor's record follows" \
+        "$(printf '%s\n' "$opened" | sed -n '6,9p')" \
+        "$(printf '\n2 commits sit above the base, and the message carried is the last one'\''s.\n\n**What floor recorded.**')"
+}
+a_request_handed_no_brief_opens_with_its_commits_message
+
+# #1077. A delivery handed a brief opens with the brief, as it always has, and carries no message.
+a_request_handed_a_brief_carries_no_commit_message() {
+  a_run_to_deliver with-brief '' || { skip "a request with a brief — git could not make a repo here"; return; }
+  a_commit_in "$tmp/with-brief" 'feat: a change the brief already tells'
+  printf 'Outcome\n\nThe brief says what changed.\n' > "$tmp/with-brief.md"
+
+  floor "$tmp/with-brief" deliver 'a change' "$tmp/with-brief.md" >/dev/null 2>&1
+  briefed=$(cat "$(floor "$tmp/with-brief" path)/body" 2>/dev/null)
+
+  is    "a request handed a brief opens with the brief" "$(printf '%s\n' "$briefed" | head -1)" "Outcome"
+  lacks "and carries no commit message" "$briefed" "feat: a change the brief already tells"
+}
+a_request_handed_a_brief_carries_no_commit_message
+
+# #1077, under `body brief`. With no brief, the commit's message is the whole body, fenced.
+a_body_set_to_brief_carries_the_message_alone() {
+  a_run_to_deliver brief-form 'body brief
+' || { skip "the message alone — git could not make a repo here"; return; }
+  a_commit_in "$tmp/brief-form" "$(printf 'feat: the only change\n\nIt is all there is.')"
+
+  floor "$tmp/brief-form" deliver 'a change' >/dev/null 2>&1
+
+  is "under body brief, a request with no brief carries its commit's message alone, fenced" \
+     "$(cat "$(floor "$tmp/brief-form" path)/body" 2>/dev/null)" \
+     "$(printf '```\nfeat: the only change\n\nIt is all there is.\n```')"
+}
+a_body_set_to_brief_carries_the_message_alone
+
+#
+# #1075. Below the record, each clause a panel met names each judge, with the worker beside it, then
+# fences its report at the left margin: as the judge wrote it, spaces and all, less its verdict line.
+#
+below_the_record_each_judge_is_named_with_its_report() {
+  printf 'One found this.\n\n  Kept  as  written.\n\nVERDICT: approve\n' > "$tmp/found-each-one.said"
+  printf 'Two found that.\nVERDICT: approve\n' > "$tmp/found-each-two.said"
+  a_panel_run found-each 'Some Model 9' one two \
+    || { skip "what each judge found — git could not make a repo here"; return; }
+
+  floor "$tmp/found-each" judged >/dev/null 2>&1
+  floor "$tmp/found-each" deliver 'a change' >/dev/null 2>&1
+  found=$(cat "$(floor "$tmp/found-each" path)/body" 2>/dev/null)
+
+  is    "what each judge found stands below the record" "$(printf '%s\n' "$found" | awk '
+          $0 == "**What floor recorded.**" { r = NR } $0 == "**What each judge found.**" { f = NR }
+          END { print (r > 0 && f > r) }')" "1"
+  has   "each judge is named, with the worker beside it" "$found" "one on \`a stranger can read it\`; worker Some Model 9"
+  has   "and so is every other judge of the panel" "$found" "two on \`a stranger can read it\`; worker Some Model 9"
+  has   "its report is fenced at the left margin, as the judge wrote it" "$found" \
+        "$(printf '\n```\nOne found this.\n\n  Kept  as  written.\n\n```')"
+  has   "and so is each other judge's" "$found" "$(printf '\n```\nTwo found that.\n```')"
+  lacks "less its verdict line" "$found" "VERDICT:"
+}
+below_the_record_each_judge_is_named_with_its_report
+
+# #1075. A report is carried only as its receipt stamped it. One changed since reads as one line.
+a_report_changed_since_its_receipt_is_not_carried() {
+  printf 'Found as it was stamped.\nVERDICT: approve\n' > "$tmp/moved-report-one.said"
+  a_panel_run moved-report '' one || { skip "a report that moved — git could not make a repo here"; return; }
+
+  floor "$tmp/moved-report" judged >/dev/null 2>&1
+  moved_run=$(floor "$tmp/moved-report" path)
+  printf 'A line added after the receipt stamped it.\n' >> "$moved_run/$(report_of one)"
+  floor "$tmp/moved-report" deliver 'a change' >/dev/null 2>&1
+  moved=$(cat "$moved_run/body" 2>/dev/null)
+
+  has   "a report that no longer matches its receipt reads as one line saying so" "$moved" \
+        "Its report is not carried: it no longer matches the checksum its receipt stamped. It is \`$(report_of one)\` in run \`$(basename "$moved_run")\`."
+  lacks "and none of it is carried" "$moved" "Found as it was stamped."
+}
+a_report_changed_since_its_receipt_is_not_carried
+
+#
+# #1075. A report with nothing above its verdict line reads as one line saying so, and a receipt with
+# no report beside it reads as one line saying that.
+#
+a_judge_with_nothing_to_carry_reads_as_one_line() {
+  printf 'VERDICT: approve\n' > "$tmp/nothing-found-one.said"
+  printf 'Two found this, and then the report went.\nVERDICT: approve\n' > "$tmp/nothing-found-two.said"
+  a_panel_run nothing-found '' one two || { skip "nothing to carry — git could not make a repo here"; return; }
+
+  floor "$tmp/nothing-found" judged >/dev/null 2>&1
+  bare_run=$(floor "$tmp/nothing-found" path)
+  rm -f "$bare_run/$(report_of two)"
+  floor "$tmp/nothing-found" deliver 'a change' >/dev/null 2>&1
+  bare=$(cat "$bare_run/body" 2>/dev/null)
+
+  has   "a report with nothing above its verdict reads as one line saying so" "$bare" \
+        "one's report holds nothing above its verdict."
+  has   "and a receipt with no report beside it reads as one line saying that" "$bare" \
+        "No report stands beside two's receipt."
+  lacks "and neither carries a verdict line" "$bare" "VERDICT:"
+  lacks "nor anything of the report that went" "$bare" "Two found this"
+}
+a_judge_with_nothing_to_carry_reads_as_one_line
+
+#
+# #1075. A message or report naming this host is withheld whole, and one line says why and where it
+# is. The home is `/c/Users/ada`, so each spelling of it floor forms can be planted, in any case.
+#
+a_text_naming_this_host_is_withheld_whole() {
+  printf 'I read /c/Users/ada/notes\nVERDICT: approve\n' > "$tmp/names-host-one.said"
+  printf 'I read C:\134Users\134ada\134notes\nVERDICT: approve\n' > "$tmp/names-host-two.said"
+  printf 'I read c:/users/ada/notes\nVERDICT: approve\n' > "$tmp/names-host-three.said"
+  printf 'JSON says "C:\134\134Users\134\134ada\134\134notes"\nVERDICT: approve\n' > "$tmp/names-host-four.said"
+  printf 'Mail it to mail@ada.invalid\nVERDICT: approve\n' > "$tmp/names-host-five.said"
+  printf 'Nothing here names the host.\nVERDICT: approve\n' > "$tmp/names-host-six.said"
+  a_panel_run names-host '' one two three four five six \
+    || { skip "a text naming this host — git could not make a repo here"; return; }
+
+  # A fixture's commits are told who made them, as `identity.md` allows, so the address is known.
+  ( export GIT_AUTHOR_NAME=ada GIT_AUTHOR_EMAIL=mail@ada.invalid GIT_COMMITTER_NAME=ada GIT_COMMITTER_EMAIL=mail@ada.invalid
+    a_commit_in "$tmp/names-host" "$(printf 'feat: signed\n\nSigned-off-by: ada <mail@ada.invalid>')" )
+  floor "$tmp/names-host" judged >/dev/null 2>&1
+  ( HOME=/c/Users/ada; floor "$tmp/names-host" deliver 'a change' ) >/dev/null 2>&1
+  named_run=$(floor "$tmp/names-host" path)
+  named=$(cat "$named_run/body" 2>/dev/null)
+
+  for member in one two three four; do
+    has "a report holding the home as [$member] spells it is withheld whole" "$named" \
+        "$member's report is withheld whole: it holds this host's home directory. It is \`$(report_of "$member")\` in run \`$(basename "$named_run")\`."
+  done
+  has   "so is one holding an address its commits carry" "$named" \
+        "five's report is withheld whole: it holds an address its commits carry."
+  has   "and a message, by the same rule" "$named" \
+        "Its commit's message is withheld whole: it holds an address its commits carry. It is \`message\` in run \`$(basename "$named_run")\`."
+  has   "while a report naming nothing of the host is carried" "$named" "$(printf '```\nNothing here names the host.\n```')"
+  lacks "and nothing withheld reaches the request" "$named" "notes"
+  lacks "nor the address" "$named" "mail@ada.invalid"
+}
+a_text_naming_this_host_is_withheld_whole
+
+# #1075. The home as `HOME` holds it, a path with no drive in it, is caught in a message too.
+a_message_naming_the_home_as_it_is_is_withheld() {
+  a_run_to_deliver home-as-is '' || { skip "the home as it is — git could not make a repo here"; return; }
+  a_commit_in "$tmp/home-as-is" 'feat: read what /home/ada/notes holds'
+
+  ( HOME=/home/ada; floor "$tmp/home-as-is" deliver 'a change' ) >/dev/null 2>&1
+
+  has "a message holding the home as HOME holds it is withheld whole" \
+      "$(cat "$(floor "$tmp/home-as-is" path)/body" 2>/dev/null)" \
+      "Its commit's message is withheld whole: it holds this host's home directory."
+}
+a_message_naming_the_home_as_it_is_is_withheld
+
+# #1075. A home of `/` names nothing, or every text holding a slash would be withheld.
+a_home_of_one_slash_names_nothing() {
+  a_run_to_deliver home-slash '' || { skip "a home of / — git could not make a repo here"; return; }
+  a_commit_in "$tmp/home-slash" 'feat: move a/b to c/d'
+
+  ( HOME=/; floor "$tmp/home-slash" deliver 'a change' ) >/dev/null 2>&1
+
+  is "a home of / withholds nothing" "$(sed -n '1,3p' "$(floor "$tmp/home-slash" path)/body" 2>/dev/null)" \
+     "$(printf '```\nfeat: move a/b to c/d\n```')"
+}
+a_home_of_one_slash_names_nothing
+
+#
+# #1075. No line of a carried text renders outside its fence, a longer backtick run included. The
+# fence is one backtick longer than the longest run the text holds.
+#
+no_line_of_a_carried_text_leaves_its_fence() {
+  printf 'a ``` inside a line\n`````\nVERDICT: approve\n' > "$tmp/fenced-in-one.said"
+  a_panel_run fenced-in '' one || { skip "a fence that holds — git could not make a repo here"; return; }
+  a_commit_in "$tmp/fenced-in" 'feat: a ```` fence in a subject'
+
+  floor "$tmp/fenced-in" judged >/dev/null 2>&1
+  floor "$tmp/fenced-in" deliver 'a change' >/dev/null 2>&1
+  fenced_body=$(cat "$(floor "$tmp/fenced-in" path)/body" 2>/dev/null)
+
+  is  "a message holding a run of four sits in a fence of five" "$(printf '%s\n' "$fenced_body" | sed -n '1,3p')" \
+      "$(printf '`````\nfeat: a ```` fence in a subject\n`````')"
+  has "and a report holding a run of five, in a fence of six" "$fenced_body" \
+      "$(printf '\n``````\na ``` inside a line\n`````\n``````')"
+}
+no_line_of_a_carried_text_leaves_its_fence
+
+#
+# #1075. A text over its bound is cut at its last whole line under it, and all of them together stay
+# under a second bound. Lines of fifty bytes put each cut on a number a person can check by hand.
+#
+carried_text_is_cut_at_its_bounds() {
+  awk 'BEGIN { for (i = 1; i <= 400; i++) printf "one %045d\n", i; print "VERDICT: approve" }' > "$tmp/cut-texts-one.said"
+  for member in two three four; do
+    awk -v m="$member" 'BEGIN { for (i = 1; i <= 300; i++) printf "%s %s\n", m, sprintf("%0" (48 - length(m)) "d", i)
+                                print "VERDICT: approve" }' > "$tmp/cut-texts-$member.said"
+  done
+  a_panel_run cut-texts '' one two three four || { skip "texts over a bound — git could not make a repo here"; return; }
+  a_commit_in "$tmp/cut-texts" "$(awk 'BEGIN { for (i = 1; i <= 340; i++) printf "msg %045d\n", i }')"
+
+  floor "$tmp/cut-texts" judged >/dev/null 2>&1
+  floor "$tmp/cut-texts" deliver 'a change' >/dev/null 2>&1
+  cut_run=$(floor "$tmp/cut-texts" path)
+  cut_body=$(cat "$cut_run/body" 2>/dev/null)
+  in_the_run="in run \`$(basename "$cut_run")\`."
+
+  has   "a message over its own bound is cut there" "$cut_body" "Cut at 16000 of its 17000 bytes. All of it is \`message\` $in_the_run"
+  has   "and so is a report" "$cut_body" "Cut at 16000 of its 20000 bytes. All of it is \`$(report_of one)\` $in_the_run"
+  has   "a report under both bounds is carried whole" "$cut_body" "$(printf 'two %045d\n```' 300)"
+  has   "one the bound on all of them reaches is cut where it falls" "$cut_body" \
+        "Cut at 1000 of its 15000 bytes. All of it is \`$(report_of three)\` $in_the_run"
+  has   "and one it leaves no room for is cut to nothing" "$cut_body" \
+        "Cut at 0 of its 15000 bytes. All of it is \`$(report_of four)\` $in_the_run"
+  lacks "no cut names a path outside the run" "$cut_body" "$cut_run"
+}
+carried_text_is_cut_at_its_bounds
 
 #
 # **Both adapters carry a brief and nothing compared them.** #377 calls that a seam built and
@@ -2945,6 +3265,25 @@ the_forge_takes_the_body_from_a_file() {
   has "down to the marker the adapter adds last"  "$filed" "floor-run: run-filed"
 }
 the_forge_takes_the_body_from_a_file
+
+#
+# #1075. The GitHub adapter drops a line that is only this item's own `Refs` or `Closes` from the whole
+# body, fenced or not, so a carried commit footer of that shape goes from inside its fence.
+#
+a_fenced_line_naming_the_item_is_dropped_too() {
+  fake_gh "$tmp/drop-fenced-bin" || { skip "a fenced reference — could not put a gh on the path"; return; }
+  printf 'What changed.\n\n```\nfeat: a footer\n\nRefs #71\n```\n' > "$tmp/drop-fenced.md"
+
+  ( cd "$tmp" && PATH="$tmp/drop-fenced-bin:$PATH" GH_STORE="$tmp/drop-fenced-store" \
+      sh "$(dirname "$runner")/../lib/source-github.sh" publish 71 run-fenced a-branch 'A title' Refs "$tmp/drop-fenced.md" ) \
+    >/dev/null 2>&1
+  fenced_sent=$(cat "$tmp/drop-fenced-store/lastbody" 2>/dev/null)
+
+  is  "a fenced line naming the item is dropped, so the item is named once" \
+      "$(printf '%s\n' "$fenced_sent" | grep -c '^Refs #71$')" "1"
+  has "and the fence it stood in still closes" "$fenced_sent" "$(printf '```\nfeat: a footer\n\n```')"
+}
+a_fenced_line_naming_the_item_is_dropped_too
 
 #
 # Two conjuncts that close fail-opens rather than edge cases. Quantified over clauses and over
