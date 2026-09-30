@@ -14360,6 +14360,11 @@ a_suite_run_with_only_runs_the_cases_it_names() {
   is    "model.sh --only answers 2 for a name that is no case" "$code" "2"
   has   "and names it"                                          "$said" "no_case_is_named_this is no case"
   lacks "and runs no check before it refuses"                   "$said" "  ok  "
+
+  # The stranger's guess: `--case`, handed a case of this file rather than a `tests/cases.sh` id.
+  said=$(bash "$suite_beside_the_runner" --case a_named_run_outranks_the_pointer 2>&1)
+  has "--case given a case of this file points at --only" \
+      "$said" "model.sh --only a_named_run_outranks_the_pointer"
 }
 
 refused_by_only() { ( . "$alone_beside_the_runner" && only_these "$@" ) >/dev/null 2>&1; printf '%s' "$?"; }

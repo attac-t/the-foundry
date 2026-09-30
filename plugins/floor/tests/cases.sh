@@ -48,11 +48,13 @@ declared_assertion() {
 
 # --- what a name may run ---
 
-# A case id is a name this file holds, never whatever the caller typed.
+# A case id is a name this file holds, never whatever the caller typed. A stranger's likelier guess
+# is a case of `model.sh` itself, which `--only` runs, so the refusal names that flag too.
 named_case() {
     case_ids | grep -Fxq -- "${1:-}" && return 0
 
-    printf 'no case named [%s]. This file holds:\n%s\n' "${1:-}" "$(case_ids)" >&2
+    printf 'no case named [%s] in tests/cases.sh, which holds:\n%s\n' "${1:-}" "$(case_ids)" >&2
+    printf 'a case of tests/model.sh itself runs alone with: model.sh --only %s\n' "${1:-}" >&2
     return 1
 }
 
