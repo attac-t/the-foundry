@@ -3119,9 +3119,13 @@ bash tests/model.sh --only a_run_is_read_in_one_status
 its breaks run the whole suite. A case run alone gets five times its clean time, and never less than
 two minutes. If the clock runs out there, the whole suite decides.
 
-**One slot in ten also runs the whole suite.** The tree's commit picks which ones. A break its case
-caught that the whole suite misses turns the audit red, because an earlier case hid it. A sample of
+**One slot in ten also runs the whole suite.** The tree's commit picks which ones. A sampled break
+its case caught and the whole suite missed turns the audit red: an earlier case hid it. A sample of
 none is red too. The verdict says `killed alone by` when the case decided it.
+
+**Outside the sampled tenth, a break hidden that way reads `ok`.** Its case catches it alone, and
+the whole suite never runs to show the case that hides it. Each tree samples a different tenth. This
+is a known gap, and #1116 owns it.
 
 `model.sh` calls the runner. `install.sh` reads the command out of `hooks/hooks.json` and hands it
 to a shell — because a suite that calls the scripts itself proves only that the scripts work, never
