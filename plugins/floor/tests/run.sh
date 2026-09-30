@@ -1699,8 +1699,8 @@ report_breaks() {
 #
 # Start a break, once a worker is free. A break's verdict rests on nothing another break did, which
 # is what lets them run at once — and the slot it is handed, rather than its tag, is what keeps its
-# mutant its own. Two breaks are tagged `elsewhere`, and one directory for two workers is one worker
-# reading a tree the other is deleting.
+# mutant its own. Two breaks were tagged `elsewhere` until #1106, and one directory for two workers
+# is one worker reading a tree the other is deleting.
 #
 # The verdict on disk reads *reported nothing* until the break replaces it, and the replacement is a
 # rename, so it lands whole or not at all. A worker killed at any point leaves the first verdict
@@ -1888,7 +1888,7 @@ wreck_runner "a selection line that is not a repo and a ref is caught" \
 # A pin captured somewhere the gates will never run. The charter reads as provenanced throughout —
 # a real artifact at a real commit — so nothing downstream can tell.
 wreck_runner "a bar derived off the graded ref is caught" \
-  elsewhere 's#    refuse_second_ref "$dir" "$identity" "$ref"#    :#'
+  secondref 's#    refuse_second_ref "$dir" "$identity" "$ref"#    :#'
 
 #
 # Authorisation refuses a run that describes no work. Two refusals, two breaks: an empty charter
@@ -2216,7 +2216,7 @@ wreck_runner "a gate run that answers 0 whatever happened is caught" \
 
 # `%` for the delimiter: the argument count holds the one sed would otherwise end on.
 wreck_runner "a gate run that takes a command from the caller is caught" \
-  callercmd 's%    \[ "$#" -eq 0 \] || { usage; exit 2; }%%'
+  gateargs 's%    \[ "$#" -eq 0 \] || { usage; exit 2; }%%'
 
 # Two guards, two breaks. A record with no name cannot be matched to a bar; a record with no command
 # is a pass for having run nothing. One mutant each, or whichever fires first hides the other.
@@ -2263,7 +2263,7 @@ wreck_runner "a gate run against a repository it was not pinned to is caught" \
 # The whole of what the completion invariant adds. Gates could pass at commit N, three commits land,
 # and delivery proceed on evidence that no longer applied.
 wreck_runner "evidence that no longer applies to the delivered ref is caught" \
-  staleref 's# || $6 "" != ref ""##'
+  staleevidence 's# || $6 "" != ref ""##'
 
 # `satisfying` evidence is a record whose answer is yes. A record that a gate failed is a record.
 wreck_runner "a failing gate counted as satisfying its clause is caught" \
@@ -2356,7 +2356,7 @@ wreck_runner "a workspace assembled in the slot rather than published into it is
 # Invariant 4 describes a stamp. A run whose selection nobody recorded is a run the work source
 # cannot ask, because there is no one it may ask.
 wreck_runner "a run that records nobody selecting it is caught" \
-  noauthority 's#    stamp_selection "$dir" "$(selector)" "$id"##'
+  unstamped 's#    stamp_selection "$dir" "$(selector)" "$id"##'
 
 # §2.5 keeps the two apart by shape, and the shape only holds if they are kept apart by store. Three
 # fields in the pool completion reads existentially would be a record with no ref, satisfying nothing
@@ -4467,7 +4467,7 @@ wreck_runner "a file named with nothing saying what writes it is caught" \
 # **The boundary itself.** `- 1` is the whole of what makes `+2879` mean 48 hours, and a fixture
 # months past the bar holds none of it. Move it by one and a run quiet 47 hours is named.
 wreck_runner "a bar that fires an hour early is caught" \
-  offbyone 's@[$][(][(][$]1 [*] 1440 - 1[)][)]@$(($1 * 1440 - 61))@'
+  hourearly 's@[$][(][(][$]1 [*] 1440 - 1[)][)]@$(($1 * 1440 - 61))@'
 
 #
 # **A directory of that name would enter the quiet set.** `-type f` is what keeps the list about
