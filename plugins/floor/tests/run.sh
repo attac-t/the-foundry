@@ -4820,17 +4820,17 @@ wreck_runner "a request handed a brief that carries the message too is caught" \
   briefandmessage 's@{ cat "\$(brief_file "\$1")"; return 0; }@{ cat "$(brief_file "$1")"; }@'
 
 wreck_runner "a body set to brief that carries nothing when it has no brief is caught" \
-  briefformbare 's@{ what_stands_first "\$1" "\$2" "\$3" > "\$body"; return 0; }@{ cat "$(brief_file "$1")" > "$body" 2>/dev/null; return 0; }@'
+  briefformbare 's@^the_parts_of_the_body() {@the_parts_of_the_body() { [ "$(body_form_at_base "$1")" = brief ] \&\& [ ! -f "$(brief_file "$1")" ] \&\& return 0;@'
 
 #
 # **Below the record, what each judge found.** #1075. One break per rule: no section, one judge of a
 # panel, a fence inside the list's indent, the verdict line kept, and no worker beside the judge.
 #
 wreck_runner "a request that carries nothing a judge found is caught" \
-  foundnone 's@ what_each_judge_found "\$1";@@'
+  foundnone 's@^    what_each_judge_found "\$1" "\$2"$@    :@'
 
 wreck_runner "a panel carried one judge short is caught" \
-  foundfirstjudge 's@^        what_one_judge_found "\$1" "\$2" "\$judged_by"$@        what_one_judge_found "$1" "$2" "$judged_by"; break@'
+  foundfirstjudge 's@^        what_one_judge_found "\$1" "\$2" "\$judged_by" "\$3"$@        what_one_judge_found "$1" "$2" "$judged_by" "$3"; break@'
 
 wreck_runner "a fence set in from the left margin is caught" \
   foundindented '/^fence_the_lines() {/,/^}/{ s@printf .%s\\n. "\$backticks"@printf "  %s\\n" "$backticks"@; s@{ print }@{ print "  " $0 }@; }'
@@ -4844,6 +4844,10 @@ wreck_runner "a judge named without the worker beside it is caught" \
 # A report is carried only as its receipt stamped it, and one with nothing to carry is one line.
 wreck_runner "a report changed since its receipt that is carried is caught" \
   stampunchecked 's@^    stamped_as_it_stands "\$1" "\$2" "\$3" || .*@    :@'
+
+# A report judged at a commit the head has left, carried as though it judged the one delivered.
+wreck_runner "a report its receipt judged at another commit that is carried is caught" \
+  candidatecheck 's@^    \[ "\$judged_at" = "\$4" \] || .*@    :@'
 
 wreck_runner "a report with nothing above its verdict that is fenced anyway is caught" \
   nothingabove 's@^    anything_in_the_first "\$1/\$report_at" "\$above_verdict" \\$@    true \\@'
@@ -4866,6 +4870,10 @@ wreck_runner "a home compared only in its drive spellings is caught" \
 
 wreck_runner "a home compared only as HOME holds it is caught" \
   withholddrive 's@^        drive != "" {$@        drive == "never" {@'
+
+# `/mnt/c/…` has no spelling of its own: it holds `/c/…`, the one a drive home is also written as.
+wreck_runner "a home on a drive never compared as /c/ is caught" \
+  withholdmsys 's@print "/" drive rest; @@'
 
 wreck_runner "a home compared with its case is caught" \
   withholdcase 's@said = tolower(\$0)@said = $0@; s@index(said, tolower(name\[i\]))@index(said, name[i])@'
@@ -4891,7 +4899,14 @@ wreck_runner "a text carried past its own bound is caught" \
   cutone 's@^CARRIED_ONE=16000$@CARRIED_ONE=99999@'
 
 wreck_runner "texts carried past the bound on all of them is caught" \
-  cutall 's@^    carried_bytes=\$((carried_bytes + fitting_bytes))$@    :@'
+  cutall 's@^    carried_bytes=\$((carried_bytes + fitting_bytes + fence_bytes))$@    :@'
+
+# The cap: texts sized as though the brief and the record took nothing, and fences left uncounted.
+wreck_runner "texts that ignore what the brief and the record take of the cap are caught" \
+  sharednone 's@^    carried_cap=\$(room_under_the_cap .*@    carried_cap=$CARRIED_ALL@'
+
+wreck_runner "fences left out of what the texts share are caught" \
+  fencesuncounted 's@^    \[ "\$fitting" -gt 0 \] || fence_bytes=0$@    fence_bytes=0@'
 
 wreck_runner "a cut naming an absolute path is caught" \
   cutpath '/^say_it_was_cut() {/,/^}/s@"\$3" "\$4" "\$2"@"$3" "$4" "$1/$2"@'

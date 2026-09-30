@@ -5606,10 +5606,18 @@ compose_the_body() {
     delivered_already "$1" >/dev/null && return 0
     keep_the_message "$1" "$2" "$3"
     ready_to_carry "$1" "$2" "$3"
-    [ "$(body_form_at_base "$1")" = brief ] && { what_stands_first "$1" "$2" "$3" > "$body"; return 0; }
 
-    { what_stands_first "$1" "$2" "$3"; what_floor_recorded "$1" "$2"; what_each_judge_found "$1"; } > "$body" \
-        || die_unwritable "$body"
+    the_parts_of_the_body "$1" "$2" "$3" > "$body" || die_unwritable "$body"
+}
+
+# The brief, or the message where it would stand. Then, unless the body is set to brief, the record
+# and what each judge found.
+the_parts_of_the_body() {
+    what_stands_first "$1" "$2" "$3"
+    [ "$(body_form_at_base "$1")" = brief ] && return 0
+
+    what_floor_recorded "$1" "$2"
+    what_each_judge_found "$1" "$2"
 }
 
 #
@@ -5790,7 +5798,7 @@ what_each_judge_found() {
     [ -n "$met_by_panels" ] || return 0
 
     printf '\n**What each judge found.**\n'
-    for panel_met in $met_by_panels; do each_judge_on "$1" "$panel_met"; done
+    for panel_met in $met_by_panels; do each_judge_on "$1" "$panel_met" "$2"; done
 }
 
 # `deliver` refused an unmet clause, so a clause a panel answers and no hand struck was met by it.
@@ -5805,7 +5813,7 @@ clauses_a_panel_met() {
 each_judge_on() {
     while IFS= read -r judged_by; do
         [ -n "$judged_by" ] || continue
-        what_one_judge_found "$1" "$2" "$judged_by"
+        what_one_judge_found "$1" "$2" "$judged_by" "$3"
     done <<EOF
 $(named_judges "$(charter_file "$1")" "$2")
 EOF
@@ -5813,17 +5821,19 @@ EOF
 
 what_one_judge_found() {
     printf '\n%s on `%s`%s\n\n' "$3" "$(clause_text "$(charter_file "$1")" "$2")" "$(worker_beside_a_judge "$1")"
-    its_report "$1" "$2" "$3"
+    its_report "$1" "$2" "$3" "$4"
 }
 
 #
-# A judge's report, or the one line that stands in for it. It is carried only as its receipt stamped
-# it, and less its verdict line, since the record above already says the panel met the clause.
+# A judge's report, or the one line that stands in for it. It is carried only when its receipt judged
+# the commit delivered, `$4`, and as that receipt stamped it. The verdict line stays behind.
 #
 its_report() {
     report_at=$(report_inside "$2" "$3")
     [ -f "$(receipt_for "$1" "$2" "$3")" ] || { printf 'No receipt stands for %s here, so no report is carried.\n' "$3"; return 0; }
     [ -f "$1/$report_at" ] || { printf 'No report stands beside %s'\''s receipt.\n' "$3"; return 0; }
+    judged_at=$(said_in "$(receipt_for "$1" "$2" "$3")" candidate)
+    [ "$judged_at" = "$4" ] || { say_it_judged_another_commit "$1" "$report_at" "$judged_at" "$4"; return 0; }
     stamped_as_it_stands "$1" "$2" "$3" || { say_it_no_longer_matches "$1" "$report_at"; return 0; }
 
     above_verdict=$(lines_above_its_verdict "$1/$report_at")
@@ -5843,6 +5853,12 @@ say_it_no_longer_matches() {
         "$2" "$(recorded_id "$1")"
 }
 
+# A judge's last round can be at a commit the head has since left, so its report says nothing of this one.
+say_it_judged_another_commit() {
+    printf 'Its report is not carried: it judged `%s`, and this request delivers `%s`. It is `%s` in run `%s`.\n' \
+        "$3" "$4" "$2" "$(recorded_id "$1")"
+}
+
 # The verdict line is the last line carrying anything, when it reads `VERDICT: <word>` as the adapters
 # read it. This counts the lines above it, or every line of a report that ends in none.
 lines_above_its_verdict() {
@@ -5855,17 +5871,38 @@ anything_in_the_first() { awk -v upto="$2" 'NR > upto { exit } NF { found = 1; e
 
 #
 # **The most text a model wrote that one body carries**, in bytes: any one message or report, and all
-# of them together. GitHub refuses a body over 65,536 characters, and no text holds more characters
-# than bytes. What is left is room for the brief and the record, which floor never cuts. #1075.
+# of them together with their fences. GitHub refuses a body over 65,536 characters, and no text holds
+# more characters than bytes. A whole body stays under `BODY_CAP`, which leaves the source its footer.
 #
 CARRIED_ONE=16000
 CARRIED_ALL=48000
+BODY_CAP=65000
 
-# Once a body: nothing carried yet, and each name of this host that no carried text may hold.
+#
+# Once a body: nothing carried yet, each name of this host no carried text may hold, and the room all
+# of them share once the brief, the record and floor's own lines are counted. #1075.
+#
 ready_to_carry() {
     carried_bytes=0
     home_spellings=$(spellings_of_the_home)
     commit_addresses=$(addresses_its_commits_carry "$1" "$2" "$3")
+    carried_cap=$(room_under_the_cap "$(bytes_with_no_text "$1" "$2" "$3")")
+}
+
+# The body with every text a model wrote cut to nothing: the brief, the record and floor's own lines.
+bytes_with_no_text() {
+    ( carried_cap=0 carried_bytes=0; the_parts_of_the_body "$1" "$2" "$3" 2>/dev/null ) | wc -c | tr -d ' '
+}
+
+#
+# What the rest of the body leaves under its cap, never more than the texts' own bound, and never less
+# than nothing. A brief that alone passes the cap leaves nothing, and goes whole, as it always has.
+#
+room_under_the_cap() {
+    shared_room=$((BODY_CAP - ${1:-$BODY_CAP}))
+    [ "$shared_room" -lt "$CARRIED_ALL" ] || shared_room=$CARRIED_ALL
+    [ "$shared_room" -gt 0 ] || shared_room=0
+    printf '%s' "$shared_room"
 }
 
 #
@@ -5878,13 +5915,21 @@ carry_the_text() {
     withheld_for=$(what_it_names_of_this_host "$1/$2")
     [ -z "$withheld_for" ] || { say_it_is_withheld "$1" "$2" "$3" "$withheld_for"; return 0; }
 
-    text_measure=$(measure_the_text "$1/$2" "${4:-0}" "$(room_left)")
+    fence_bytes=$(bytes_of_the_fences_for "$1/$2" "${4:-0}")
+    text_measure=$(measure_the_text "$1/$2" "${4:-0}" "$(room_left "$fence_bytes")")
     fitting=${text_measure%% *} whole_bytes=${text_measure##* } fitting_bytes=${text_measure#* }
     fitting_bytes=${fitting_bytes%% *}
-    carried_bytes=$((carried_bytes + fitting_bytes))
+    [ "$fitting" -gt 0 ] || fence_bytes=0
+    carried_bytes=$((carried_bytes + fitting_bytes + fence_bytes))
 
     [ "$fitting" -eq 0 ] || fence_the_lines "$1/$2" "$fitting"
     [ "$fitting_bytes" -eq "$whole_bytes" ] || say_it_was_cut "$1" "$2" "$fitting_bytes" "$whole_bytes"
+}
+
+# The two fence lines a text needs, measured over all it may carry, so a shorter cut costs no more.
+bytes_of_the_fences_for() {
+    backticks=$(backtick_fence_for "$1" "$2")
+    printf '%s' "$(( (${#backticks} + 1) * 2 ))"
 }
 
 #
@@ -5910,7 +5955,9 @@ holds_one_of() {
 
 #
 # This host's home in each spelling floor can form: as `HOME` holds it, and for a drive path each form
-# a tool on Windows writes, `/c/x`, `/mnt/c/x`, `C:/x`, `C:\x` and `C:\\x`. A home of `/` names none.
+# a tool on Windows writes, `/c/x`, `C:/x`, `C:\x` and `C:\\x`. A home of `/` names none.
+#
+# WSL's `/mnt/c/x` holds `/c/x`, so it is caught with no spelling of its own.
 #
 spellings_of_the_home() {
     printf '%s\n' "${HOME:-}" | LC_ALL=C awk '
@@ -5923,7 +5970,7 @@ spellings_of_the_home() {
         /^\/[A-Za-z](\/|$)/ { drive = substr($0, 2, 1); rest = substr($0, 3) }
         /^[A-Za-z]:[\/\\]/ { drive = substr($0, 1, 1); rest = swapped(substr($0, 3), back, "/") }
         drive != "" {
-            print "/" drive rest; print "/mnt/" drive rest; print drive ":" rest
+            print "/" drive rest; print drive ":" rest
             print drive ":" swapped(rest, "/", back); print drive ":" swapped(rest, "/", back back)
         }'
 }
@@ -5937,9 +5984,9 @@ addresses_its_commits_carry() {
     [ -z "$carried_from" ] || git -C "$carried_tree" log --format='%ae%n%ce' "$carried_from..$2" 2>/dev/null
 }
 
-# What one text may still take: its own bound, or what is left of the bound on all of them.
+# What one text may still take: its own bound, or what is left of the room they share less its fences.
 room_left() {
-    room_bytes=$((CARRIED_ALL - carried_bytes))
+    room_bytes=$((carried_cap - carried_bytes - ${1:-0}))
     [ "$room_bytes" -lt "$CARRIED_ONE" ] || room_bytes=$CARRIED_ONE
     [ "$room_bytes" -gt 0 ] || room_bytes=0
     printf '%s' "$room_bytes"
@@ -5970,7 +6017,7 @@ fence_the_lines() {
 # them can close the fence it sits in.
 backtick_fence_for() {
     LC_ALL=C awk -v upto="$2" '
-        NR > upto { exit }
+        upto > 0 && NR > upto { exit }
         { rest = $0; while (match(rest, /`+/)) { if (RLENGTH > longest) longest = RLENGTH; rest = substr(rest, RSTART + RLENGTH) } }
         END { n = (longest < 3 ? 3 : longest + 1); while (n-- > 0) printf "`"; print "" }' "$1"
 }

@@ -900,6 +900,7 @@ verdict line. #1075.
 these reads as one line saying which it is:
 
 - a report that no longer matches
+- a report its receipt judged at a commit other than the one delivered, naming both
 - a report with nothing above its verdict line
 - a receipt with no report beside it
 - a judge with no receipt in the run
@@ -914,7 +915,7 @@ cutting a line out would not.
 Floor compares these, without case:
 
 - this host's home as `HOME` holds it
-- for a home on a drive, `/c/…`, `/mnt/c/…`, `C:/…`, `C:\…` and `C:\\…`
+- for a home on a drive, `/c/…`, `C:/…`, `C:\…` and `C:\\…`, and so WSL's `/mnt/c/…`, which holds `/c/…`
 - each address the delivered commit, and every commit above the base, carries as author or committer
 
 A home of `/` names nothing. **A name floor cannot form is carried**:
@@ -928,17 +929,23 @@ longest run the text holds, and never shorter than three. It sits at the left ma
 item can hold it.
 
 **Carried text has two bounds, in bytes: 16,000 for any one message or report, and 48,000 for all of
-them.** GitHub refuses a body over 65,536 characters, and no text holds more characters than bytes. So
-the rest is left for the brief and the record, which floor never cuts. A text over a bound is cut at
-its last whole line under it. One line names its file by the run's id and a path inside the run.
+them with their fences.** A text over a bound is cut at its last whole line under it. One line names
+its file by the run's id and a path inside the run.
+
+**A body stays under 65,000 bytes.** GitHub refuses one over 65,536 characters, and no text holds
+more characters than bytes. The rest is room for the source's footer. So the texts share what the
+brief, the record and floor's own lines leave under the cap. They never share more than 48,000. Floor
+never cuts a brief. One that alone passes the cap leaves the texts nothing, and GitHub refuses it, as
+it always did.
 
 **A second `deliver` on the same branch pushes the new head, and the request keeps its first
 body.** One run, one delivery: the request is not rewritten, and the run keeps the body it sent.
 So the request then names the older commit, and `deliver` says so, naming both.
 
-**The body is a setting.** `body brief` in `.foundry/practice` sends the brief alone, or the commit's
-message alone when there is no brief. `body record`, or no line, sends the record too, and what each
-judge found. It is read at the run's base, so no worker sets it. A word that is neither is named, and
+**The body is a setting.** `body brief` in `.foundry/practice` sends the brief alone. With no brief it
+sends the commit's message. When two or more commits sit above the base, the line saying how many
+follows it. `body record`, or no line, sends the record too, and what each judge found. It is read at
+the run's base, so no worker sets it. A word that is neither is named, and
 the record is kept.
 
 ---

@@ -3164,6 +3164,9 @@ no_line_of_a_carried_text_leaves_its_fence
 # #1075. A text over its bound is cut at its last whole line under it, and all of them together stay
 # under a second bound. Lines of fifty bytes put each cut on a number a person can check by hand.
 #
+# Each carried text's two fences, eight bytes here, count toward the bound on all of them. So the third
+# report has 968 bytes left, and is cut at 950.
+#
 carried_text_is_cut_at_its_bounds() {
   awk 'BEGIN { for (i = 1; i <= 400; i++) printf "one %045d\n", i; print "VERDICT: approve" }' > "$tmp/cut-texts-one.said"
   for member in two three four; do
@@ -3183,12 +3186,99 @@ carried_text_is_cut_at_its_bounds() {
   has   "and so is a report" "$cut_body" "Cut at 16000 of its 20000 bytes. All of it is \`$(report_of one)\` $in_the_run"
   has   "a report under both bounds is carried whole" "$cut_body" "$(printf 'two %045d\n```' 300)"
   has   "one the bound on all of them reaches is cut where it falls" "$cut_body" \
-        "Cut at 1000 of its 15000 bytes. All of it is \`$(report_of three)\` $in_the_run"
+        "Cut at 950 of its 15000 bytes. All of it is \`$(report_of three)\` $in_the_run"
   has   "and one it leaves no room for is cut to nothing" "$cut_body" \
         "Cut at 0 of its 15000 bytes. All of it is \`$(report_of four)\` $in_the_run"
   lacks "no cut names a path outside the run" "$cut_body" "$cut_run"
 }
 carried_text_is_cut_at_its_bounds
+
+#
+# A report is carried only when its receipt judged the commit delivered. Here a judge approved at one
+# commit and answered again at a later one, and the head went back, so the files hold the later round.
+#
+a_report_judged_at_another_commit_is_not_carried() {
+  printf 'Found at the first commit.\nVERDICT: approve\n' > "$tmp/judged-elsewhere-one.said"
+  a_panel_run judged-elsewhere '' one || { skip "a report judged elsewhere — git could not make a repo here"; return; }
+
+  floor "$tmp/judged-elsewhere" judged >/dev/null 2>&1
+  elsewhere_slot=$(only_slot "$(floor "$tmp/judged-elsewhere" path)/units/01/workspace")
+  judged_first=$(git -C "$elsewhere_slot" rev-parse HEAD 2>/dev/null)
+  a_commit_in "$tmp/judged-elsewhere" 'feat: a later change'
+  judged_later=$(git -C "$elsewhere_slot" rev-parse HEAD 2>/dev/null)
+  printf 'Found at the later commit.\nVERDICT: approve\n' > "$tmp/judged-elsewhere-one.said"
+  floor "$tmp/judged-elsewhere" judged >/dev/null 2>&1
+  git -C "$elsewhere_slot" reset -q --hard "$judged_first" >/dev/null 2>&1
+
+  floor "$tmp/judged-elsewhere" deliver 'a change' >/dev/null 2>&1
+  elsewhere=$(cat "$(floor "$tmp/judged-elsewhere" path)/body" 2>/dev/null)
+
+  has   "a report its receipt judged at another commit reads as one line naming both" "$elsewhere" \
+        "Its report is not carried: it judged \`$judged_later\`, and this request delivers \`$judged_first\`."
+  lacks "and none of it is carried" "$elsewhere" "Found at the later commit."
+}
+a_report_judged_at_another_commit_is_not_carried
+
+#
+# The texts share only what the brief, the record and floor's own lines leave under the body's cap, and
+# a fence counts with its text. One's report holds a run of 1,000 backticks, so its fences take 2,004
+# bytes, and the report after it is cut for want of them. The body stays under 65,000 bytes.
+#
+a_body_stays_under_its_cap_whatever_its_brief_leaves() {
+  { awk 'BEGIN { while (n++ < 1000) printf "`"; print "" }'
+    awk 'BEGIN { for (i = 1; i <= 299; i++) printf "one %045d\n", i }'
+    printf 'VERDICT: approve\n'; } > "$tmp/capped-one.said"
+  for member in two three; do
+    awk -v m="$member" 'BEGIN { for (i = 1; i <= 320; i++) printf "%s %s\n", m, sprintf("%0" (48 - length(m)) "d", i)
+                                print "VERDICT: approve" }' > "$tmp/capped-$member.said"
+  done
+  awk 'BEGIN { for (i = 1; i <= 620; i++) printf "brief %043d\n", i }' > "$tmp/capped-brief.md"
+  a_panel_run capped '' one two three || { skip "a body under its cap — git could not make a repo here"; return; }
+
+  floor "$tmp/capped" judged >/dev/null 2>&1
+  floor "$tmp/capped" deliver 'a change' "$tmp/capped-brief.md" >/dev/null 2>&1
+  capped_body="$(floor "$tmp/capped" path)/body"
+  capped_size=$(wc -c < "$capped_body" 2>/dev/null)
+
+  is  "a body carrying a long brief and three long reports stays under its cap" \
+      "$(( ${capped_size:-99999} <= 65000 ))" "1"
+  has "a report holding a long backtick run is carried whole" "$(cat "$capped_body" 2>/dev/null)" \
+      "$(printf 'one %045d\n' 299)"
+  has "and the one after it is cut, since those fences counted" "$(cat "$capped_body" 2>/dev/null)" \
+      "of its 16000 bytes. All of it is \`$(report_of two)\`"
+}
+a_body_stays_under_its_cap_whatever_its_brief_leaves
+
+#
+# WSL writes the home as `/mnt/c/…`, and that holds the `/c/…` spelling floor forms from a home such as
+# `C:\Users\ada`. So it is caught without a spelling of its own.
+#
+a_wsl_path_to_the_home_is_caught_through_its_drive_spelling() {
+  a_run_to_deliver wsl-home '' || { skip "the home as WSL writes it — git could not make a repo here"; return; }
+  a_commit_in "$tmp/wsl-home" 'feat: read what /mnt/c/Users/ada/notes holds'
+
+  ( HOME='C:\Users\ada'; floor "$tmp/wsl-home" deliver 'a change' ) >/dev/null 2>&1
+
+  has "a message holding the home as WSL writes it is withheld whole" \
+      "$(cat "$(floor "$tmp/wsl-home" path)/body" 2>/dev/null)" \
+      "Its commit's message is withheld whole: it holds this host's home directory."
+}
+a_wsl_path_to_the_home_is_caught_through_its_drive_spelling
+
+# #1077, under `body brief`, with two commits: the count line follows the message, and nothing else does.
+under_body_brief_the_count_line_follows_the_message() {
+  a_run_to_deliver brief-count 'body brief
+' || { skip "the count under body brief — git could not make a repo here"; return; }
+  a_commit_in "$tmp/brief-count" 'feat: the first of two'
+  a_commit_in "$tmp/brief-count" "$(printf 'feat: the last of two\n\nIt is the one carried.')"
+
+  floor "$tmp/brief-count" deliver 'a change' >/dev/null 2>&1
+
+  is "under body brief, the count line follows the message, and nothing else does" \
+     "$(cat "$(floor "$tmp/brief-count" path)/body" 2>/dev/null)" \
+     "$(printf '```\nfeat: the last of two\n\nIt is the one carried.\n```\n\n2 commits sit above the base, and the message carried is the last one'\''s.')"
+}
+under_body_brief_the_count_line_follows_the_message
 
 #
 # **Both adapters carry a brief and nothing compared them.** #377 calls that a seam built and
