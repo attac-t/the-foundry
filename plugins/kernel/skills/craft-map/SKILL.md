@@ -1,7 +1,7 @@
 ---
 name: craft-map
-trigger: directory visualization, tree listing, codebase overview
 description: Show what exists, where it lives, and what each part is for. Use for a directory tree, a codebase layout, a component hierarchy. Not for sequence (craft-flow) or who acts (craft-swimlane).
+when_to_use: directory visualization, tree listing, codebase overview
 ---
 
 # Skill: Craft Map
