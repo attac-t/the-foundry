@@ -92,6 +92,10 @@ should.
 `brief.sh --evidence <ledger>` reads the log instead, and refuses a work file that shouts a grade
 with no log behind it.
 
+**Hand it the ledger of the commit the judge reads.** With `--worktree` beside it, a log grading
+another commit is refused. **And the log proves nothing on its own** — a row is a line of text.
+The brief says so, and asks the judge to weigh it as a record rather than as a run.
+
 `bin/brief.sh` does all this for a judge on another host. It refuses to print a brief when the chain
 cannot answer. **Nothing refuses you here.** Forget it and the judge refuses instead, which is the
 whole of the enforcement. **Refuse when the gap makes a verdict wrong; say so and carry on when it

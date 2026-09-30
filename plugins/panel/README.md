@@ -108,14 +108,27 @@ Mechanical     bin/verdicts.sh refuses a round claiming a prior verdict
                bin/brief.sh refuses a work file shouting a grade — PASS,
                FAIL, ALL GREEN, AGREED, N RED — with no log a grade kept
                behind it, exit 7. --evidence reads that log: each gate's
-               name, its exit code, and the last lines a failing one
-               printed. Lowercase prose claiming the same thing gets
-               through, so it closes the easy path and nothing more.
+               name, its exit code, the commit it graded, and the last
+               lines a failing one printed. A gate graded twice is read at
+               its last row and the count is said. Lowercase prose claiming
+               the same thing gets through, so it closes the easy path and
+               nothing more.
+
+               With --worktree too, it refuses a log grading a commit that
+               tree is not on, exit 8. An abbreviation of the same commit
+               is not a disagreement.
 
 Architectural  /verdict runs oracles in the parent session.
                Exit codes are harness-observed, never model-reported.
 
-Not shipped    The parent's own write scope is unconstrained.
+Not shipped    A ledger is a file, and nothing proves a run wrote it. A
+               convener can type a machine row, and floor says so of its
+               own recorder. brief.sh says this to the judge rather than
+               vouching for what it never checked. Panel also reads floor's
+               column order from a fixture, so floor moving a column leaves
+               both suites green and the grade unreadable.
+
+               The parent's own write scope is unconstrained.
                Author restraint from verdicts/ is convention, not enforcement.
                Nothing checks the review name a convener passes, so a new
                name opens a chain owing no prior round. That leaves a stamp

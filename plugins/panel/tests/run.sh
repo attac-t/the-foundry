@@ -195,6 +195,45 @@ wreck_brief "a failing gate's kept log pointed at instead of carried is caught" 
 wreck_brief "a ledger read whole instead of its gates is caught" \
   everyrow 's#\$2 != "machine" { next }#$2 == "" { next }#'
 
+#
+# The grade of another tree. `locate_the_commit` holds the head and every gate row names what it
+# graded, and nothing compared them — so a sibling run's green ledger printed under this head.
+wreck_brief "a grade of a commit the tree is not on is caught" \
+  othertree 's#^    at=$(a_ref_that_is_not "$evidence" "$commit")$#    at=#'
+
+# The other half of that check. An exact match refuses an honest abbreviated ref, which is the
+# check failing rather than the grade.
+wreck_brief "a commit compared without allowing an abbreviation is caught" \
+  exactref 's#index(head, $6) == 1 || index($6, head) == 1 { next }#$6 == head { next }#'
+
+#
+# The ledger appends, so a gate regraded holds two rows. Reporting the first hands the judge the
+# answer that was replaced, and nothing on the page says so.
+wreck_brief "a regraded gate reported at its first row is caught" \
+  firstrow 's#{ times\[$4\]++; code\[$4\] = $5; at\[$4\] = $6; why\[$4\] = $7 }#{ times[$4]++; if (times[$4] == 1) { code[$4] = $5; at[$4] = $6; why[$4] = $7 } }#'
+
+# Collapsing to the last row is right. Doing it in silence is not — a gate that went red before it
+# went green is the thing a judge most wants to know.
+wreck_brief "a gate graded twice in silence is caught" \
+  quietregrade 's#graded %s times — this is the last of them#this is the last of them#'
+
+#
+# The word inside a word. PASS matched BYPASS and FAIL matched FAILING, so a work file writing
+# ordinary prose about a gate was refused as a grade claim.
+wreck_brief "a grade word matched inside a longer word is caught" \
+  insideword 's#padded ~ /\[^A-Za-z\]PASS\[^A-Za-z\]/#$0 ~ /PASS/#'
+
+#
+# The provenance no mechanism here can give. A row is a line of text, and swearing it was not
+# retyped told the judge not to doubt the one thing it should.
+wreck_brief "a brief vouching for a log it never checked is caught" \
+  vouched 's#^.*Nothing here proves it is one.*$#    :#'
+
+# `kept in` first rather than last. A gate printing the phrase itself took the path, and the judge
+# was told the logs were gone.
+wreck_brief "the first kept-in path taken instead of the last is caught" \
+  firstkept 's#^            while (match(rest, /kept in /)) {#            if (match(rest, /kept in /)) {#'
+
 bash "$root/tests/chain.sh" || failed=1
 echo
 

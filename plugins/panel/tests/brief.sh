@@ -288,4 +288,94 @@ a_grade_comes_from_the_log_it_kept() {
 }
 a_grade_comes_from_the_log_it_kept
 
+
+#
+# What the judge said back. Three faults it found in the first pass of this, and each is a case.
+#
+a_grade_is_weighed_as_a_record_and_not_a_run() {
+  kept="$tmp/kept2"
+  mkdir -p "$kept"
+  printf 'the shell gate found a bare exit\n' > "$kept/shell.log"
+
+  tree="$tmp/graded"
+  mkdir -p "$tree"
+  git -C "$tree" init -q >/dev/null 2>&1
+  printf 'one\n' > "$tree/file"
+  git -C "$tree" add -A >/dev/null 2>&1
+  git -C "$tree" -c user.email=a@b.c -c user.name=a commit -qm one >/dev/null 2>&1
+  head=$(git -C "$tree" rev-parse HEAD 2>/dev/null)
+
+  row() { printf '2026-09-30T00:00:0%s\tmachine\t01\t%s\t%s\t%s\t%s\n' "$1" "$2" "$3" "$4" "$5"; }
+
+  #
+  # A grade of another tree. Both values were in hand and nothing compared them, so a green ledger
+  # from a sibling run printed under this tree's head and said nothing.
+  #
+  row 0 gates 0 0000000000000000000000000000000000000000 'ALL GREEN' > "$tmp/elsewhere"
+  is "a grade of a commit this tree is not on is refused" \
+     "$(code_of brief adversary 'a clause' --verdicts "$tmp/empty" --review R1 \
+        --worktree "$tree" --evidence "$tmp/elsewhere")" "8"
+  said=$(brief_says adversary 'a clause' --verdicts "$tmp/empty" --review R1 \
+         --worktree "$tree" --evidence "$tmp/elsewhere")
+  has "and it names the commit the grade read" "$said" "0000000000"
+  has "and the commit the judge reads"         "$said" "$head"
+
+  row 0 gates 0 "$head" 'ALL GREEN' > "$tmp/here"
+  is "the same tree's own grade goes over" \
+     "$(code_of brief adversary 'a clause' --verdicts "$tmp/empty" --review R1 \
+        --worktree "$tree" --evidence "$tmp/here")" "0"
+
+  # A ledger may abbreviate. Refusing an honest short ref would be the check failing, not the grade.
+  row 0 gates 0 "$(printf '%.7s' "$head")" 'ALL GREEN' > "$tmp/short"
+  is "a grade naming the same commit short is not refused" \
+     "$(code_of brief adversary 'a clause' --verdicts "$tmp/empty" --review R1 \
+        --worktree "$tree" --evidence "$tmp/short")" "0"
+
+  # No tree named, nothing to disagree with. A refusal here would block every brief that omits one.
+  is "a grade with no tree beside it is not refused" \
+     "$(code_of brief adversary 'a clause' --verdicts "$tmp/empty" --review R1 --evidence "$tmp/elsewhere")" "0"
+
+  #
+  # The ledger appends, so one gate holds several rows. Red then green handed the judge two answers
+  # and no word on which was current.
+  #
+  { row 0 shell 1 "$head" "1 RED kept in $kept"
+    row 1 shell 0 "$head" 'PASS shell'; } > "$tmp/twice"
+  said=$(brief adversary 'a clause' --verdicts "$tmp/empty" --review R1 --evidence "$tmp/twice")
+  has "the last row a gate wrote is the one that stands" "$said" "shell — exit 0"
+  lacks "the row it replaced does not stand beside it"   "$said" "shell — exit 1"
+  has "and the judge is told it was graded again"        "$said" "graded 2 times"
+
+  #
+  # The word, never a word inside a word. PASS matched BYPASS and FAIL matched FAILING, so ordinary
+  # prose was refused as a grade claim.
+  #
+  printf 'the BYPASS flag is gone and the FAILING path is named\n' > "$tmp/prose"
+  is "prose holding a grade word inside a longer word is not a claim" \
+     "$(code_of brief adversary 'a clause' --verdicts "$tmp/empty" --review R1 --work "$tmp/prose")" "0"
+
+  printf 'the suite went 3 RED at 89775ab\n' > "$tmp/red3"
+  has "a red claim is reported with the count its record printed" \
+      "$(brief_says adversary 'a clause' --verdicts "$tmp/empty" --review R1 --work "$tmp/red3")" "3 RED"
+
+  #
+  # The provenance the brief may not swear to. A row is a line of text, and the convener could have
+  # typed it — so the brief says that rather than vouching for what it never checked.
+  #
+  said=$(brief adversary 'a clause' --verdicts "$tmp/empty" --review R1 --evidence "$tmp/here")
+  has "the brief says nothing proves the log is a grade's" "$said" "Nothing here proves it is one"
+  has "and tells the judge how to weigh it"                "$said" "as a record, never as a run"
+  lacks "it no longer swears the lines were not retyped"   "$said" "None of it was retyped"
+
+  #
+  # `kept in` last, not first. A gate printing the phrase itself took the path, and the judge was
+  # then told the logs were gone.
+  #
+  row 0 shell 1 "$head" "a gate said kept in the wrong place, then 1 RED kept in $kept" > "$tmp/decoy"
+  has "the path taken is the last the record names" \
+      "$(brief adversary 'a clause' --verdicts "$tmp/empty" --review R1 --evidence "$tmp/decoy")" \
+      "found a bare exit"
+}
+a_grade_is_weighed_as_a_record_and_not_a_run
+
 summary "brief"
