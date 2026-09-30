@@ -5872,8 +5872,10 @@ anything_in_the_first() { awk -v upto="$2" 'NR > upto { exit } NF { found = 1; e
 
 #
 # **The most text a model wrote that one body carries**, in bytes: any one message or report, and all
-# of them together with their fences. GitHub refuses a body over 65,536 characters, and no text holds
-# more characters than bytes. A whole body stays under `BODY_CAP`, which leaves the source its footer.
+# of them together with their fences. No text holds more characters than bytes.
+#
+# They share what the brief, the record and floor's own lines leave under `BODY_CAP`, which keeps room
+# for the source's footer under GitHub's 65,536. Floor never cuts those, so they alone can pass the cap.
 #
 CARRIED_ONE=16000
 CARRIED_ALL=48000
@@ -5897,7 +5899,7 @@ bytes_with_no_text() {
 
 #
 # What the rest of the body leaves under its cap, never more than the texts' own bound, and never less
-# than nothing. A brief that alone passes the cap leaves nothing, and goes whole, as it always has.
+# than nothing. When the rest passes the cap it leaves nothing, and still goes whole, uncut.
 #
 room_under_the_cap() {
     shared_room=$((BODY_CAP - ${1:-$BODY_CAP}))
