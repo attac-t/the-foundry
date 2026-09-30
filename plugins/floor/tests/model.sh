@@ -14366,6 +14366,70 @@ refused_by_only() { ( . "$alone_beside_the_runner" && only_these "$@" ) >/dev/nu
 a_suite_run_with_only_runs_the_cases_it_names
 
 #
+# How the audit decides a runner break, one rule a check. The order is the point: each rule's break
+# goes red at its own check, and at none above it.
+#
+a_break_is_decided_at_its_killers_case_first() {
+  is "a break its case catches alone is caught there, and the whole suite never runs" \
+     "$(decided the-case 0 1 0)" "alone@150 alone 0"
+  is "a case the clock stops is a miss, and the whole suite's answer stands" \
+     "$(decided the-case 0 2 1)" "alone@150 whole whole 1"
+  is "a case that passes against its break is a miss, never a catch" \
+     "$(decided the-case 0 0 0)" "alone@150 whole whole 0"
+  is "a break with no row is decided by the whole suite, as before" \
+     "$(decided '' 0 1 1)" "whole whole 1"
+  is "a case that failed clean alone hands its breaks to the whole suite" \
+     "$(decided the-case 1 1 1)" "whole whole 1"
+  is "a break caught alone that the sample's whole suite misses is a split, and red" \
+     "$(decided the-case 0 1 1 sampled)" "alone@150 whole split 1"
+  is "a break caught alone that the sample's whole suite catches stays caught" \
+     "$(decided the-case 0 1 0 sampled)" "alone@150 whole sampled 0"
+
+  is "an alone run's deadline is never under two minutes" "$(from_alone alone_deadline 3)" "120"
+  is "a sample of none is red"                             "$(code_of from_alone say_the_sample 0 12)" "1"
+  is "the sample takes one slot in ten, and its tenth says which" "$(slots_chosen 3)" "7 17 "
+}
+
+#
+# One break decided by the rules beside the runner, against stand-ins for both runs. It prints each
+# run as it starts, the case's with its deadline, then `how` and the answer, so a rule that skips a
+# run reads as plainly as one that answers wrong.
+#
+# Its arguments: the break's case or nothing, that case's clean alone exit, what the case alone
+# answers as `bounded` does, what the whole suite answers as `model_caught` does, and `sampled` when
+# the sample chose it. The case took 30 seconds clean alone, so its deadline is 150.
+#
+decided() {
+  ( row=$1 clean=$2 alone_answer=$3 whole_answer=$4
+    killer_cases=$tmp/decided.tsv alone_records=$tmp/decided
+    . "$alone_beside_the_runner" || exit 9
+    rm -rf "$alone_records" && mkdir -p "$alone_records" || exit 9
+    printf 'another-break\tthe-case\n' > "$killer_cases"
+    [ -z "$row" ] || printf 'a-break\t%s\n' "$row" >> "$killer_cases"
+    keep_the_clean_run the-case "$clean" 30
+
+    run_alone()    { printf 'alone@%s ' "$2"; return "$alone_answer"; }
+    caught_whole() { printf 'whole '; return "$whole_answer"; }
+
+    decide_a_break a-break "${5:-}"
+    said=$?
+    printf '%s %s' "$how" "$said" )
+}
+
+from_alone() { ( . "$alone_beside_the_runner" && "$@" ); }
+
+# The slots of the first twenty the sample takes, under one tenth.
+slots_chosen() {
+  ( . "$alone_beside_the_runner" || exit 9
+    slot=1
+    while [ "$slot" -le 20 ]; do
+      chosen_for_the_sample "$slot" "$1" && printf '%s ' "$slot"
+      slot=$((slot + 1))
+    done )
+}
+a_break_is_decided_at_its_killers_case_first
+
+#
 # **Every wake this suite made says where it ended.** Last, so it reads them all. An `ended` reading
 # `unread`, or an offer failing with a code the offer never gives, is an exit with no `read=` row.
 #
