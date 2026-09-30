@@ -87,6 +87,11 @@ Hand over each gate too: its name, its exit code, and what it printed. **A gate 
 gate that passed.** Name the ones you skipped, or the judge records that box unticked — and it
 should.
 
+**Read that out of the log the grade kept, never out of your own summary.** A grade condensed to
+*the 25 gates at `<head>` — ALL GREEN* is a claim, and a judge can weigh a claim only as one.
+`brief.sh --evidence <ledger>` reads the log instead, and refuses a work file that shouts a grade
+with no log behind it.
+
 `bin/brief.sh` does all this for a judge on another host. It refuses to print a brief when the chain
 cannot answer. **Nothing refuses you here.** Forget it and the judge refuses instead, which is the
 whole of the enforcement. **Refuse when the gap makes a verdict wrong; say so and carry on when it

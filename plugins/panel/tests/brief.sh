@@ -200,4 +200,92 @@ a_brief_names_the_commit_it_was_built_from() {
 }
 a_brief_names_the_commit_it_was_built_from
 
+#
+# The grade, and the one line a convener used to type in its place.
+#
+# **The judge was handed *the 25 gates at `<head>` — ALL GREEN*** and could weigh it only as a claim.
+# A grade keeps a log; the log names each gate, the code it answered with and what it printed. That
+# is what goes over now.
+#
+a_grade_comes_from_the_log_it_kept() {
+  kept="$tmp/kept"
+  mkdir -p "$kept"
+  printf 'the floor suite ran nine mutants\nPROVED NOTHING — the experiments above never ran\n' \
+    > "$kept/floor.log"
+
+  # The ledger's own shape: seven tab-separated fields, `machine` for a gate that ran. A red row ends
+  # `kept in <dir>`, which is where that gate's own output went.
+  printf '2026-09-30T00:00:00Z\tmachine\t01\tgates\t1\t89775ab5c31ea1266b3be04be15420edac0120a8\t  PASS  shell   FAIL  floor  1 RED kept in %s\n' "$kept" > "$tmp/ledger"
+  printf '2026-09-30T00:00:01Z\tmachine\t01\tagree\t0\t89775ab5c31ea1266b3be04be15420edac0120a8\t  PASS  CONTRIBUTING AGREED 25 gates\n' >> "$tmp/ledger"
+  printf '2026-09-30T00:00:02Z\tjudged\t01\ta clause\t0\t89775ab\tadversary said approve\tadversary\n' >> "$tmp/ledger"
+
+  printf 'the 25 gates at 89775ab — ALL GREEN\n' > "$tmp/typed"
+
+  said=$(brief adversary 'a clause' --verdicts "$tmp/empty" --review R1 --evidence "$tmp/ledger")
+
+  has "every gate the log holds is named"    "$said" "gates —"
+  has "and the one beside it"                "$said" "agree —"
+  has "the exit code the gate answered with" "$said" "exit 1"
+  has "and a passing gate's own code"        "$said" "exit 0"
+  has "the commit the grade read"            "$said" "89775ab"
+  has "what the log kept of the output"      "$said" "PASS  CONTRIBUTING"
+
+  # `kept in <dir>` is a path, and this file's own header says a path is not a handoff.
+  has "the failing gate's own last lines travel" "$said" "PROVED NOTHING"
+  has "and the gate they belong to is named"     "$said" "floor — the last"
+
+  # A verdict sits in the same file and ran nothing.
+  lacks "a verdict row is not read as a gate" "$said" "adversary said approve"
+
+  #
+  # The refusal. A grade typed into the work file, with no log it was read from.
+  #
+  is "a work file claiming a grade with no log is refused" \
+     "$(code_of brief adversary 'a clause' --verdicts "$tmp/empty" --review R1 --work "$tmp/typed")" "7"
+  has "and it says which word it read" \
+      "$(brief_says adversary 'a clause' --verdicts "$tmp/empty" --review R1 --work "$tmp/typed")" "ALL GREEN"
+  has "and names the flag that settles it" \
+      "$(brief_says adversary 'a clause' --verdicts "$tmp/empty" --review R1 --work "$tmp/typed")" "--evidence"
+
+  is "the same work file with the log is not refused" \
+     "$(code_of brief adversary 'a clause' --verdicts "$tmp/empty" --review R1 --work "$tmp/typed" --evidence "$tmp/ledger")" "0"
+
+  # The other shout a grade's record makes. One word is not the rule — the grade's vocabulary is.
+  printf 'the suite went 1 RED at 89775ab\n' > "$tmp/typedred"
+  is "a red grade typed with no log is refused too" \
+     "$(code_of brief adversary 'a clause' --verdicts "$tmp/empty" --review R1 --work "$tmp/typedred")" "7"
+
+  # Prose claiming no grade is not a grade. A refusal firing here would block an honest brief.
+  is "a work file claiming no grade needs no log" \
+     "$(code_of brief adversary 'a clause' --verdicts "$tmp/empty" --review R1 --work "$tmp/work")" "0"
+
+  #
+  # A log holding no gate is no grade. Passing one claims a grade a second way, and the brief would
+  # have printed an empty block over the top of the claim.
+  #
+  printf '2026-09-30T00:00:02Z\tjudged\t01\ta clause\t0\t89775ab\tadversary said approve\tadversary\n' \
+    > "$tmp/nogates"
+  is "a log that records no gate is refused" \
+     "$(code_of brief adversary 'a clause' --verdicts "$tmp/empty" --review R1 --evidence "$tmp/nogates")" "7"
+  has "and it says the log records no gate" \
+      "$(brief_says adversary 'a clause' --verdicts "$tmp/empty" --review R1 --evidence "$tmp/nogates")" "records no gate"
+
+  is "a log nobody can read is refused" \
+     "$(code_of brief adversary 'a clause' --verdicts "$tmp/empty" --review R1 --evidence "$tmp/nothing-here")" "4"
+  is "an evidence flag with no value is refused" \
+     "$(code_of brief adversary 'a clause' --verdicts "$tmp/empty" --review R1 --evidence)" "2"
+
+  # Absent is legal here as it is for the bar and the tree. Silent is not.
+  bare=$(brief adversary 'a clause' --verdicts "$tmp/empty" --review R1)
+  has "a brief naming no grade says so" "$bare" "No gate ran for you"
+
+  # The path the record names, gone. A brief pointing at it and reading nothing must say which.
+  printf '2026-09-30T00:00:00Z\tmachine\t01\tgates\t1\t89775ab\t1 RED kept in %s\n' "$tmp/nowhere" \
+    > "$tmp/lostlogs"
+  has "a kept log that is no longer there is said out loud" \
+      "$(brief adversary 'a clause' --verdicts "$tmp/empty" --review R1 --evidence "$tmp/lostlogs")" \
+      "It is not there now"
+}
+a_grade_comes_from_the_log_it_kept
+
 summary "brief"

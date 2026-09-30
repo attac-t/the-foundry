@@ -8,7 +8,7 @@
 # verdict.
 #
 #   sh bin/brief.sh adversary "a clause" --charter FILE --work FILE --verdicts DIR --review ID \
-#       --worktree DIR
+#       --worktree DIR --evidence FILE
 #
 # **A path is not a handoff.** Every part is read here and printed, so what the judge was given is
 # what this command emitted. An audit reads one stream, never a directory it hopes was reachable.
@@ -18,22 +18,29 @@
 # Exit: 0 printed. 2 called wrongly. 3 no such role. 4 a named file could not be read.
 #       5 the chain has no record of the round before this one.
 #       6 the worktree named is not a checkout with a commit in it.
+#       7 the work claims a grade and no log a grade kept came with it.
 
 set -u
 
 root=$(cd "$(dirname "$0")/.." && pwd)
+
+# How much of a failing gate's own output goes over. Its tail, because a gate prints what it found
+# last, and a brief carrying every line would be the gate's log rather than a brief.
+KEPT_LINES=40
 
 main() {
     read_arguments "$@"
     locate_role
     locate_the_commit
     locate_the_prior
+    locate_the_grade
 
     say_the_role
     say_the_skills
     say_the_bar
     say_the_tree
     say_the_work
+    say_the_grade
     say_the_prior
     say_the_clause
     say_what_is_wanted
@@ -50,6 +57,7 @@ read_arguments() {
     round=
     review=
     worktree=
+    evidence=
 
     [ -n "$role" ] && [ -n "$clause" ] || fail 2 'name a role and the clause it answers'
     [ "$#" -ge 2 ] && shift 2
@@ -61,6 +69,7 @@ read_arguments() {
             --verdicts) verdicts=${2:-}; [ -n "$verdicts" ] || fail 2 "verdicts names a directory" ;;
             --review)  review=${2:-}; [ -n "$review" ] || fail 2 "review names the chain" ;;
             --worktree) worktree=${2:-}; [ -n "$worktree" ] || fail 2 "worktree names a checkout" ;;
+            --evidence) evidence=${2:-}; refuse_unreadable evidence "$evidence" ;;
             *)         fail 2 "unknown argument [$1]" ;;
         esac
         shift 2
@@ -174,6 +183,131 @@ say_the_work() {
 }
 
 #
+# The log a grade kept, and the refusal that stops a typed one standing in for it.
+#
+# **A judge was handed the grade as one line the convener wrote** — *the 25 gates at `<head>` — ALL
+# GREEN* — so it could weigh the bar only as a claim. One review said so three rounds running.
+#
+# The remedy is the same one this file already applies to the bar, the tree and the prior round: the
+# artefact, read here. A grade's log names each gate, the code it answered with, and what it printed.
+# Nobody can type that, which is the whole of the difference.
+#
+# Asked before a word is printed. A brief that would go over as a claim must not go over at all.
+#
+locate_the_grade() {
+    graded=
+
+    refuse_a_typed_grade
+    [ -n "$evidence" ] || return 0
+
+    graded=$(grade_rows "$evidence")
+    [ -n "$graded" ] || fail 7 "the log at [$evidence] records no gate, so no grade was read from it"
+}
+
+#
+# A grade in the work file, with no log it came from.
+#
+# **The words are the grade's own, spelled the way its record spells them.** A work file shouting
+# PASS, FAIL, ALL GREEN, AGREED or `N RED` is claiming a grade, and a claim is what this refuses.
+#
+# Lowercase prose saying the same thing gets through. That is the gap, and it is the gap every lint
+# here has: this closes the path a convener takes without thinking, and nothing more.
+refuse_a_typed_grade() {
+    [ -n "$work" ] || return 0
+    [ -z "$evidence" ] || return 0
+
+    said=$(grade_word_in "$work")
+    [ -n "$said" ] || return 0
+
+    note "the work claims a grade — it says [$said] — and no log a grade kept came with it"
+    note "a judge cannot weigh a grade it was told, only one it was shown"
+    fail 7 "pass --evidence FILE, the ledger the grade wrote as it ran"
+}
+
+# The first grade word the work shouts, or nothing. One is enough: a work file claiming a grade twice
+# is still one claim, and the refusal names one word so a convener can see which.
+grade_word_in() {
+    awk '/ALL GREEN/ { print "ALL GREEN"; exit }
+         /[0-9] RED/ { print "RED"; exit }
+         /AGREED/    { print "AGREED"; exit }
+         /PASS/      { print "PASS"; exit }
+         /FAIL/      { print "FAIL"; exit }' "$1"
+}
+
+#
+# Each gate the log holds: its name, the code it answered with, the commit it read, and the line the
+# log kept of what it printed.
+#
+# `machine` rows only, and seven tab-separated fields in the order the ledger writes them. A verdict
+# and a handoff sit in the same file, and neither of them ran anything.
+grade_rows() {
+    awk -F'\t' '$2 != "machine" { next }
+                { printf "    %s — exit %s, at %s\n        %s\n", $4, $5, $6, $7 }' "$1"
+}
+
+#
+# Absent is legal and it is said out loud, like the bar and the tree. A judge that cannot tell an
+# ungraded run from an unmentioned grade will assume the second.
+say_the_grade() {
+    [ -n "$evidence" ] || { printf '\n---\n\n# The grade\n\nNOT SUPPLIED. No gate ran for you, so nothing mechanical sits under this verdict.\n'; return; }
+
+    printf '\n---\n\n# The grade, as the log the grade kept has it\n\n'
+    printf '%s\n' "$graded"
+    say_the_kept_logs
+
+    printf '\nEvery line above was read out of [%s], which a grade wrote as it ran.\n' "$evidence"
+    printf 'None of it was retyped. A name, an exit code or an output missing here is missing\n'
+    printf 'from the record too, and that is a finding rather than an omission.\n'
+}
+
+#
+# A failing gate's own output, carried rather than pointed at.
+#
+# The ledger flattens what a gate printed to one line, and a red one ends *kept in `<dir>`*. **That
+# path is the fault this file's own header names**: a judge told to go and look is handed nothing. So
+# the logs kept there are read here, and their tails go over.
+say_the_kept_logs() {
+    kept_dirs "$evidence" | while IFS= read -r where; do
+        [ -n "$where" ] || continue
+        say_one_kept_dir "$where"
+    done
+}
+
+# Every directory the grade's own record says it kept output in. `sort -u` because a run's gates all
+# keep in one place, and the line naming it is repeated per row.
+kept_dirs() {
+    awk -F'\t' '$2 == "machine" && match($7, /kept in /) { print substr($7, RSTART + RLENGTH) }' "$1" \
+        | sort -u
+}
+
+say_one_kept_dir() {
+    printf '\n    The output a failing gate printed was kept in\n\n        %s\n' "$1"
+    [ -d "$1" ] || { printf '\n    It is not there now, so none of it could be read.\n'; return; }
+
+    found=
+    for kept in "$1"/*.log; do
+        [ -f "$kept" ] || continue
+        found=yes
+        name=${kept##*/}
+        printf '\n    %s — the last %s lines it printed\n\n' "${name%.log}" "$KEPT_LINES"
+        last_lines "$kept"
+    done
+
+    [ -n "$found" ] || printf '\n    It holds no log, so none of it could be read.\n'
+}
+
+# The tail of a file, without `tail`. Panel declares `sh`, `awk`, `sed`, `find`, `sort` and `git`,
+# and a brief reaching for a seventh command stops working on a host that has six.
+last_lines() {
+    awk -v keep="$KEPT_LINES" '
+        { line[NR % keep] = $0 }
+        END {
+            start = NR > keep ? NR - keep + 1 : 1
+            for (i = start; i <= NR; i++) printf "        %s\n", line[i % keep]
+        }' "$1"
+}
+
+#
 # The round before this one, fetched through the chain rather than handed in.
 #
 # The Adversary refuses to judge a history it was told. A file on the command line is a telling: any
@@ -259,8 +393,11 @@ ASK
 }
 
 fail() {
-    printf 'brief: %s\n' "$2" >&2
+    note "$2"
     exit "$1"
 }
+
+# A refusal worth more than one line. `fail` says the last of them and leaves.
+note() { printf 'brief: %s\n' "$1" >&2; }
 
 main "$@"

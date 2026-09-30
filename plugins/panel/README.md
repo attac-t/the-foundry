@@ -105,6 +105,13 @@ Mechanical     bin/verdicts.sh refuses a round claiming a prior verdict
                Run by bin/brief.sh off-host, by /verdict in session.
                By no judge: none of them holds a tool that runs a command.
 
+               bin/brief.sh refuses a work file shouting a grade — PASS,
+               FAIL, ALL GREEN, AGREED, N RED — with no log a grade kept
+               behind it, exit 7. --evidence reads that log: each gate's
+               name, its exit code, and the last lines a failing one
+               printed. Lowercase prose claiming the same thing gets
+               through, so it closes the easy path and nothing more.
+
 Architectural  /verdict runs oracles in the parent session.
                Exit codes are harness-observed, never model-reported.
 

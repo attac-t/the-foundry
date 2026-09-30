@@ -167,6 +167,34 @@ Then one paragraph saying why.'
 wreck_brief "a brief naming a worktree and no commit is caught" \
   nocommit 's|^    printf .    commit %s.*$|    :|'
 
+#
+# The grade typed rather than read. The line a convener wrote was *the 25 gates at `<head>` — ALL
+# GREEN*, and a judge could weigh that only as a claim. With the refusal gone the claim goes over.
+wreck_brief "a grade typed into the work file is caught" \
+  typedgrade 's#^    said=$(grade_word_in "$work")$#    said=#'
+
+# Fail closed, the other half. A log recording no gate is no grade, and passing one would have
+# printed an empty block over the top of the claim it was meant to answer.
+wreck_brief "a log recording no gate accepted as a grade is caught" \
+  nogaterows 's#^    \[ -n "$graded" \] || fail 7 #    [ -n "$graded" ] || : #'
+
+#
+# The exit code dropped from a gate's row. Every gate name is still there, so only the check reading
+# the code can see it — and the code is the half a convener's summary always lost.
+wreck_brief "a grade carrying names and no exit codes is caught" \
+  nocodes 's#— exit %s, at %s#— at %s#'
+
+#
+# A failing gate's own output left where the log put it. `kept in <dir>` is a path, and this file's
+# header says a path is not a handoff: the judge is handed nothing and cannot tell.
+wreck_brief "a failing gate's kept log pointed at instead of carried is caught" \
+  pointedat 's#^    kept_dirs "$evidence" | while IFS= read -r where; do#    false | while IFS= read -r where; do#'
+
+# A verdict and a handoff live in the same ledger and neither ran anything. Read as gates, they
+# arrive as rows a judge would weigh as a grade.
+wreck_brief "a ledger read whole instead of its gates is caught" \
+  everyrow 's#\$2 != "machine" { next }#$2 == "" { next }#'
+
 bash "$root/tests/chain.sh" || failed=1
 echo
 
