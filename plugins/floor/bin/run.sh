@@ -5673,7 +5673,7 @@ clause_and_what_met_it() {
 #
 what_a_clause_stands_on() {
     a_hand_struck_the_clause "$1" "$2" && { each_strike_of "$1" "$2"; return 0; }
-    printf '%s%s%s' "$(what_met "$(charter_file "$1")" "$2")" "$(each_yes_it_stands_on "$1" "$2")" \
+    printf '%s%s%s' "$(what_met "$1" "$2")" "$(each_yes_it_stands_on "$1" "$2")" \
         "$(who_proposed_a_panel_clause "$1" "$2")"
 }
 
@@ -5704,9 +5704,30 @@ each_yes_it_stands_on() {
 each_yes_said() { awk -F'\t' '{ printf "; yes from %s at %s: `%s`", $1, $2, $3 }'; }
 
 what_met() {
-    met_by=$(answerer_of "$1" "$2")
-    [ "$met_by" = panel ] && { printf 'judged by %s' "$(spaced "$(named_judges "$1" "$2")" | sed 's/ /, /g')"; return; }
+    met_by=$(answerer_of "$(charter_file "$1")" "$2")
+    [ "$met_by" = panel ] && { printf 'judged by %s%s' "$(each_judge_of "$1" "$2")" "$(worker_beside_a_judge "$1")"; return; }
     printf '%s' "$met_by"
+}
+
+each_judge_of() { spaced "$(named_judges "$(charter_file "$1")" "$2")" | sed 's/ /, /g'; }
+
+#
+# #1076. The worker `run.began` recorded, and never the one the shell reading it names.
+#
+# A verdict's check reads its own shell, and a pass runs `new` and `judged` in one, so there the two
+# agree. A person can run them in two, and the check may then have held a worker the record never saw.
+#
+worker_beside_a_judge() {
+    began_by=$(recorded_worker "$1")
+    [ -n "$began_by" ] && { printf '; worker %s' "$began_by"; return 0; }
+
+    printf '; this run records no worker, so nothing checked that its judge did not write the work'
+}
+
+# `began_with` writes the field last and on one line, so the rest of the row is the name, spaces too.
+recorded_worker() {
+    awk -F'\t' '$3 == "run.began" { at = index($4, " worker="); if (at) print substr($4, at + 8); exit }' \
+        "$(observations_file "$1")" 2>/dev/null
 }
 
 # A path, or nothing at all. An adapter that is given a path it cannot

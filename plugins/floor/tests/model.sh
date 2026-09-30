@@ -2799,6 +2799,78 @@ a_request_names_what_the_grader_accepts() {
 a_request_names_what_the_grader_accepts
 
 #
+# A run in a repository of its own, begun by the worker `$2` names, or by none when it is empty. Its
+# gate and its one judged clause are met, and a push lands in a bare remote beside it.
+#
+# Only a repository git could not make fails here. What floor did is the case's to read, since a
+# break that stopped a step would otherwise be counted as a skip.
+#
+a_judged_run_begun_by() {
+  git init -q --bare "$tmp/$1-remote.git" 2>/dev/null \
+    && make_repo "$tmp/$1" main && set_origin "$tmp/$1" "https://github.com/acme/$1.git" \
+    && mkdir -p "$tmp/$1/.foundry" \
+    && commit_file "$tmp/$1" .foundry/gates 'tests  true
+' && commit_file "$tmp/$1" .foundry/judged 'a-reviewer  a stranger can read it
+' || return 1
+
+  ( cd "$tmp/$1" && FOUNDRY_HOME="$home" FOUNDRY_RUN="" FOUNDRY_WHO=ada@example.com FOUNDRY_WORKER="$2" \
+      sh "$runner" new "Begun by ${2:-nobody}" >/dev/null 2>&1 )
+  for step in "charter derive" "policy authorize https://github.com/acme/$1.git" \
+      "policy deliver-to https://github.com/acme/$1.git" "targets add https://github.com/acme/$1.git main" open gates; do
+    floor "$tmp/$1" $step >/dev/null 2>&1
+  done
+
+  begun_slot=$(only_slot "$(floor "$tmp/$1" path)/units/01/workspace") \
+    && git -C "$begun_slot" config "url.$tmp/$1-remote.git.pushInsteadOf" "https://github.com/acme/$1.git"
+  judged "$tmp/$1" 'a stranger can read it' a-reviewer approve 'reads fine' >/dev/null 2>&1
+  return 0
+}
+
+#
+# #1076. Wherever a request names a judge, it names the worker `run.began` recorded, or says the run
+# recorded none, and so nothing checked that its judge did not write the work.
+#
+# Each run delivers from a shell naming another worker, so a request that read the shell names that
+# one. The recorded name holds spaces, so a request that read one word of it names a different one.
+#
+a_request_names_the_worker_its_run_began_with() {
+  a_judged_run_begun_by begun-by-one 'Some Model 9' && a_judged_run_begun_by begun-by-none '' \
+    || { skip "the worker a request names — git could not make a repo here"; return; }
+
+  for begun in begun-by-one begun-by-none; do
+    ( FOUNDRY_WORKER=another-worker; floor "$tmp/$begun" deliver 'a change' ) >/dev/null 2>&1
+  done
+  by_one=$(cat "$(floor "$tmp/begun-by-one" path)/body" 2>/dev/null)
+  by_none=$(cat "$(floor "$tmp/begun-by-none" path)/body" 2>/dev/null)
+
+  has   "a request names the worker its run began with, beside its judge" "$by_one" \
+        "Judged \`a stranger can read it\`: judged by a-reviewer; worker Some Model 9"
+  has   "and a run that recorded none says so, and that nothing checked" "$by_none" \
+        "Judged \`a stranger can read it\`: judged by a-reviewer; this run records no worker, so nothing checked that its judge did not write the work"
+  lacks "and neither names the worker of the shell that delivered it" "$by_one$by_none" "another-worker"
+}
+a_request_names_the_worker_its_run_began_with
+
+#
+# #1076, where `status` reads a run. *met* prints each clause through the reader the request uses, so
+# it names the same worker from the same record, whatever worker the shell reading it names.
+#
+status_names_the_worker_its_run_began_with() {
+  a_judged_run_begun_by read-begun-by-one 'Some Model 9' && a_judged_run_begun_by read-begun-by-none '' \
+    || { skip "the worker status names — git could not make a repo here"; return; }
+
+  read_one=$(FOUNDRY_WORKER=another-worker; floor_says "$tmp/read-begun-by-one" status)
+  read_none=$(FOUNDRY_WORKER=another-worker; floor_says "$tmp/read-begun-by-none" status)
+
+  has   "status names the worker its run began with, under met" "$read_one" \
+        "  - Judged \`a stranger can read it\`: judged by a-reviewer; worker Some Model 9"
+  has   "and says a run recorded none, and that nothing checked" "$read_none" \
+        "  - Judged \`a stranger can read it\`: judged by a-reviewer; this run records no worker, so nothing checked that its judge did not write the work"
+  lacks "and neither names the worker of the shell reading it" "$read_one$read_none" "another-worker"
+}
+status_names_the_worker_its_run_began_with
+
+#
 # **Both adapters carry a brief and nothing compared them.** #377 calls that a seam built and
 # unproved: two implementations, one contract, and no case driving one input through both.
 #

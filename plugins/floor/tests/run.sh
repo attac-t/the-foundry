@@ -4778,6 +4778,22 @@ wreck_runner "a body handed to gh as one argument is caught" \
   ghbodyarg 's@ --title "\$4" --body-file -@ --title "$4" --body "$(cat)"@' lib/source-github.sh
 
 #
+# **Beside each judge, the worker `run.began` recorded.** #1076. One break per rule: nothing beside the
+# judge, the worker read from the shell, the half saying nothing checked, and a name cut at a space.
+#
+wreck_runner "a judge named without the worker its run began with is caught" \
+  workerunnamed 's@ "\$(worker_beside_a_judge "\$1")";@ "";@'
+
+wreck_runner "a worker read from the shell rather than the record is caught" \
+  workerfromenv 's@^recorded_worker() {@recorded_worker() { worker; return 0;@'
+
+wreck_runner "a run with no worker that never says nothing checked is caught" \
+  workerunchecked 's@, so nothing checked that its judge did not write the work@@'
+
+wreck_runner "a worker read to its first space is caught" \
+  workerword 's@if (at) print substr(\$4, at + 8)@if (at) { split(substr($4, at + 8), word, " "); print word[1] }@'
+
+#
 # **A member who answered here is not asked again.** Piece 5b-i. Each break removes the skip, the
 # count of what a skipped member holds, the check of the charter's version, the check that an answer
 # followed the latest handoff, or an unavailable counted as an answer.

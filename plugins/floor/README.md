@@ -874,6 +874,14 @@ has a cap, 32,767 characters on Windows, and a body GitHub would take can be lon
 **A clause nothing derived also names each yes it stood on**: who said yes, when, and the line. It
 reads the hearing the grade read, never a row, and `status` says the same under *met*.
 
+**Beside each judge it names the worker `run.began` recorded.** A run that recorded none says so,
+and says nothing checked that its judge did not write the work. It reads the record, never the
+worker the shell names, and `status` says the same under *met*. #1076.
+
+**The check a verdict meets reads its own shell instead.** A pass runs `new` and `judged` in one, so
+there the two agree. A person can run them in two, and then the check may have held a worker the
+line never names.
+
 **A shaped run's record adds one line**: who sat, and who a missing label left out. A clause a hand
 struck reads `struck by <hand> at <when>` and the line, since nothing met it and nothing had to. A
 clause the panel proposed names its proposers.
