@@ -12,8 +12,8 @@
 # **A comment may name a host. Code may not.** Those two sentences are the fixture: a check that
 # reads them as violations gates the opposite of what is wanted.
 #
-# `bin/core.dirs` says what core is, and this reads it rather than keeping a copy. Every gate that
-# refuses a word in core reads that one file, so a directory added there moves all of them at once.
+# `plugins/floor/core.dirs` says what core is, and this reads it rather than keeping a copy. Every
+# check that refuses a word in core reads that one file, so a directory added there moves them all.
 #
 # Usage: sh bin/hosts.sh
 #
@@ -28,6 +28,10 @@ cd "$(dirname "$0")/.." || exit 3
 # repository has already spent a day on one.
 HOSTS='docker|container|podman|kubernetes|lxc|chroot'
 
+# Floor's core, named from floor's own root. The file says which directories and why it ships with
+# the plugin rather than living here; this prefixes each with the directory the file sits in.
+readonly CORE_DIRS=plugins/floor/core.dirs
+
 say()  { printf '%s\n' "$1"; }
 fail() { printf 'hosts: %s\n' "$1" >&2; exit 3; }
 
@@ -35,10 +39,11 @@ main() {
     [ "$#" -eq 0 ] || fail 'takes no arguments'
 
     # Missing and saying nothing are one answer here: either way this gate has no core to read.
-    CORE=$(grep '^[^#]' bin/core.dirs 2>/dev/null) \
-        || fail 'bin/core.dirs is missing, or names no directory'
+    CORE=$(grep '^[^#]' "$CORE_DIRS" 2>/dev/null | sed "s|^|${CORE_DIRS%/*}/|")
+    [ -n "$CORE" ] || fail "$CORE_DIRS is missing, or names no directory"
 
-    core_is_here || fail 'bin/core.dirs names a directory that is not here'
+    absent=$(core_that_is_not_here)
+    [ -z "$absent" ] || fail "$CORE_DIRS names a directory that is not here: ${absent% }"
 
     caught=$(host_words_in_code)
 
@@ -47,9 +52,11 @@ main() {
     say "hosts   core names no host"
 }
 
-core_is_here() {
+# Named rather than counted. The old message listed all three whatever was absent, so a gate that
+# could not read one directory said nothing about which.
+core_that_is_not_here() {
     for dir in $CORE; do
-        [ -d "$dir" ] || return 1
+        [ -d "$dir" ] || printf '%s ' "$dir"
     done
 }
 

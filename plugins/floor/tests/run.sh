@@ -71,6 +71,14 @@ GIT_CONFIG_VALUE_0=
 export GIT_TERMINAL_PROMPT GIT_ASKPASS GIT_CONFIG_COUNT GIT_CONFIG_KEY_0 GIT_CONFIG_VALUE_0
 
 root="$(cd "$(dirname "$0")/.." && pwd)"
+
+# What core is, from the one definition of it. `plugins/floor/core.dirs` says why it lives in the
+# plugin; this suite reads it rather than naming the directories again.
+#
+# **`core_names_no_vendor` named two of the three and had done since it was written**, so floor's
+# hooks were never read for a vendor's name. That is the drift, and it was already here.
+core_dirs()    { sed -n "s|^[^#]|$root/&|p" "$root/core.dirs"; }
+core_scripts() { find $(core_dirs) -name '*.sh' -type f 2>/dev/null; }
 tmp="${TMPDIR:-/tmp}/floor-audit-$$"
 mkdir -p "$tmp/verdict"
 # `chmod -R u+rwX` first, because two fixtures make a directory read-only to prove the runner
@@ -233,7 +241,7 @@ core_names_no_vendor() {
   local word found
 
   for word in $(vendor_words); do
-    found=$(grep -rlw -- "$word" "$root/bin" "$root/lib" 2>/dev/null | tr '\n' ' ')
+    found=$(grep -rlw -- "$word" $(core_dirs) 2>/dev/null | tr '\n' ' ')
     [ -z "$found" ] || bad "floor core names [$word]: $found"
   done
 
@@ -266,7 +274,7 @@ core_names_no_vendor
 settings_match_the_page() {
   local read named missing stale
 
-  read=$(grep -ohE 'FOUNDRY_[A-Z_]+' "$root"/bin/*.sh "$root"/lib/*.sh "$root"/hooks/*.sh 2>/dev/null | sort -u)
+  read=$(grep -ohE 'FOUNDRY_[A-Z_]+' $(core_scripts) 2>/dev/null | sort -u)
   named=$(grep -ohE '`FOUNDRY_[A-Z_]+`' "$root/README.md" 2>/dev/null | tr -d '`' | sort -u)
 
   missing=$(printf '%s
@@ -302,7 +310,7 @@ harness_reads_match_the_page() {
   local read named missing stale
   local theirs='composer.json package.json'
 
-  read=$(grep -ohE '[a-z_]+\.json|\.claude/rules'            "$root"/bin/*.sh "$root"/lib/*.sh "$root"/hooks/*.sh 2>/dev/null | sort -u)
+  read=$(grep -ohE '[a-z_]+\.json|\.claude/rules' $(core_scripts) 2>/dev/null | sort -u)
 
   for one in $theirs; do read=$(printf '%s
 ' "$read" | grep -vxF "$one"); done
