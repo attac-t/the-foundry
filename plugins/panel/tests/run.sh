@@ -161,6 +161,12 @@ wreck_brief "a paragraph asked for after the verdict line is caught" \
   paraafter '/^    VERDICT: revise$/a\
 Then one paragraph saying why.'
 
+#
+# The commit dropped from the block that names the tree. A path is what the brief always gave, and
+# a path is the fault: the judge reads whatever is there while it reads.
+wreck_brief "a brief naming a worktree and no commit is caught" \
+  nocommit 's|^    printf .    commit %s.*$|    :|'
+
 bash "$root/tests/chain.sh" || failed=1
 echo
 
@@ -272,6 +278,17 @@ wreck "a guard that watches the recorder only is caught" \
 wreck "a review holding the stamp's own punctuation is caught" \
   anypunct 's|^        \*,\*)|        ZZCOMMA)|
             s|^        \*"$newline"\*)|        ZZBREAK)|'
+
+
+# The refusal itself, gone. A verdict then records against a tree the branch left, which is the
+# fault this pair was built for.
+wreck "a chain that records a verdict after the branch moved is caught" \
+  movedon 's|^    \[ -n "$commit" \] && refuse_unless_the_branch_holds.*$|    :|'
+
+# Hashes where trees belong. An amend, a rebase or a merge changing no file renames the commit and
+# moves nothing the judge read, so comparing hashes refuses work that is sound.
+wreck "a chain comparing commits instead of trees is caught" \
+  hashnottree 's|"$2^{tree}"|"$2"|'
 
 
 # The tally every check reports through. A break that empties a suite used to turn it green, and no
