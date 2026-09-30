@@ -157,6 +157,20 @@ took_alone()         { clean_run_field "$1" 2; }
 clean_run_field()    { awk -v field="$2" '{ print $field; exit }' "$alone_records/$1" 2>/dev/null; }
 
 #
+# Run what it is handed, and keep its status and seconds as that case's clean alone run. The status
+# is read straight off the run, so nothing between the two can answer in its place. Kept wrong, a
+# case red on its own would read clean, and every break it decides would read `ok`.
+#
+keep_what_it_answered() {
+  local named=$1 began said
+  shift
+  began=$(date +%s)
+  "$@"
+  said=$?
+  keep_the_clean_run "$named" "$said" "$(( $(date +%s) - began ))"
+}
+
+#
 # The sample. One slot in ten runs the whole suite as well, and the tree's commit says which tenth, so
 # over many trees every slot takes a turn. A break caught alone that no sample ever reaches is a mask
 # nobody looked for.

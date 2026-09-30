@@ -1853,14 +1853,11 @@ name_each_row_that_names_no_case() {
   done
 }
 
-# Clean, so against this tree's own runner, and under the whole suite's deadline: alone is less.
+# Clean, so against this tree's own runner, and under the whole suite's deadline: alone is less. The
+# status is kept by `tests/alone.sh`, where the model suite can break the keeping.
 run_one_case_clean_alone() {
-  local began said
-  began=$(date +%s)
-  bounded "$deadline" env RUNNER="$root/bin/run.sh" FOUNDRY_FAIL_FAST=1 \
-          FOUNDRY_CHECK="$alone_records/$1.check" bash "$root/tests/model.sh" --only "$1"
-  said=$?
-  keep_the_clean_run "$1" "$said" "$(seconds_since "$began")"
+  keep_what_it_answered "$1" bounded "$deadline" env RUNNER="$root/bin/run.sh" FOUNDRY_FAIL_FAST=1 \
+                        FOUNDRY_CHECK="$alone_records/$1.check" bash "$root/tests/model.sh" --only "$1"
 }
 
 name_each_case_that_failed_clean_alone() {
@@ -4828,7 +4825,7 @@ wreck_runner "a reading that writes into the run is caught" \
   statuswrites '/^status() {/,/^}/s@^    say_the_run "\$dir"$@    say_the_run "$dir"; : > "$dir/status.read"@'
 
 #
-# **How a runner break is decided, broken seven ways.** Each breaks one rule in the copy's
+# **How a runner break is decided, broken one rule at a time.** Each breaks one rule in the copy's
 # `tests/alone.sh`, which the model suite reads beside the runner, and each dies at a check of its
 # own: `--only` in `a_suite_run_with_only_runs_the_cases_it_names`, and every other one in
 # `a_break_is_decided_at_its_killers_case_first`. #1112.
@@ -4853,6 +4850,10 @@ wreck_runner "a break caught alone and missed whole read as green is caught" \
 
 wreck_runner "a sample of none read as green is caught" \
   samplenone 's#^  \[ "\$1" -gt 0 \]$#  true#' tests/alone.sh
+
+# The status a clean alone run is kept under, read as clean whatever the run answered.
+wreck_runner "a case red clean alone kept as clean is caught" \
+  keptclean '/^keep_what_it_answered() {/,/^}/s#^  said=\$?$#  said=0#' tests/alone.sh
 
 report_breaks
 

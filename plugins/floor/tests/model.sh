@@ -14380,6 +14380,8 @@ a_break_is_decided_at_its_killers_case_first() {
      "$(decided '' 0 1 1)" "whole whole 1"
   is "a case that failed clean alone hands its breaks to the whole suite" \
      "$(decided the-case 1 1 1)" "whole whole 1"
+  is "a case red clean alone is kept red, so its breaks run the whole suite" "$(kept_after false)" "1"
+  is "and a case that ran clean alone is kept clean"                         "$(kept_after true)"  "0"
   is "a break caught alone that the sample's whole suite misses is a split, and red" \
      "$(decided the-case 0 1 1 sampled)" "alone@150 whole split 1"
   is "a break caught alone that the sample's whole suite catches stays caught" \
@@ -14417,6 +14419,15 @@ decided() {
 }
 
 from_alone() { ( . "$alone_beside_the_runner" && "$@" ); }
+
+# The status a case's clean alone run is kept under, once the rule beside the runner has run a stand-in.
+kept_after() {
+  ( alone_records=$tmp/kept
+    . "$alone_beside_the_runner" || exit 9
+    rm -rf "$alone_records" && mkdir -p "$alone_records" || exit 9
+    keep_what_it_answered the-case "$@" >/dev/null 2>&1
+    clean_run_field the-case 1 )
+}
 
 # The slots of the first twenty the sample takes, under one tenth.
 slots_chosen() {
