@@ -4,14 +4,18 @@
 # the base names, one a line. `ENVIRON["speakers"]` holds `speaker`'s lines: the account floor writes as
 # now, then `<author>\t<question>\t<when>` for each question asked. Every account arrives folded.
 #
-# Prints `heard\t<question>\t<who>\t<when>\t<words>` for each yes it hears, and
-# `unread\t<who>\t<when>\t<why>` for each named hand's comment that authorises nothing. A line it drops is
-# said on stderr, and one bad line never stops the rest.
+# `ENVIRON["strikable"]` holds the questions a no may strike, one a line: the authorisation questions
+# of the clauses a panel proposed. A no to any other question is no yes, as it always was.
+#
+# Prints `heard\t<question>\t<who>\t<when>\t<words>` for each yes it hears, `struck` in the same fields
+# for each no, and `unread\t<who>\t<when>\t<why>` for each named hand's comment that authorises nothing.
+# A line it drops is said on stderr, and one bad line never stops the rest.
 
 BEGIN {
     FS = "\t"
     name_the_hands(ENVIRON["hands"])
     name_the_speakers(ENVIRON["speakers"])
+    name_the_strikable(ENVIRON["strikable"])
 }
 
 $0 == "" { next }
@@ -23,6 +27,11 @@ END { close_the_comment() }
 function name_the_hands(said,   n, i, line) {
     n = split(said, line, "\n")
     for (i = 1; i <= n; i++) if (line[i] != "") hand[line[i]] = 1
+}
+
+function name_the_strikable(said,   n, i, line) {
+    n = split(said, line, "\n")
+    for (i = 1; i <= n; i++) if (line[i] != "") strikable[line[i]] = 1
 }
 
 #
@@ -87,9 +96,9 @@ function begin_the_comment(who, when) {
 }
 
 #
-# A yes is the whole line `yes <question>`, from a named hand, to a question `speaker` lists, written
-# strictly after that question was first asked. The first reason a line is not one is kept, so a comment
-# that authorised nothing can say why.
+# A yes is the whole line `yes <question>`, or `yes <question> <commit>` at completion, from a named
+# hand, to a question `speaker` lists, written strictly after that question was first asked. The first
+# reason a line is not one is kept, so a comment that authorised nothing can say why.
 #
 function weigh(who, when, words,   question) {
     owed = 1
@@ -98,20 +107,55 @@ function weigh(who, when, words,   question) {
 
     if (!(question in asked)) { owe("a question nobody asked: " question); return }
     if (!after_its_question(question, when)) { owe("before its question: " question); return }
+    if (!shaped_for_its_stage(question)) return
 
     answered = 1
-    printf "heard\t%s\t%s\t%s\t%s\n", question, who, when, words
+    printf "%s\t%s\t%s\t%s\t%s\n", (struck ? "struck" : "heard"), question, who, when, words
 }
 
 #
-# The question a line says yes to, or nothing. The whole line is `yes` and one question id, so a quote
-# reply, a no naming the question, and a tab then a no are none of them one. A word that is no question
-# id, `yes please`, is a line with no yes in it.
+# The question a line says yes to, or nothing, with any word after it left in `commit`. The whole line
+# is `yes`, one question id, and at most one space and one word of lower-case hex, so a quote reply, a
+# no naming the question, and a tab then a no are none of them one. `yes please` is no yes at all.
 #
-function the_question_in(words) {
-    if (words !~ /^yes [a-z0-9-]+[.][a-z]+[.][0-9]+$/) return ""
-    return substr(words, 5)
+function the_question_in(words,   space) {
+    commit = ""
+    if (a_strike(words)) return substr(words, 4)
+    if (words !~ /^yes [a-z0-9-]+[.][a-z]+[.][0-9]+( [0-9a-f]+)?$/) return ""
+
+    words = substr(words, 5)
+    space = index(words, " ")
+    if (space == 0) return words
+
+    commit = substr(words, space + 1)
+    return substr(words, 1, space - 1)
 }
+
+#
+# **A no is the whole line `no <question>`**, read as a yes is, and it strikes only a question floor
+# named as one a no may strike. Past this it is weighed as a yes: a named hand, after its question.
+#
+function a_strike(words) {
+    struck = words ~ /^no [a-z0-9-]+[.][a-z]+[.][0-9]+$/ && (substr(words, 4) in strikable)
+    return struck
+}
+
+#
+# **Each stage has one shape.** An authorisation names no commit, and a completion names the one its
+# hand read, whole. A completion naming none is owed a reason of its own: a person who typed the
+# authorisation's shape thinks they answered.
+#
+function shaped_for_its_stage(question) {
+    if (!is_a_completion(question)) return commit == ""
+    if (commit == "") { owe("no commit named: " question); return 0 }
+    return is_a_whole_commit(commit)
+}
+
+function is_a_completion(question) { return question ~ /[.]completion[.][0-9]+$/ }
+
+# 40 or 64 hex digits, as `git rev-parse` prints a commit, so a short sha names none. Counted with
+# `length`, since an interval like `{40}` is not in every awk.
+function is_a_whole_commit(said) { return length(said) == 40 || length(said) == 64 }
 
 # Strictly after its first ask, with no upper bound. A question asked later closes nothing, so two
 # asked back to back are each answerable.

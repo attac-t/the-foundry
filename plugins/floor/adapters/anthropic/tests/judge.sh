@@ -183,6 +183,15 @@ d=$(handed quiet); judged "$d"
 has "a harness that said nothing is unavailable" "$(cat "$d/r.receipt")" "verdict unavailable"
 hasnt "and it names no session it cannot vouch for" "$(cat "$d/r.receipt")" "context "
 
+# --- the shaping entry point ---
+#
+# Its table runs last and is counted here, so this adapter's one audit runs both, and fails when
+# either does. No pin covers a suite, so neither entry point's pin moves for this line.
+
+echo
+bash "$(dirname "$0")/shape.sh" && ok "the shaping entry point's table passes" \
+  || bad "the shaping entry point's table passes"
+
 printf '
 anthropic — %d passed, %d failed
 ' "$passed" "$failed"

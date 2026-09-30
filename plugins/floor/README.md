@@ -214,6 +214,7 @@ sh bin/run.sh policy authorize https://github.com/acme/api.git
 sh bin/run.sh charter
 sh bin/run.sh charter derive
 sh bin/run.sh charter check
+sh bin/run.sh charter shape
 sh bin/run.sh evidence
 sh bin/run.sh evidence record tests ./check
 sh bin/run.sh evidence handed "the interface is understandable" "A Reviewer" "a harness" 4e1f9c
@@ -269,6 +270,7 @@ ${FOUNDRY_HOME:-$HOME/.foundry}/runs/<date>-<slug>-<short id>/
 ├── body               the brief, then what floor recorded: run, commit, charter, what met each clause
 ├── substitutions      files graded as the base wrote them — absent when the run changed no gate
 ├── judged/            what `judged` asked each judge, and what came back — one pair per clause
+├── shaped/            who sat, the bar each member read, and each attempt's brief and what it printed
 ├── observations       what happened, one line each, and nothing granted by any of it
 ├── pass.alive         the time a pass at work last beat, and its beat — absent when no pass is at work
 ├── claim.holder       the name this run's claim goes under, kept when the run moves
@@ -769,6 +771,10 @@ grant of its own and absent by default.
 evidence names. That last one is the contract: a head that moved after grading is a tree nothing
 answered for. It also refuses a source that will not take the delivery.
 
+**It grades as `deliver` does, so it hears the item first**, and a yes deleted since `deliver` holds
+it. It asks for its source before that, so a source missing is 3 before any hearing. It hears as
+whoever is signed in, and *Who may answer, and what a yes is* says what that costs.
+
 **Then the checks the target branch requires, asked rather than assumed.** The branch's own rules
 name them; every other check in the rollup belongs to the repository and bars nothing. Each one that
 did not pass is named, and one that never started is named apart from one that came back red.
@@ -819,8 +825,13 @@ comes from the reader that already owns it, so it keeps nothing and grants nothi
 |---|---|
 | the run | its name, its item and its delivery |
 | ran | the ledger, as `evidence` prints it: each gate that ran, each handoff and each verdict |
+| decided | for a run that was shaped: who sat, who a missing label left out, and each clause nothing derived, with who proposed it and what a hand said |
 | met | each clause the grader passes at the workspace's head, and whom it accepted |
 | missing | what `complete` would name, at that same head |
+
+**What a hand said is one of four**: `yes by <hand> at <when>`, `struck by <hand> at <when>`,
+`asked, no answer yet`, or `never asked`. A struck clause is never printed under *met*, and a derived
+clause is never under *decided*, so the two never share a part.
 
 **It never says the run may deliver.** `deliver` refuses on four things before its grade, and
 `status` asks none of them:
@@ -841,6 +852,10 @@ judge that has not answered yet.
 **A run `complete` cannot read, `status` cannot either,** and it exits with the same code. Otherwise
 it exits 0, whatever is missing.
 
+**It hears the item once the run and what ran are printed**, when the charter holds a clause nothing
+derived. So a source nobody can ask stops it at 20, and a clash of hands at 49, 50 or 51. The run and
+what ran are shown by then. It writes nothing it heard: it keeps no record of its own.
+
 ---
 ### A delivery names its record
 
@@ -852,6 +867,13 @@ that one commit. A commit landing meanwhile, even from a `pre-push` hook, reache
 Each is named by whom the grader accepted: every judge its panel names, or the kind of row it
 trusts. The record reads no row itself, so it cannot name one the grader skipped. The brief above
 it is its author's words, and may say anything. The adapter adds its marker last. Decided on #736.
+
+**A clause nothing derived also names each yes it stood on**: who said yes, when, and the line. It
+reads the hearing the grade read, never a row, and `status` says the same under *met*.
+
+**A shaped run's record adds one line**: who sat, and who a missing label left out. A clause a hand
+struck reads `struck by <hand> at <when>` and the line, since nothing met it and nothing had to. A
+clause the panel proposed names its proposers.
 
 **A second `deliver` on the same branch pushes the new head, and the request keeps its first
 body.** One run, one delivery: the request is not rewritten, and the run keeps the body it sent.
@@ -929,11 +951,12 @@ the label, reads what it is for, and deletes it. Nothing else has to know it exi
 What must be true for this run to be good. One file, in the run.
 
 ```
-clause  <id>  Gate|Judged|Decided  <text>
-pin     <id>  <target>  <ref>  <source>  <sha>
-gate    <id>  <command...>
-judge   <id>  <who>  <command...>
-rounds  <id>  <who>  <n>
+clause    <id>  Gate|Judged|Decided  <text>
+pin       <id>  <target>  <ref>  <source>  <sha>
+gate      <id>  <command...>
+judge     <id>  <who>  <command...>
+rounds    <id>  <who>  <n>
+proposer  <id>  <who>
 ```
 
 A command is the last field, so spaces and quotes need no parser. One `judge` line per member — a
@@ -960,8 +983,9 @@ One clause may have many pins. A clause whose meaning comes from two repositorie
 its own base ref. Pins are separate records because inline ones make dropping a target and deleting a
 clause the same edit, and monotonicity has to tell those apart.
 
-A clause with no pin is **introduced**. It stays introduced. Re-deriving keeps it and never gives it
-provenance it did not earn.
+A clause with no pin is **introduced**. It stays introduced. Re-deriving keeps it, and its panel with
+it, and never gives it provenance it did not earn. *A clause nothing derived*, below, says how one
+binds.
 
 ### A Gate names a gate
 
@@ -1049,11 +1073,11 @@ took from the base, because that is the likeliest cause and it used to be invisi
 **recorded and never read** — so a gate exiting 0 satisfied a `Judged:` clause, whose whole point is
 that no command can answer it.
 
-| Kind | Answered by | Written by |
-|---|---|---|
-| `Gate` | `machine` | `gates`, and `evidence record` for a name no pin holds |
-| `Judged` | `judged` | `judged`, or `evidence verdict` and `evidence receipt` by hand |
-| `Decided` | `human` | an answer where the item is |
+| Kind | Answered by | Written by | Once a hand says yes to it, nothing derived |
+|---|---|---|---|
+| `Gate` | `machine` | `gates`, and `evidence record` for a name no pin holds | never: a `Gate` is not introduced |
+| `Judged` | `judged` | `judged`, or `evidence verdict` and `evidence receipt` by hand | the bench, less its proposer |
+| `Decided` | `human` | an answer where the item is | `yes <question> <commit>`, recorded at that commit |
 
 **A green gate does not satisfy a `Judged` clause**, whatever name it is recorded under. That is
 what the kinds are for.
@@ -1072,9 +1096,242 @@ in §2.6 marked.
 one — `judge  text` — and this file is the source, so every clause here pins to it.
 
 **A `reach  judge  command...` line beside it says how the runner asks that judge.** A
-`rounds  judge  n` line says how often it may be asked. `reach` and `rounds` are reserved first
-words, so no judge may be called either. Three record kinds in one file need a word to tell them
-apart, and only the first field can carry it. The clause text is already the line's tail.
+`rounds  judge  n` line says how often it may be asked. A `bench  judge...` line names who judges a
+`Judged` clause nothing derived. Each word is a member, a comma parts them too, and more lines add
+members, each once. A `shape` line names a member who proposes clauses before any work, as *A panel
+shapes the charter* says. `reach`, `rounds`, `bench` and `shape` are reserved first words, so no judge
+may be called any of them. Five record kinds in one file need a word to tell them apart. Only the
+first field can carry it, and the clause text is already the line's tail.
+
+**A judge already called `bench` or `shape` becomes that kind of line.** A run that derived its clause
+then refuses its next `derive` at 6.
+
+### A clause nothing derived
+
+`charter introduce <kind> <text>` adds one. **It stays introduced, and it binds only once a hand's yes
+stands**, as *Who may answer, and what a yes is* says. Then its kind's own answer meets it.
+
+| `introduce` | Answers |
+|---|---|
+| a `Gate` the base names | 2: `charter derive` pins it |
+| a `Gate` the base does not name | 55: nothing could meet it |
+| a `Judged` clause, and no `bench` line at the base | 55 |
+| a `Judged` clause whose bench is only its proposer | 55 |
+| a `Judged` clause | the bench as its panel, and who proposed it |
+
+**55 is one fact with one fix**: nothing at the base could meet the clause. The fix is a line at the
+base, and only a new run reads the base. The kind, one line and a kind change are refused first. A
+run with no base refuses at 6, as `derive` does.
+
+**A `Judged` clause goes to the bench at the base, less the member who proposed it.** `introduce`
+reads the bench, and each member's `reach` and `rounds`, in a checkout of the base. It refuses a
+reach or a limit as `derive` does, 6. It writes one `judge` record a member, and a `rounds` record
+where one is named. `proposer <id> <who>` names the worker `FOUNDRY_WORKER` names, or each member
+`charter shape` hands the same writer, one record each. With no worker named there is no `proposer`,
+and the panel is the whole bench. All of it lands in the clause's own write.
+
+**The proposer is whoever introduced the words first.** A second `introduce` adds only a member the
+panel lacks, each once, and a proposer only where none is recorded. **It never seats a member recorded
+as proposing the clause**, whoever wrote that record: a panel's `charter shape` may record several. A
+member it records as proposer leaves its seat in that same write, since an `introduce` naming no
+worker seats the whole bench. A clause derivation pinned takes no panel from it.
+
+**Re-deriving carries the panel.** Each introduced clause keeps its `judge`, `rounds` and `proposer`
+records through a derivation, since a pass derives again on every resume. A clause derivation pins
+leaves its panel behind: the declaration names its own.
+
+**`check` holds an introduced panel to the bench at the base**, less every member recorded as
+proposing it. A member with no `judge` record is `unresolved`, and introducing the clause again mends
+it. A base `check` cannot read is a finding too, never a bench of nobody.
+
+### A panel shapes the charter
+
+**Before any work, the members the repository names propose clauses, and a named hand takes or
+strikes each one.** `charter shape` asks them. It stands on the bench, the hands and the hearing.
+
+**A `shape` line in `.foundry/judged` names one member and how it is reached:**
+
+```
+shape  <member>  @adapter <name> <digest>  [<label>]
+```
+
+Five or six words, counting `shape`. The member is `<model>:<role>`, as a judge is written. The digest
+is the adapter's `shape.sh`, as `git hash-object --no-filters` takes it. **The entry point is pinned
+apart from the judge**, so an edit to the judge's `run.sh` never moves what shapes, nor the reverse.
+
+| | |
+|---|---|
+| where it is read | at the run's base, in one checkout of it, beside the practice's hands. A worker's commit seats nobody |
+| a line of any other shape | 6, naming each: under five words or over six, a third word not `@adapter`, a name that is no adapter, a pin that is no digest |
+| a member named twice | sits once, on its first line. The second is never read |
+| a sixth word | a label. The member sits only when a hand the practice names put that label on the item last |
+| a source that cannot list labels | 27, and 20 for one nobody could ask, as the offer answers |
+| a base that cannot be read | 6, as `derive` refuses one. *No member* is said only of a base that was read |
+
+**Who sits is decided once a run**, at the first shaping, and written to `shaped/seats` in one rename.
+A later wake reads the file and never the labels, so a label put on after the first shaping seats
+nobody. A person who needs a member added mid-run starts a new run.
+
+**`charter shape` asks each seated member with no contribution once, then answers by the first row
+that fits:**
+
+| Found | Exit |
+|---|---|
+| a contribution refused | 56, naming the member, the line and the file |
+| a seated member with no contribution | 21, naming each |
+| each seated member recorded | 0, once what may enter has, and each proposal has its row |
+| no `shape` line at a base it read | 0, and nothing is written or said |
+
+It refuses first as `derive` and `authorise` do. No charter or no item is 1. The wrong repository or
+no base is 6. No resolver is 3, and a declaration nobody can read is 22.
+
+**A pass runs `charter shape` between `charter derive` and `open`**, so shaping needs no command of its
+own. *What a pass may take* says how a pass routes each code.
+
+**Each entry point is checked before any member is asked**, so one drifted pin never spends another
+member's call. An entry point the plugin does not ship is 21. One that is not what the pin says is 40.
+
+**Each attempt is handed a brief**, `shaped/<member>-<n>.brief`, written before the call. It names the
+run, the member, the attempt and the base. Then come the seven words below, in floor's words, and
+`shaped/bar` whole. The bar is the charter and the item fenced as data, as a judge is handed them. It
+is **written once**, at the first shaping. So a member asked on a later wake reads what the first one
+read, and no brief holds another member's words.
+
+**A member runs where it can read nothing but its brief.** Floor makes `${TMPDIR:-/tmp}/floor-shape-<pid>`
+fresh, runs the entry point there with stdin closed and `FOUNDRY_RUN` unset, and removes it after.
+Exported, as this page tells a person to, the run reached the host's hooks in the member's session.
+Kernel's read the run's memory in, and floor's can write into the run. **Every other variable still passes
+through**, and the judge's call keeps `FOUNDRY_RUN` too: #1102 owns both. What it prints lands
+whole in `shaped/<member>-<n>.returned`, and the last line it writes on stderr rides the attempt's row.
+**A shaping killed mid-call leaves its room behind**, and no later shaping removes it, since each
+names its own pid.
+
+The anthropic entry point asks with no built-in tool, and no MCP server from a config file:
+
+```
+claude -p --model opus --output-format json --tools "" --strict-mcp-config --no-session-persistence
+```
+
+| Flag | Gives | Does not give |
+|---|---|---|
+| `--tools ""` | no built-in tool: no file write, no edit, no shell | MCP tools, which stay loaded |
+| `--strict-mcp-config`, naming no config | no MCP server from any config file | account connectors, which have a switch of their own |
+| `--no-session-persistence` | no transcript kept on disk | anything about what loads |
+
+**Measured once, on 29 September 2026**, on Claude Code 2.1.284, signed in with a login whose
+sessions carry account connectors. The call's `system/init` event listed no tool and no MCP server.
+**Which flag dropped the connectors is not measured.** Eight start hooks ran before the model
+answered. The harness also made an empty `memory` folder under `~/.claude/projects`, named for the
+room's path, and that path changes with each call.
+
+**What still loads.** Without `--bare`, `claude -p` loads what an interactive session would, from the
+working directory and from `~/.claude`. The directory is empty, and `~/.claude` is the host's: its
+CLAUDE.md, auto memory, plugins, skills and hooks all load. **So the claim is narrower than *writes
+nothing*.** The model has no built-in tool and no MCP server from a config file. Whether a connector
+can hand it a tool that writes, on another host or version, is unverified. The host's hooks and
+plugins are the host's own code.
+
+**Why not `--bare`.** It skips all of that, and it reads an API key and never a login. On a host that
+signs in with a login every call would then be missing. The vendor says `--bare` will become the
+default for `-p`, and such a host would then fail every call, the judge's too.
+
+**The entry point owes floor a code of its own**, never a judge adapter's, whose 1 also covers prose:
+
+| Code | Means |
+|---|---|
+| 0 | a model answered this call, whatever it said |
+| 1 | no model answered: no harness, a harness that failed, or an answer with no words |
+| 2 | floor handed it nothing: no brief, or one it cannot read |
+
+The anthropic one asks for one JSON object. It says 0 only when that object holds `"is_error":false`
+and a result with a line of words, and it prints the result as bytes. It says 1 for text where JSON
+should be, `"is_error":true`, an empty result, a harness exit that is not 0, and no `claude` on the
+path. **Its stub table, `adapters/anthropic/tests/shape.sh`, runs last in `tests/judge.sh`**, so the
+adapter's one audit runs both and fails when either does. No codex entry point ships: codex refuses to
+run outside a repository, and a member runs outside every one.
+
+**Floor decides each attempt from the code, then from the lines:**
+
+| The entry point says | What came back | The row says | Then |
+|---|---|---|---|
+| 1 | anything | `missing: no model answered` | asked again at the next shaping |
+| 0 | no line with words | `missing: no lines` | the same |
+| 0 | `nothing`, maybe beside unknowns and objections | `recorded` | it proposes nothing |
+| 0 | each line in shape | `recorded` | its proposals are weighed |
+| 0 | any line out of shape | `refused: line <k>: <the line>` | 56 |
+| 2, any other code, or killed | anything | `missing:` and the code or the signal | asked again |
+
+**A contribution is lines, and each opens with one of seven words.** `lib/contribution.awk` is their
+one reader, and `charter shape`, the question and `status` each read through it.
+
+| Line | Says |
+|---|---|
+| `propose <kind> <text>` | a clause this run should be judged against. `<kind>` is `Judged`, `Decided` or `Gate`, exactly |
+| `why <text>` | why the proposal above it matters |
+| `evidence <text>` | what shows it |
+| `objection <text>` | the strongest case against the proposal above it |
+| `unknown <text>` | what the member could not settle |
+| `recommend <text>` | what a hand should do with the proposal above it |
+| `nothing` | the member has nothing to propose |
+
+A field line names the proposal nearest above it. So a `why`, `evidence` or `recommend` line above
+every proposal is out of shape, and an `objection` or `unknown` there names none. `nothing` may stand
+beside those, and never beside a `propose` line. A line is read as a yes is, less its backticks.
+Spaces and a carriage return go at either end, and the first word is read in any case. **Backticks
+stay.** A yes loses one pair, since a person may copy it from a rendered question. A member prints its
+lines, and each must open with one of the seven words. So a line wrapped in backticks is out of shape.
+A blank line is no line. A proposal's text holds no tab or carriage return, as `introduce` takes a clause. One space
+parts it from its kind, since a text opening with a space would read two ways. **Any other line
+refuses the whole contribution, and nothing is repaired.** The word is `propose` and not *claim*,
+since *claim* already means taking an item.
+
+**Only what a pass can meet enters**, once each seated member is recorded and none refused. Each
+distinct proposal, by kind and words:
+
+| The proposal | Enters | Its row's reason |
+|---|---|---|
+| `Judged`, each panel member reached by a `reach` line at the base | yes | `introduced, proposed by <members>` |
+| `Gate` | no | `a Gate is never introduced: charter derive pins the gates the base declares` |
+| `Decided` | no | `a Decided clause needs a person to complete it, and no pass does that: #1061` |
+| `Judged`, and the base names no bench | no | `the base names no bench` |
+| `Judged`, and the bench names only its proposers | no | `only its proposers sit on the bench` |
+| `Judged`, and a panel member has no `reach` line | no | `no pass can ask <member>: the base gives it no reach` |
+| words the charter holds already, or an id another clause holds | no | `the charter already holds a clause under its id` |
+
+**The panel is the bench at the base, less each proposer**: every seated member whose contribution
+proposes those words, in any kind. The clause enters through `introduce`'s own writer, handed its
+proposers, so `derive` and `introduce` stay the charter's only writers. When nothing enters, the run
+goes on with its derived charter and nothing is asked. The rows keep what reached nobody, and #1064
+owns carrying it to a person.
+
+**The ledger keeps two rows.** `shape.attempt` holds the member, the code, the attempt and what floor
+made of it, written once the call ends: **the one write that decides**. `shape.proposal` holds one
+proposal's words, `0` when it entered and `1` when not, who proposed it, and why. It is written once
+each, after the charter's writes. A resume reads the rows, never a file being there. It numbers an
+attempt from the briefs, so a kill loses a call and never a contribution.
+
+**A run is shaped once each seated member has a contribution, none is refused, and each proposal has
+its row.** On a shaped run `charter shape` asks nobody and writes nothing. A clause the charter holds
+counts as its proposal, entered, when its kind, words and `proposer` records all match. So a kill
+between the charter's write and the rows strands nothing.
+
+**`authorise` asks nothing while a shaping is unfinished.** A refused contribution is 56. A member with
+no contribution is 21, and so is a proposal with no row, and each message says which. A run never
+shaped goes on as it did.
+
+**A pass killed mid-shaping leaves the shaping running**, #1046. The call in flight still answers, and
+the shaping records it: a row the next wake reads. It then asks each member left on the list it read
+before its loop, so it can ask one the next wake has recorded since, and write that row too. If each
+member is then recorded, it enters what the panel may and writes the proposal rows, beside whatever the
+next wake is doing.
+
+**What this cannot hold.** A member and a proposer are names a record reports, and floor proves
+neither, #156. A failure the entry point does not know, inside a result at `"is_error":false`, reads
+as prose and is refused; the file keeps the words. A person may skip `charter shape` or run it after
+`open`, and `authorise` refuses only a shaping that began and did not finish. A judge that answered
+before a late strike had the struck clause in its brief, and its answer stands at that commit. One
+shipped entry point and floor's fixtures prove the seam, and no second vendor does, #1084. A worker can
+write `shaped/` as the same user, #419.
 
 ### A repository owns the choice of judge, not the code that reaches one
 
@@ -1101,6 +1358,9 @@ file, and no second candidate anywhere:
 ```
 <plugin>/adapters/<id>/run.sh
 ```
+
+A shaping member's entry point is `<plugin>/adapters/<id>/shape.sh`, built the same way and pinned
+apart, as *A panel shapes the charter* says.
 
 **No `$PATH`.** An install elsewhere would answer for this one. **No newest-installed.** That is a
 package manager written in shell, on the one path where being wrong is worst. **No file in the
@@ -1760,14 +2020,28 @@ to fail today; this is the sentence that fails it.
 | `nothing selected` | no target, so every clause is satisfied over nothing |
 | `unmet` | a clause with no passing record at the delivered ref |
 | `ungradable` | a selected target with no checkout here, so nothing can be evidenced at its ref |
-| `introduced` | a clause resting on no pin, which no ref can satisfy |
+| `introduced` | a clause nothing derived with no yes standing now, or a `Gate` resting on no pin |
 | `unverifiable` | a clause pinned to a repository this checkout is not |
 | `nothing delivered` | this checkout has no commit to be graded at |
 
 The last three are not failures and not passes. **They take different remedies, which is why they are
-different words.** An `introduced` clause was established by nobody, so the answer is a human's, and
-the work source carries one. An `unverifiable` clause belongs to a checkout
+different words.** An `introduced` clause was established by nobody, so the answer is a hand's yes.
+The finding names the verb that asks for one. An `unverifiable` clause belongs to a checkout
 that does — the workspace seam is what turns it into an answer.
+
+**A clause nothing derived is graded once a hand's yes stands.** Then it reads as its kind does. A
+`Judged` one names each member that has not approved. A `Decided` one needs both halves: a `human`
+row at the commit graded, and a yes naming that commit.
+
+| A `Decided` clause | `unmet` says |
+|---|---|
+| its completion never asked | `run.sh source ask completion` asks |
+| no yes naming this commit | the line that completes it here, `yes <question> <commit>` |
+| a yes naming it, and no row | `run.sh source receive completion` writes one |
+
+**A yes deleted is withdrawn at the next read.** `complete`, `status`, `deliver` and `merge` each hear
+the item before they grade, so the four cannot disagree. A clause a yes let bind reads `introduced`
+or `unmet` again.
 
 **It keeps no record of its own.** `new` stamped the selection, the charter holds the clauses, unit 01
 holds the selection, the ledger holds what ran. A second copy of any of them is a second thing to
@@ -1808,6 +2082,9 @@ block. What is missing is the *ask*, which needs a work source to ask through an
 | this run has no charter | there is nothing to authorise yet | 1 |
 | the detector yields a gate the charter holds no clause for | condition 3 — re-derive | 12 |
 | the charter holds no clause | nothing is described | 8 |
+| a shaping member's contribution holds a line out of shape | it was refused whole, and the run is let go | 56 |
+| a shaping member has no contribution | `charter shape` asks it again, and nothing is asked of a hand before | 21 |
+| every member answered, and a proposal has no row | `charter shape` writes it, and the message names the proposal | 21 |
 | a clause is introduced, and `.foundry/practice` at the base names no hand | nobody may answer. Add `authorise <hand>`; only a new run reads it | 49 |
 | every hand named is skipped, one or more being floor's account now | floor could never hear a yes. Run floor on an account of its own | 50 |
 | every hand named wrote floor's questions on this item | floor cannot tell their yes from its own. Name another hand | 51 |
@@ -1821,7 +2098,8 @@ block. What is missing is the *ask*, which needs a work source to ask through an
 leads to another refusal is worse than one remedy — so the cause always outranks the symptom. An
 emptied selection is a *moved* one, not a bar grading nothing. An introduced clause is stopped for
 its provenance before its coverage, because *declare that gate* would turn a clause nobody authorised
-into a real bar and only then mention it had none.
+into a real bar and only then mention it had none. **`introduce` refuses a `Gate`**, so an introduced
+one now arrives only by a hand in the charter file. The order guards that one way left.
 
 **A code per remedy, never one code for the stage.** One code would say *refused* and leave the
 caller reading prose to find out what to do about it. **The refused run ends.** Re-running planning
@@ -1907,6 +2185,49 @@ yes <run>.authorisation.<clause>
 Delete the line before delivery to withdraw it.
 ````
 
+**A completion yes names its commit: `yes <question> <commit>`.** It is the full commit, as
+`git rev-parse` prints it: 40 or 64 hex digits in lower case. Each stage has one shape. An
+authorisation question with a commit after it is no yes. A completion question with none is *no
+commit named*.
+
+The commit is compared as text with the commit being graded. **A commit, never a tree**, as every row
+in the ledger is keyed. So a rebase that keeps the tree asks again, and a short sha names no commit.
+A moved head meets nothing, and `deliver` refuses with the line for the new head.
+
+**A clause the panel proposed takes a no as well: `no <question>`, one whole line.** It is read as a
+yes is: from a named hand, never an account `speaker` names, dated strictly after its question, with
+the same trims. **A no wins over any yes, from one hand or two, until it is deleted.** A struck clause
+binds nothing in this run. `authorise` stops waiting on it, it lacks nothing at the grade, `judged`
+passes its bench over, and it is never under *met*. The judge's brief names it after the charter, as
+no part of the bar, since a no never changes the file. Only such a question takes one: a no to any
+other is *no whole-line yes*, as it always was.
+
+**Its question says more.** Between the first line and the yes line, in the order the members sat:
+each member who proposed it and their lines, each objection and unknown that names no proposal, and
+each proposal that did not enter, with its lines and why. **Each member's line is printed as read,
+indented four spaces**, so it renders as code, and no member can open a line with a marker floor
+reads. After the yes line it ends:
+
+````
+Or a hand strikes it from this run with this line alone:
+
+```
+no <run>.authorisation.<clause>
+```
+
+A no strikes it whatever yes stands beside it. Delete a yes before delivery to withdraw it. A no holds until it is deleted.
+````
+
+The words are fixed once the run is shaped, so a resume asks the same question and never meets 17. A
+clause no member proposed keeps the words above, with no no line.
+
+**`source ask completion` keeps the caller's words and ends them with floor's paragraph.** That never
+holds a commit, so the question never moves with the head:
+
+```
+A hand named in `.foundry/practice` says it is met with one line: `yes <run>.completion.<clause>`, a space, and the full commit they read. Delete the line before delivery to withdraw it.
+```
+
 Every answer on the item is read once. A line is a yes only when all of these hold:
 
 | It must | Or it is |
@@ -1916,7 +2237,8 @@ Every answer on the item is read once. A line is a yes only when all of these ho
 | sit in a comment with no line starting `floor-<word>: ` | skipped, with its whole comment |
 | answer a question `speaker` lists | *a question nobody asked* |
 | be dated strictly after that question was first asked | *before its question* |
-| be exactly `yes <question>` once spaces and a carriage return at either end, one pair of backticks and the first word's case are set aside | *no whole-line yes* |
+| be exactly `yes <question>`, or at completion `yes <question> <commit>`, once spaces and a carriage return at either end, one pair of backticks and the first word's case are set aside | *no whole-line yes* |
+| at completion, name a commit after the question | *no commit named* |
 
 No question opens or closes a window over the others, so questions asked back to back are each
 answerable. A no, a quote reply, whose line starts with `>`, and a yes followed by a tab and a no are
@@ -1927,21 +2249,73 @@ wrote it, when, and the reason in italics above. `status` prints it. It is never
 because a note there is how floor once read its own words as a yes, #373. **Two stay silent**: a stamped
 comment, dropped before floor learns who wrote it, and a hand skipped as a `speaker` account.
 
+**Each yes and each no floor hears where it acts writes `answer.heard`**, beside `answer.unread`. Its
+fields are who, `0`, when, and the line. Each row is written once, so a yes heard at `deliver` and
+again at `merge` is one row. **No reader decides from a row.** Each hears the source again, so a yes
+or a no deleted since reads as gone.
+
 `source receive <stage> <clause>` hears the same way and prints the yes it heard: who, when and the
-line. At completion it writes the `human` row. A yes to the authorisation question never completes a
-clause, because the question carries its stage.
+line. At completion it writes the `human` row **at the commit each yes names, never the head**, once
+each. A yes to the authorisation question never completes a clause, because the question carries its
+stage.
+
+Every reader that decides whether a yes stands hears the item once, before it grades. It hears only
+when the charter holds a clause nothing derived:
+
+| Reader | Hears | Records |
+|---|---|---|
+| `authorise` | before it asks | yes |
+| `source receive` | always | yes |
+| `complete` | before it grades | no: it keeps no record |
+| `status` | once the run and what ran are printed | no: it keeps no record |
+| `deliver` | after its grant and its ancestry | yes |
+| `merge` | after its grant and its source, as whoever is signed in | yes |
+| `judged` | when the panel proposed a clause, before it asks any judge | yes |
+| a pass at a `judged` stop | when the panel proposed a clause, before the ledger decides | yes |
+
+**`judged` hears only when a `shape.proposal` row says a clause entered**, since only then can a hand
+have struck one, so a run nobody shaped hears nowhere new. It hears in its own shell, and stops with
+20, 27, 49, 50 or 51 as any hearing does. A no it acted on and a person later deleted leaves its
+`answer.heard` row, which explains the bench `judged` skipped. `deliver` then refuses at 15, and a
+person runs `judged` in the run. **A pass at a `judged` stop hears on the same terms.** It hears in a
+capture whose code it reads, and a refusal there is a stop at `judged`, resumed and counted.
 
 **Floor refuses when nobody may answer**, before it asks anything, and at every read. With no hand named
 it exits 49. When every hand named is an account it skips, it exits 51 if every one wrote its questions,
-and 50 otherwise, naming each hand and why. A pass lets the item go at 49 and 51, whose fix is a line at
-the base, and resumes 50, whose fix is on the host.
+and 50 otherwise, naming each hand and why. A source nobody can ask is 20. `complete`, `status`,
+`deliver` and `merge` stop with the same codes. **`merge` asks for its source first**, so one missing
+is 3 there, before any hearing.
 
-**What this cannot hold.** A hand is a name the source reports; floor cannot prove who typed it, #156. An
+A pass lets the item go at 49 and 51, whose fix is a line at the base, and resumes 50, whose fix is on
+the host. **At `open` it waits on 11, 47, uncounted**, since a named hand can answer. **At `deliver`
+it resumes 20 and 50, as it resumes 19.** Each resume counts toward `FOUNDRY_PASS_TRIES`, so a host
+never fixed ends at 46.
+
+**`merge` reads the item as whoever is signed in.** Floor skips its own account. So a hand who
+answered, and runs `merge` on their own login, has their yes skipped. That is 15, or 50 when they are
+the only hand, and 50 names a fix that is not theirs. The hand who answered runs `merge` from floor's
+account, or another named hand answers.
+
+**What this cannot hold.** A hand is a name the source reports; floor cannot prove who typed it, #156.
+A proposer is a name the environment gives, `FOUNDRY_WORKER`, and floor cannot prove that either. A
+false one now strikes a member from a panel at `introduce`. Before, it could only lose a verdict.
+A second worker introducing the same words is no proposer, so it may judge a clause it also proposed.
+A `proposer` record written by hand leaves its member's seat standing, and `check` never asks whether
+a proposer holds one.
+The panel is asked whether or not a yes stands, so a withdrawn clause can spend a member's rounds. A
+clause introduced after `open` is never asked, since only `authorise` asks. A pass then waits at
+`deliver` on a person nobody asked, #1080. A completion question asked
+before its closing paragraph existed reads as other words when asked again: 17. A `Judged` clause
+introduced before a bench existed has no panel, and reads `unmet` until it is introduced again. An
 edit keeps a comment's author and time, so an account that may edit a hand's comment can make it a yes.
 The forge dates a comment to the second, so a yes in its question's own second is not heard. A reply that
 pastes only the fenced line above a no reads as a yes; pasting the whole question carries floor's stamp,
 and is skipped. A question deleted and asked again starts its bound again, and a whole paste of it left
 behind becomes its first marker, so the pasting hand reads as a `speaker` until it goes.
+`source receive authorisation` prints each yes to a struck clause's question and exits 0, so beside a
+no it reads as answered: the no binds, and that verb does not say so. A hand who struck a clause and
+runs `merge` on their own login is floor's account there, so the strike goes unheard and `merge`
+refuses.
 
 ---
 
@@ -2235,7 +2609,8 @@ read** holds the host for three beats from its side name, and a pass that finds 
 adds a `.found` one, so no person has to clear it. A winner removes numbers below its own whose side
 names are a day old.
 
-**What the door cannot see.** A command still running after its pass was killed, which #1046 owns. A
+**What the door cannot see.** A command or a shaping still running after its pass was killed, which
+#1046 owns: a shaping left running writes attempt rows and can ask a member the next wake recorded. A
 reused process id, which keeps a dead pass's mark fresh until it goes. And a machine that slept past
 three beats: a second pass starts, and one in the same checkout can resume the live pass's own run,
 so two passes work one workspace for up to one verb. That verb can be a resume's own tail. The pass
@@ -2319,8 +2694,8 @@ the function call: there, dash keeps a copy of each for as long as the function 
 with a signal it cannot ignore**, so a pass started with TERM ignored still ends.
 
 **A mark nobody can age reads as live.** Leaving a dead run costs a wake. Resuming a live one puts
-two workers in one workspace. **What the mark cannot see:** a command, a grade or a judgement still
-running after its pass was killed, which #1046 owns. A reused process id keeps a dead pass's mark
+two workers in one workspace. **What the mark cannot see:** a command, a shaping, a grade or a judgement
+still running after its pass was killed, which #1046 owns. A reused process id keeps a dead pass's mark
 fresh, so on one host every wake leaves that run alone until the id goes.
 
 **A pass carries on a run a pass began, before it takes anything new.** The run's own record decides,
@@ -2350,17 +2725,47 @@ After a failed command or failed gates it acts again. At a `judged` stop, the le
 | a member has not answered | asks it, and only it |
 | every member approved | goes on to the request |
 
+**The pass hears first there, when the panel proposed a clause**, as `judged` does, and records what
+it heard. It hears in a capture whose code it reads. A refusal on the way is a stop at `judged`,
+resumed and counted. **A clause a hand struck is passed over**: its refusals spend no rounds, and its
+deadlock or silence lets nothing go.
+
 **Revise rounds are counted per member and clause**, against that member's `rounds` line, or three
 where the charter has none.
 
-**`deliver`'s code says who can answer it.** 15, 18 and 32 wait on a person: `pass.waiting`, 47. 19 is
-a send that failed, sent again next wake. Nothing in the run can answer any other code, so the run
-is let go with `pass.left why=deliver`, and the pass takes what is offered. A host with no command
-leaves a run waiting too, 44.
+**`deliver`'s code says who can answer it.** 15, 18 and 32 wait on a person, 47, with
+`pass.waiting why=deliver`. 19 is a send that failed, sent again next wake. **20 and 50 are resumed
+there too.** A source nobody could ask, and floor on a hand's account, are each fixed on the host.
+Nothing in the run can answer any other code, so the run is let go with `pass.left why=deliver`, and
+the pass takes what is offered. 49 and 51 are let go that way, as at the workspace. A host with no
+command leaves a run waiting too, 44.
 
-**Opening the work, 49 and 51 let the item go**: `pass.left why=workspace code=49`, or `code=51`. Only a
-line at the base answers either, and only a new run reads the base. 50 is resumed like every other stop
-there, because its fix is on the host, and the bound counts each resume.
+**The pass shapes before it opens the work.** It runs `charter shape` between `charter derive` and
+`open`, on every wake that starts the run over. On a run already shaped, that asks nobody and writes
+nothing. A refused contribution is the member's, and nothing in the run can answer it:
+`pass.left why=shape code=56`, 48. Any other code is `pass.stopped why=shape`, which the next wake
+starts over and counts. So a member missing past `FOUNDRY_PASS_TRIES` wakes ends the item at 46, its
+claim held.
+
+**Opening the work, 11 is a wait**: `pass.waiting why=workspace code=11`, 47, never counted.
+`authorise` reaches 11 only once the hearing passed and each question was put, so a named hand can
+answer. The answer resumes the same run. The next wake derives, shapes, which asks nobody, and opens,
+and `authorise` hears the yes or the no. The checkout still points at the run, so no second run is
+made.
+
+**49 and 51 let the item go**: `pass.left why=workspace code=49`, or `code=51`. Only a line at the base
+answers either, and only a new run reads the base. 50 is resumed like every other stop there, because
+its fix is on the host, and the bound counts each resume.
+
+**What shaping costs a pass.** Each wake that opens work checks out the base once more, to learn
+whether it names a member. Nothing records that. A member missing for two wakes spends two resumes. A
+run a pass began before shaping shipped, and past `open`, is never shaped: it resumes from its line.
+
+**`run.sh release <item>` does not end that run.** It frees the claim alone. The checkout still points
+at the run, so the next wake resumes it and claims the item again. Only a pass letting the run go ends
+it, by the table above: its last line delivered or let it go, another host holds the item, or a request
+for it is open elsewhere. Once a pass has let the run go, `release` frees the item, and the next run is
+shaped.
 
 **A wait is never counted, and every other resume is.** `FOUNDRY_PASS_TRIES` bounds them, five by
 default. Past it the pass writes `pass.left why=tries`, 46. A wake killed partway still counts,
@@ -2371,7 +2776,9 @@ stops there, and the claim the door renewed keeps the item on this host, uncount
 
 **What the bound costs:** a run that needs more than five resumes stops, even if each one moved it
 forward. `run.sh release <item>` on this host frees the item, and the next wake takes it into a new
-run. **A run waiting on a person holds this host**: every wake exits 47 and takes no other work.
+run. **A run waiting on a person holds this host**: every wake exits 47 and takes no other work. That
+holds at `open` as at `deliver`. A named hand's silence on a clause asked there stalls the checkout,
+not only the run.
 
 **A read that fails after the run is made is a stop.** The pass writes `pass.began` before it reads
 the item a second time, and a read that fails then is `why=read`. #1026. A run whose pointer could

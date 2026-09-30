@@ -17,6 +17,9 @@
 # nothing to check is a change, not a clean sheet — and a gate that passes over an empty set
 # certifies nothing.
 #
+# **A `shape` line pins an adapter too**, by the digest of its `shape.sh`: the entry point a member
+# shapes through, pinned apart from the judge's `run.sh`. It is graded the same way, file by file.
+#
 # No `set -e`: every reach is read, and one bad pin must not hide the next.
 #
 # Exit: 0 every pin names what is here, 1 one does not, 3 the declaration could not be read
@@ -35,7 +38,8 @@ failed=0
 main() {
     ensure_the_declaration_reads
 
-    while_reading_each "$(reaches)"
+    while_reading_each run.sh "$(reaches)"
+    while_reading_each shape.sh "$(shapes)"
     verdict
 }
 
@@ -52,6 +56,12 @@ reaches() {
     awk '!/^[ \t]*#/ && $1 == "reach" && $3 == "@adapter" { print $4, $5 }' "$DECLARED"
 }
 
+# Every `shape` line, as `adapter pin`. A member shapes only through `@adapter`, and floor refuses any
+# other shape of line, so one that is not `@adapter` is left for floor to name.
+shapes() {
+    awk '!/^[ \t]*#/ && $1 == "shape" && $3 == "@adapter" { print $4, $5 }' "$DECLARED"
+}
+
 #
 # A here-doc, not a pipe. Both tallies are raised inside this loop, and a tally raised in a pipe's
 # subshell dies with it — the failure `bin/gates.sh` and floor's own runner each paid for once.
@@ -61,26 +71,27 @@ while_reading_each() {
         [ -n "$adapter" ] || continue
 
         checked=$((checked + 1))
-        grade "$adapter" "$pin"
+        grade "$adapter" "$pin" "$1"
     done <<EOF
-$1
+$2
 EOF
 }
 
+# `$3` is the file the pin names inside the adapter: `run.sh` for a reach, `shape.sh` for a shape.
 grade() {
-    at=$ADAPTERS/$1/run.sh
+    at=$ADAPTERS/$1/$3
 
-    [ -f "$at" ] || { report "$1" "no adapter at $at"; return; }
+    [ -f "$at" ] || { report "$at" "no file at $at"; return; }
 
     here=$(git hash-object --no-filters -- "$at" 2>/dev/null)
-    [ "$here" = "$2" ] && { printf '  ok    %s is pinned at what this tree ships\n' "$1"; return; }
+    [ "$here" = "$2" ] && { printf '  ok    %s is pinned at what this tree ships\n' "$at"; return; }
 
-    report "$1" "pinned at [$2] and this tree ships [${here:-nothing readable}]"
+    report "$at" "pinned at [$2] and this tree ships [${here:-nothing readable}]"
 }
 
 report() {
     printf '  FAIL  %s — %s\n' "$1" "$2"
-    printf '        take the digest with: git hash-object --no-filters -- %s\n' "$ADAPTERS/$1/run.sh"
+    printf '        take the digest with: git hash-object --no-filters -- %s\n' "$1"
     failed=$((failed + 1))
 }
 
@@ -89,7 +100,7 @@ report() {
 #
 verdict() {
     [ "$checked" -eq 0 ] && {
-        printf 'FAIL — %s names no @adapter reach, so this gate graded nothing.\n' "$DECLARED"
+        printf 'FAIL — %s names no @adapter reach or shape, so this gate graded nothing.\n' "$DECLARED"
         return 1
     }
 
