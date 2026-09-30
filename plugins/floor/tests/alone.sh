@@ -89,11 +89,13 @@ only_these() {
 #   sampled  red alone, and the whole suite, run for the sample, went red too
 #   split    red alone, and the sample's whole suite missed it: an earlier case's state hid it
 #
-# The caller names two paths and supplies two runs:
+# The caller names three paths and supplies two runs:
 #
 #   killer_cases           the table: a break's tag, a tab, its killer's case
 #   alone_records          the directory each case's clean alone run is kept in
-#   run_alone <case> <s>   that case alone against the mutant under s seconds, as `bounded` answers
+#   alone_suite            the suite a case runs alone in
+#   run_alone <case> <s>   that case alone against the mutant under s seconds, as `bounded` answers,
+#                          built by `run_the_case_alone`
 #   caught_whole           the whole suite against the mutant, as `model_caught` answers
 #
 # `sampled` as the second argument is the sample choosing this break.
@@ -130,6 +132,19 @@ caught_alone() {
   [ "$said" -eq 0 ] && return 1
   [ "$said" -eq 2 ] && return 1
   return 0
+}
+
+#
+# The one command a case runs alone under: the grader's suite, fail-fast, every other case skipped.
+# A case's clean run and a break's alone run both come from here. They differ in the plugin whose
+# runner they hand it and in the deadline, and each writes its first red to a file of its own.
+#
+# Built twice, the two could drift apart, and a case red on its own would read clean. `bounded` and
+# `alone_suite`, the grader's suite and never the mutant's, are the caller's.
+#
+run_the_case_alone() {
+  bounded "$3" env RUNNER="$2/bin/run.sh" FOUNDRY_FAIL_FAST=1 FOUNDRY_CHECK="$4" \
+          bash "$alone_suite" --only "$1"
 }
 
 # Five clean alone runs, and never under two minutes: the whole suite's rule, at one case's size.

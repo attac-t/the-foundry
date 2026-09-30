@@ -1560,14 +1560,11 @@ model_caught() {
 . "$root/tests/alone.sh"
 killer_cases=$root/tests/killer-cases.tsv
 alone_records=$tmp/alone
+alone_suite=$root/tests/model.sh
 mkdir -p "$alone_records"
 
 # The two runs `decide_a_break` asks for. Each reads `mutant` and `checks` from the break it decides.
-run_alone() {
-  bounded "$2" env RUNNER="$mutant/bin/run.sh" FOUNDRY_FAIL_FAST=1 FOUNDRY_CHECK="$checks.alone" \
-          bash "$root/tests/model.sh" --only "$1"
-}
-
+run_alone()    { run_the_case_alone "$1" "$mutant" "$2" "$checks.alone"; }
 caught_whole() { model_caught "$mutant"; }
 
 #
@@ -1854,10 +1851,9 @@ name_each_row_that_names_no_case() {
 }
 
 # Clean, so against this tree's own runner, and under the whole suite's deadline: alone is less. The
-# status is kept by `tests/alone.sh`, where the model suite can break the keeping.
+# command and its status are both `tests/alone.sh`'s, where the model suite can break them.
 run_one_case_clean_alone() {
-  keep_what_it_answered "$1" bounded "$deadline" env RUNNER="$root/bin/run.sh" FOUNDRY_FAIL_FAST=1 \
-                        FOUNDRY_CHECK="$alone_records/$1.check" bash "$root/tests/model.sh" --only "$1"
+  keep_what_it_answered "$1" run_the_case_alone "$1" "$root" "$deadline" "$alone_records/$1.check"
 }
 
 name_each_case_that_failed_clean_alone() {
@@ -4854,6 +4850,10 @@ wreck_runner "a sample of none read as green is caught" \
 # The status a clean alone run is kept under, read as clean whatever the run answered.
 wreck_runner "a case red clean alone kept as clean is caught" \
   keptclean '/^keep_what_it_answered() {/,/^}/s#^  said=\$?$#  said=0#' tests/alone.sh
+
+# The one command both alone runs are built from, naming a case it was not handed.
+wreck_runner "an alone run of a case it was not handed is caught" \
+  othercase '/^run_the_case_alone() {/,/^}/s#--only "\$1"$#--only "$2"#' tests/alone.sh
 
 report_breaks
 

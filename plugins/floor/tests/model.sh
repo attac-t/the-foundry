@@ -14387,6 +14387,9 @@ a_break_is_decided_at_its_killers_case_first() {
      "$(decided the-case 1 1 1)" "whole whole 1"
   is "a case red clean alone is kept red, so its breaks run the whole suite" "$(kept_after false)" "1"
   is "and a case that ran clean alone is kept clean"                         "$(kept_after true)"  "0"
+  is "a case runs alone as itself, fail-fast, under the runner and deadline it is handed" \
+     "$(alone_command)" \
+     "150 env RUNNER=/a/plugin/bin/run.sh FOUNDRY_FAIL_FAST=1 FOUNDRY_CHECK=/a/check bash /a/suite --only the-case"
   is "a break caught alone that the sample's whole suite misses is a split, and red" \
      "$(decided the-case 0 1 1 sampled)" "alone@150 whole split 1"
   is "a break caught alone that the sample's whole suite catches stays caught" \
@@ -14424,6 +14427,14 @@ decided() {
 }
 
 from_alone() { ( . "$alone_beside_the_runner" && "$@" ); }
+
+# The command a case runs alone under, as the rule beside the runner builds it, `bounded` stood in.
+alone_command() {
+  ( alone_suite=/a/suite
+    . "$alone_beside_the_runner" || exit 9
+    bounded() { printf '%s' "$*"; }
+    run_the_case_alone the-case /a/plugin 150 /a/check )
+}
 
 # The status a case's clean alone run is kept under, once the rule beside the runner has run a stand-in.
 kept_after() {
