@@ -4827,6 +4827,33 @@ wreck_runner "a missing part that reads the head a second time is caught" \
 wreck_runner "a reading that writes into the run is caught" \
   statuswrites '/^status() {/,/^}/s@^    say_the_run "\$dir"$@    say_the_run "$dir"; : > "$dir/status.read"@'
 
+#
+# **How a runner break is decided, broken seven ways.** Each breaks one rule in the copy's
+# `tests/alone.sh`, which the model suite reads beside the runner, and each dies at a check of its
+# own: `--only` in `a_suite_run_with_only_runs_the_cases_it_names`, and every other one in
+# `a_break_is_decided_at_its_killers_case_first`. #1112.
+#
+wreck_runner "an --only that runs a case it was not given is caught" \
+  onlyall 's#{ print ":"; next }#{ print; next }#' tests/alone.sh
+
+wreck_runner "a case that passes against its break read as a catch is caught" \
+  passcaught 's#^  \[ "\$said" -eq 0 \] \&\& return 1$#  :#' tests/alone.sh
+
+wreck_runner "a break its case missed that never reaches the whole suite is caught" \
+  nofallback 's#^  caught_alone "\$killer_case" || { caught_whole; return; }$#  caught_alone "$killer_case" || return#' tests/alone.sh
+
+wreck_runner "a break with no row decided without the whole suite is caught" \
+  rowlesscaught 's#^  \[ -n "\$killer_case" \]  *|| { caught_whole; return; }$#  [ -n "$killer_case" ] || return 0#' tests/alone.sh
+
+wreck_runner "a case that failed clean alone still deciding its breaks is caught" \
+  noguard 's#^  clean_alone "\$killer_case"  *|| { caught_whole; return; }$#  :#' tests/alone.sh
+
+wreck_runner "a break caught alone and missed whole read as green is caught" \
+  splitgreen '/^read_the_sample() {/,/^}/s#^  return 1$#  return 0#' tests/alone.sh
+
+wreck_runner "a sample of none read as green is caught" \
+  samplenone 's#^  \[ "\$1" -gt 0 \]$#  true#' tests/alone.sh
+
 report_breaks
 
 #
