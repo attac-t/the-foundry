@@ -218,13 +218,14 @@ done
 # A tool finds a break by its tag and drives the first it meets, so a shared tag hides a break.
 # Five were shared until #1106, and on 29 September a break reported as lived had never run.
 #
-# A tag is the first word after a break's description, on that line or the next.
+# A tag is the first word after a break's description, on that line or the next. A break declared
+# behind a guard is read too, and its guard's own quotes are never taken for the description.
 break_tags() {
   awk '
     held { print $1; held = 0; next }
 
-    /^[ \t]*wreck[a-z_]*[ \t]+"/ {
-      sub(/^[^"]*"[^"]*"[ \t]*/, "")
+    /(^|&&|\|\||;)[ \t]*wreck[a-z_]*[ \t]+"/ {
+      sub(/^.*wreck[a-z_]*[ \t]+"[^"]*"[ \t]*/, "")
       if ($0 == "\\") { held = 1; next }
       print $1
     }' "$1"
@@ -244,10 +245,10 @@ refuse_a_tag_used_twice() {
 }
 
 # Driven the way a break is: faults put into a copy, and the check must go red naming each. One is
-# #1106's own, a runner and a join under `noauthority`, and `oneanswer` is the one-line form.
+# #1106's own, `oneanswer` is the one-line form, and `secondref` is repeated behind a guard.
 a_tag_used_twice_is_refused() {
   local said left
-  sed 's/^  unstamped /  noauthority /; s/ verdictset "/ oneanswer "/' \
+  sed 's/^  unstamped /  noauthority /; s/ verdictset "/ oneanswer "/; s/^  spins /  secondref /' \
     "$root/tests/run.sh" > "$tmp/tags-twice.sh"
   cmp -s "$tmp/tags-twice.sh" "$root/tests/run.sh" \
     && { moot "a tag used twice — the plant changed nothing, so this proves nothing"; return; }
@@ -255,7 +256,7 @@ a_tag_used_twice_is_refused() {
   said=$( failed=0; refuse_a_tag_used_twice "$tmp/tags-twice.sh"; exit "$failed" )
   left=$?
 
-  [ "$left" -eq 1 ] && [ "${said##*: }" = 'noauthority oneanswer' ] \
+  [ "$left" -eq 1 ] && [ "${said##*: }" = 'noauthority oneanswer secondref' ] \
     && { printf '  ok    a tag used twice is refused, and each one is named\n'; return; }
   bad "a tag planted twice was not refused by name — it left $left and said [$said]"
 }
