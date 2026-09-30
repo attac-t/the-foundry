@@ -3106,6 +3106,23 @@ first of them is being recorded as the one. Every audit before this read all thr
 group proves nothing the other did not. A break that breaks something fundamental dies at the first
 check that touches it. No aiming of its `sed` changes that. A checkpoint per break would.
 
+**A runner break runs its killer's case alone first.** `tests/killer-cases.tsv` names one case for
+each break, by its tag. It is the case whose check first went red for that break in a full audit.
+The audit runs that case with every other case skipped. It runs the whole suite only when the case
+misses. A break with no row runs the whole suite, as every break did before.
+
+```bash
+bash tests/model.sh --only a_run_is_read_in_one_status
+```
+
+**Each case in the table runs alone and clean once, before any break.** One that fails is named, and
+its breaks run the whole suite. A case run alone gets five times its clean time, and never less than
+two minutes. If the clock runs out there, the whole suite decides.
+
+**One slot in ten also runs the whole suite.** The tree's commit picks which ones. A break its case
+caught that the whole suite misses turns the audit red, because an earlier case hid it. A sample of
+none is red too. The verdict says `killed alone by` when the case decided it.
+
 `model.sh` calls the runner. `install.sh` reads the command out of `hooks/hooks.json` and hands it
 to a shell — because a suite that calls the scripts itself proves only that the scripts work, never
 that the wiring does, which is where kernel and signal both failed.
