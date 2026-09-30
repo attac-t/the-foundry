@@ -526,9 +526,10 @@ a_suite_started_inside_a_pass_keeps_none_of_it() {
   is "a suite started inside a pass keeps none of its variables" "$kept" ""
 }
 
-# Each `FOUNDRY_PASS_` name floor's own code holds, set the way a pass would leave it.
+# Each `FOUNDRY_PASS_` name floor's own code holds, set the way a pass would leave it. Core is read
+# from `core.dirs`, since that file alone may list its directories.
 left_by_a_pass() {
-  grep -ohE 'FOUNDRY_PASS_[A-Z_]+' "$here"/bin/*.sh "$here"/lib/*.sh "$here"/hooks/*.sh 2>/dev/null \
+  find $(core_dirs_in "$here") -name '*.sh' -type f -exec grep -ohE 'FOUNDRY_PASS_[A-Z_]+' {} + 2>/dev/null \
     | LC_ALL=C sort -u | sed 's/$/=left-by-a-pass/'
 }
 a_suite_started_inside_a_pass_keeps_none_of_it
