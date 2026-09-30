@@ -868,6 +868,9 @@ Each is named by whom the grader accepted: every judge its panel names, or the k
 trusts. The record reads no row itself, so it cannot name one the grader skipped. The brief above
 it is its author's words, and may say anything. The adapter adds its marker last. Decided on #736.
 
+**The GitHub adapter hands `gh` the body on standard input, never as one argument.** A command line
+has a cap, 32,767 characters on Windows, and a body GitHub would take can be longer than that.
+
 **A clause nothing derived also names each yes it stood on**: who said yes, when, and the line. It
 reads the hearing the grade read, never a row, and `status` says the same under *met*.
 

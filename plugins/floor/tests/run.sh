@@ -4773,6 +4773,10 @@ wreck_runner "a body that ignores its setting is caught" \
 wreck_runner "a setting nobody can read that is kept silent is caught" \
   bodytypo 's@^    note "the practice says \[body \$form\].*@    :@'
 
+# The body reaches `gh` in a file. `$(cat)` reads it off the pipe and hands it back as one argument.
+wreck_runner "a body handed to gh as one argument is caught" \
+  ghbodyarg 's@ --title "\$4" --body-file -@ --title "$4" --body "$(cat)"@' lib/source-github.sh
+
 #
 # **A member who answered here is not asked again.** Piece 5b-i. Each break removes the skip, the
 # count of what a skipped member holds, the check of the charter's version, the check that an answer

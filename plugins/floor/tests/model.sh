@@ -259,6 +259,25 @@ chatter() {
 # The `--jq` the adapter sent, whatever else it passed.
 the_jq() { prev=; for arg in "$@"; do [ "$prev" = --jq ] && printf '%s\n' "$arg"; prev=$arg; done; }
 
+# The body `pr create` was handed: the file `--body-file` names, standard input for `-`, or the text of
+# `--body`. `gh` takes all three, so none is refused, and `how_the_body_came` keeps which it was.
+body_handed() {
+  prev=
+  for arg in "$@"; do
+    [ "$prev" = --body-file ] && [ "$arg" = - ] && { cat; return; }
+    [ "$prev" = --body-file ] && { cat "$arg"; return; }
+    [ "$prev" = --body ] && { printf '%s' "$arg"; return; }
+    prev=$arg
+  done
+}
+
+how_the_body_came() {
+  for arg in "$@"; do
+    [ "$arg" = --body-file ] && { printf 'file\n'; return; }
+    [ "$arg" = --body ] && { printf 'argument\n'; return; }
+  done
+}
+
 # Each comment still on the item, oldest first. A deleted comment loses its body and keeps its author,
 # so slots only grow, and a new comment never takes a deleted one's place.
 slots() { for body in "$store/comments"/*; do [ -f "$body" ] && printf '%s\n' "${body##*/}"; done; }
@@ -413,10 +432,11 @@ case "$*" in
                             printf '%s
 ' "$3" >> "$store/merged" ;;
   "pr create"*)             [ -f "$store/writes-fail" ] && { echo "GraphQL: Head sha can't be blank (createPullRequest)" >&2; exit 1; }
+                            body_handed "$@" > "$store/lastbody"
+                            how_the_body_came "$@" > "$store/body-came-as"
                             url="https://example.invalid/pr/$(cat "$store/prs" 2>/dev/null | grep -c .)"
-                            run=$(printf '%s' "$8" | awk '$1 == "floor-run:" { print $2 }')
-                            printf '%s' "$8" | head -1 >> "$store/words"
-                            printf '%s' "$8" > "$store/lastbody"
+                            run=$(awk '$1 == "floor-run:" { print $2 }' "$store/lastbody")
+                            head -1 "$store/lastbody" >> "$store/words"
                             printf '%s %s %s\n' "$4" "$url" "$run" >> "$store/prs"
                             printf '%s\n' "$url" ;;
   # The open issues carrying a label, one number a line, the shape the adapter's `--jq` asks for.
@@ -2831,6 +2851,28 @@ Refs #71"
   lacks "while the directory brief holds no marker"     "$kept" "floor-run:"
 }
 one_brief_through_both_adapters
+
+#
+# The GitHub adapter hands `gh` the body in a file, never as one argument. A command line has a cap,
+# 32,767 characters on Windows, and a body GitHub would take can be longer than that.
+#
+# **The adapter beside the runner under test**, never the one beside this file, so a break of the
+# adapter reaches this case. The stub keeps which way the body came, and all of what came.
+#
+the_forge_takes_the_body_from_a_file() {
+  fake_gh "$tmp/filed-bin" || { skip "a body in a file — could not put a gh on the path"; return; }
+  printf 'What changed.\n\nThe last line of the brief.\n' > "$tmp/filed-brief.md"
+  filed_by="$(dirname "$runner")/../lib/source-github.sh"
+
+  ( cd "$tmp" && PATH="$tmp/filed-bin:$PATH" GH_STORE="$tmp/filed-store" \
+      sh "$filed_by" publish 71 run-filed a-branch 'A title' Refs "$tmp/filed-brief.md" ) >/dev/null 2>&1
+  filed=$(cat "$tmp/filed-store/lastbody" 2>/dev/null)
+
+  is  "the forge is handed the body in a file"    "$(cat "$tmp/filed-store/body-came-as" 2>/dev/null)" "file"
+  has "and the whole brief arrives"               "$filed" "The last line of the brief."
+  has "down to the marker the adapter adds last"  "$filed" "floor-run: run-filed"
+}
+the_forge_takes_the_body_from_a_file
 
 #
 # Two conjuncts that close fail-opens rather than edge cases. Quantified over clauses and over
