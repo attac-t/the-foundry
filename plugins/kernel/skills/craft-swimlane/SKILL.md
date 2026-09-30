@@ -1,7 +1,7 @@
 ---
 name: craft-swimlane
-trigger: swimlane, handoff, touchpoint, who does what, responsibility boundary
 description: Draw who or what acts at each step, and what crosses between them. Use when a hand-off, an approval, a human touchpoint or an adapter seam is the point. Not for static structure (craft-map), ownerless process (craft-flow), or a call and return trace.
+when_to_use: swimlane, handoff, touchpoint, who does what, responsibility boundary
 ---
 
 # Craft Swimlane

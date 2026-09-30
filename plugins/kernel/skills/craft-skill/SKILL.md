@@ -19,8 +19,12 @@ description: How to craft an atomic skill. Includes templates and registration.
 - **Atomic examples**: one subject per file, named for it. Anthropic calls this **progressive
   disclosure**, and adds the rule that matters — **references stay one level deep from `SKILL.md`**,
   so a file it sends you to is read whole rather than chased.
-- **A description is read at 250 characters**: 1,024 is the hard limit, but only the first 250 reach
-  the listing Claude picks from. A trigger word past 250 is invisible.
+- **The listing cuts at 1,536 characters**: `description` and `when_to_use` are joined, then cut
+  there. Put the main use first.
+- **Trigger phrases go in `when_to_use:`, and there is no `trigger:`**: Claude Code appends
+  `when_to_use` to the description in the listing. It ignores a key the field list does not name,
+  and claude.ai refuses that key on upload. Three skills here carried `trigger:` and nothing ever
+  read a word of it.
 
 ## Choose a Template
 
@@ -48,8 +52,9 @@ plugins/{plugin-name}/skills/{skill-name}/
 
 ## Official Spec
 
-Use `claude-code-guide` to query Claude Code skill documentation. The numbers above came from it
-on 2026-08-22 — ask again rather than trusting them.
+The field list lives at https://code.claude.com/docs/en/skills. Fetch it rather than trusting the
+numbers above. They were read there on 2026-09-29, and the ones they replaced were five weeks old
+and wrong.
 
 ## Preloading
 
