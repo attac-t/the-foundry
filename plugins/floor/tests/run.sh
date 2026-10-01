@@ -3039,8 +3039,9 @@ wreck_runner "a pass that stops on a judge that approved is caught" \
 wreck_runner "a pass that calls a refused delivery delivered is caught" \
   passdeliver '/^carry_it_to_a_request() {/,/^}/s#^    ( deliver "\$2" ) >/dev/null || stop_at "\$1" deliver "\$?"$#    ( deliver "$2" ) >/dev/null#'
 
-wreck_runner "a pass whose run answers to nobody is caught" \
-  passwho 's#^answer_to_the_applier() { .*}$#answer_to_the_applier() { :; }#'
+# The hand's read alone, so the run is still made, with the label's second, and answers to git's address.
+wreck_runner "a pass whose run answers to the checkout's git address, not the label's hand, is caught" \
+  passwho 's#^    FOUNDRY_WHO=\$(printf .%s\\n. "\$1" | cut -f3)$#    :#'
 
 #
 # **A pass's run says when the work was asked for**, from the line the offer gave the item it took, and
