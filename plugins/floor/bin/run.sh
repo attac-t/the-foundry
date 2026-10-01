@@ -727,7 +727,8 @@ stamp_selection() {
 selected_at() { printf '%s' "${label_went_on:-$(date -u +%Y-%m-%dT%H:%M:%SZ)}"; }
 
 # Set only when a pass reads that line, so a run made by hand never stamps a second its environment held.
-label_went_on=
+# Unset, never emptied: an inherited export would hand the label's second to the command, gates and judges.
+unset label_went_on
 
 #
 # The human this run answers to. `FOUNDRY_WHO` first: a harness knows who it is acting for, and git

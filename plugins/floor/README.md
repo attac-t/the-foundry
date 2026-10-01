@@ -2906,7 +2906,7 @@ column says what happens then, because that is the case almost every reader is i
 |---|---|---|
 | `FOUNDRY_HOME` | runs live under `$HOME/.foundry` | they live where it says |
 | `FOUNDRY_RUN` | the pointer in the git directory decides | that run, and no other |
-| `FOUNDRY_WHO` | `git config user.email` answers | it answers instead |
+| `FOUNDRY_WHO` | a run made by hand answers to `git config user.email` | it answers instead. A pass never reads it: see *Who the run answers to* |
 | `FOUNDRY_WORKER` | the record leaves the field out | it names what produced the work |
 | `FOUNDRY_SOURCE` | the source is read from the target | it names one |
 | `FOUNDRY_SOURCE_DIR` | a directory source reads the repository | it reads that directory |

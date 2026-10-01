@@ -2531,7 +2531,7 @@ wreck_runner "a selector invented when nobody is named is caught" \
 # Only a pass sets the second its label went on. A run made by hand that takes one from its
 # environment stamps a moment nobody selected it in. #1073.
 wreck_runner "a run made by hand that stamps a second its environment held is caught" \
-  stampenv 's#^label_went_on=$#:#'
+  stampenv 's#^unset label_went_on$#:#'
 
 wreck_runner "a gate that eats the gates after it is caught" \
   eatstdin 's#why=$("$@" </dev/null 2>&1)#why=$("$@" 2>\&1)#'
