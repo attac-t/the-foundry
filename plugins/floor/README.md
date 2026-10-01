@@ -923,11 +923,12 @@ Six were proposed and none survived, each for its own reason:
 | `goal`, `maintenance`, `experiment` | no reader. Three words for a distinction nothing acts on |
 | `proposal` | a pull request already is one, and GitHub says so without a label |
 | `human` | `source ask` posts the question. A label repeats what the comment already says |
-| `go` | **authority is a stamped record**, and a label carries no actor, no time and no revision |
+| `go` | **authority is a stamped record**, and a label alone carries no actor, no time and no revision |
 
 `go` is the one worth stating plainly. A label that means *approved* is authority wearing a signal,
 and whoever clicks it is whoever has write access. `authority` names the person, the moment and the
-run, and nothing in a label can.
+run, and a label alone names none of them. A pass reads who put its label on, and when, from the
+source's record. *Who the run answers to* says what it stamps.
 
 #### Foundry does not write labels
 
@@ -1809,13 +1810,19 @@ that file by hand, once. Every refusal the suite checks is still a fixture's.
 
 ## Who the run answers to
 
-A run exists because a human selected the work item. `new` stamps that, once, in `authority`:
+A run exists because a human selected the work item. It is stamped once, in `authority`, with when,
+who, and the run:
 
 ```
 2026-08-16T21:14:03Z	ada@example.com	2026-08-16-ship-the-flow-0000
 ```
 
-`FOUNDRY_WHO` names them; `git config user.email` is the fallback every checkout already has.
+**A run made by hand answers to whoever ran `new`, from the second it ran.** `FOUNDRY_WHO` names
+them; `git config user.email` is the fallback every checkout already has.
+
+**A pass's run answers to the hand that put the label on, from the second it went on.** Both come
+from the one line the offer gave the item, as the source recorded them. So the stamp says when the
+work was asked for, and `pass.began` says when the pass took it.
 
 **Three fields, where evidence has seven, and it is a different file.** This names no clause, so it
 can satisfy none — and a record with no `ref` cannot satisfy the completion invariant, which reads
@@ -1823,7 +1830,7 @@ its ledger existentially. Keeping them apart by store is what makes that true; a
 would not.
 
 **Nobody is an answer, and is written as one.** `new` changes nothing in any repository, so it is the
-wrong place to demand a name. Delivery is the right one, and `complete` reads what `new` stamped.
+wrong place to demand a name. Delivery is the right one, and `complete` reads the stamp.
 
 ---
 
@@ -2542,7 +2549,9 @@ put a label on every issue it opens. No fetched default branch, no line, or no h
 offered, and it says which.
 
 A label no event names is dropped and said, and so is one put on by a hand the rule does not name.
-**Floor never puts the label on.**
+So is one whose time is not UTC to the second, `YYYY-MM-DDTHH:MM:SSZ`, before any pass can claim it.
+The offer sorts by that time as text, and a pass stamps it as when the work was asked for. **Floor
+never puts the label on.**
 
 **An item a request is open for is not offered**, and that is said too. The request is its work,
 waiting on review. Its claim ages out while it waits, and a second host took the item again, #1025.
@@ -2792,8 +2801,9 @@ from its workspace, or another host's pass may take the item.
 names a judge, then `deliver`. It stops at the first that does not pass, with that verb's own code,
 and the run records which. Delivery needs the practice's standing `deliver` line, as it always has.
 
-**The run answers to the person who put the label on.** A container names nobody, and a run nobody
-selected may never deliver. So the pass records the label's applier as the run's selector.
+**The run answers to the person who put the label on, from the second it went on.** A container
+names nobody, and a run nobody selected may never deliver. So the pass stamps the label's applier and
+that second in `authority`, as *Who the run answers to* says.
 
 ### Two adapters, because one proves nothing
 

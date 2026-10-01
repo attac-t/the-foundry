@@ -706,7 +706,7 @@ mint_id() { claim_free_slot "$1-$(slug "$2")"; }
 authority_file() { printf '%s/authority' "$1"; }
 
 #
-# Who selected the work item, and which run it authorised — RFC-001 invariant 4.
+# When the work item was selected, who selected it, and which run it authorised — RFC-001 invariant 4.
 #
 # **Not evidence, and not in that ledger.** It names no clause, so it can satisfy none. §2.5 keeps
 # the two apart by giving this a different shape rather than the evidence record a field to sort by:
@@ -716,9 +716,17 @@ authority_file() { printf '%s/authority' "$1"; }
 # It happens before the run does, so it lands with the layout and names the run it authorised.
 #
 stamp_selection() {
-    printf '%s\t%s\t%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$(one_line "$2")" "$3" \
+    printf '%s\t%s\t%s\n' "$(selected_at)" "$(one_line "$2")" "$3" \
         >> "$(authority_file "$1")" 2>/dev/null || die_unwritable "$(authority_file "$1")"
 }
+
+#
+# When the work was asked for. A pass stamps the second its label went on, from the offer's line for
+# the item it took, and a run made by hand stamps the second `new` ran. `pass.began` keeps the pass's.
+selected_at() { printf '%s' "${label_went_on:-$(date -u +%Y-%m-%dT%H:%M:%SZ)}"; }
+
+# Set only when a pass reads that line, so a run made by hand never stamps a second its environment held.
+label_went_on=
 
 #
 # The human this run answers to. `FOUNDRY_WHO` first: a harness knows who it is acting for, and git
@@ -3978,13 +3986,22 @@ fetched_default_tip() {
 #
 # Each item the source listed, kept when a name put its label on and the rule allows that name.
 # What is dropped is said, with what would make it offered.
+#
+# **The time it went on must be UTC to the second**, the one shape whose text order is time order.
+# `oldest_first` sorts it as text and a pass stamps it, so any other shape would pick the item, then
+# stand in its run's `authority`. It is read after the hand, so an item no event names is dropped as
+# naming nobody. #1073.
 kept_by_who_put_it_on() {
     awk -F'\t' -v label="$1" -v allowed=" $2 " '
         function say(item, why) { printf "floor: [%s] is not offered: %s\n", item, why | "cat 1>&2" }
+        function utc_to_the_second(said) {
+            return said ~ /^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[0-9][0-9]:[0-9][0-9]:[0-9][0-9]Z$/ }
         NF < 3 || $1 == "" { next }
         $3 == ""           { say($1, "nothing names who put [" label "] on it"); next }
         index(allowed, " " $3 " ") == 0 {
             say($1, "[" label "] was put on by " $3 ", and the rule names only" allowed); next }
+        !utc_to_the_second($2) {
+            say($1, "[" label "] went on at [" $2 "], which is not UTC to the second, YYYY-MM-DDTHH:MM:SSZ"); next }
         { print }'
 }
 
@@ -4478,14 +4495,22 @@ this_pass_claims() {
 }
 
 #
-# **The person who put the label on selected this item**, so the run answers to them. A container
-# names nobody, and a run nobody selected may never deliver — invariant 4.
+# **The person who put the label on selected this item**, so the run answers to them, from the second
+# it went on. A container names nobody, and a run nobody selected may never deliver — invariant 4.
 #
 # The selection is floor's to read and nobody's to inherit, so it is never exported: a gate, a judge
 # and the command each run as they would outside a pass. #884's judge, round three.
-answer_to_the_applier() { unset FOUNDRY_WHO; FOUNDRY_WHO=$(applier_of "$1" "$2"); }
+answer_to_the_applier() { unset FOUNDRY_WHO; read_the_applier "$(offered_line_of "$1" "$2")"; }
 
-applier_of() { printf '%s\n' "$2" | awk -F'\t' -v item="$1" '$1 == item { print $3; exit }'; }
+offered_line_of() { printf '%s\n' "$2" | awk -F'\t' -v item="$1" '$1 == item { print; exit }'; }
+
+#
+# **Both are cut from one line**: the item, the second its label went on, and the hand that put it on.
+# So a stamp never pairs one item's hand with another item's second. #1073.
+read_the_applier() {
+    label_went_on=$(printf '%s\n' "$1" | cut -f2)
+    FOUNDRY_WHO=$(printf '%s\n' "$1" | cut -f3)
+}
 
 #
 # **An item is underway here while a run here holds it, under the name its claim carries.** To

@@ -2997,7 +2997,7 @@ wreck_runner "a suite that keeps what a pass left it is caught" \
   passkept 's#^unset FOUNDRY_PASS_.*#:#' tests/model.sh
 
 wreck_runner "a selection exported to everything the pass runs is caught" \
-  passunwho 's#^answer_to_the_applier() { unset FOUNDRY_WHO; FOUNDRY_WHO=\$(applier_of "\$1" "\$2"); }$#answer_to_the_applier() { FOUNDRY_WHO=$(applier_of "$1" "$2"); export FOUNDRY_WHO; }#'
+  passunwho 's#^answer_to_the_applier() { unset FOUNDRY_WHO; read_the_applier "\$(offered_line_of "\$1" "\$2")"; }$#answer_to_the_applier() { read_the_applier "$(offered_line_of "$1" "$2")"; export FOUNDRY_WHO; }#'
 
 wreck_runner "a pin exported to every gate and judge is caught" \
   passexport 's#^pin_this_run() { unset FOUNDRY_RUN; FOUNDRY_RUN=\$dir; }$#pin_this_run() { FOUNDRY_RUN=$dir; export FOUNDRY_RUN; }#'
@@ -3036,6 +3036,19 @@ wreck_runner "a pass that calls a refused delivery delivered is caught" \
 
 wreck_runner "a pass whose run answers to nobody is caught" \
   passwho 's#^answer_to_the_applier() { .*}$#answer_to_the_applier() { :; }#'
+
+#
+# **A pass's run says when the work was asked for**, from the line the offer gave the item it took, and
+# a label whose time is not UTC to the second is never offered. One break per way it could be false. #1073.
+#
+wreck_runner "a pass that stamps the second it began is caught" \
+  passnow 's#^selected_at() { .*}$#selected_at() { date -u +%Y-%m-%dT%H:%M:%SZ; }#'
+
+wreck_runner "a pass that stamps the first offered line's second is caught" \
+  passfirst 's#label_went_on=\$(printf .%s\\n. "\$1" | cut -f2)#label_went_on=$(printf "%s\\n" "$items" | head -n 1 | cut -f2)#'
+
+wreck_runner "a label whose time is not UTC to the second, offered anyway, is caught" \
+  offertime '/^kept_by_who_put_it_on() {/,/^}/s#^        !utc_to_the_second(\$2) {#        0 {#'
 
 #
 # **An item a request is open for is not offered, and every run a pass makes holds a line.** One

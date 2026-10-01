@@ -4657,6 +4657,45 @@ bar_and_rule() {
 a_pass_takes_the_first_item_nobody_holds
 
 #
+# **A pass's run says when the work was asked for**: the second its label went on, beside the hand
+# that put it on, both from the one line the offer gave the item. #1073.
+#
+# The item taken sits behind one another host holds and before one it does not, and no other line
+# holds its hand or its second, so a stamp read from any other line is not this one. One label went
+# on at a forge's milliseconds, and the offer drops it before any claim, and names it.
+#
+a_pass_says_when_the_work_was_asked_for() {
+  make_repo "$tmp/whenasked" main && set_origin "$tmp/whenasked" 'https://gitlab.com/acme/whenasked.git' \
+    || { skip "when the work was asked for — git could not make a repo here"; return; }
+
+  mkdir -p "$src/items" "$src/labels" "$src/claims/1701"
+  for n in 1701 1702 1703 1704; do printf 'Asked item %s\n' "$n" > "$src/items/$n"; done
+  printf 'asked\t2026-09-01T00:00:00Z\tpat\n'     > "$src/labels/1701"
+  printf 'asked\t2026-09-03T09:52:09Z\tquinn\n'   > "$src/labels/1702"
+  printf 'asked\t2026-09-05T00:00:00Z\tpat\n'     > "$src/labels/1703"
+  printf 'asked\t2026-08-01T00:00:00.077Z\tpat\n' > "$src/labels/1704"
+  printf '2026-01-01T00:00:00Z\tOtherHost\t%s\n' "$(date -u +%s)" > "$src/claims/1701/held"
+  bar_and_rule "$tmp/whenasked" 'offer asked pat quinn'
+
+  offered=$(floor "$tmp/whenasked" offer)
+  is  "a label that went on at a forge's milliseconds is not offered, and the rest are, oldest first" \
+      "$(printf '%s\n' "$offered" | cut -f1 | tr '\n' ' ')" "1701 1702 1703 "
+  has "and the offer names it, with the shape that would offer it" "$(floor_says "$tmp/whenasked" offer)" \
+      "[1704] is not offered: [asked] went on at [2026-08-01T00:00:00.077Z], which is not UTC to the second, YYYY-MM-DDTHH:MM:SSZ"
+  is  "and no other line offered holds the hand or the second of the item a pass will take" \
+      "$(printf '%s\n' "$offered" | grep -c -e quinn -e 2026-09-03T09:52:09Z)" "1"
+
+  is  "a pass passes over the item another host holds, and begins a run for the next" \
+      "$(code_of floor "$tmp/whenasked" pass)" "44"
+  asked_run=$(floor "$tmp/whenasked" path)
+  is  "and the run answers to the hand that put the label on, from the second it went on" \
+      "$(cat "$asked_run/authority" 2>/dev/null)" "$(printf '2026-09-03T09:52:09Z\tquinn\t%s' "$(basename "$asked_run")")"
+
+  for n in 1701 1702 1703 1704; do rm -rf "$src/claims/$n" "$src/labels/$n" "$src/items/$n"; done
+}
+a_pass_says_when_the_work_was_asked_for
+
+#
 # **Two hosts pass at once, and each takes a different item.** The claim is the one step both go
 # through, so the host that loses an item is refused it and takes the next. #884 asked for this.
 #
