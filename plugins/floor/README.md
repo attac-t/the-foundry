@@ -267,7 +267,8 @@ ${FOUNDRY_HOME:-$HOME/.foundry}/runs/<date>-<slug>-<short id>/
 ├── charter            the bar — one clause, one pin and one command per line
 ├── delivery           the branch this run pushed, the commit it pushed, and where it landed
 ├── brief              what `deliver` was handed — absent when it was handed none
-├── body               the brief, then what floor recorded: run, commit, charter, what met each clause
+├── message            the delivered commit's message — kept when `deliver` was handed no brief
+├── body               the brief or that message, then what floor recorded, then what each judge found
 ├── substitutions      files graded as the base wrote them — absent when the run changed no gate
 ├── judged/            what `judged` asked each judge, and what came back — one pair per clause
 ├── shaped/            who sat, the bar each member read, and each attempt's brief and what it printed
@@ -859,8 +860,9 @@ what ran are shown by then. It writes nothing it heard: it keeps no record of it
 ---
 ### A delivery names its record
 
-**The body is the brief, then what floor recorded.** The record is the run, the commit the push
-sent, and the charter by the digest every handoff stamps. Then it says what met each clause there.
+**The body is the brief or the commit's message, then what floor recorded, then what each judge
+found.** The record is the run, the commit the push sent, and the charter by the digest every
+handoff stamps. Then it says what met each clause there.
 **`deliver` reads the head once.** The ancestry check, the grade, the push and the record all take
 that one commit. A commit landing meanwhile, even from a `pre-push` hook, reaches none of them.
 `deliver` refuses an unmet clause before it pushes, so every clause the record lists was met.
