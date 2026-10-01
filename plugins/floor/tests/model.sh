@@ -790,13 +790,15 @@ is     "and asking for it exits 1" "$(code_of floor "$tmp/bare" bootstrap)" "1"
 # begins, and it is not evidence — it names no clause, so it can satisfy none.
 #
 the_selection_is_stamped() {
+  # The second a pass reads from its label, left in the environment. A run made by hand stamps its own.
   chose=$( cd "$tmp/bare" 2>/dev/null || exit 9
-           FOUNDRY_HOME="$home" FOUNDRY_RUN="" FOUNDRY_WHO="ada@example.com" \
+           FOUNDRY_HOME="$home" FOUNDRY_RUN="" FOUNDRY_WHO="ada@example.com" label_went_on=2001-01-01T00:00:00Z \
            sh "$runner" new "Chosen" 2>/dev/null )
 
   held=$(cat "$chose/authority" 2>/dev/null)
   matches "the selection names when, who, and the run it authorised" \
           "$held" "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:]+Z	ada@example.com	$(basename "$chose")$"
+  lacks "and when is the second new ran, never one its environment held" "$held" "2001-01-01T00:00:00Z"
   is "three fields, where evidence has seven" \
      "$(printf '%s\n' "$held" | awk -F'\t' 'NF != 3' | grep -c .)" "0"
   is "and it is not in the ledger completion reads" "$(cat "$chose/evidence" 2>/dev/null)" ""

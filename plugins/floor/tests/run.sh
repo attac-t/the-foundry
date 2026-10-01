@@ -2528,6 +2528,11 @@ wreck_runner "a selection written into the evidence ledger is caught" \
 wreck_runner "a selector invented when nobody is named is caught" \
   inventedwho 's#${FOUNDRY_WHO:-$(git config user.email 2>/dev/null)}#${FOUNDRY_WHO:-nobody}#'
 
+# Only a pass sets the second its label went on. A run made by hand that takes one from its
+# environment stamps a moment nobody selected it in. #1073.
+wreck_runner "a run made by hand that stamps a second its environment held is caught" \
+  stampenv 's#^label_went_on=$#:#'
+
 wreck_runner "a gate that eats the gates after it is caught" \
   eatstdin 's#why=$("$@" </dev/null 2>&1)#why=$("$@" 2>\&1)#'
 
