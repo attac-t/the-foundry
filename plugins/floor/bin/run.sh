@@ -12,7 +12,8 @@
 #   0  answered
 #   1  nothing to answer with — no run is active, no bootstrap target, no charter yet, or the work
 #      source holds no item, no clause by that name, and no answer
-#   2  asked for something this does not do
+#   2  asked for something this does not do, or a read a stamp needs came back empty: the clock that
+#      dates a new run, or the second a pass's label went on
 #   3  nowhere to put a run, or the home cannot be written to
 #   4  a target was refused: no portable identity, or a ref that is not one
 #   5  a target was refused: nobody authorised it for this run
@@ -4030,6 +4031,7 @@ pass() {
 
     select_an_item
     answer_to_the_applier "$taken" "$items"
+    leave_with_no_second "$taken"
     heading=$(the_heading_of "$taken") || exit "$?"
     begin_a_run_for "$taken" "$heading"
 
@@ -4502,7 +4504,8 @@ this_pass_claims() {
 # and the command each run as they would outside a pass. #884's judge, round three.
 answer_to_the_applier() { unset FOUNDRY_WHO; read_the_applier "$(offered_line_of "$1" "$2")"; }
 
-offered_line_of() { printf '%s\n' "$2" | awk -F'\t' -v item="$1" '$1 == item { print; exit }'; }
+# The item's own line, matched as text: `07` and `7` are two items, and each reads its own hand and second.
+offered_line_of() { printf '%s\n' "$2" | item=$1 awk -F'\t' '$1 "" == ENVIRON["item"] "" { print; exit }'; }
 
 #
 # **Both are cut from one line**: the item, the second its label went on, and the hand that put it on.
@@ -4510,6 +4513,17 @@ offered_line_of() { printf '%s\n' "$2" | awk -F'\t' -v item="$1" '$1 == item { p
 read_the_applier() {
     label_went_on=$(printf '%s\n' "$1" | cut -f2)
     FOUNDRY_WHO=$(printf '%s\n' "$1" | cut -f3)
+}
+
+#
+# **A pass never stamps its own second.** The offer drops a line with none, so an empty read is a fork
+# that failed, as `make_run`'s clock once did. It stops before any run, and the next wake takes it again.
+leave_with_no_second() {
+    [ -n "${label_went_on:-}" ] && return 0
+
+    pass_read="no-second:$1"
+    note "the offer's line for [$1] gave no second, so this pass begins no run"
+    exit 2
 }
 
 #

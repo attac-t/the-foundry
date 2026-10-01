@@ -7631,6 +7631,53 @@ a_released_item_is_taken_again() {
 a_released_item_is_taken_again
 
 #
+# **Two ids that are one number are two items.** A pass finds the line it took by the id as text, so
+# `01705` never reads `1705`'s hand or second, the way `07` once read `7`'s. #1073's build review.
+#
+a_pass_tells_two_ids_of_one_number_apart() {
+  a_resumable_repo onenumber 1705 && a_second_checkout_of onenumber \
+    || { skip "two ids of one number — git could not make a repo here"; return; }
+  printf 'Resumed item 01705\n' > "$src/items/01705"
+  printf 'onenumber\t2026-09-20T00:00:00Z\tpat\n' > "$src/labels/01705"
+
+  is  "a pass takes 1705, whose label went on first" "$(resume_in "$tmp/onenumber")" "44"
+  is  "and a pass from another checkout takes 01705" "$(resume_in "$tmp/onenumber-outside")" "44"
+
+  first=$(floor "$tmp/onenumber" path)
+  second=$(floor "$tmp/onenumber-outside" path)
+  is  "the run for 1705 answers to its own line" "$(cat "$first/authority" 2>/dev/null)" \
+      "$(printf '2026-09-19T00:00:00Z\tpat\t%s' "$(basename "$first")")"
+  is  "and the run for 01705 to its own, never to 1705's" "$(cat "$second/authority" 2>/dev/null)" \
+      "$(printf '2026-09-20T00:00:00Z\tpat\t%s' "$(basename "$second")")"
+
+  for n in 1705 01705; do rm -rf "$src/claims/$n" "$src/labels/$n" "$src/items/$n"; done
+}
+a_pass_tells_two_ids_of_one_number_apart
+
+#
+# **A pass never stamps its own second.** A read that comes back empty stops it before any run, with
+# `make_run`'s code for an empty clock, and its wake says why. #1073's build review.
+#
+# The stub answers `cut -f2` with nothing and succeeds, which is what a failed fork hands a substitution.
+#
+a_pass_that_reads_no_second_begins_no_run() {
+  a_resumable_repo nosecond 1706 || { skip "a second read empty — git could not make a repo here"; return; }
+  mkdir -p "$tmp/nosecondbin"
+  printf '#!/bin/sh\n[ "${1:-}" = -f2 ] && exit 0\nexec %s "$@"\n' "$(command -v cut)" > "$tmp/nosecondbin/cut" \
+    && chmod +x "$tmp/nosecondbin/cut" || { skip "a second read empty — could not put a cut on the path"; return; }
+
+  said=$(PATH="$tmp/nosecondbin:$PATH" floor_says "$tmp/nosecond" pass)
+  has "a pass whose second reads empty says so, and begins no run" "$said" \
+      "the offer's line for [1706] gave no second, so this pass begins no run"
+  has "and its wake ends there, with make_run's code for an empty read" "$(last_wake_line ended)" \
+      "read=no-second:1706 code=2"
+  is  "and its checkout points at no run" "$(code_of floor "$tmp/nosecond" path)" "1"
+
+  rm -rf "$src/claims/1706" "$src/labels/1706" "$src/items/1706"
+}
+a_pass_that_reads_no_second_begins_no_run
+
+#
 # **A change to either setting reaches the next pass's record.** The host names the cadence, the
 # repository the rule. A person pushes the rule after the host started and moves no ref by hand, and
 # the next pass fetches it before it selects. #997's fourth box, and #1060's first.

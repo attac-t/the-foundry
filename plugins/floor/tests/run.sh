@@ -3055,6 +3055,13 @@ wreck_runner "a pass that stamps the first offered line's second is caught" \
 wreck_runner "a label whose time is not UTC to the second, offered anyway, is caught" \
   offertime '/^kept_by_who_put_it_on() {/,/^}/s#^        !utc_to_the_second(\$2) {#        0 {#'
 
+# The number match came back as `+ 0`, so it is a number match whatever an awk makes of a `-v` value.
+wreck_runner "a pass that reads another item's line when two ids are one number is caught" \
+  passnumber '/^offered_line_of() {/s#\$1 "" == ENVIRON\["item"\] ""#$1 + 0 == ENVIRON["item"] + 0#'
+
+wreck_runner "a pass that stamps its own second when its read comes back empty is caught" \
+  passnosecond '/^leave_with_no_second() {/,/^}/s#^    \[ -n "\${label_went_on:-}" \] && return 0$#    return 0#'
+
 #
 # **An item a request is open for is not offered, and every run a pass makes holds a line.** One
 # break per rule. #1025, #1026.
