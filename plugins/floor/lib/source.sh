@@ -46,12 +46,15 @@ say_what_answers() {
     say_whether_gh_can_answer
 }
 
-# **The sign-in is read here, and routing never reads it.** `gh auth status` reaches the network, so
-# every verb would pay for a call. A signed-out `gh` is refused inside the adapter, in its own words.
+# **The sign-in is read here, and routing never reads it.** It reaches the network, so every verb would
+# pay for a call. A signed-out `gh` is refused inside the adapter, and `read` and `publish` say so in its words.
+#
+# `api user` answers only when the account `gh` would use does. `auth status` fails when any account
+# fails, and `--active`, which narrows it, is not in the `gh` Debian ships. #1132's judge, round one.
 say_whether_gh_can_answer() {
-    said=$(gh auth status 2>&1) && { printf 'GitHub\n'; return 0; }
+    said=$(gh api user 2>&1 >/dev/null) && { printf 'GitHub\n'; return 0; }
 
-    printf 'nothing answers: the remote is GitHub, and gh auth status failed. gh said:\n%s\n' "$said"
+    printf 'nothing answers: the remote is GitHub, and gh api user failed. gh said:\n%s\n' "$said"
     return 3
 }
 

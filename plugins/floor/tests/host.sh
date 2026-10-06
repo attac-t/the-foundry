@@ -725,12 +725,15 @@ has   "and says so"                                "$declared" "joined."
 . "$here/tests/without.sh"
 nogh=$(path_without gh "$tmp/without-gh") || broke "could not build a path with no gh on it"
 
-# A `gh` this suite writes, answering `auth status` as the real one does signed in, or signed out.
+# Two `gh`s this suite writes. Each answers `api user` as the real one does, and fails every other call,
+# as `auth status` fails on a host whose second account fails while the active one answers.
 a_gh_that() {
-  mkdir -p "$tmp/gh-$1" && printf '#!/bin/sh\n%s\n' "$2" > "$tmp/gh-$1/gh" && chmod +x "$tmp/gh-$1/gh"
+  mkdir -p "$tmp/gh-$1" \
+    && printf '#!/bin/sh\ncase "$*" in\n  "api user") %s ;;\nesac\nexit 1\n' "$2" > "$tmp/gh-$1/gh" \
+    && chmod +x "$tmp/gh-$1/gh"
 }
 a_gh_that in  'exit 0' || broke "could not write a signed-in gh"
-a_gh_that out 'echo "You are not logged into any GitHub hosts. To log in, run: gh auth login" >&2; exit 1' \
+a_gh_that out 'echo "To get started with GitHub CLI, please run:  gh auth login" >&2; exit 4' \
   || broke "could not write a signed-out gh"
 
 git -C "$tmp/one" remote add origin https://github.com/acme/thing.git
@@ -754,10 +757,11 @@ has "and says it joined"                            "$named_dir" "joined."
 
 signed_out=$(joined "$tmp/one" FOUNDRY_WHO=a@b PATH="$tmp/gh-out:$nogh")
 is  "with gh signed out, it is refused too"          "$(code_of "$tmp/one" FOUNDRY_WHO=a@b PATH="$tmp/gh-out:$nogh")" "1"
-has "and prints gh's own words"                     "$signed_out" "You are not logged into any GitHub hosts"
+has "and prints gh's own words"                     "$signed_out" "To get started with GitHub CLI"
 
 signed_in=$(joined "$tmp/one" FOUNDRY_WHO=a@b PATH="$tmp/gh-in:$nogh")
-is  "with gh signed in, it joins"                    "$(code_of "$tmp/one" FOUNDRY_WHO=a@b PATH="$tmp/gh-in:$nogh")" "0"
+is  "with the account gh would use answering, it joins, though another fails" \
+    "$(code_of "$tmp/one" FOUNDRY_WHO=a@b PATH="$tmp/gh-in:$nogh")" "0"
 has "and names GitHub as the source"                "$signed_in" "source  GitHub"
 
 # Off again, so no later join asks this machine's own `gh`.

@@ -5225,6 +5225,11 @@ wreck_join "a host whose work source cannot be asked waved through is caught" \
 wreck_join "a host refused for a resolver with no serves is caught" \
   anysourcecode 's#\[ "$source_answered" -eq 3 \]#[ "$source_answered" -ne 0 ]#'
 
+# The sign-in read as `auth status`, which fails when any account fails while the active one answers.
+# A host signing in two was refused for the one `gh` never uses. #1132's judge, round one.
+wreck_join "a sign-in read that refuses for an account gh does not use is caught" \
+  authstatus 's#gh api user 2>#gh auth status 2>#' lib/source.sh
+
 # A count that reads comments and blank lines reports a repository authorising more than a human
 # wrote — the shape of the number matters as much as its presence.
 wreck_join "a grant count that counts comments is caught" \

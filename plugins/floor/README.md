@@ -2420,9 +2420,9 @@ any other shape, is dropped and said, and the rest are still read. **A source th
 refused by name, 27**, in the one place core asks for either, and a `speaker` that cannot say stops the
 read at 20.
 
-**Every `source` verb refuses at 6 outside the run's own repository**, before the source is asked,
-and names both repositories. Asked from another checkout, that checkout's source answered for the run,
-and a delivery it took was one `deliver` later returned without asking. #1132.
+**A run that recorded its repository refuses every `source` verb at 6 outside it**, before the source
+is asked, and names both repositories. Asked from another checkout, that checkout's source answered
+for the run, and a delivery it took was one `deliver` later returned without asking. #1132.
 
 ### An absence is observed, never assumed
 
@@ -2896,10 +2896,11 @@ the item's own words, so a run carried to a machine with neither installed still
 prints a URL holding `github.com`. That remote is the GitHub adapter's when `gh` is on the path, and
 nobody's when it is not: every verb exits 3 and names `gh`. Every other remote is the directory's.
 
-**`serves` reads the sign-in, and routing does not.** `gh auth status` reaches the network, so a
-router asking it would pay a call on every verb. A signed-out `gh` is refused inside the adapter
-instead, in `gh`'s own words. `join.sh` asks `serves` once, before any run, and refuses a host it
-answers 3 for: no `gh`, or a `gh auth status` that failed. A network fault there reads the same, and
+**`serves` reads the sign-in, and routing does not.** It asks `gh api user`, which answers only when
+the account `gh` would use does, and that reaches the network, so a router asking it would pay a call
+on every verb. A signed-out `gh` is refused inside the adapter instead, and `read` and `publish`
+refuse in `gh`'s own words. `join.sh` asks `serves` once, before any run, and refuses a host it
+answers 3 for: no `gh`, or a `gh api user` that failed. A network fault there reads the same, and
 running `join.sh` again is the cure for both.
 
 **What it cannot see.** A GitHub reached through an alias, or on a host not named `github.com`, reads
