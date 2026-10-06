@@ -100,8 +100,11 @@ delivery_of() {
 
 # The caller says which word. `Refs` names the item and closes nothing.
 # `Closes` is what GitHub acts on, and only a person grants that.
+#
+# The body goes in on standard input, never as one argument. A command line has a cap, 32,767
+# characters on Windows, and a body GitHub would take can be longer than that.
 open_delivery() {
-    gh pr create --head "$3" --title "$4" --body "$(body_for "$1" "$2" "${5:-Refs}" "${6:-}")" \
+    body_for "$1" "$2" "${5:-Refs}" "${6:-}" | gh pr create --head "$3" --title "$4" --body-file - \
         || return 3
 }
 

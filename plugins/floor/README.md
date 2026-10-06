@@ -267,7 +267,8 @@ ${FOUNDRY_HOME:-$HOME/.foundry}/runs/<date>-<slug>-<short id>/
 ├── charter            the bar — one clause, one pin and one command per line
 ├── delivery           the branch this run pushed, the commit it pushed, and where it landed
 ├── brief              what `deliver` was handed — absent when it was handed none
-├── body               the brief, then what floor recorded: run, commit, charter, what met each clause
+├── message            the delivered commit's message — kept when `deliver` was handed no brief
+├── body               the brief or that message, then what floor recorded, then what each judge found
 ├── substitutions      files graded as the base wrote them — absent when the run changed no gate
 ├── judged/            what `judged` asked each judge, and what came back — one pair per clause
 ├── shaped/            who sat, the bar each member read, and each attempt's brief and what it printed
@@ -823,7 +824,7 @@ comes from the reader that already owns it, so it keeps nothing and grants nothi
 
 | Part | Printed by |
 |---|---|
-| the run | its name, its item and its delivery |
+| the run | its name, its item, its delivery and its worker |
 | ran | the ledger, as `evidence` prints it: each gate that ran, each handoff and each verdict |
 | decided | for a run that was shaped: who sat, who a missing label left out, and each clause nothing derived, with who proposed it and what a hand said |
 | met | each clause the grader passes at the workspace's head, and whom it accepted |
@@ -859,8 +860,9 @@ what ran are shown by then. It writes nothing it heard: it keeps no record of it
 ---
 ### A delivery names its record
 
-**The body is the brief, then what floor recorded.** The record is the run, the commit the push
-sent, and the charter by the digest every handoff stamps. Then it says what met each clause there.
+**The body is the brief or the commit's message, then what floor recorded, then what each judge
+found.** The record is the run, the commit the push sent, and the charter by the digest every
+handoff stamps. Then it says what met each clause there.
 **`deliver` reads the head once.** The ancestry check, the grade, the push and the record all take
 that one commit. A commit landing meanwhile, even from a `pre-push` hook, reaches none of them.
 `deliver` refuses an unmet clause before it pushes, so every clause the record lists was met.
@@ -868,20 +870,93 @@ Each is named by whom the grader accepted: every judge its panel names, or the k
 trusts. The record reads no row itself, so it cannot name one the grader skipped. The brief above
 it is its author's words, and may say anything. The adapter adds its marker last. Decided on #736.
 
+**With no brief, the delivered commit's message stands where the brief would**, fenced, and `deliver`
+says so. When more than one commit sits above the base, one line says how many. Only the last one's
+message is carried. A brief still comes first, and then no message is carried. The run keeps the
+message as `message`, beside `brief`. #1077.
+
+**The GitHub adapter hands `gh` the body on standard input, never as one argument.** A command line
+has a cap, 32,767 characters on Windows, and a body GitHub would take can be longer than that.
+
 **A clause nothing derived also names each yes it stood on**: who said yes, when, and the line. It
 reads the hearing the grade read, never a row, and `status` says the same under *met*.
+
+**Beside each judge it names the worker `run.began` recorded.** A run that recorded none says so,
+and says nothing checked that its judge did not write the work. It reads the record, never the
+worker the shell names. `status` says the same under *met*, and under *run* whether or not a panel
+clause is met yet. #1076.
+
+**The check a verdict meets reads its own shell instead.** A pass runs `new` and `judged` in one, so
+there the two agree. A person can run them in two, and then the check may have held a worker the
+line never names.
 
 **A shaped run's record adds one line**: who sat, and who a missing label left out. A clause a hand
 struck reads `struck by <hand> at <when>` and the line, since nothing met it and nothing had to. A
 clause the panel proposed names its proposers.
 
+**Below the record, what each judge found.** Each clause a panel met names each judge, with the
+worker beside it. Its report follows, fenced at the left margin, as the judge wrote it, less its
+verdict line. #1075.
+
+**A report is carried only when its checksum matches the `report` its receipt stamped.** Each of
+these reads as one line saying which it is:
+
+- a report that no longer matches
+- a report whose judge was last asked about a commit other than the one delivered, naming both
+- a report with nothing above its verdict line
+- a receipt with no report beside it
+- a judge with no receipt in the run
+
+**The GitHub adapter still drops a line that is only this item's own `Closes` or `Refs`**, fenced or
+not. A carried commit footer of that shape is dropped inside its fence.
+
+**A message or report that names this host is withheld whole.** One line says why. It names the file
+by the run's id and a path inside the run. Withholding it whole keeps it as its writer wrote it, and
+cutting a line out would not.
+
+Floor compares these, without case:
+
+- this host's home as `HOME` holds it
+- for a home on a drive, `/c/…`, `C:/…`, `C:\…` and `C:\\…`, and so WSL's `/mnt/c/…`, which holds `/c/…`
+- each address the delivered commit, and every commit above the base, carries as author or committer
+
+A home of `/` names nothing. **A name floor cannot form is carried**:
+
+- a forge account, or a person's name alone
+- `~`, or a path split across two lines
+- a path in any spelling not listed above
+
+**No line of a carried text renders outside its fence.** The fence is one backtick longer than the
+longest run the text holds, and never shorter than three. It sits at the left margin, where no list
+item can hold it.
+
+**Carried text has two bounds, in bytes: 16,000 for any one message or report, and 48,000 for all of
+them with their fences.** A text over a bound is cut at its last whole line under it. One line names
+its file by the run's id and a path inside the run.
+
+**Floor cuts the texts to keep a body under about 65,000 bytes.** GitHub refuses one over 65,536
+characters, and no text holds more characters than bytes. The rest is room for the source's footer. The texts share what the
+brief, the record and floor's own lines leave under the cap. They never share more than 48,000.
+
+**Floor never cuts the brief, the record or its own lines.** Its own lines include:
+
+- the heading over the judges, and each judge's heading
+- the line saying how many commits sit above the base
+- each line that stands in for a text it withheld or did not carry
+- each line saying where a text was cut
+
+When those pass the cap, the texts get nothing. Past GitHub's own limit, GitHub refuses the body after
+the push. A cut line can run four bytes past what the measure allowed, so the cap is about 65,000.
+
 **A second `deliver` on the same branch pushes the new head, and the request keeps its first
 body.** One run, one delivery: the request is not rewritten, and the run keeps the body it sent.
 So the request then names the older commit, and `deliver` says so, naming both.
 
-**The body is a setting.** `body brief` in `.foundry/practice` sends the brief alone, and `body
-record`, or no line, sends the record too. It is read at the run's base, so no worker sets it. A
-word that is neither is named, and the record is kept.
+**The body is a setting.** `body brief` in `.foundry/practice` sends the brief alone. With no brief it
+sends the commit's message. When two or more commits sit above the base, the line saying how many
+follows it. `body record`, or no line, sends the record too, and what each judge found. It is read at
+the run's base, so no worker sets it. A word that is neither is named, and
+the record is kept.
 
 ---
 ### A kind is the source's word, not Foundry's
