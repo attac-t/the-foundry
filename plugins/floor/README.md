@@ -33,14 +33,14 @@ installed and nothing is written to the repository. `adopt.sh`, below, is the on
 does write to one.
 
 Six things stood between a clean machine and a working system, and three were silent when wrong: no
-`gh` picks a different work source, no git identity fails later at commit, and no `FOUNDRY_WHO`
-records an authority nobody granted. Each now names itself.
+`gh` swapped the work source without a word, no git identity fails later at commit, and no
+`FOUNDRY_WHO` records an authority nobody granted. Each now names itself.
 
 ```
 home    /home/you/.foundry
         derived from HOME. Set FOUNDRY_HOME to put it elsewhere.
 who     you@example.com
-source  a directory, and the remote is GitHub. Install gh, or Issues stay unreachable.
+source  GitHub
 grants  2 in .foundry/practice
 gates   1 in .foundry/gates
 judges  1 in .foundry/judged
@@ -57,10 +57,13 @@ A rule that names a skill is the declaration — there is no second list. `shell
 `kernel:craft-sh` before the first character*, and on a host where kernel is off that rule does
 nothing and says nothing. Now it says.
 
-Exit 1 is something the host must supply. Exit 3 is not a repository this can join. **Exit 4 is a
-repository declaring none of the three a run needs** — no gates and `authorise` stops, no judges and
-`judged` stops, no grants and `deliver` stops. It says `not joined.` and names nothing else, because
-the other three absences stop nothing and stay reports.
+Exit 1 is something the host must supply. **A work source nothing can ask is one**: on a GitHub
+remote, no `gh` or a `gh` that cannot answer. The `source` line says what is missing, in `gh`'s own
+words when it said any.
+
+Exit 3 is not a repository this can join. **Exit 4 is a repository declaring none of the three a run
+needs** — no gates and `authorise` stops, no judges and `judged` stops, no grants and `deliver` stops.
+It says `not joined.` and names nothing else, because the skills and plugins it reports stop nothing.
 
 ## Adopting a judge
 
@@ -170,8 +173,9 @@ asked at all.
 **Every verb refuses on its own and can be run again.** That is what lets a resumed run re-enter
 anywhere, and it is why nothing here runs the eleven for you.
 
-Two need a host. `source read` needs a work source that can answer — otherwise a directory does, and
-says so. `deliver` needs credentials to push, and says so at exit 19.
+Two need a host. `source read` needs a work source that can answer. On a GitHub remote that is `gh`,
+and with none it refuses at 20 and names it. `deliver` needs credentials to push, and says so at
+exit 19.
 
 A machine with `sh`, `awk` and `git` runs every verb here. **What a gate command needs is the
 charter's, not floor's** — a gate may reach for anything. A host without it refuses at 21, and so
@@ -2423,9 +2427,12 @@ read at 20.
 own code — 1 and 20. `gh` exits 1 for both, so the adapter asks a second question: a repository
 cannot be absent and an issue can.
 
-A GitHub remote on a machine with no `gh` is answered by the directory adapter, which has never heard
-of Issues. That is right — `gh` is not a floor dependency — and it is now said out loud, because a
-missing tool otherwise reads as a missing item.
+**A GitHub remote on a machine with no `gh` is answered by nothing.** A directory has never heard of
+Issues, so its *nothing there* would be a fact nobody observed. Every verb exits 3 and names `gh`,
+and floor reads that 3 as 20 on `read`, 19 on a delivery and 1 on `ask`.
+
+**`gh` is still not a floor dependency.** A GitHub remote needs `gh`, or `FOUNDRY_SOURCE` naming the
+directory adapter, `lib/source-dir.sh`. *Two adapters*, below, says how the resolver chooses.
 
 ### There is no parameter for what a human supplies
 
@@ -2882,8 +2889,23 @@ selected may never deliver. So the pass records the label's applier as the run's
 where a work item lives. Nothing above them learns which answered: the run records the item's id and
 the item's own words, so a run carried to a machine with neither installed still means what it meant.
 
-`FOUNDRY_SOURCE` names another adapter. `FOUNDRY_SOURCE_DIR` moves the directory one, which otherwise
-sits in the Foundry home.
+**It chooses on every call, by `origin`.** *The remote is GitHub* when `git remote get-url origin`
+prints a URL holding `github.com`. That remote is the GitHub adapter's when `gh` is on the path, and
+nobody's when it is not: every verb exits 3 and names `gh`. Every other remote is the directory's.
+
+**`serves` reads the sign-in, and routing does not.** `gh auth status` reaches the network, so a
+router asking it would pay a call on every verb. A signed-out `gh` is refused inside the adapter
+instead, in `gh`'s own words. `join.sh` asks `serves` once, before any run, and refuses a host it
+answers 3 for: no `gh`, or a `gh auth status` that failed. A network fault there reads the same, and
+running `join.sh` again is the cure for both.
+
+**What it cannot see.** A GitHub reached through an alias, or on a host not named `github.com`, reads
+as not GitHub, so the directory answers it and nothing is said. A grant can name such a remote, and
+`deliver` there still delivers into a directory and reports success.
+
+`FOUNDRY_SOURCE` names another adapter, and naming `lib/source-dir.sh` there is the one way a
+directory answers a remote the resolver reads as GitHub. `FOUNDRY_SOURCE_DIR` moves the directory
+one, which otherwise sits in the Foundry home.
 
 **A source may be less than four verbs.** `source-read-only.sh` answers `read` and refuses everything
 else at exit 2, which floor reports as **27** — *this source can only be read*. That is a different

@@ -3323,18 +3323,17 @@ audit_the_unreadable_declaration() {
     unreadable 's#\[ -r "$dir/.foundry/gates" \] || return 22##' lib/detect-gates.sh
 }
 audit_the_unreadable_declaration
-# The check this breaks is the one skipped where `gh` is installed, so this is skipped there too. Both
-# run under `sh bin/gates.sh linux`, whose image has no `gh` — which is the whole point of the rule.
-audit_the_missing_half() {
-  command -v gh >/dev/null 2>&1 && {
-    printf '  skip  a directory answering silently for a GitHub remote — this machine has gh\n'
-    return
-  }
+#
+# **#1132's refusals.** Their cases build their own path with no `gh`, so none of these is skipped
+# where one is installed, as `quietfall` was before them.
+#
+# The fallback, put back: a directory answers the GitHub remote, and a delivery it takes reports success.
+wreck_runner "a directory answering a GitHub remote with no gh is caught" \
+  dirforgh 's#^gh_is_here || refuse_without_gh$#gh_is_here || exec sh "$here/source-dir.sh" "$@"#' lib/source.sh
 
-  wreck_runner "a directory answering silently for a GitHub remote is caught" \
-    quietfall '/remote_is_github && echo/d' lib/source.sh
-}
-audit_the_missing_half
+# A missing `gh` read as a source with no way to do a thing, so floor names the wrong remedy.
+wreck_runner "a GitHub adapter answering a missing gh with 2 is caught" \
+  ghtwo '/^command -v gh/s#exit 3#exit 2#' lib/source-github.sh
 
 wreck_runner "a question rewritten under a human is caught" \
   dirwords 's#same_question "$file" "$3" || return 4#:#' lib/source-dir.sh
@@ -5212,6 +5211,15 @@ wreck_join "a repository declaring nothing a run needs waved through is caught" 
 # The silent one this command exists for. Saying nothing about the source is what it replaced.
 wreck_join "a source that is chosen without a word is caught" \
   mutesource 's#^    report_work_source$#    say "who     $FOUNDRY_WHO"#'
+
+# A host where nothing can be asked for work, joined. A run made there stops at its first source call.
+wreck_join "a host whose work source cannot be asked waved through is caught" \
+  unaskedjoins 's#^    refuse_without_a_work_source$#    :#'
+
+# Only the resolver's 3 refuses. The directory adapter has no `serves` and answers 2, and a host naming
+# it joins — #1132's one way for a directory to answer a GitHub remote.
+wreck_join "a host refused for a resolver with no serves is caught" \
+  anysourcecode 's#\[ "$source_answered" -eq 3 \]#[ "$source_answered" -ne 0 ]#'
 
 # A count that reads comments and blank lines reports a repository authorising more than a human
 # wrote — the shape of the number matters as much as its presence.

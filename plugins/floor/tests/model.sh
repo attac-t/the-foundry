@@ -88,6 +88,10 @@ this_host() { printf '%s/%s' "$(uname -n)" "$(cat "$home/host-name")"; }
 . "$here/tests/isolate.sh"
 isolate_git_transport "$tmp" || { printf 'could not isolate the git transport\n' >&2; exit 3; }
 
+# A path with no `gh` on it, for the cases that drive a host without one. The grade image has one.
+. "$here/tests/without.sh"
+no_gh_path() { path_without gh "$tmp/without-gh"; }
+
 # Run the shipped CLI from a directory, with an explicit home and run variable.
 #
 # The directory adapter, named rather than detected.
@@ -100,6 +104,10 @@ isolate_git_transport "$tmp" || { printf 'could not isolate the git transport\n'
 # points `RUNNER` at it, so naming the original's adapter would hand every mutant an unbroken one.
 #
 dir_source="$(dirname "$runner")/../lib/source-dir.sh"
+
+# The resolver and the GitHub adapter beside it, for the cases that ask one of them by name.
+router="$(dirname "$runner")/../lib/source.sh"
+gh_adapter="$(dirname "$runner")/../lib/source-github.sh"
 
 floor_as() {
   local dir="$1" home_dir="$2" run="$3"; shift 3
@@ -4488,8 +4496,8 @@ is "charter with no run exits 1" "$(code_of floor "$tmp/bare" charter)" "1"
 # RFC-001 §2.1. Four verbs, and the properties that make them a contract rather than a call to one
 # provider.
 #
-# Nothing here names a source. The adapter is chosen by `lib/source.sh`, and with no `gh` on this
-# machine the directory answers — needing nothing floor does not already declare, and reading its
+# Nothing here names a source. The adapter is chosen by `lib/source.sh`, and a remote that is not
+# GitHub is the directory's — needing nothing floor does not already declare, and reading its
 # root out of the home this suite already sets. That is the portability claim, executed.
 
 # Where the shipped adapter looks with nothing configured: floor's own home, which this suite sets.
@@ -12441,32 +12449,195 @@ And only what was graded.
 }
 a_merge_lands_only_what_was_graded
 
-# Level 1 has two halves and this is the second one: a repository whose remote is GitHub, on a
-# machine with no `gh`, still has a work source. Skipped where a real `gh` would answer instead.
-a_remote_with_no_gh_still_has_a_source() {
-  [ -n "${ghrun:-}" ] || { skip "no gh — the other adapter did not run"; return; }
-  command -v gh >/dev/null 2>&1 && { cannot "a remote with no gh — this machine has one"; return; }
+# --- a GitHub remote with no `gh` ---
+#
+# **Answered by GitHub or by nothing.** A directory has never heard of Issues, so its *nothing there*
+# about a GitHub item is a fact nobody observed. #1132 reverses the case that stood here, which held a
+# directory answering such a remote and called that answer right about the directory and wrong about
+# the item.
+#
+# **Each case that drives no `gh` builds a path without one.** The grade image installs one, and the
+# case that stood here answered n/a wherever one was installed — which was everywhere it was graded.
+#
+# Not through `floor_as`, which names the directory adapter. Which source answers is the question.
+#
 
-  mkdir -p "$src/items"
-  printf 'Read from a directory\n' > "$src/items/12"
-
-  # Not through `floor_as`, which names the adapter. Detection is the whole of what this asks about,
-  # and a check that pins the answer it is testing for passes whether or not detection still works.
-  has "with no gh, a directory answers for a GitHub remote" \
-      "$( cd "$tmp/gh" 2>/dev/null \
-          && FOUNDRY_HOME="$home" FOUNDRY_RUN="$ghrun" FOUNDRY_WHO="" \
-             sh "$runner" source read 12 2>/dev/null )" \
-      "Read from a directory"
-
-  # And says which half is missing. A directory answering *no item* for a GitHub remote is right about
-  # the directory and wrong about the item, and only this line lets a reader tell.
-  has "and says which half of level 1 is missing" \
-      "$( cd "$tmp/gh" 2>/dev/null \
-          && FOUNDRY_HOME="$home" FOUNDRY_RUN="$ghrun" FOUNDRY_WHO="" \
-             sh "$runner" source read 12 2>&1 >/dev/null )" \
-      "gh is not here"
+# The resolver beside the runner under test, asked from `$1` with no `gh` on the path: what it said
+# on stderr, then its code. A directory it answered from would sit beside the checkout.
+asked_with_no_gh() {
+  local checkout=$1; shift
+  ( cd "$checkout" && PATH="$(no_gh_path)" FOUNDRY_SOURCE_DIR="$checkout.source" \
+      sh "$router" "$@" 2>&1 >/dev/null; printf 'exit=%s' "$?" )
 }
-a_remote_with_no_gh_still_has_a_source
+
+nothing_answers_a_github_remote_with_no_gh() {
+  make_repo "$tmp/nogh" main && set_origin "$tmp/nogh" 'https://github.com/acme/nogh.git' \
+    || { skip "a GitHub remote with no gh — git could not make a repo here"; return; }
+  no_gh_path >/dev/null || { broke "a GitHub remote with no gh — no path without gh could be built"; return; }
+
+  mkdir -p "$tmp/nogh.source/items" && printf 'Read from a directory\n' > "$tmp/nogh.source/items/12"
+  local held verb rest said
+  held=$(ls -R "$tmp/nogh.source")
+
+  # Each with what a directory would act on, so a directory answering in its place would write.
+  while read -r verb rest; do
+    said=$(asked_with_no_gh "$tmp/nogh" "$verb" $rest)
+    has "with no gh, $verb on a GitHub remote exits 3" "$said" "exit=3"
+    has "and $verb names gh"                           "$said" "gh is not here"
+  done <<'ASKED'
+read 12
+kind 12
+where
+open foundry/a-run
+claim 12 a-host
+held 12
+release 12 a-host
+publish 12 a-run foundry/a-run A-title Refs
+ask 12 a-run.authorisation.1 A-question
+receive 12
+speaker 12
+state a-run
+land a-run
+find ready
+ASKED
+
+  is "and none of them writes where a directory would answer" "$(ls -R "$tmp/nogh.source")" "$held"
+
+  # Through the runner, which reads that 3 as a source it could not ask, and binds no item.
+  nogh_run=$( cd "$tmp/nogh" && FOUNDRY_HOME="$home" FOUNDRY_RUN="" FOUNDRY_WHO="" sh "$runner" new "No gh" 2>/dev/null )
+  said=$( cd "$tmp/nogh" && PATH="$(no_gh_path)" FOUNDRY_HOME="$home" FOUNDRY_RUN="$nogh_run" FOUNDRY_WHO="" \
+          FOUNDRY_SOURCE= FOUNDRY_SOURCE_DIR="$tmp/nogh.source" sh "$runner" source read 12 2>&1; printf 'exit=%s' "$?" )
+
+  has    "floor reads it as a source it could not ask, 20" "$said" "exit=20"
+  has    "and tells the reader gh is what is missing"      "$said" "gh is not here"
+  absent "and the run holds no item"                       "$nogh_run/item.md"
+}
+nothing_answers_a_github_remote_with_no_gh
+
+# **The host's choice, and the only way a directory answers a GitHub remote.** #1132.
+a_named_directory_answers_a_github_remote_with_no_gh() {
+  make_repo "$tmp/noghnamed" main && set_origin "$tmp/noghnamed" 'https://github.com/acme/noghnamed.git' \
+    || { skip "a named directory — git could not make a repo here"; return; }
+  no_gh_path >/dev/null || { broke "a named directory — no path without gh could be built"; return; }
+
+  mkdir -p "$tmp/noghnamed.source/items" && printf 'Read from a named directory\n' > "$tmp/noghnamed.source/items/12"
+  noghnamed_run=$( cd "$tmp/noghnamed" && FOUNDRY_HOME="$home" FOUNDRY_RUN="" FOUNDRY_WHO="" \
+                   sh "$runner" new "Named" 2>/dev/null )
+
+  has "with FOUNDRY_SOURCE naming the directory adapter, a GitHub remote with no gh is answered by it" \
+      "$( cd "$tmp/noghnamed" && PATH="$(no_gh_path)" FOUNDRY_HOME="$home" FOUNDRY_RUN="$noghnamed_run" \
+          FOUNDRY_WHO="" FOUNDRY_SOURCE="$dir_source" FOUNDRY_SOURCE_DIR="$tmp/noghnamed.source" \
+          sh "$runner" source read 12 2>/dev/null )" \
+      "Read from a named directory"
+}
+a_named_directory_answers_a_github_remote_with_no_gh
+
+# **3, never 2.** Floor reads 2 as a source with no way to do a thing — 27, or *no item* on a read —
+# and the remedy for a tool nobody installed is the install. #1132.
+the_github_adapter_with_no_gh_could_not_be_asked() {
+  make_repo "$tmp/ghgone" main && set_origin "$tmp/ghgone" 'https://github.com/acme/ghgone.git' \
+    || { skip "the GitHub adapter with no gh — git could not make a repo here"; return; }
+  no_gh_path >/dev/null || { broke "the GitHub adapter with no gh — no path without gh could be built"; return; }
+
+  said=$( cd "$tmp/ghgone" && PATH="$(no_gh_path)" sh "$gh_adapter" read 12 2>&1; printf 'exit=%s' "$?" )
+  has "the GitHub adapter, named with no gh on the path, exits 3" "$said" "exit=3"
+  has "and names gh"                                              "$said" "gh is not here"
+
+  ghgone_run=$( cd "$tmp/ghgone" && FOUNDRY_HOME="$home" FOUNDRY_RUN="" FOUNDRY_WHO="" sh "$runner" new "Gone" 2>/dev/null )
+  is "and floor, asking through it, reads a source it could not ask, 20" \
+     "$( cd "$tmp/ghgone" && PATH="$(no_gh_path)" FOUNDRY_HOME="$home" FOUNDRY_RUN="$ghgone_run" FOUNDRY_WHO="" \
+         FOUNDRY_SOURCE="$gh_adapter" sh "$runner" source read 12 >/dev/null 2>&1; printf '%s' "$?" )" "20"
+}
+the_github_adapter_with_no_gh_could_not_be_asked
+
+# **#1132's shape: a delivery a directory took, reported as a success with no request open.** With no
+# `gh` on a GitHub remote, `deliver` pushes, then sends `publish` through the resolver, which refuses.
+#
+# The item is bound through the directory, named, as a host may. No clause is introduced, so the
+# publish is the first call that can stop `deliver`.
+a_delivery_with_no_gh_records_nothing() {
+  git init -q --bare "$tmp/remotes/acme/noghdv.git" 2>/dev/null \
+    && make_repo "$tmp/noghdv" main && set_origin "$tmp/noghdv" 'https://github.com/acme/noghdv.git' \
+    && mkdir -p "$tmp/noghdv/.foundry" \
+    && commit_file "$tmp/noghdv" .foundry/gates 'tests  true
+' || { skip "a delivery with no gh — git could not make a repo here"; return; }
+  no_gh_path >/dev/null || { broke "a delivery with no gh — no path without gh could be built"; return; }
+
+  mkdir -p "$src/items" && printf 'Deliver it where no gh is\n' > "$src/items/1132"
+  noghdv_run=$(floor_new_as "$tmp/noghdv" ada@example.com "No gh delivery")
+  for step in "source read 1132" "charter derive" "policy authorize https://github.com/acme/noghdv.git" \
+      "policy deliver-to https://github.com/acme/noghdv.git" "targets add https://github.com/acme/noghdv.git main" \
+      authorise open gates; do
+    floor "$tmp/noghdv" $step >/dev/null 2>&1
+  done
+
+  said=$( cd "$tmp/noghdv" && PATH="$(no_gh_path)" FOUNDRY_HOME="$home" FOUNDRY_RUN="$noghdv_run" FOUNDRY_WHO="" \
+          FOUNDRY_SOURCE= sh "$runner" deliver 'Where no gh is' 2>&1; printf 'exit=%s' "$?" )
+
+  has    "a delivery with no gh on a GitHub remote is refused, 19" "$said" "exit=19"
+  has    "and the resolver names gh"                               "$said" "gh is not here"
+  absent "and the run keeps no delivery"                           "$noghdv_run/delivery"
+  lacks  "and records no run.delivered"                            "$(floor "$tmp/noghdv" observe)" "run.delivered"
+
+  # A break that brings the directory back leaves a delivery in the shared source, and later cases read it.
+  rm -f "$src/deliveries/$(basename "$noghdv_run")" "$src/deliveries/$(basename "$noghdv_run").brief"
+}
+a_delivery_with_no_gh_records_nothing
+
+# **A pass stops sooner, at its first source call.** It asks which items carry its label before it
+# claims or begins anything, and a source nobody could ask ends the wake at 20. #1132.
+a_pass_with_no_gh_stops_at_its_first_source_call() {
+  make_repo "$tmp/noghpass" main && set_origin "$tmp/noghpass" 'https://github.com/acme/noghpass.git' \
+    && bar_and_rule "$tmp/noghpass" \
+    || { skip "a pass with no gh — git could not make a repo here"; return; }
+  no_gh_path >/dev/null || { broke "a pass with no gh — no path without gh could be built"; return; }
+
+  is  "a pass with no gh on a GitHub remote stops at its first source call, 20" \
+      "$( cd "$tmp/noghpass" && PATH="$(no_gh_path)" FOUNDRY_HOME="$home" FOUNDRY_RUN="" FOUNDRY_WHO="" \
+          FOUNDRY_SOURCE= FOUNDRY_SOURCE_DIR="$tmp/noghpass.source" sh "$runner" pass >/dev/null 2>&1; printf '%s' "$?" )" "20"
+  has "and its wake says the source was not asked" "$(last_wake_line ended)" "read=source-unasked"
+}
+a_pass_with_no_gh_stops_at_its_first_source_call
+
+# A `gh` that is there and signed out. Every call answers on stderr in `gh`'s words, and fails.
+signed_out_gh() {
+  mkdir -p "$1" || return 1
+  printf '#!/bin/sh\n%s\n%s\nexit 4\n' \
+    "echo 'To get started with GitHub CLI, please run:  gh auth login' >&2" \
+    "echo 'Alternatively, populate the GH_TOKEN environment variable with a GitHub API authentication token.' >&2" \
+    > "$1/gh" && chmod +x "$1/gh"
+}
+
+# The runner on a GitHub remote, through the resolver, with that `gh` first on the path.
+signed_out() {
+  local named=$1; shift
+  ( cd "$tmp/ghout" && PATH="$tmp/ghout-bin:$PATH" FOUNDRY_HOME="$home" FOUNDRY_RUN="$named" FOUNDRY_WHO="" \
+      FOUNDRY_SOURCE= sh "$runner" "$@" 2>&1 )
+}
+
+# **Routing never asks whether `gh` is signed in, so the adapter refuses, in `gh`'s own words.** Read
+# and publish carry them two ways: one leaves `gh` its stderr, the other captures it and says it. #1132.
+a_signed_out_gh_is_refused_in_its_own_words() {
+  make_repo "$tmp/ghout" main && set_origin "$tmp/ghout" 'https://github.com/acme/ghout.git' \
+    || { skip "a signed-out gh — git could not make a repo here"; return; }
+  signed_out_gh "$tmp/ghout-bin" || { broke "a signed-out gh — could not put one on the path"; return; }
+
+  mkdir -p "$tmp/ghout.source/items" && printf 'Read before the sign-out\n' > "$tmp/ghout.source/items/12"
+  ghout_run=$( cd "$tmp/ghout" && FOUNDRY_HOME="$home" FOUNDRY_RUN="" FOUNDRY_WHO="" sh "$runner" new "Signed out" 2>/dev/null )
+
+  said=$(signed_out "$ghout_run" source read 12; printf 'exit=%s' "$?")
+  has "a signed-out gh is refused inside the GitHub adapter, 20" "$said" "exit=20"
+  has "and the refusal carries gh's own words"                   "$said" "gh auth login"
+
+  # Bound through the directory, named, so a publish reaches the adapter holding an item.
+  ( cd "$tmp/ghout" && FOUNDRY_HOME="$home" FOUNDRY_RUN="$ghout_run" FOUNDRY_WHO="" FOUNDRY_SOURCE="$dir_source" \
+      FOUNDRY_SOURCE_DIR="$tmp/ghout.source" sh "$runner" source read 12 >/dev/null 2>&1 )
+
+  said=$(signed_out "$ghout_run" source publish work/signed-out 'Signed out'; printf 'exit=%s' "$?")
+  has "a delivery a signed-out gh cannot carry is refused, 19" "$said" "exit=19"
+  has "and that refusal carries gh's own words too"            "$said" "gh auth login"
+}
+a_signed_out_gh_is_refused_in_its_own_words
 
 # --- asking for the wrong thing ---
 

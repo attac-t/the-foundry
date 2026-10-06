@@ -714,17 +714,55 @@ lacks "and a repository with one is not told how" "$declared" "no judge is decla
 # refusal nobody can act on, so the tree that declares all three is the one this proves.
 is    "a repository declaring all three joins"     "$(code_of "$tmp/one" FOUNDRY_WHO=a@b)" "0"
 has   "and says so"                                "$declared" "joined."
-rm -f "$tmp/one/.foundry/judged"
+
+#
+# **A GitHub remote is answered by `gh` or by nothing, and join refuses a host where nothing answers.**
+# A run made there stops at its first source call. #1132.
+#
+# Each check builds its own `gh`, or a path with none, so no answer here rests on what this machine
+# installed. The branch that stood here did, and counted one check or two by it.
+#
+. "$here/tests/without.sh"
+nogh=$(path_without gh "$tmp/without-gh") || broke "could not build a path with no gh on it"
+
+# A `gh` this suite writes, answering `auth status` as the real one does signed in, or signed out.
+a_gh_that() {
+  mkdir -p "$tmp/gh-$1" && printf '#!/bin/sh\n%s\n' "$2" > "$tmp/gh-$1/gh" && chmod +x "$tmp/gh-$1/gh"
+}
+a_gh_that in  'exit 0' || broke "could not write a signed-in gh"
+a_gh_that out 'echo "You are not logged into any GitHub hosts. To log in, run: gh auth login" >&2; exit 1' \
+  || broke "could not write a signed-out gh"
 
 git -C "$tmp/one" remote add origin https://github.com/acme/thing.git
-remote=$(joined "$tmp/one" FOUNDRY_WHO=a@b)
 
-if command -v gh >/dev/null 2>&1; then
-  has "with gh here, GitHub is named as the source" "$remote" "source  GitHub"
-else
-  has "with no gh, it says a directory is answering" "$remote" "source  a directory"
-  has "and names what would change that"             "$remote" "gh"
-fi
+served=$( cd "$tmp/one" && PATH="$nogh" sh "$root/lib/source.sh" serves 2>/dev/null; printf 'exit=%s' "$?" )
+has "with no gh, serves says nothing answers, 3" "$served" "exit=3"
+has "and that gh would"                          "$served" "Install gh"
+has "or the directory adapter, named in full"   "$served" "FOUNDRY_SOURCE=$root/lib/source-dir.sh"
+
+unasked=$(joined "$tmp/one" FOUNDRY_WHO=a@b PATH="$nogh")
+is  "with no gh, a host on a GitHub remote is refused" "$(code_of "$tmp/one" FOUNDRY_WHO=a@b PATH="$nogh")" "1"
+has "and it prints the resolver's words"            "$unasked" "source  nothing answers: the remote is GitHub, and gh is not here"
+has "with the second line set under the first"      "$unasked" "        Install gh, or name the directory adapter"
+has "and says it did not join"                      "$unasked" "not joined. No work source can be asked here"
+
+# The directory adapter has no `serves`, so the line is blank. #1132 leaves that, and says so.
+named_dir=$(joined "$tmp/one" FOUNDRY_WHO=a@b PATH="$nogh" FOUNDRY_SOURCE="$root/lib/source-dir.sh")
+is  "with the directory adapter named, that host joins" \
+    "$(code_of "$tmp/one" FOUNDRY_WHO=a@b PATH="$nogh" FOUNDRY_SOURCE="$root/lib/source-dir.sh")" "0"
+has "and says it joined"                            "$named_dir" "joined."
+
+signed_out=$(joined "$tmp/one" FOUNDRY_WHO=a@b PATH="$tmp/gh-out:$nogh")
+is  "with gh signed out, it is refused too"          "$(code_of "$tmp/one" FOUNDRY_WHO=a@b PATH="$tmp/gh-out:$nogh")" "1"
+has "and prints gh's own words"                     "$signed_out" "You are not logged into any GitHub hosts"
+
+signed_in=$(joined "$tmp/one" FOUNDRY_WHO=a@b PATH="$tmp/gh-in:$nogh")
+is  "with gh signed in, it joins"                    "$(code_of "$tmp/one" FOUNDRY_WHO=a@b PATH="$tmp/gh-in:$nogh")" "0"
+has "and names GitHub as the source"                "$signed_in" "source  GitHub"
+
+# Off again, so no later join asks this machine's own `gh`.
+git -C "$tmp/one" remote remove origin
+rm -f "$tmp/one/.foundry/judged"
 
 # The sentence above comes from the resolver, never from `join.sh`. A copy of
 # `remote_is_github` lived here once, which put a provider's name in core.

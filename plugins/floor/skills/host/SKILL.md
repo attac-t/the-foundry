@@ -198,7 +198,7 @@ FOUNDRY_KEYS=foundry-keys sh bin/host.sh --worker sh -c 'cd /src/plugins/floor &
 
 It ends `joined.`, or names the one thing the machine still owes. It writes nothing.
 
-**Five things it can ask for, and they are not all the machine's to give:**
+**Six things it can ask for, and they are not all the machine's to give:**
 
 | It says | Exit | What it wants, and what answering costs |
 |---|---|---|
@@ -206,6 +206,7 @@ It ends `joined.`, or names the one thing the machine still owes. It writes noth
 | there is no repository here | 3 | you are not standing in one. `cd /src` — the clone from step 2, mounted read-only |
 | this host has no git author | 1 | a git `user.name` and `user.email`. It prints two `--global` lines, and **`~/.gitconfig` is on the container's own layer** — step 3 keeps three directories and that is not one. So set it outside, on the clone, where it arrives at `/src` with the mount |
 | `FOUNDRY_WHO` is not set | 1 | outside as well. `host.sh` sends it in from the machine's `git config user.email`, so empty there is empty inside. **It is a record, never a credential** — [`identity.md`](../../../../.claude/rules/identity.md) says so |
+| `source  nothing answers` | 1 | a work source a run can ask. On a GitHub remote that is a `gh` that answers. **The image carries `gh`**, so here it is the sign-in, and `gh`'s own words follow the line. Or name the directory adapter, `lib/source-dir.sh`, in `FOUNDRY_SOURCE` |
 | not joined. A run here would stop at… | 4 | the **repository's** declarations, not the machine's: `.foundry/gates`, `.foundry/practice`, `.foundry/judged`. No sign-in and no install ends this one. The first two are written by hand, and the refusal prints the command that declares a judge |
 
 **One of those is unverified here.** `host.sh` also sends `GIT_AUTHOR_NAME` and `GIT_AUTHOR_EMAIL`
@@ -213,7 +214,7 @@ into the container, and join reads `git config`. Whether the second sees the fir
 driven on this machine. **Setting the identity on the clone answers it either way.**
 
 Everything else it prints is a report, and reports never stop it. They are the home, the authority,
-the work source, what the repository declares, and the skills its rules name.
+the work source whenever one answers, what the repository declares, and the skills its rules name.
 
 **`joined.` is not *installed*.** Join reports the plugins a rule names, and refuses on none of
 them. So a host with all three missing ends `joined.` all the same. On a fresh keys store, join's

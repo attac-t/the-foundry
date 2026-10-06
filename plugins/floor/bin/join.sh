@@ -2,9 +2,8 @@
 #
 # Join this host to a repository that already carries Foundry.
 #
-# Seven things stand between a clean machine and a working system, and four are silent
-# when wrong: no `gh` picks a different source, no git identity fails at commit, no
-# `FOUNDRY_WHO` names the authority, and a rule can name a skill nobody reaches.
+# Seven things stand between a clean machine and a working system, and three are silent when wrong:
+# no git identity fails at commit, no `FOUNDRY_WHO` names the authority, and a rule can name a skill nobody reaches.
 #
 # It reports and exits. Nothing here is a daemon, nothing is installed, and nothing is written to the
 # repository — the repository already says what may be graded, delivered and required.
@@ -30,6 +29,7 @@ main() {
     report_skills_the_rules_name
     report_plugins_this_host_has
 
+    refuse_without_a_work_source
     refuse_without_what_a_run_needs
     say "joined."
 }
@@ -122,12 +122,27 @@ run_home() { sh "$(dirname "$0")/run.sh" home 2>/dev/null; }
 #
 report_work_source() {
     say "who     $FOUNDRY_WHO"
-    say "source  $(sh "$(source_resolver)" serves 2>/dev/null)"
+
+    source_said=$(sh "$(source_resolver)" serves 2>/dev/null); source_answered=$?
+    say_the_source "$source_said"
 }
 
 # The same file `run.sh` asks, and the same override. Core names no provider, so it
 # asks whatever resolver is installed and prints the sentence back.
 source_resolver() { printf '%s' "${FOUNDRY_SOURCE:-$(dirname "$0")/../lib/source.sh}"; }
+
+# The resolver's words, each line after the first set under the column.
+say_the_source() { printf '%s\n' "$1" | awk 'NR == 1 { print "source  " $0; next } { print "        " $0 }'; }
+
+# 3 is the resolver's *nothing answers*, and a run made here stops at its first call to the source.
+# Any other code is a report. 2 is a resolver with no `serves`, as the directory adapter is.
+refuse_without_a_work_source() {
+    [ "$source_answered" -eq 3 ] || return 0
+
+    say ""
+    say "not joined. No work source can be asked here, so a run would stop at its first call to one."
+    exit 1
+}
 
 #
 # The repository's half, printed beside the host's own. `.foundry/practice` states
@@ -184,8 +199,8 @@ count_judges() {
 # Three of the six absences stop a run, and `run.sh` says so in its own codes: no gates and
 # `authorise` exits 8, no judges and `judged` exits 8, no grants and `deliver` exits 18.
 #
-# **The other three are reports and must stay reports.** No path in `run.sh` reads `.claude/rules`
-# or `plugins/`, and `source` names an adapter rather than an absence.
+# **The other three are reports, but for one answer.** No path in `run.sh` reads `.claude/rules` or
+# `plugins/`. `source` names an adapter, and the 3 saying none answers is refused apart, at 1.
 #
 # `run.sh:4762` carries this repository's account of the same fault one stage later — *silence read
 # as success. Derive on a repository declaring no gates wrote an empty charter and said nothing.*
