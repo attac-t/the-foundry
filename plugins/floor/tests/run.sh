@@ -2528,6 +2528,11 @@ wreck_runner "a selection written into the evidence ledger is caught" \
 wreck_runner "a selector invented when nobody is named is caught" \
   inventedwho 's#${FOUNDRY_WHO:-$(git config user.email 2>/dev/null)}#${FOUNDRY_WHO:-nobody}#'
 
+# Only a pass sets the second its label went on. A run made by hand that takes one from its
+# environment stamps a moment nobody selected it in. #1073.
+wreck_runner "a run made by hand that stamps a second its environment held is caught" \
+  stampenv 's#^unset label_went_on$#:#'
+
 wreck_runner "a gate that eats the gates after it is caught" \
   eatstdin 's#why=$("$@" </dev/null 2>&1)#why=$("$@" 2>\&1)#'
 
@@ -2997,7 +3002,7 @@ wreck_runner "a suite that keeps what a pass left it is caught" \
   passkept 's#^unset FOUNDRY_PASS_.*#:#' tests/model.sh
 
 wreck_runner "a selection exported to everything the pass runs is caught" \
-  passunwho 's#^answer_to_the_applier() { unset FOUNDRY_WHO; FOUNDRY_WHO=\$(applier_of "\$1" "\$2"); }$#answer_to_the_applier() { FOUNDRY_WHO=$(applier_of "$1" "$2"); export FOUNDRY_WHO; }#'
+  passunwho 's#^answer_to_the_applier() { unset FOUNDRY_WHO; read_the_applier "\$(offered_line_of "\$1" "\$2")"; }$#answer_to_the_applier() { read_the_applier "$(offered_line_of "$1" "$2")"; export FOUNDRY_WHO; }#'
 
 wreck_runner "a pin exported to every gate and judge is caught" \
   passexport 's#^pin_this_run() { unset FOUNDRY_RUN; FOUNDRY_RUN=\$dir; }$#pin_this_run() { FOUNDRY_RUN=$dir; export FOUNDRY_RUN; }#'
@@ -3034,8 +3039,29 @@ wreck_runner "a pass that stops on a judge that approved is caught" \
 wreck_runner "a pass that calls a refused delivery delivered is caught" \
   passdeliver '/^carry_it_to_a_request() {/,/^}/s#^    ( deliver "\$2" ) >/dev/null || stop_at "\$1" deliver "\$?"$#    ( deliver "$2" ) >/dev/null#'
 
-wreck_runner "a pass whose run answers to nobody is caught" \
-  passwho 's#^answer_to_the_applier() { .*}$#answer_to_the_applier() { :; }#'
+# The hand's read alone, so the run is still made, with the label's second, and answers to git's address.
+wreck_runner "a pass whose run answers to the checkout's git address, not the label's hand, is caught" \
+  passwho 's#^    FOUNDRY_WHO=\$(printf .%s\\n. "\$1" | cut -f3)$#    :#'
+
+#
+# **A pass's run says when the work was asked for**, from the line the offer gave the item it took, and
+# a label whose time is not UTC to the second is never offered. One break per way it could be false. #1073.
+#
+wreck_runner "a pass that stamps the second it began is caught" \
+  passnow 's#^selected_at() { .*}$#selected_at() { date -u +%Y-%m-%dT%H:%M:%SZ; }#'
+
+wreck_runner "a pass that stamps the first offered line's second is caught" \
+  passfirst 's#label_went_on=\$(printf .%s\\n. "\$1" | cut -f2)#label_went_on=$(printf "%s\\n" "$items" | head -n 1 | cut -f2)#'
+
+wreck_runner "a label whose time is not UTC to the second, offered anyway, is caught" \
+  offertime '/^kept_by_who_put_it_on() {/,/^}/s#^        !utc_to_the_second(\$2) {#        0 {#'
+
+# The number match came back as `+ 0`, so it is a number match whatever an awk makes of a `-v` value.
+wreck_runner "a pass that reads another item's line when two ids are one number is caught" \
+  passnumber '/^offered_line_of() {/s#\$1 "" == ENVIRON\["item"\] ""#$1 + 0 == ENVIRON["item"] + 0#'
+
+wreck_runner "a pass that stamps its own second when its read comes back empty is caught" \
+  passnosecond '/^leave_with_no_second() {/,/^}/s#^    \[ -n "\${label_went_on:-}" \] && return 0$#    return 0#'
 
 #
 # **An item a request is open for is not offered, and every run a pass makes holds a line.** One
