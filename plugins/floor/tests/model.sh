@@ -12137,7 +12137,6 @@ the_offer_reads_the_same_from_github
 #
 GH_CALLS_FLOOR_MAKES='gh api
 gh api user
-gh auth status
 gh issue comment
 gh issue list
 gh issue view
