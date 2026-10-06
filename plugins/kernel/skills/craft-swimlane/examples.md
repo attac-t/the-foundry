@@ -33,6 +33,9 @@ That is the scenario. Not *the system*. It has a start, an end, and a question a
        │                                        (what passed,
        │                                         what did not)
        │                                             │
+       │                    boxes ticked ◀───── tick what held,
+       │                         │               against its check
+       │                         │                   │
        │                    delivery ◀───── a brief, and
        │                    opened            the item it answers
        │                         │
@@ -40,12 +43,8 @@ That is the scenario. Not *the system*. It has a start, an end, and a question a
   read the brief ◀───────────────┤
   and the diff                   │
        │                         │
-       ├─── merge ──────────────▶│
-       │    (the change lands)   │
-       │                         │
-       └─── tick the boxes ─────▶ item closed
-            (a person reads
-             the list)
+       └─── merge ──────────────▶ item closed
+            (the change lands)
 ```
 
 ## What the drawing shows that a flow could not
@@ -54,9 +53,9 @@ That is the scenario. Not *the system*. It has a start, an end, and a question a
 know what was checked reads the run's own account of it. That gap is why a brief carries the
 evidence rather than pointing at it.
 
-**Two arrows leave `PERSON` at the end, not one, and neither is acceptance.** Merging lands the
-change. Ticking the boxes says the item's own list was met. A merge that skips the second closes an
-issue nobody checked.
+**Ticking sits in `RUN`, not in `PERSON`.** The worker that did the work reads the list and ticks
+what held, against the check that proves it. `.claude/rules/closing.md` owns that rule. A tick says
+a box held, so a merge that lands before the ticking closes an issue nobody checked.
 
 **A merge is not a yes.** It moves the work into the trunk. Whether the outcome was wanted is a
 separate act, recorded separately, by a named person. Drawing merge as acceptance is how a run comes
@@ -90,7 +89,7 @@ If a redraw were needed, the drawing would have been of GitHub, not of Foundry.
 | Question | From the drawing |
 |---|---|
 | who acts at each step? | four lanes, and every action sits in one |
-| who decides? | the person. Merging is not one of the two |
+| who decides? | the person. Neither a merge nor a tick is that |
 | what crosses each boundary? | every arrow is labelled. None is bare |
 | where does a person get stuck? | at the brief, because the bar never speaks to them |
 

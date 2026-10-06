@@ -138,10 +138,14 @@ ready or done. If `Observed` is old, the row is a memory, not a fact.
 
 - accept a goal, which makes it current
 - answer anything in `Decide`
-- tick a `## Done when` box, which is what lets an issue close
+- accept an outcome, which nothing else here can do
 
-**A merge is not acceptance.** It lands a change. Whether the outcome was wanted is a separate act,
-recorded separately, with your name on it.
+**A worker ticks a `## Done when` box**, against the check that proves it.
+[`.claude/rules/closing.md`](../.claude/rules/closing.md) owns that rule, and a box that will not
+tick keeps the issue open.
+
+**Neither a tick nor a merge is acceptance.** A tick says a box held. A merge lands a change. Whether
+the outcome was wanted is a separate act, recorded separately, with your name on it.
 
 ---
 
