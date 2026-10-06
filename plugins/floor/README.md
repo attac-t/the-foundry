@@ -2420,6 +2420,9 @@ any other shape, is dropped and said, and the rest are still read. **A source th
 refused by name, 27**, in the one place core asks for either, and a `speaker` that cannot say stops the
 read at 20.
 
+**Every `source` verb refuses at 6 outside the run's own repository**, before the source is asked,
+and names both repositories. Asked from another checkout, that checkout's source answered for the run,
+and a delivery it took was one `deliver` later returned without asking. #1132.
 
 ### An absence is observed, never assumed
 

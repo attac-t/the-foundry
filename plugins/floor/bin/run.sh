@@ -17,7 +17,8 @@
 #   4  a target was refused: no portable identity, or a ref that is not one
 #   5  a target was refused: nobody authorised it for this run
 #   6  a clause was refused: it would weaken the charter, its pin could not be captured, or the run
-#      would derive from an artifact it changed — including a run that recorded no base
+#      would derive from an artifact it changed — including a run that recorded no base. Or floor
+#      stands outside the run's own repository, where a verb would read or ask the wrong one
 #   7  the charter cannot be run against as it stands — something drifted, went missing, holds
 #      together with nothing, or is pinned to a repository this is not
 #   8  the charter gives this stage nothing to run — it holds no clause, none that pins a gate, or
@@ -9555,9 +9556,13 @@ refuse_a_proposal_with_no_row() {
 # The rename guard, because a question's identity is the run's name: a renamed run derives a
 # different question and asks a human the same thing twice.
 #
+# **The repository guard, as `derive` has.** Asked from another checkout, that checkout's source
+# answered for this run, and a delivery it took was one `deliver` later returned unasked. #1132.
+#
 work_source() {
     dir=$(active_run) || exit 1
     refuse_renamed_run "$dir"
+    refuse_wrong_repository "$dir"
     refuse_missing_source
 
     case "${1:-}" in

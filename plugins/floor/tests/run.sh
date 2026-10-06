@@ -3335,6 +3335,10 @@ wreck_runner "a directory answering a GitHub remote with no gh is caught" \
 wreck_runner "a GitHub adapter answering a missing gh with 2 is caught" \
   ghtwo '/^command -v gh/s#exit 3#exit 2#' lib/source-github.sh
 
+# A `source` verb asked from another checkout, so that checkout's source answers for the run.
+wreck_runner "a source verb asked from outside the run's repository is caught" \
+  sourceanywhere '/^work_source() {/,/^}/s#^    refuse_wrong_repository "$dir"$#    :#'
+
 wreck_runner "a question rewritten under a human is caught" \
   dirwords 's#same_question "$file" "$3" || return 4#:#' lib/source-dir.sh
 

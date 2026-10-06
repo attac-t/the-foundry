@@ -12599,6 +12599,38 @@ a_pass_with_no_gh_stops_at_its_first_source_call() {
 }
 a_pass_with_no_gh_stops_at_its_first_source_call
 
+# A run's verbs, asked from a checkout of another repository, through the resolver as a host would ask.
+from_outside() {
+  local named=$1; shift
+  ( cd "$tmp/srcout" && FOUNDRY_HOME="$home" FOUNDRY_RUN="$named" FOUNDRY_WHO="" FOUNDRY_SOURCE= \
+      sh "$runner" "$@" 2>&1 )
+}
+
+# **Refused at 6, before the source is asked, as `derive` already is.** A record `source publish`
+# wrote from elsewhere is one `deliver` later returns unasked. #1132.
+a_source_verb_outside_the_runs_repository_refuses() {
+  make_repo "$tmp/srcin" main && set_origin "$tmp/srcin" 'https://github.com/acme/srcin.git' \
+    && make_repo "$tmp/srcout" main && set_origin "$tmp/srcout" 'https://gitlab.com/acme/srcout.git' \
+    || { skip "a source verb from outside — git could not make a repo here"; return; }
+
+  mkdir -p "$src/items" && printf 'Publish it from somewhere else\n' > "$src/items/1133"
+  srcin_run=$(floor "$tmp/srcin" new "Inside")
+  floor "$tmp/srcin" source read 1133 >/dev/null 2>&1
+
+  said=$(from_outside "$srcin_run" source publish work/outside 'From outside'; printf 'exit=%s' "$?")
+  has    "source publish from outside the run's repository is refused, 6" "$said" "exit=6"
+  has    "and names the run's repository"                                  "$said" "inside [https://github.com/acme/srcin.git]"
+  has    "and the one floor stands in"                                     "$said" "not [https://gitlab.com/acme/srcout.git]"
+  absent "and leaves no delivery for deliver to return"                    "$srcin_run/delivery"
+  absent "and the source there was never asked to take one"                "$src/deliveries/$(basename "$srcin_run")"
+
+  local asked
+  for asked in 'read 1133' kind 'ask authorisation tests May-it' 'receive authorisation tests'; do
+    is "source $asked from outside is refused too, 6" "$(code_of from_outside "$srcin_run" source $asked)" "6"
+  done
+}
+a_source_verb_outside_the_runs_repository_refuses
+
 # A `gh` that is there and signed out. Every call answers on stderr in `gh`'s words, and fails.
 signed_out_gh() {
   mkdir -p "$1" || return 1
