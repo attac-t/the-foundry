@@ -6,8 +6,13 @@ An issue closes when its own list says it may.
 
 ## Every box, ticked
 
-**Read the whole `## Done when` list before closing anything.** Tick what holds, against the check
-that proves it. What does not hold keeps the issue open, or moves to an issue that owns it.
+**The worker ticks.** Whoever did the work reads the whole `## Done when` list before closing
+anything, and ticks what holds, against the check that proves it. What does not hold keeps the issue
+open, or moves to an issue that owns it.
+
+**So do not wait for a person to tick.** What a person still owns is acceptance — whether the outcome
+was wanted — and [`docs/work-system.md`](../../docs/work-system.md) says the same. **A tick is not
+that.** It says a box held.
 
 Closed with an unticked box is a lie the tree tells the next reader. It is worse than an open issue,
 because nobody looks again.

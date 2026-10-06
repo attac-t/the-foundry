@@ -818,13 +818,15 @@ is     "and asking for it exits 1" "$(code_of floor "$tmp/bare" bootstrap)" "1"
 # begins, and it is not evidence — it names no clause, so it can satisfy none.
 #
 the_selection_is_stamped() {
+  # The second a pass reads from its label, left in the environment. A run made by hand stamps its own.
   chose=$( cd "$tmp/bare" 2>/dev/null || exit 9
-           FOUNDRY_HOME="$home" FOUNDRY_RUN="" FOUNDRY_WHO="ada@example.com" \
+           FOUNDRY_HOME="$home" FOUNDRY_RUN="" FOUNDRY_WHO="ada@example.com" label_went_on=2001-01-01T00:00:00Z \
            sh "$runner" new "Chosen" 2>/dev/null )
 
   held=$(cat "$chose/authority" 2>/dev/null)
   matches "the selection names when, who, and the run it authorised" \
           "$held" "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:]+Z	ada@example.com	$(basename "$chose")$"
+  lacks "and when is the second new ran, never one its environment held" "$held" "2001-01-01T00:00:00Z"
   is "three fields, where evidence has seven" \
      "$(printf '%s\n' "$held" | awk -F'\t' 'NF != 3' | grep -c .)" "0"
   is "and it is not in the ledger completion reads" "$(cat "$chose/evidence" 2>/dev/null)" ""
@@ -5208,6 +5210,45 @@ bar_and_rule() {
 a_pass_takes_the_first_item_nobody_holds
 
 #
+# **A pass's run says when the work was asked for**: the second its label went on, beside the hand
+# that put it on, both from the one line the offer gave the item. #1073.
+#
+# The item taken sits behind one another host holds and before one it does not, and no other line
+# holds its hand or its second, so a stamp read from any other line is not this one. One label went
+# on at a forge's milliseconds, and the offer drops it before any claim, and names it.
+#
+a_pass_says_when_the_work_was_asked_for() {
+  make_repo "$tmp/whenasked" main && set_origin "$tmp/whenasked" 'https://gitlab.com/acme/whenasked.git' \
+    || { skip "when the work was asked for — git could not make a repo here"; return; }
+
+  mkdir -p "$src/items" "$src/labels" "$src/claims/1701"
+  for n in 1701 1702 1703 1704; do printf 'Asked item %s\n' "$n" > "$src/items/$n"; done
+  printf 'asked\t2026-09-01T00:00:00Z\tpat\n'     > "$src/labels/1701"
+  printf 'asked\t2026-09-03T09:52:09Z\tquinn\n'   > "$src/labels/1702"
+  printf 'asked\t2026-09-05T00:00:00Z\tpat\n'     > "$src/labels/1703"
+  printf 'asked\t2026-08-01T00:00:00.077Z\tpat\n' > "$src/labels/1704"
+  printf '2026-01-01T00:00:00Z\tOtherHost\t%s\n' "$(date -u +%s)" > "$src/claims/1701/held"
+  bar_and_rule "$tmp/whenasked" 'offer asked pat quinn'
+
+  offered=$(floor "$tmp/whenasked" offer)
+  is  "a label that went on at a forge's milliseconds is not offered, and the rest are, oldest first" \
+      "$(printf '%s\n' "$offered" | cut -f1 | tr '\n' ' ')" "1701 1702 1703 "
+  has "and the offer names it, with the shape that would offer it" "$(floor_says "$tmp/whenasked" offer)" \
+      "[1704] is not offered: [asked] went on at [2026-08-01T00:00:00.077Z], which is not UTC to the second, YYYY-MM-DDTHH:MM:SSZ"
+  is  "and no other line offered holds the hand or the second of the item a pass will take" \
+      "$(printf '%s\n' "$offered" | grep -c -e quinn -e 2026-09-03T09:52:09Z)" "1"
+
+  is  "a pass passes over the item another host holds, and begins a run for the next" \
+      "$(code_of floor "$tmp/whenasked" pass)" "44"
+  asked_run=$(floor "$tmp/whenasked" path)
+  is  "and the run answers to the hand that put the label on, from the second it went on" \
+      "$(cat "$asked_run/authority" 2>/dev/null)" "$(printf '2026-09-03T09:52:09Z\tquinn\t%s' "$(basename "$asked_run")")"
+
+  for n in 1701 1702 1703 1704; do rm -rf "$src/claims/$n" "$src/labels/$n" "$src/items/$n"; done
+}
+a_pass_says_when_the_work_was_asked_for
+
+#
 # **Two hosts pass at once, and each takes a different item.** The claim is the one step both go
 # through, so the host that loses an item is refused it and takes the next. #884 asked for this.
 #
@@ -8139,6 +8180,53 @@ a_released_item_is_taken_again() {
   rm -rf "$src/claims/592" "$src/labels/592" "$src/items/592"
 }
 a_released_item_is_taken_again
+
+#
+# **Two ids that are one number are two items.** A pass finds the line it took by the id as text, so
+# `01705` never reads `1705`'s hand or second, the way `07` once read `7`'s. #1073's build review.
+#
+a_pass_tells_two_ids_of_one_number_apart() {
+  a_resumable_repo onenumber 1705 && a_second_checkout_of onenumber \
+    || { skip "two ids of one number — git could not make a repo here"; return; }
+  printf 'Resumed item 01705\n' > "$src/items/01705"
+  printf 'onenumber\t2026-09-20T00:00:00Z\tpat\n' > "$src/labels/01705"
+
+  is  "a pass takes 1705, whose label went on first" "$(resume_in "$tmp/onenumber")" "44"
+  is  "and a pass from another checkout takes 01705" "$(resume_in "$tmp/onenumber-outside")" "44"
+
+  first=$(floor "$tmp/onenumber" path)
+  second=$(floor "$tmp/onenumber-outside" path)
+  is  "the run for 1705 answers to its own line" "$(cat "$first/authority" 2>/dev/null)" \
+      "$(printf '2026-09-19T00:00:00Z\tpat\t%s' "$(basename "$first")")"
+  is  "and the run for 01705 to its own, never to 1705's" "$(cat "$second/authority" 2>/dev/null)" \
+      "$(printf '2026-09-20T00:00:00Z\tpat\t%s' "$(basename "$second")")"
+
+  for n in 1705 01705; do rm -rf "$src/claims/$n" "$src/labels/$n" "$src/items/$n"; done
+}
+a_pass_tells_two_ids_of_one_number_apart
+
+#
+# **A pass never stamps its own second.** A read that comes back empty stops it before any run, with
+# `make_run`'s code for an empty clock, and its wake says why. #1073's build review.
+#
+# The stub answers `cut -f2` with nothing and succeeds, which is what a failed fork hands a substitution.
+#
+a_pass_that_reads_no_second_begins_no_run() {
+  a_resumable_repo nosecond 1706 || { skip "a second read empty — git could not make a repo here"; return; }
+  mkdir -p "$tmp/nosecondbin"
+  printf '#!/bin/sh\n[ "${1:-}" = -f2 ] && exit 0\nexec %s "$@"\n' "$(command -v cut)" > "$tmp/nosecondbin/cut" \
+    && chmod +x "$tmp/nosecondbin/cut" || { skip "a second read empty — could not put a cut on the path"; return; }
+
+  said=$(PATH="$tmp/nosecondbin:$PATH" floor_says "$tmp/nosecond" pass)
+  has "a pass whose second reads empty says so, and begins no run" "$said" \
+      "the offer's line for [1706] gave no second, so this pass begins no run"
+  has "and its wake ends there, with make_run's code for an empty read" "$(last_wake_line ended)" \
+      "read=no-second:1706 code=2"
+  is  "and its checkout points at no run" "$(code_of floor "$tmp/nosecond" path)" "1"
+
+  rm -rf "$src/claims/1706" "$src/labels/1706" "$src/items/1706"
+}
+a_pass_that_reads_no_second_begins_no_run
 
 #
 # **A change to either setting reaches the next pass's record.** The host names the cadence, the
