@@ -4799,6 +4799,144 @@ wreck_runner "a body that ignores its setting is caught" \
 wreck_runner "a setting nobody can read that is kept silent is caught" \
   bodytypo 's@^    note "the practice says \[body \$form\].*@    :@'
 
+# The body reaches `gh` in a file. `$(cat)` reads it off the pipe and hands it back as one argument.
+wreck_runner "a body handed to gh as one argument is caught" \
+  ghbodyarg 's@ --title "\$4" --body-file -@ --title "$4" --body "$(cat)"@' lib/source-github.sh
+
+#
+# **Beside each judge, the worker `run.began` recorded.** #1076. One break per rule: nothing beside the
+# judge, the worker read from the shell, the half saying nothing checked, and a name cut at a space.
+#
+wreck_runner "a judge named without the worker its run began with is caught" \
+  workerunnamed 's@ "\$(worker_beside_a_judge "\$1")";@ "";@'
+
+wreck_runner "a worker read from the shell rather than the record is caught" \
+  workerfromenv 's@^recorded_worker() {@recorded_worker() { worker; return 0;@'
+
+wreck_runner "a run with no worker that never says nothing checked is caught" \
+  workerunchecked 's@, so nothing checked that its judge did not write the work@@'
+
+wreck_runner "a worker read to its first space is caught" \
+  workerword 's@if (at) print substr(\$4, at + 8)@if (at) { split(substr($4, at + 8), word, " "); print word[1] }@'
+
+# #1076 under *run*: the worker line goes, so status is silent until a panel clause is met.
+wreck_runner "a status that names no worker under run is caught" \
+  statusworker '/^say_the_run() {/,/^}/s@^    printf .worker    %s.*@    :@'
+
+#
+# **With no brief, the commit's message stands where the brief would.** #1077. One break per rule: no
+# message, a message unfenced, the old note, no count, and the wrong commit's message. Then the brief.
+#
+wreck_runner "a request with no brief that carries no message is caught" \
+  messagenone 's@^    carry_the_text "\$1" message "Its commit.s message"$@    :@'
+
+wreck_runner "a message carried unfenced is caught" \
+  messageunfenced 's@^    carry_the_text "\$1" message "Its commit.s message"$@    cat "$1/message"@'
+
+wreck_runner "a deliver that still says it carries floor's words alone is caught" \
+  messagenote 's@^    note "no brief, so this delivery carries its commit.s message.*@    note "no brief"@'
+
+wreck_runner "a request that never says how many commits its message is the last of is caught" \
+  countnone 's@^    say_how_many_it_is_the_last_of "\$1" "\$2" "\$3"$@    :@'
+
+wreck_runner "a request carrying an earlier commit's message is caught" \
+  countfirst 's@log -1 --format=%B "\$2"@log -1 --format=%B "$2~1"@'
+
+wreck_runner "a request handed a brief that carries the message too is caught" \
+  briefandmessage 's@{ cat "\$(brief_file "\$1")"; return 0; }@{ cat "$(brief_file "$1")"; }@'
+
+wreck_runner "a body set to brief that carries nothing when it has no brief is caught" \
+  briefformbare 's@^the_parts_of_the_body() {@the_parts_of_the_body() { [ "$(body_form_at_base "$1")" = brief ] \&\& [ ! -f "$(brief_file "$1")" ] \&\& return 0;@'
+
+#
+# **Below the record, what each judge found.** #1075. One break per rule: no section, one judge of a
+# panel, a fence inside the list's indent, the verdict line kept, and no worker beside the judge.
+#
+wreck_runner "a request that carries nothing a judge found is caught" \
+  foundnone 's@^    what_each_judge_found "\$1" "\$2"$@    :@'
+
+wreck_runner "a panel carried one judge short is caught" \
+  foundfirstjudge 's@^        what_one_judge_found "\$1" "\$2" "\$judged_by" "\$3"$@        what_one_judge_found "$1" "$2" "$judged_by" "$3"; break@'
+
+wreck_runner "a fence set in from the left margin is caught" \
+  foundindented '/^fence_the_lines() {/,/^}/{ s@printf .%s\\n. "\$backticks"@printf "  %s\\n" "$backticks"@; s@{ print }@{ print "  " $0 }@; }'
+
+wreck_runner "a report carried with its verdict line is caught" \
+  foundverdict 's@^lines_above_its_verdict() {@lines_above_its_verdict() { awk "END { print NR }" "$1"; return;@'
+
+wreck_runner "a judge named without the worker beside it is caught" \
+  workerheading 's@ "\$(worker_beside_a_judge "\$1")"$@@'
+
+# A report is carried only as its receipt stamped it, and one with nothing to carry is one line.
+wreck_runner "a report changed since its receipt that is carried is caught" \
+  stampunchecked 's@^    stamped_as_it_stands "\$1" "\$2" "\$3" || .*@    :@'
+
+# A report last asked about a commit the head has left, carried as though it were about the one delivered.
+wreck_runner "a report last asked about another commit that is carried is caught" \
+  candidatecheck 's@^    \[ "\$last_asked" = "\$4" \] || .*@    :@'
+
+wreck_runner "a report with nothing above its verdict that is fenced anyway is caught" \
+  nothingabove 's@^    anything_in_the_first "\$1/\$report_at" "\$above_verdict" \\$@    true \\@'
+
+wreck_runner "a receipt with no report beside it read as a report that moved is caught" \
+  noreportline 's@^    \[ -f "\$1/\$report_at" \] || .*@    :@'
+
+wreck_runner "a judge with no receipt read as one missing a report is caught" \
+  noreceiptline 's@^    \[ -f "\$(receipt_for "\$1" "\$2" "\$3")" \] || .*@    :@'
+
+#
+# **A text naming this host is withheld whole.** #1075. One break per rule: no home, no home as `HOME`
+# holds it, no drive spelling, case compared, no address, a home of `/`, and the line's absolute path.
+#
+wreck_runner "a text holding this host's home that is carried is caught" \
+  withholdhome 's@^    home_spellings=\$(spellings_of_the_home)$@    home_spellings=@'
+
+wreck_runner "a home compared only in its drive spellings is caught" \
+  withholdasis 's@{ print; back = @{ back = @'
+
+wreck_runner "a home compared only as HOME holds it is caught" \
+  withholddrive 's@^        drive != "" {$@        drive == "never" {@'
+
+# `/mnt/c/…` has no spelling of its own: it holds `/c/…`, the one a drive home is also written as.
+wreck_runner "a home on a drive never compared as /c/ is caught" \
+  withholdmsys 's@print "/" drive rest; @@'
+
+wreck_runner "a home compared with its case is caught" \
+  withholdcase 's@said = tolower(\$0)@said = $0@; s@index(said, tolower(name\[i\]))@index(said, name[i])@'
+
+wreck_runner "a text holding an address its commits carry that is carried is caught" \
+  withholdaddress 's@^    commit_addresses=\$(addresses_its_commits_carry .*@    commit_addresses=@'
+
+wreck_runner "a home of / that withholds every text is caught" \
+  withholdslash 's@length(\$0) < 2 { exit }@length($0) < 1 { exit }@'
+
+wreck_runner "a withheld line naming an absolute path is caught" \
+  withheldpath '/^say_it_is_withheld() {/,/^}/s@"\$3" "\$4" "\$2"@"$3" "$4" "$1/$2"@'
+
+# No line leaves its fence: three backticks always, or no more than the longest run the text holds.
+wreck_runner "a fence of three around a longer backtick run is caught" \
+  fencethree 's@n = (longest < 3 ? 3 : longest + 1)@n = 3@'
+
+wreck_runner "a fence no longer than the run it holds is caught" \
+  fenceequal 's@longest < 3 ? 3 : longest + 1@longest < 3 ? 3 : longest@'
+
+# The bounds: none on one text, none on all of them together, and a cut naming an absolute path.
+wreck_runner "a text carried past its own bound is caught" \
+  cutone 's@^CARRIED_ONE=16000$@CARRIED_ONE=99999@'
+
+wreck_runner "texts carried past the bound on all of them is caught" \
+  cutall 's@^    carried_bytes=\$((carried_bytes + fitting_bytes + fence_bytes))$@    :@'
+
+# The cap: texts sized as though the brief and the record took nothing, and fences left uncounted.
+wreck_runner "texts that ignore what the brief and the record take of the cap are caught" \
+  sharednone 's@^    carried_cap=\$(room_under_the_cap .*@    carried_cap=$CARRIED_ALL@'
+
+wreck_runner "fences left out of what the texts share are caught" \
+  fencesuncounted 's@^    \[ "\$fitting" -gt 0 \] || fence_bytes=0$@    fence_bytes=0@'
+
+wreck_runner "a cut naming an absolute path is caught" \
+  cutpath '/^say_it_was_cut() {/,/^}/s@"\$3" "\$4" "\$2"@"$3" "$4" "$1/$2"@'
+
 #
 # **A member who answered here is not asked again.** Piece 5b-i. Each break removes the skip, the
 # count of what a skipped member holds, the check of the charter's version, the check that an answer

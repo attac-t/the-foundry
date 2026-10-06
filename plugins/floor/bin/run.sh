@@ -2699,6 +2699,9 @@ record_the_deadlock() {
 brief_for()   { printf '%s/judged/%s-%s.brief' "$1" "$2" "$(path_safe "$3")"; }
 receipt_for() { printf '%s/judged/%s-%s.receipt' "$1" "$2" "$(path_safe "$3")"; }
 
+# The report an adapter writes beside the receipt, named from inside the run so a reader can find it.
+report_inside() { printf 'judged/%s-%s.report' "$1" "$(path_safe "$2")"; }
+
 # A member's name reaches a path and a repository writes it. Every member carries a colon, which
 # Windows refuses in a filename and Git Bash rewrites in `rev:path`, and nothing stops a declaration
 # writing a slash. So a checksum stands in the path and the name itself sits in the receipt, on the
@@ -3249,6 +3252,7 @@ say_the_run() {
     printf 'run       %s\n' "$(recorded_id "$1")"
     printf 'item      %s\n' "$(or_none "$(item_id "$1" 2>/dev/null)")"
     printf 'delivery  %s\n' "$(or_none "$(recorded_delivery "$1")")"
+    printf 'worker    %s\n' "$(the_worker_it_began_with "$1")"
 }
 
 or_none() { [ -n "$1" ] || { printf 'none'; return 0; }; printf '%s' "$1"; }
@@ -5621,7 +5625,7 @@ brief_file() { printf '%s/brief' "$1"; }
 # at the moment that it applies is a skill that nobody ever invokes,
 # and this is the very last moment that a delivery has to say so.
 say_what_a_brief_is() {
-    note "no brief, so this delivery carries floor's words alone"
+    note "no brief, so this delivery carries its commit's message where a brief would stand"
     note "  floor:brief names the five shapes a human surface takes"
 }
 
@@ -5630,18 +5634,30 @@ say_what_a_brief_is() {
 # from the run, the charter, the evidence and the commit, **and the body is a setting.**
 #
 # The brief comes first, because a reader opens a request to decide, and it is its author's words.
-# The record follows, built only from files the run keeps, so the record cannot say what the run
-# did not record. `$2` is the commit the push sent.
+# With none, the commit's message stands there, #1077. The record follows, built only from files the
+# run keeps, so the record cannot say what the run did not record. Then what each judge found, #1075.
+#
+# `$2` is the commit the push sent, and `$3` the target it went to.
 #
 compose_the_body() {
     body=$(body_file "$1")
 
     # A request is never rewritten, so a second `deliver` keeps the body it carries.
     delivered_already "$1" >/dev/null && return 0
-    [ "$(body_form_at_base "$1")" = brief ] && { the_brief_alone "$1" > "$body"; return 0; }
+    keep_the_message "$1" "$2" "$3"
+    ready_to_carry "$1" "$2" "$3"
 
-    { cat "$(brief_file "$1")" 2>/dev/null; what_floor_recorded "$1" "$2"; } > "$body" \
-        || die_unwritable "$body"
+    the_parts_of_the_body "$1" "$2" "$3" > "$body" || die_unwritable "$body"
+}
+
+# The brief, or the message where it would stand. Then, unless the body is set to brief, the record
+# and what each judge found.
+the_parts_of_the_body() {
+    what_stands_first "$1" "$2" "$3"
+    [ "$(body_form_at_base "$1")" = brief ] && return 0
+
+    what_floor_recorded "$1" "$2"
+    what_each_judge_found "$1" "$2"
 }
 
 #
@@ -5660,9 +5676,44 @@ body_form_at_base() {
     printf 'record\n'
 }
 
-the_brief_alone() { cat "$(brief_file "$1")" 2>/dev/null; return 0; }
-
 body_file() { printf '%s/body' "$1"; }
+
+#
+# The delivered commit's message, kept in the run as a brief is. What the body carried stays with the
+# run, so a line saying where its words went can name a path inside it.
+#
+keep_the_message() {
+    kept_from=$(unit_work_tree "$1" "$3") || return 0
+    kept_message=$(git -C "$kept_from" log -1 --format=%B "$2" 2>/dev/null) || kept_message=
+
+    printf '%s\n' "$kept_message" > "$(message_file "$1")" || die_unwritable "$(message_file "$1")"
+}
+
+message_file() { printf '%s/message' "$1"; }
+
+# The brief, or with none the delivered commit's message where it would stand, fenced. #1077.
+what_stands_first() {
+    [ -f "$(brief_file "$1")" ] && { cat "$(brief_file "$1")"; return 0; }
+
+    carry_the_text "$1" message "Its commit's message"
+    say_how_many_it_is_the_last_of "$1" "$2" "$3"
+}
+
+# One line when more than one commit sits above the base, since only the last one's message is carried.
+say_how_many_it_is_the_last_of() {
+    how_many=$(commits_above_the_base "$1" "$2" "$3")
+    is_a_count "$how_many" && [ "$how_many" -gt 1 ] || return 0
+
+    printf '\n%s commits sit above the base, and the message carried is the last one'\''s.\n' "$how_many"
+}
+
+commits_above_the_base() {
+    above_in=$(unit_work_tree "$1" "$3") || return 0
+    above_from=$(recorded_base "$(unit_workspace "$1")" "$(target_slot "$3")")
+    [ -n "$above_from" ] || return 0
+
+    git -C "$above_in" rev-list --count "$above_from..$2" 2>/dev/null
+}
 
 # The charter by `charter_version`, the digest every handoff row stamps, so a reader can match the
 # request's charter to the one each judge was handed.
@@ -5713,7 +5764,7 @@ clause_and_what_met_it() {
 #
 what_a_clause_stands_on() {
     a_hand_struck_the_clause "$1" "$2" && { each_strike_of "$1" "$2"; return 0; }
-    printf '%s%s%s' "$(what_met "$(charter_file "$1")" "$2")" "$(each_yes_it_stands_on "$1" "$2")" \
+    printf '%s%s%s' "$(what_met "$1" "$2")" "$(each_yes_it_stands_on "$1" "$2")" \
         "$(who_proposed_a_panel_clause "$1" "$2")"
 }
 
@@ -5744,9 +5795,282 @@ each_yes_it_stands_on() {
 each_yes_said() { awk -F'\t' '{ printf "; yes from %s at %s: `%s`", $1, $2, $3 }'; }
 
 what_met() {
-    met_by=$(answerer_of "$1" "$2")
-    [ "$met_by" = panel ] && { printf 'judged by %s' "$(spaced "$(named_judges "$1" "$2")" | sed 's/ /, /g')"; return; }
+    met_by=$(answerer_of "$(charter_file "$1")" "$2")
+    [ "$met_by" = panel ] && { printf 'judged by %s%s' "$(each_judge_of "$1" "$2")" "$(worker_beside_a_judge "$1")"; return; }
     printf '%s' "$met_by"
+}
+
+each_judge_of() { spaced "$(named_judges "$(charter_file "$1")" "$2")" | sed 's/ /, /g'; }
+
+#
+# #1076. The worker `run.began` recorded, and never the one the shell reading it names.
+#
+# A verdict's check reads its own shell, and a pass runs `new` and `judged` in one, so there the two
+# agree. A person can run them in two, and the check may then have held a worker the record never saw.
+#
+worker_beside_a_judge() {
+    began_by=$(recorded_worker "$1")
+    [ -n "$began_by" ] && { printf '; worker %s' "$began_by"; return 0; }
+
+    printf '; this run records no worker, so nothing checked that its judge did not write the work'
+}
+
+# The same, for `status` under *run*, whether or not a panel clause is met yet.
+the_worker_it_began_with() {
+    began_by=$(recorded_worker "$1")
+    [ -n "$began_by" ] && { printf '%s' "$began_by"; return 0; }
+
+    printf 'none recorded, so nothing checked that its judge did not write the work'
+}
+
+# `began_with` writes the field last and on one line, so the rest of the row is the name, spaces too.
+recorded_worker() {
+    awk -F'\t' '$3 == "run.began" { at = index($4, " worker="); if (at) print substr($4, at + 8); exit }' \
+        "$(observations_file "$1")" 2>/dev/null
+}
+
+#
+# **Below the record, what each judge found**, #1075: each judge of a clause a panel met, the worker
+# beside it, then its report fenced at the left margin, or the one line that stands in for it.
+#
+what_each_judge_found() {
+    met_by_panels=$(clauses_a_panel_met "$1")
+    [ -n "$met_by_panels" ] || return 0
+
+    printf '\n**What each judge found.**\n'
+    for panel_met in $met_by_panels; do each_judge_on "$1" "$panel_met" "$2"; done
+}
+
+# `deliver` refused an unmet clause, so a clause a panel answers and no hand struck was met by it.
+clauses_a_panel_met() {
+    for panel_id in $(clause_ids_in "$(charter_file "$1")"); do
+        [ "$(answerer_of "$(charter_file "$1")" "$panel_id")" = panel ] || continue
+        a_hand_struck_the_clause "$1" "$panel_id" || printf '%s\n' "$panel_id"
+    done
+}
+
+# One a line from the charter, and never split by the shell, since a member may be named `*`.
+each_judge_on() {
+    while IFS= read -r judged_by; do
+        [ -n "$judged_by" ] || continue
+        what_one_judge_found "$1" "$2" "$judged_by" "$3"
+    done <<EOF
+$(named_judges "$(charter_file "$1")" "$2")
+EOF
+}
+
+what_one_judge_found() {
+    printf '\n%s on `%s`%s\n\n' "$3" "$(clause_text "$(charter_file "$1")" "$2")" "$(worker_beside_a_judge "$1")"
+    its_report "$1" "$2" "$3" "$4"
+}
+
+#
+# A judge's report, or the one line that stands in for it. It is carried only when its judge was last
+# asked about the commit delivered, `$4`, and as its receipt stamped it. The verdict line stays behind.
+#
+its_report() {
+    report_at=$(report_inside "$2" "$3")
+    [ -f "$(receipt_for "$1" "$2" "$3")" ] || { printf 'No receipt stands for %s here, so no report is carried.\n' "$3"; return 0; }
+    [ -f "$1/$report_at" ] || { printf 'No report stands beside %s'\''s receipt.\n' "$3"; return 0; }
+    last_asked=$(said_in "$(receipt_for "$1" "$2" "$3")" candidate)
+    [ "$last_asked" = "$4" ] || { say_it_was_last_asked_about_another_commit "$1" "$report_at" "$last_asked" "$4"; return 0; }
+    stamped_as_it_stands "$1" "$2" "$3" || { say_it_no_longer_matches "$1" "$report_at"; return 0; }
+
+    above_verdict=$(lines_above_its_verdict "$1/$report_at")
+    anything_in_the_first "$1/$report_at" "$above_verdict" \
+        || { printf '%s'\''s report holds nothing above its verdict.\n' "$3"; return 0; }
+    carry_the_text "$1" "$report_at" "$3's report" "$above_verdict"
+}
+
+# The receipt's `report` is the report's `cksum`, as `digest_of` reads it, so an edit since reads apart.
+stamped_as_it_stands() {
+    stamped_report=$(said_in "$(receipt_for "$1" "$2" "$3")" report)
+    [ -n "$stamped_report" ] && [ "$stamped_report" = "$(digest_of "$1/$(report_inside "$2" "$3")")" ]
+}
+
+say_it_no_longer_matches() {
+    printf 'Its report is not carried: it no longer matches the checksum its receipt stamped. It is `%s` in run `%s`.\n' \
+        "$2" "$(recorded_id "$1")"
+}
+
+# A judge's last round can be at a commit the head has since left. The receipt names that commit before
+# the judge is asked, so the line says asked, never judged: that round may have been killed or unavailable.
+say_it_was_last_asked_about_another_commit() {
+    printf 'Its report is not carried: it was last asked about `%s`, and this request delivers `%s`. It is `%s` in run `%s`.\n' \
+        "$3" "$4" "$2" "$(recorded_id "$1")"
+}
+
+# The verdict line is the last line carrying anything, when it reads `VERDICT: <word>` as the adapters
+# read it. This counts the lines above it, or every line of a report that ends in none.
+lines_above_its_verdict() {
+    awk 'NF { last = NR; said = $0 }
+         END { if (said ~ /^[ \t]*VERDICT:[ \t]*(approve|reject|revise)[ \t]*$/) { print last - 1; exit }
+               print NR }' "$1"
+}
+
+anything_in_the_first() { awk -v upto="$2" 'NR > upto { exit } NF { found = 1; exit } END { exit !found }' "$1"; }
+
+#
+# **The most text a model wrote that one body carries**, in bytes: any one message or report, and all
+# of them together with their fences. No text holds more characters than bytes.
+#
+# They share what the brief, the record and floor's own lines leave under `BODY_CAP`, which keeps room
+# for the source's footer under GitHub's 65,536. Floor never cuts those, so they alone can pass the cap.
+#
+CARRIED_ONE=16000
+CARRIED_ALL=48000
+BODY_CAP=65000
+
+#
+# Once a body: nothing carried yet, each name of this host no carried text may hold, and the room all
+# of them share once the brief, the record and floor's own lines are counted. #1075.
+#
+ready_to_carry() {
+    carried_bytes=0
+    home_spellings=$(spellings_of_the_home)
+    commit_addresses=$(addresses_its_commits_carry "$1" "$2" "$3")
+    carried_cap=$(room_under_the_cap "$(bytes_with_no_text "$1" "$2" "$3")")
+}
+
+# The body with every text a model wrote cut to nothing: the brief, the record and floor's own lines.
+bytes_with_no_text() {
+    ( carried_cap=0 carried_bytes=0; the_parts_of_the_body "$1" "$2" "$3" 2>/dev/null ) | wc -c | tr -d ' '
+}
+
+#
+# What the rest of the body leaves under its cap, never more than the texts' own bound, and never less
+# than nothing. When the rest passes the cap it leaves nothing, and still goes whole, uncut.
+#
+room_under_the_cap() {
+    shared_room=$((BODY_CAP - ${1:-$BODY_CAP}))
+    [ "$shared_room" -lt "$CARRIED_ALL" ] || shared_room=$CARRIED_ALL
+    [ "$shared_room" -gt 0 ] || shared_room=0
+    printf '%s' "$shared_room"
+}
+
+#
+# **One text a model wrote**: its first `$4` lines, or all when that is 0, from `$2` inside the run.
+# Withheld whole when it names this host, and cut where a bound falls. Fenced, so no line escapes.
+#
+carry_the_text() {
+    [ -r "$1/$2" ] || return 0
+
+    withheld_for=$(what_it_names_of_this_host "$1/$2")
+    [ -z "$withheld_for" ] || { say_it_is_withheld "$1" "$2" "$3" "$withheld_for"; return 0; }
+
+    fence_bytes=$(bytes_of_the_fences_for "$1/$2" "${4:-0}")
+    text_measure=$(measure_the_text "$1/$2" "${4:-0}" "$(room_left "$fence_bytes")")
+    fitting=${text_measure%% *} whole_bytes=${text_measure##* } fitting_bytes=${text_measure#* }
+    fitting_bytes=${fitting_bytes%% *}
+    [ "$fitting" -gt 0 ] || fence_bytes=0
+    carried_bytes=$((carried_bytes + fitting_bytes + fence_bytes))
+
+    [ "$fitting" -eq 0 ] || fence_the_lines "$1/$2" "$fitting"
+    [ "$fitting_bytes" -eq "$whole_bytes" ] || say_it_was_cut "$1" "$2" "$fitting_bytes" "$whole_bytes"
+}
+
+# The two fence lines a text needs, measured over all it may carry, so a shorter cut costs no more.
+bytes_of_the_fences_for() {
+    backticks=$(backtick_fence_for "$1" "$2")
+    printf '%s' "$(( (${#backticks} + 1) * 2 ))"
+}
+
+#
+# A text holding this host's home, or an address its commits carry, is withheld whole. Cutting the
+# line would not keep it as its writer wrote it, and a request is never rewritten once it is sent.
+#
+what_it_names_of_this_host() {
+    holds_one_of "$1" "$home_spellings" && { printf "this host's home directory"; return 0; }
+    holds_one_of "$1" "$commit_addresses" && printf 'an address its commits carry'
+    return 0
+}
+
+# Any line of `$2` anywhere in the file, compared without case. An empty line names nothing.
+holds_one_of() {
+    [ -n "$2" ] || return 1
+
+    names=$2 LC_ALL=C awk '
+        BEGIN { n = split(ENVIRON["names"], name, "\n") }
+        { said = tolower($0)
+          for (i = 1; i <= n; i++) if (name[i] != "" && index(said, tolower(name[i]))) { found = 1; exit } }
+        END { exit !found }' "$1"
+}
+
+#
+# This host's home in each spelling floor can form: as `HOME` holds it, and for a drive path each form
+# a tool on Windows writes, `/c/x`, `C:/x`, `C:\x` and `C:\\x`. A home of `/` names none.
+#
+# WSL's `/mnt/c/x` holds `/c/x`, so it is caught with no spelling of its own.
+#
+spellings_of_the_home() {
+    printf '%s\n' "${HOME:-}" | LC_ALL=C awk '
+        function swapped(path, from, to,   out, i, c) {
+            for (i = 1; i <= length(path); i++) { c = substr(path, i, 1); out = out (c == from ? to : c) }
+            return out
+        }
+        length($0) < 2 { exit }
+        { print; back = sprintf("%c", 92) }
+        /^\/[A-Za-z](\/|$)/ { drive = substr($0, 2, 1); rest = substr($0, 3) }
+        /^[A-Za-z]:[\/\\]/ { drive = substr($0, 1, 1); rest = swapped(substr($0, 3), back, "/") }
+        drive != "" {
+            print "/" drive rest; print drive ":" rest
+            print drive ":" swapped(rest, "/", back); print drive ":" swapped(rest, "/", back back)
+        }'
+}
+
+# Each address the delivered commit, and every commit above the base, carries as author and committer.
+addresses_its_commits_carry() {
+    carried_tree=$(unit_work_tree "$1" "$3") || return 0
+    carried_from=$(recorded_base "$(unit_workspace "$1")" "$(target_slot "$3")")
+
+    git -C "$carried_tree" log -1 --format='%ae%n%ce' "$2" 2>/dev/null
+    [ -z "$carried_from" ] || git -C "$carried_tree" log --format='%ae%n%ce' "$carried_from..$2" 2>/dev/null
+}
+
+# What one text may still take: its own bound, or what is left of the room they share less its fences.
+room_left() {
+    room_bytes=$((carried_cap - carried_bytes - ${1:-0}))
+    [ "$room_bytes" -lt "$CARRIED_ONE" ] || room_bytes=$CARRIED_ONE
+    [ "$room_bytes" -gt 0 ] || room_bytes=0
+    printf '%s' "$room_bytes"
+}
+
+#
+# Of a text's first `$2` lines, or all of them when that is 0: how many fit in `$3` bytes, the bytes
+# they take, and the bytes of the whole. Whole lines only, so a cut never splits a character.
+#
+measure_the_text() {
+    LC_ALL=C awk -v upto="$2" -v room="$3" '
+        upto > 0 && NR > upto { exit }
+        { whole += length($0) + 1 }
+        whole <= room { fitting = NR; bytes = whole }
+        END { printf "%d %d %d\n", fitting, bytes, whole }' "$1"
+}
+
+# The first `$2` lines between two fences at the left margin, where no list item can hold them.
+fence_the_lines() {
+    backticks=$(backtick_fence_for "$1" "$2")
+
+    printf '%s\n' "$backticks"
+    awk -v upto="$2" 'NR > upto { exit } { print }' "$1"
+    printf '%s\n' "$backticks"
+}
+
+# One backtick longer than the longest run the lines hold, and never fewer than three, so no line of
+# them can close the fence it sits in.
+backtick_fence_for() {
+    LC_ALL=C awk -v upto="$2" '
+        upto > 0 && NR > upto { exit }
+        { rest = $0; while (match(rest, /`+/)) { if (RLENGTH > longest) longest = RLENGTH; rest = substr(rest, RSTART + RLENGTH) } }
+        END { n = (longest < 3 ? 3 : longest + 1); while (n-- > 0) printf "`"; print "" }' "$1"
+}
+
+say_it_is_withheld() {
+    printf '%s is withheld whole: it holds %s. It is `%s` in run `%s`.\n' "$3" "$4" "$2" "$(recorded_id "$1")"
+}
+
+say_it_was_cut() {
+    printf '\nCut at %s of its %s bytes. All of it is `%s` in run `%s`.\n' "$3" "$4" "$2" "$(recorded_id "$1")"
 }
 
 # A path, or nothing at all. An adapter that is given a path it cannot
@@ -5778,7 +6102,7 @@ send_delivery() {
 
     push_workspace "$1" "$2" "$branch" "$4"
     say_a_moved_head "$1" "$4"
-    compose_the_body "$1" "$4"
+    compose_the_body "$1" "$4" "$2"
     publish_delivery "$1" "$branch" "$3" "$4"
 }
 
