@@ -12592,10 +12592,12 @@ a_pass_with_no_gh_stops_at_its_first_source_call() {
     || { skip "a pass with no gh — git could not make a repo here"; return; }
   no_gh_path >/dev/null || { broke "a pass with no gh — no path without gh could be built"; return; }
 
+  # A home of its own, so no mark another case's pass left can hold the host first.
   is  "a pass with no gh on a GitHub remote stops at its first source call, 20" \
-      "$( cd "$tmp/noghpass" && PATH="$(no_gh_path)" FOUNDRY_HOME="$home" FOUNDRY_RUN="" FOUNDRY_WHO="" \
+      "$( cd "$tmp/noghpass" && PATH="$(no_gh_path)" FOUNDRY_HOME="$tmp/noghpass.home" FOUNDRY_RUN="" FOUNDRY_WHO="" \
           FOUNDRY_SOURCE= FOUNDRY_SOURCE_DIR="$tmp/noghpass.source" sh "$runner" pass >/dev/null 2>&1; printf '%s' "$?" )" "20"
-  has "and its wake says the source was not asked" "$(last_wake_line ended)" "read=source-unasked"
+  has "and its wake says the source was not asked" \
+      "$(grep "	ended	" "$tmp/noghpass.home/wakes" 2>/dev/null | tail -n 1)" "read=source-unasked"
 }
 a_pass_with_no_gh_stops_at_its_first_source_call
 
