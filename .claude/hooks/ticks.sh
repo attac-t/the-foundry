@@ -11,7 +11,8 @@
 # This is that instruction where it fires on its own.
 #
 # It reports and never ticks. A tick is a judgement — did this box hold? — and
-# `.claude/rules/closing.md` keeps that with a person.
+# `.claude/rules/closing.md` keeps that with the worker that did the work, against the check that
+# proves it. What a person owns is acceptance, which no tick is.
 #
 # Reads a `PostToolUse` tool call as JSON on stdin.
 #
