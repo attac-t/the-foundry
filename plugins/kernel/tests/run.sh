@@ -28,6 +28,7 @@ main() {
   audit_the_cleanup "$strays_before"
   audit_the_tally
   audit_the_bound
+  audit_the_mode_guard
 
   report
 }
@@ -317,14 +318,21 @@ wreck() {
 # Copy the plugin somewhere we can ruin it.
 copy() { rm -rf "$tmp/$1" && cp -R "$root" "$tmp/$1"; }
 
-# Whether each hook the plugin ships executable is still executable in the broken copy.
+# Whether the broken copy kept every executable bit the plugin ships, on each script at any depth,
+# as the suite reads them. Where this host keeps no bit there is nothing to hold, and no refusal.
 modes_held() {
-  local hook
-  for hook in "$root"/hooks/*.sh; do
-    [ -x "$hook" ] && [ ! -x "$tmp/$1/hooks/${hook##*/}" ] && return 1
-  done
-  return 0
+  records_exec || return 0
+  ! scripts_that_lost_their_bit "$1" | grep -q .
 }
+
+# Each script the plugin ships executable that the broken copy still holds, without the bit.
+scripts_that_lost_their_bit() {
+  find "$root/hooks" -name '*.sh' -type f | while read -r script; do
+    lost_its_bit "$script" "$tmp/$1/hooks/${script#"$root"/hooks/}" && printf '%s\n' "$script"
+  done
+}
+
+lost_its_bit() { [ -x "$1" ] && [ -e "$2" ] && [ ! -x "$2" ]; }
 
 # Determine if the install suite fails against the broken copy.
 caught() { red_against install.sh PLUGIN_ROOT="$tmp/$1"; }
@@ -411,6 +419,15 @@ audit_the_bound() {
 
   [ "$?" -eq 2 ] && { printf '  ok    a mutant that never answers is bounded\n'; return; }
   bad "a mutant that never answers was not bounded"
+}
+
+# The mode guard, driven, since the one break that drops a bit opts out of it. #1142.
+audit_the_mode_guard() {
+  records_exec || { printf '  skip  the mode guard — no executable bit is kept here\n'; return; }
+  copy guard && chmod -x "$tmp/guard/hooks/ground.sh" \
+    || { bad "the mode guard — no copy to drive it, so this proves nothing"; return; }
+  modes_held guard && { bad "a copy whose hook lost its executable bit reads as held"; return; }
+  printf '  ok    a copy whose hook lost its executable bit is refused\n'
 }
 
 # Say how it went, and leave with the verdict.
