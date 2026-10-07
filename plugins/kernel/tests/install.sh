@@ -88,7 +88,7 @@ runtime_files() { find "$root/hooks" -type f \( -name '*.sh' -o -name '*.awk' \)
 # would then be reading a directory it never wrote.
 #
 fire() {
-  ( cd "$tmp/bare" 2>/dev/null || exit 0
+  ( cd "${FIRE_DIR:-$tmp/bare}" 2>/dev/null || exit 0
     printf '%s' "$2" \
       | CLAUDE_PLUGIN_ROOT="${FIRE_ROOT:-$root}" CLAUDE_MEMORY_DIR="$tmp/mem" FOUNDRY_RUN= TMPDIR="$tmp" \
         sh -c "$(command_for "$1")" 2>/dev/null )
@@ -227,6 +227,8 @@ is  "and on one inside .git, where git answers false" \
 outside_every_work_tree || bad "consider — $tmp/outside sits in a work tree, so quiet there proves nothing"
 is  "consider is quiet outside every work tree" \
     "$(fire consider.sh "$(edited "$tmp/outside/b.sh")")" ""
+is  "and on a file at the root, fired from inside a work tree" \
+    "$(FIRE_DIR="$tmp/tree" fire consider.sh "$(edited /consider-probe.sh)")" ""
 is  "consider is quiet on docs" \
     "$(fire consider.sh '{"tool_input":{"file_path":"/app/README.md"}}')" ""
 is  "consider is quiet on a unix test path" \
