@@ -1041,8 +1041,7 @@ alone_with_the_policy_run() {
   running_alone && [ -z "${polrun:-}" ] || return 0
   the_policy_repo || return 0
 
-  polrun=$(floor "$tmp/pol" new "Policy")
-  say_made "the policy run, in \$tmp/pol"
+  polrun=$(floor "$tmp/pol" new "Policy") && say_made "the policy run, in \$tmp/pol"
 }
 
 #
@@ -1660,9 +1659,9 @@ alone_with_the_charter_run() {
   running_alone && [ -z "${chrun:-}" ] || return 0
   the_charter_repo || return 0
 
-  chrun=$(floor "$tmp/ch" new "Charter")
-  floor "$tmp/ch" charter derive >/dev/null 2>&1
-  say_made "the charter run, derived, in \$tmp/ch"
+  chrun=$(floor "$tmp/ch" new "Charter") \
+    && floor "$tmp/ch" charter derive >/dev/null 2>&1 \
+    && say_made "the charter run, derived, in \$tmp/ch"
 }
 
 # The Decided clause the case above introduces, which the two cases below read.
@@ -9664,9 +9663,8 @@ alone_with_the_shipped_run() {
 
   ready_run "$tmp/shipped" 'https://gitlab.com/acme/shipped.git'
   floor "$tmp/shipped" gates >/dev/null 2>&1
-  floor_at "$tmp/shipped" judged >/dev/null 2>&1
-  floor "$tmp/shipped" complete >/dev/null 2>&1
-  say_made "the shipped run, judged and complete, in \$tmp/shipped"
+  floor_at "$tmp/shipped" judged >/dev/null 2>&1 && floor "$tmp/shipped" complete >/dev/null 2>&1 \
+    && say_made "the shipped run, judged and complete, in \$tmp/shipped"
 }
 
 #
@@ -10503,9 +10501,8 @@ alone_with_the_work_source_run() {
   wsrun=$(floor "$tmp/wsrc" new "Work source")
   wsid=$(basename "$wsrun")
 
-  ws source read 7 >/dev/null 2>&1
-  ws charter derive >/dev/null 2>&1
-  say_made "the work source run, item 7 read and the charter derived, in \$tmp/wsrc"
+  ws source read 7 >/dev/null 2>&1 && ws charter derive >/dev/null 2>&1 \
+    && say_made "the work source run, item 7 read and the charter derived, in \$tmp/wsrc"
 }
 
 # A question is `run + stage + clause`, derived and never issued — §2.1. A resumed run recomputes it
