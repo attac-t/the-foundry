@@ -343,8 +343,8 @@ unwire()   { grep -v 'consider.sh' "$1/hooks/hooks.json" | rewrite "$1/hooks/hoo
 restyle()  { awk '/^  "hooks": \{$/ { print "  \"outputStyle\": \"kernel:craftsman\"," } { print }' "$1/hooks/hooks.json" | rewrite "$1/hooks/hooks.json"; }
 bashism()  { sed 's|dirname "\$0"|dirname "${BASH_SOURCE[0]}"|'  "$1/hooks/prompt.sh" | rewrite "$1/hooks/prompt.sh"; }
 
-# The edit hook as it was before #1141, #1143 and #1130: each reader taking the absolute path, and
-# speaking anywhere. Each keeps the hook executable, so only its own consider case can catch it.
+# The edit hook before #1141, #1143 and #1130. `stdabs` and `skipabs` each reach one case; `anywhere`
+# reaches every quiet case, so its row proves less until #1144 names the check a break must fail.
 stdabs()   { sed 's#standard_for "$IN_TREE"#standard_for "$FILE"#' "$1/hooks/consider.sh" | rewrite_in_place "$1/hooks/consider.sh"; }
 skipabs()  { sed 's#"$IN_TREE" | grep -qE#"$FILE" | grep -qE#' "$1/hooks/consider.sh" | rewrite_in_place "$1/hooks/consider.sh"; }
 anywhere() { grep -vF 'can_be_committed "$FILE" || exit 0' "$1/hooks/consider.sh" | rewrite_in_place "$1/hooks/consider.sh"; }
