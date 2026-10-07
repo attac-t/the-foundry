@@ -344,7 +344,7 @@ bashism()  { sed 's|dirname "\$0"|dirname "${BASH_SOURCE[0]}"|'  "$1/hooks/promp
 
 # The edit hook as it was before #1141 and #1130: matching the absolute path, and speaking anywhere.
 # Each keeps the hook executable, so only the consider cases can catch it.
-unrooted() { sed 's|"$(path_in_its_tree "$FILE")"|"$FILE"|' "$1/hooks/consider.sh" | rewrite_in_place "$1/hooks/consider.sh"; }
+unrooted() { sed 's|^IN_TREE=$(path_in_its_tree "$FILE")$|IN_TREE=$FILE|' "$1/hooks/consider.sh" | rewrite_in_place "$1/hooks/consider.sh"; }
 anywhere() { grep -vF 'can_be_committed "$FILE" || exit 0' "$1/hooks/consider.sh" | rewrite_in_place "$1/hooks/consider.sh"; }
 
 #

@@ -26,9 +26,6 @@ FILE=$(field tool_input.file_path)
 # on half the installs it runs on. Nothing says it went wrong.
 FILE=$(printf '%s' "$FILE" | tr '\\' '/')
 
-# Skip non-code files (tests, docs, config)
-printf '%s' "$FILE" | grep -qE '(^|/)tests?/|\.test\.|\.spec\.|\.md$|\.json$|\.ya?ml$|\.env' && exit 0
-
 # The directory holding a path, as `dirname` gives it. `git -C ""` would ask the session's own tree.
 dir_of() {
     case $1 in
@@ -51,6 +48,10 @@ path_in_its_tree() {
 }
 
 can_be_committed "$FILE" || exit 0
+IN_TREE=$(path_in_its_tree "$FILE")
+
+# Skip tests, docs and config by the path in the tree, so a folder above it changes nothing.
+printf '%s' "$IN_TREE" | grep -qE '(^|/)tests?/|\.test\.|\.spec\.|\.md$|\.json$|\.ya?ml$|\.env' && exit 0
 
 # Which standard governs the edit. A copy here would be a second one to keep true.
 standard_for() {
@@ -66,4 +67,4 @@ printf '{
     "additionalContext": "**Consider**: `%s` governs what you just edited. Read it before the next one — afterwards is a rewrite."
   }
 }
-' "$(standard_for "$(path_in_its_tree "$FILE")")"
+' "$(standard_for "$IN_TREE")"

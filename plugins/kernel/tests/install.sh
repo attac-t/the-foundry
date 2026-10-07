@@ -202,16 +202,21 @@ printf '| id | state |\n| 1 | in-progress |\n' > "$tmp/mem/blueprint.md"
 # the nudge fired on every write it exists to stay out of.
 
 #
-# A work tree to edit in, one directory git ignores, and one no work tree holds. The harness hands
-# the hook an absolute path, so each path below is one. #1130, #1141.
+# A work tree to edit in, one under a folder named like a test, a directory git ignores, and one no
+# work tree holds. The harness hands the hook an absolute path, so each below is one. #1130, #1141.
 #
 mkdir -p "$tmp/outside"
-git init -q "$tmp/tree" 2>/dev/null && mkdir -p "$tmp/tree/src" "$tmp/tree/plugins/x/bin" "$tmp/tree/scratch" \
+git init -q "$tmp/tree" 2>/dev/null && git init -q "$tmp/tests/repo" 2>/dev/null \
+  && mkdir -p "$tmp/tree/src" "$tmp/tree/tests" "$tmp/tree/plugins/x/bin" "$tmp/tree/scratch" \
+              "$tmp/tests/repo/src" \
   && printf 'scratch/\n' > "$tmp/tree/.gitignore" \
   || bad "consider — git could not make a work tree here, so the checks below prove nothing"
 
 # A payload naming one edited file.
 edited() { printf '{"tool_input":{"file_path":"%s"}}' "$1"; }
+
+# A path as Windows writes it, each separator a backslash, escaped for JSON.
+with_backslashes() { printf '%s' "$1" | sed 's|/|\\\\|g'; }
 
 # Whether the outside directory really is outside. One under a work tree would prove nothing.
 outside_every_work_tree() { ! git -C "$tmp/outside" rev-parse --is-inside-work-tree >/dev/null 2>&1; }
@@ -230,11 +235,13 @@ is  "consider is quiet outside every work tree" \
 is  "and on a file at the root, fired from inside a work tree" \
     "$(FIRE_DIR="$tmp/tree" fire consider.sh "$(edited /consider-probe.sh)")" ""
 is  "consider is quiet on docs" \
-    "$(fire consider.sh '{"tool_input":{"file_path":"/app/README.md"}}')" ""
-is  "consider is quiet on a unix test path" \
-    "$(fire consider.sh '{"tool_input":{"file_path":"/app/tests/OrderTest.php"}}')" ""
-is  "consider is quiet on a windows test path" \
-    "$(fire consider.sh '{"tool_input":{"file_path":"C:\\app\\tests\\OrderTest.php"}}')" ""
+    "$(fire consider.sh "$(edited "$tmp/tree/README.md")")" ""
+is  "consider is quiet on a test" \
+    "$(fire consider.sh "$(edited "$tmp/tree/tests/OrderTest.php")")" ""
+has "and reads a path written with backslashes" \
+    "$(fire consider.sh "$(edited "$(with_backslashes "$tmp/tree/src/Order.php")")")" "craft-adr"
+has "and nudges code in a work tree under a folder named tests, #1143" \
+    "$(fire consider.sh "$(edited "$tmp/tests/repo/src/Order.php")")" "craft-adr"
 is  "consider is quiet when it cannot read a path" \
     "$(fire consider.sh '{"tool_input":{}}')" ""
 has "content holding a decoy path does not fool it" \
