@@ -221,6 +221,7 @@ where it is — a key for a one-off buys indirection and saves nothing.
 | `is_stage` | 2 | default | a question is asked at authorisation or at completion, not at [$2] | nobody yet — the person who could want it otherwise is a repository that asks its question at a third moment, and then a question asked where nothing reads it is never answered |
 | `judged` | 2 | default | — | `usage` |
 | `keep_the_brief` | 2 | default | no brief to read at [$2] | nobody — there is nothing to act on. The line a person would write: **a run reads only a brief it was handed** |
+| `leave_with_no_hand` | 2 | default | the offer's line for [$1] gave no hand, so this pass begins no run | nobody — a pass's run answers to the hand that put the label on, and git's address may name nobody the rule does. The line a person would write: **a pass's run answers only to a hand the rule names** |
 | `leave_with_no_second` | 2 | default | the offer's line for [$1] gave no second, so this pass begins no run | nobody — doctrine's durability table says a run record shows *that work began*, and never when it was asked for. The line a person would write: **a pass's run carries the second its label went on** |
 | `list_runs` | 2 | default | — | `usage` |
 | `main` | 2 | default | — | `usage` |
