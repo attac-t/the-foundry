@@ -3039,8 +3039,8 @@ wreck_runner "a pass that stops on a judge that approved is caught" \
 wreck_runner "a pass that calls a refused delivery delivered is caught" \
   passdeliver '/^carry_it_to_a_request() {/,/^}/s#^    ( deliver "\$2" ) >/dev/null || stop_at "\$1" deliver "\$?"$#    ( deliver "$2" ) >/dev/null#'
 
-# The hand's read alone, so the run is still made, with the label's second, and answers to git's address.
-wreck_runner "a pass whose run answers to the checkout's git address, not the label's hand, is caught" \
+# The hand's read alone. The pass then stops at the empty read, where its case wants a run. #1133.
+wreck_runner "a pass that never reads the label's hand is caught" \
   passwho 's#^    FOUNDRY_WHO=\$(printf .%s\\n. "\$1" | cut -f3)$#    :#'
 
 #
@@ -3062,6 +3062,9 @@ wreck_runner "a pass that reads another item's line when two ids are one number 
 
 wreck_runner "a pass that stamps its own second when its read comes back empty is caught" \
   passnosecond '/^leave_with_no_second() {/,/^}/s#^    \[ -n "\${label_went_on:-}" \] && return 0$#    return 0#'
+
+wreck_runner "a pass that answers to git's address when its read of the hand comes back empty is caught" \
+  passnohand '/^leave_with_no_hand() {/,/^}/s#^    \[ -n "\${FOUNDRY_WHO:-}" \] && return 0$#    return 0#'
 
 #
 # **An item a request is open for is not offered, and every run a pass makes holds a line.** One

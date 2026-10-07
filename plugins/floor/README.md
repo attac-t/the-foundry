@@ -1901,8 +1901,9 @@ them; `git config user.email` is the fallback every checkout already has.
 
 **A pass's run answers to the hand that put the label on, from the second it went on.** Both come
 from the one line the offer gave the item, as the source recorded them. So the stamp says when the
-work was asked for, and `pass.began` says when the pass took it. A pass that reads no second there
-stops before any run, 2, and the next wake takes the item again.
+work was asked for, and `pass.began` says when the pass took it. A pass that reads no second or no
+hand there stops before any run, 2, and the next wake takes the item again. So a pass's run never
+answers to git's address.
 
 **Three fields, where evidence has seven, and it is a different file.** This names no clause, so it
 can satisfy none — and a record with no `ref` cannot satisfy the completion invariant, which reads
@@ -2740,6 +2741,7 @@ commit the pass read its rule at. A pass that stopped before reading one says `n
 | `resumed:<run>` | it resumed a run |
 | `took:<item>` | it took an item |
 | `no-second:<item>` | it took an item, read no second from its line, and began no run, 2 |
+| `no-hand:<item>` | it took an item, read no hand from its line, and began no run, 2 |
 
 **An open `woke` is a pass at work or one that died**, and the host mark says which. A pass killed
 outright never writes its `ended`. A pass with no work source still records its wake, and ends

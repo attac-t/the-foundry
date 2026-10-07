@@ -4038,6 +4038,7 @@ pass() {
     select_an_item
     answer_to_the_applier "$taken" "$items"
     leave_with_no_second "$taken"
+    leave_with_no_hand "$taken"
     heading=$(the_heading_of "$taken") || exit "$?"
     begin_a_run_for "$taken" "$heading"
 
@@ -4529,6 +4530,17 @@ leave_with_no_second() {
 
     pass_read="no-second:$1"
     note "the offer's line for [$1] gave no second, so this pass begins no run"
+    exit 2
+}
+
+#
+# **A pass's run never answers to git's address.** The offer drops a line that names no hand, so an
+# empty read here is a failed fork too. It stops before any run, and the next wake takes it again. #1133.
+leave_with_no_hand() {
+    [ -n "${FOUNDRY_WHO:-}" ] && return 0
+
+    pass_read="no-hand:$1"
+    note "the offer's line for [$1] gave no hand, so this pass begins no run"
     exit 2
 }
 

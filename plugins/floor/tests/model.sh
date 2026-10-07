@@ -8334,6 +8334,41 @@ a_pass_that_reads_no_second_begins_no_run() {
 a_pass_that_reads_no_second_begins_no_run
 
 #
+# A `cut` that answers the hand's read of the item's own line with nothing, as a failed fork does.
+# The offer cuts the same field from its open requests first, and that read stays whole.
+#
+a_cut_that_reads_no_hand_for() {
+  printf '#!/bin/sh\nreal=%s item=%s\n' "$(command -v cut)" "$1"
+  cat <<'STUB'
+[ "${1:-}" = -f3 ] || exec "$real" "$@"
+piped=$(cat)
+case $piped in "$item$(printf '\t')"*) exit 0 ;; esac
+printf '%s\n' "$piped" | exec "$real" "$@"
+STUB
+}
+
+#
+# **A pass's run never answers to git's address.** A hand that reads empty stops it before any run,
+# with the code an empty second gets, and its wake says why. #1133.
+#
+a_pass_that_reads_no_hand_begins_no_run() {
+  a_resumable_repo nohandread 1707 || { skip "a hand read empty — git could not make a repo here"; return; }
+  mkdir -p "$tmp/nohandbin"
+  a_cut_that_reads_no_hand_for 1707 > "$tmp/nohandbin/cut" && chmod +x "$tmp/nohandbin/cut" \
+    || { skip "a hand read empty — could not put a cut on the path"; return; }
+
+  said=$(PATH="$tmp/nohandbin:$PATH" floor_says "$tmp/nohandread" pass)
+  has "a pass whose hand reads empty says so, and begins no run" "$said" \
+      "the offer's line for [1707] gave no hand, so this pass begins no run"
+  has "and its wake ends there, with the code an empty second gets" "$(last_wake_line ended)" \
+      "read=no-hand:1707 code=2"
+  is  "and its checkout points at no run" "$(code_of floor "$tmp/nohandread" path)" "1"
+
+  rm -rf "$src/claims/1707" "$src/labels/1707" "$src/items/1707"
+}
+a_pass_that_reads_no_hand_begins_no_run
+
+#
 # **A change to either setting reaches the next pass's record.** The host names the cadence, the
 # repository the rule. A person pushes the rule after the host started and moves no ref by hand, and
 # the next pass fetches it before it selects. #997's fourth box, and #1060's first.
