@@ -35,18 +35,32 @@ unset FOUNDRY_PASS_ITEM FOUNDRY_PASS_WORKSPACE FOUNDRY_PASS_ITEM_FILE
 here="$(cd "$(dirname "$0")/.." && pwd)"
 
 #
-# `--only <case>...` runs those cases alone: every other case call is skipped, and nothing else
-# changes. This file's own text, those calls made `:`, is run here, so `$0` and the plugin it finds
-# stay this file's. A name that is no case is refused before anything runs. `tests/alone.sh` says
-# what a case is. #1112.
+# `--only <case>...` runs those cases alone: every other case call is skipped. This file's own text,
+# those calls made `:`, is run here, so `$0` and the plugin it finds stay this file's. #1112.
+#
+# A name that is no case is refused before anything runs. `tests/alone.sh` says what a case is.
 #
 [ "${1:-}" = --only ] && {
   shift
   only_text=$( . "$here/tests/alone.sh" && only_these "$0" "$@" ) || exit 2
+  only_cases=$*
   set --
   eval "$only_text"
   exit
 }
+
+#
+# **Only a run of named cases builds what a case reads and an earlier case left.** The whole suite
+# builds nothing, so a chain a later change breaks still skips there, and never mends in silence.
+#
+# Where the earlier case makes a repository too, both call one function, so its name is written
+# once. `only_cases` marks the run: cases assign `alone`, and none assigns this. #1139.
+#
+running_alone() { [ -n "${only_cases:-}" ]; }
+
+# A line for each thing a case run alone built, so the log shows it. Called inside `$(...)`, the
+# line would land in a variable instead.
+say_made() { printf '  made  %s\n' "$1"; }
 
 . "$here/tests/lib.sh"
 
@@ -503,7 +517,7 @@ say_what_it_kept "$@"
 
 #
 # One `tests/cases.sh` id, on state the clean runner built. Its noun is an id and never a case of
-# this file: `--only`, at the top, runs those, and builds nothing.
+# this file: `--only`, at the top, runs those, building only what a skipped case would have left.
 #
 # `--checkpoint` builds what a case starts from; `--case` runs the case against whatever `RUNNER`
 # names. The audit restores the same bytes to the same pathname before each, so a mutant answers
@@ -1002,9 +1016,13 @@ restore_selection
 
 policy_for() { printf '%s/policy/runs/%s/targets' "$home" "$(basename "$1")"; }
 
+# `alone_with_the_policy_run` makes this too, for a case below run alone.
+the_policy_repo() {
+  make_repo "$tmp/pol" main && set_origin "$tmp/pol" 'https://github.com/acme/boot.git'
+}
+
 the_bootstrap_is_authorised_without_a_grant() {
-  make_repo "$tmp/pol" main && set_origin "$tmp/pol" 'https://github.com/acme/boot.git' \
-    || { skip "policy — git could not make a repo here"; return; }
+  the_policy_repo || { skip "policy — git could not make a repo here"; return; }
 
   polrun=$(floor "$tmp/pol" new "Policy")
 
@@ -1018,6 +1036,15 @@ the_bootstrap_is_authorised_without_a_grant() {
 }
 the_bootstrap_is_authorised_without_a_grant
 
+# The run the policy cases read. The case above also selects its bootstrap, which none needs.
+alone_with_the_policy_run() {
+  running_alone && [ -z "${polrun:-}" ] || return 0
+  the_policy_repo || return 0
+
+  polrun=$(floor "$tmp/pol" new "Policy")
+  say_made "the policy run, in \$tmp/pol"
+}
+
 #
 # The advisory proof, by sequence rather than by absence.
 #
@@ -1026,6 +1053,7 @@ the_bootstrap_is_authorised_without_a_grant
 # if policy does nothing.
 #
 an_item_grants_nothing() {
+  alone_with_the_policy_run
   [ -n "${polrun:-}" ] || { skip "the advisory proof — no run with a bootstrap"; return; }
 
   printf 'targets: https://github.com/attacker/evil.git main\n' >> "$polrun/item.md"
@@ -1059,6 +1087,7 @@ a_refusal_writes_nothing
 # The discriminator. Without it the sequence above would still pass while authority widened itself.
 #
 targets_add_never_grants() {
+  alone_with_the_policy_run
   [ -n "${polrun:-}" ] || { skip "the self-authorisation proof — no run with a bootstrap"; return; }
 
   # Granted, and not selected yet. Every guard returns before the append, so the write this is about
@@ -1083,6 +1112,7 @@ targets_add_never_grants
 # different reason: git resolves dot segments, so the line clones one repo and reads as another.
 #
 a_repo_argument_cannot_carry_a_second_line() {
+  alone_with_the_policy_run
   [ -n "${polrun:-}" ] || { skip "the newline proof — no run with a bootstrap"; return; }
 
   smuggle=$(printf 'https://github.com/acme/boot.git\nhttps://github.com/smuggled/in.git')
@@ -1298,6 +1328,7 @@ policy_stores_only_portable_identities
 # The bootstrap is an effective grant, not a stored one. Copying it would outlive the run's own
 # `bootstrap` file and make the two disagree about what a run may reach.
 authorizing_the_bootstrap_copies_nothing() {
+  alone_with_the_policy_run
   [ -n "${polrun:-}" ] || { skip "the bootstrap copy proof — no run with a bootstrap"; return; }
 
   # Byte-identical, not merely `lacks`: an empty file lacks everything.
@@ -1349,15 +1380,22 @@ charter_of() { printf '%s/charter' "$1"; }
 # Where a loose object lives, so a test can take one away.
 loose_object() { printf '%s/.git/objects/%.2s/%s' "$1" "$2" "${2#??}"; }
 
+#
 # `pat` is named to answer, so a clause nothing derives is asked about rather than refused at 49. A
 # bench judges a `Judged` one, so introducing it is not refused at 55.
-a_charter_derives_from_the_repository_it_is_run_in() {
+#
+# `alone_with_the_charter_run` makes this too, for a case below run alone.
+#
+the_charter_repo() {
   make_repo "$tmp/ch" develop && set_origin "$tmp/ch" 'https://github.com/acme/ch.git' \
     && commit_file "$tmp/ch" Makefile 'test:
 	echo ok
 ' && mkdir -p "$tmp/ch/.foundry" && commit_file "$tmp/ch" .foundry/practice 'authorise pat' \
-    && commit_file "$tmp/ch" .foundry/judged 'bench alice reviewer' \
-    || { skip "charter — git could not make a repo here"; return; }
+    && commit_file "$tmp/ch" .foundry/judged 'bench alice reviewer'
+}
+
+a_charter_derives_from_the_repository_it_is_run_in() {
+  the_charter_repo || { skip "charter — git could not make a repo here"; return; }
 
   chrun=$(floor "$tmp/ch" new "Charter")
   said=$(floor_says "$tmp/ch" charter derive)
@@ -1617,7 +1655,28 @@ the_three_kinds_stay_apart() {
 }
 the_three_kinds_stay_apart
 
+# The charter run, derived. The case above then selects and freezes, which no case below needs.
+alone_with_the_charter_run() {
+  running_alone && [ -z "${chrun:-}" ] || return 0
+  the_charter_repo || return 0
+
+  chrun=$(floor "$tmp/ch" new "Charter")
+  floor "$tmp/ch" charter derive >/dev/null 2>&1
+  say_made "the charter run, derived, in \$tmp/ch"
+}
+
+# The Decided clause the case above introduces, which the two cases below read.
+alone_with_the_decided_clause() {
+  running_alone && [ -n "${chrun:-}" ] || return 0
+  grep -qx 'clause [0-9]* Decided refund copy signed off' "$(charter_of "$chrun")" 2>/dev/null && return 0
+
+  floor "$tmp/ch" charter introduce Decided 'refund copy signed off' >/dev/null 2>&1 \
+    && say_made "the Decided clause, in the charter run"
+}
+
 an_introduced_clause_stays_introduced() {
+  alone_with_the_charter_run
+  alone_with_the_decided_clause
   [ -n "${chrun:-}" ] || { skip "introduction — no charter run"; return; }
 
   #
@@ -1636,6 +1695,8 @@ an_introduced_clause_stays_introduced() {
 an_introduced_clause_stays_introduced
 
 a_clause_cannot_be_weakened() {
+  alone_with_the_charter_run
+  alone_with_the_decided_clause
   [ -n "${chrun:-}" ] || { skip "monotonicity — no charter run"; return; }
 
   before=$(cat "$(charter_of "$chrun")")
@@ -1664,6 +1725,7 @@ a_clause_cannot_be_weakened() {
 a_clause_cannot_be_weakened
 
 a_clause_is_one_line() {
+  alone_with_the_charter_run
   [ -n "${chrun:-}" ] || { skip "one line — no charter run"; return; }
 
   lines_before=$(grep -c . "$(charter_of "$chrun")")
@@ -1674,11 +1736,16 @@ a_clause_is_one_line() {
 }
 a_clause_is_one_line
 
-deletion_and_drift_are_visible() {
+# `alone_with_the_drift_repo` makes this too, for a wrong-repository case run alone.
+the_drift_repo() {
   make_repo "$tmp/ch2" main && set_origin "$tmp/ch2" 'https://github.com/acme/ch2.git' \
     && commit_file "$tmp/ch2" Makefile 'test:
 	echo ok
-' || { skip "drift — git could not make a repo here"; return; }
+'
+}
+
+deletion_and_drift_are_visible() {
+  the_drift_repo || { skip "drift — git could not make a repo here"; return; }
 
   d=$(floor "$tmp/ch2" new "Drift")
   floor "$tmp/ch2" charter derive >/dev/null 2>&1
@@ -4155,7 +4222,15 @@ a_pin_that_cannot_be_captured_writes_nothing() {
 }
 a_pin_that_cannot_be_captured_writes_nothing
 
+# The repository the two cases below run from. Its run is the drift case's, and neither needs it.
+alone_with_the_drift_repo() {
+  running_alone && [ ! -d "$tmp/ch2" ] || return 0
+  the_drift_repo && say_made "the drift repository, \$tmp/ch2"
+}
+
 deriving_needs_the_right_repository() {
+  alone_with_the_charter_run
+  alone_with_the_drift_repo
   [ -n "${chrun:-}" ] || { skip "wrong repo — no charter run"; return; }
 
   #
@@ -4180,6 +4255,8 @@ deriving_needs_the_right_repository
 # which is the lesson the check above already carries.
 #
 authorising_needs_the_right_repository() {
+  alone_with_the_charter_run
+  alone_with_the_drift_repo
   [ -n "${chrun:-}" ] || { skip "authorise wrong repo — no charter run"; return; }
 
   has "authorising from another repository is refused for being the wrong repository" \
@@ -4464,6 +4541,7 @@ a_tampered_charter_is_visible
 # member who proposed it sits on none of it. Each is read on its own, so each fault fails on its own.
 #
 introducing_twice_leaves_one_record() {
+  alone_with_the_charter_run
   [ -n "${chrun:-}" ] || { skip "one record — no charter run"; return; }
 
   floor_worked "$tmp/ch" alice charter introduce Judged 'said once' >/dev/null 2>&1
@@ -4526,15 +4604,22 @@ line_of() { printf '%s\t%s\t%s' "$1" "$2" "$3"; }
 # The part of an `answer.unread` row a case reads: who, the code, when, and why.
 row_of() { printf '%s\t1\t%s\t%s' "$1" "$2" "$3"; }
 
+#
 # `pat` is the hand this repository names, so an answer here can be heard at all. A bench judges a
 # `Judged` clause introduced here, so introducing one is not refused at 55.
-the_work_source() {
+#
+# `alone_with_the_work_source_run` makes this too, for a case below run alone.
+#
+the_work_source_repo() {
   make_repo "$tmp/wsrc" main && set_origin "$tmp/wsrc" 'https://gitlab.com/acme/ws.git' \
     && commit_file "$tmp/wsrc" Makefile 'test:
 	echo ok
 ' && mkdir -p "$tmp/wsrc/.foundry" && commit_file "$tmp/wsrc" .foundry/practice 'authorise pat' \
-    && commit_file "$tmp/wsrc" .foundry/judged 'bench reviewer' \
-    || { skip "work source — git could not make a repo here"; return; }
+    && commit_file "$tmp/wsrc" .foundry/judged 'bench reviewer'
+}
+
+the_work_source() {
+  the_work_source_repo || { skip "work source — git could not make a repo here"; return; }
 
   mkdir -p "$src/items"
   printf 'Make the thing\n\ntargets: https://gitlab.com/acme/items.git\n' > "$src/items/7"
@@ -5490,12 +5575,21 @@ STUB
 }
 a_beat_ends_with_its_pass
 
+# The two directories the pass cases below write into. Each makes its own item, label and claim.
+alone_with_items_and_labels() {
+  running_alone || return 0
+
+  [ -d "$src/items" ]  || { mkdir -p "$src/items"  && say_made "\$src/items"; }
+  [ -d "$src/labels" ] || { mkdir -p "$src/labels" && say_made "\$src/labels"; }
+}
+
 #
 # **A claim nothing here works on is taken again.** A pass that died between its claim and its run
 # left this host's name on an item no run holds. Passed over for good, it would need a person to
 # free it. #884's judge.
 #
 a_pass_takes_back_a_claim_no_run_holds() {
+  alone_with_items_and_labels
   make_repo "$tmp/stale-claim" main && set_origin "$tmp/stale-claim" 'https://gitlab.com/acme/stale.git' \
     || { skip "a claim no run holds — git could not make a repo here"; return; }
 
@@ -5518,6 +5612,7 @@ a_pass_takes_back_a_claim_no_run_holds
 # cannot open its work. It used to leave with no line, and a refusal read the same as a death.
 #
 a_refused_step_is_a_stop() {
+  alone_with_items_and_labels
   make_repo "$tmp/noorigin" main || { skip "a refused step — git could not make a repo here"; return; }
 
   printf 'Unopened item\n' > "$src/items/88"
@@ -5538,6 +5633,7 @@ a_refused_step_is_a_stop
 # judge, round two.
 #
 a_pass_keeps_its_own_run() {
+  alone_with_items_and_labels
   git init -q --bare "$tmp/remotes/acme/pinx.git" 2>/dev/null \
     || { skip "a run begun under a pass — git could not make a bare repo here"; return; }
   make_repo "$tmp/pinx" main && set_origin "$tmp/pinx" 'https://github.com/acme/pinx.git' \
@@ -5568,6 +5664,7 @@ a_pass_keeps_its_own_run
 # so every pass that reached such an item stopped there, and wrote no line. #884's judge.
 #
 a_blank_item_is_still_an_item() {
+  alone_with_items_and_labels
   make_repo "$tmp/blank" main && set_origin "$tmp/blank" 'https://gitlab.com/acme/blank.git' \
     || { skip "a blank item — git could not make a repo here"; return; }
 
@@ -5588,6 +5685,7 @@ a_blank_item_is_still_an_item
 # #1025.
 #
 an_open_request_keeps_its_item() {
+  alone_with_items_and_labels
   make_repo "$tmp/req" main && set_origin "$tmp/req" 'https://gitlab.com/acme/req.git' \
     || { skip "an open request — git could not make a repo here"; return; }
 
@@ -5631,6 +5729,7 @@ an_open_request_keeps_its_item
 # passed over. Two of them answered wrongly. #884's judge, round five.
 #
 a_pass_says_which_step_refused() {
+  alone_with_items_and_labels
   make_repo "$tmp/refused" main && set_origin "$tmp/refused" 'https://gitlab.com/acme/refused.git' \
     || { skip "a refused pass — git could not make a repo here"; return; }
 
@@ -5686,6 +5785,7 @@ a_pass_says_which_step_refused
 # later pass could read, and that run would look like a person's. #1026.
 #
 a_second_read_that_fails_is_a_stop() {
+  alone_with_items_and_labels
   make_repo "$tmp/reread" main && set_origin "$tmp/reread" 'https://gitlab.com/acme/reread.git' \
     || { skip "a second read that fails — git could not make a repo here"; return; }
 
@@ -7181,6 +7281,7 @@ a_member_who_answered_here_is_not_asked_again
 # none, so the judged step only ever answered 8. #884's judge, rounds four and five.
 #
 a_pass_asks_the_judges() {
+  alone_with_items_and_labels
   a_judged_pass "$tmp/pjudge" pjudge reject 70 \
     || { skip "a judged pass — git could not make a repo here"; return; }
 
@@ -9317,6 +9418,14 @@ a_repo_that_owns_no_judge() {
 ' && commit_file "$1" .foundry/judged "$3"
 }
 
+# The repository reaching the shipped adapter at the pin it is handed. `alone_with_the_shipped_run`
+# makes it too, for the receipt case run alone.
+the_shipped_repo() {
+  a_repo_that_owns_no_judge "$tmp/shipped" shipped "reach  a-reviewer  @adapter a-shipped $1
+a-reviewer  a stranger can read it
+"
+}
+
 #
 # An adapter the plugin ships, reached at the content the repository authorised — #512.
 #
@@ -9332,9 +9441,7 @@ a_shipped_adapter_is_reached_at_the_content_authorised() {
     || { skip "a shipped adapter — the plugin could not be copied"; return; }
 
   pin=$(pin_of a-shipped)
-  a_repo_that_owns_no_judge "$tmp/shipped" shipped "reach  a-reviewer  @adapter a-shipped $pin
-a-reviewer  a stranger can read it
-" || { skip "a shipped adapter — git could not make a repo here"; return; }
+  the_shipped_repo "$pin" || { skip "a shipped adapter — git could not make a repo here"; return; }
 
   ready_run "$tmp/shipped" 'https://gitlab.com/acme/shipped.git'
   floor "$tmp/shipped" gates >/dev/null 2>&1
@@ -9546,6 +9653,23 @@ a-reviewer  a stranger can read it
 a_run_may_not_move_its_own_pin
 
 #
+# The shipped run as the receipt case reads it: judged once, and complete.
+#
+# `$tmp/declared` is not made, so alone that case's last two checks do not run.
+#
+alone_with_the_shipped_run() {
+  running_alone && [ ! -d "$tmp/shipped" ] || return 0
+  a_plugin_shipping a-shipped "$(a_judge_that_approves)" || return 0
+  the_shipped_repo "$(pin_of a-shipped)" || return 0
+
+  ready_run "$tmp/shipped" 'https://gitlab.com/acme/shipped.git'
+  floor "$tmp/shipped" gates >/dev/null 2>&1
+  floor_at "$tmp/shipped" judged >/dev/null 2>&1
+  floor "$tmp/shipped" complete >/dev/null 2>&1
+  say_made "the shipped run, judged and complete, in \$tmp/shipped"
+}
+
+#
 # The receipt binds two facts, and a gap between them is a refusal.
 #
 # `judged` refused each of these before the adapter ran. These are the same three against a receipt
@@ -9553,6 +9677,7 @@ a_run_may_not_move_its_own_pin
 # and a hand-written one may reach none a run could not.
 #
 a_receipt_binds_the_adapter_that_answered() {
+  alone_with_the_shipped_run
   [ -d "$tmp/shipped" ] || { skip "a receipt binding an adapter — the shipped run is not there"; return; }
 
   # Read again rather than inherited. `pin` is a global here, and a check resting on whichever
@@ -10367,9 +10492,26 @@ the_item_names_its_targets() {
 }
 the_item_names_its_targets
 
+# The work source run as `the_work_source` leaves it for the cases below: item 7 read, the charter
+# derived. Item 8 is left out, and none of them reads it.
+alone_with_the_work_source_run() {
+  running_alone && [ -z "${wsrun:-}" ] || return 0
+  the_work_source_repo || return 0
+
+  mkdir -p "$src/items"
+  printf 'Make the thing\n\ntargets: https://gitlab.com/acme/items.git\n' > "$src/items/7"
+  wsrun=$(floor "$tmp/wsrc" new "Work source")
+  wsid=$(basename "$wsrun")
+
+  ws source read 7 >/dev/null 2>&1
+  ws charter derive >/dev/null 2>&1
+  say_made "the work source run, item 7 read and the charter derived, in \$tmp/wsrc"
+}
+
 # A question is `run + stage + clause`, derived and never issued — §2.1. A resumed run recomputes it
 # and finds what it already asked, which is why nothing anywhere holds a list of pending questions.
 a_question_is_derived_not_issued() {
+  alone_with_the_work_source_run
   [ -n "${wsrun:-}" ] || { skip "questions — no work source run"; return; }
 
   q=$(ws source ask authorisation tests 'May this clause exist?')
@@ -10404,9 +10546,18 @@ a_question_is_derived_not_issued() {
 }
 a_question_is_derived_not_issued
 
+# The question the case above asks, which the case below answers.
+alone_with_the_question() {
+  running_alone && [ -z "${q:-}" ] && [ -n "${wsrun:-}" ] || return 0
+
+  q=$(ws source ask authorisation tests 'May this clause exist?') && say_made "the question, $q"
+}
+
 # `receive` carries a yes and makes none. There is no parameter for one, so a worker can produce a
 # human's answer only by writing it where a human's answer lives.
 an_answer_is_carried_never_minted() {
+  alone_with_the_work_source_run
+  alone_with_the_question
   [ -n "${q:-}" ] || { skip "answers — no question"; return; }
 
   is "an unanswered question is not an answer"  "$(code_of ws source receive authorisation tests)" "1"
@@ -10468,6 +10619,7 @@ only_the_yes_line_authorises
 # is asked at all. The adapter holds the same rule and keeps it, because floor is not its only
 # caller — so the record comes off below to reach it.
 one_item_has_many_runs() {
+  alone_with_the_work_source_run
   [ -n "${wsrun:-}" ] || { skip "deliveries — no work source run"; return; }
 
   first=$(ws source publish work/first 'The first attempt')
@@ -10509,6 +10661,7 @@ a_deleted_run_never_lends_its_name
 
 # A source that is not there answers "no item", and no item is what an unread run looks like.
 a_missing_source_is_not_silence() {
+  alone_with_the_work_source_run
   [ -n "${wsrun:-}" ] || { skip "missing source — no work source run"; return; }
 
   is "a work source that is not there stops the command" \

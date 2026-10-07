@@ -3228,6 +3228,10 @@ misses. A break with no row runs the whole suite, as every break did before.
 bash tests/model.sh --only a_run_is_read_in_one_status
 ```
 
+**Alone, a case makes what an earlier case would have left it.** Each thing it makes prints a line
+that starts with `made`. The whole suite makes nothing, so a case that loses what an earlier one left
+still goes red there.
+
 **Each case in the table runs alone and clean once, before any break.** One that fails is named, and
 its breaks run the whole suite. A case run alone gets five times its clean time, and never less than
 two minutes. If the clock runs out there, the whole suite decides.
