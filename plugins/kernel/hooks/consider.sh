@@ -26,12 +26,13 @@ FILE=$(field tool_input.file_path)
 # on half the installs it runs on. Nothing says it went wrong.
 FILE=$(printf '%s' "$FILE" | tr '\\' '/')
 
-# The directory holding a path, as `dirname` gives it. `git -C ""` would ask the session's own tree.
+# The directory holding a path, as `dirname` gives it. A root keeps its slash: `git -C ""` and
+# `git -C C:` would both ask the session's own tree.
 dir_of() {
-    case $1 in
-        */*) set -- "${1%/*}"; printf '%s' "${1:-/}" ;;
-        *)   printf '.' ;;
-    esac
+    case $1 in */*) ;; *) printf '.'; return ;; esac
+    set -- "${1%/*}"
+    case $1 in ''|?:) set -- "$1/" ;; esac
+    printf '%s' "$1"
 }
 
 # Only a file a commit can hold has a standard: not one outside every work tree, nor one git

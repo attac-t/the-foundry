@@ -271,7 +271,8 @@ audit_the_install() {
   wreck "hooks.json pointing at nothing is caught"      nofile rewire
   wreck "a hook that ships but is never wired is caught" nowire unwire
   wreck "a key that is not hooks is caught"              style  restyle
-  wreck "an edit hook reading the path as handed is caught" rooted unrooted
+  wreck "an edit hook naming a standard by the path as handed is caught" stdabs stdabs
+  wreck "an edit hook skipping by the path as handed is caught" skipabs skipabs
   wreck "an edit hook speaking outside a work tree is caught" outwt anywhere
 
   sh_is_bash && {
@@ -342,9 +343,10 @@ unwire()   { grep -v 'consider.sh' "$1/hooks/hooks.json" | rewrite "$1/hooks/hoo
 restyle()  { awk '/^  "hooks": \{$/ { print "  \"outputStyle\": \"kernel:craftsman\"," } { print }' "$1/hooks/hooks.json" | rewrite "$1/hooks/hooks.json"; }
 bashism()  { sed 's|dirname "\$0"|dirname "${BASH_SOURCE[0]}"|'  "$1/hooks/prompt.sh" | rewrite "$1/hooks/prompt.sh"; }
 
-# The edit hook as it was before #1141 and #1130: matching the absolute path, and speaking anywhere.
-# Each keeps the hook executable, so only the consider cases can catch it.
-unrooted() { sed 's|^IN_TREE=$(path_in_its_tree "$FILE")$|IN_TREE=$FILE|' "$1/hooks/consider.sh" | rewrite_in_place "$1/hooks/consider.sh"; }
+# The edit hook as it was before #1141, #1143 and #1130: each reader taking the absolute path, and
+# speaking anywhere. Each keeps the hook executable, so only its own consider case can catch it.
+stdabs()   { sed 's#standard_for "$IN_TREE"#standard_for "$FILE"#' "$1/hooks/consider.sh" | rewrite_in_place "$1/hooks/consider.sh"; }
+skipabs()  { sed 's#"$IN_TREE" | grep -qE#"$FILE" | grep -qE#' "$1/hooks/consider.sh" | rewrite_in_place "$1/hooks/consider.sh"; }
 anywhere() { grep -vF 'can_be_committed "$FILE" || exit 0' "$1/hooks/consider.sh" | rewrite_in_place "$1/hooks/consider.sh"; }
 
 #
