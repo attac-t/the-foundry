@@ -43,11 +43,15 @@ here="$(cd "$(dirname "$0")/.." && pwd)"
 [ "${1:-}" = --only ] && {
   shift
   only_text=$( . "$here/tests/alone.sh" && only_these "$0" "$@" ) || exit 2
-  only_cases=$*
+  readonly only_cases="$*"
   set --
   eval "$only_text"
   exit
 }
+
+# An inherited `only_cases` would make the whole suite build. `--only` runs this line again, so the
+# reset spares the one mark that block made read-only.
+readonly -p | grep -q ' only_cases=' || unset only_cases
 
 #
 # **Only a run of named cases builds what a case reads and an earlier case left.** The whole suite
@@ -1654,7 +1658,8 @@ the_three_kinds_stay_apart() {
 }
 the_three_kinds_stay_apart
 
-# The charter run, derived. The case above then selects and freezes, which no case below needs.
+# The charter run, derived. `a_charter_derives_from_the_repository_it_is_run_in` goes on to select
+# and freeze, and no case below needs either.
 alone_with_the_charter_run() {
   running_alone && [ -z "${chrun:-}" ] || return 0
   the_charter_repo || return 0
@@ -10543,9 +10548,11 @@ a_question_is_derived_not_issued() {
 }
 a_question_is_derived_not_issued
 
-# The question the case above asks, which the case below answers.
+# The question the case above asks, which the case below answers. Two cases further up leave other
+# items' questions in `q`, so only this run's own counts as built.
 alone_with_the_question() {
-  running_alone && [ -z "${q:-}" ] && [ -n "${wsrun:-}" ] || return 0
+  running_alone && [ -n "${wsrun:-}" ] || return 0
+  [ "${q:-}" = "${wsid:-}.authorisation.$(clause_of tests)" ] && return 0
 
   q=$(ws source ask authorisation tests 'May this clause exist?') && say_made "the question, $q"
 }
