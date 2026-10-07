@@ -1,5 +1,5 @@
 #!/bin/sh
-# PostToolUse: Prompts ADR consideration after code changes
+# PostToolUse: names the standard that governs a code edit
 #
 # Uses JSON additionalContext (PostToolUse stdout doesn't reach Claude)
 
@@ -29,16 +29,17 @@ FILE=$(printf '%s' "$FILE" | tr '\\' '/')
 # Skip non-code files (tests, docs, config)
 printf '%s' "$FILE" | grep -qE '(^|/)tests?/|\.test\.|\.spec\.|\.md$|\.json$|\.ya?ml$|\.env' && exit 0
 
-# Only a file a commit can hold has a standard: not one outside every work tree, nor one git ignores.
+# Only a file a commit can hold has a standard: not one outside every work tree, nor one git
+# ignores. Inside `.git/` git answers `false`, which is no work tree either.
 can_be_committed() {
-    git -C "$(dirname "$1")" rev-parse --is-inside-work-tree >/dev/null 2>&1 || return 1
-    ! git -C "$(dirname "$1")" check-ignore -q "$1" 2>/dev/null
+    [ "$(git -C "${1%/*}" rev-parse --is-inside-work-tree 2>/dev/null)" = true ] || return 1
+    ! git -C "${1%/*}" check-ignore -q "$1" 2>/dev/null
 }
 
 # The path from its work tree's root. The harness hands the hook an absolute path, and the patterns
 # below read one from its first character.
 path_in_its_tree() {
-    printf '%s%s' "$(git -C "$(dirname "$1")" rev-parse --show-prefix 2>/dev/null)" "$(basename "$1")"
+    printf '%s%s' "$(git -C "${1%/*}" rev-parse --show-prefix 2>/dev/null)" "${1##*/}"
 }
 
 can_be_committed "$FILE" || exit 0

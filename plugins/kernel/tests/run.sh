@@ -313,6 +313,10 @@ caught() { red_against install.sh PLUGIN_ROOT="$tmp/$1"; }
 # Rewrite a file in place.
 rewrite() { cat > "$1.new" && mv "$1.new" "$1"; }
 
+# Rewrite a file through itself, so it keeps its mode. `rewrite` moves a new file over the old, and
+# a hook that lost its executable bit fails the suite whatever else the break did.
+rewrite_in_place() { cat > "$1.new" && cat "$1.new" > "$1" && rm -f "$1.new"; }
+
 # Determine if this filesystem records an executable bit. Windows does not — tests/install.sh says
 # why. Removing a bit that was never there mutates nothing, and a mutation that did not happen
 # cannot prove the suite would notice it.
@@ -339,8 +343,9 @@ restyle()  { awk '/^  "hooks": \{$/ { print "  \"outputStyle\": \"kernel:craftsm
 bashism()  { sed 's|dirname "\$0"|dirname "${BASH_SOURCE[0]}"|'  "$1/hooks/prompt.sh" | rewrite "$1/hooks/prompt.sh"; }
 
 # The edit hook as it was before #1141 and #1130: matching the absolute path, and speaking anywhere.
-unrooted() { sed 's|"$(path_in_its_tree "$FILE")"|"$FILE"|' "$1/hooks/consider.sh" | rewrite "$1/hooks/consider.sh"; }
-anywhere() { grep -vF 'can_be_committed "$FILE" || exit 0' "$1/hooks/consider.sh" | rewrite "$1/hooks/consider.sh"; }
+# Each keeps the hook executable, so only the consider cases can catch it.
+unrooted() { sed 's|"$(path_in_its_tree "$FILE")"|"$FILE"|' "$1/hooks/consider.sh" | rewrite_in_place "$1/hooks/consider.sh"; }
+anywhere() { grep -vF 'can_be_committed "$FILE" || exit 0' "$1/hooks/consider.sh" | rewrite_in_place "$1/hooks/consider.sh"; }
 
 #
 # Last, because everything above fires the preflight and this has to see all of it.

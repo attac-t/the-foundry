@@ -222,6 +222,8 @@ has "and names craft-sh for a shipped script, by its absolute path" \
     "$(fire consider.sh "$(edited "$tmp/tree/plugins/x/bin/a.sh")")" "craft-sh"
 is  "consider is quiet on a file git ignores" \
     "$(fire consider.sh "$(edited "$tmp/tree/scratch/c.sh")")" ""
+is  "and on one inside .git, where git answers false" \
+    "$(fire consider.sh "$(edited "$tmp/tree/.git/hooks/d.sh")")" ""
 outside_every_work_tree || bad "consider — $tmp/outside sits in a work tree, so quiet there proves nothing"
 is  "consider is quiet outside every work tree" \
     "$(fire consider.sh "$(edited "$tmp/outside/b.sh")")" ""
