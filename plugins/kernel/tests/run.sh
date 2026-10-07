@@ -351,7 +351,7 @@ stdabs()   { sed 's#standard_for "$IN_TREE"#standard_for "$FILE"#' "$1/hooks/con
 skipabs()  { sed 's#"$IN_TREE" | grep -qE#"$FILE" | grep -qE#' "$1/hooks/consider.sh" | rewrite_in_place "$1/hooks/consider.sh"; }
 anywhere() { grep -vF 'can_be_committed "$FILE" || exit 0' "$1/hooks/consider.sh" | rewrite_in_place "$1/hooks/consider.sh"; }
 
-# The ground hook before #1109, both ways it went wrong: not asked after a compaction, or demanding there.
+# The two ways the ground hook can fail #1109: not asked after a compaction, or demanding there.
 forgets() { sed 's#"matcher": "startup|clear|compact"#"matcher": "startup|clear"#' "$1/hooks/hooks.json" | rewrite "$1/hooks/hooks.json"; }
 insists() { sed 's#= compact \]#= never ]#' "$1/hooks/ground.sh" | rewrite_in_place "$1/hooks/ground.sh"; }
 

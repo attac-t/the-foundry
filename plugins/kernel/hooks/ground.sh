@@ -36,8 +36,8 @@ ask_only_if_lost() {
 ---
 🧭 **After a compaction.** The harness restates the skills this session loaded, within a budget.
 
-- If the text of the `kernel:ground-*` skills is in your context, do not load them again.
-- If it is missing, invoke `Skill(kernel:ground)` before you answer.
+- The budget drops skills one at a time, so check each `kernel:ground-*` skill on its own.
+- If its text is missing, invoke that skill by name before you answer. Load no other.
 EOF
 }
 

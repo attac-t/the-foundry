@@ -27,7 +27,7 @@ printf '| id | state |\n| 1 | in-progress |\n'    > "$tmp/mem/blueprint.md"
 
 #
 # One line per wired hook: event, script, declared shell, the command string Claude Code runs, and
-# the matcher of the entry it sits in, or `-` where the entry names none.
+# the last matcher above that command within its event, or `-` where its event names none.
 #
 # Buffered and flushed, because the shell a hook declares sits on the line after its command, and a
 # hook that declares none has to come out of here marked rather than silently paired with the next
@@ -182,7 +182,7 @@ has "and after a clear"                   "$(fire ground.sh '{"source":"clear"}'
 # After a compaction the harness restates loaded skills within a budget, oldest first out, and says
 # not to reload them. So ground asks there, and only for a text that is gone. #1109.
 lacks "after a compaction ground does not demand" "$(fire ground.sh '{"source":"compact"}')" "GROUND NOW"
-has   "and asks only for a ground that is missing" "$(fire ground.sh '{"source":"compact"}')" "If it is missing"
+has   "and asks only for each ground skill that is missing" "$(fire ground.sh '{"source":"compact"}')" "invoke that skill by name"
 has   "ground is wired to a startup"         "$(matchers_of ground.sh)" "startup"
 has   "and to a clear"                       "$(matchers_of ground.sh)" "clear"
 has   "and to a compaction"                  "$(matchers_of ground.sh)" "compact"
