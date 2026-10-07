@@ -26,7 +26,8 @@ printf '**Objective**: Ship the harness\n'        > "$tmp/mem/working.md"
 printf '| id | state |\n| 1 | in-progress |\n'    > "$tmp/mem/blueprint.md"
 
 #
-# One line per wired hook: event, script, declared shell, and the command string Claude Code runs.
+# One line per wired hook: event, script, declared shell, the command string Claude Code runs, and
+# the matcher of the entry it sits in, or `-` where the entry names none.
 #
 # Buffered and flushed, because the shell a hook declares sits on the line after its command, and a
 # hook that declares none has to come out of here marked rather than silently paired with the next
@@ -39,11 +40,14 @@ wiring() {
       script = pending
       sub(/.*\//, "", script)
       sub(/"[ \t]*$/, "", script)
-      print pevent "\t" script "\t" (shell == "" ? "-" : shell) "\t" pending
+      print pevent "\t" script "\t" (shell == "" ? "-" : shell) "\t" pending "\t" (pmatcher == "" ? "-" : pmatcher)
       pending = ""; shell = ""
     }
     /^[ \t]*"[A-Z][A-Za-z]*"[ \t]*:[ \t]*\[/ {
-      event = $0; sub(/^[ \t]*"/, "", event); sub(/".*/, "", event)
+      event = $0; sub(/^[ \t]*"/, "", event); sub(/".*/, "", event); matcher = ""
+    }
+    /"matcher"[ \t]*:/ {
+      matcher = $0; sub(/^[^:]*:[ \t]*"/, "", matcher); sub(/".*/, "", matcher)
     }
     /"command"[ \t]*:/ {
       flush()
@@ -51,7 +55,7 @@ wiring() {
       sub(/^[^:]*:[ \t]*"/, "", cmd)
       sub(/",?[ \t]*$/, "", cmd)
       gsub(/\\"/, "\"", cmd)
-      pending = cmd; pevent = event
+      pending = cmd; pevent = event; pmatcher = matcher
     }
     /"shell"[ \t]*:/ {
       s = $0; sub(/^[^:]*:[ \t]*"/, "", s); sub(/".*/, "", s); shell = s
@@ -68,6 +72,9 @@ shell_for() { wiring | awk -F'\t' -v want="$1" '$2 == want { print $3; exit }'; 
 
 # List every script hooks.json wires.
 wired() { wiring | cut -f2 | sort -u; }
+
+# List each matcher a script is wired under, one a line, from every entry that runs it.
+matchers_of() { wiring | awk -F'\t' -v want="$1" '$2 == want { print $5 }'; }
 
 # List every top-level key in hooks.json. They sit one indent in, and nothing else does.
 top_level_keys() { sed -n 's/^  "\([^"]*\)".*/\1/p' "$hooks"; }
@@ -170,6 +177,15 @@ done
 is  "preflight is silent when healthy"    "$(fire preflight.sh '{"source":"startup"}')" ""
 has "remember loads working memory"       "$(fire remember.sh '{"source":"startup"}')" "Ship the harness"
 has "ground demands grounding"            "$(fire ground.sh '{"source":"startup"}')" "GROUND NOW"
+has "and after a clear"                   "$(fire ground.sh '{"source":"clear"}')"   "GROUND NOW"
+
+# After a compaction the harness restates loaded skills within a budget, oldest first out, and says
+# not to reload them. So ground asks there, and only for a text that is gone. #1109.
+lacks "after a compaction ground does not demand" "$(fire ground.sh '{"source":"compact"}')" "GROUND NOW"
+has   "and asks only for a ground that is missing" "$(fire ground.sh '{"source":"compact"}')" "If it is missing"
+has   "ground is wired to a startup"         "$(matchers_of ground.sh)" "startup"
+has   "and to a clear"                       "$(matchers_of ground.sh)" "clear"
+has   "and to a compaction"                  "$(matchers_of ground.sh)" "compact"
 has "the prompt hook echoes the objective"  "$(fire prompt.sh '{"prompt":"go"}')" "Ship the harness"
 has "and points at working memory"          "$(fire prompt.sh '{"prompt":"go"}')" "working.md"
 has "and forces skill evaluation"           "$(fire prompt.sh '{"prompt":"go"}')" "Skill Evaluation"

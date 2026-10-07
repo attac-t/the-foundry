@@ -274,6 +274,8 @@ audit_the_install() {
   wreck "an edit hook naming a standard by the path as handed is caught" stdabs stdabs
   wreck "an edit hook skipping by the path as handed is caught" skipabs skipabs
   wreck "an edit hook speaking outside a work tree is caught" outwt anywhere
+  wreck "a ground hook that forgets a compaction is caught" forget forgets
+  wreck "a ground hook that demands after a compaction is caught" insist insists
 
   sh_is_bash && {
     printf '  skip  a bash-only variable put back — this sh is bash, where it still resolves\n'
@@ -348,6 +350,10 @@ bashism()  { sed 's|dirname "\$0"|dirname "${BASH_SOURCE[0]}"|'  "$1/hooks/promp
 stdabs()   { sed 's#standard_for "$IN_TREE"#standard_for "$FILE"#' "$1/hooks/consider.sh" | rewrite_in_place "$1/hooks/consider.sh"; }
 skipabs()  { sed 's#"$IN_TREE" | grep -qE#"$FILE" | grep -qE#' "$1/hooks/consider.sh" | rewrite_in_place "$1/hooks/consider.sh"; }
 anywhere() { grep -vF 'can_be_committed "$FILE" || exit 0' "$1/hooks/consider.sh" | rewrite_in_place "$1/hooks/consider.sh"; }
+
+# The ground hook before #1109, both ways it went wrong: not asked after a compaction, or demanding there.
+forgets() { sed 's#"matcher": "startup|clear|compact"#"matcher": "startup|clear"#' "$1/hooks/hooks.json" | rewrite "$1/hooks/hooks.json"; }
+insists() { sed 's#= compact \]#= never ]#' "$1/hooks/ground.sh" | rewrite_in_place "$1/hooks/ground.sh"; }
 
 #
 # Last, because everything above fires the preflight and this has to see all of it.

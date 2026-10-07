@@ -1,11 +1,25 @@
 #!/bin/sh
-# SessionStart: Loads ground philosophy (foundational principles)
+# SessionStart: asks for the ground at a cold start, and after a compaction only if it was lost.
 #
-# These are non-negotiable. They shape every decision.
-#
-# Purpose: Establish the philosophy before any work begins.
+# After a compaction the harness restates the skills a session loaded, within a budget that drops
+# the oldest first. The ground loads first, so a long session can lose it, and a demand to reload
+# it then contradicts a harness that says not to. So that one moment asks, and does not demand. #1109.
 
-cat <<'EOF'
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PAYLOAD=$(cat)
+
+main() {
+    after_a_compaction && { ask_only_if_lost; return; }
+    demand_the_ground
+}
+
+# Whether the session restarted from a compaction. The payload names its cause in `source`.
+after_a_compaction() {
+    [ "$(printf '%s' "$PAYLOAD" | awk -f "$SCRIPT_DIR/lib/unjson.awk" -v path=source 2>/dev/null)" = compact ]
+}
+
+demand_the_ground() {
+    cat <<'EOF'
 ---
 🚨🚨🚨 **GROUND NOW** 🚨🚨🚨
 
@@ -15,3 +29,16 @@ cat <<'EOF'
 - ❌ Do not skip.
 - ❌ Do not respond to user until complete.
 EOF
+}
+
+ask_only_if_lost() {
+    cat <<'EOF'
+---
+🧭 **After a compaction.** The harness restates the skills this session loaded, within a budget.
+
+- If the text of the `kernel:ground-*` skills is in your context, do not load them again.
+- If it is missing, invoke `Skill(kernel:ground)` before you answer.
+EOF
+}
+
+main "$@"
