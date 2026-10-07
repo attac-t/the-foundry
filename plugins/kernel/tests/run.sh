@@ -289,16 +289,23 @@ audit_the_executable_bit() {
     printf '  skip  a hook that lost its executable bit — this filesystem records no such bit\n'
     return
   }
-  wreck "a hook that lost its executable bit is caught" nox unhook
+  wreck "a hook that lost its executable bit is caught" nox unhook drops-a-mode
 }
 
+#
 # Break one thing about the install and require the suite to notice.
+#
+# A break that drops a hook's executable bit fails the suite for that alone, whatever else it broke,
+# so it is refused unless its call says the bit is the thing it breaks. #1142.
+#
 wreck() {
-  local name="$1" tag="$2" break_it="$3"
+  local name="$1" tag="$2" break_it="$3" breaks_a_mode="${4:-}"
 
   copy "$tag"             || { bad "$name — could not copy the plugin, so this proves nothing"; return; }
   "$break_it" "$tmp/$tag" || { bad "$name — the break did not apply, so this proves nothing"; return; }
-  caught "$tag"          
+  [ -n "$breaks_a_mode" ] || modes_held "$tag" \
+    || { bad "$name — the break dropped a hook's executable bit, so the suite failed for that"; return; }
+  caught "$tag"
   case $? in
     1) bad  "$name — the suite passed against a broken install"; return ;;
     2) moot "$name — the mutant never answered, so this proves nothing"; return ;;
@@ -310,10 +317,19 @@ wreck() {
 # Copy the plugin somewhere we can ruin it.
 copy() { rm -rf "$tmp/$1" && cp -R "$root" "$tmp/$1"; }
 
+# Whether each hook the plugin ships executable is still executable in the broken copy.
+modes_held() {
+  local hook
+  for hook in "$root"/hooks/*.sh; do
+    [ -x "$hook" ] && [ ! -x "$tmp/$1/hooks/${hook##*/}" ] && return 1
+  done
+  return 0
+}
+
 # Determine if the install suite fails against the broken copy.
 caught() { red_against install.sh PLUGIN_ROOT="$tmp/$1"; }
 
-# Rewrite a file in place.
+# Rewrite a file by moving a new one over it, which takes the umask's mode: right for hooks.json.
 rewrite() { cat > "$1.new" && mv "$1.new" "$1"; }
 
 # Rewrite a file through itself, so it keeps its mode. `rewrite` moves a new file over the old, and
@@ -335,7 +351,7 @@ records_exec() {
 # The breaks. The ones that rewrite hooks.json rewrite every hook in it, on purpose — the wiring is
 # one artefact, and the bug kernel shipped was never confined to a single line of it.
 unhook()   { chmod -x "$1/hooks/ground.sh"; }
-crlf()     { awk '{ printf "%s\r\n", $0 }' "$1/hooks/ground.sh" | rewrite "$1/hooks/ground.sh"; }
+crlf()     { awk '{ printf "%s\r\n", $0 }' "$1/hooks/ground.sh" | rewrite_in_place "$1/hooks/ground.sh"; }
 unquote()  { sed 's/\\"//g' "$1/hooks/hooks.json" | rewrite "$1/hooks/hooks.json"; }
 bare()     { sed 's|"command": "sh |"command": "|' "$1/hooks/hooks.json" | rewrite "$1/hooks/hooks.json"; }
 unshell()  { grep -v '"shell"' "$1/hooks/hooks.json" | rewrite "$1/hooks/hooks.json"; }
@@ -343,7 +359,7 @@ unship()   { rm -f "$1/hooks/lib/unjson.awk"; }
 rewire()   { sed 's|hooks/ground.sh|hooks/gone.sh|' "$1/hooks/hooks.json" | rewrite "$1/hooks/hooks.json"; }
 unwire()   { grep -v 'consider.sh' "$1/hooks/hooks.json" | rewrite "$1/hooks/hooks.json"; }
 restyle()  { awk '/^  "hooks": \{$/ { print "  \"outputStyle\": \"kernel:craftsman\"," } { print }' "$1/hooks/hooks.json" | rewrite "$1/hooks/hooks.json"; }
-bashism()  { sed 's|dirname "\$0"|dirname "${BASH_SOURCE[0]}"|'  "$1/hooks/prompt.sh" | rewrite "$1/hooks/prompt.sh"; }
+bashism()  { sed 's|dirname "\$0"|dirname "${BASH_SOURCE[0]}"|'  "$1/hooks/prompt.sh" | rewrite_in_place "$1/hooks/prompt.sh"; }
 
 # The edit hook before #1141, #1143 and #1130. `stdabs` and `skipabs` each reach one case; `anywhere`
 # reaches every quiet case, so its row proves less until #1144 names the check a break must fail.
