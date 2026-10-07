@@ -112,7 +112,7 @@ PROMPT (UserPromptSubmit)              ← Anchor past → Reflect → Act
     ▼
 RESPONSE (PostToolUse)
     │
-    └── consider   Prompt ADR check (skips tests, config, docs)
+    └── consider   Prompt ADR check (skips tests, config, docs, and files no commit can hold)
     │
     ▼
 STOP (Stop)

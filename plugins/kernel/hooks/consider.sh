@@ -29,6 +29,20 @@ FILE=$(printf '%s' "$FILE" | tr '\\' '/')
 # Skip non-code files (tests, docs, config)
 printf '%s' "$FILE" | grep -qE '(^|/)tests?/|\.test\.|\.spec\.|\.md$|\.json$|\.ya?ml$|\.env' && exit 0
 
+# Only a file a commit can hold has a standard: not one outside every work tree, nor one git ignores.
+can_be_committed() {
+    git -C "$(dirname "$1")" rev-parse --is-inside-work-tree >/dev/null 2>&1 || return 1
+    ! git -C "$(dirname "$1")" check-ignore -q "$1" 2>/dev/null
+}
+
+# The path from its work tree's root. The harness hands the hook an absolute path, and the patterns
+# below read one from its first character.
+path_in_its_tree() {
+    printf '%s%s' "$(git -C "$(dirname "$1")" rev-parse --show-prefix 2>/dev/null)" "$(basename "$1")"
+}
+
+can_be_committed "$FILE" || exit 0
+
 # Which standard governs the edit. A copy here would be a second one to keep true.
 standard_for() {
     case "$1" in
@@ -43,4 +57,4 @@ printf '{
     "additionalContext": "**Consider**: `%s` governs what you just edited. Read it before the next one — afterwards is a rewrite."
   }
 }
-' "$(standard_for "$FILE")"
+' "$(standard_for "$(path_in_its_tree "$FILE")")"

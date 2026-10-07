@@ -201,8 +201,30 @@ printf '| id | state |\n| 1 | in-progress |\n' > "$tmp/mem/blueprint.md"
 # The jq-shaped hole: with no reader, the path came back empty, nothing matched the skip list, and
 # the nudge fired on every write it exists to stay out of.
 
+#
+# A work tree to edit in, one directory git ignores, and one no work tree holds. The harness hands
+# the hook an absolute path, so each path below is one. #1130, #1141.
+#
+mkdir -p "$tmp/outside"
+git init -q "$tmp/tree" 2>/dev/null && mkdir -p "$tmp/tree/src" "$tmp/tree/plugins/x/bin" "$tmp/tree/scratch" \
+  && printf 'scratch/\n' > "$tmp/tree/.gitignore" \
+  || bad "consider — git could not make a work tree here, so the checks below prove nothing"
+
+# A payload naming one edited file.
+edited() { printf '{"tool_input":{"file_path":"%s"}}' "$1"; }
+
+# Whether the outside directory really is outside. One under a work tree would prove nothing.
+outside_every_work_tree() { ! git -C "$tmp/outside" rev-parse --is-inside-work-tree >/dev/null 2>&1; }
+
 has "consider nudges on code" \
-    "$(fire consider.sh '{"tool_input":{"file_path":"/app/src/Order.php"}}')" "additionalContext"
+    "$(fire consider.sh "$(edited "$tmp/tree/src/Order.php")")" "craft-adr"
+has "and names craft-sh for a shipped script, by its absolute path" \
+    "$(fire consider.sh "$(edited "$tmp/tree/plugins/x/bin/a.sh")")" "craft-sh"
+is  "consider is quiet on a file git ignores" \
+    "$(fire consider.sh "$(edited "$tmp/tree/scratch/c.sh")")" ""
+outside_every_work_tree || bad "consider — $tmp/outside sits in a work tree, so quiet there proves nothing"
+is  "consider is quiet outside every work tree" \
+    "$(fire consider.sh "$(edited "$tmp/outside/b.sh")")" ""
 is  "consider is quiet on docs" \
     "$(fire consider.sh '{"tool_input":{"file_path":"/app/README.md"}}')" ""
 is  "consider is quiet on a unix test path" \
@@ -212,7 +234,7 @@ is  "consider is quiet on a windows test path" \
 is  "consider is quiet when it cannot read a path" \
     "$(fire consider.sh '{"tool_input":{}}')" ""
 has "content holding a decoy path does not fool it" \
-    "$(fire consider.sh '{"tool_input":{"file_path":"/app/src/A.php","content":"{\"file_path\":\"/x.md\"}"}}')" "additionalContext"
+    "$(fire consider.sh "$(printf '{"tool_input":{"file_path":"%s",' "$tmp/tree/src/A.php")"'"content":"{\"file_path\":\"/x.md\"}"}}')" "additionalContext"
 
 # `C:\Program Files\ClaudeCode\plugins` is where Windows actually puts this. An unquoted variable in
 # hooks.json splits on that space and the hook never starts.

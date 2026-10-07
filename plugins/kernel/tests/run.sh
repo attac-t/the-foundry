@@ -271,6 +271,8 @@ audit_the_install() {
   wreck "hooks.json pointing at nothing is caught"      nofile rewire
   wreck "a hook that ships but is never wired is caught" nowire unwire
   wreck "a key that is not hooks is caught"              style  restyle
+  wreck "an edit hook reading the path as handed is caught" rooted unrooted
+  wreck "an edit hook speaking outside a work tree is caught" outwt anywhere
 
   sh_is_bash && {
     printf '  skip  a bash-only variable put back — this sh is bash, where it still resolves\n'
@@ -335,6 +337,10 @@ rewire()   { sed 's|hooks/ground.sh|hooks/gone.sh|' "$1/hooks/hooks.json" | rewr
 unwire()   { grep -v 'consider.sh' "$1/hooks/hooks.json" | rewrite "$1/hooks/hooks.json"; }
 restyle()  { awk '/^  "hooks": \{$/ { print "  \"outputStyle\": \"kernel:craftsman\"," } { print }' "$1/hooks/hooks.json" | rewrite "$1/hooks/hooks.json"; }
 bashism()  { sed 's|dirname "\$0"|dirname "${BASH_SOURCE[0]}"|'  "$1/hooks/prompt.sh" | rewrite "$1/hooks/prompt.sh"; }
+
+# The edit hook as it was before #1141 and #1130: matching the absolute path, and speaking anywhere.
+unrooted() { sed 's|"$(path_in_its_tree "$FILE")"|"$FILE"|' "$1/hooks/consider.sh" | rewrite "$1/hooks/consider.sh"; }
+anywhere() { grep -vF 'can_be_committed "$FILE" || exit 0' "$1/hooks/consider.sh" | rewrite "$1/hooks/consider.sh"; }
 
 #
 # Last, because everything above fires the preflight and this has to see all of it.
