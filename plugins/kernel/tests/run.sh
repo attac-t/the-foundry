@@ -478,9 +478,13 @@ audit_the_label() {
   local said
   said=$(failed=0; wreck "a decoy" decoy crlf "the prompt hook echoes the objective"; echo "failed=$failed")
 
+  never_answered "$said" && { moot "a row whose break misses its own check — the decoy never answered"; return; }
   names_both "$said" || { bad "a row whose break misses its own check reads as caught — $said"; return; }
   printf '  ok    a row whose break misses its own check fails, naming both\n'
 }
+
+# Whether the bound ended the decoy's mutant before its suite answered.
+never_answered() { case $1 in *"MOOT  a decoy"*) return 0 ;; esac; return 1; }
 
 # Whether the decoy's row failed, naming the check it wanted and the first that failed instead.
 names_both() {
