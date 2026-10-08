@@ -3374,6 +3374,71 @@ a_delivery_that_cannot_read_its_messages_pushes_nothing() {
 }
 a_delivery_that_cannot_read_its_messages_pushes_nothing
 
+#
+# #1153. An `awk` that answers the name read for `$1`, `home` or `address`, with no word and exit 1,
+# as BusyBox's does on its own error. Its program prints a word, and the names it reads come in `names`.
+#
+an_awk_that_cannot_read_names() {
+  printf '#!/bin/sh\ncase "$*" in *"print (found"*) case "${names:-}" in *@*) [ %s = address ] && exit 1 ;; *) [ %s = home ] && exit 1 ;; esac ;; esac\nexec %s "$@"\n' \
+    "$1" "$1" "$(command -v awk)"
+}
+
+# #1153. An `awk` that ends the shell running it when its arguments match `$1`, as a fork that failed would.
+an_awk_that_ends_its_shell() {
+  printf '#!/bin/sh\ncase "$*" in %s) kill -KILL $PPID ;; esac\nexec %s "$@"\n' "$1" "$(command -v awk)"
+}
+
+# #1153. A `git` that cannot read the addresses commits carry, and reads anything else.
+a_git_that_cannot_read_addresses() {
+  printf '#!/bin/sh\ncase "$*" in *--format=%%ae%%n%%ce*) exit 128 ;; esac\nexec %s "$@"\n' "$(command -v git)"
+}
+
+#
+# #1153. One clean report, delivered with `$2` first on the path, so the body is read as it is there.
+# `$1` names the run. The body is printed, so a case reads the withheld line its stand-in caused.
+#
+a_body_read_through() {
+  printf 'Nothing here names this host.\nVERDICT: approve\n' > "$tmp/$1-one.said"
+  a_panel_run "$1" '' one || return 1
+  a_commit_in "$tmp/$1" 'feat: nothing to withhold'
+  floor "$tmp/$1" judged >/dev/null 2>&1
+  ( HOME=/c/Users/ada; PATH="$2:$PATH"; floor "$tmp/$1" deliver 'a change' ) >/dev/null 2>&1
+  cat "$(floor "$tmp/$1" path)/body" 2>/dev/null
+}
+
+#
+# #1153. A read that did not finish withholds the text, and its line names the read. Each stand-in
+# fails one read: a name read with no word, a capture whose shell ends, a log git cannot read.
+#
+a_read_that_did_not_finish_withholds_the_text() {
+  mkdir -p "$tmp/unread-homebin" "$tmp/unread-addressbin" "$tmp/dead-reasonsbin" "$tmp/dead-namesbin" "$tmp/dead-logbin"
+  an_awk_that_cannot_read_names home > "$tmp/unread-homebin/awk" \
+    && an_awk_that_cannot_read_names address > "$tmp/unread-addressbin/awk" \
+    && an_awk_that_ends_its_shell '*lib/credentials.awk\ *' > "$tmp/dead-reasonsbin/awk" \
+    && an_awk_that_ends_its_shell '*"function swapped"*' > "$tmp/dead-namesbin/awk" \
+    && a_git_that_cannot_read_addresses > "$tmp/dead-logbin/git" \
+    && chmod +x "$tmp/unread-homebin/awk" "$tmp/unread-addressbin/awk" "$tmp/dead-reasonsbin/awk" \
+         "$tmp/dead-namesbin/awk" "$tmp/dead-logbin/git" \
+    || { skip "a read that did not finish — could not put a stand-in on the path"; return; }
+
+  has "a home read with no word withholds the text, naming that read" \
+      "$(a_body_read_through unread-home "$tmp/unread-homebin")" \
+      "one's report is withheld whole: it holds what floor could not read for this host's home directory."
+  has "and so does an address read" \
+      "$(a_body_read_through unread-address "$tmp/unread-addressbin")" \
+      "one's report is withheld whole: it holds what floor could not read for an address its commits carry."
+  has "a capture of the reasons whose shell ends withholds the text" \
+      "$(a_body_read_through dead-reasons "$tmp/dead-reasonsbin")" \
+      "one's report is withheld whole: it holds what floor could not read for this text."
+  has "a capture of the home's spellings whose shell ends withholds every text" \
+      "$(a_body_read_through dead-names "$tmp/dead-namesbin")" \
+      "one's report is withheld whole: it holds what floor could not read for this host's names."
+  has "an address read whose log fails withholds every text" \
+      "$(a_body_read_through dead-log "$tmp/dead-logbin")" \
+      "one's report is withheld whole: it holds what floor could not read for this host's names."
+}
+a_read_that_did_not_finish_withholds_the_text
+
 # #1075. The home as `HOME` holds it, a path with no drive in it, is caught in a message too.
 a_message_naming_the_home_as_it_is_is_withheld() {
   a_run_to_deliver home-as-is '' || { skip "the home as it is — git could not make a repo here"; return; }

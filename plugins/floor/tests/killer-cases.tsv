@@ -10,6 +10,7 @@
 #
 # One row a break: its tag, a tab, its killer's case.
 a1reason	a_yes_in_another_stages_shape_is_no_yes
+addressswallow	a_read_that_did_not_finish_withholds_the_text
 adoptbase	a_delivery_carrying_a_commit_nobody_recorded
 advised	the_item_names_its_targets
 alivecopy	a_beat_ends_with_its_pass
@@ -257,6 +258,7 @@ holdignored	a_run_keeps_the_name_it_claimed_under
 holdname	a_run_keeps_the_name_it_claimed_under
 holdnoadopt	a_run_keeps_the_name_it_claimed_under
 holdrecord	a_run_keeps_the_name_it_claimed_under
+holdsword	a_read_that_did_not_finish_withholds_the_text
 homemade	a_claim_names_its_home
 homeonce	exactly_one_host_takes_an_item
 hostaged	a_pass_at_work_is_left_to_work
@@ -313,6 +315,8 @@ loosebar	a_pass_at_work_is_left_to_work
 loosech	an_empty_charter_is_refused
 lostonce	exactly_one_host_takes_an_item
 lowered	a_charter_derives_from_the_repository_it_is_run_in
+marknames	a_read_that_did_not_finish_withholds_the_text
+markreasons	a_read_that_did_not_finish_withholds_the_text
 memberdecoded	the_brief_a_judge_is_handed
 memberglob	a_member_named_like_a_pattern_stays_itself
 membernumeric	a_member_that_looks_like_a_number_is_its_own

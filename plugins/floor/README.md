@@ -950,6 +950,16 @@ before any of them.
 **A reader that cannot run withholds the text**, since a read that failed must never read as a
 credential that is not there. Its line says *it holds what floor could not read for a credential*.
 
+**So does any read that did not finish.** Each read's capture ends with a line `.` that only its own
+success writes. So a fork that failed, or an awk that errored, is never read as clean. The line
+names the read that did not finish:
+
+- *what floor could not read for this host's home directory*, or *for an address its commits carry*
+- *what floor could not read for this host's names*, when a list of them could not be read
+- *what floor could not read for this text*, when the read of the text as a whole did not finish
+
+A failed home read is named before a credential the third read would find.
+
 **A push would publish a message before the body is composed, so `deliver` reads first.** It reads
 the message of every commit above the base, through the one it carries, with the same reader. A
 shape stops it, 57, and nothing is pushed. The line names the commit and the shape. A reader that

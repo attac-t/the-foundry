@@ -5940,10 +5940,21 @@ BODY_CAP=65000
 #
 ready_to_carry() {
     carried_bytes=0
-    home_spellings=$(spellings_of_the_home)
-    commit_addresses=$(addresses_its_commits_carry "$1" "$2" "$3")
+    home_spellings=$(spellings_of_the_home && mark_the_end)
+    commit_addresses=$(addresses_its_commits_carry "$1" "$2" "$3" && mark_the_end)
+    names_unread=
+    finished "$home_spellings" && finished "$commit_addresses" || names_unread=1
+    home_spellings=${home_spellings%"$NEWLINE".} commit_addresses=${commit_addresses%"$NEWLINE".}
     carried_cap=$(room_under_the_cap "$(bytes_with_no_text "$1" "$2" "$3")")
 }
+
+#
+# **A read counts only when it finishes.** Its capture ends with a line `.` that only its own success
+# writes. A fork that fails ends the subshell first, and so leaves an answer with no mark. #1153.
+mark_the_end() { printf '\n.'; }
+
+# The whole last line is the mark, so no name or reason ending in a full stop can pass for it.
+finished() { [ "${1##*"$NEWLINE"}" = . ]; }
 
 # The body with every text a model wrote cut to nothing: the brief, the record and floor's own lines.
 bytes_with_no_text() {
@@ -5968,7 +5979,8 @@ room_under_the_cap() {
 carry_the_text() {
     [ -r "$1/$2" ] || return 0
 
-    withheld_for=$(why_it_is_withheld "$1/$2")
+    withheld_for=$(why_it_is_withheld "$1/$2" && mark_the_end)
+    settle_the_reason
     [ -z "$withheld_for" ] || { say_it_is_withheld "$1" "$2" "$3" "$withheld_for"; return 0; }
 
     fence_bytes=$(bytes_of_the_fences_for "$1/$2" "${4:-0}")
@@ -5995,9 +6007,27 @@ bytes_of_the_fences_for() {
 # The first reason found is the one given, so a text naming two is named by the home first. #1126.
 #
 why_it_is_withheld() {
-    holds_one_of "$1" "$home_spellings" && { printf "this host's home directory"; return 0; }
-    holds_one_of "$1" "$commit_addresses" && { printf 'an address its commits carry'; return 0; }
+    [ -z "${names_unread:-}" ] || { printf "what floor could not read for this host's names"; return 0; }
+    named_by "$1" "$home_spellings" "this host's home directory" && return 0
+    named_by "$1" "$commit_addresses" 'an address its commits carry' && return 0
     the_credential_in "$1"
+}
+
+# A capture with no mark is a read that did not finish, so the text is withheld for it. #1153.
+settle_the_reason() {
+    finished "$withheld_for" || { withheld_for="what floor could not read for this text"; return 0; }
+    withheld_for=${withheld_for%"$NEWLINE".}
+}
+
+# The reason `$3` when the file names a line of `$2`, or the read's own when it did not finish. When
+# the file names none, nothing, and 1.
+named_by() {
+    holds_one_of "$1" "$2"
+    case $? in
+        0) printf '%s' "$3"; return 0 ;;
+        1) return 1 ;;
+    esac
+    printf 'what floor could not read for %s' "$3"
 }
 
 #
@@ -6008,15 +6038,21 @@ the_credential_in() {
     printf 'what floor could not read for a credential'
 }
 
+#
 # Any line of `$2` anywhere in the file, compared without case. An empty line names nothing.
+#
+# The word awk prints is the answer, never its exit: an awk that errors may exit 1, which reads as
+# none found. 0 found, 1 none, and 2 for a read that did not finish. #1153.
 holds_one_of() {
     [ -n "$2" ] || return 1
 
-    names=$2 LC_ALL=C awk '
+    holds_said=$(names=$2 LC_ALL=C awk '
         BEGIN { n = split(ENVIRON["names"], name, "\n") }
         { said = tolower($0)
           for (i = 1; i <= n; i++) if (name[i] != "" && index(said, tolower(name[i]))) { found = 1; exit } }
-        END { exit !found }' "$1"
+        END { print (found ? "held" : "clear") }' "$1")
+    case $holds_said in held) return 0 ;; clear) return 1 ;; esac
+    return 2
 }
 
 #
@@ -6041,13 +6077,15 @@ spellings_of_the_home() {
         }'
 }
 
+#
 # Each address the delivered commit, and every commit above the base, carries as author and committer.
+# A tree, base or log it cannot read ends it with that failure, so its capture carries no mark. #1153.
 addresses_its_commits_carry() {
-    carried_tree=$(unit_work_tree "$1" "$3") || return 0
+    carried_tree=$(unit_work_tree "$1" "$3") || return 1
     carried_from=$(recorded_base "$(unit_workspace "$1")" "$(target_slot "$3")")
 
-    git -C "$carried_tree" log -1 --format='%ae%n%ce' "$2" 2>/dev/null
-    [ -z "$carried_from" ] || git -C "$carried_tree" log --format='%ae%n%ce' "$carried_from..$2" 2>/dev/null
+    git -C "$carried_tree" log -1 --format='%ae%n%ce' "$2" 2>/dev/null || return 1
+    git -C "$carried_tree" log --format='%ae%n%ce' "${carried_from:?}..$2" 2>/dev/null
 }
 
 # What one text may still take: its own bound, or what is left of the room they share less its fences.

@@ -4895,7 +4895,7 @@ wreck_runner "a judge with no receipt read as one missing a report is caught" \
 # holds it, no drive spelling, case compared, no address, a home of `/`, and the line's absolute path.
 #
 wreck_runner "a text holding this host's home that is carried is caught" \
-  withholdhome 's@^    home_spellings=\$(spellings_of_the_home)$@    home_spellings=@'
+  withholdhome 's@^    home_spellings=\$(spellings_of_the_home && mark_the_end)$@    home_spellings=$(mark_the_end)@'
 
 wreck_runner "a home compared only in its drive spellings is caught" \
   withholdasis 's@{ print; back = @{ back = @'
@@ -4911,7 +4911,7 @@ wreck_runner "a home compared with its case is caught" \
   withholdcase 's@said = tolower(\$0)@said = $0@; s@index(said, tolower(name\[i\]))@index(said, name[i])@'
 
 wreck_runner "a text holding an address its commits carry that is carried is caught" \
-  withholdaddress 's@^    commit_addresses=\$(addresses_its_commits_carry .*@    commit_addresses=@'
+  withholdaddress 's@^    commit_addresses=\$(addresses_its_commits_carry .*@    commit_addresses=$(mark_the_end)@'
 
 wreck_runner "a home of / that withholds every text is caught" \
   withholdslash 's@length(\$0) < 2 { exit }@length($0) < 1 { exit }@'
@@ -4960,10 +4960,26 @@ wreck_runner "a delivery that never reads for a credential is caught" \
   credread 's@^    the_credential_in "\$1"$@    :@'
 
 wreck_runner "a credential named before the home is caught" \
-  credorder 's@^    holds_one_of "\$1" "\$home_spellings" && {@    the_credential_in "$1" | grep -q . \&\& { the_credential_in "$1"; return 0; }; holds_one_of "$1" "$home_spellings" \&\& {@'
+  credorder 's@^    named_by "\$1" "\$home_spellings" "this host.s home directory" && return 0$@    the_credential_in "$1" | grep -q . \&\& { the_credential_in "$1"; return 0; }; &@'
 
 wreck_runner "a reader that cannot run, read as no credential, is caught" \
   credopen 's@^    LC_ALL=C awk -f "\$PLUGIN_ROOT/lib/credentials.awk" "\$1" && return 0$@    LC_ALL=C awk -f "$PLUGIN_ROOT/lib/credentials.awk" "$1"; return 0@'
+
+#
+# **A read counts only when it finishes.** One break per place a read could pass unfinished as clean:
+# the name read's word, each capture's mark, and the address read that swallows its failure. #1153.
+#
+wreck_runner "a name read with no word, read as none found, is caught" \
+  holdsword '/^holds_one_of() {/,/^}/s@^    return 2$@    return 1@'
+
+wreck_runner "a capture of the reasons with no mark, read as clean, is caught" \
+  markreasons 's@^    finished "\$withheld_for" || { withheld_for="what floor could not read for this text"; return 0; }$@    finished "$withheld_for" || { withheld_for=; return 0; }@'
+
+wreck_runner "a list of names with no mark, read as read, is caught" \
+  marknames 's@^    finished "\$home_spellings" && finished "\$commit_addresses" || names_unread=1$@    names_unread=@'
+
+wreck_runner "an address read that swallows its failure is caught" \
+  addressswallow 's@^    git -C "\$carried_tree" log -1 --format=.%ae%n%ce. "\$2" 2>/dev/null || return 1$@    return 0@'
 
 #
 # **No message holding a credential reaches the remote.** One break per way the read could miss it:
