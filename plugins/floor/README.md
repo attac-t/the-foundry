@@ -956,7 +956,8 @@ shape stops it, 57, and nothing is pushed. The line names the commit and the sha
 cannot run, or commits that cannot be listed, stop it the same way.
 
 **57 has two fixes.** A person rewords the message in a new commit, made through `commit` and graded
-at its own sha. A host repairs a reader that cannot run. A pass waits on a person at 57.
+at its own sha. A host repairs a reader that cannot run. A pass stops at 57, and the next wake waits
+on a person.
 
 | Exit | Means | Remedy |
 |---|---|---|
