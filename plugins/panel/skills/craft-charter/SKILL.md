@@ -26,7 +26,9 @@ Drive toward three answers:
 1. **What must become true?** Stated so it could be false. *"Orders over €100 ship free"* — not
    *"improve checkout"*.
 2. **How would we know?** The gates. If nothing mechanical can catch a failure here, say so — that
-   is a finding about the task, not a formality (see `craft-oracle`, The Coverage Rule).
+   is a finding about the task, not a formality (see `craft-oracle`, The Coverage Rule). **When the
+   work adds a check, first count what the record already holds that it must catch.** One charter
+   named six credential shapes, and the one instance on record matched none of them.
 3. **What is out of scope?** Explicitly. Scope drift is the most common way a run produces confident,
    unwanted work.
 
