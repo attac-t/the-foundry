@@ -229,7 +229,7 @@ audit_the_lib_scripts() {
   wreck_lib "a resolver that drops the session's folder is caught" nosess resolve-memory.sh 's|SESSION="${1:-}"|SESSION=|' 'named a worktree from the main checkout, it answers that branch in full'
 
   # A base that starts with a backslash, read as relative again, is joined under the folder. #1162.
-  wreck_lib "a resolver that joins a rooted base is caught" noarm resolve-memory.sh 's/|\\\\\*)/)/'
+  wreck_lib "a resolver that joins a rooted base is caught" noarm resolve-memory.sh 's/|\\\\\*)/)/' 'and a rooted one'
 }
 
 # Both of resolve-memory.sh's redirects at once. The rule is never `&>` anywhere in that file, so a
@@ -251,7 +251,7 @@ audit_the_echo() {
     printf '  skip  echo put back on the answer — this sh is bash, whose echo reads no escapes\n'
     return
   }
-  wreck_lib "echo put back on the answer is caught" echoback resolve-memory.sh 's/answer() { printf [^"]*"/answer() { echo "/'
+  wreck_lib "echo put back on the answer is caught" echoback resolve-memory.sh 's/answer() { printf [^"]*"/answer() { echo "/' 'and a UNC base, which leaves whole wherever echo reads escapes'
 }
 
 # Break one thing about a lib script and require the suite to fail the check its row names.
