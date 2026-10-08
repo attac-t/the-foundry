@@ -177,6 +177,10 @@ git branch?       → .claude/memory/<branch>
 otherwise         → .claude/memory
 ```
 
+**The hooks ask git in the folder the session works in**, which each payload names as `cwd`. They
+print a full path under that folder, unless a run or a full `CLAUDE_MEMORY_DIR` names the path. The
+desktop app runs every hook in the main checkout, and only `cwd` names the worktree.
+
 One variable is the whole handshake with [floor](../floor/README.md). kernel never learns where a
 run is kept and never calls floor, so each still works with the other uninstalled. `FOUNDRY_RUN`
 unset — which is every session without floor — changes nothing below.

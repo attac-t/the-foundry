@@ -88,6 +88,38 @@ is "an empty run variable changes nothing" \
 is "the answer inside a run is one line" \
    "$(lines "$(resolve_in_run "$tmp/bare" "$tmp/run" "$tmp/mem")")" "1"
 
+# --- the session's folder named ---
+#
+# The desktop app runs every hook in the main checkout, and only the payload names the worktree.
+# So the folder named is where git is asked, and the answer is a full path under it. #1137.
+
+# Resolve for a named folder, from a given working directory, with a run if one is given.
+resolve_for() { (cd "$1" && FOUNDRY_RUN="${4:-}" CLAUDE_MEMORY_DIR="$3" sh "$lib/resolve-memory.sh" "$2" 2>/dev/null); }
+
+a_session_named() {
+  a_checkout_and_its_worktree "$tmp/main" "$tmp/wt" \
+    || { skip "a session named — git could not make a worktree here"; return; }
+  mkdir -p "$tmp/wt/src"
+
+  is "named a worktree from the main checkout, it answers that branch in full" \
+     "$(resolve_for "$tmp/main" "$tmp/wt" .claude/memory)" "$tmp/wt/.claude/memory/feat/wt"
+  is "an active run still outranks a folder named" \
+     "$(resolve_for "$tmp/main" "$tmp/wt" .claude/memory "$tmp/run")" "$tmp/run/memory"
+  is "an absolute base stays as given" \
+     "$(resolve_for "$tmp/main" "$tmp/wt" "$tmp/mem")" "$tmp/mem/feat/wt"
+  is "and a drive-letter base too" \
+     "$(resolve_for "$tmp/main" "$tmp/wt" 'C:\mem')" 'C:\mem/feat/wt'
+  is "a subdirectory named reads the path from there, not from its tree's root" \
+     "$(resolve_for "$tmp/main" "$tmp/wt/src" .claude/memory)" "$tmp/wt/src/.claude/memory/feat/wt"
+
+  # Where a hook already runs in the folder the session works in, as the CLI's do, nothing moves.
+  is "named the folder it runs in, a relative base answers today's path, in full" \
+     "$(resolve_for "$tmp/wt" "$tmp/wt" .claude/memory)" "$tmp/wt/$(resolve "$tmp/wt" .claude/memory)"
+  is "and an absolute base answers exactly what it does today" \
+     "$(resolve_for "$tmp/wt" "$tmp/wt" "$tmp/mem")" "$(resolve "$tmp/wt" "$tmp/mem")"
+}
+a_session_named
+
 # --- the objective ---
 
 is "an objective is read"          "$(objective '**Objective**: Ship the harness')" "Ship the harness"

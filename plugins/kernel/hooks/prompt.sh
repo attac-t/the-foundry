@@ -16,13 +16,17 @@
 dir=$(cd "$(dirname "$0")" && pwd)
 
 main() {
-    memory=$(sh "$dir/lib/resolve-memory.sh")
+    session=$(session_folder)
+    memory=$(sh "$dir/lib/resolve-memory.sh" "$session")
 
     say_the_objective
     say_where_progress_goes
     say_to_evaluate_the_skills
     say_to_check_delegation
 }
+
+# The folder the session works in. Read only off a pipe: at a terminal the read waits for ever.
+session_folder() { [ -t 0 ] || awk -f "$dir/lib/unjson.awk" -v path=cwd 2>/dev/null; }
 
 # --- what each of the four said ---
 
@@ -41,7 +45,7 @@ say_the_objective() {
 # **`return`, never `exit`.** Apart, this one ended its own process and the other three still ran.
 # Folded, an exit here would take the skill evaluation with it — the fault a fold invites.
 say_where_progress_goes() {
-    case $(git branch --show-current 2>/dev/null) in
+    case $(git -C "${session:-.}" branch --show-current 2>/dev/null) in
         main|master|develop) printf '📝 Protected branch. See: ground-topic\n'; return 0 ;;
     esac
 
