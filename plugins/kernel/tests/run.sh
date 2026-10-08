@@ -28,11 +28,11 @@ main() {
   audit_the_reader
   audit_the_lib_scripts
   audit_the_install
+  audit_the_label
   audit_the_cleanup "$strays_before"
   audit_the_tally
   audit_the_bound
   audit_the_mode_guard
-  audit_the_label
 
   report
 }
@@ -236,6 +236,7 @@ audit_the_redirect() {
     printf '  skip  a bash-only redirect put back — this sh is bash, where it is not a bug\n'
     return
   }
+  # No check names the redirect. The guard memory.sh keeps for this bashism is the label.
   wreck_lib "a bash-only redirect put back is caught" amp resolve-memory.sh 's| >/dev/null 2>&1| \&>/dev/null|' 'the answer never carries a path to git'
 }
 
@@ -405,8 +406,8 @@ unwire()   { grep -v 'consider.sh' "$1/hooks/hooks.json" | rewrite "$1/hooks/hoo
 restyle()  { awk '/^  "hooks": \{$/ { print "  \"outputStyle\": \"kernel:craftsman\"," } { print }' "$1/hooks/hooks.json" | rewrite "$1/hooks/hooks.json"; }
 bashism()  { sed 's|dirname "\$0"|dirname "${BASH_SOURCE[0]}"|'  "$1/hooks/prompt.sh" | rewrite_in_place "$1/hooks/prompt.sh"; }
 
-# The edit hook before #1141, #1143 and #1130. `stdabs` and `skipabs` each reach one case; `anywhere`
-# reaches every quiet case, so its row proves less until #1144 names the check a break must fail.
+# The edit hook before #1141, #1143 and #1130. `stdabs` and `skipabs` each reach one case. `anywhere`
+# reaches all four quiet cases and its row names one, so the other three stay unpinned.
 stdabs()   { sed 's#standard_for "$IN_TREE"#standard_for "$FILE"#' "$1/hooks/consider.sh" | rewrite_in_place "$1/hooks/consider.sh"; }
 skipabs()  { sed 's#"$IN_TREE" | grep -qE#"$FILE" | grep -qE#' "$1/hooks/consider.sh" | rewrite_in_place "$1/hooks/consider.sh"; }
 anywhere() { grep -vF 'can_be_committed "$FILE" || exit 0' "$1/hooks/consider.sh" | rewrite_in_place "$1/hooks/consider.sh"; }
