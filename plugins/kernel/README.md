@@ -332,7 +332,8 @@ bash plugins/kernel/tests/run.sh
 ```
 
 The suite reads `hooks.json` and fires each command the way Claude Code fires it, then breaks the
-plugin one rule at a time and requires itself to go red. A suite that calls the scripts directly
+plugin one rule at a time. Each break must turn red the check that guards its rule, and red
+anywhere else does not count. A suite that calls the scripts directly
 proves only that the scripts work — never that the wiring does, which is where these hooks failed.
 
 **Requires `sh` and `awk`.** Nothing else. `git` is used where it is present and done without where

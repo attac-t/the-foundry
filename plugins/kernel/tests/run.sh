@@ -17,6 +17,9 @@ trap 'rm -rf "$tmp"' EXIT
 
 failed=0
 
+# What a suite said to the last mutant it met, kept so a row can read which check went red. #1144.
+heard="$tmp/heard"
+
 main() {
   local strays_before
   strays_before=$(strays)
@@ -25,6 +28,7 @@ main() {
   audit_the_reader
   audit_the_lib_scripts
   audit_the_install
+  audit_the_label
   audit_the_cleanup "$strays_before"
   audit_the_tally
   audit_the_bound
@@ -65,7 +69,7 @@ timed() {
   local seconds="$1" said
   shift
 
-  timeout "$seconds" "$@" >/dev/null 2>&1
+  timeout "$seconds" "$@" >"$heard" 2>&1
   said=$?
 
   [ "$said" -eq 124 ] && return 2
@@ -79,7 +83,7 @@ polled() {
   local seconds="$1" job waited=0
   shift
 
-  "$@" >/dev/null 2>&1 &
+  "$@" >"$heard" 2>&1 &
   job=$!
 
   while kill -0 "$job" 2>/dev/null; do
@@ -213,15 +217,15 @@ audit_the_lib_scripts() {
 
   audit_the_redirect
 
-  wreck_lib "an objective parser that keeps placeholders is caught" tbd extract-objective.sh 's|^  "\["\*"\]") exit 0 ;;|  "no-such-case") exit 0 ;;|'
+  wreck_lib "an objective parser that keeps placeholders is caught" tbd extract-objective.sh 's|^  "\["\*"\]") exit 0 ;;|  "no-such-case") exit 0 ;;|' 'a placeholder is not a goal'
 
   # The run rung, both ways: a rung that fires on a directory that is not there, and a rung that
   # never fires at all. Every memory hook goes quiet rather than loud on the first.
-  wreck_lib "a resolver that trusts a deleted run is caught"  ghost  resolve-memory.sh 's|\[ -d "$FOUNDRY_RUN" \]|\[ -n "$FOUNDRY_RUN" \]|'
-  wreck_lib "a resolver that ignores an active run is caught" norung resolve-memory.sh 's|if \[ -n "${FOUNDRY_RUN:-}" \] |if \[ -z "${FOUNDRY_RUN:-}" \] |'
+  wreck_lib "a resolver that trusts a deleted run is caught"  ghost  resolve-memory.sh 's|\[ -d "$FOUNDRY_RUN" \]|\[ -n "$FOUNDRY_RUN" \]|' 'a run that is gone falls back to the branch'
+  wreck_lib "a resolver that ignores an active run is caught" norung resolve-memory.sh 's|if \[ -n "${FOUNDRY_RUN:-}" \] |if \[ -z "${FOUNDRY_RUN:-}" \] |' 'an active run outranks the base'
 
   # The folder a hook names, dropped: memory is read where the hook runs again. #1137.
-  wreck_lib "a resolver that drops the session's folder is caught" nosess resolve-memory.sh 's|SESSION="${1:-}"|SESSION=|'
+  wreck_lib "a resolver that drops the session's folder is caught" nosess resolve-memory.sh 's|SESSION="${1:-}"|SESSION=|' 'named a worktree from the main checkout, it answers that branch in full'
 }
 
 # Both of resolve-memory.sh's redirects at once. The rule is never `&>` anywhere in that file, so a
@@ -232,12 +236,13 @@ audit_the_redirect() {
     printf '  skip  a bash-only redirect put back — this sh is bash, where it is not a bug\n'
     return
   }
-  wreck_lib "a bash-only redirect put back is caught" amp resolve-memory.sh 's| >/dev/null 2>&1| \&>/dev/null|'
+  # No check names the redirect. The guard memory.sh keeps for this bashism is the label.
+  wreck_lib "a bash-only redirect put back is caught" amp resolve-memory.sh 's| >/dev/null 2>&1| \&>/dev/null|' 'the answer never carries a path to git'
 }
 
-# Break one thing about a lib script and require the suite to notice.
+# Break one thing about a lib script and require the suite to fail the check its row names.
 wreck_lib() {
-  local name="$1" tag="$2" file="$3" expr="$4"
+  local name="$1" tag="$2" file="$3" expr="$4" label="$5"
 
   rm -rf "$tmp/$tag" && cp -R "$root/hooks/lib" "$tmp/$tag" || { bad "$name — could not copy lib"; return; }
   sed "$expr" "$root/hooks/lib/$file" > "$tmp/$tag/$file" || { bad "$name — sed failed"; return; }
@@ -247,6 +252,7 @@ wreck_lib() {
     1) bad  "$name — the suite passed against a broken lib"; return ;;
     2) moot "$name — the mutant never answered, so this proves nothing"; return ;;
   esac
+  failed_on "$label" || { bad "$name — $(what_failed_instead "$label")"; return; }
 
   printf '  ok    %s\n' "$name"
 }
@@ -267,29 +273,32 @@ audit_the_install() {
 
   audit_the_executable_bit
 
-  wreck "a hook checked out with CRLF is caught"        crlf   crlf
-  wreck "an unquoted plugin root is caught"             noquot unquote
-  wreck "a bare path with no interpreter is caught"     barep  bare
-  wreck "a hook that declares no shell is caught"       noshel unshell
-  wreck "a lib that did not ship is caught"             nolib  unship
-  wreck "hooks.json pointing at nothing is caught"      nofile rewire
-  wreck "a hook that ships but is never wired is caught" nowire unwire
-  wreck "a key that is not hooks is caught"              style  restyle
-  wreck "an edit hook naming a standard by the path as handed is caught" stdabs stdabs
-  wreck "an edit hook skipping by the path as handed is caught" skipabs skipabs
-  wreck "an edit hook speaking outside a work tree is caught" outwt anywhere
-  wreck "a ground hook that forgets a compaction is caught" forget forgets
-  wreck "a ground hook that demands after a compaction is caught" insist insists
-  wreck "a remember hook that never reads the session's folder is caught" remcwd remembers_here
-  wreck "a prompt hook that never reads the session's folder is caught" procwd prompts_here
-  wreck "a verify hook that never reads the session's folder is caught" vercwd verifies_here
-  wreck "a protected check asked of the hook's own folder is caught" protect protects_here
+  wreck "a hook checked out with CRLF is caught"        crlf   crlf 'carriage returns'
+  wreck "an unquoted plugin root is caught"             noquot unquote 'every plugin root is quoted'
+  wreck "a bare path with no interpreter is caught"     barep  bare 'consider.sh runs a bare path'
+  wreck "a hook that declares no shell is caught"       noshel unshell 'declares its shell'
+  # No check names a missing lib. The preflight is what speaks up, so its silence is the label.
+  wreck "a lib that did not ship is caught"             nolib  unship 'preflight is silent when healthy'
+  wreck "hooks.json pointing at nothing is caught"      nofile rewire 'hooks.json wires gone.sh, which did not ship'
+  wreck "a hook that ships but is never wired is caught" nowire unwire 'consider.sh ships but nothing wires it'
+  wreck "a key that is not hooks is caught"              style  restyle 'hooks.json carries "outputStyle", which Claude Code drops with a warning at every start'
+  wreck "an edit hook naming a standard by the path as handed is caught" stdabs stdabs 'and names craft-sh for a shipped script, by its absolute path'
+  wreck "an edit hook skipping by the path as handed is caught" skipabs skipabs 'and nudges code in a work tree under a folder named tests, #1143'
+  wreck "an edit hook speaking outside a work tree is caught" outwt anywhere 'consider is quiet outside every work tree'
+  wreck "a ground hook that forgets a compaction is caught" forget forgets 'and to a compaction'
+  wreck "a ground hook that demands after a compaction is caught" insist insists 'after a compaction ground does not demand'
+  wreck "a remember hook that never reads the session's folder is caught" remcwd remembers_here "from the main checkout, remember loads the worktree's memory"
+  wreck "a prompt hook that never reads the session's folder is caught" procwd prompts_here "and prompt echoes the worktree's objective"
+  wreck "a verify hook that never reads the session's folder is caught" vercwd verifies_here "and verify holds the turn on the worktree's blueprint"
+  wreck "a protected check asked of the hook's own folder is caught" protect protects_here "and names the worktree's path for progress, though the checkout is on main"
 
   sh_is_bash && {
     printf '  skip  a bash-only variable put back — this sh is bash, where it still resolves\n'
     return
   }
-  wreck "a bash-only variable put back is caught"       bsrc   bashism
+  # No check names a bashism. Under dash the variable is a bad substitution, so the prompt hook
+  # cannot find its lib, and the objective goes unsaid. That is the check this row reads.
+  wreck "a bash-only variable put back is caught"       bsrc   bashism 'the prompt hook echoes the objective'
 }
 
 audit_the_executable_bit() {
@@ -297,17 +306,18 @@ audit_the_executable_bit() {
     printf '  skip  a hook that lost its executable bit — this filesystem records no such bit\n'
     return
   }
-  wreck "a hook that lost its executable bit is caught" nox unhook drops-a-mode
+  wreck "a hook that lost its executable bit is caught" nox unhook 'not executable' drops-a-mode
 }
 
 #
-# Break one thing about the install and require the suite to notice.
+# Break one thing about the install and require the suite to fail the check its row names.
 #
 # A break that drops a hook's executable bit fails the suite for that alone, whatever else it broke,
 # so it is refused unless its call says the bit is the thing it breaks. #1142.
 #
+# A suite red only on other checks is a row that proved something else. #1144.
 wreck() {
-  local name="$1" tag="$2" break_it="$3" breaks_a_mode="${4:-}"
+  local name="$1" tag="$2" break_it="$3" label="$4" breaks_a_mode="${5:-}"
 
   copy "$tag"             || { bad "$name — could not copy the plugin, so this proves nothing"; return; }
   "$break_it" "$tmp/$tag" || { bad "$name — the break did not apply, so this proves nothing"; return; }
@@ -318,8 +328,28 @@ wreck() {
     1) bad  "$name — the suite passed against a broken install"; return ;;
     2) moot "$name — the mutant never answered, so this proves nothing"; return ;;
   esac
+  failed_on "$label" || { bad "$name — $(what_failed_instead "$label")"; return; }
 
   printf '  ok    %s\n' "$name"
+}
+
+#
+# Whether the suite the last mutant met failed the named check. A label is a check's own name: it
+# starts a FAIL line's text and ends with the line, or at the dash before the line's detail. Each
+# is matched whole, as a fixed string.
+#
+failed_on() {
+  want="  FAIL  $1" awk '$0 == ENVIRON["want"] || index($0, ENVIRON["want"] " — ") == 1 { found = 1 }
+                        END { exit !found }' "$heard"
+}
+
+# Say which check a row wanted, and the first one its suite failed instead.
+what_failed_instead() { printf 'wanted [%s] to fail, and the first to fail was [%s]' "$1" "$(first_failure)"; }
+
+# The name of the first check the last suite failed, cut where its detail begins.
+first_failure() {
+  awk 'index($0, "  FAIL  ") == 1 { line = substr($0, 9); cut = index(line, " — ")
+                                    print (cut ? substr(line, 1, cut - 1) : line); exit }' "$heard"
 }
 
 # Copy the plugin somewhere we can ruin it.
@@ -376,8 +406,8 @@ unwire()   { grep -v 'consider.sh' "$1/hooks/hooks.json" | rewrite "$1/hooks/hoo
 restyle()  { awk '/^  "hooks": \{$/ { print "  \"outputStyle\": \"kernel:craftsman\"," } { print }' "$1/hooks/hooks.json" | rewrite "$1/hooks/hooks.json"; }
 bashism()  { sed 's|dirname "\$0"|dirname "${BASH_SOURCE[0]}"|'  "$1/hooks/prompt.sh" | rewrite_in_place "$1/hooks/prompt.sh"; }
 
-# The edit hook before #1141, #1143 and #1130. `stdabs` and `skipabs` each reach one case; `anywhere`
-# reaches every quiet case, so its row proves less until #1144 names the check a break must fail.
+# The edit hook before #1141, #1143 and #1130. `stdabs` and `skipabs` each reach one case. `anywhere`
+# reaches all four quiet cases and its row names one, so the other three stay unpinned.
 stdabs()   { sed 's#standard_for "$IN_TREE"#standard_for "$FILE"#' "$1/hooks/consider.sh" | rewrite_in_place "$1/hooks/consider.sh"; }
 skipabs()  { sed 's#"$IN_TREE" | grep -qE#"$FILE" | grep -qE#' "$1/hooks/consider.sh" | rewrite_in_place "$1/hooks/consider.sh"; }
 anywhere() { grep -vF 'can_be_committed "$FILE" || exit 0' "$1/hooks/consider.sh" | rewrite_in_place "$1/hooks/consider.sh"; }
@@ -442,6 +472,27 @@ audit_the_mode_guard() {
     || { bad "the mode guard — no copy to drive it, so this proves nothing"; return; }
   modes_held guard && { bad "a copy whose hook lost its executable bit reads as held"; return; }
   printf '  ok    a copy whose hook lost its executable bit is refused\n'
+}
+
+# A row whose break turns a check red, but names one its suite passes, must fail and name both. #1144.
+audit_the_label() {
+  local said
+  said=$(failed=0; wreck "a decoy" decoy crlf "the prompt hook echoes the objective"; echo "failed=$failed")
+
+  never_answered "$said" && { moot "a row whose break misses its own check — the decoy never answered"; return; }
+  names_both "$said" || { bad "a row whose break misses its own check reads as caught — $said"; return; }
+  printf '  ok    a row whose break misses its own check fails, naming both\n'
+}
+
+# Whether the bound ended the decoy's mutant before its suite answered.
+never_answered() { case $1 in *"MOOT  a decoy"*) return 0 ;; esac; return 1; }
+
+# Whether the decoy's row failed, naming the check it wanted and the first that failed instead.
+names_both() {
+  case $1 in
+    *"wanted [the prompt hook echoes the objective] to fail, and the first to fail was ["?*"]"*"failed=1") return 0 ;;
+  esac
+  return 1
 }
 
 # Say how it went, and leave with the verdict.
