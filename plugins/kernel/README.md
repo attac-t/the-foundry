@@ -112,7 +112,7 @@ PROMPT (UserPromptSubmit)              ← Anchor past → Reflect → Act
     ▼
 RESPONSE (PostToolUse)
     │
-    └── consider   Prompt ADR check (skips tests, config, docs)
+    └── consider   Name the standard an edit answers to (skips tests, config, docs, and files no commit can hold)
     │
     ▼
 STOP (Stop)
@@ -332,7 +332,8 @@ plugin one rule at a time and requires itself to go red. A suite that calls the 
 proves only that the scripts work — never that the wiring does, which is where these hooks failed.
 
 **Requires `sh` and `awk`.** Nothing else. `git` is used where it is present and done without where
-it is not. There is no `bash` and no `jq`: kernel is wired through `sh`, so every script here is
+it is not. Where it is missing, `consider` stays quiet: it cannot tell which files a commit can hold.
+There is no `bash` and no `jq`: kernel is wired through `sh`, so every script here is
 POSIX, and the one place that needed to read JSON now reads it with `awk`.
 
 ---
