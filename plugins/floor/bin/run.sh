@@ -5963,12 +5963,12 @@ room_under_the_cap() {
 
 #
 # **One text a model wrote**: its first `$4` lines, or all when that is 0, from `$2` inside the run.
-# Withheld whole when it names this host, and cut where a bound falls. Fenced, so no line escapes.
+# Withheld whole for a reason below, and cut where a bound falls. Fenced, so no line escapes.
 #
 carry_the_text() {
     [ -r "$1/$2" ] || return 0
 
-    withheld_for=$(what_it_names_of_this_host "$1/$2")
+    withheld_for=$(why_it_is_withheld "$1/$2")
     [ -z "$withheld_for" ] || { say_it_is_withheld "$1" "$2" "$3" "$withheld_for"; return 0; }
 
     fence_bytes=$(bytes_of_the_fences_for "$1/$2" "${4:-0}")
@@ -5989,14 +5989,19 @@ bytes_of_the_fences_for() {
 }
 
 #
-# A text holding this host's home, or an address its commits carry, is withheld whole. Cutting the
-# line would not keep it as its writer wrote it, and a request is never rewritten once it is sent.
+# A text holding this host's home, an address its commits carry, or a credential is withheld whole.
+# Cutting the line would not keep it as its writer wrote it, and a request is never rewritten.
 #
-what_it_names_of_this_host() {
+# The first reason found is the one given, so a text naming two is named by the home first. #1126.
+#
+why_it_is_withheld() {
     holds_one_of "$1" "$home_spellings" && { printf "this host's home directory"; return 0; }
-    holds_one_of "$1" "$commit_addresses" && printf 'an address its commits carry'
-    return 0
+    holds_one_of "$1" "$commit_addresses" && { printf 'an address its commits carry'; return 0; }
+    the_credential_in "$1"
 }
+
+# The earliest shape `lib/credentials.awk` names in the file, or nothing.
+the_credential_in() { LC_ALL=C awk -f "$PLUGIN_ROOT/lib/credentials.awk" "$1"; }
 
 # Any line of `$2` anywhere in the file, compared without case. An empty line names nothing.
 holds_one_of() {

@@ -930,6 +930,29 @@ A home of `/` names nothing. **A name floor cannot form is carried**:
 - `~`, or a path split across two lines
 - a path in any spelling not listed above
 
+**A message or report that holds a credential in a shape below is withheld whole too**, by the same
+line. `lib/credentials.awk` reads each shape as a prefix and the run of characters after it:
+
+- a GitHub token: `ghp_`, `gho_`, `ghu_`, `ghs_` or `ghr_`, then 36 letters and digits or more
+- a GitHub token: `github_pat_`, then 22 letters, digits and `_` or more
+- a private key: a `-----BEGIN … PRIVATE KEY-----` header, with or without a word before `PRIVATE`
+- an AWS access key: `AKIA` or `ASIA`, then 16 capitals and digits or more
+- a model vendor's API key: `sk-ant-` or `sk-proj-`, then 20 or more
+- a signed link: `X-Amz-Signature=` or `X-Goog-Signature=`, in either case, then 64 hex digits or more
+- a signed link: `sig=`, then 46 or more of what a URL can hold
+
+**Any other credential is carried.** A PGP key block is one. So are an AWS secret without its key
+ID, and any other `sk-` key. A prefix with too short a run is carried, and so is prose naming one. A text holding two shapes is named by the earlier one above. The home and the addresses
+are read before any of them.
+
+**The push publishes a commit's message before the body is composed.** So a message withheld for a
+credential is public already. The line marks where it is, and the credential wants revoking. #1151
+owns refusing that push.
+
+**Only what a model wrote is read.** The brief, the title and the lines of the record are carried
+unread. Clause text a panel proposed is among them, and so is a hand's yes. `body brief` carries no
+judge's report.
+
 **No line of a carried text renders outside its fence.** The fence is one backtick longer than the
 longest run the text holds, and never shorter than three. It sits at the left margin, where no list
 item can hold it.

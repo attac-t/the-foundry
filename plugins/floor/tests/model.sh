@@ -3196,6 +3196,107 @@ a_text_naming_this_host_is_withheld_whole() {
 }
 a_text_naming_this_host_is_withheld_whole
 
+#
+# #1126. Each credential is built as the case runs, so no token is written whole in this file and no
+# push of it carries one. A run repeats one character: `$1`, `$2` times.
+#
+repeated() { awk -v c="$1" -v n="$2" 'BEGIN { while (n-- > 0) printf "%s", c }'; }
+
+a_github_token() { printf 'gh%s_%s' "$1" "$(repeated a 36)"; }
+a_fine_token()   { printf 'github_%s_%s' pat "$(repeated b 22)"; }
+a_key_header()   { printf '%s' "-----BEGIN ${1}PRIVATE KEY-----"; }
+an_aws_key()     { printf 'A%sIA%s' "$1" "$(repeated C 16)"; }
+a_vendor_key()   { printf 'sk-%s-%s' "$1" "$(repeated d 20)"; }
+a_signed_link()  { printf 'https://b.invalid/o?%s=%s' "$1" "$(repeated e 64)"; }
+a_sas_link()     { printf 'https://b.invalid/o?sv=1&si%s=%s%%3D&se=2' g "$(repeated f 44)"; }
+
+# Each run one short of its least, in characters no planted token repeats.
+runs_too_short() {
+  printf 'gh%s_%s github_%s_%s A%sIA%s sk-%s-%s X-%s-Signature=%s si%s=%s' \
+    p "$(repeated z 35)" pat "$(repeated z 21)" K "$(repeated Z 15)" ant "$(repeated z 19)" \
+    Amz "$(repeated 9 63)" g "$(repeated z 45)"
+}
+
+# Each member, and the shape its report is withheld for.
+the_members_withheld() {
+  cat <<'MEMBERS'
+ghp|a GitHub token
+gho|a GitHub token
+ghu|a GitHub token
+ghs|a GitHub token
+ghr|a GitHub token
+pat|a GitHub token
+rsakey|a private key
+barekey|a private key
+akia|an AWS access key
+asia|an AWS access key
+ant|a model vendor's API key
+proj|a model vendor's API key
+amz|a signed link
+goog|a signed link
+amzlower|a signed link
+googupper|a signed link
+sas|a signed link
+later|a GitHub token
+MEMBERS
+}
+
+# What each member's report holds, one per alternative the reader names, then the near misses.
+plant_the_credentials() {
+  for kind in p o u r s; do plant "gh$kind" "$(a_github_token "$kind")" || return 1; done
+  plant pat "$(a_fine_token)" && plant rsakey "$(a_key_header 'RSA ')" && plant barekey "$(a_key_header '')" \
+    && plant akia "$(an_aws_key K)" && plant asia "$(an_aws_key S)" \
+    && plant ant "$(a_vendor_key ant)" && plant proj "$(a_vendor_key proj)" \
+    && plant amz "$(a_signed_link X-Amz-Signature)" && plant goog "$(a_signed_link X-Goog-Signature)" \
+    && plant amzlower "$(a_signed_link x-amz-signature)" && plant googupper "$(a_signed_link X-GOOG-SIGNATURE)" \
+    && plant sas "$(a_sas_link)" && plant later "ghp_x, then $(a_github_token p)" \
+    && plant hometoken "/c/Users/ada/notes and $(a_github_token p)" \
+    && plant twoshapes "$(an_aws_key K)
+and $(a_github_token p)" \
+    && plant short "$(runs_too_short)" \
+    && plant prose "the ghp_ prefix, github_pat_, a -----BEGIN line, AKIA, sk-ant-, sig= and X-Amz-Signature="
+}
+
+plant() { printf 'I read %s in a file\nVERDICT: approve\n' "$2" > "$tmp/holds-credential-$1.said"; }
+
+#
+# #1126. A message or report holding a credential in a shape floor names is withheld whole, and its
+# line names the shape. Every alternative is planted, each from a member of its own.
+#
+a_text_holding_a_credential_is_withheld_whole() {
+  plant_the_credentials || { skip "a text holding a credential — could not plant a report"; return; }
+  a_panel_run holds-credential '' $(the_members_withheld | cut -d'|' -f1) hometoken twoshapes short prose \
+    || { skip "a text holding a credential — git could not make a repo here"; return; }
+  ( export GIT_AUTHOR_NAME=ada GIT_AUTHOR_EMAIL=mail@ada.invalid GIT_COMMITTER_NAME=ada GIT_COMMITTER_EMAIL=mail@ada.invalid
+    a_commit_in "$tmp/holds-credential" "$(printf 'feat: keep the key\n\nkey %s' "$(an_aws_key K)")" )
+  floor "$tmp/holds-credential" judged >/dev/null 2>&1
+  ( HOME=/c/Users/ada; floor "$tmp/holds-credential" deliver 'a change' ) >/dev/null 2>&1
+  held=$(cat "$(floor "$tmp/holds-credential" path)/body" 2>/dev/null)
+
+  while IFS='|' read -r member shape; do
+    has "a report planting [$member] is withheld whole, for $shape" "$held" \
+        "$member's report is withheld whole: it holds $shape."
+  done <<MEMBERS
+$(the_members_withheld)
+MEMBERS
+  has   "a message holding one is withheld by the same rule" "$held" \
+        "Its commit's message is withheld whole: it holds an AWS access key."
+  has   "a report holding the home and a token is withheld for the home" "$held" \
+        "hometoken's report is withheld whole: it holds this host's home directory."
+  has   "a report holding two shapes is named by the earlier row" "$held" \
+        "twoshapes's report is withheld whole: it holds a GitHub token."
+  has   "a run one short of each least is carried" "$held" "$(printf '```\nI read %s in a file\n```' "$(runs_too_short)")"
+  has   "and so is prose naming each prefix" "$held" "I read the ghp_ prefix, github_pat_"
+  lacks "no planted token reaches the request" "$held" "$(repeated a 36)"
+  lacks "nor a fine-grained one" "$held" "$(repeated b 22)"
+  lacks "nor a key header" "$held" "PRIVATE KEY-----"
+  lacks "nor an AWS key" "$held" "$(repeated C 16)"
+  lacks "nor a vendor's key" "$held" "$(repeated d 20)"
+  lacks "nor a signature" "$held" "$(repeated e 64)"
+  lacks "nor a SAS signature" "$held" "$(repeated f 44)"
+}
+a_text_holding_a_credential_is_withheld_whole
+
 # #1075. The home as `HOME` holds it, a path with no drive in it, is caught in a message too.
 a_message_naming_the_home_as_it_is_is_withheld() {
   a_run_to_deliver home-as-is '' || { skip "the home as it is — git could not make a repo here"; return; }

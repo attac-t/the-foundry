@@ -4919,6 +4919,49 @@ wreck_runner "a home of / that withholds every text is caught" \
 wreck_runner "a withheld line naming an absolute path is caught" \
   withheldpath '/^say_it_is_withheld() {/,/^}/s@"\$3" "\$4" "\$2"@"$3" "$4" "$1/$2"@'
 
+#
+# **A credential in a shape floor names is withheld whole.** One break per row of the reader, and
+# one for each rule a row leans on: every match read, the least, either case, and both orders. #1126.
+#
+wreck_runner "a reader that misses a classic GitHub token is caught" \
+  credgh '/row("a GitHub token", "gh\[pousr\]_"/d' lib/credentials.awk
+
+wreck_runner "a reader that misses a fine-grained GitHub token is caught" \
+  credpat '/row("a GitHub token", "github_pat_"/d' lib/credentials.awk
+
+wreck_runner "a reader that misses a private key is caught" \
+  credkey '/row("a private key"/d' lib/credentials.awk
+
+wreck_runner "a reader that misses an AWS access key is caught" \
+  credaws '/row("an AWS access key"/d' lib/credentials.awk
+
+wreck_runner "a reader that misses a model vendor's key is caught" \
+  credvendor '/row("a model vendor.s API key"/d' lib/credentials.awk
+
+wreck_runner "a reader that misses a signature named in a link is caught" \
+  credsign '/in_either_case("a signed link"/d' lib/credentials.awk
+
+wreck_runner "a reader that misses a SAS signature is caught" \
+  credsas '/row("a signed link", "sig="/d' lib/credentials.awk
+
+wreck_runner "a reader that reads only the first match on a line is caught" \
+  credfirst 's@while (match(rest, prefix\[i\]))@if (match(rest, prefix[i]))@' lib/credentials.awk
+
+wreck_runner "a reader that ignores the least is caught" \
+  credleast 's@>= least\[i\]@>= 0@' lib/credentials.awk
+
+wreck_runner "a reader that reads a signature name in one case only is caught" \
+  credcase 's@return (i in folded) ? tolower(line) : line@return line@' lib/credentials.awk
+
+wreck_runner "a reader that names the later of two rows is caught" \
+  credrows 's@^END { for (i = 1; i <= rows; i++)@END { for (i = rows; i >= 1; i--)@' lib/credentials.awk
+
+wreck_runner "a delivery that never reads for a credential is caught" \
+  credread 's@^    the_credential_in "\$1"$@    :@'
+
+wreck_runner "a credential named before the home is caught" \
+  credorder 's@^    holds_one_of "\$1" "\$home_spellings" \&\& {@    the_credential_in "$1" | grep -q . \&\& { the_credential_in "$1"; return 0; }; holds_one_of "$1" "$home_spellings" \&\& {@'
+
 # No line leaves its fence: three backticks always, or no more than the longest run the text holds.
 wreck_runner "a fence of three around a longer backtick run is caught" \
   fencethree 's@n = (longest < 3 ? 3 : longest + 1)@n = 3@'
