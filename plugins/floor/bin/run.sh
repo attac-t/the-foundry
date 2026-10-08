@@ -6017,7 +6017,11 @@ why_it_is_withheld() {
 settle_the_reason() {
     finished "$withheld_for" || { withheld_for="what floor could not read for this text"; return 0; }
     withheld_for=${withheld_for%"$NEWLINE".}
+    drop_the_readers_newline
 }
+
+# The credential reader ends its shape with `print`, and a bare capture used to swallow that newline.
+drop_the_readers_newline() { withheld_for=${withheld_for%"$NEWLINE"}; }
 
 # The reason `$3` when the file names a line of `$2`, or the read's own when it did not finish. When
 # the file names none, nothing, and 1.

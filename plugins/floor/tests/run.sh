@@ -4979,7 +4979,11 @@ wreck_runner "a list of names with no mark, read as read, is caught" \
   marknames 's@^    finished "\$home_spellings" && finished "\$commit_addresses" || names_unread=1$@    names_unread=@'
 
 wreck_runner "an address read that swallows its failure is caught" \
-  addressswallow 's@^    git -C "\$carried_tree" log -1 --format=.%ae%n%ce. "\$2" 2>/dev/null || return 1$@    return 0@'
+  addressswallow 's@^\(    git -C "\$carried_tree" log -1 --format=.%ae%n%ce. "\$2" 2>/dev/null\) || return 1$@\1 || return 0@'
+
+# The reader prints its shape with a newline, and a marked capture keeps it: the line breaks unless dropped.
+wreck_runner "a credential reason that keeps the reader's newline is caught" \
+  credline 's@^drop_the_readers_newline() { withheld_for=\${withheld_for%"\$NEWLINE"}; }$@drop_the_readers_newline() { :; }@'
 
 #
 # **No message holding a credential reaches the remote.** One break per way the read could miss it:
