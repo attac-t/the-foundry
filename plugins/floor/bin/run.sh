@@ -6000,8 +6000,13 @@ why_it_is_withheld() {
     the_credential_in "$1"
 }
 
-# The earliest shape `lib/credentials.awk` names in the file, or nothing.
-the_credential_in() { LC_ALL=C awk -f "$PLUGIN_ROOT/lib/credentials.awk" "$1"; }
+#
+# The earliest shape `lib/credentials.awk` names in the file, or nothing. A reader that cannot run
+# withholds the text, since a read that failed must never read as a credential that is not there.
+the_credential_in() {
+    LC_ALL=C awk -f "$PLUGIN_ROOT/lib/credentials.awk" "$1" && return 0
+    printf 'what floor could not read for a credential'
+}
 
 # Any line of `$2` anywhere in the file, compared without case. An empty line names nothing.
 holds_one_of() {

@@ -4960,7 +4960,10 @@ wreck_runner "a delivery that never reads for a credential is caught" \
   credread 's@^    the_credential_in "\$1"$@    :@'
 
 wreck_runner "a credential named before the home is caught" \
-  credorder 's@^    holds_one_of "\$1" "\$home_spellings" \&\& {@    the_credential_in "$1" | grep -q . \&\& { the_credential_in "$1"; return 0; }; holds_one_of "$1" "$home_spellings" \&\& {@'
+  credorder 's@^    holds_one_of "\$1" "\$home_spellings" && {@    the_credential_in "$1" | grep -q . \&\& { the_credential_in "$1"; return 0; }; holds_one_of "$1" "$home_spellings" \&\& {@'
+
+wreck_runner "a reader that cannot run, read as no credential, is caught" \
+  credopen 's@^    LC_ALL=C awk -f "\$PLUGIN_ROOT/lib/credentials.awk" "\$1" && return 0$@    LC_ALL=C awk -f "$PLUGIN_ROOT/lib/credentials.awk" "$1"; return 0@'
 
 # No line leaves its fence: three backticks always, or no more than the longest run the text holds.
 wreck_runner "a fence of three around a longer backtick run is caught" \

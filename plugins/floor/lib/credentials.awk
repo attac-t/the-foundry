@@ -21,7 +21,7 @@ END { for (i = 1; i <= rows; i++) if (i in held) { print shape[i]; exit } }
 
 function row(name, start, run, fewest) {
     rows++
-    shape[rows] = name; prefix[rows] = start; tail[rows] = run; least[rows] = fewest
+    shape[rows] = name; prefix[rows] = start; runs[rows] = run; least[rows] = fewest
 }
 
 function in_either_case(name, start, run, fewest) { row(name, start, run, fewest); folded[rows] = 1 }
@@ -34,7 +34,7 @@ function holds(line, i,   rest) {
     rest = line
     while (match(rest, prefix[i])) {
         rest = substr(rest, RSTART + RLENGTH)
-        if (run_at(rest, tail[i]) >= least[i]) return 1
+        if (run_at(rest, runs[i]) >= least[i]) return 1
     }
     return 0
 }

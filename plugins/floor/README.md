@@ -937,13 +937,18 @@ line. `lib/credentials.awk` reads each shape as a prefix and the run of characte
 - a GitHub token: `github_pat_`, then 22 letters, digits and `_` or more
 - a private key: a `-----BEGIN … PRIVATE KEY-----` header, with or without a word before `PRIVATE`
 - an AWS access key: `AKIA` or `ASIA`, then 16 capitals and digits or more
-- a model vendor's API key: `sk-ant-` or `sk-proj-`, then 20 or more
-- a signed link: `X-Amz-Signature=` or `X-Goog-Signature=`, in either case, then 64 hex digits or more
-- a signed link: `sig=`, then 46 or more of what a URL can hold
+- a model vendor's API key: `sk-ant-` or `sk-proj-`, then 20 letters, digits, `_` and `-` or more
+- a signed link: `X-Amz-Signature=` or `X-Goog-Signature=`, in either case, then 64 hex digits or
+  more
+- a signed link: `sig=`, then 46 letters, digits, `%`, `+`, `/`, `=`, `_` and `-` or more
 
 **Any other credential is carried.** A PGP key block is one. So are an AWS secret without its key
-ID, and any other `sk-` key. A prefix with too short a run is carried, and so is prose naming one. A text holding two shapes is named by the earlier one above. The home and the addresses
-are read before any of them.
+ID, and any other `sk-` key. A prefix with too short a run is carried, and so is prose naming one.
+A text holding two shapes is named by the earlier one above. The home and the addresses are read
+before any of them.
+
+**A reader that cannot run withholds the text**, since a read that failed must never read as a
+credential that is not there. Its line says *it holds what floor could not read for a credential*.
 
 **The push publishes a commit's message before the body is composed.** So a message withheld for a
 credential is public already. The line marks where it is, and the credential wants revoking. #1151

@@ -3235,6 +3235,8 @@ proj|a model vendor's API key
 amz|a signed link
 goog|a signed link
 amzlower|a signed link
+amzupper|a signed link
+googlower|a signed link
 googupper|a signed link
 sas|a signed link
 later|a GitHub token
@@ -3248,7 +3250,8 @@ plant_the_credentials() {
     && plant akia "$(an_aws_key K)" && plant asia "$(an_aws_key S)" \
     && plant ant "$(a_vendor_key ant)" && plant proj "$(a_vendor_key proj)" \
     && plant amz "$(a_signed_link X-Amz-Signature)" && plant goog "$(a_signed_link X-Goog-Signature)" \
-    && plant amzlower "$(a_signed_link x-amz-signature)" && plant googupper "$(a_signed_link X-GOOG-SIGNATURE)" \
+    && plant amzlower "$(a_signed_link x-amz-signature)" && plant amzupper "$(a_signed_link X-AMZ-SIGNATURE)" \
+    && plant googlower "$(a_signed_link x-goog-signature)" && plant googupper "$(a_signed_link X-GOOG-SIGNATURE)" \
     && plant sas "$(a_sas_link)" && plant later "ghp_x, then $(a_github_token p)" \
     && plant hometoken "/c/Users/ada/notes and $(a_github_token p)" \
     && plant twoshapes "$(an_aws_key K)
@@ -3296,6 +3299,34 @@ MEMBERS
   lacks "nor a SAS signature" "$held" "$(repeated f 44)"
 }
 a_text_holding_a_credential_is_withheld_whole
+
+# An `awk` that cannot run the credential reader, as a fork that failed cannot, and runs any other.
+an_awk_that_cannot_read_credentials() {
+  printf '#!/bin/sh\ncase "$*" in *lib/credentials.awk*) exit 2 ;; esac\nexec %s "$@"\n' "$(command -v awk)"
+}
+
+#
+# #1126's build judge, round one. A reader that cannot run withholds the text it was to read, since
+# a read that failed must never read as a credential that is not there.
+#
+a_text_floor_cannot_read_for_a_credential_is_withheld() {
+  printf 'Nothing here holds a credential.\nVERDICT: approve\n' > "$tmp/unread-credential-one.said"
+  a_panel_run unread-credential '' one \
+    || { skip "a reader that cannot run — git could not make a repo here"; return; }
+  mkdir -p "$tmp/unreadbin"
+  an_awk_that_cannot_read_credentials > "$tmp/unreadbin/awk" && chmod +x "$tmp/unreadbin/awk" \
+    || { skip "a reader that cannot run — could not put an awk on the path"; return; }
+
+  a_commit_in "$tmp/unread-credential" 'feat: nothing secret'
+  floor "$tmp/unread-credential" judged >/dev/null 2>&1
+  ( PATH="$tmp/unreadbin:$PATH"; floor "$tmp/unread-credential" deliver 'a change' ) >/dev/null 2>&1
+  unread=$(cat "$(floor "$tmp/unread-credential" path)/body" 2>/dev/null)
+
+  has   "a report floor cannot read for a credential is withheld whole" "$unread" \
+        "one's report is withheld whole: it holds what floor could not read for a credential."
+  lacks "and its words never reach the request" "$unread" "Nothing here holds a credential."
+}
+a_text_floor_cannot_read_for_a_credential_is_withheld
 
 # #1075. The home as `HOME` holds it, a path with no drive in it, is caught in a message too.
 a_message_naming_the_home_as_it_is_is_withheld() {
