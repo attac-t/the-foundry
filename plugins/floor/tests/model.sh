@@ -3263,15 +3263,16 @@ and $(a_github_token p)" \
 plant() { printf 'I read %s in a file\nVERDICT: approve\n' "$2" > "$tmp/holds-credential-$1.said"; }
 
 #
-# #1126. A message or report holding a credential in a shape floor names is withheld whole, and its
-# line names the shape. Every alternative is planted, each from a member of its own.
+# #1126. A report holding a credential in a shape floor names is withheld whole, and its line names
+# the shape. Every alternative is planted, each from a member of its own.
+#
+# Its commit's message is clean: since #1151, one holding a shape stops the push before any body.
 #
 a_text_holding_a_credential_is_withheld_whole() {
   plant_the_credentials || { skip "a text holding a credential — could not plant a report"; return; }
   a_panel_run holds-credential '' $(the_members_withheld | cut -d'|' -f1) hometoken twoshapes short prose \
     || { skip "a text holding a credential — git could not make a repo here"; return; }
-  ( export GIT_AUTHOR_NAME=ada GIT_AUTHOR_EMAIL=mail@ada.invalid GIT_COMMITTER_NAME=ada GIT_COMMITTER_EMAIL=mail@ada.invalid
-    a_commit_in "$tmp/holds-credential" "$(printf 'feat: keep the key\n\nkey %s' "$(an_aws_key K)")" )
+  a_commit_in "$tmp/holds-credential" 'feat: nothing secret'
   floor "$tmp/holds-credential" judged >/dev/null 2>&1
   ( HOME=/c/Users/ada; floor "$tmp/holds-credential" deliver 'a change' ) >/dev/null 2>&1
   held=$(cat "$(floor "$tmp/holds-credential" path)/body" 2>/dev/null)
@@ -3282,8 +3283,6 @@ a_text_holding_a_credential_is_withheld_whole() {
   done <<MEMBERS
 $(the_members_withheld)
 MEMBERS
-  has   "a message holding one is withheld by the same rule" "$held" \
-        "Its commit's message is withheld whole: it holds an AWS access key."
   has   "a report holding the home and a token is withheld for the home" "$held" \
         "hometoken's report is withheld whole: it holds this host's home directory."
   has   "a report holding two shapes is named by the earlier row" "$held" \
@@ -3327,6 +3326,50 @@ a_text_floor_cannot_read_for_a_credential_is_withheld() {
   lacks "and its words never reach the request" "$unread" "Nothing here holds a credential."
 }
 a_text_floor_cannot_read_for_a_credential_is_withheld
+
+# Every ref a bare remote holds, with the commit it names: what a refused push must leave as it was.
+remote_refs_of() { git -C "$1" for-each-ref --format='%(refname) %(objectname)' 2>/dev/null; }
+
+#
+# #1151. A message holding a credential stops the delivery before the push, and the remote's refs
+# are as they were. The token sits below the head, so a read of the head alone would miss it.
+#
+a_delivery_holding_a_credential_pushes_nothing() {
+  a_run_to_deliver cred-push '' || { skip "a credential before the push — git could not make a repo here"; return; }
+  a_commit_in "$tmp/cred-push" "$(printf 'feat: keep the key\n\nkey %s' "$(an_aws_key K)")" \
+    && a_commit_in "$tmp/cred-push" 'feat: nothing more' \
+    || { skip "a credential before the push — could not commit"; return; }
+  below=$(git -C "$(only_slot "$(floor "$tmp/cred-push" path)/units/01/workspace")" rev-parse HEAD~1)
+  refs_before=$(remote_refs_of "$tmp/cred-push-remote.git")
+
+  is  "a delivery whose message below the head holds a credential is refused" \
+      "$(code_of floor "$tmp/cred-push" deliver 'a change')" "57"
+  has "and the refusal names that commit and the shape" "$(floor_says "$tmp/cred-push" deliver 'a change')" \
+      "commit [$below] holds an AWS access key in its message, so nothing was pushed."
+  is  "and the remote's refs are as they were" "$(remote_refs_of "$tmp/cred-push-remote.git")" "$refs_before"
+}
+a_delivery_holding_a_credential_pushes_nothing
+
+#
+# #1151. A reader that cannot run stops the delivery too, since a read that failed must never read
+# as a message holding nothing.
+#
+a_delivery_that_cannot_read_its_messages_pushes_nothing() {
+  a_run_to_deliver cred-unread '' || { skip "an unread push — git could not make a repo here"; return; }
+  a_commit_in "$tmp/cred-unread" 'feat: nothing secret' || { skip "an unread push — could not commit"; return; }
+  mkdir -p "$tmp/credunreadbin"
+  an_awk_that_cannot_read_credentials > "$tmp/credunreadbin/awk" && chmod +x "$tmp/credunreadbin/awk" \
+    || { skip "an unread push — could not put an awk on the path"; return; }
+  refs_before=$(remote_refs_of "$tmp/cred-unread-remote.git")
+
+  is  "a delivery whose reader cannot run is refused" \
+      "$( PATH="$tmp/credunreadbin:$PATH"; code_of floor "$tmp/cred-unread" deliver 'a change' )" "57"
+  has "and says it could not read, and pushed nothing" \
+      "$( PATH="$tmp/credunreadbin:$PATH"; floor_says "$tmp/cred-unread" deliver 'a change' )" \
+      "the messages above the base could not be read for a credential, so nothing was pushed."
+  is  "and the remote's refs are as they were" "$(remote_refs_of "$tmp/cred-unread-remote.git")" "$refs_before"
+}
+a_delivery_that_cannot_read_its_messages_pushes_nothing
 
 # #1075. The home as `HOME` holds it, a path with no drive in it, is caught in a message too.
 a_message_naming_the_home_as_it_is_is_withheld() {
@@ -8499,6 +8542,26 @@ a_pass_that_reads_no_hand_begins_no_run() {
   rm -rf "$src/claims/1707" "$src/labels/1707" "$src/items/1707"
 }
 a_pass_that_reads_no_hand_begins_no_run
+
+#
+# #1151. A pass whose worker commits a credential meets 57 at `deliver`, and waits on a person who can
+# reword it. Nothing reaches the remote. The token is built as the case runs.
+#
+a_pass_waits_on_a_person_when_a_message_holds_a_credential() {
+  git init -q --bare "$tmp/remotes/acme/credpass.git" 2>/dev/null \
+    || { skip "a pass that meets a credential — git could not make a bare repo here"; return; }
+  a_resumable_repo credpass 1708 'https://github.com/acme/credpass.git' 'deliver https://github.com/acme/credpass.git' \
+    || { skip "a pass that meets a credential — git could not make a repo here"; return; }
+  keyed_worker="date >> worked && git add worked && sh '$runner' commit 'key $(an_aws_key K)'"
+
+  is  "a pass whose worker commits a credential waits on a person" \
+      "$(FOUNDRY_PASS_COMMAND=$keyed_worker code_of floor "$tmp/credpass" pass)" "47"
+  has "and its run says it waits at deliver, on 57" "$(last_pass_line_in "$tmp/credpass")" "why=deliver code=57"
+  is  "and nothing reached the remote" "$(remote_refs_of "$tmp/remotes/acme/credpass.git")" ""
+
+  rm -rf "$src/claims/1708" "$src/labels/1708" "$src/items/1708"
+}
+a_pass_waits_on_a_person_when_a_message_holds_a_credential
 
 #
 # **A change to either setting reaches the next pass's record.** The host names the cadence, the

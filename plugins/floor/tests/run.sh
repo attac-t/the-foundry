@@ -4965,6 +4965,26 @@ wreck_runner "a credential named before the home is caught" \
 wreck_runner "a reader that cannot run, read as no credential, is caught" \
   credopen 's@^    LC_ALL=C awk -f "\$PLUGIN_ROOT/lib/credentials.awk" "\$1" && return 0$@    LC_ALL=C awk -f "$PLUGIN_ROOT/lib/credentials.awk" "$1"; return 0@'
 
+#
+# **No message holding a credential reaches the remote.** One break per way the read could miss it:
+# never read, the head read alone, a failed read let through, the push first, a pass that lets 57 go.
+#
+wreck_runner "a delivery that pushes without reading its messages is caught" \
+  credpush 's@^    refuse_a_credential_in_the_messages "\$1" "\$2" "\$4"$@    :@'
+
+wreck_runner "a delivery that reads the head's message alone is caught" \
+  credhead 's@rev-list "\${pushed_base:?}\.\.\$3"@rev-list -1 "$3"@'
+
+wreck_runner "a delivery whose failed read is let through is caught" \
+  credunread 's@^    held_shape=\$(shape_in_the_message "\$1" "\$2") || refuse_an_unread_push$@    held_shape=$(shape_in_the_message "$1" "$2") || return 0@'
+
+# The read and the push trade lines, so the read still refuses, after the push published the message.
+wreck_runner "a delivery that pushes before it reads is caught" \
+  credlate 's@^    refuse_a_credential_in_the_messages "\$1" "\$2" "\$4"$@    push_workspace "$1" "$2" "$branch" "$4"@; t; s@^    push_workspace "\$1" "\$2" "\$branch" "\$4"$@    refuse_a_credential_in_the_messages "$1" "$2" "$4"@'
+
+wreck_runner "a pass that lets 57 go, never waiting on a person, is caught" \
+  credwait 's@^        15|18|32|57) wait_on_a_person@        15|18|32) wait_on_a_person@'
+
 # No line leaves its fence: three backticks always, or no more than the longest run the text holds.
 wreck_runner "a fence of three around a longer backtick run is caught" \
   fencethree 's@n = (longest < 3 ? 3 : longest + 1)@n = 3@'

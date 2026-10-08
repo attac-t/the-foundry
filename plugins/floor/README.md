@@ -950,9 +950,16 @@ before any of them.
 **A reader that cannot run withholds the text**, since a read that failed must never read as a
 credential that is not there. Its line says *it holds what floor could not read for a credential*.
 
-**The push publishes a commit's message before the body is composed.** So a message withheld for a
-credential is public already. The line marks where it is, and the credential wants revoking. #1151
-owns refusing that push.
+**A push would publish a message before the body is composed, so `deliver` reads first.** It reads
+the message of every commit above the base, through the one it carries, with the same reader. A
+shape stops it, 57, and nothing is pushed. The line names the commit and the shape. A reader that
+cannot run, or commits that cannot be listed, stop it the same way.
+
+**57 has two fixes.** A person rewords the message in a new commit, made through `commit` and graded
+at its own sha. A host repairs a reader that cannot run. A pass waits on a person at 57.
+
+A commit below a base the remote lacks is pushed unread. Only a run a person opens on an unpushed
+ref has one, since a pass starts from origin's tip.
 
 **Only what a model wrote is read.** The brief, the title and the lines of the record are carried
 unread. Clause text a panel proposed is among them, and so is a hand's yes. `body brief` carries no
@@ -2055,6 +2062,7 @@ Three files, beside the workspace. All three are append-only.
 | 32 | a commit is carried that no record accounts for | account for it, or drop it |
 | 33 | the ancestry cannot be trusted | open a new run, from where the work is |
 | 34 | the worker tried to account for its own ancestry | a person does it |
+| 57 | a commit's message holds a credential, or none could be read | reword it in a new commit, graded at its own sha; or repair the reader |
 
 **33 is the fail-closed path, and it covers three faults.** No base was recorded. The base or the
 head cannot be read. The base is not behind the head. All three end the same way: what this run
@@ -2859,7 +2867,7 @@ deadlock or silence lets nothing go.
 **Revise rounds are counted per member and clause**, against that member's `rounds` line, or three
 where the charter has none.
 
-**`deliver`'s code says who can answer it.** 15, 18 and 32 wait on a person, 47, with
+**`deliver`'s code says who can answer it.** 15, 18, 32 and 57 wait on a person, 47, with
 `pass.waiting why=deliver`. 19 is a send that failed, sent again next wake. **20 and 50 are resumed
 there too.** A source nobody could ask, and floor on a hand's account, are each fixed on the host.
 Nothing in the run can answer any other code, so the run is let go with `pass.left why=deliver`, and
