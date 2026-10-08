@@ -4978,9 +4978,10 @@ wreck_runner "a delivery that reads the head's message alone is caught" \
 wreck_runner "a delivery whose failed read is let through is caught" \
   credunread 's@^    held_shape=\$(shape_in_the_message "\$1" "\$2") || refuse_an_unread_push$@    held_shape=$(shape_in_the_message "$1" "$2") || return 0@'
 
-# The read and the push trade lines, so the read still refuses, after the push published the message.
+# The read and the push trade lines through a placeholder, so the read still refuses, after the push
+# published the message. No branch command, since BSD sed reads what follows `t;` as its label.
 wreck_runner "a delivery that pushes before it reads is caught" \
-  credlate 's@^    refuse_a_credential_in_the_messages "\$1" "\$2" "\$4"$@    push_workspace "$1" "$2" "$branch" "$4"@; t; s@^    push_workspace "\$1" "\$2" "\$branch" "\$4"$@    refuse_a_credential_in_the_messages "$1" "$2" "$4"@'
+  credlate 's@^    refuse_a_credential_in_the_messages "\$1" "\$2" "\$4"$@PUSH_GOES_HERE@; s@^    push_workspace "\$1" "\$2" "\$branch" "\$4"$@    refuse_a_credential_in_the_messages "$1" "$2" "$4"@; s@^PUSH_GOES_HERE$@    push_workspace "$1" "$2" "$branch" "$4"@'
 
 wreck_runner "a pass that lets 57 go, never waiting on a person, is caught" \
   credwait 's@^        15|18|32|57) wait_on_a_person@        15|18|32) wait_on_a_person@'

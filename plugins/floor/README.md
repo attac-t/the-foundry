@@ -958,6 +958,10 @@ cannot run, or commits that cannot be listed, stop it the same way.
 **57 has two fixes.** A person rewords the message in a new commit, made through `commit` and graded
 at its own sha. A host repairs a reader that cannot run. A pass waits on a person at 57.
 
+| Exit | Means | Remedy |
+|---|---|---|
+| 57 | a message above the base holds a credential, or none could be read | reword it in a new commit, graded at its own sha; or repair the reader |
+
 A commit below a base the remote lacks is pushed unread. Only a run a person opens on an unpushed
 ref has one, since a pass starts from origin's tip.
 
@@ -2062,7 +2066,6 @@ Three files, beside the workspace. All three are append-only.
 | 32 | a commit is carried that no record accounts for | account for it, or drop it |
 | 33 | the ancestry cannot be trusted | open a new run, from where the work is |
 | 34 | the worker tried to account for its own ancestry | a person does it |
-| 57 | a commit's message holds a credential, or none could be read | reword it in a new commit, graded at its own sha; or repair the reader |
 
 **33 is the fail-closed path, and it covers three faults.** No base was recorded. The base or the
 head cannot be read. The base is not behind the head. All three end the same way: what this run

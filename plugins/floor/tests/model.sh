@@ -3299,9 +3299,12 @@ MEMBERS
 }
 a_text_holding_a_credential_is_withheld_whole
 
+#
 # An `awk` that cannot run the credential reader, as a fork that failed cannot, and runs any other.
+# `$1` names which read fails: `file`, the body's, or `input`, the push's, which pipes the message.
 an_awk_that_cannot_read_credentials() {
-  printf '#!/bin/sh\ncase "$*" in *lib/credentials.awk*) exit 2 ;; esac\nexec %s "$@"\n' "$(command -v awk)"
+  printf '#!/bin/sh\ncase "$*" in\n  *lib/credentials.awk) [ %s = input ] && exit 2 ;;\n  *lib/credentials.awk\\ *) [ %s = file ] && exit 2 ;;\nesac\nexec %s "$@"\n' \
+    "$1" "$1" "$(command -v awk)"
 }
 
 #
@@ -3313,7 +3316,7 @@ a_text_floor_cannot_read_for_a_credential_is_withheld() {
   a_panel_run unread-credential '' one \
     || { skip "a reader that cannot run — git could not make a repo here"; return; }
   mkdir -p "$tmp/unreadbin"
-  an_awk_that_cannot_read_credentials > "$tmp/unreadbin/awk" && chmod +x "$tmp/unreadbin/awk" \
+  an_awk_that_cannot_read_credentials file > "$tmp/unreadbin/awk" && chmod +x "$tmp/unreadbin/awk" \
     || { skip "a reader that cannot run — could not put an awk on the path"; return; }
 
   a_commit_in "$tmp/unread-credential" 'feat: nothing secret'
@@ -3358,7 +3361,7 @@ a_delivery_that_cannot_read_its_messages_pushes_nothing() {
   a_run_to_deliver cred-unread '' || { skip "an unread push — git could not make a repo here"; return; }
   a_commit_in "$tmp/cred-unread" 'feat: nothing secret' || { skip "an unread push — could not commit"; return; }
   mkdir -p "$tmp/credunreadbin"
-  an_awk_that_cannot_read_credentials > "$tmp/credunreadbin/awk" && chmod +x "$tmp/credunreadbin/awk" \
+  an_awk_that_cannot_read_credentials input > "$tmp/credunreadbin/awk" && chmod +x "$tmp/credunreadbin/awk" \
     || { skip "an unread push — could not put an awk on the path"; return; }
   refs_before=$(remote_refs_of "$tmp/cred-unread-remote.git")
 
@@ -8544,8 +8547,8 @@ a_pass_that_reads_no_hand_begins_no_run() {
 a_pass_that_reads_no_hand_begins_no_run
 
 #
-# #1151. A pass whose worker commits a credential meets 57 at `deliver`, and waits on a person who can
-# reword it. Nothing reaches the remote. The token is built as the case runs.
+# #1151. A pass whose worker commits a credential stops at `deliver` with 57. The next wake resumes
+# the delivery, meets 57 again, and waits on a person who can reword it. Nothing reaches the remote.
 #
 a_pass_waits_on_a_person_when_a_message_holds_a_credential() {
   git init -q --bare "$tmp/remotes/acme/credpass.git" 2>/dev/null \
@@ -8554,9 +8557,12 @@ a_pass_waits_on_a_person_when_a_message_holds_a_credential() {
     || { skip "a pass that meets a credential — git could not make a repo here"; return; }
   keyed_worker="date >> worked && git add worked && sh '$runner' commit 'key $(an_aws_key K)'"
 
-  is  "a pass whose worker commits a credential waits on a person" \
-      "$(FOUNDRY_PASS_COMMAND=$keyed_worker code_of floor "$tmp/credpass" pass)" "47"
-  has "and its run says it waits at deliver, on 57" "$(last_pass_line_in "$tmp/credpass")" "why=deliver code=57"
+  is  "a pass whose worker commits a credential stops at deliver, 57" \
+      "$(FOUNDRY_PASS_COMMAND=$keyed_worker code_of floor "$tmp/credpass" pass)" "57"
+  has "and writes the stop with its code" "$(last_pass_line_in "$tmp/credpass")" "pass.stopped item=1708 why=deliver code=57"
+  is  "the next wake resumes it, and waits on a person" \
+      "$(FOUNDRY_PASS_COMMAND=true code_of floor "$tmp/credpass" pass)" "47"
+  has "and says it waits at deliver, on 57" "$(last_pass_line_in "$tmp/credpass")" "pass.waiting item=1708 why=deliver code=57"
   is  "and nothing reached the remote" "$(remote_refs_of "$tmp/remotes/acme/credpass.git")" ""
 
   rm -rf "$src/claims/1708" "$src/labels/1708" "$src/items/1708"

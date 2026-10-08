@@ -6133,6 +6133,9 @@ send_delivery() {
 #
 # **No message holding a credential reaches the remote.** Every commit above the base, through the
 # one `deliver` carries, is read before the push, with the reader the body uses. #1151.
+#
+# The ancestry walk lists this range first and stops at 33, so the list fails here only if the range
+# moved between the two reads. `:?` keeps a missing base from reading as `HEAD..`, which pushes unread.
 refuse_a_credential_in_the_messages() {
     pushed_tree=$(unit_work_tree "$1" "$2") || exit 16
     pushed_base=$(recorded_base "$(unit_workspace "$1")" "$(target_slot "$2")")
