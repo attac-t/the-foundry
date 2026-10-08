@@ -216,6 +216,7 @@ audit_the_lib_scripts() {
   echo "audit — break a lib script, the memory suite must notice"
 
   audit_the_redirect
+  audit_the_echo
 
   wreck_lib "an objective parser that keeps placeholders is caught" tbd extract-objective.sh 's|^  "\["\*"\]") exit 0 ;;|  "no-such-case") exit 0 ;;|' 'a placeholder is not a goal'
 
@@ -226,6 +227,9 @@ audit_the_lib_scripts() {
 
   # The folder a hook names, dropped: memory is read where the hook runs again. #1137.
   wreck_lib "a resolver that drops the session's folder is caught" nosess resolve-memory.sh 's|SESSION="${1:-}"|SESSION=|' 'named a worktree from the main checkout, it answers that branch in full'
+
+  # A base that starts with a backslash, read as relative again, is joined under the folder. #1162.
+  wreck_lib "a resolver that joins a rooted base is caught" noarm resolve-memory.sh 's/|\\\\\*)/)/' 'and a rooted one'
 }
 
 # Both of resolve-memory.sh's redirects at once. The rule is never `&>` anywhere in that file, so a
@@ -238,6 +242,16 @@ audit_the_redirect() {
   }
   # No check names the redirect. The guard memory.sh keeps for this bashism is the label.
   wreck_lib "a bash-only redirect put back is caught" amp resolve-memory.sh 's| >/dev/null 2>&1| \&>/dev/null|' 'the answer never carries a path to git'
+}
+
+# `echo` put back on the answer. Dash reads `\\` in it as one backslash, so a UNC base cannot leave
+# whole. Bash's `echo` reads no escapes, so there the break changes nothing. #1162.
+audit_the_echo() {
+  sh_is_bash && {
+    printf '  skip  echo put back on the answer — this sh is bash, whose echo reads no escapes\n'
+    return
+  }
+  wreck_lib "echo put back on the answer is caught" echoback resolve-memory.sh 's/answer() { printf [^"]*"/answer() { echo "/' 'and a UNC base, which leaves whole wherever echo reads escapes'
 }
 
 # Break one thing about a lib script and require the suite to fail the check its row names.
