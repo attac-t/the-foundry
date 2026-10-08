@@ -13055,7 +13055,7 @@ ASKED
 
   has    "floor reads it as a source it could not ask, 20" "$said" "exit=20"
   has    "and tells the reader gh is what is missing"      "$said" "gh is not here"
-  absent "and the run holds no item"                       "$nogh_run/item.md"
+  absent "and the run holds no item"                       "$nogh_run/source"
 }
 nothing_answers_a_github_remote_with_no_gh
 
