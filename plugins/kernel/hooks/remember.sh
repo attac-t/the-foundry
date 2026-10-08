@@ -2,7 +2,10 @@
 # SessionStart: Loads working.md, blueprint.md, and latest handoff
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-MEMORY_DIR=$(sh "$SCRIPT_DIR/lib/resolve-memory.sh")
+
+# The folder the session works in. Read only off a pipe: at a terminal the read waits for ever.
+SESSION=$([ -t 0 ] || awk -f "$SCRIPT_DIR/lib/unjson.awk" -v path=cwd 2>/dev/null)
+MEMORY_DIR=$(sh "$SCRIPT_DIR/lib/resolve-memory.sh" "$SESSION")
 
 # Get the newest handoff, or nothing. Names lead with a sequence number, so the last one sorts first.
 latest_handoff() {

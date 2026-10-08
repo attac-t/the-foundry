@@ -6,6 +6,9 @@
 # dash that second form means background, then redirect: this
 # guard always passes, and git's output becomes that path.
 
+# The folder the session works in, when a hook read one from its payload. Named, it is where git
+# is asked, and the path comes back full. Not named, everything here answers as before. #1137.
+SESSION="${1:-}"
 MEMORY_BASE="${CLAUDE_MEMORY_DIR:-.claude/memory}"
 
 # An active run outranks the branch, and outranks the base above.
@@ -17,6 +20,18 @@ if [ -n "${FOUNDRY_RUN:-}" ] && [ -d "$FOUNDRY_RUN" ]; then
     echo "$FOUNDRY_RUN/memory"
     exit 0
 fi
+
+# Whether a path starts at a root, as `/x`, `C:\x` and `C:/x` do.
+is_absolute() { case $1 in /*|[A-Za-z]:*) return 0 ;; esac; return 1; }
+
+# Move into the session's folder. A relative base is read from there, and an absolute one stays.
+enter_the_session() {
+    is_absolute "$MEMORY_BASE" || MEMORY_BASE="$SESSION/$MEMORY_BASE"
+    cd "$SESSION" 2>/dev/null
+}
+
+# A folder that is gone answers as one outside a repo does.
+[ -z "$SESSION" ] || enter_the_session || { echo "$MEMORY_BASE"; exit 0; }
 
 # No git? Use base.
 command -v git >/dev/null 2>&1 || { echo "$MEMORY_BASE"; exit 0; }

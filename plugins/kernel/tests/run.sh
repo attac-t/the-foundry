@@ -219,6 +219,9 @@ audit_the_lib_scripts() {
   # never fires at all. Every memory hook goes quiet rather than loud on the first.
   wreck_lib "a resolver that trusts a deleted run is caught"  ghost  resolve-memory.sh 's|\[ -d "$FOUNDRY_RUN" \]|\[ -n "$FOUNDRY_RUN" \]|'
   wreck_lib "a resolver that ignores an active run is caught" norung resolve-memory.sh 's|if \[ -n "${FOUNDRY_RUN:-}" \] |if \[ -z "${FOUNDRY_RUN:-}" \] |'
+
+  # The folder a hook names, dropped: memory is read where the hook runs again. #1137.
+  wreck_lib "a resolver that drops the session's folder is caught" nosess resolve-memory.sh 's|SESSION="${1:-}"|SESSION=|'
 }
 
 # Both of resolve-memory.sh's redirects at once. The rule is never `&>` anywhere in that file, so a
@@ -277,6 +280,10 @@ audit_the_install() {
   wreck "an edit hook speaking outside a work tree is caught" outwt anywhere
   wreck "a ground hook that forgets a compaction is caught" forget forgets
   wreck "a ground hook that demands after a compaction is caught" insist insists
+  wreck "a remember hook that never reads the session's folder is caught" remcwd remembers_here
+  wreck "a prompt hook that never reads the session's folder is caught" procwd prompts_here
+  wreck "a verify hook that never reads the session's folder is caught" vercwd verifies_here
+  wreck "a protected check asked of the hook's own folder is caught" protect protects_here
 
   sh_is_bash && {
     printf '  skip  a bash-only variable put back — this sh is bash, where it still resolves\n'
@@ -378,6 +385,13 @@ anywhere() { grep -vF 'can_be_committed "$FILE" || exit 0' "$1/hooks/consider.sh
 # The two ways the ground hook can fail #1109: not asked after a compaction, or demanding there.
 forgets() { sed 's#"matcher": "startup|clear|compact"#"matcher": "startup|clear"#' "$1/hooks/hooks.json" | rewrite "$1/hooks/hooks.json"; }
 insists() { sed 's#= compact \]#= never ]#' "$1/hooks/ground.sh" | rewrite_in_place "$1/hooks/ground.sh"; }
+
+# How a hook reads another checkout's memory, #1137: one of the three never reads the session's
+# folder, or the protected check asks the folder the hook runs in.
+remembers_here() { sed 's#-v path=cwd#-v path=nowhere#' "$1/hooks/remember.sh" | rewrite_in_place "$1/hooks/remember.sh"; }
+prompts_here()   { sed 's#-v path=cwd#-v path=nowhere#' "$1/hooks/prompt.sh" | rewrite_in_place "$1/hooks/prompt.sh"; }
+verifies_here()  { sed 's#"$(field cwd)"#""#' "$1/hooks/verify.sh" | rewrite_in_place "$1/hooks/verify.sh"; }
+protects_here()  { sed 's#git -C "${session:-.}" branch#git branch#' "$1/hooks/prompt.sh" | rewrite_in_place "$1/hooks/prompt.sh"; }
 
 #
 # Last, because everything above fires the preflight and this has to see all of it.
