@@ -1,5 +1,5 @@
 #!/bin/sh
-# PostToolUse: Prompts ADR consideration after code changes
+# PostToolUse: names the standard that governs a code edit
 #
 # Uses JSON additionalContext (PostToolUse stdout doesn't reach Claude)
 
@@ -26,8 +26,33 @@ FILE=$(field tool_input.file_path)
 # on half the installs it runs on. Nothing says it went wrong.
 FILE=$(printf '%s' "$FILE" | tr '\\' '/')
 
-# Skip non-code files (tests, docs, config)
-printf '%s' "$FILE" | grep -qE '(^|/)tests?/|\.test\.|\.spec\.|\.md$|\.json$|\.ya?ml$|\.env' && exit 0
+# The directory holding a path, as `dirname` gives it. A root keeps its slash: `git -C ""` and
+# `git -C C:` would both ask the session's own tree.
+dir_of() {
+    case $1 in */*) ;; *) printf '.'; return ;; esac
+    set -- "${1%/*}"
+    case $1 in ''|?:) set -- "$1/" ;; esac
+    printf '%s' "$1"
+}
+
+# Only a file a commit can hold has a standard: not one outside every work tree, nor one git
+# ignores. Inside `.git/` git answers `false`, which is no work tree either.
+can_be_committed() {
+    [ "$(git -C "$(dir_of "$1")" rev-parse --is-inside-work-tree 2>/dev/null)" = true ] || return 1
+    ! git -C "$(dir_of "$1")" check-ignore -q "$1" 2>/dev/null
+}
+
+# The path from its work tree's root. The harness hands the hook an absolute path, and the patterns
+# below read one from its first character.
+path_in_its_tree() {
+    printf '%s%s' "$(git -C "$(dir_of "$1")" rev-parse --show-prefix 2>/dev/null)" "${1##*/}"
+}
+
+can_be_committed "$FILE" || exit 0
+IN_TREE=$(path_in_its_tree "$FILE")
+
+# Skip tests, docs and config by the path in the tree, so a folder above it changes nothing.
+printf '%s' "$IN_TREE" | grep -qE '(^|/)tests?/|\.test\.|\.spec\.|\.md$|\.json$|\.ya?ml$|\.env' && exit 0
 
 # Which standard governs the edit. A copy here would be a second one to keep true.
 standard_for() {
@@ -43,4 +68,4 @@ printf '{
     "additionalContext": "**Consider**: `%s` governs what you just edited. Read it before the next one — afterwards is a rewrite."
   }
 }
-' "$(standard_for "$FILE")"
+' "$(standard_for "$IN_TREE")"

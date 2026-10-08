@@ -26,7 +26,8 @@ printf '**Objective**: Ship the harness\n'        > "$tmp/mem/working.md"
 printf '| id | state |\n| 1 | in-progress |\n'    > "$tmp/mem/blueprint.md"
 
 #
-# One line per wired hook: event, script, declared shell, and the command string Claude Code runs.
+# One line per wired hook: event, script, declared shell, the command string Claude Code runs, and
+# the last matcher above that command within its event, or `-` where its event names none.
 #
 # Buffered and flushed, because the shell a hook declares sits on the line after its command, and a
 # hook that declares none has to come out of here marked rather than silently paired with the next
@@ -39,11 +40,14 @@ wiring() {
       script = pending
       sub(/.*\//, "", script)
       sub(/"[ \t]*$/, "", script)
-      print pevent "\t" script "\t" (shell == "" ? "-" : shell) "\t" pending
+      print pevent "\t" script "\t" (shell == "" ? "-" : shell) "\t" pending "\t" (pmatcher == "" ? "-" : pmatcher)
       pending = ""; shell = ""
     }
     /^[ \t]*"[A-Z][A-Za-z]*"[ \t]*:[ \t]*\[/ {
-      event = $0; sub(/^[ \t]*"/, "", event); sub(/".*/, "", event)
+      event = $0; sub(/^[ \t]*"/, "", event); sub(/".*/, "", event); matcher = ""
+    }
+    /"matcher"[ \t]*:/ {
+      matcher = $0; sub(/^[^:]*:[ \t]*"/, "", matcher); sub(/".*/, "", matcher)
     }
     /"command"[ \t]*:/ {
       flush()
@@ -51,7 +55,7 @@ wiring() {
       sub(/^[^:]*:[ \t]*"/, "", cmd)
       sub(/",?[ \t]*$/, "", cmd)
       gsub(/\\"/, "\"", cmd)
-      pending = cmd; pevent = event
+      pending = cmd; pevent = event; pmatcher = matcher
     }
     /"shell"[ \t]*:/ {
       s = $0; sub(/^[^:]*:[ \t]*"/, "", s); sub(/".*/, "", s); shell = s
@@ -68,6 +72,9 @@ shell_for() { wiring | awk -F'\t' -v want="$1" '$2 == want { print $3; exit }'; 
 
 # List every script hooks.json wires.
 wired() { wiring | cut -f2 | sort -u; }
+
+# List each matcher a script is wired under, one a line, from every entry that runs it.
+matchers_of() { wiring | awk -F'\t' -v want="$1" '$2 == want { print $5 }'; }
 
 # List every top-level key in hooks.json. They sit one indent in, and nothing else does.
 top_level_keys() { sed -n 's/^  "\([^"]*\)".*/\1/p' "$hooks"; }
@@ -88,7 +95,7 @@ runtime_files() { find "$root/hooks" -type f \( -name '*.sh' -o -name '*.awk' \)
 # would then be reading a directory it never wrote.
 #
 fire() {
-  ( cd "$tmp/bare" 2>/dev/null || exit 0
+  ( cd "${FIRE_DIR:-$tmp/bare}" 2>/dev/null || exit 0
     printf '%s' "$2" \
       | CLAUDE_PLUGIN_ROOT="${FIRE_ROOT:-$root}" CLAUDE_MEMORY_DIR="$tmp/mem" FOUNDRY_RUN= TMPDIR="$tmp" \
         sh -c "$(command_for "$1")" 2>/dev/null )
@@ -170,6 +177,15 @@ done
 is  "preflight is silent when healthy"    "$(fire preflight.sh '{"source":"startup"}')" ""
 has "remember loads working memory"       "$(fire remember.sh '{"source":"startup"}')" "Ship the harness"
 has "ground demands grounding"            "$(fire ground.sh '{"source":"startup"}')" "GROUND NOW"
+has "and after a clear"                   "$(fire ground.sh '{"source":"clear"}')"   "GROUND NOW"
+
+# After a compaction the harness restates loaded skills within a budget, oldest first out, and says
+# not to reload them. So ground asks there, and only for a text that is gone. #1109.
+lacks "after a compaction ground does not demand" "$(fire ground.sh '{"source":"compact"}')" "GROUND NOW"
+has   "and asks only for each ground skill that is missing" "$(fire ground.sh '{"source":"compact"}')" "invoke that skill by name"
+has   "ground is wired to a startup"         "$(matchers_of ground.sh)" "startup"
+has   "and to a clear"                       "$(matchers_of ground.sh)" "clear"
+has   "and to a compaction"                  "$(matchers_of ground.sh)" "compact"
 has "the prompt hook echoes the objective"  "$(fire prompt.sh '{"prompt":"go"}')" "Ship the harness"
 has "and points at working memory"          "$(fire prompt.sh '{"prompt":"go"}')" "working.md"
 has "and forces skill evaluation"           "$(fire prompt.sh '{"prompt":"go"}')" "Skill Evaluation"
@@ -201,18 +217,51 @@ printf '| id | state |\n| 1 | in-progress |\n' > "$tmp/mem/blueprint.md"
 # The jq-shaped hole: with no reader, the path came back empty, nothing matched the skip list, and
 # the nudge fired on every write it exists to stay out of.
 
+#
+# A work tree to edit in, one under a folder named like a test, a directory git ignores, and one no
+# work tree holds. The harness hands the hook an absolute path, so each below is one. #1130, #1141.
+#
+mkdir -p "$tmp/outside"
+git init -q "$tmp/tree" 2>/dev/null && git init -q "$tmp/tests/repo" 2>/dev/null \
+  && mkdir -p "$tmp/tree/src" "$tmp/tree/tests" "$tmp/tree/plugins/x/bin" "$tmp/tree/scratch" \
+              "$tmp/tests/repo/src" \
+  && printf 'scratch/\n' > "$tmp/tree/.gitignore" \
+  || bad "consider — git could not make a work tree here, so the checks below prove nothing"
+
+# A payload naming one edited file.
+edited() { printf '{"tool_input":{"file_path":"%s"}}' "$1"; }
+
+# A path as Windows writes it, each separator a backslash, escaped for JSON.
+with_backslashes() { printf '%s' "$1" | sed 's|/|\\\\|g'; }
+
+# Whether the outside directory really is outside. One under a work tree would prove nothing.
+outside_every_work_tree() { ! git -C "$tmp/outside" rev-parse --is-inside-work-tree >/dev/null 2>&1; }
+
 has "consider nudges on code" \
-    "$(fire consider.sh '{"tool_input":{"file_path":"/app/src/Order.php"}}')" "additionalContext"
+    "$(fire consider.sh "$(edited "$tmp/tree/src/Order.php")")" "craft-adr"
+has "and names craft-sh for a shipped script, by its absolute path" \
+    "$(fire consider.sh "$(edited "$tmp/tree/plugins/x/bin/a.sh")")" "craft-sh"
+is  "consider is quiet on a file git ignores" \
+    "$(fire consider.sh "$(edited "$tmp/tree/scratch/c.sh")")" ""
+is  "and on one inside .git, where git answers false" \
+    "$(fire consider.sh "$(edited "$tmp/tree/.git/hooks/d.sh")")" ""
+outside_every_work_tree || bad "consider — $tmp/outside sits in a work tree, so quiet there proves nothing"
+is  "consider is quiet outside every work tree" \
+    "$(fire consider.sh "$(edited "$tmp/outside/b.sh")")" ""
+is  "and on a file at the root, fired from inside a work tree" \
+    "$(FIRE_DIR="$tmp/tree" fire consider.sh "$(edited /consider-probe.sh)")" ""
 is  "consider is quiet on docs" \
-    "$(fire consider.sh '{"tool_input":{"file_path":"/app/README.md"}}')" ""
-is  "consider is quiet on a unix test path" \
-    "$(fire consider.sh '{"tool_input":{"file_path":"/app/tests/OrderTest.php"}}')" ""
-is  "consider is quiet on a windows test path" \
-    "$(fire consider.sh '{"tool_input":{"file_path":"C:\\app\\tests\\OrderTest.php"}}')" ""
+    "$(fire consider.sh "$(edited "$tmp/tree/README.md")")" ""
+is  "consider is quiet on a test" \
+    "$(fire consider.sh "$(edited "$tmp/tree/tests/OrderTest.php")")" ""
+has "and reads a path written with backslashes" \
+    "$(fire consider.sh "$(edited "$(with_backslashes "$tmp/tree/src/Order.php")")")" "craft-adr"
+has "and nudges code in a work tree under a folder named tests, #1143" \
+    "$(fire consider.sh "$(edited "$tmp/tests/repo/src/Order.php")")" "craft-adr"
 is  "consider is quiet when it cannot read a path" \
     "$(fire consider.sh '{"tool_input":{}}')" ""
 has "content holding a decoy path does not fool it" \
-    "$(fire consider.sh '{"tool_input":{"file_path":"/app/src/A.php","content":"{\"file_path\":\"/x.md\"}"}}')" "additionalContext"
+    "$(fire consider.sh "$(printf '{"tool_input":{"file_path":"%s",' "$tmp/tree/src/A.php")"'"content":"{\"file_path\":\"/x.md\"}"}}')" "additionalContext"
 
 # `C:\Program Files\ClaudeCode\plugins` is where Windows actually puts this. An unquoted variable in
 # hooks.json splits on that space and the hook never starts.
