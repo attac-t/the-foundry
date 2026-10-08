@@ -97,7 +97,7 @@ runtime_files() { find "$root/hooks" -type f \( -name '*.sh' -o -name '*.awk' \)
 fire() {
   ( cd "${FIRE_DIR:-$tmp/bare}" 2>/dev/null || exit 0
     printf '%s' "$2" \
-      | CLAUDE_PLUGIN_ROOT="${FIRE_ROOT:-$root}" CLAUDE_MEMORY_DIR="$tmp/mem" FOUNDRY_RUN= TMPDIR="$tmp" \
+      | CLAUDE_PLUGIN_ROOT="${FIRE_ROOT:-$root}" CLAUDE_MEMORY_DIR="${FIRE_MEMORY-$tmp/mem}" FOUNDRY_RUN= TMPDIR="$tmp" \
         sh -c "$(command_for "$1")" 2>/dev/null )
 }
 
@@ -212,6 +212,48 @@ for state in pending done deferred; do
 done
 
 printf '| id | state |\n| 1 | in-progress |\n' > "$tmp/mem/blueprint.md"
+
+# --- the session's own folder ---
+#
+# The desktop app runs every hook in the main checkout, and CLAUDE_PROJECT_DIR names it as well.
+# Only the payload's `cwd` names the worktree, so that is whose memory each hook reads. #1137.
+
+# Write a working memory and a blueprint under a folder, for a branch.
+memory_of() {
+  mkdir -p "$1/.claude/memory/$2" \
+    && printf '**Objective**: %s\n' "$3" > "$1/.claude/memory/$2/working.md" \
+    && printf '| id | state |\n| 1 | %s |\n' "$4" > "$1/.claude/memory/$2/blueprint.md"
+}
+
+# Fire a hook from a folder at the default memory base, which a relative path is read from.
+fire_in() { FIRE_MEMORY= FIRE_DIR="$1" CLAUDE_PROJECT_DIR="$tmp/main" fire "$2" "$3"; }
+
+# A payload naming the worktree, after the fields it is given.
+in_wt() { printf '{%s"cwd":"%s"}' "$1" "$tmp/wt"; }
+
+a_worktree_session() {
+  a_checkout_and_its_worktree "$tmp/main" "$tmp/wt" \
+    && memory_of "$tmp/main" main 'Ship the main checkout' done \
+    && memory_of "$tmp/wt" feat/wt 'Ship the worktree' in-review \
+    || { skip "a worktree session — git could not make a worktree here"; return; }
+
+  has "from the main checkout, remember loads the worktree's memory" \
+      "$(fire_in "$tmp/main" remember.sh "$(in_wt '"source":"startup",')")" "Ship the worktree"
+  has "and prompt echoes the worktree's objective" \
+      "$(fire_in "$tmp/main" prompt.sh "$(in_wt '"prompt":"go",')")" "Ship the worktree"
+  has "and names the worktree's path for progress, though the checkout is on main" \
+      "$(fire_in "$tmp/main" prompt.sh "$(in_wt '"prompt":"go",')")" "Update \`$tmp/wt/.claude/memory/feat/wt/working.md\`"
+  has "and verify holds the turn on the worktree's blueprint" \
+      "$(fire_in "$tmp/main" verify.sh "$(in_wt '"stop_hook_active":false,')")" "in-review"
+
+  # Fired in the worktree, as the CLI fires it, a hook reads what it read before. #1137.
+  has "fired in the worktree with no folder named, remember reads its memory" \
+      "$(fire_in "$tmp/wt" remember.sh '{"source":"startup"}')" "Ship the worktree"
+  is  "and with the worktree named, exactly the same" \
+      "$(fire_in "$tmp/wt" remember.sh "$(in_wt '"source":"startup",')")" \
+      "$(fire_in "$tmp/wt" remember.sh '{"source":"startup"}')"
+}
+a_worktree_session
 
 # --- the ADR nudge reads the payload ---
 # The jq-shaped hole: with no reader, the path came back empty, nothing matched the skip list, and

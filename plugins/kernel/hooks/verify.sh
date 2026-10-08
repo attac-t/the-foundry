@@ -10,13 +10,19 @@
 # and then. A late nag is free. A stuck one costs it all.
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-MEMORY_DIR=$(sh "$SCRIPT_DIR/lib/resolve-memory.sh")
-BLUEPRINT="$MEMORY_DIR/blueprint.md"
-PAYLOAD=$(cat)
+
+# Read only off a pipe: at a terminal the read waits for ever.
+PAYLOAD=$([ -t 0 ] || cat)
+
+# Get one field of the payload.
+field() { printf '%s' "$PAYLOAD" | awk -f "$SCRIPT_DIR/lib/unjson.awk" -v path="$1" 2>/dev/null; }
 
 # Already continuing because of a stop hook? Let this turn end.
-CONTINUING=$(printf '%s' "$PAYLOAD" | awk -f "$SCRIPT_DIR/lib/unjson.awk" -v path=stop_hook_active 2>/dev/null)
-[ "$CONTINUING" = "true" ] && exit 0
+[ "$(field stop_hook_active)" = "true" ] && exit 0
+
+# The blueprint of the folder the session works in, not of the one this runs in. #1137.
+MEMORY_DIR=$(sh "$SCRIPT_DIR/lib/resolve-memory.sh" "$(field cwd)")
+BLUEPRINT="$MEMORY_DIR/blueprint.md"
 
 # No blueprint? Allow stop.
 [ -f "$BLUEPRINT" ] || exit 0

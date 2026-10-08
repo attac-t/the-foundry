@@ -40,6 +40,15 @@ lacks() {
   esac
 }
 
+# Make a main checkout on `main`, and a worktree of it on `feat/wt`. A worktree needs a commit, and
+# a fixture repository is told who commits, or git refuses.
+a_checkout_and_its_worktree() {
+  git init -q "$1" >/dev/null 2>&1 \
+    && git -C "$1" symbolic-ref HEAD refs/heads/main \
+    && git -C "$1" -c user.email=a@b.c -c user.name=a commit -q --allow-empty -m x >/dev/null 2>&1 \
+    && git -C "$1" worktree add -b feat/wt "$2" >/dev/null 2>&1
+}
+
 # Report the tally, and answer whether it stands. Zero failures over zero checks is not a suite
 # that passed but one that never ran, and the gate printed PASS for both. A skip counts as neither.
 summary() {
