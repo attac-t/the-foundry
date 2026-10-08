@@ -27,8 +27,9 @@ Drive toward three answers:
    *"improve checkout"*.
 2. **How would we know?** The gates. If nothing mechanical can catch a failure here, say so — that
    is a finding about the task, not a formality (see `craft-oracle`, The Coverage Rule). **When the
-   work adds a check, first count what the record already holds that it must catch.** One charter
-   named six credential shapes, and the one instance on record matched none of them.
+   work adds a check, first count what it must catch in what it will read today.** One charter named
+   six credential shapes. Of the 299 reports its check would read, the one holding a credential
+   matched none of them.
 3. **What is out of scope?** Explicitly. Scope drift is the most common way a run produces confident,
    unwanted work.
 
