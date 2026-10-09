@@ -125,7 +125,7 @@ yours to run when it applies:
 | three operating systems | a matrix nobody has locally | you touch anything a suite runs |
 | `sh bin/unticked.sh` | a minute, and it reaches GitHub | before you close an issue, and after a `Closes #N` merge |
 | `sh bin/audited.sh` | a second | before you grade, to learn whether floor's audit can answer at all |
-| `bash plugins/floor/tests/applies.sh` | two and a half minutes on Git Bash, measured | before you grade a change that touches floor, to learn whether any break changes nothing |
+| `bash plugins/floor/tests/applies.sh` | six seconds in the grade image, two and a half minutes on Git Bash, measured | before you grade a change that touches floor, to learn whether any break changes nothing |
 | `sh bin/unread.sh` | a minute, and it reaches GitHub | weekly, and before you pick up work that may already be done |
 | `sh bin/ships.sh <word>` | a second | **before you say this repository lacks a thing** |
 | `sh bin/unlisted.sh` | a minute, and it reaches GitHub | before you point at a closed issue as if it owned something |
