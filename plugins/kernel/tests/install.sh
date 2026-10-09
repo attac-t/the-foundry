@@ -128,13 +128,13 @@ echo "install"
 for script in $(shipped_hooks); do
   case " $(wired | tr '\n' ' ') " in
     *" $script "*) ok "hooks.json wires $script" ;;
-    *)             bad "$script ships but nothing wires it" ;;
+    *)             bad "a hook ships but nothing wires it — $script" ;;
   esac
 done
 
 for script in $(wired); do
   [ -f "$root/hooks/$script" ] && ok "wired and present — $script" \
-                               || bad "hooks.json wires $script, which did not ship"
+                               || bad "hooks.json wires a hook that did not ship — $script"
 done
 
 # --- the wiring is the portable form ---
@@ -145,7 +145,7 @@ done
 for script in $(wired); do
   case "$(command_for "$script")" in
     "sh "*) ok "names an interpreter — $script" ;;
-    *)      bad "$script runs a bare path — it needs an executable bit Windows will not give it" ;;
+    *)      bad "a hook runs a bare path — $script needs an executable bit Windows will not give it" ;;
   esac
 done
 
@@ -167,7 +167,7 @@ is "every plugin root is quoted" "$quoted" "$placeholders"
 for key in $(top_level_keys); do
   case "$key" in
     hooks) ok "hooks.json top level — $key" ;;
-    *)     bad "hooks.json carries \"$key\", which Claude Code drops with a warning at every start" ;;
+    *)     bad "hooks.json carries a key Claude Code drops with a warning at every start — \"$key\"" ;;
   esac
 done
 
