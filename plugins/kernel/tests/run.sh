@@ -586,34 +586,37 @@ check_names_in() {
 # **The label check can fail, and here it must.** Each case runs it against a copy of these suites
 # with one thing changed, and reads every line it says.
 drive_the_label_check() {
-  a_renamed_check_names_its_row
+  a_renamed_check_names_its_row install.sh 'every plugin root is quoted' 'every root of the plugin is quoted' \
+    'an unquoted plugin root is caught'
+  a_renamed_check_names_its_row memory.sh 'a placeholder is not a goal' 'a placeholder is never a goal' \
+    'an objective parser that keeps placeholders is caught'
   a_label_from_the_other_suite_is_named
   an_unreadable_row_is_named
   the_stubs_end_with_the_check
 }
 
-# A copy of these suites, and one change to a file in it.
+# A copy of these suites, to change one thing in.
 suites_copy() { rm -rf "${tmp:?}/$1" && cp -R "$root/tests" "$tmp/$1"; }
-rewrite_in()  { sed "$1" "$2" > "$2.new" && mv "$2.new" "$2"; }
 
+# A check renamed in a copy of its suite, `$1`: the label check fails, and names that row alone.
 a_renamed_check_names_its_row() {
-  local said
-  suites_copy renamed || { bad "a renamed check — no copy of the suites, so this proves nothing"; return; }
-  rewrite_in 's/is "every plugin root is quoted"/is "every root of the plugin is quoted"/' "$tmp/renamed/install.sh"
-  grep -q 'every root of the plugin is quoted' "$tmp/renamed/install.sh" \
-    || { bad "a renamed check — the rename changed nothing, so this proves nothing"; return; }
+  local said copy="$tmp/renamed-${1%.sh}"
+  suites_copy "renamed-${1%.sh}" || { bad "a renamed check in $1 — no copy of the suites, so this proves nothing"; return; }
+  sed "s/is \"$2\"/is \"$3\"/" "$copy/$1" | rewrite "$copy/$1"
+  grep -q "is \"$3\"" "$copy/$1" \
+    || { bad "a renamed check in $1 — the rename changed nothing, so this proves nothing"; return; }
 
-  said=$(labels_no_check_carries "$tmp/renamed")
-  [ "$said" = "an unquoted plugin root is caught — its label [every plugin root is quoted] is no check in install.sh" ] \
-    || { bad "a renamed check must name its row and no other — [$said]"; return; }
-  printf '  ok    a renamed check names its row, and no other\n'
+  said=$(labels_no_check_carries "$copy")
+  [ "$said" = "$4 — its label [$2] is no check in $1" ] \
+    || { bad "a check renamed in $1 must name its row and no other — [$said]"; return; }
+  printf '  ok    a check renamed in %s names its row, and no other\n' "$1"
 }
 
 a_label_from_the_other_suite_is_named() {
   local said
   suites_copy crossed || { bad "a crossed label — no copy of the suites, so this proves nothing"; return; }
-  rewrite_in "s/'carriage returns'\$/'a placeholder is not a goal'/" "$tmp/crossed/run.sh"
-  grep -q "'a placeholder is not a goal'\$" "$tmp/crossed/run.sh" \
+  sed "s/'carriage returns'\$/'a placeholder is not a goal'/" "$tmp/crossed/run.sh" | rewrite "$tmp/crossed/run.sh"
+  grep -q "^  wreck \"a hook checked out with CRLF is caught\".*'a placeholder is not a goal'\$" "$tmp/crossed/run.sh" \
     || { bad "a crossed label — the change made nothing, so this proves nothing"; return; }
 
   said=$(labels_no_check_carries "$tmp/crossed")
@@ -622,24 +625,27 @@ a_label_from_the_other_suite_is_named() {
   printf '  ok    a label only the other suite carries names its row\n'
 }
 
-# Two rows planted before the first install row: one with no label, one with an open quote. The
-# driver word is printed, never written, or the check would read these as rows of this file.
-planted_rows() {
+# Two unreadable rows planted before the first install row, one with no label and one with an open
+# quote, then a readable row whose label is stale. The driver word is printed, never written, or the
+# check would read these as rows of this file.
+unreadable_rows() {
   printf '  %s "a planted row with no label is caught" nolabel crlf\n' wreck
   printf "  %s \"a planted row with an open quote is caught\" openq crlf 'carriage returns\n" wreck
 }
+stale_row() { printf "  %s \"a planted row whose label is stale is caught\" stale crlf 'no check carries this'\n" wreck; }
 
 an_unreadable_row_is_named() {
   local said wanted
   suites_copy unreadable || { bad "an unreadable row — no copy of the suites, so this proves nothing"; return; }
-  planted_rows > "$tmp/planted"
+  { unreadable_rows; stale_row; } > "$tmp/planted"
   awk -v plant="$tmp/planted" '/^  wreck "a hook checked out with CRLF is caught"/ { while ((getline l < plant) > 0) print l } { print }' \
-    "$tmp/unreadable/run.sh" > "$tmp/unreadable/run.sh.new" && mv "$tmp/unreadable/run.sh.new" "$tmp/unreadable/run.sh"
+    "$tmp/unreadable/run.sh" | rewrite "$tmp/unreadable/run.sh"
 
-  wanted=$(planted_rows | while IFS= read -r row; do printf 'a row that could not be read — %s\n' "$(trimmed "$row")"; done)
+  wanted=$(unreadable_rows | while IFS= read -r row; do printf 'a row that could not be read — %s\n' "$(trimmed "$row")"; done
+           printf 'a planted row whose label is stale is caught — its label [no check carries this] is no check in install.sh\n')
   said=$(labels_no_check_carries "$tmp/unreadable")
   [ "$said" = "$wanted" ] \
-    || { bad "two unreadable rows must each be named, and every other row read — [$said]"; return; }
+    || { bad "two unreadable rows and a stale one after them must each be named — [$said]"; return; }
   printf '  ok    a row it cannot read is named, and the rows after it are still read\n'
 }
 
