@@ -3255,6 +3255,15 @@ got. Read `failed` and `skipped`, which mean the same thing everywhere.
 Every suite, then a deliberate break for every rule that matters. Each one must turn a suite red, and
 the run says so if a break failed to apply — a mutation that changed nothing proves nothing.
 
+**A break whose `sed` changes nothing stops the audit before any break runs.** `tests/applies.sh`
+replays each declaration with drivers that only apply and compare. It names each whose `sed` fails,
+prints nothing or changes nothing, and each it could not replay. The audit asks it once it is asked
+to run, and stops there, so a stale break costs seconds rather than the hours before its turn.
+
+```bash
+bash tests/applies.sh
+```
+
 **Each break names the check that killed it.** Every suite runs under fail-fast, so one check answers,
 and `lib.sh` hands over its name rather than the audit cutting one out of a message:
 

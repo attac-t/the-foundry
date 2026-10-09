@@ -27,6 +27,9 @@ grading may have passed or died and you cannot tell.
 
 So a steady count of the second is the worker pool being full, not that many faults.
 
+**Floor names the first kind before its audit spends anything.** `bash plugins/floor/tests/applies.sh`
+replays every break, and the audit stops on any it names.
+
 **Test a repointed break the way the suite passes it.** Extract the line and run it through your
 shell. Unescaping it by hand tests a string nothing sends, and that reads as a MOOT it is not.
 

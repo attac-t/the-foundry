@@ -86,6 +86,9 @@ trap 'chmod -R u+rwX "$tmp" 2>/dev/null; rm -rf "$tmp"' EXIT
 . "$root/tests/isolate.sh"
 isolate_git_transport "$tmp" || { printf 'could not isolate the git transport\n' >&2; exit 2; }
 
+# `break_tags`, and the check that every break still changes its file. #1169.
+. "$root/tests/applies.sh"
+
 failed=0
 
 # Two ways an audit ends badly, and they take different remedies.
@@ -215,22 +218,7 @@ for suite in "$root"/adapters/*/tests/*.sh; do
     || bad "${suite#"$root/"} runs checks below its exit, and nothing counts them"
 done
 
-# A tool finds a break by its tag and drives the first it meets, so a shared tag hides a break.
-# Five were shared until #1106, and on 29 September a break reported as lived had never run.
-#
-# A tag is the first word after a break's description, on that line or the next. A break declared
-# behind a guard is read too, and its guard's own quotes are never taken for the description.
-break_tags() {
-  awk '
-    held { print $1; held = 0; next }
-
-    /(^|&&|\|\||;)[ \t]*wreck[a-z_]*[ \t]+"/ {
-      sub(/^.*wreck[a-z_]*[ \t]+"[^"]*"[ \t]*/, "")
-      if ($0 == "\\") { held = 1; next }
-      print $1
-    }' "$1"
-}
-
+# `break_tags` lives in `tests/applies.sh`, which reads every tag the same way.
 tags_used_twice() { break_tags "$1" | LC_ALL=C sort | uniq -d; }
 
 refuse_a_tag_used_twice() {
@@ -971,6 +959,99 @@ say_if_nobody_asked() {
     exit 4
 }
 say_if_nobody_asked
+
+#
+# **A break whose `sed` changes nothing stops the audit here, before any break runs.** #1169.
+#
+# The audit would call it MOOT on its turn, hours in. `tests/applies.sh` replays each declaration
+# with drivers that only apply and compare, so asking costs seconds. A tag it could not replay stops
+# the audit too, since what that break would break is unknown.
+#
+# **It is stricter than the audit for `wreck_join` and `wreck_adopt`.** Their `sed` runs in a pipe
+# whose status nobody reads, so one that fails or prints nothing still runs a suite. Here it stops.
+refuse_a_break_that_changes_nothing() {
+  local named
+  named=$(breaks_that_change_nothing "$root" "$tmp/applies")
+  [ -n "$named" ] || {
+    printf 'audit — each of %s breaks changes its file\n' "$(sed_breaks_in "$tmp/applies")"
+    return 0
+  }
+
+  printf 'audit — not run. These breaks would prove nothing:\n'
+  printf '%s\n' "$named" | sed 's/^/audit —   /'
+
+  # A rule broken above outranks an audit that could not run, as the deadline's refusal holds.
+  [ "${failed:-0}" -eq 1 ] && { printf 'FAILURES ABOVE\n'; exit 1; }
+
+  printf 'PROVED NOTHING\n'
+  exit 3
+}
+
+# A copy of this plugin with one file rewritten by a `sed`, refused when the `sed` changed nothing.
+plugin_copy_with() {
+  rm -rf "${tmp:?}/$1" && cp -R "$root" "$tmp/$1" || return 1
+  sed "$3" "$root/$2" > "$tmp/$1/$2" || return 1
+  ! cmp -s "$tmp/$1/$2" "$root/$2"
+}
+
+# The line two breaks aim at, moved, as #1151 moved it on 9 October. Each names its own break.
+a_break_aimed_at_a_moved_line_is_named() {
+  local said
+  plugin_copy_with applies-moved bin/run.sh \
+    's/^        15|18|32|57) wait_on_a_person/        15|18|32|57|99) wait_on_a_person/' \
+    || { moot "a moved line — the plant changed nothing, so this proves nothing"; return; }
+
+  said=$(breaks_that_change_nothing "$tmp/applies-moved" "$tmp/applies-moved-work" | LC_ALL=C sort)
+  [ "$said" = "credwait — its sed changes nothing in bin/run.sh
+deliverperson — its sed changes nothing in bin/run.sh" ] \
+    && { printf '  ok    a break aimed at a moved line is named, with its twin\n'; return; }
+  bad "a break aimed at a moved line was not named alone — [$said]"
+}
+
+#
+# Three declarations planted at the foot of a copy: a file that is gone, a `sed` that prints nothing,
+# and one that reads `$root`, which the audit sets and a replay must not. The driver word is printed,
+# never written, or this file would declare them itself.
+planted_declarations() {
+  sed 's/^DRIVER /wreck_runner /' <<'EOF'
+DRIVER "a planted break on a file that is gone is caught" gonefile 's/x/y/' lib/gone.sh
+DRIVER "a planted break that empties its file is caught" emptied '1,$d' lib/source-dir.sh
+DRIVER "a planted break on the root the audit sets is caught" rootname "s#$root#ROOT#" bin/wake.sh
+EOF
+}
+
+a_planted_declaration_is_named() {
+  local said
+  rm -rf "${tmp:?}/applies-planted" && cp -R "$root" "$tmp/applies-planted" \
+    || { moot "a planted declaration — could not copy the plugin, so this proves nothing"; return; }
+  planted_declarations >> "$tmp/applies-planted/tests/run.sh"
+
+  said=$(breaks_that_change_nothing "$tmp/applies-planted" "$tmp/applies-planted-work" | LC_ALL=C sort)
+  [ "$said" = "emptied — its sed prints nothing from lib/source-dir.sh
+gonefile — its sed fails on lib/gone.sh
+rootname — its declaration could not be replayed" ] \
+    && { printf '  ok    a sed that fails, one that prints nothing, and one leaning on the audit are each named\n'; return; }
+  bad "three planted declarations were not each named — [$said]"
+}
+
+# The stop, over the copy with a moved line, and what it leaves for `exit`.
+stop_leaves() {
+  ( failed=$1; root="$tmp/applies-moved"; refuse_a_break_that_changes_nothing; exit 0 ) >/dev/null 2>&1
+  left=$?
+
+  [ "$left" = "$2" ] || { bad "the stop over a moved line, after failed $1, left $left, not $2"; return; }
+  printf '  ok    the stop over a moved line, after failed %s, leaves %s\n' "$1" "$2"
+}
+
+a_break_that_changes_nothing_stops_the_audit() {
+  stop_leaves 0 3
+  stop_leaves 1 1
+}
+
+a_break_aimed_at_a_moved_line_is_named
+a_planted_declaration_is_named
+a_break_that_changes_nothing_stops_the_audit
+refuse_a_break_that_changes_nothing
 
 #
 # The cases, and they run here rather than only when somebody asks for them.
