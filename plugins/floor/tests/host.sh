@@ -253,11 +253,11 @@ git -C "$tmp/one" config user.email 'fixture@example.invalid'
 git -C "$tmp/one" add -A >/dev/null 2>&1
 git -C "$tmp/one" commit -q -m 'a tree to read' >/dev/null 2>&1
 git -C "$tmp/one" checkout -q -B a-branch
-here=$(git -C "$tmp/one" rev-parse --short HEAD 2>/dev/null)
+at_head=$(git -C "$tmp/one" rev-parse --short HEAD 2>/dev/null)
 astree=$( cd "$tmp/one" && CLAUDE_CONFIG_DIR="$home" FOUNDRY_WHO=a@b sh "$join" 2>&1 )
 
 has "and it names the branch that tree is on" "$astree" "on a-branch"
-has "and the commit it is at"                 "$astree" "at $here"
+has "and the commit it is at"                 "$astree" "at $at_head"
 
 #
 # **A marketplace may be a plain directory git never touched.** Naming a branch there would be a
