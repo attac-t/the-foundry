@@ -123,6 +123,8 @@ replay_each() {
 # Sourced, this file is definitions alone. Run, it checks the plugin, or replays for `replayed`.
 [ "${BASH_SOURCE[0]}" = "$0" ] || return 0
 
-set -u
+# The replay's `-u` is the flag `replayed` starts its bash with, and nothing else, so it is one guard.
 [ "${1:-}" = replay ] && { replay_each; exit 0; }
+
+set -u
 main "$@"
