@@ -33,14 +33,14 @@ installed and nothing is written to the repository. `adopt.sh`, below, is the on
 does write to one.
 
 Six things stood between a clean machine and a working system, and three were silent when wrong: no
-`gh` picks a different work source, no git identity fails later at commit, and no `FOUNDRY_WHO`
-records an authority nobody granted. Each now names itself.
+`gh` swapped the work source without a word, no git identity fails later at commit, and no
+`FOUNDRY_WHO` records an authority nobody granted. Each now names itself.
 
 ```
 home    /home/you/.foundry
         derived from HOME. Set FOUNDRY_HOME to put it elsewhere.
 who     you@example.com
-source  a directory, and the remote is GitHub. Install gh, or Issues stay unreachable.
+source  GitHub
 grants  2 in .foundry/practice
 gates   1 in .foundry/gates
 judges  1 in .foundry/judged
@@ -57,10 +57,13 @@ A rule that names a skill is the declaration — there is no second list. `shell
 `kernel:craft-sh` before the first character*, and on a host where kernel is off that rule does
 nothing and says nothing. Now it says.
 
-Exit 1 is something the host must supply. Exit 3 is not a repository this can join. **Exit 4 is a
-repository declaring none of the three a run needs** — no gates and `authorise` stops, no judges and
-`judged` stops, no grants and `deliver` stops. It says `not joined.` and names nothing else, because
-the other three absences stop nothing and stay reports.
+Exit 1 is something the host must supply. **A work source nothing can ask is one**: on a GitHub
+remote, no `gh` or a `gh` that cannot answer. The `source` line says what is missing, in `gh`'s own
+words when it said any.
+
+Exit 3 is not a repository this can join. **Exit 4 is a repository declaring none of the three a run
+needs** — no gates and `authorise` stops, no judges and `judged` stops, no grants and `deliver` stops.
+It says `not joined.` and names nothing else, because the skills and plugins it reports stop nothing.
 
 ## Adopting a judge
 
@@ -170,8 +173,9 @@ asked at all.
 **Every verb refuses on its own and can be run again.** That is what lets a resumed run re-enter
 anywhere, and it is why nothing here runs the eleven for you.
 
-Two need a host. `source read` needs a work source that can answer — otherwise a directory does, and
-says so. `deliver` needs credentials to push, and says so at exit 19.
+Two need a host. `source read` needs a work source that can answer. On a GitHub remote that is `gh`,
+and with none it refuses at 20 and names it. `deliver` needs credentials to push, and says so at
+exit 19.
 
 A machine with `sh`, `awk` and `git` runs every verb here. **What a gate command needs is the
 charter's, not floor's** — a gate may reach for anything. A host without it refuses at 21, and so
@@ -925,6 +929,55 @@ A home of `/` names nothing. **A name floor cannot form is carried**:
 - a forge account, or a person's name alone
 - `~`, or a path split across two lines
 - a path in any spelling not listed above
+
+**A message or report that holds a credential in a shape below is withheld whole too**, by the same
+line. `lib/credentials.awk` reads each shape as a prefix and the run of characters after it:
+
+- a GitHub token: `ghp_`, `gho_`, `ghu_`, `ghs_` or `ghr_`, then 36 letters and digits or more
+- a GitHub token: `github_pat_`, then 22 letters, digits and `_` or more
+- a private key: a `-----BEGIN … PRIVATE KEY-----` header, with or without a word before `PRIVATE`
+- an AWS access key: `AKIA` or `ASIA`, then 16 capitals and digits or more
+- a model vendor's API key: `sk-ant-` or `sk-proj-`, then 20 letters, digits, `_` and `-` or more
+- a signed link: `X-Amz-Signature=` or `X-Goog-Signature=`, in either case, then 64 hex digits or
+  more
+- a signed link: `sig=`, then 46 letters, digits, `%`, `+`, `/`, `=`, `_` and `-` or more
+
+**Any other credential is carried.** A PGP key block is one. So are an AWS secret without its key
+ID, and any other `sk-` key. A prefix with too short a run is carried, and so is prose naming one.
+A text holding two shapes is named by the earlier one above. The home and the addresses are read
+before any of them.
+
+**A reader that cannot run withholds the text**, since a read that failed must never read as a
+credential that is not there. Its line says *it holds what floor could not read for a credential*.
+
+**So does any read that did not finish.** Each read's capture ends with a line `.` that only its own
+success writes. So a fork that failed, or an awk that errored, is never read as clean. The line
+names the read that did not finish:
+
+- *what floor could not read for this host's home directory*, or *for an address its commits carry*
+- *what floor could not read for this host's names*, when a list of them could not be read
+- *what floor could not read for this text*, when the read of the text as a whole did not finish
+
+A failed home read is named before a credential the third read would find.
+
+**A push would publish a message before the body is composed, so `deliver` reads first.** It reads
+the message of every commit above the base, through the one it carries, with the same reader. A
+shape stops it, 57, and nothing is pushed. The line names the commit and the shape. A reader that
+cannot run, or commits that cannot be listed, stop it the same way.
+
+**57 has two fixes.** A person rewords the message in a new commit, made through `commit` and graded
+at its own sha. A host repairs a reader that cannot run. A pass waits on a person at 57.
+
+| Exit | Means | Remedy |
+|---|---|---|
+| 57 | a message above the base holds a credential, or none could be read | reword it in a new commit, graded at its own sha; or repair the reader |
+
+A commit below a base the remote lacks is pushed unread. Only a run a person opens on an unpushed
+ref has one, since a pass starts from origin's tip.
+
+**Only what a model wrote is read.** The brief, the title and the lines of the record are carried
+unread. Clause text a panel proposed is among them, and so is a hand's yes. `body brief` carries no
+judge's report.
 
 **No line of a carried text renders outside its fence.** The fence is one backtick longer than the
 longest run the text holds, and never shorter than three. It sits at the left margin, where no list
@@ -1897,8 +1950,9 @@ them; `git config user.email` is the fallback every checkout already has.
 
 **A pass's run answers to the hand that put the label on, from the second it went on.** Both come
 from the one line the offer gave the item, as the source recorded them. So the stamp says when the
-work was asked for, and `pass.began` says when the pass took it. A pass that reads no second there
-stops before any run, 2, and the next wake takes the item again.
+work was asked for, and `pass.began` says when the pass took it. A pass that reads no second or no
+hand there stops before any run, 2, and the next wake takes the item again. So a pass's run never
+answers to git's address.
 
 **Three fields, where evidence has seven, and it is a different file.** This names no clause, so it
 can satisfy none — and a record with no `ref` cannot satisfy the completion invariant, which reads
@@ -2424,6 +2478,9 @@ any other shape, is dropped and said, and the rest are still read. **A source th
 refused by name, 27**, in the one place core asks for either, and a `speaker` that cannot say stops the
 read at 20.
 
+**A run that recorded its repository refuses every `source` verb at 6 outside it**, before the source
+is asked, and names both repositories. Asked from another checkout, that checkout's source answered
+for the run, and a delivery it took was one `deliver` later returned without asking. #1132.
 
 ### An absence is observed, never assumed
 
@@ -2431,9 +2488,12 @@ read at 20.
 own code — 1 and 20. `gh` exits 1 for both, so the adapter asks a second question: a repository
 cannot be absent and an issue can.
 
-A GitHub remote on a machine with no `gh` is answered by the directory adapter, which has never heard
-of Issues. That is right — `gh` is not a floor dependency — and it is now said out loud, because a
-missing tool otherwise reads as a missing item.
+**A GitHub remote on a machine with no `gh` is answered by nothing.** A directory has never heard of
+Issues, so its *nothing there* would be a fact nobody observed. Every verb exits 3 and names `gh`,
+and floor reads that 3 as 20 on `read`, 19 on a delivery and 1 on `ask`.
+
+**`gh` is still not a floor dependency.** A GitHub remote needs `gh`, or `FOUNDRY_SOURCE` naming the
+directory adapter, `lib/source-dir.sh`. *Two adapters*, below, says how the resolver chooses.
 
 ### There is no parameter for what a human supplies
 
@@ -2730,6 +2790,7 @@ commit the pass read its rule at. A pass that stopped before reading one says `n
 | `resumed:<run>` | it resumed a run |
 | `took:<item>` | it took an item |
 | `no-second:<item>` | it took an item, read no second from its line, and began no run, 2 |
+| `no-hand:<item>` | it took an item, read no hand from its line, and began no run, 2 |
 
 **An open `woke` is a pass at work or one that died**, and the host mark says which. A pass killed
 outright never writes its `ended`. A pass with no work source still records its wake, and ends
@@ -2819,7 +2880,7 @@ deadlock or silence lets nothing go.
 **Revise rounds are counted per member and clause**, against that member's `rounds` line, or three
 where the charter has none.
 
-**`deliver`'s code says who can answer it.** 15, 18 and 32 wait on a person, 47, with
+**`deliver`'s code says who can answer it.** 15, 18, 32 and 57 wait on a person, 47, with
 `pass.waiting why=deliver`. 19 is a send that failed, sent again next wake. **20 and 50 are resumed
 there too.** A source nobody could ask, and floor on a hand's account, are each fixed on the host.
 Nothing in the run can answer any other code, so the run is let go with `pass.left why=deliver`, and
@@ -2894,8 +2955,24 @@ that second in `authority`, as *Who the run answers to* says.
 where a work item lives. Nothing above them learns which answered: the run records the item's id and
 the item's own words, so a run carried to a machine with neither installed still means what it meant.
 
-`FOUNDRY_SOURCE` names another adapter. `FOUNDRY_SOURCE_DIR` moves the directory one, which otherwise
-sits in the Foundry home.
+**It chooses on every call, by `origin`.** *The remote is GitHub* when `git remote get-url origin`
+prints a URL holding `github.com`. That remote is the GitHub adapter's when `gh` is on the path, and
+nobody's when it is not: every verb exits 3 and names `gh`. Every other remote is the directory's.
+
+**`serves` reads the sign-in, and routing does not.** It asks `gh api user`, which answers only when
+the account `gh` would use does, and that reaches the network, so a router asking it would pay a call
+on every verb. A signed-out `gh` is refused inside the adapter instead, and `read` and `publish`
+refuse in `gh`'s own words. `join.sh` asks `serves` once, before any run, and refuses a host it
+answers 3 for: no `gh`, or a `gh api user` that failed. A network fault there reads the same, and
+running `join.sh` again is the cure for both.
+
+**What it cannot see.** A GitHub reached through an alias, or on a host not named `github.com`, reads
+as not GitHub, so the directory answers it and nothing is said. A grant can name such a remote, and
+`deliver` there still delivers into a directory and reports success.
+
+`FOUNDRY_SOURCE` names another adapter, and naming `lib/source-dir.sh` there is the one way a
+directory answers a remote the resolver reads as GitHub. `FOUNDRY_SOURCE_DIR` moves the directory
+one, which otherwise sits in the Foundry home.
 
 **A source may be less than four verbs.** `source-read-only.sh` answers `read` and refuses everything
 else at exit 2, which floor reports as **27** — *this source can only be read*. That is a different
@@ -3201,6 +3278,10 @@ misses. A break with no row runs the whole suite, as every break did before.
 ```bash
 bash tests/model.sh --only a_run_is_read_in_one_status
 ```
+
+**Alone, a case makes what an earlier case would have left it.** Each thing it makes prints a line
+that starts with `made`. The whole suite makes nothing, so a case that loses what an earlier one left
+still goes red there.
 
 **Each case in the table runs alone and clean once, before any break.** One that fails is named, and
 its breaks run the whole suite. A case run alone gets five times its clean time, and never less than

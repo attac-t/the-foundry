@@ -3039,8 +3039,8 @@ wreck_runner "a pass that stops on a judge that approved is caught" \
 wreck_runner "a pass that calls a refused delivery delivered is caught" \
   passdeliver '/^carry_it_to_a_request() {/,/^}/s#^    ( deliver "\$2" ) >/dev/null || stop_at "\$1" deliver "\$?"$#    ( deliver "$2" ) >/dev/null#'
 
-# The hand's read alone, so the run is still made, with the label's second, and answers to git's address.
-wreck_runner "a pass whose run answers to the checkout's git address, not the label's hand, is caught" \
+# The hand's read alone. The pass then stops at the empty read, where its case wants a run. #1133.
+wreck_runner "a pass that never reads the label's hand is caught" \
   passwho 's#^    FOUNDRY_WHO=\$(printf .%s\\n. "\$1" | cut -f3)$#    :#'
 
 #
@@ -3062,6 +3062,9 @@ wreck_runner "a pass that reads another item's line when two ids are one number 
 
 wreck_runner "a pass that stamps its own second when its read comes back empty is caught" \
   passnosecond '/^leave_with_no_second() {/,/^}/s#^    \[ -n "\${label_went_on:-}" \] && return 0$#    return 0#'
+
+wreck_runner "a pass that answers to git's address when its read of the hand comes back empty is caught" \
+  passnohand '/^leave_with_no_hand() {/,/^}/s#^    \[ -n "\${FOUNDRY_WHO:-}" \] && return 0$#    return 0#'
 
 #
 # **An item a request is open for is not offered, and every run a pass makes holds a line.** One
@@ -3256,7 +3259,7 @@ wreck_runner "a wait on a person with no line is caught" \
   personwaitline '/^wait_on_a_person() {/,/^}/s#^    emit "\$dir" pass.waiting item="\$1" why="\$2" code="\$3"$#    :#'
 
 wreck_runner "a grant deliver asks for, read as nothing a person can answer, is caught" \
-  deliverperson '/^deliver_and_route() {/,/^}/s#^        15|18|32) wait_on_a_person#        15|32) wait_on_a_person#'
+  deliverperson '/^deliver_and_route() {/,/^}/s#^        15|18|32|57) wait_on_a_person#        15|32|57) wait_on_a_person#'
 
 wreck_runner "a failed send let go rather than sent again is caught" \
   deliversend '/^deliver_and_route() {/,/^}/s#^        19)       stop_at "\$1" deliver 19 ;;$#        19) ;;#'
@@ -3349,18 +3352,21 @@ audit_the_unreadable_declaration() {
     unreadable 's#\[ -r "$dir/.foundry/gates" \] || return 22##' lib/detect-gates.sh
 }
 audit_the_unreadable_declaration
-# The check this breaks is the one skipped where `gh` is installed, so this is skipped there too. Both
-# run under `sh bin/gates.sh linux`, whose image has no `gh` — which is the whole point of the rule.
-audit_the_missing_half() {
-  command -v gh >/dev/null 2>&1 && {
-    printf '  skip  a directory answering silently for a GitHub remote — this machine has gh\n'
-    return
-  }
+#
+# **#1132's refusals.** Their cases build their own path with no `gh`, so none of these is skipped
+# where one is installed, as `quietfall` was before them.
+#
+# The fallback, put back: a directory answers the GitHub remote, and a delivery it takes reports success.
+wreck_runner "a directory answering a GitHub remote with no gh is caught" \
+  dirforgh 's#^gh_is_here || refuse_without_gh$#gh_is_here || exec sh "$here/source-dir.sh" "$@"#' lib/source.sh
 
-  wreck_runner "a directory answering silently for a GitHub remote is caught" \
-    quietfall '/remote_is_github && echo/d' lib/source.sh
-}
-audit_the_missing_half
+# A missing `gh` read as a source with no way to do a thing, so floor names the wrong remedy.
+wreck_runner "a GitHub adapter answering a missing gh with 2 is caught" \
+  ghtwo '/^command -v gh/s#exit 3#exit 2#' lib/source-github.sh
+
+# A `source` verb asked from another checkout, so that checkout's source answers for the run.
+wreck_runner "a source verb asked from outside the run's repository is caught" \
+  sourceanywhere '/^work_source() {/,/^}/s#^    refuse_wrong_repository "$dir"$#    :#'
 
 wreck_runner "a question rewritten under a human is caught" \
   dirwords 's#same_question "$file" "$3" || return 4#:#' lib/source-dir.sh
@@ -4889,7 +4895,7 @@ wreck_runner "a judge with no receipt read as one missing a report is caught" \
 # holds it, no drive spelling, case compared, no address, a home of `/`, and the line's absolute path.
 #
 wreck_runner "a text holding this host's home that is carried is caught" \
-  withholdhome 's@^    home_spellings=\$(spellings_of_the_home)$@    home_spellings=@'
+  withholdhome 's@^    home_spellings=\$(spellings_of_the_home && mark_the_end)$@    home_spellings=$(mark_the_end)@'
 
 wreck_runner "a home compared only in its drive spellings is caught" \
   withholdasis 's@{ print; back = @{ back = @'
@@ -4905,13 +4911,100 @@ wreck_runner "a home compared with its case is caught" \
   withholdcase 's@said = tolower(\$0)@said = $0@; s@index(said, tolower(name\[i\]))@index(said, name[i])@'
 
 wreck_runner "a text holding an address its commits carry that is carried is caught" \
-  withholdaddress 's@^    commit_addresses=\$(addresses_its_commits_carry .*@    commit_addresses=@'
+  withholdaddress 's@^    commit_addresses=\$(addresses_its_commits_carry .*@    commit_addresses=$(mark_the_end)@'
 
 wreck_runner "a home of / that withholds every text is caught" \
   withholdslash 's@length(\$0) < 2 { exit }@length($0) < 1 { exit }@'
 
 wreck_runner "a withheld line naming an absolute path is caught" \
   withheldpath '/^say_it_is_withheld() {/,/^}/s@"\$3" "\$4" "\$2"@"$3" "$4" "$1/$2"@'
+
+#
+# **A credential in a shape floor names is withheld whole.** One break per row of the reader, and
+# one for each rule a row leans on: every match read, the least, either case, and both orders. #1126.
+#
+wreck_runner "a reader that misses a classic GitHub token is caught" \
+  credgh '/row("a GitHub token", "gh\[pousr\]_"/d' lib/credentials.awk
+
+wreck_runner "a reader that misses a fine-grained GitHub token is caught" \
+  credpat '/row("a GitHub token", "github_pat_"/d' lib/credentials.awk
+
+wreck_runner "a reader that misses a private key is caught" \
+  credkey '/row("a private key"/d' lib/credentials.awk
+
+wreck_runner "a reader that misses an AWS access key is caught" \
+  credaws '/row("an AWS access key"/d' lib/credentials.awk
+
+wreck_runner "a reader that misses a model vendor's key is caught" \
+  credvendor '/row("a model vendor.s API key"/d' lib/credentials.awk
+
+wreck_runner "a reader that misses a signature named in a link is caught" \
+  credsign '/in_either_case("a signed link"/d' lib/credentials.awk
+
+wreck_runner "a reader that misses a SAS signature is caught" \
+  credsas '/row("a signed link", "sig="/d' lib/credentials.awk
+
+wreck_runner "a reader that reads only the first match on a line is caught" \
+  credfirst 's@while (match(rest, prefix\[i\]))@if (match(rest, prefix[i]))@' lib/credentials.awk
+
+wreck_runner "a reader that ignores the least is caught" \
+  credleast 's@>= least\[i\]@>= 0@' lib/credentials.awk
+
+wreck_runner "a reader that reads a signature name in one case only is caught" \
+  credcase 's@return (i in folded) ? tolower(line) : line@return line@' lib/credentials.awk
+
+wreck_runner "a reader that names the later of two rows is caught" \
+  credrows 's@^END { for (i = 1; i <= rows; i++)@END { for (i = rows; i >= 1; i--)@' lib/credentials.awk
+
+wreck_runner "a delivery that never reads for a credential is caught" \
+  credread 's@^    the_credential_in "\$1"$@    :@'
+
+wreck_runner "a credential named before the home is caught" \
+  credorder 's@^    named_by "\$1" "\$home_spellings" "this host.s home directory" && return 0$@    the_credential_in "$1" | grep -q . \&\& { the_credential_in "$1"; return 0; }; &@'
+
+wreck_runner "a reader that cannot run, read as no credential, is caught" \
+  credopen 's@^    LC_ALL=C awk -f "\$PLUGIN_ROOT/lib/credentials.awk" "\$1" && return 0$@    LC_ALL=C awk -f "$PLUGIN_ROOT/lib/credentials.awk" "$1"; return 0@'
+
+#
+# **A read counts only when it finishes.** One break per place a read could pass unfinished as clean:
+# the name read's word, each capture's mark, and the address read that swallows its failure. #1153.
+#
+wreck_runner "a name read with no word, read as none found, is caught" \
+  holdsword '/^holds_one_of() {/,/^}/s@^    return 2$@    return 1@'
+
+wreck_runner "a capture of the reasons with no mark, read as clean, is caught" \
+  markreasons 's@^    finished "\$withheld_for" || { withheld_for="what floor could not read for this text"; return 0; }$@    finished "$withheld_for" || { withheld_for=; return 0; }@'
+
+wreck_runner "a list of names with no mark, read as read, is caught" \
+  marknames 's@^    finished "\$home_spellings" && finished "\$commit_addresses" || names_unread=1$@    names_unread=@'
+
+wreck_runner "an address read that swallows its failure is caught" \
+  addressswallow 's@^\(    git -C "\$carried_tree" log -1 --format=.%ae%n%ce. "\$2" 2>/dev/null\) || return 1$@\1 || return 0@'
+
+# The reader prints its shape with a newline, and a marked capture keeps it: the line breaks unless dropped.
+wreck_runner "a credential reason that keeps the reader's newline is caught" \
+  credline 's@^drop_the_readers_newline() { withheld_for=\${withheld_for%"\$NEWLINE"}; }$@drop_the_readers_newline() { :; }@'
+
+#
+# **No message holding a credential reaches the remote.** One break per way the read could miss it:
+# never read, the head read alone, a failed read let through, the push first, a pass that lets 57 go.
+#
+wreck_runner "a delivery that pushes without reading its messages is caught" \
+  credpush 's@^    refuse_a_credential_in_the_messages "\$1" "\$2" "\$4"$@    :@'
+
+wreck_runner "a delivery that reads the head's message alone is caught" \
+  credhead 's@rev-list "\${pushed_base:?}\.\.\$3"@rev-list -1 "$3"@'
+
+wreck_runner "a delivery whose failed read is let through is caught" \
+  credunread 's@^    held_shape=\$(shape_in_the_message "\$1" "\$2") || refuse_an_unread_push$@    held_shape=$(shape_in_the_message "$1" "$2") || return 0@'
+
+# The read and the push trade lines through a placeholder, so the read still refuses, after the push
+# published the message. No branch command, since BSD sed reads what follows `t;` as its label.
+wreck_runner "a delivery that pushes before it reads is caught" \
+  credlate 's@^    refuse_a_credential_in_the_messages "\$1" "\$2" "\$4"$@PUSH_GOES_HERE@; s@^    push_workspace "\$1" "\$2" "\$branch" "\$4"$@    refuse_a_credential_in_the_messages "$1" "$2" "$4"@; s@^PUSH_GOES_HERE$@    push_workspace "$1" "$2" "$branch" "$4"@'
+
+wreck_runner "a pass that lets 57 go, never waiting on a person, is caught" \
+  credwait 's@^        15|18|32|57) wait_on_a_person@        15|18|32) wait_on_a_person@'
 
 # No line leaves its fence: three backticks always, or no more than the longest run the text holds.
 wreck_runner "a fence of three around a longer backtick run is caught" \
@@ -5238,6 +5331,20 @@ wreck_join "a repository declaring nothing a run needs waved through is caught" 
 # The silent one this command exists for. Saying nothing about the source is what it replaced.
 wreck_join "a source that is chosen without a word is caught" \
   mutesource 's#^    report_work_source$#    say "who     $FOUNDRY_WHO"#'
+
+# A host where nothing can be asked for work, joined. A run made there stops at its first source call.
+wreck_join "a host whose work source cannot be asked waved through is caught" \
+  unaskedjoins 's#^    refuse_without_a_work_source$#    :#'
+
+# Only the resolver's 3 refuses. The directory adapter has no `serves` and answers 2, and a host naming
+# it joins — #1132's one way for a directory to answer a GitHub remote.
+wreck_join "a host refused for a resolver with no serves is caught" \
+  anysourcecode 's#\[ "$source_answered" -eq 3 \]#[ "$source_answered" -ne 0 ]#'
+
+# The sign-in read as `auth status`, which fails when any account fails while the active one answers.
+# A host signing in two was refused for the one `gh` never uses. #1132's judge, round one.
+wreck_join "a sign-in read that refuses for an account gh does not use is caught" \
+  authstatus 's#gh api user 2>#gh auth status 2>#' lib/source.sh
 
 # A count that reads comments and blank lines reports a repository authorising more than a human
 # wrote — the shape of the number matters as much as its presence.

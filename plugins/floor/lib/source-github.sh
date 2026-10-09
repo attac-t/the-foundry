@@ -2,8 +2,8 @@
 #
 # A work source that is GitHub Issues. The first adapter, and not the model.
 #
-# Needs `gh`, which floor does not declare — so floor reaches this only where the remote is GitHub
-# *and* `gh` is there, and `source-dir.sh` answers otherwise. §3's level 1, both halves.
+# Needs `gh`, which floor does not declare — so `source.sh` reaches this only where the remote is
+# GitHub *and* `gh` is there. §3's level 1, both halves. Named anywhere with no `gh`, it exits 3.
 #
 # A question is a comment, and an answer is any comment a person writes on the item. The human is
 # asked where they already are, and one marker line addresses one question among many:
@@ -34,13 +34,14 @@
 #        sh source-github.sh find    <label>
 #
 # Exit: 0 answered · 1 nothing there · 2 asked for something this does not do · 3 GitHub refused,
-#       or could not be reached at all
+#       could not be reached at all, or `gh` is not here
 #       4 this run already sent something else under that name
 #
 
 set -u
 
-command -v gh >/dev/null 2>&1 || { echo "source-github: gh is not here" >&2; exit 2; }
+# 3, *could not be asked*. A 2 reads as a source with no way to do a thing, and `gh` is only missing.
+command -v gh >/dev/null 2>&1 || { echo "source-github: gh is not here" >&2; exit 3; }
 
 #
 # The issue's own words, and no interpretation of them. A transport carries; it does not read.

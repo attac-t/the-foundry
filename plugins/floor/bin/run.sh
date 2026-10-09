@@ -18,7 +18,8 @@
 #   4  a target was refused: no portable identity, or a ref that is not one
 #   5  a target was refused: nobody authorised it for this run
 #   6  a clause was refused: it would weaken the charter, its pin could not be captured, or the run
-#      would derive from an artifact it changed — including a run that recorded no base
+#      would derive from an artifact it changed — including a run that recorded no base. Or floor
+#      stands outside the run's own repository, where a verb would read or ask the wrong one
 #   7  the charter cannot be run against as it stands — something drifted, went missing, holds
 #      together with nothing, or is pinned to a repository this is not
 #   8  the charter gives this stage nothing to run — it holds no clause, none that pins a gate, or
@@ -4037,6 +4038,7 @@ pass() {
     select_an_item
     answer_to_the_applier "$taken" "$items"
     leave_with_no_second "$taken"
+    leave_with_no_hand "$taken"
     heading=$(the_heading_of "$taken") || exit "$?"
     begin_a_run_for "$taken" "$heading"
 
@@ -4532,6 +4534,17 @@ leave_with_no_second() {
 }
 
 #
+# **A pass's run never answers to git's address.** The offer drops a line that names no hand, so an
+# empty read here is a failed fork too. It stops before any run, and the next wake takes it again. #1133.
+leave_with_no_hand() {
+    [ -n "${FOUNDRY_WHO:-}" ] && return 0
+
+    pass_read="no-hand:$1"
+    note "the offer's line for [$1] gave no hand, so this pass begins no run"
+    exit 2
+}
+
+#
 # **An item is underway here while a run here holds it, under the name its claim carries.** To
 # `claim`, this host's own claim is a renewal. To a pass it is work already started, unless no run
 # here holds it so: then the claim outlived a pass that died, and this pass takes it again.
@@ -5021,8 +5034,8 @@ carry_on_to_a_request() {
 }
 
 #
-# **`deliver`'s code says who can answer it.** 15, 18 and 32 wait on a person: a clause, a grant,
-# a commit to account for. 19 was a send that failed, and the next wake sends again.
+# **`deliver`'s code says who can answer it.** 15, 18, 32 and 57 wait on a person: a clause, a
+# grant, a commit to account for, a message to reword. 19 was a send that failed, sent again next wake.
 #
 # Nothing in this run can answer any other code, so the run is let go and the pass selects afresh.
 deliver_and_route() {
@@ -5031,7 +5044,7 @@ deliver_and_route() {
 
     case $delivered in
         0)        say_it_was_delivered "$1"; return 0 ;;
-        15|18|32) wait_on_a_person "$1" deliver "$delivered" ;;
+        15|18|32|57) wait_on_a_person "$1" deliver "$delivered" ;;
         19)       stop_at "$1" deliver 19 ;;
         20|50)    stop_at_the_delivery "$1" "$delivered" ;;
     esac
@@ -5927,10 +5940,21 @@ BODY_CAP=65000
 #
 ready_to_carry() {
     carried_bytes=0
-    home_spellings=$(spellings_of_the_home)
-    commit_addresses=$(addresses_its_commits_carry "$1" "$2" "$3")
+    home_spellings=$(spellings_of_the_home && mark_the_end)
+    commit_addresses=$(addresses_its_commits_carry "$1" "$2" "$3" && mark_the_end)
+    names_unread=
+    finished "$home_spellings" && finished "$commit_addresses" || names_unread=1
+    home_spellings=${home_spellings%"$NEWLINE".} commit_addresses=${commit_addresses%"$NEWLINE".}
     carried_cap=$(room_under_the_cap "$(bytes_with_no_text "$1" "$2" "$3")")
 }
+
+#
+# **A read counts only when it finishes.** Its capture ends with a line `.` that only its own success
+# writes. A fork that fails ends the subshell first, and so leaves an answer with no mark. #1153.
+mark_the_end() { printf '\n.'; }
+
+# The whole last line is the mark, so no name or reason ending in a full stop can pass for it.
+finished() { [ "${1##*"$NEWLINE"}" = . ]; }
 
 # The body with every text a model wrote cut to nothing: the brief, the record and floor's own lines.
 bytes_with_no_text() {
@@ -5950,12 +5974,13 @@ room_under_the_cap() {
 
 #
 # **One text a model wrote**: its first `$4` lines, or all when that is 0, from `$2` inside the run.
-# Withheld whole when it names this host, and cut where a bound falls. Fenced, so no line escapes.
+# Withheld whole for a reason below, and cut where a bound falls. Fenced, so no line escapes.
 #
 carry_the_text() {
     [ -r "$1/$2" ] || return 0
 
-    withheld_for=$(what_it_names_of_this_host "$1/$2")
+    withheld_for=$(why_it_is_withheld "$1/$2" && mark_the_end)
+    settle_the_reason
     [ -z "$withheld_for" ] || { say_it_is_withheld "$1" "$2" "$3" "$withheld_for"; return 0; }
 
     fence_bytes=$(bytes_of_the_fences_for "$1/$2" "${4:-0}")
@@ -5976,24 +6001,62 @@ bytes_of_the_fences_for() {
 }
 
 #
-# A text holding this host's home, or an address its commits carry, is withheld whole. Cutting the
-# line would not keep it as its writer wrote it, and a request is never rewritten once it is sent.
+# A text holding this host's home, an address its commits carry, or a credential is withheld whole.
+# Cutting the line would not keep it as its writer wrote it, and a request is never rewritten.
 #
-what_it_names_of_this_host() {
-    holds_one_of "$1" "$home_spellings" && { printf "this host's home directory"; return 0; }
-    holds_one_of "$1" "$commit_addresses" && printf 'an address its commits carry'
-    return 0
+# The first reason found is the one given, so a text naming two is named by the home first. #1126.
+#
+why_it_is_withheld() {
+    [ -z "${names_unread:-}" ] || { printf "what floor could not read for this host's names"; return 0; }
+    named_by "$1" "$home_spellings" "this host's home directory" && return 0
+    named_by "$1" "$commit_addresses" 'an address its commits carry' && return 0
+    the_credential_in "$1"
 }
 
+# A capture with no mark is a read that did not finish, so the text is withheld for it. #1153.
+settle_the_reason() {
+    finished "$withheld_for" || { withheld_for="what floor could not read for this text"; return 0; }
+    withheld_for=${withheld_for%"$NEWLINE".}
+    drop_the_readers_newline
+}
+
+# The credential reader ends its shape with `print`, and a bare capture used to swallow that newline.
+drop_the_readers_newline() { withheld_for=${withheld_for%"$NEWLINE"}; }
+
+# The reason `$3` when the file names a line of `$2`, or the read's own when it did not finish. When
+# the file names none, nothing, and 1.
+named_by() {
+    holds_one_of "$1" "$2"
+    case $? in
+        0) printf '%s' "$3"; return 0 ;;
+        1) return 1 ;;
+    esac
+    printf 'what floor could not read for %s' "$3"
+}
+
+#
+# The earliest shape `lib/credentials.awk` names in the file, or nothing. A reader that cannot run
+# withholds the text, since a read that failed must never read as a credential that is not there.
+the_credential_in() {
+    LC_ALL=C awk -f "$PLUGIN_ROOT/lib/credentials.awk" "$1" && return 0
+    printf 'what floor could not read for a credential'
+}
+
+#
 # Any line of `$2` anywhere in the file, compared without case. An empty line names nothing.
+#
+# The word awk prints is the answer, never its exit: an awk that errors may exit 1, which reads as
+# none found. 0 found, 1 none, and 2 for a read that did not finish. #1153.
 holds_one_of() {
     [ -n "$2" ] || return 1
 
-    names=$2 LC_ALL=C awk '
+    holds_said=$(names=$2 LC_ALL=C awk '
         BEGIN { n = split(ENVIRON["names"], name, "\n") }
         { said = tolower($0)
           for (i = 1; i <= n; i++) if (name[i] != "" && index(said, tolower(name[i]))) { found = 1; exit } }
-        END { exit !found }' "$1"
+        END { print (found ? "held" : "clear") }' "$1")
+    case $holds_said in held) return 0 ;; clear) return 1 ;; esac
+    return 2
 }
 
 #
@@ -6018,13 +6081,15 @@ spellings_of_the_home() {
         }'
 }
 
+#
 # Each address the delivered commit, and every commit above the base, carries as author and committer.
+# A tree, base or log it cannot read ends it with that failure, so its capture carries no mark. #1153.
 addresses_its_commits_carry() {
-    carried_tree=$(unit_work_tree "$1" "$3") || return 0
+    carried_tree=$(unit_work_tree "$1" "$3") || return 1
     carried_from=$(recorded_base "$(unit_workspace "$1")" "$(target_slot "$3")")
 
-    git -C "$carried_tree" log -1 --format='%ae%n%ce' "$2" 2>/dev/null
-    [ -z "$carried_from" ] || git -C "$carried_tree" log --format='%ae%n%ce' "$carried_from..$2" 2>/dev/null
+    git -C "$carried_tree" log -1 --format='%ae%n%ce' "$2" 2>/dev/null || return 1
+    git -C "$carried_tree" log --format='%ae%n%ce' "${carried_from:?}..$2" 2>/dev/null
 }
 
 # What one text may still take: its own bound, or what is left of the room they share less its fences.
@@ -6095,15 +6160,50 @@ refuse_incomplete() {
     exit 15
 }
 
-# Push, then say so. A source told about a delivery nobody can fetch is worse than silence, so the
-# order is not a preference. `$4` is the commit `deliver` graded, and the push and the body take it.
+# Read, push, then say so. A source told about a delivery nobody can fetch is worse than silence, so
+# the order is not a preference. `$4` is the commit `deliver` graded; the read, push and body take it.
 send_delivery() {
     branch=$(delivery_branch "$1")
 
+    refuse_a_credential_in_the_messages "$1" "$2" "$4"
     push_workspace "$1" "$2" "$branch" "$4"
     say_a_moved_head "$1" "$4"
     compose_the_body "$1" "$4" "$2"
     publish_delivery "$1" "$branch" "$3" "$4"
+}
+
+#
+# **No message holding a credential reaches the remote.** Every commit above the base, through the
+# one `deliver` carries, is read before the push, with the reader the body uses. #1151.
+#
+# The ancestry walk lists this range first and stops at 33, so the list fails here only if the range
+# moved between the two reads. `:?` keeps a missing base from reading as `HEAD..`, which pushes unread.
+refuse_a_credential_in_the_messages() {
+    pushed_tree=$(unit_work_tree "$1" "$2") || exit 16
+    pushed_base=$(recorded_base "$(unit_workspace "$1")" "$(target_slot "$2")")
+
+    pushed_commits=$(git -C "$pushed_tree" rev-list "${pushed_base:?}..$3" 2>/dev/null) || refuse_an_unread_push
+    for pushed in $pushed_commits; do refuse_a_shape_in "$pushed_tree" "$pushed"; done
+}
+
+# The shape commit `$2`'s message holds, or nothing. Non-zero when the message or the reader fails.
+shape_in_the_message() {
+    pushed_message=$(git -C "$1" log -1 --format=%B "$2" 2>/dev/null) || return 1
+    printf '%s\n' "$pushed_message" | LC_ALL=C awk -f "$PLUGIN_ROOT/lib/credentials.awk"
+}
+
+refuse_a_shape_in() {
+    held_shape=$(shape_in_the_message "$1" "$2") || refuse_an_unread_push
+    [ -n "$held_shape" ] || return 0
+
+    note "commit [$2] holds $held_shape in its message, so nothing was pushed. Deliver again from a new commit, made through \`commit\` and graded at its own sha"
+    exit 57
+}
+
+# A read that failed must never read as a message holding nothing.
+refuse_an_unread_push() {
+    note "the messages above the base could not be read for a credential, so nothing was pushed. Repair the reader on this host, and deliver again"
+    exit 57
 }
 
 # The sha, never `HEAD`. A commit landing after `deliver` read its head is not what it graded.
@@ -9595,9 +9695,13 @@ refuse_a_proposal_with_no_row() {
 # The rename guard, because a question's identity is the run's name: a renamed run derives a
 # different question and asks a human the same thing twice.
 #
+# **The repository guard, as `derive` has.** Asked from another checkout, that checkout's source
+# answered for this run, and a delivery it took was one `deliver` later returned unasked. #1132.
+#
 work_source() {
     dir=$(active_run) || exit 1
     refuse_renamed_run "$dir"
+    refuse_wrong_repository "$dir"
     refuse_missing_source
 
     case "${1:-}" in

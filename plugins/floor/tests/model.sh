@@ -35,18 +35,36 @@ unset FOUNDRY_PASS_ITEM FOUNDRY_PASS_WORKSPACE FOUNDRY_PASS_ITEM_FILE
 here="$(cd "$(dirname "$0")/.." && pwd)"
 
 #
-# `--only <case>...` runs those cases alone: every other case call is skipped, and nothing else
-# changes. This file's own text, those calls made `:`, is run here, so `$0` and the plugin it finds
-# stay this file's. A name that is no case is refused before anything runs. `tests/alone.sh` says
-# what a case is. #1112.
+# `--only <case>...` runs those cases alone: every other case call is skipped. This file's own text,
+# those calls made `:`, is run here, so `$0` and the plugin it finds stay this file's. #1112.
+#
+# A name that is no case is refused before anything runs. `tests/alone.sh` says what a case is.
 #
 [ "${1:-}" = --only ] && {
   shift
   only_text=$( . "$here/tests/alone.sh" && only_these "$0" "$@" ) || exit 2
+  readonly only_cases="$*"
   set --
   eval "$only_text"
   exit
 }
+
+# An inherited `only_cases` would make the whole suite build. `--only` runs this line again, so the
+# reset spares the one mark that block made read-only.
+readonly -p | grep -q ' only_cases=' || unset only_cases
+
+#
+# **Only a run of named cases builds what a case reads and an earlier case left.** The whole suite
+# builds nothing, so a chain a later change breaks still skips there, and never mends in silence.
+#
+# Where the earlier case makes a repository too, both call one function, so its name is written
+# once. `only_cases` marks the run: cases assign `alone`, and none assigns this. #1139.
+#
+running_alone() { [ -n "${only_cases:-}" ]; }
+
+# A line for each thing a case run alone built, so the log shows it. Called inside `$(...)`, the
+# line would land in a variable instead.
+say_made() { printf '  made  %s\n' "$1"; }
 
 . "$here/tests/lib.sh"
 
@@ -88,6 +106,10 @@ this_host() { printf '%s/%s' "$(uname -n)" "$(cat "$home/host-name")"; }
 . "$here/tests/isolate.sh"
 isolate_git_transport "$tmp" || { printf 'could not isolate the git transport\n' >&2; exit 3; }
 
+# A path with no `gh` on it, for the cases that drive a host without one. The grade image has one.
+. "$here/tests/without.sh"
+no_gh_path() { path_without gh "$tmp/without-gh"; }
+
 # Run the shipped CLI from a directory, with an explicit home and run variable.
 #
 # The directory adapter, named rather than detected.
@@ -100,6 +122,10 @@ isolate_git_transport "$tmp" || { printf 'could not isolate the git transport\n'
 # points `RUNNER` at it, so naming the original's adapter would hand every mutant an unbroken one.
 #
 dir_source="$(dirname "$runner")/../lib/source-dir.sh"
+
+# The resolver and the GitHub adapter beside it, for the cases that ask one of them by name.
+router="$(dirname "$runner")/../lib/source.sh"
+gh_adapter="$(dirname "$runner")/../lib/source-github.sh"
 
 floor_as() {
   local dir="$1" home_dir="$2" run="$3"; shift 3
@@ -495,7 +521,7 @@ say_what_it_kept "$@"
 
 #
 # One `tests/cases.sh` id, on state the clean runner built. Its noun is an id and never a case of
-# this file: `--only`, at the top, runs those, and builds nothing.
+# this file: `--only`, at the top, runs those, building only what a skipped case would have left.
 #
 # `--checkpoint` builds what a case starts from; `--case` runs the case against whatever `RUNNER`
 # names. The audit restores the same bytes to the same pathname before each, so a mutant answers
@@ -994,9 +1020,13 @@ restore_selection
 
 policy_for() { printf '%s/policy/runs/%s/targets' "$home" "$(basename "$1")"; }
 
+# `alone_with_the_policy_run` makes this too, for a case below run alone.
+the_policy_repo() {
+  make_repo "$tmp/pol" main && set_origin "$tmp/pol" 'https://github.com/acme/boot.git'
+}
+
 the_bootstrap_is_authorised_without_a_grant() {
-  make_repo "$tmp/pol" main && set_origin "$tmp/pol" 'https://github.com/acme/boot.git' \
-    || { skip "policy — git could not make a repo here"; return; }
+  the_policy_repo || { skip "policy — git could not make a repo here"; return; }
 
   polrun=$(floor "$tmp/pol" new "Policy")
 
@@ -1010,6 +1040,14 @@ the_bootstrap_is_authorised_without_a_grant() {
 }
 the_bootstrap_is_authorised_without_a_grant
 
+# The run the policy cases read. The case above also selects its bootstrap, which none needs.
+alone_with_the_policy_run() {
+  running_alone && [ -z "${polrun:-}" ] || return 0
+  the_policy_repo || return 0
+
+  polrun=$(floor "$tmp/pol" new "Policy") && say_made "the policy run, in \$tmp/pol"
+}
+
 #
 # The advisory proof, by sequence rather than by absence.
 #
@@ -1018,6 +1056,7 @@ the_bootstrap_is_authorised_without_a_grant
 # if policy does nothing.
 #
 an_item_grants_nothing() {
+  alone_with_the_policy_run
   [ -n "${polrun:-}" ] || { skip "the advisory proof — no run with a bootstrap"; return; }
 
   printf 'targets: https://github.com/attacker/evil.git main\n' >> "$polrun/item.md"
@@ -1051,6 +1090,7 @@ a_refusal_writes_nothing
 # The discriminator. Without it the sequence above would still pass while authority widened itself.
 #
 targets_add_never_grants() {
+  alone_with_the_policy_run
   [ -n "${polrun:-}" ] || { skip "the self-authorisation proof — no run with a bootstrap"; return; }
 
   # Granted, and not selected yet. Every guard returns before the append, so the write this is about
@@ -1075,6 +1115,7 @@ targets_add_never_grants
 # different reason: git resolves dot segments, so the line clones one repo and reads as another.
 #
 a_repo_argument_cannot_carry_a_second_line() {
+  alone_with_the_policy_run
   [ -n "${polrun:-}" ] || { skip "the newline proof — no run with a bootstrap"; return; }
 
   smuggle=$(printf 'https://github.com/acme/boot.git\nhttps://github.com/smuggled/in.git')
@@ -1290,6 +1331,7 @@ policy_stores_only_portable_identities
 # The bootstrap is an effective grant, not a stored one. Copying it would outlive the run's own
 # `bootstrap` file and make the two disagree about what a run may reach.
 authorizing_the_bootstrap_copies_nothing() {
+  alone_with_the_policy_run
   [ -n "${polrun:-}" ] || { skip "the bootstrap copy proof — no run with a bootstrap"; return; }
 
   # Byte-identical, not merely `lacks`: an empty file lacks everything.
@@ -1341,15 +1383,22 @@ charter_of() { printf '%s/charter' "$1"; }
 # Where a loose object lives, so a test can take one away.
 loose_object() { printf '%s/.git/objects/%.2s/%s' "$1" "$2" "${2#??}"; }
 
+#
 # `pat` is named to answer, so a clause nothing derives is asked about rather than refused at 49. A
 # bench judges a `Judged` one, so introducing it is not refused at 55.
-a_charter_derives_from_the_repository_it_is_run_in() {
+#
+# `alone_with_the_charter_run` makes this too, for a case below run alone.
+#
+the_charter_repo() {
   make_repo "$tmp/ch" develop && set_origin "$tmp/ch" 'https://github.com/acme/ch.git' \
     && commit_file "$tmp/ch" Makefile 'test:
 	echo ok
 ' && mkdir -p "$tmp/ch/.foundry" && commit_file "$tmp/ch" .foundry/practice 'authorise pat' \
-    && commit_file "$tmp/ch" .foundry/judged 'bench alice reviewer' \
-    || { skip "charter — git could not make a repo here"; return; }
+    && commit_file "$tmp/ch" .foundry/judged 'bench alice reviewer'
+}
+
+a_charter_derives_from_the_repository_it_is_run_in() {
+  the_charter_repo || { skip "charter — git could not make a repo here"; return; }
 
   chrun=$(floor "$tmp/ch" new "Charter")
   said=$(floor_says "$tmp/ch" charter derive)
@@ -1609,7 +1658,29 @@ the_three_kinds_stay_apart() {
 }
 the_three_kinds_stay_apart
 
+# The charter run, derived. `a_charter_derives_from_the_repository_it_is_run_in` goes on to select
+# and freeze, and no case below needs either.
+alone_with_the_charter_run() {
+  running_alone && [ -z "${chrun:-}" ] || return 0
+  the_charter_repo || return 0
+
+  chrun=$(floor "$tmp/ch" new "Charter") \
+    && floor "$tmp/ch" charter derive >/dev/null 2>&1 \
+    && say_made "the charter run, derived, in \$tmp/ch"
+}
+
+# The Decided clause the case above introduces, which the two cases below read.
+alone_with_the_decided_clause() {
+  running_alone && [ -n "${chrun:-}" ] || return 0
+  grep -qx 'clause [0-9]* Decided refund copy signed off' "$(charter_of "$chrun")" 2>/dev/null && return 0
+
+  floor "$tmp/ch" charter introduce Decided 'refund copy signed off' >/dev/null 2>&1 \
+    && say_made "the Decided clause, in the charter run"
+}
+
 an_introduced_clause_stays_introduced() {
+  alone_with_the_charter_run
+  alone_with_the_decided_clause
   [ -n "${chrun:-}" ] || { skip "introduction — no charter run"; return; }
 
   #
@@ -1628,6 +1699,8 @@ an_introduced_clause_stays_introduced() {
 an_introduced_clause_stays_introduced
 
 a_clause_cannot_be_weakened() {
+  alone_with_the_charter_run
+  alone_with_the_decided_clause
   [ -n "${chrun:-}" ] || { skip "monotonicity — no charter run"; return; }
 
   before=$(cat "$(charter_of "$chrun")")
@@ -1656,6 +1729,7 @@ a_clause_cannot_be_weakened() {
 a_clause_cannot_be_weakened
 
 a_clause_is_one_line() {
+  alone_with_the_charter_run
   [ -n "${chrun:-}" ] || { skip "one line — no charter run"; return; }
 
   lines_before=$(grep -c . "$(charter_of "$chrun")")
@@ -1666,11 +1740,16 @@ a_clause_is_one_line() {
 }
 a_clause_is_one_line
 
-deletion_and_drift_are_visible() {
+# `alone_with_the_drift_repo` makes this too, for a wrong-repository case run alone.
+the_drift_repo() {
   make_repo "$tmp/ch2" main && set_origin "$tmp/ch2" 'https://github.com/acme/ch2.git' \
     && commit_file "$tmp/ch2" Makefile 'test:
 	echo ok
-' || { skip "drift — git could not make a repo here"; return; }
+'
+}
+
+deletion_and_drift_are_visible() {
+  the_drift_repo || { skip "drift — git could not make a repo here"; return; }
 
   d=$(floor "$tmp/ch2" new "Drift")
   floor "$tmp/ch2" charter derive >/dev/null 2>&1
@@ -3117,6 +3196,249 @@ a_text_naming_this_host_is_withheld_whole() {
 }
 a_text_naming_this_host_is_withheld_whole
 
+#
+# #1126. Each credential is built as the case runs, so no token is written whole in this file and no
+# push of it carries one. A run repeats one character: `$1`, `$2` times.
+#
+repeated() { awk -v c="$1" -v n="$2" 'BEGIN { while (n-- > 0) printf "%s", c }'; }
+
+a_github_token() { printf 'gh%s_%s' "$1" "$(repeated a 36)"; }
+a_fine_token()   { printf 'github_%s_%s' pat "$(repeated b 22)"; }
+a_key_header()   { printf '%s' "-----BEGIN ${1}PRIVATE KEY-----"; }
+an_aws_key()     { printf 'A%sIA%s' "$1" "$(repeated C 16)"; }
+a_vendor_key()   { printf 'sk-%s-%s' "$1" "$(repeated d 20)"; }
+a_signed_link()  { printf 'https://b.invalid/o?%s=%s' "$1" "$(repeated e 64)"; }
+a_sas_link()     { printf 'https://b.invalid/o?sv=1&si%s=%s%%3D&se=2' g "$(repeated f 44)"; }
+
+# Each run one short of its least, in characters no planted token repeats.
+runs_too_short() {
+  printf 'gh%s_%s github_%s_%s A%sIA%s sk-%s-%s X-%s-Signature=%s si%s=%s' \
+    p "$(repeated z 35)" pat "$(repeated z 21)" K "$(repeated Z 15)" ant "$(repeated z 19)" \
+    Amz "$(repeated 9 63)" g "$(repeated z 45)"
+}
+
+# Each member, and the shape its report is withheld for.
+the_members_withheld() {
+  cat <<'MEMBERS'
+ghp|a GitHub token
+gho|a GitHub token
+ghu|a GitHub token
+ghs|a GitHub token
+ghr|a GitHub token
+pat|a GitHub token
+rsakey|a private key
+barekey|a private key
+akia|an AWS access key
+asia|an AWS access key
+ant|a model vendor's API key
+proj|a model vendor's API key
+amz|a signed link
+goog|a signed link
+amzlower|a signed link
+amzupper|a signed link
+googlower|a signed link
+googupper|a signed link
+sas|a signed link
+later|a GitHub token
+MEMBERS
+}
+
+# What each member's report holds, one per alternative the reader names, then the near misses.
+plant_the_credentials() {
+  for kind in p o u r s; do plant "gh$kind" "$(a_github_token "$kind")" || return 1; done
+  plant pat "$(a_fine_token)" && plant rsakey "$(a_key_header 'RSA ')" && plant barekey "$(a_key_header '')" \
+    && plant akia "$(an_aws_key K)" && plant asia "$(an_aws_key S)" \
+    && plant ant "$(a_vendor_key ant)" && plant proj "$(a_vendor_key proj)" \
+    && plant amz "$(a_signed_link X-Amz-Signature)" && plant goog "$(a_signed_link X-Goog-Signature)" \
+    && plant amzlower "$(a_signed_link x-amz-signature)" && plant amzupper "$(a_signed_link X-AMZ-SIGNATURE)" \
+    && plant googlower "$(a_signed_link x-goog-signature)" && plant googupper "$(a_signed_link X-GOOG-SIGNATURE)" \
+    && plant sas "$(a_sas_link)" && plant later "ghp_x, then $(a_github_token p)" \
+    && plant hometoken "/c/Users/ada/notes and $(a_github_token p)" \
+    && plant twoshapes "$(an_aws_key K)
+and $(a_github_token p)" \
+    && plant short "$(runs_too_short)" \
+    && plant prose "the ghp_ prefix, github_pat_, a -----BEGIN line, AKIA, sk-ant-, sig= and X-Amz-Signature="
+}
+
+plant() { printf 'I read %s in a file\nVERDICT: approve\n' "$2" > "$tmp/holds-credential-$1.said"; }
+
+#
+# #1126. A report holding a credential in a shape floor names is withheld whole, and its line names
+# the shape. Every alternative is planted, each from a member of its own.
+#
+# Its commit's message is clean: since #1151, one holding a shape stops the push before any body.
+#
+a_text_holding_a_credential_is_withheld_whole() {
+  plant_the_credentials || { skip "a text holding a credential — could not plant a report"; return; }
+  a_panel_run holds-credential '' $(the_members_withheld | cut -d'|' -f1) hometoken twoshapes short prose \
+    || { skip "a text holding a credential — git could not make a repo here"; return; }
+  a_commit_in "$tmp/holds-credential" 'feat: nothing secret'
+  floor "$tmp/holds-credential" judged >/dev/null 2>&1
+  ( HOME=/c/Users/ada; floor "$tmp/holds-credential" deliver 'a change' ) >/dev/null 2>&1
+  held=$(cat "$(floor "$tmp/holds-credential" path)/body" 2>/dev/null)
+
+  while IFS='|' read -r member shape; do
+    has "a report planting [$member] is withheld whole, for $shape" "$held" \
+        "$member's report is withheld whole: it holds $shape."
+  done <<MEMBERS
+$(the_members_withheld)
+MEMBERS
+  has   "a report holding the home and a token is withheld for the home" "$held" \
+        "hometoken's report is withheld whole: it holds this host's home directory."
+  has   "a report holding two shapes is named by the earlier row" "$held" \
+        "twoshapes's report is withheld whole: it holds a GitHub token."
+  has   "a run one short of each least is carried" "$held" "$(printf '```\nI read %s in a file\n```' "$(runs_too_short)")"
+  has   "and so is prose naming each prefix" "$held" "I read the ghp_ prefix, github_pat_"
+  lacks "no planted token reaches the request" "$held" "$(repeated a 36)"
+  lacks "nor a fine-grained one" "$held" "$(repeated b 22)"
+  lacks "nor a key header" "$held" "PRIVATE KEY-----"
+  lacks "nor an AWS key" "$held" "$(repeated C 16)"
+  lacks "nor a vendor's key" "$held" "$(repeated d 20)"
+  lacks "nor a signature" "$held" "$(repeated e 64)"
+  lacks "nor a SAS signature" "$held" "$(repeated f 44)"
+}
+a_text_holding_a_credential_is_withheld_whole
+
+#
+# An `awk` that cannot run the credential reader, as a fork that failed cannot, and runs any other.
+# `$1` names which read fails: `file`, the body's, or `input`, the push's, which pipes the message.
+an_awk_that_cannot_read_credentials() {
+  printf '#!/bin/sh\ncase "$*" in\n  *lib/credentials.awk) [ %s = input ] && exit 2 ;;\n  *lib/credentials.awk\\ *) [ %s = file ] && exit 2 ;;\nesac\nexec %s "$@"\n' \
+    "$1" "$1" "$(command -v awk)"
+}
+
+#
+# #1126's build judge, round one. A reader that cannot run withholds the text it was to read, since
+# a read that failed must never read as a credential that is not there.
+#
+a_text_floor_cannot_read_for_a_credential_is_withheld() {
+  printf 'Nothing here holds a credential.\nVERDICT: approve\n' > "$tmp/unread-credential-one.said"
+  a_panel_run unread-credential '' one \
+    || { skip "a reader that cannot run — git could not make a repo here"; return; }
+  mkdir -p "$tmp/unreadbin"
+  an_awk_that_cannot_read_credentials file > "$tmp/unreadbin/awk" && chmod +x "$tmp/unreadbin/awk" \
+    || { skip "a reader that cannot run — could not put an awk on the path"; return; }
+
+  a_commit_in "$tmp/unread-credential" 'feat: nothing secret'
+  floor "$tmp/unread-credential" judged >/dev/null 2>&1
+  ( PATH="$tmp/unreadbin:$PATH"; floor "$tmp/unread-credential" deliver 'a change' ) >/dev/null 2>&1
+  unread=$(cat "$(floor "$tmp/unread-credential" path)/body" 2>/dev/null)
+
+  has   "a report floor cannot read for a credential is withheld whole" "$unread" \
+        "one's report is withheld whole: it holds what floor could not read for a credential."
+  lacks "and its words never reach the request" "$unread" "Nothing here holds a credential."
+}
+a_text_floor_cannot_read_for_a_credential_is_withheld
+
+# Every ref a bare remote holds, with the commit it names: what a refused push must leave as it was.
+remote_refs_of() { git -C "$1" for-each-ref --format='%(refname) %(objectname)' 2>/dev/null; }
+
+#
+# #1151. A message holding a credential stops the delivery before the push, and the remote's refs
+# are as they were. The token sits below the head, so a read of the head alone would miss it.
+#
+a_delivery_holding_a_credential_pushes_nothing() {
+  a_run_to_deliver cred-push '' || { skip "a credential before the push — git could not make a repo here"; return; }
+  a_commit_in "$tmp/cred-push" "$(printf 'feat: keep the key\n\nkey %s' "$(an_aws_key K)")" \
+    && a_commit_in "$tmp/cred-push" 'feat: nothing more' \
+    || { skip "a credential before the push — could not commit"; return; }
+  below=$(git -C "$(only_slot "$(floor "$tmp/cred-push" path)/units/01/workspace")" rev-parse HEAD~1)
+  refs_before=$(remote_refs_of "$tmp/cred-push-remote.git")
+
+  is  "a delivery whose message below the head holds a credential is refused" \
+      "$(code_of floor "$tmp/cred-push" deliver 'a change')" "57"
+  has "and the refusal names that commit and the shape" "$(floor_says "$tmp/cred-push" deliver 'a change')" \
+      "commit [$below] holds an AWS access key in its message, so nothing was pushed."
+  is  "and the remote's refs are as they were" "$(remote_refs_of "$tmp/cred-push-remote.git")" "$refs_before"
+}
+a_delivery_holding_a_credential_pushes_nothing
+
+#
+# #1151. A reader that cannot run stops the delivery too, since a read that failed must never read
+# as a message holding nothing.
+#
+a_delivery_that_cannot_read_its_messages_pushes_nothing() {
+  a_run_to_deliver cred-unread '' || { skip "an unread push — git could not make a repo here"; return; }
+  a_commit_in "$tmp/cred-unread" 'feat: nothing secret' || { skip "an unread push — could not commit"; return; }
+  mkdir -p "$tmp/credunreadbin"
+  an_awk_that_cannot_read_credentials input > "$tmp/credunreadbin/awk" && chmod +x "$tmp/credunreadbin/awk" \
+    || { skip "an unread push — could not put an awk on the path"; return; }
+  refs_before=$(remote_refs_of "$tmp/cred-unread-remote.git")
+
+  is  "a delivery whose reader cannot run is refused" \
+      "$( PATH="$tmp/credunreadbin:$PATH"; code_of floor "$tmp/cred-unread" deliver 'a change' )" "57"
+  has "and says it could not read, and pushed nothing" \
+      "$( PATH="$tmp/credunreadbin:$PATH"; floor_says "$tmp/cred-unread" deliver 'a change' )" \
+      "the messages above the base could not be read for a credential, so nothing was pushed."
+  is  "and the remote's refs are as they were" "$(remote_refs_of "$tmp/cred-unread-remote.git")" "$refs_before"
+}
+a_delivery_that_cannot_read_its_messages_pushes_nothing
+
+#
+# #1153. An `awk` that answers the name read for `$1`, `home` or `address`, with no word and exit 1,
+# as BusyBox's does on its own error. Its program prints a word, and the names it reads come in `names`.
+#
+an_awk_that_cannot_read_names() {
+  printf '#!/bin/sh\ncase "$*" in *"print (found"*) case "${names:-}" in *@*) [ %s = address ] && exit 1 ;; *) [ %s = home ] && exit 1 ;; esac ;; esac\nexec %s "$@"\n' \
+    "$1" "$1" "$(command -v awk)"
+}
+
+# #1153. An `awk` that ends the shell running it when its arguments match `$1`, as a fork that failed would.
+an_awk_that_ends_its_shell() {
+  printf '#!/bin/sh\ncase "$*" in %s) kill -KILL $PPID ;; esac\nexec %s "$@"\n' "$1" "$(command -v awk)"
+}
+
+# #1153. A `git` that cannot read the addresses commits carry, and reads anything else.
+a_git_that_cannot_read_addresses() {
+  printf '#!/bin/sh\ncase "$*" in *--format=%%ae%%n%%ce*) exit 128 ;; esac\nexec %s "$@"\n' "$(command -v git)"
+}
+
+#
+# #1153. One clean report, delivered with `$2` first on the path, so the body is read as it is there.
+# `$1` names the run. The body is printed, so a case reads the withheld line its stand-in caused.
+#
+a_body_read_through() {
+  printf 'Nothing here names this host.\nVERDICT: approve\n' > "$tmp/$1-one.said"
+  a_panel_run "$1" '' one || return 1
+  a_commit_in "$tmp/$1" 'feat: nothing to withhold'
+  floor "$tmp/$1" judged >/dev/null 2>&1
+  ( HOME=/c/Users/ada; PATH="$2:$PATH"; floor "$tmp/$1" deliver 'a change' ) >/dev/null 2>&1
+  cat "$(floor "$tmp/$1" path)/body" 2>/dev/null
+}
+
+#
+# #1153. A read that did not finish withholds the text, and its line names the read. Each stand-in
+# fails one read: a name read with no word, a capture whose shell ends, a log git cannot read.
+#
+a_read_that_did_not_finish_withholds_the_text() {
+  mkdir -p "$tmp/unread-homebin" "$tmp/unread-addressbin" "$tmp/dead-reasonsbin" "$tmp/dead-namesbin" "$tmp/dead-logbin"
+  an_awk_that_cannot_read_names home > "$tmp/unread-homebin/awk" \
+    && an_awk_that_cannot_read_names address > "$tmp/unread-addressbin/awk" \
+    && an_awk_that_ends_its_shell '*lib/credentials.awk\ *' > "$tmp/dead-reasonsbin/awk" \
+    && an_awk_that_ends_its_shell '*"function swapped"*' > "$tmp/dead-namesbin/awk" \
+    && a_git_that_cannot_read_addresses > "$tmp/dead-logbin/git" \
+    && chmod +x "$tmp/unread-homebin/awk" "$tmp/unread-addressbin/awk" "$tmp/dead-reasonsbin/awk" \
+         "$tmp/dead-namesbin/awk" "$tmp/dead-logbin/git" \
+    || { skip "a read that did not finish — could not put a stand-in on the path"; return; }
+
+  has "a home read with no word withholds the text, naming that read" \
+      "$(a_body_read_through unread-home "$tmp/unread-homebin")" \
+      "one's report is withheld whole: it holds what floor could not read for this host's home directory."
+  has "and so does an address read" \
+      "$(a_body_read_through unread-address "$tmp/unread-addressbin")" \
+      "one's report is withheld whole: it holds what floor could not read for an address its commits carry."
+  has "a capture of the reasons whose shell ends withholds the text" \
+      "$(a_body_read_through dead-reasons "$tmp/dead-reasonsbin")" \
+      "one's report is withheld whole: it holds what floor could not read for this text."
+  has "a capture of the home's spellings whose shell ends withholds every text" \
+      "$(a_body_read_through dead-names "$tmp/dead-namesbin")" \
+      "one's report is withheld whole: it holds what floor could not read for this host's names."
+  has "an address read whose log fails withholds every text" \
+      "$(a_body_read_through dead-log "$tmp/dead-logbin")" \
+      "one's report is withheld whole: it holds what floor could not read for this host's names."
+}
+a_read_that_did_not_finish_withholds_the_text
+
 # #1075. The home as `HOME` holds it, a path with no drive in it, is caught in a message too.
 a_message_naming_the_home_as_it_is_is_withheld() {
   a_run_to_deliver home-as-is '' || { skip "the home as it is — git could not make a repo here"; return; }
@@ -4147,7 +4469,15 @@ a_pin_that_cannot_be_captured_writes_nothing() {
 }
 a_pin_that_cannot_be_captured_writes_nothing
 
+# The repository the two cases below run from. Its run is the drift case's, and neither needs it.
+alone_with_the_drift_repo() {
+  running_alone && [ ! -d "$tmp/ch2" ] || return 0
+  the_drift_repo && say_made "the drift repository, \$tmp/ch2"
+}
+
 deriving_needs_the_right_repository() {
+  alone_with_the_charter_run
+  alone_with_the_drift_repo
   [ -n "${chrun:-}" ] || { skip "wrong repo — no charter run"; return; }
 
   #
@@ -4172,6 +4502,8 @@ deriving_needs_the_right_repository
 # which is the lesson the check above already carries.
 #
 authorising_needs_the_right_repository() {
+  alone_with_the_charter_run
+  alone_with_the_drift_repo
   [ -n "${chrun:-}" ] || { skip "authorise wrong repo — no charter run"; return; }
 
   has "authorising from another repository is refused for being the wrong repository" \
@@ -4456,6 +4788,7 @@ a_tampered_charter_is_visible
 # member who proposed it sits on none of it. Each is read on its own, so each fault fails on its own.
 #
 introducing_twice_leaves_one_record() {
+  alone_with_the_charter_run
   [ -n "${chrun:-}" ] || { skip "one record — no charter run"; return; }
 
   floor_worked "$tmp/ch" alice charter introduce Judged 'said once' >/dev/null 2>&1
@@ -4490,8 +4823,8 @@ is "charter with no run exits 1" "$(code_of floor "$tmp/bare" charter)" "1"
 # RFC-001 §2.1. Four verbs, and the properties that make them a contract rather than a call to one
 # provider.
 #
-# Nothing here names a source. The adapter is chosen by `lib/source.sh`, and with no `gh` on this
-# machine the directory answers — needing nothing floor does not already declare, and reading its
+# Nothing here names a source. The adapter is chosen by `lib/source.sh`, and a remote that is not
+# GitHub is the directory's — needing nothing floor does not already declare, and reading its
 # root out of the home this suite already sets. That is the portability claim, executed.
 
 # Where the shipped adapter looks with nothing configured: floor's own home, which this suite sets.
@@ -4518,15 +4851,22 @@ line_of() { printf '%s\t%s\t%s' "$1" "$2" "$3"; }
 # The part of an `answer.unread` row a case reads: who, the code, when, and why.
 row_of() { printf '%s\t1\t%s\t%s' "$1" "$2" "$3"; }
 
+#
 # `pat` is the hand this repository names, so an answer here can be heard at all. A bench judges a
 # `Judged` clause introduced here, so introducing one is not refused at 55.
-the_work_source() {
+#
+# `alone_with_the_work_source_run` makes this too, for a case below run alone.
+#
+the_work_source_repo() {
   make_repo "$tmp/wsrc" main && set_origin "$tmp/wsrc" 'https://gitlab.com/acme/ws.git' \
     && commit_file "$tmp/wsrc" Makefile 'test:
 	echo ok
 ' && mkdir -p "$tmp/wsrc/.foundry" && commit_file "$tmp/wsrc" .foundry/practice 'authorise pat' \
-    && commit_file "$tmp/wsrc" .foundry/judged 'bench reviewer' \
-    || { skip "work source — git could not make a repo here"; return; }
+    && commit_file "$tmp/wsrc" .foundry/judged 'bench reviewer'
+}
+
+the_work_source() {
+  the_work_source_repo || { skip "work source — git could not make a repo here"; return; }
 
   mkdir -p "$src/items"
   printf 'Make the thing\n\ntargets: https://gitlab.com/acme/items.git\n' > "$src/items/7"
@@ -5482,12 +5822,21 @@ STUB
 }
 a_beat_ends_with_its_pass
 
+# The two directories the pass cases below write into. Each makes its own item, label and claim.
+alone_with_items_and_labels() {
+  running_alone || return 0
+
+  [ -d "$src/items" ]  || { mkdir -p "$src/items"  && say_made "\$src/items"; }
+  [ -d "$src/labels" ] || { mkdir -p "$src/labels" && say_made "\$src/labels"; }
+}
+
 #
 # **A claim nothing here works on is taken again.** A pass that died between its claim and its run
 # left this host's name on an item no run holds. Passed over for good, it would need a person to
 # free it. #884's judge.
 #
 a_pass_takes_back_a_claim_no_run_holds() {
+  alone_with_items_and_labels
   make_repo "$tmp/stale-claim" main && set_origin "$tmp/stale-claim" 'https://gitlab.com/acme/stale.git' \
     || { skip "a claim no run holds — git could not make a repo here"; return; }
 
@@ -5510,6 +5859,7 @@ a_pass_takes_back_a_claim_no_run_holds
 # cannot open its work. It used to leave with no line, and a refusal read the same as a death.
 #
 a_refused_step_is_a_stop() {
+  alone_with_items_and_labels
   make_repo "$tmp/noorigin" main || { skip "a refused step — git could not make a repo here"; return; }
 
   printf 'Unopened item\n' > "$src/items/88"
@@ -5530,6 +5880,7 @@ a_refused_step_is_a_stop
 # judge, round two.
 #
 a_pass_keeps_its_own_run() {
+  alone_with_items_and_labels
   git init -q --bare "$tmp/remotes/acme/pinx.git" 2>/dev/null \
     || { skip "a run begun under a pass — git could not make a bare repo here"; return; }
   make_repo "$tmp/pinx" main && set_origin "$tmp/pinx" 'https://github.com/acme/pinx.git' \
@@ -5560,6 +5911,7 @@ a_pass_keeps_its_own_run
 # so every pass that reached such an item stopped there, and wrote no line. #884's judge.
 #
 a_blank_item_is_still_an_item() {
+  alone_with_items_and_labels
   make_repo "$tmp/blank" main && set_origin "$tmp/blank" 'https://gitlab.com/acme/blank.git' \
     || { skip "a blank item — git could not make a repo here"; return; }
 
@@ -5580,6 +5932,7 @@ a_blank_item_is_still_an_item
 # #1025.
 #
 an_open_request_keeps_its_item() {
+  alone_with_items_and_labels
   make_repo "$tmp/req" main && set_origin "$tmp/req" 'https://gitlab.com/acme/req.git' \
     || { skip "an open request — git could not make a repo here"; return; }
 
@@ -5623,6 +5976,7 @@ an_open_request_keeps_its_item
 # passed over. Two of them answered wrongly. #884's judge, round five.
 #
 a_pass_says_which_step_refused() {
+  alone_with_items_and_labels
   make_repo "$tmp/refused" main && set_origin "$tmp/refused" 'https://gitlab.com/acme/refused.git' \
     || { skip "a refused pass — git could not make a repo here"; return; }
 
@@ -5678,6 +6032,7 @@ a_pass_says_which_step_refused
 # later pass could read, and that run would look like a person's. #1026.
 #
 a_second_read_that_fails_is_a_stop() {
+  alone_with_items_and_labels
   make_repo "$tmp/reread" main && set_origin "$tmp/reread" 'https://gitlab.com/acme/reread.git' \
     || { skip "a second read that fails — git could not make a repo here"; return; }
 
@@ -7173,6 +7528,7 @@ a_member_who_answered_here_is_not_asked_again
 # none, so the judged step only ever answered 8. #884's judge, rounds four and five.
 #
 a_pass_asks_the_judges() {
+  alone_with_items_and_labels
   a_judged_pass "$tmp/pjudge" pjudge reject 70 \
     || { skip "a judged pass — git could not make a repo here"; return; }
 
@@ -8219,6 +8575,64 @@ a_pass_that_reads_no_second_begins_no_run() {
   rm -rf "$src/claims/1706" "$src/labels/1706" "$src/items/1706"
 }
 a_pass_that_reads_no_second_begins_no_run
+
+#
+# A `cut` that answers the hand's read of the item's own line with nothing, as a failed fork does.
+# The offer cuts the same field from its open requests first, and that read stays whole.
+#
+a_cut_that_reads_no_hand_for() {
+  printf '#!/bin/sh\nreal=%s item=%s\n' "$(command -v cut)" "$1"
+  cat <<'STUB'
+[ "${1:-}" = -f3 ] || exec "$real" "$@"
+piped=$(cat)
+case $piped in "$item$(printf '\t')"*) exit 0 ;; esac
+printf '%s\n' "$piped" | exec "$real" "$@"
+STUB
+}
+
+#
+# **A pass's run never answers to git's address.** A hand that reads empty stops it before any run,
+# with the code an empty second gets, and its wake says why. #1133.
+#
+a_pass_that_reads_no_hand_begins_no_run() {
+  a_resumable_repo nohandread 1707 || { skip "a hand read empty — git could not make a repo here"; return; }
+  mkdir -p "$tmp/nohandbin"
+  a_cut_that_reads_no_hand_for 1707 > "$tmp/nohandbin/cut" && chmod +x "$tmp/nohandbin/cut" \
+    || { skip "a hand read empty — could not put a cut on the path"; return; }
+
+  said=$(PATH="$tmp/nohandbin:$PATH" floor_says "$tmp/nohandread" pass)
+  has "a pass whose hand reads empty says so, and begins no run" "$said" \
+      "the offer's line for [1707] gave no hand, so this pass begins no run"
+  has "and its wake ends there, with the code an empty second gets" "$(last_wake_line ended)" \
+      "read=no-hand:1707 code=2"
+  is  "and its checkout points at no run" "$(code_of floor "$tmp/nohandread" path)" "1"
+
+  rm -rf "$src/claims/1707" "$src/labels/1707" "$src/items/1707"
+}
+a_pass_that_reads_no_hand_begins_no_run
+
+#
+# #1151. A pass whose worker commits a credential stops at `deliver` with 57. The next wake resumes
+# the delivery, meets 57 again, and waits on a person who can reword it. Nothing reaches the remote.
+#
+a_pass_waits_on_a_person_when_a_message_holds_a_credential() {
+  git init -q --bare "$tmp/remotes/acme/credpass.git" 2>/dev/null \
+    || { skip "a pass that meets a credential — git could not make a bare repo here"; return; }
+  a_resumable_repo credpass 1708 'https://github.com/acme/credpass.git' 'deliver https://github.com/acme/credpass.git' \
+    || { skip "a pass that meets a credential — git could not make a repo here"; return; }
+  keyed_worker="date >> worked && git add worked && sh '$runner' commit 'key $(an_aws_key K)'"
+
+  is  "a pass whose worker commits a credential stops at deliver, 57" \
+      "$(FOUNDRY_PASS_COMMAND=$keyed_worker code_of floor "$tmp/credpass" pass)" "57"
+  has "and writes the stop with its code" "$(last_pass_line_in "$tmp/credpass")" "pass.stopped item=1708 why=deliver code=57"
+  is  "the next wake resumes it, and waits on a person" \
+      "$(FOUNDRY_PASS_COMMAND=true code_of floor "$tmp/credpass" pass)" "47"
+  has "and says it waits at deliver, on 57" "$(last_pass_line_in "$tmp/credpass")" "pass.waiting item=1708 why=deliver code=57"
+  is  "and nothing reached the remote" "$(remote_refs_of "$tmp/remotes/acme/credpass.git")" ""
+
+  rm -rf "$src/claims/1708" "$src/labels/1708" "$src/items/1708"
+}
+a_pass_waits_on_a_person_when_a_message_holds_a_credential
 
 #
 # **A change to either setting reaches the next pass's record.** The host names the cadence, the
@@ -9309,6 +9723,14 @@ a_repo_that_owns_no_judge() {
 ' && commit_file "$1" .foundry/judged "$3"
 }
 
+# The repository reaching the shipped adapter at the pin it is handed. `alone_with_the_shipped_run`
+# makes it too, for the receipt case run alone.
+the_shipped_repo() {
+  a_repo_that_owns_no_judge "$tmp/shipped" shipped "reach  a-reviewer  @adapter a-shipped $1
+a-reviewer  a stranger can read it
+"
+}
+
 #
 # An adapter the plugin ships, reached at the content the repository authorised — #512.
 #
@@ -9324,9 +9746,7 @@ a_shipped_adapter_is_reached_at_the_content_authorised() {
     || { skip "a shipped adapter — the plugin could not be copied"; return; }
 
   pin=$(pin_of a-shipped)
-  a_repo_that_owns_no_judge "$tmp/shipped" shipped "reach  a-reviewer  @adapter a-shipped $pin
-a-reviewer  a stranger can read it
-" || { skip "a shipped adapter — git could not make a repo here"; return; }
+  the_shipped_repo "$pin" || { skip "a shipped adapter — git could not make a repo here"; return; }
 
   ready_run "$tmp/shipped" 'https://gitlab.com/acme/shipped.git'
   floor "$tmp/shipped" gates >/dev/null 2>&1
@@ -9538,6 +9958,22 @@ a-reviewer  a stranger can read it
 a_run_may_not_move_its_own_pin
 
 #
+# The shipped run as the receipt case reads it: judged once, and complete.
+#
+# `$tmp/declared` is not made, so alone that case's last two checks do not run.
+#
+alone_with_the_shipped_run() {
+  running_alone && [ ! -d "$tmp/shipped" ] || return 0
+  a_plugin_shipping a-shipped "$(a_judge_that_approves)" || return 0
+  the_shipped_repo "$(pin_of a-shipped)" || return 0
+
+  ready_run "$tmp/shipped" 'https://gitlab.com/acme/shipped.git'
+  floor "$tmp/shipped" gates >/dev/null 2>&1
+  floor_at "$tmp/shipped" judged >/dev/null 2>&1 && floor "$tmp/shipped" complete >/dev/null 2>&1 \
+    && say_made "the shipped run, judged and complete, in \$tmp/shipped"
+}
+
+#
 # The receipt binds two facts, and a gap between them is a refusal.
 #
 # `judged` refused each of these before the adapter ran. These are the same three against a receipt
@@ -9545,6 +9981,7 @@ a_run_may_not_move_its_own_pin
 # and a hand-written one may reach none a run could not.
 #
 a_receipt_binds_the_adapter_that_answered() {
+  alone_with_the_shipped_run
   [ -d "$tmp/shipped" ] || { skip "a receipt binding an adapter — the shipped run is not there"; return; }
 
   # Read again rather than inherited. `pin` is a global here, and a check resting on whichever
@@ -10359,9 +10796,25 @@ the_item_names_its_targets() {
 }
 the_item_names_its_targets
 
+# The work source run as `the_work_source` leaves it for the cases below: item 7 read, the charter
+# derived. Item 8 is left out, and none of them reads it.
+alone_with_the_work_source_run() {
+  running_alone && [ -z "${wsrun:-}" ] || return 0
+  the_work_source_repo || return 0
+
+  mkdir -p "$src/items"
+  printf 'Make the thing\n\ntargets: https://gitlab.com/acme/items.git\n' > "$src/items/7"
+  wsrun=$(floor "$tmp/wsrc" new "Work source")
+  wsid=$(basename "$wsrun")
+
+  ws source read 7 >/dev/null 2>&1 && ws charter derive >/dev/null 2>&1 \
+    && say_made "the work source run, item 7 read and the charter derived, in \$tmp/wsrc"
+}
+
 # A question is `run + stage + clause`, derived and never issued — §2.1. A resumed run recomputes it
 # and finds what it already asked, which is why nothing anywhere holds a list of pending questions.
 a_question_is_derived_not_issued() {
+  alone_with_the_work_source_run
   [ -n "${wsrun:-}" ] || { skip "questions — no work source run"; return; }
 
   q=$(ws source ask authorisation tests 'May this clause exist?')
@@ -10396,9 +10849,20 @@ a_question_is_derived_not_issued() {
 }
 a_question_is_derived_not_issued
 
+# The question the case above asks, which the case below answers. Two cases further up leave other
+# items' questions in `q`, so only this run's own counts as built.
+alone_with_the_question() {
+  running_alone && [ -n "${wsrun:-}" ] || return 0
+  [ "${q:-}" = "${wsid:-}.authorisation.$(clause_of tests)" ] && return 0
+
+  q=$(ws source ask authorisation tests 'May this clause exist?') && say_made "the question, $q"
+}
+
 # `receive` carries a yes and makes none. There is no parameter for one, so a worker can produce a
 # human's answer only by writing it where a human's answer lives.
 an_answer_is_carried_never_minted() {
+  alone_with_the_work_source_run
+  alone_with_the_question
   [ -n "${q:-}" ] || { skip "answers — no question"; return; }
 
   is "an unanswered question is not an answer"  "$(code_of ws source receive authorisation tests)" "1"
@@ -10460,6 +10924,7 @@ only_the_yes_line_authorises
 # is asked at all. The adapter holds the same rule and keeps it, because floor is not its only
 # caller — so the record comes off below to reach it.
 one_item_has_many_runs() {
+  alone_with_the_work_source_run
   [ -n "${wsrun:-}" ] || { skip "deliveries — no work source run"; return; }
 
   first=$(ws source publish work/first 'The first attempt')
@@ -10501,6 +10966,7 @@ a_deleted_run_never_lends_its_name
 
 # A source that is not there answers "no item", and no item is what an unread run looks like.
 a_missing_source_is_not_silence() {
+  alone_with_the_work_source_run
   [ -n "${wsrun:-}" ] || { skip "missing source — no work source run"; return; }
 
   is "a work source that is not there stops the command" \
@@ -12217,7 +12683,6 @@ the_offer_reads_the_same_from_github
 #
 GH_CALLS_FLOOR_MAKES='gh api
 gh api user
-gh auth status
 gh issue comment
 gh issue list
 gh issue view
@@ -12529,32 +12994,229 @@ And only what was graded.
 }
 a_merge_lands_only_what_was_graded
 
-# Level 1 has two halves and this is the second one: a repository whose remote is GitHub, on a
-# machine with no `gh`, still has a work source. Skipped where a real `gh` would answer instead.
-a_remote_with_no_gh_still_has_a_source() {
-  [ -n "${ghrun:-}" ] || { skip "no gh — the other adapter did not run"; return; }
-  command -v gh >/dev/null 2>&1 && { cannot "a remote with no gh — this machine has one"; return; }
+# --- a GitHub remote with no `gh` ---
+#
+# **Answered by GitHub or by nothing.** A directory has never heard of Issues, so its *nothing there*
+# about a GitHub item is a fact nobody observed. #1132 reverses the case that stood here, which held a
+# directory answering such a remote and called that answer right about the directory and wrong about
+# the item.
+#
+# **Each case that drives no `gh` builds a path without one.** The grade image installs one, and the
+# case that stood here answered n/a wherever one was installed — which was everywhere it was graded.
+#
+# Not through `floor_as`, which names the directory adapter. Which source answers is the question.
+#
 
-  mkdir -p "$src/items"
-  printf 'Read from a directory\n' > "$src/items/12"
-
-  # Not through `floor_as`, which names the adapter. Detection is the whole of what this asks about,
-  # and a check that pins the answer it is testing for passes whether or not detection still works.
-  has "with no gh, a directory answers for a GitHub remote" \
-      "$( cd "$tmp/gh" 2>/dev/null \
-          && FOUNDRY_HOME="$home" FOUNDRY_RUN="$ghrun" FOUNDRY_WHO="" \
-             sh "$runner" source read 12 2>/dev/null )" \
-      "Read from a directory"
-
-  # And says which half is missing. A directory answering *no item* for a GitHub remote is right about
-  # the directory and wrong about the item, and only this line lets a reader tell.
-  has "and says which half of level 1 is missing" \
-      "$( cd "$tmp/gh" 2>/dev/null \
-          && FOUNDRY_HOME="$home" FOUNDRY_RUN="$ghrun" FOUNDRY_WHO="" \
-             sh "$runner" source read 12 2>&1 >/dev/null )" \
-      "gh is not here"
+# The resolver beside the runner under test, asked from `$1` with no `gh` on the path: what it said
+# on stderr, then its code. A directory it answered from would sit beside the checkout.
+asked_with_no_gh() {
+  local checkout=$1; shift
+  ( cd "$checkout" && PATH="$(no_gh_path)" FOUNDRY_SOURCE_DIR="$checkout.source" \
+      sh "$router" "$@" 2>&1 >/dev/null; printf 'exit=%s' "$?" )
 }
-a_remote_with_no_gh_still_has_a_source
+
+nothing_answers_a_github_remote_with_no_gh() {
+  make_repo "$tmp/nogh" main && set_origin "$tmp/nogh" 'https://github.com/acme/nogh.git' \
+    || { skip "a GitHub remote with no gh — git could not make a repo here"; return; }
+  no_gh_path >/dev/null || { broke "a GitHub remote with no gh — no path without gh could be built"; return; }
+
+  mkdir -p "$tmp/nogh.source/items" && printf 'Read from a directory\n' > "$tmp/nogh.source/items/12"
+  local held verb rest said
+  held=$(ls -R "$tmp/nogh.source")
+
+  # Each with what a directory would act on, so a directory answering in its place would write.
+  while read -r verb rest; do
+    said=$(asked_with_no_gh "$tmp/nogh" "$verb" $rest)
+    has "with no gh, $verb on a GitHub remote exits 3" "$said" "exit=3"
+    has "and $verb names gh"                           "$said" "gh is not here"
+  done <<'ASKED'
+read 12
+kind 12
+where
+open foundry/a-run
+claim 12 a-host
+held 12
+release 12 a-host
+publish 12 a-run foundry/a-run A-title Refs
+ask 12 a-run.authorisation.1 A-question
+receive 12
+speaker 12
+state a-run
+land a-run
+find ready
+ASKED
+
+  is "and none of them writes where a directory would answer" "$(ls -R "$tmp/nogh.source")" "$held"
+
+  # Through the runner, which reads that 3 as a source it could not ask, and binds no item.
+  nogh_run=$( cd "$tmp/nogh" && FOUNDRY_HOME="$home" FOUNDRY_RUN="" FOUNDRY_WHO="" sh "$runner" new "No gh" 2>/dev/null )
+  said=$( cd "$tmp/nogh" && PATH="$(no_gh_path)" FOUNDRY_HOME="$home" FOUNDRY_RUN="$nogh_run" FOUNDRY_WHO="" \
+          FOUNDRY_SOURCE= FOUNDRY_SOURCE_DIR="$tmp/nogh.source" sh "$runner" source read 12 2>&1; printf 'exit=%s' "$?" )
+
+  has    "floor reads it as a source it could not ask, 20" "$said" "exit=20"
+  has    "and tells the reader gh is what is missing"      "$said" "gh is not here"
+  absent "and the run holds no item"                       "$nogh_run/source"
+}
+nothing_answers_a_github_remote_with_no_gh
+
+# **The host's choice, and the only way a directory answers a GitHub remote.** #1132.
+a_named_directory_answers_a_github_remote_with_no_gh() {
+  make_repo "$tmp/noghnamed" main && set_origin "$tmp/noghnamed" 'https://github.com/acme/noghnamed.git' \
+    || { skip "a named directory — git could not make a repo here"; return; }
+  no_gh_path >/dev/null || { broke "a named directory — no path without gh could be built"; return; }
+
+  mkdir -p "$tmp/noghnamed.source/items" && printf 'Read from a named directory\n' > "$tmp/noghnamed.source/items/12"
+  noghnamed_run=$( cd "$tmp/noghnamed" && FOUNDRY_HOME="$home" FOUNDRY_RUN="" FOUNDRY_WHO="" \
+                   sh "$runner" new "Named" 2>/dev/null )
+
+  has "with FOUNDRY_SOURCE naming the directory adapter, a GitHub remote with no gh is answered by it" \
+      "$( cd "$tmp/noghnamed" && PATH="$(no_gh_path)" FOUNDRY_HOME="$home" FOUNDRY_RUN="$noghnamed_run" \
+          FOUNDRY_WHO="" FOUNDRY_SOURCE="$dir_source" FOUNDRY_SOURCE_DIR="$tmp/noghnamed.source" \
+          sh "$runner" source read 12 2>/dev/null )" \
+      "Read from a named directory"
+}
+a_named_directory_answers_a_github_remote_with_no_gh
+
+# **3, never 2.** Floor reads 2 as a source with no way to do a thing — 27, or *no item* on a read —
+# and the remedy for a tool nobody installed is the install. #1132.
+the_github_adapter_with_no_gh_could_not_be_asked() {
+  make_repo "$tmp/ghgone" main && set_origin "$tmp/ghgone" 'https://github.com/acme/ghgone.git' \
+    || { skip "the GitHub adapter with no gh — git could not make a repo here"; return; }
+  no_gh_path >/dev/null || { broke "the GitHub adapter with no gh — no path without gh could be built"; return; }
+
+  said=$( cd "$tmp/ghgone" && PATH="$(no_gh_path)" sh "$gh_adapter" read 12 2>&1; printf 'exit=%s' "$?" )
+  has "the GitHub adapter, named with no gh on the path, exits 3" "$said" "exit=3"
+  has "and names gh"                                              "$said" "gh is not here"
+
+  ghgone_run=$( cd "$tmp/ghgone" && FOUNDRY_HOME="$home" FOUNDRY_RUN="" FOUNDRY_WHO="" sh "$runner" new "Gone" 2>/dev/null )
+  is "and floor, asking through it, reads a source it could not ask, 20" \
+     "$( cd "$tmp/ghgone" && PATH="$(no_gh_path)" FOUNDRY_HOME="$home" FOUNDRY_RUN="$ghgone_run" FOUNDRY_WHO="" \
+         FOUNDRY_SOURCE="$gh_adapter" sh "$runner" source read 12 >/dev/null 2>&1; printf '%s' "$?" )" "20"
+}
+the_github_adapter_with_no_gh_could_not_be_asked
+
+# **#1132's shape: a delivery a directory took, reported as a success with no request open.** With no
+# `gh` on a GitHub remote, `deliver` pushes, then sends `publish` through the resolver, which refuses.
+#
+# The item is bound through the directory, named, as a host may. No clause is introduced, so the
+# publish is the first call that can stop `deliver`.
+a_delivery_with_no_gh_records_nothing() {
+  git init -q --bare "$tmp/remotes/acme/noghdv.git" 2>/dev/null \
+    && make_repo "$tmp/noghdv" main && set_origin "$tmp/noghdv" 'https://github.com/acme/noghdv.git' \
+    && mkdir -p "$tmp/noghdv/.foundry" \
+    && commit_file "$tmp/noghdv" .foundry/gates 'tests  true
+' || { skip "a delivery with no gh — git could not make a repo here"; return; }
+  no_gh_path >/dev/null || { broke "a delivery with no gh — no path without gh could be built"; return; }
+
+  mkdir -p "$src/items" && printf 'Deliver it where no gh is\n' > "$src/items/1132"
+  noghdv_run=$(floor_new_as "$tmp/noghdv" ada@example.com "No gh delivery")
+  for step in "source read 1132" "charter derive" "policy authorize https://github.com/acme/noghdv.git" \
+      "policy deliver-to https://github.com/acme/noghdv.git" "targets add https://github.com/acme/noghdv.git main" \
+      authorise open gates; do
+    floor "$tmp/noghdv" $step >/dev/null 2>&1
+  done
+
+  said=$( cd "$tmp/noghdv" && PATH="$(no_gh_path)" FOUNDRY_HOME="$home" FOUNDRY_RUN="$noghdv_run" FOUNDRY_WHO="" \
+          FOUNDRY_SOURCE= sh "$runner" deliver 'Where no gh is' 2>&1; printf 'exit=%s' "$?" )
+
+  has    "a delivery with no gh on a GitHub remote is refused, 19" "$said" "exit=19"
+  has    "and the resolver names gh"                               "$said" "gh is not here"
+  absent "and the run keeps no delivery"                           "$noghdv_run/delivery"
+  lacks  "and records no run.delivered"                            "$(floor "$tmp/noghdv" observe)" "run.delivered"
+
+  # A break that brings the directory back leaves a delivery in the shared source, and later cases read it.
+  rm -f "$src/deliveries/$(basename "$noghdv_run")" "$src/deliveries/$(basename "$noghdv_run").brief"
+}
+a_delivery_with_no_gh_records_nothing
+
+# **A pass stops sooner, at its first source call.** It asks which items carry its label before it
+# claims or begins anything, and a source nobody could ask ends the wake at 20. #1132.
+a_pass_with_no_gh_stops_at_its_first_source_call() {
+  make_repo "$tmp/noghpass" main && set_origin "$tmp/noghpass" 'https://github.com/acme/noghpass.git' \
+    && bar_and_rule "$tmp/noghpass" \
+    || { skip "a pass with no gh — git could not make a repo here"; return; }
+  no_gh_path >/dev/null || { broke "a pass with no gh — no path without gh could be built"; return; }
+
+  # A home of its own, so no mark another case's pass left can hold the host first.
+  is  "a pass with no gh on a GitHub remote stops at its first source call, 20" \
+      "$( cd "$tmp/noghpass" && PATH="$(no_gh_path)" FOUNDRY_HOME="$tmp/noghpass.home" FOUNDRY_RUN="" FOUNDRY_WHO="" \
+          FOUNDRY_SOURCE= FOUNDRY_SOURCE_DIR="$tmp/noghpass.source" sh "$runner" pass >/dev/null 2>&1; printf '%s' "$?" )" "20"
+  has "and its wake says the source was not asked" \
+      "$(grep "	ended	" "$tmp/noghpass.home/wakes" 2>/dev/null | tail -n 1)" "read=source-unasked"
+}
+a_pass_with_no_gh_stops_at_its_first_source_call
+
+# A run's verbs, asked from a checkout of another repository, through the resolver as a host would ask.
+from_outside() {
+  local named=$1; shift
+  ( cd "$tmp/srcout" && FOUNDRY_HOME="$home" FOUNDRY_RUN="$named" FOUNDRY_WHO="" FOUNDRY_SOURCE= \
+      sh "$runner" "$@" 2>&1 )
+}
+
+# **Refused at 6, before the source is asked, as `derive` already is.** A record `source publish`
+# wrote from elsewhere is one `deliver` later returns unasked. #1132.
+a_source_verb_outside_the_runs_repository_refuses() {
+  make_repo "$tmp/srcin" main && set_origin "$tmp/srcin" 'https://github.com/acme/srcin.git' \
+    && make_repo "$tmp/srcout" main && set_origin "$tmp/srcout" 'https://gitlab.com/acme/srcout.git' \
+    || { skip "a source verb from outside — git could not make a repo here"; return; }
+
+  mkdir -p "$src/items" && printf 'Publish it from somewhere else\n' > "$src/items/1133"
+  srcin_run=$(floor "$tmp/srcin" new "Inside")
+  floor "$tmp/srcin" source read 1133 >/dev/null 2>&1
+
+  said=$(from_outside "$srcin_run" source publish work/outside 'From outside'; printf 'exit=%s' "$?")
+  has    "source publish from outside the run's repository is refused, 6" "$said" "exit=6"
+  has    "and names the run's repository"                                  "$said" "inside [https://github.com/acme/srcin.git]"
+  has    "and the one floor stands in"                                     "$said" "not [https://gitlab.com/acme/srcout.git]"
+  absent "and leaves no delivery for deliver to return"                    "$srcin_run/delivery"
+  absent "and the source there was never asked to take one"                "$src/deliveries/$(basename "$srcin_run")"
+
+  local asked
+  for asked in 'read 1133' kind 'ask authorisation tests May-it' 'receive authorisation tests'; do
+    is "source $asked from outside is refused too, 6" "$(code_of from_outside "$srcin_run" source $asked)" "6"
+  done
+}
+a_source_verb_outside_the_runs_repository_refuses
+
+# A `gh` that is there and signed out. Every call answers on stderr in `gh`'s words, and fails.
+signed_out_gh() {
+  mkdir -p "$1" || return 1
+  printf '#!/bin/sh\n%s\n%s\nexit 4\n' \
+    "echo 'To get started with GitHub CLI, please run:  gh auth login' >&2" \
+    "echo 'Alternatively, populate the GH_TOKEN environment variable with a GitHub API authentication token.' >&2" \
+    > "$1/gh" && chmod +x "$1/gh"
+}
+
+# The runner on a GitHub remote, through the resolver, with that `gh` first on the path.
+signed_out() {
+  local named=$1; shift
+  ( cd "$tmp/ghout" && PATH="$tmp/ghout-bin:$PATH" FOUNDRY_HOME="$home" FOUNDRY_RUN="$named" FOUNDRY_WHO="" \
+      FOUNDRY_SOURCE= sh "$runner" "$@" 2>&1 )
+}
+
+# **Routing never asks whether `gh` is signed in, so the adapter refuses, in `gh`'s own words.** Read
+# and publish carry them two ways: one leaves `gh` its stderr, the other captures it and says it. #1132.
+a_signed_out_gh_is_refused_in_its_own_words() {
+  make_repo "$tmp/ghout" main && set_origin "$tmp/ghout" 'https://github.com/acme/ghout.git' \
+    || { skip "a signed-out gh — git could not make a repo here"; return; }
+  signed_out_gh "$tmp/ghout-bin" || { broke "a signed-out gh — could not put one on the path"; return; }
+
+  mkdir -p "$tmp/ghout.source/items" && printf 'Read before the sign-out\n' > "$tmp/ghout.source/items/12"
+  ghout_run=$( cd "$tmp/ghout" && FOUNDRY_HOME="$home" FOUNDRY_RUN="" FOUNDRY_WHO="" sh "$runner" new "Signed out" 2>/dev/null )
+
+  said=$(signed_out "$ghout_run" source read 12; printf 'exit=%s' "$?")
+  has "a signed-out gh is refused inside the GitHub adapter, 20" "$said" "exit=20"
+  has "and the refusal carries gh's own words"                   "$said" "gh auth login"
+
+  # Bound through the directory, named, so a publish reaches the adapter holding an item.
+  ( cd "$tmp/ghout" && FOUNDRY_HOME="$home" FOUNDRY_RUN="$ghout_run" FOUNDRY_WHO="" FOUNDRY_SOURCE="$dir_source" \
+      FOUNDRY_SOURCE_DIR="$tmp/ghout.source" sh "$runner" source read 12 >/dev/null 2>&1 )
+
+  said=$(signed_out "$ghout_run" source publish work/signed-out 'Signed out'; printf 'exit=%s' "$?")
+  has "a delivery a signed-out gh cannot carry is refused, 19" "$said" "exit=19"
+  has "and that refusal carries gh's own words too"            "$said" "gh auth login"
+}
+a_signed_out_gh_is_refused_in_its_own_words
 
 # --- asking for the wrong thing ---
 

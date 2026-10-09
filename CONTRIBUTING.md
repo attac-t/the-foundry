@@ -92,11 +92,12 @@ symlink, and ignores `chmod`. A check that reads one of those reports *unrunnabl
 One `n/a` line hid five passes in install, because the check it guards sits in a loop. **`n/a`
 counts lines, never checks**, so the two columns cannot be reconciled by adding it back.
 
-**The filesystem is not the only cause, and host proves it.** Its extra pass comes from a `gh` branch:
-one check when `gh` is installed, two when it is not. This WSL has no `gh` and
-Windows has one, so the row reads as a platform difference and is not.
+**The filesystem was not the only cause, and host proved it.** Its extra pass came from a `gh` branch:
+one check when `gh` was installed, two when it was not. That WSL had no `gh` and
+Windows had one, so the row read as a platform difference and was not.
 
-**A count belongs to the box, never to the platform.** Install `gh` in WSL and the column moves.
+**A count belongs to the box, never to the platform.** Host's no longer moves with `gh`: since #1132
+it builds a `gh` of its own and a path with none, so every one of its checks runs everywhere.
 
 Read `failed` and `skipped` instead. Both must be zero on every platform, and both mean the same
 thing everywhere.
