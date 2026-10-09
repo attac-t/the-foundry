@@ -2,8 +2,8 @@
 # What `bin/gates.sh fast` runs, and what the full run still runs.
 #
 # **In a lab, never the real gates.** Each case copies `bin/gates.sh` into a directory of its own.
-# Every path a gate line names holds a stand-in that writes its gate's name down and passes. So a
-# case reads which gates ran, in seconds, and no lab gate runs this file again.
+# Every path a gate line names holds a stand-in that writes down its gate's name and arguments, and
+# passes. So a case reads what ran, in seconds, and no lab gate runs this file again.
 #
 # **The plugin suites come from the disk, never from the copy under test.** A copy that drops one
 # from its own list would otherwise agree with itself.
@@ -39,25 +39,32 @@ suites_on_disk() {
 }
 
 #
-# A gate line's name and path, wherever on the line they sit. A plant that guards a gate line keeps
-# it a gate line here, so a copy cannot hide the gate it then skips.
+# Each gate line as `name path arguments`, wherever on the line it sits. A plant that guards a gate
+# line keeps it a gate line here, so a copy cannot hide the gate it then skips.
 gate_lines() {
   awk '{
     for (i = 1; i + 3 <= NF; i++) {
       if ($i != "gate") continue
       if ($(i + 2) != "sh" && $(i + 2) != "bash") continue
       if ($(i + 3) ~ /\$/) continue
-      print $(i + 1), $(i + 3)
+      line = $(i + 1) " " $(i + 3)
+      for (j = i + 4; j <= NF; j++) line = line " " $j
+      print line
     }
   }' "$1"
 }
 
-# It writes its gate's name down, and fails when the lab's `fails` names it.
+# Each gate line as its stand-in records the call: the name, then the arguments.
+calls_on_the_gate_lines() {
+  gate_lines "$1" | awk '{ call = $1; for (i = 3; i <= NF; i++) call = call " " $i; print call }' | sort
+}
+
+# It writes down its gate's name and the arguments it was handed, and fails when `fails` names it.
 stand_in() {
   mkdir -p "$lab/$(dirname "$2")"
   cat > "$lab/$2" <<EOF
 #!/bin/sh
-echo $1 >> "$lab/ran"
+echo $1 "\$@" >> "$lab/ran"
 grep -qx $1 "$lab/fails" 2>/dev/null && exit 1
 exit 0
 EOF
@@ -67,7 +74,7 @@ EOF
 a_lab() {
   rm -rf "$lab" && mkdir -p "$lab/bin" && cp "$1" "$lab/bin/gates.sh" || return 1
 
-  gate_lines "$lab/bin/gates.sh" | while read -r name path; do stand_in "$name" "$path"; done
+  gate_lines "$lab/bin/gates.sh" | while read -r name path _; do stand_in "$name" "$path"; done
   for suite in $(suites_on_disk); do stand_in "$suite" "plugins/$suite/tests/run.sh"; done
 }
 
@@ -79,33 +86,37 @@ graded_in_the_lab() {
       GIT_CEILING_DIRECTORIES="$tmp" sh bin/gates.sh "$@" 2>&1 )
 }
 
-# What the lab's `list` names, less the suites on disk.
-listed_but_the_suites() {
-  graded_in_the_lab list | sort > "$tmp/listed"
-  suites_on_disk > "$tmp/suites"
-  comm -23 "$tmp/listed" "$tmp/suites"
-}
-
-# The gates that ran in the lab, one line each time one ran.
+# Every call the lab's stand-ins recorded, one line each time one ran.
 what_ran() { sort "$lab/ran" 2>/dev/null; }
 
-# `fast` ran every gate `list` names but the plugin suites, each once, and no suite.
-fast_runs_the_rest() {
-  a_lab "$1" || return 1
-  graded_in_the_lab fast > "$tmp/said"
-
+# What ran matches each gate line's call, less any gate named here, which stands real in the lab.
+ran_each_gate_line_but() {
   what_ran > "$tmp/ran"
-  listed_but_the_suites > "$tmp/wanted"
+  calls_on_the_gate_lines "$lab/bin/gates.sh" | awk -v real=" $* " 'index(real, " " $1 " ") == 0' > "$tmp/wanted"
   cmp -s "$tmp/ran" "$tmp/wanted"
 }
 
-# The full run ran every gate `list` names and every suite on disk, each once.
+#
+# `fast` made each gate line's call once, with its arguments, and ran no plugin suite. Any gate
+# named after the copy fails in the lab, so the red path is read the same way as the green.
+fast_runs_the_rest() {
+  a_lab "$1" || return 1
+  shift
+  printf '%s\n' "$@" > "$lab/fails"
+
+  graded_in_the_lab fast > "$tmp/said"
+  exited=$?
+
+  ran_each_gate_line_but
+}
+
+# The full run made each gate line's call once, and ran every suite on disk.
 full_runs_them_all() {
   a_lab "$1" || return 1
   graded_in_the_lab > "$tmp/said"
 
   what_ran > "$tmp/ran"
-  { graded_in_the_lab list; suites_on_disk; } | sort -u > "$tmp/wanted"
+  { calls_on_the_gate_lines "$lab/bin/gates.sh"; suites_on_disk; } | sort > "$tmp/wanted"
   cmp -s "$tmp/ran" "$tmp/wanted"
 }
 
@@ -131,28 +142,27 @@ a_plant_is_caught() {
 # --- what fast runs ---
 #
 fast_runs_the_rest "$root/bin/gates.sh" \
-  && ok  "fast runs every gate list names, but the plugin suites" \
-  || bad "fast runs every gate list names, but the plugin suites"
+  && ok  "fast makes each gate line's call, with its arguments, and runs no plugin suite" \
+  || bad "fast makes each gate line's call, with its arguments, and runs no plugin suite"
 
 says_it_is_not_a_grade "$tmp/said" \
   && ok  "a green fast never says ALL GREEN, and its last line names what it left out" \
   || bad "a green fast never says ALL GREEN, and its last line names what it left out — $(tail -1 "$tmp/said")"
 
 #
-# Two gates fail: the first and the last that `fast` runs. **Each is named, and the exit is
-# not 0.** A count alone would send a reader looking for which.
+# Two gates fail: the first and the last by name. **Each is named, the exit is not 0, and what ran
+# is read as on the green path.** A count alone would send a reader looking for which.
 #
-a_lab "$root/bin/gates.sh"
-first=$(listed_but_the_suites | head -1)
-last=$(listed_but_the_suites | tail -1)
-printf '%s\n%s\n' "$first" "$last" > "$lab/fails"
+first=$(gate_lines "$root/bin/gates.sh" | cut -d' ' -f1 | sort | head -1)
+last=$(gate_lines "$root/bin/gates.sh" | cut -d' ' -f1 | sort | tail -1)
 
-graded_in_the_lab fast > "$tmp/said"
-code=$?
+fast_runs_the_rest "$root/bin/gates.sh" "$first" "$last" \
+  && ok  "a red fast still makes each gate line's call, and runs no plugin suite" \
+  || bad "a red fast still makes each gate line's call, and runs no plugin suite"
 
-[ "$code" -ne 0 ] && grep -q "^  FAIL  $first " "$tmp/said" && grep -q "^  FAIL  $last " "$tmp/said" \
+[ "$exited" -ne 0 ] && grep -q "^  FAIL  $first " "$tmp/said" && grep -q "^  FAIL  $last " "$tmp/said" \
   && ok  "a red fast exits non-zero, and names each gate that did not pass" \
-  || bad "a red fast exits non-zero, and names each gate that did not pass — exit $code"
+  || bad "a red fast exits non-zero, and names each gate that did not pass — exit $exited"
 
 grep -q '^2 RED$' "$tmp/said" && says_it_is_not_a_grade "$tmp/said" \
   && ok  "a red fast counts them, and still ends naming what it left out" \
@@ -173,8 +183,8 @@ grep -q '^gate added ' "$tmp/added.sh" && fast_runs_the_rest "$tmp/added.sh" && 
 # --- what the full run still does ---
 #
 full_runs_them_all "$root/bin/gates.sh" && [ "$(tail -1 "$tmp/said")" = "ALL GREEN" ] \
-  && ok  "the full run runs every gate and every plugin suite, and ends ALL GREEN" \
-  || bad "the full run runs every gate and every plugin suite, and ends ALL GREEN — $(tail -1 "$tmp/said")"
+  && ok  "the full run makes each gate line's call and runs every plugin suite, then ends ALL GREEN" \
+  || bad "the full run makes each gate line's call and runs every plugin suite, then ends ALL GREEN — $(tail -1 "$tmp/said")"
 
 a_lab "$root/bin/gates.sh"
 { gate_lines "$lab/bin/gates.sh" | cut -d' ' -f1; suites_on_disk; } | sort > "$tmp/wanted"
@@ -184,7 +194,7 @@ cmp -s "$tmp/listed" "$tmp/wanted" \
   && ok  "list names each gate line and each plugin suite, and prints nothing else" \
   || bad "list names each gate line and each plugin suite, and prints nothing else"
 
-grep -qx '        sh bin/gates.sh' "$root/bin/gates.sh" \
+sed -n '/^on_linux() {/,/^}/p' "$root/bin/gates.sh" | grep -q '^ *sh bin/gates.sh$' \
   && ok  "linux still runs the full run inside its container" \
   || bad "linux still runs the full run inside its container"
 
@@ -206,18 +216,18 @@ unnamed_stands() {
 unnamed_stands
 graded_in_the_lab fast > "$tmp/said"
 
-grep -q '^  PASS  unnamed$' "$tmp/said" \
-  && ok  "with no plant, unnamed passes in the lab" \
-  || bad "with no plant, unnamed passes in the lab — $(grep 'unnamed' "$tmp/said" | head -1)"
+grep -q '^  PASS  unnamed$' "$tmp/said" && ran_each_gate_line_but unnamed \
+  && ok  "with no plant, unnamed passes in the lab, and every stand-in ran" \
+  || bad "with no plant, unnamed passes in the lab, and every stand-in ran — $(grep 'unnamed' "$tmp/said" | head -1)"
 
 unnamed_stands
 printf '\nrefuse_for_a_plant() {\n    note "a plant put this here"\n    exit 2\n}\n' \
   >> "$lab/plugins/floor/bin/run.sh"
 graded_in_the_lab fast > "$tmp/said"
 
-grep -q '^  FAIL  unnamed — a rule broken (exit 1)$' "$tmp/said" \
-  && ok  "a refusal with no row turns fast red on unnamed, at exit 1" \
-  || bad "a refusal with no row turns fast red on unnamed, at exit 1 — $(grep 'unnamed' "$tmp/said" | head -1)"
+grep -q '^  FAIL  unnamed — a rule broken (exit 1)$' "$tmp/said" && ran_each_gate_line_but unnamed \
+  && ok  "a refusal with no row turns fast red on unnamed, at exit 1, and every stand-in ran" \
+  || bad "a refusal with no row turns fast red on unnamed, at exit 1, and every stand-in ran — $(grep 'unnamed' "$tmp/said" | head -1)"
 
 #
 # --- the breaks ---
@@ -227,6 +237,15 @@ a_plant_is_caught "a plugin suite run under fast is caught" fast_runs_the_rest \
 
 a_plant_is_caught "a gate fast skips is caught" fast_runs_the_rest \
   's/^gate frontmatter /[ "$mode" = fast ] || gate frontmatter /'
+
+# Round one's judge found both: each slips past a check that reads only names, or only green runs.
+red_fast_runs_the_rest() { fast_runs_the_rest "$1" "$first" "$last"; }
+
+a_plant_is_caught "a plugin suite run only by a red fast is caught" red_fast_runs_the_rest \
+  's/^\[ "\$mode" = fast \] || for plugin/[ "$mode" = fast ] \&\& [ "$failed" -eq 0 ] || for plugin/'
+
+a_plant_is_caught "a gate run without its arguments is caught" fast_runs_the_rest \
+  's/said=\$("\$@" 2>&1)/said=$("$1" "$2" 2>\&1)/'
 
 a_plant_is_caught "a plugin suite the full run skips is caught" full_runs_them_all \
   's/^suites=.*/suites=kernel/'

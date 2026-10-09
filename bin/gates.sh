@@ -8,6 +8,8 @@
 # sh bin/gates.sh fast     every gate but the plugin suites, before a judge round or a grade
 # sh bin/gates.sh audit    the cases for this file, in a lab of stand-ins
 #
+# Exit: 0 when every gate that ran passed, 1 when one did not. `audit` exits with its suite's code.
+#
 # A failing gate's output is kept under floor's home, in `gates/`, one directory per run. Not under
 # `linux`: that container is `--rm`, so `FOUNDRY_EPHEMERAL` tells the run inside to keep nothing.
 #
