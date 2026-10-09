@@ -109,6 +109,12 @@ a_session_named() {
      "$(resolve_for "$tmp/main" "$tmp/wt" "$tmp/mem")" "$tmp/mem/feat/wt"
   is "and a drive-letter base too" \
      "$(resolve_for "$tmp/main" "$tmp/wt" 'C:\mem')" 'C:\mem/feat/wt'
+  is "and a UNC base, which leaves whole wherever echo reads escapes" \
+     "$(resolve_for "$tmp/main" "$tmp/wt" '\\srv\mem')" '\\srv\mem/feat/wt'
+  is "and a rooted one" \
+     "$(resolve_for "$tmp/main" "$tmp/wt" '\mem')" '\mem/feat/wt'
+  is "a folder that is gone answers the base joined to it" \
+     "$(resolve_for "$tmp/main" "$tmp/gone" .claude/memory)" "$tmp/gone/.claude/memory"
   is "a subdirectory named reads the path from there, not from its tree's root" \
      "$(resolve_for "$tmp/main" "$tmp/wt/src" .claude/memory)" "$tmp/wt/src/.claude/memory/feat/wt"
 
