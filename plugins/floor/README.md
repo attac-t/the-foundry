@@ -3257,8 +3257,9 @@ the run says so if a break failed to apply — a mutation that changed nothing p
 
 **A break whose `sed` changes nothing stops the audit before any break runs.** `tests/applies.sh`
 replays each declaration with drivers that only apply and compare. It names each whose `sed` fails,
-prints nothing or changes nothing, and each it could not replay. The audit asks it once it is asked
-to run, and stops there, so a stale break costs seconds rather than the hours before its turn.
+prints nothing or changes nothing, and each it could not replay. A `wreck` break carries a function,
+not a `sed`, so it is left to the audit. The audit asks the check once it is asked to run, and stops
+there, so a stale break costs seconds rather than the hours before its turn.
 
 ```bash
 bash tests/applies.sh

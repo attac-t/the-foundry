@@ -12,7 +12,7 @@
 #   bash tests/applies.sh [<plugin root>]
 #
 # Exit: 0 every break changes its file. 1 one does not, or one could not be replayed.
-#       2 no plugin at the root named.
+#       2 no plugin at the root named, or no break could be replayed at all.
 
 main() {
   local root work named
@@ -22,6 +22,7 @@ main() {
   trap 'rm -rf "$work"' EXIT
 
   named=$(breaks_that_change_nothing "$root" "$work")
+  nothing_replayed "$work" && { printf 'applies — %s\n' "$named"; exit 2; }
   [ -n "$named" ] || { printf 'applies — each of %s breaks changes its file\n' "$(sed_breaks_in "$work")"; exit 0; }
 
   printf '%s\n' "$named"
@@ -34,10 +35,15 @@ main() {
 # nothing, and a tag `break_tags` reads that no replay printed. The replay stays in `$2/replayed`.
 breaks_that_change_nothing() {
   local root="$1" work="$2" kind tag mutation file
-  mkdir -p "$work" || return 1
+  mkdir -p "$work" || { printf 'the folder %s could not be made, so no break was replayed\n' "$work"; return; }
   replayed "$root/tests/run.sh" > "$work/replayed"
 
+  # A replay that read nothing proves nothing, so it is named, never passed.
+  [ -s "$work/replayed" ] || { printf 'no break could be replayed from %s\n' "$root/tests/run.sh"; return; }
+
   while IFS=$'\037' read -r kind tag mutation file; do
+    # A `wreck` line carries a function, not a `sed`, so nothing here applies it. #1176 owns the ten
+    # of those that cannot tell a copy they changed from one they did not.
     [ "$kind" = sed ] || continue
     why_it_proves_nothing "$root" "$tag" "$mutation" "$file" "$work/out"
   done < "$work/replayed"
@@ -45,7 +51,8 @@ breaks_that_change_nothing() {
   tags_never_replayed "$root/tests/run.sh" "$work"
 }
 
-sed_breaks_in() { grep -c '^sed' "$1/replayed"; }
+sed_breaks_in()    { grep -c '^sed' "$1/replayed"; }
+nothing_replayed() { [ ! -s "$1/replayed" ]; }
 
 # Nothing when a break's `sed` changes its file, else the way it does not.
 why_it_proves_nothing() {
@@ -101,6 +108,7 @@ declarations_in() {
 # The kind, tag, `sed` and file each declaration hands its driver. **Read by a bash started with no
 # variable of its caller's, under `-u`**, so a declaration leaning on the audit's state fails loudly.
 replayed() {
+  [ -r "$1" ] || return 0
   declarations_in "$1" | env -i "$BASH" --noprofile --norc -u "${BASH_SOURCE[0]}" replay
 }
 
