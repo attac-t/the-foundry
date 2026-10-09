@@ -2,8 +2,13 @@
 #
 # Every product gate. `bin/agree.sh` checks the README and the workflow name these same ones.
 #
-# sh bin/gates.sh         run them here sh bin/gates.sh linux   run them where `sh` is dash sh
-# bin/gates.sh list    name them, run nothing
+# sh bin/gates.sh          run them here
+# sh bin/gates.sh linux    run them where `sh` is dash
+# sh bin/gates.sh list     name them, run nothing
+# sh bin/gates.sh fast     every gate but the plugin suites, before a judge round or a grade
+# sh bin/gates.sh audit    the cases for this file, in a lab of stand-ins
+#
+# Exit: 0 when every gate that ran passed, 1 when one did not. `audit` exits with its suite's code.
 #
 # A failing gate's output is kept under floor's home, in `gates/`, one directory per run. Not under
 # `linux`: that container is `--rm`, so `FOUNDRY_EPHEMERAL` tells the run inside to keep nothing.
@@ -18,6 +23,9 @@ cd "$root" || exit 1
 mode=${1:-run}
 failed=0
 ran=0
+
+# The plugin suites. Minutes each, and floor's audit hours, so `fast` is every gate but these.
+suites='kernel signal floor panel'
 
 # Gates that ran and graded less than their whole claim. Not failures, and not full passes either —
 # a reader has one line at the end to tell the two apart.
@@ -63,6 +71,9 @@ on_linux() {
 }
 
 [ "$mode" = linux ] && { on_linux; exit $?; }
+
+# No gate runs these cases, so the count stands. Each copies this file into a lab of its own.
+[ "$mode" = audit ] && { bash tests/gates.sh; exit $?; }
 
 # What a gate's exit code means, repo-wide. A number is only legible to whoever already knows the
 # table.
@@ -320,7 +331,10 @@ gate durable     sh   bin/durable.sh audit
 # It could not be a gate until today. It refuses while any row is blank, and fifty-one were.
 gate unnamed     sh   bin/unnamed.sh audit
 
-for plugin in kernel signal floor panel; do
+#
+# **`fast` stops before the plugin suites, and nowhere else.** No gate line above names a mode, so
+# one added there joins `fast` with no second edit. Picking gates by hand is what this replaced.
+[ "$mode" = fast ] || for plugin in $suites; do
     gate "$plugin" bash "plugins/$plugin/tests/run.sh"
 done
 
@@ -346,8 +360,23 @@ say_how_green() {
            "$(( ran - declined ))" "$declined" "$lessened"
 }
 
+say_what_was_red() {
+    printf '%d RED\n' "$failed"
+    [ -d "$logs" ] && printf 'kept in %s\n' "$logs"
+}
+
+# **`fast` is never a grade, so it never says `ALL GREEN`.** Its last line names the suites it left out.
+end_fast() {
+    [ "$failed" -eq 0 ] || say_what_was_red
+    printf 'fast — the plugin suites did not run: %s\n' "$suites"
+
+    [ "$failed" -eq 0 ] || exit 1
+    exit 0
+}
+
+[ "$mode" = fast ] && end_fast
+
 [ "$failed" -eq 0 ] && { say_how_green; exit 0; }
 
-printf '%d RED\n' "$failed"
-[ -d "$logs" ] && printf 'kept in %s\n' "$logs"
+say_what_was_red
 exit 1
