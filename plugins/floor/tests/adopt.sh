@@ -305,7 +305,18 @@ is "a declaration that did end gains no blank line" \
 is "adopting from inside the shipping repository is refused"    "$(cd "$root" && sh bin/adopt.sh adopt ok:one a-shipped >/dev/null 2>&1; printf '%s' "$?")" "1"
 has "and it names the tree it would have written to"     "$(cd "$root" && sh bin/adopt.sh adopt ok:one a-shipped 2>&1)" "shipping the adapter"
 has "and it gives the command that works"     "$(cd "$root" && sh bin/adopt.sh adopt ok:one a-shipped 2>&1)" "by its full path"
-# Asked of the filesystem, not of git: an audit's copy of the plugin is no work tree. #1168.
-absent "and it writes nothing"       "$root/.foundry"
+#
+# Read where adopt writes: `.foundry/judged` at the top of the repository holding the plugin. An
+# audit's copy of the plugin sits in no work tree, and there the question cannot be asked. #1168.
+it_writes_nothing() {
+  local top judged code
+  top=$(git -C "$root" rev-parse --show-toplevel 2>/dev/null) \
+    || { cannot "and it writes nothing — the plugin sits in no work tree here"; return; }
+
+  judged=$(git -C "$top" status --porcelain -- .foundry/judged); code=$?
+  is "and git answers for the declaration" "$code" "0"
+  is "and it writes nothing"               "$judged" ""
+}
+it_writes_nothing
 
 summary "adopt"

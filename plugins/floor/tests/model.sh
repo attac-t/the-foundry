@@ -2207,7 +2207,7 @@ a_result_is_not_something_you_pass() {
   floor "$tmp/ev2" evidence record tests 0 >/dev/null 2>&1
   claimed=$(floor "$tmp/ev2" evidence); claimed_code=$?
   is "the record is read after a claimed result"      "$claimed_code" "0"
-  is "a claimed result is never recorded as a pass"   "$claimed" ""
+  is "a claimed result leaves the record empty"       "$claimed" ""
 }
 a_result_is_not_something_you_pass
 
@@ -6623,7 +6623,7 @@ a_declared_judgement_is_answered_by_a_verdict() {
 
   completion=$(floor "$tmp/dj" complete 2>&1); completion_code=$?
   is "and complete finds nothing unmet" "$completion_code" "0"
-  is "and the clause is met"            "$completion" ""
+  is "and complete names nothing unmet" "$completion" ""
 
   # The refusal that gives `judged` its meaning, on a clause that can now be satisfied.
   is "a worker still may not judge its own work"      "$(code_of floor_worked "$tmp/dj" 'Some Model 9' evidence verdict 'a stranger can read it' 'Some Model 9' approve 'fine' "$(reviewed_at "$tmp/dj")")" "2"
@@ -9872,7 +9872,7 @@ a-reviewer  a stranger can read it
   has "and says nothing else answers"       "$(floor_at_says "$tmp/missing" judged)" "nothing else answers for it"
   unjudged=$(floor "$tmp/missing" evidence); unjudged_code=$?
   is "and the record is still read"    "$unjudged_code" "0"
-  is "and no judgement is recorded"    "$unjudged" ""
+  is "and the missing adapter's record holds nothing" "$unjudged" ""
 }
 an_adapter_this_host_does_not_have_fails_closed
 
@@ -9900,7 +9900,7 @@ a-reviewer  a stranger can read it
       "$(floor_at_says "$tmp/moved" judged)" "not the adapter this repository committed"
   unjudged=$(floor "$tmp/moved" evidence); unjudged_code=$?
   is "and its record is still read"            "$unjudged_code" "0"
-  is "and the rewritten one judged nothing"    "$unjudged" ""
+  is "and the rewritten adapter's record holds nothing" "$unjudged" ""
 
   #
   # **The remedy, in the message.** This is where a consumer lands the first time a plugin upgrade
@@ -10158,7 +10158,7 @@ a_panel_agrees_or_nothing_moves() {
   judged "$tmp/jury" 'a stranger can read it' 'two' approve 'so does this' >/dev/null 2>&1
   completion=$(floor "$tmp/jury" complete 2>&1); completion_code=$?
   is "with both heard, complete finds nothing unmet" "$completion_code" "0"
-  is "with both heard, the clause is met"            "$completion" ""
+  is "with both heard, complete names nothing unmet" "$completion" ""
 
   # One dissent stops it, whatever the others said.
   judged "$tmp/jury" 'a stranger can read it' 'two' reject 'on reflection, no' >/dev/null 2>&1
