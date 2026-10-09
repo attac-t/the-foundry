@@ -245,10 +245,10 @@ audit_the_redirect() {
 }
 
 # `echo` put back on the answer. Dash reads `\\` in it as one backslash, so a UNC base cannot leave
-# whole. Bash's `echo` reads no escapes, so there the break changes nothing. #1162.
+# whole. Where `sh` is bash, the probe cannot say if its `echo` reads escapes, so this skips. #1162.
 audit_the_echo() {
   sh_is_bash && {
-    printf '  skip  echo put back on the answer — this sh is bash, whose echo reads no escapes\n'
+    printf '  skip  echo put back on the answer — this sh is bash, and the probe cannot say whether its echo reads escapes\n'
     return
   }
   wreck_lib "echo put back on the answer is caught" echoback resolve-memory.sh 's/answer() { printf [^"]*"/answer() { echo "/' 'and a UNC base, which leaves whole wherever echo reads escapes'
