@@ -25,6 +25,8 @@ main() {
   strays_before=$(strays)
 
   run_every_suite
+  refuse_a_label_no_check_carries
+  drive_the_label_check
   audit_the_reader
   audit_the_lib_scripts
   audit_the_install
@@ -289,13 +291,13 @@ audit_the_install() {
 
   wreck "a hook checked out with CRLF is caught"        crlf   crlf 'carriage returns'
   wreck "an unquoted plugin root is caught"             noquot unquote 'every plugin root is quoted'
-  wreck "a bare path with no interpreter is caught"     barep  bare 'consider.sh runs a bare path'
+  wreck "a bare path with no interpreter is caught"     barep  bare 'a hook runs a bare path'
   wreck "a hook that declares no shell is caught"       noshel unshell 'declares its shell'
   # No check names a missing lib. The preflight is what speaks up, so its silence is the label.
   wreck "a lib that did not ship is caught"             nolib  unship 'preflight is silent when healthy'
-  wreck "hooks.json pointing at nothing is caught"      nofile rewire 'hooks.json wires gone.sh, which did not ship'
-  wreck "a hook that ships but is never wired is caught" nowire unwire 'consider.sh ships but nothing wires it'
-  wreck "a key that is not hooks is caught"              style  restyle 'hooks.json carries "outputStyle", which Claude Code drops with a warning at every start'
+  wreck "hooks.json pointing at nothing is caught"      nofile rewire 'hooks.json wires a hook that did not ship'
+  wreck "a hook that ships but is never wired is caught" nowire unwire 'a hook ships but nothing wires it'
+  wreck "a key that is not hooks is caught"              style  restyle 'hooks.json carries a key Claude Code drops with a warning at every start'
   wreck "an edit hook naming a standard by the path as handed is caught" stdabs stdabs 'and names craft-sh for a shipped script, by its absolute path'
   wreck "an edit hook skipping by the path as handed is caught" skipabs skipabs 'and nudges code in a work tree under a folder named tests, #1143'
   wreck "an edit hook speaking outside a work tree is caught" outwt anywhere 'consider is quiet outside every work tree'
@@ -507,6 +509,145 @@ names_both() {
     *"wanted [the prompt hook echoes the objective] to fail, and the first to fail was ["?*"]"*"failed=1") return 0 ;;
   esac
   return 1
+}
+
+#
+# **Each row's label must name a check its suite carries, before any break runs.** #1165.
+#
+# A check renamed in `install.sh` or `memory.sh` left its row aimed at nothing, and only that row's
+# own break said so. Each row is replayed alone, so one that cannot be read is named, never passed.
+refuse_a_label_no_check_carries() {
+  echo
+  echo "audit — each row's label names a check its suite carries"
+
+  local stale line
+  stale=$(labels_no_check_carries "$root/tests")
+  [ -n "$stale" ] || { printf '  ok    every row names a check its suite carries\n'; return; }
+
+  while IFS= read -r line; do bad "$line"; done <<< "$stale"
+}
+
+# One line for each row whose label no check in its suite carries, or that cannot be read.
+labels_no_check_carries() {
+  local dir="$1" row said suite name label
+
+  while IFS= read -r row; do
+    said=$(label_of "$row")
+    [ -n "$said" ] || { printf 'a row that could not be read — %s\n' "$(trimmed "$row")"; continue; }
+
+    IFS=$'\t' read -r suite name label <<< "$said"
+    carries "$dir/$suite" "$label" && continue
+    printf '%s — its label [%s] is no check in %s\n' "$name" "$label" "$suite"
+  done < <(rows_in "$dir/run.sh")
+}
+
+# A row: a line whose first word is `wreck` or `wreck_lib`, then a blank and a double quote.
+rows_in() { grep -E '^[[:space:]]*(wreck|wreck_lib)[[:space:]]+"' "$1"; }
+
+# The suite, name and label a row gives, replayed in a subshell that holds the stub drivers and ends
+# with them. Nothing, when the row cannot be read.
+label_of() {
+  ( wreck()     { [ "$#" -ge 4 ] && printf 'install.sh\t%s\t%s\n' "$1" "$4"; }
+    wreck_lib() { [ "$#" -ge 5 ] && printf 'memory.sh\t%s\t%s\n' "$1" "$5"; }
+    eval "$1" ) 2>/dev/null
+}
+
+trimmed() { printf '%s' "${1#"${1%%[![:space:]]*}"}"; }
+
+# Whether a suite carries the check a label names: its name whole, or up to ` — `. The label is
+# read through ENVIRON, as `failed_on` reads one, so the two never part on a backslash.
+carries() {
+  check_names_in "$1" | want="$2" awk '$0 == ENVIRON["want"] || index($0, ENVIRON["want"] " — ") == 1 { found = 1 }
+                                     END { exit !found }'
+}
+
+# Each check's name in a suite: the first double-quoted argument of an `is`, `has`, `lacks` or `bad`
+# call, with `\"` read as `"`. A comment line names nothing.
+check_names_in() {
+  awk '/^[ \t]*#/ { next }
+       {
+         line = " " $0
+         while (match(line, /[^A-Za-z0-9_](is|has|lacks|bad)[ \t]+"/)) {
+           rest = substr(line, RSTART + RLENGTH)
+           name = ""
+           for (i = 1; i <= length(rest); i++) {
+             c = substr(rest, i, 1)
+             if (c == "\\" && substr(rest, i + 1, 1) == "\"") { name = name "\""; i++; continue }
+             if (c == "\"") break
+             name = name c
+           }
+           print name
+           line = substr(rest, i + 1)
+         }
+       }' "$1"
+}
+
+#
+# **The label check can fail, and here it must.** Each case runs it against a copy of these suites
+# with one thing changed, and reads every line it says.
+drive_the_label_check() {
+  a_renamed_check_names_its_row
+  a_label_from_the_other_suite_is_named
+  an_unreadable_row_is_named
+  the_stubs_end_with_the_check
+}
+
+# A copy of these suites, and one change to a file in it.
+suites_copy() { rm -rf "${tmp:?}/$1" && cp -R "$root/tests" "$tmp/$1"; }
+rewrite_in()  { sed "$1" "$2" > "$2.new" && mv "$2.new" "$2"; }
+
+a_renamed_check_names_its_row() {
+  local said
+  suites_copy renamed || { bad "a renamed check — no copy of the suites, so this proves nothing"; return; }
+  rewrite_in 's/is "every plugin root is quoted"/is "every root of the plugin is quoted"/' "$tmp/renamed/install.sh"
+  grep -q 'every root of the plugin is quoted' "$tmp/renamed/install.sh" \
+    || { bad "a renamed check — the rename changed nothing, so this proves nothing"; return; }
+
+  said=$(labels_no_check_carries "$tmp/renamed")
+  [ "$said" = "an unquoted plugin root is caught — its label [every plugin root is quoted] is no check in install.sh" ] \
+    || { bad "a renamed check must name its row and no other — [$said]"; return; }
+  printf '  ok    a renamed check names its row, and no other\n'
+}
+
+a_label_from_the_other_suite_is_named() {
+  local said
+  suites_copy crossed || { bad "a crossed label — no copy of the suites, so this proves nothing"; return; }
+  rewrite_in "s/'carriage returns'\$/'a placeholder is not a goal'/" "$tmp/crossed/run.sh"
+  grep -q "'a placeholder is not a goal'\$" "$tmp/crossed/run.sh" \
+    || { bad "a crossed label — the change made nothing, so this proves nothing"; return; }
+
+  said=$(labels_no_check_carries "$tmp/crossed")
+  [ "$said" = "a hook checked out with CRLF is caught — its label [a placeholder is not a goal] is no check in install.sh" ] \
+    || { bad "a label only memory.sh carries must name its install row — [$said]"; return; }
+  printf '  ok    a label only the other suite carries names its row\n'
+}
+
+# Two rows planted before the first install row: one with no label, one with an open quote. The
+# driver word is printed, never written, or the check would read these as rows of this file.
+planted_rows() {
+  printf '  %s "a planted row with no label is caught" nolabel crlf\n' wreck
+  printf "  %s \"a planted row with an open quote is caught\" openq crlf 'carriage returns\n" wreck
+}
+
+an_unreadable_row_is_named() {
+  local said wanted
+  suites_copy unreadable || { bad "an unreadable row — no copy of the suites, so this proves nothing"; return; }
+  planted_rows > "$tmp/planted"
+  awk -v plant="$tmp/planted" '/^  wreck "a hook checked out with CRLF is caught"/ { while ((getline l < plant) > 0) print l } { print }' \
+    "$tmp/unreadable/run.sh" > "$tmp/unreadable/run.sh.new" && mv "$tmp/unreadable/run.sh.new" "$tmp/unreadable/run.sh"
+
+  wanted=$(planted_rows | while IFS= read -r row; do printf 'a row that could not be read — %s\n' "$(trimmed "$row")"; done)
+  said=$(labels_no_check_carries "$tmp/unreadable")
+  [ "$said" = "$wanted" ] \
+    || { bad "two unreadable rows must each be named, and every other row read — [$said]"; return; }
+  printf '  ok    a row it cannot read is named, and the rows after it are still read\n'
+}
+
+# The stub drivers die with their subshell, or every row after the check would break nothing.
+the_stubs_end_with_the_check() {
+  declare -f wreck | grep -q 'caught "\$tag"' && declare -f wreck_lib | grep -q 'lib_caught' \
+    || { bad "a stub driver outlived the label check"; return; }
+  printf '  ok    the stub drivers end with the label check\n'
 }
 
 # Say how it went, and leave with the verdict.
