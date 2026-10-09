@@ -4,6 +4,7 @@
 
 ```bash
 sh bin/gates.sh                 # all 25, here
+sh bin/gates.sh fast            # every gate but the plugin suites: before a judge round or a grade
 sh bin/agree.sh                 # this table, the workflow, gates.sh and every harness file
 sh bin/gates.sh linux           # the same 25 where `sh` is dash
 sh bin/host.sh <the recipe>     # the same 25 from a clone — see below
@@ -118,6 +119,7 @@ yours to run when it applies:
 | `sh bin/agree.sh audit` | eighty seconds, measured | you change what `agree` reads, or how |
 | `sh bin/taper.sh audit` | a second, measured | you change what `taper` reads, or the shape it grades |
 | `sh bin/audited.sh audit` | seven seconds, measured | you change what forces an audit, or how the diff is read |
+| `sh bin/gates.sh audit` | two minutes on Git Bash, measured | you change `bin/gates.sh` |
 | `sh bin/refusals.sh audit` | four seconds, measured | you change how a refusal site is found |
 | the per-plugin tool check | seconds, in the matrix | a plugin starts reaching for something new |
 | three operating systems | a matrix nobody has locally | you touch anything a suite runs |
