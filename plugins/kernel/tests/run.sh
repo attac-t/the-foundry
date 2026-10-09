@@ -112,14 +112,23 @@ red_against() {
 }
 
 #
-# Determine if this system's `sh` is really bash.
+# **Three probes, one for each row that skips, and each asks what its own break needs.** One probe
+# asked whether `&>` parses and stood in for all three, which said more than it knew. #1173.
 #
-# It is on macOS, and it is under Git Bash. bash in POSIX mode still accepts `&>`, `[[ =~ ]]` and
-# `${BASH_SOURCE[0]}`, so a bashism put back on purpose changes nothing there and the mutation
-# proves nothing. Only a runner whose `sh` is dash can answer these — which is the whole reason the
-# matrix in gates.yml starts with ubuntu.
-#
-sh_is_bash() { [ -z "$(sh -c 'echo leak &>/dev/null' 2>/dev/null)" ]; }
+# A break that puts a bashism back proves nothing where `sh` takes that bashism, as bash does even in
+# POSIX mode under Git Bash and on macOS. Only a `sh` that refuses it can answer.
+
+# Whether this `sh` parses `&>` as one redirect. Dash runs the `echo` in the background, and prints it.
+sh_parses_amp_redirect() { [ -z "$(sh -c 'echo leak &>/dev/null' 2>/dev/null)" ]; }
+
+# Whether this `sh`'s `echo` keeps `\\` as two backslashes. Dash's reads it as an escape, and keeps one.
+sh_echo_keeps_backslashes() { [ "$(sh -c 'echo "\\\\"' 2>/dev/null)" = '\\' ]; }
+
+# Whether this `sh` names a script by `${BASH_SOURCE[0]}`. Dash refuses the array as a bad substitution.
+sh_knows_bash_source() {
+  printf 'printf %%s "${BASH_SOURCE[0]}"\n' > "$tmp/bash-source-probe.sh"
+  [ -n "$(sh "$tmp/bash-source-probe.sh" 2>/dev/null)" ]
+}
 
 # Run each suite in its own bash, and remember whether any of them went red.
 run_every_suite() {
@@ -238,19 +247,19 @@ audit_the_lib_scripts() {
 # break that put the bashism back in one place would leave the other unguarded. The leading space
 # keeps it off the header line, which quotes the redirect it forbids.
 audit_the_redirect() {
-  sh_is_bash && {
-    printf '  skip  a bash-only redirect put back — this sh is bash, where it is not a bug\n'
+  sh_parses_amp_redirect && {
+    printf '  skip  a bash-only redirect put back — this sh parses &>, so putting it back changes nothing\n'
     return
   }
   # No check names the redirect. The guard memory.sh keeps for this bashism is the label.
   wreck_lib "a bash-only redirect put back is caught" amp resolve-memory.sh 's| >/dev/null 2>&1| \&>/dev/null|' 'the answer never carries a path to git'
 }
 
-# `echo` put back on the answer. Dash reads `\\` in it as one backslash, so a UNC base cannot leave
-# whole. Where `sh` is bash, the probe cannot say if its `echo` reads escapes, so this skips. #1162.
+# `echo` put back on the answer. An `echo` reading `\\` as one backslash cannot leave a UNC base whole,
+# so the row runs wherever this `sh`'s `echo` does, and skips only where it keeps both. #1162, #1173.
 audit_the_echo() {
-  sh_is_bash && {
-    printf '  skip  echo put back on the answer — this sh is bash, and the probe cannot say whether its echo reads escapes\n'
+  sh_echo_keeps_backslashes && {
+    printf "  skip  echo put back on the answer — this sh's echo keeps both backslashes, so the break changes nothing\n"
     return
   }
   wreck_lib "echo put back on the answer is caught" echoback resolve-memory.sh 's/answer() { printf [^"]*"/answer() { echo "/' 'and a UNC base, which leaves whole wherever echo reads escapes'
@@ -308,8 +317,8 @@ audit_the_install() {
   wreck "a verify hook that never reads the session's folder is caught" vercwd verifies_here "and verify holds the turn on the worktree's blueprint"
   wreck "a protected check asked of the hook's own folder is caught" protect protects_here "and names the worktree's path for progress, though the checkout is on main"
 
-  sh_is_bash && {
-    printf '  skip  a bash-only variable put back — this sh is bash, where it still resolves\n'
+  sh_knows_bash_source && {
+    printf '  skip  a bash-only variable put back — this sh knows ${BASH_SOURCE[0]}, so it still resolves\n'
     return
   }
   # No check names a bashism. Under dash the variable is a bad substitution, so the prompt hook
