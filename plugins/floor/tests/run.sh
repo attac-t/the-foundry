@@ -1484,6 +1484,11 @@ a_killer_is_named_by_the_check_that_wrote_it() {
   same "a bad with no name is named by its message" \
        "$(killed_by "$checks")" "not executable — run.sh"
 
+  # A capture that read nothing fails `lacks`, under the check's own name. #1168.
+  ask_lib_sh lacks "a capture that read nothing" "" "anything"
+  same "an empty subject fails lacks, under its own name" \
+       "$(killed_by "$checks")" "a capture that read nothing"
+
   # `broke`'s sentence is `lib.sh`'s, and `$setup` is this file's copy of it. Read the real one back
   # and compare, or the two drift and the refusal below stops recognising what it refuses.
   ask_lib_sh broke "could not make a repository to test against"
@@ -5431,6 +5436,12 @@ wreck_join "a sign-in read that refuses for an account gh does not use is caught
 # wrote — the shape of the number matters as much as its presence.
 wreck_join "a grant count that counts comments is caught" \
   loudcount 's#grep -cv#grep -c#'
+
+#
+# A provider's name in core's code. The check that refuses one read the plugin beside the suite from
+# 24 August, so a name planted in the copy under test passed it. It reads that copy now. #1168.
+wreck_join "a provider named in join.sh's code is caught" \
+  joinvendor 's#^set -u$#set -u; : github#'
 
 # Where the marketplace lives is the whole of the shipped side now. Lose it and every plugin reads
 # as unknown, the count says nothing was offered, and a host three versions behind looks clean.

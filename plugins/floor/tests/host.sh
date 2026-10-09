@@ -386,7 +386,7 @@ offered "$tmp/market"
 installed 0.0.1
 
 vendors_none=$( cd "$tmp/two" && CLAUDE_CONFIG_DIR="$home" FOUNDRY_WHO=a@b sh "$join" 2>&1 )
-lacks "the second repository vendors no plugins" "$(ls "$tmp/two")" "plugins"
+absent "the second repository vendors no plugins" "$tmp/two/plugins"
 has "and the drift is still named"    "$vendors_none" "floor ships $ships"
 has "and so is what it registered"    "$vendors_none" "this host has 0.0.1 registered"
 has "and the count is not zero"       "$vendors_none" "1 offered here"
@@ -456,8 +456,9 @@ reachable() {
 }
 
 reachable "user - $ships" "project $tmp/elsewhere 0.0.1"
-theirs=$( CLAUDE_CONFIG_DIR="$home" sh "$lib" session "$tmp/one" 2>&1 )
-lacks "a row for another project is not reported" "$theirs" "could load"
+theirs=$( CLAUDE_CONFIG_DIR="$home" sh "$lib" session "$tmp/one" 2>&1 ); theirs_code=$?
+is "a row for another project is read, and answered" "$theirs_code" "0"
+is "a row for another project is not reported"       "$theirs" ""
 
 reachable "user - $ships" "project $tmp/one 0.0.1"
 ours=$( CLAUDE_CONFIG_DIR="$home" sh "$lib" session "$tmp/one" 2>&1 )
@@ -483,8 +484,9 @@ is "a session matching what it ships says nothing" "$quiet" ""
 # A comparison needs no such answer. Another machine's path is simply not this repository, whichever
 # machine reads the record.
 reachable "user - $ships" 'project D:\\Elsewhere\\repo 0.0.1'
-foreign=$( CLAUDE_CONFIG_DIR="$home" sh "$lib" session "$tmp/one" 2>&1 )
-lacks "a path from another machine is not this repository" "$foreign" "could load"
+foreign=$( CLAUDE_CONFIG_DIR="$home" sh "$lib" session "$tmp/one" 2>&1 ); foreign_code=$?
+is "a path from another machine is read, and answered" "$foreign_code" "0"
+is "a path from another machine is not this repository" "$foreign" ""
 
 #
 # **The fold needs one case where it has to match.** Every assertion above reads an absence, and a
@@ -672,14 +674,16 @@ is "settings naming no marketplace refuses too" "$(declared_code)" "3"
 # reports a disagreement about a marketplace nobody declared.
 offered "$tmp/one" github acme/thing
 declares x github acme/thing
-lacks "a nested source key is not read as a marketplace" "$(declared)" "source is declared"
-is    "so a well-formed pair still exits 0"              "$(declared_code)" "0"
+nested=$(declared); nested_code=$?
+is    "a nested source key is not read as a marketplace" "$nested" ""
+is    "so a well-formed pair still exits 0"              "$nested_code" "0"
 # --- the repository's half ---
 
 # **Superseded 8 September, by #573.** This asserted `0` for a repository carrying neither file, and
 # that is the contract being replaced: a script cannot branch on an answer that never changes. Three
 # of the six absences stop a run, so a tree missing one now refuses and does not say `joined.`
-is "a repository declaring none of the three is refused" "$(code_of "$tmp/one" FOUNDRY_WHO=a@b)" "4"
+said=$(joined "$tmp/one" FOUNDRY_WHO=a@b); joined_code=$?
+is "a repository declaring none of the three is refused" "$joined_code" "4"
 has "and says it carries no grants"   "$said" "grants  none"
 has "and says it carries no gates"    "$said" "gates   none"
 
@@ -777,7 +781,7 @@ rm -f "$tmp/one/.foundry/judged"
 # **Kept beside `bin/providers.sh`, deliberately.** That gate reads every file in core and belongs
 # to this repository. This reads one file and ships with the plugin, so a consumer running floor's
 # own suite still has the check the day `remote_is_github` was copied here.
-code=$(grep -v '^[[:space:]]*#' "$here/bin/join.sh" | tr 'A-Z' 'a-z')
+code=$(grep -v '^[[:space:]]*#' "$join" | tr 'A-Z' 'a-z')
 lacks "core holds no provider name" "$code" "github"
 lacks "nor any other"               "$code" "gitlab"
 

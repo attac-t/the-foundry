@@ -132,8 +132,10 @@ matches() {
   bad "$1 — [$2] does not match /$3/" "$1"
 }
 
-# Assert a string does not contain the given text.
+# Assert a string does not contain the given text. **An empty string is refused**: a capture that
+# failed reads empty, and passing it would read a dead command as a clean answer. #1168.
 lacks() {
+  [ -n "$2" ] || { bad "$1 — the subject was empty, so nothing was read" "$1"; return; }
   case "$2" in
     *"$3"*) bad "$1 — [$3] should not be in [$2]" "$1" ;;
     *)      ok "$1" ;;

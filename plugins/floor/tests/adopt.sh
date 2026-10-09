@@ -305,6 +305,7 @@ is "a declaration that did end gains no blank line" \
 is "adopting from inside the shipping repository is refused"    "$(cd "$root" && sh bin/adopt.sh adopt ok:one a-shipped >/dev/null 2>&1; printf '%s' "$?")" "1"
 has "and it names the tree it would have written to"     "$(cd "$root" && sh bin/adopt.sh adopt ok:one a-shipped 2>&1)" "shipping the adapter"
 has "and it gives the command that works"     "$(cd "$root" && sh bin/adopt.sh adopt ok:one a-shipped 2>&1)" "by its full path"
-lacks "and it writes nothing"       "$(cd "$root" && git status --porcelain -- .foundry 2>/dev/null)" "judged"
+# Asked of the filesystem, not of git: an audit's copy of the plugin is no work tree. #1168.
+absent "and it writes nothing"       "$root/.foundry"
 
 summary "adopt"
