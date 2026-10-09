@@ -1009,14 +1009,15 @@ deliverperson — its sed changes nothing in bin/run.sh" ] \
 }
 
 #
-# Three declarations planted at the foot of a copy: a file that is gone, a `sed` that prints nothing,
-# and one that reads `$root`, which the audit sets and a replay must not. The driver word is printed,
-# never written, or this file would declare them itself.
+# Four declarations planted at the foot of a copy: a file that is gone, a `sed` that prints nothing,
+# one reading `$root`, which the audit sets, and one reading a name the case exports. A replay sees
+# neither name. The driver word is printed, never written, or this file would declare them itself.
 planted_declarations() {
   sed 's/^DRIVER /wreck_runner /' <<'EOF'
 DRIVER "a planted break on a file that is gone is caught" gonefile 's/x/y/' lib/gone.sh
 DRIVER "a planted break that empties its file is caught" emptied '1,$d' lib/source-dir.sh
 DRIVER "a planted break on the root the audit sets is caught" rootname "s#$root#ROOT#" bin/wake.sh
+DRIVER "a planted break on a name the shell exports is caught" exported "s#$FLOOR_APPLIES_PROBE#X#" bin/wake.sh
 EOF
 }
 
@@ -1026,12 +1027,26 @@ a_planted_declaration_is_named() {
     || { moot "a planted declaration — could not copy the plugin, so this proves nothing"; return; }
   planted_declarations >> "$tmp/applies-planted/tests/run.sh"
 
-  said=$(breaks_that_change_nothing "$tmp/applies-planted" "$tmp/applies-planted-work" | LC_ALL=C sort)
+  # Exported as `^`, the name would let its `sed` change every line, and the replay must never see it.
+  said=$(export FLOOR_APPLIES_PROBE='^'
+         breaks_that_change_nothing "$tmp/applies-planted" "$tmp/applies-planted-work" | LC_ALL=C sort)
   [ "$said" = "emptied — its sed prints nothing from lib/source-dir.sh
+exported — its declaration could not be replayed
 gonefile — its sed fails on lib/gone.sh
 rootname — its declaration could not be replayed" ] \
-    && { printf '  ok    a sed that fails, one that prints nothing, and one leaning on the audit are each named\n'; return; }
-  bad "three planted declarations were not each named — [$said]"
+    && { printf '  ok    a sed that fails, one that prints nothing, and two leaning on names are each named\n'; return; }
+  bad "four planted declarations were not each named — [$said]"
+}
+
+# A root holding no suite replays nothing, and that is named, never passed.
+a_root_with_no_breaks_is_named() {
+  local said
+  mkdir -p "$tmp/applies-empty"
+  said=$(breaks_that_change_nothing "$tmp/applies-empty" "$tmp/applies-empty-work")
+
+  [ "$said" = "no break could be replayed from $tmp/applies-empty/tests/run.sh" ] \
+    && { printf '  ok    a root with no breaks is named, never passed\n'; return; }
+  bad "a root with no breaks was not named — [$said]"
 }
 
 # The stop, over the copy with a moved line, and what it leaves for `exit`.
@@ -1044,12 +1059,18 @@ stop_leaves() {
 }
 
 a_break_that_changes_nothing_stops_the_audit() {
+  moved_copy_differs || { moot "the stop — no moved line was planted, so this proves nothing"; return; }
   stop_leaves 0 3
   stop_leaves 1 1
 }
 
+moved_copy_differs() {
+  [ -f "$tmp/applies-moved/bin/run.sh" ] && ! cmp -s "$tmp/applies-moved/bin/run.sh" "$root/bin/run.sh"
+}
+
 a_break_aimed_at_a_moved_line_is_named
 a_planted_declaration_is_named
+a_root_with_no_breaks_is_named
 a_break_that_changes_nothing_stops_the_audit
 refuse_a_break_that_changes_nothing
 
