@@ -3259,7 +3259,7 @@ wreck_runner "a wait on a person with no line is caught" \
   personwaitline '/^wait_on_a_person() {/,/^}/s#^    emit "\$dir" pass.waiting item="\$1" why="\$2" code="\$3"$#    :#'
 
 wreck_runner "a grant deliver asks for, read as nothing a person can answer, is caught" \
-  deliverperson '/^deliver_and_route() {/,/^}/s#^        15|18|32) wait_on_a_person#        15|32) wait_on_a_person#'
+  deliverperson '/^deliver_and_route() {/,/^}/s#^        15|18|32|57) wait_on_a_person#        15|32|57) wait_on_a_person#'
 
 wreck_runner "a failed send let go rather than sent again is caught" \
   deliversend '/^deliver_and_route() {/,/^}/s#^        19)       stop_at "\$1" deliver 19 ;;$#        19) ;;#'
