@@ -1989,7 +1989,9 @@ an_aside_is_kept_and_blocks_nothing() {
   floor "$tmp/as" open >/dev/null 2>&1
 
   asrun=$(basename "$(floor "$tmp/as" path)")
-  lacks "a run with nothing set aside contributes nothing" "$(floor "$tmp/as" aside)" "$asrun"
+  asides=$(floor "$tmp/as" aside); asides_code=$?
+  is "a run with nothing set aside answers aside"     "$asides_code" "0"
+  is "a run with nothing set aside contributes nothing" "$asides" ""
 
   floor "$tmp/as" aside 'the identity rule admits no offline address' >/dev/null 2>&1
   has "and one it kept comes back" "$(floor "$tmp/as" aside)" "no offline address"
@@ -2201,9 +2203,11 @@ a_result_is_not_something_you_pass() {
   is  "and nothing was written" "$(floor "$tmp/ev2" evidence)" ""
 
   # What a caller trying to claim a pass actually gets: `0` is run as a command, and there is no such
-  # command. The record says what happened, which is that nothing ran.
+  # command. The record keeps nothing, so no row can say it passed.
   floor "$tmp/ev2" evidence record tests 0 >/dev/null 2>&1
-  lacks "a claimed result is never recorded as a pass" "$(floor "$tmp/ev2" evidence)" "	0	"
+  claimed=$(floor "$tmp/ev2" evidence); claimed_code=$?
+  is "the record is read after a claimed result"      "$claimed_code" "0"
+  is "a claimed result leaves the record empty"       "$claimed" ""
 }
 a_result_is_not_something_you_pass
 
@@ -4911,7 +4915,9 @@ the_work_source() {
   # with no policy at all.
   #
   lacks "an item's words authorise no target" "$(ws policy)"  "acme/items"
-  lacks "and select none"                     "$(ws targets)" "acme/items"
+  targeted=$(ws targets); targeted_code=$?
+  is    "and targets answers"                 "$targeted_code" "0"
+  is    "and select none"                     "$targeted" ""
   is    "so the repository it names is refused" \
         "$(code_of ws targets add https://gitlab.com/acme/items.git main)" "5"
 
@@ -6615,7 +6621,9 @@ a_declared_judgement_is_answered_by_a_verdict() {
   floor "$tmp/dj" gates >/dev/null 2>&1
   is "a verdict from something else is recorded"      "$(code_of judged "$tmp/dj" 'a stranger can read it' 'a-reviewer' approve 'read in two minutes')" "0"
 
-  lacks "and the clause is met"         "$(floor "$tmp/dj" complete 2>&1)" "a stranger can read it"
+  completion=$(floor "$tmp/dj" complete 2>&1); completion_code=$?
+  is "and complete finds nothing unmet" "$completion_code" "0"
+  is "and complete names nothing unmet" "$completion" ""
 
   # The refusal that gives `judged` its meaning, on a clause that can now be satisfied.
   is "a worker still may not judge its own work"      "$(code_of floor_worked "$tmp/dj" 'Some Model 9' evidence verdict 'a stranger can read it' 'Some Model 9' approve 'fine' "$(reviewed_at "$tmp/dj")")" "2"
@@ -9862,7 +9870,9 @@ a-reviewer  a stranger can read it
   is  "and the runner fails closed when it is asked for"       "$(code_of floor_at "$tmp/missing" judged)" "21"
   has "and names what is missing"     "$(floor_at_says "$tmp/missing" judged)" "no-such-adapter"
   has "and says nothing else answers"       "$(floor_at_says "$tmp/missing" judged)" "nothing else answers for it"
-  lacks "and no judgement is recorded" "$(floor "$tmp/missing" evidence)" "judged"
+  unjudged=$(floor "$tmp/missing" evidence); unjudged_code=$?
+  is "and the record is still read"    "$unjudged_code" "0"
+  is "and the missing adapter's record holds nothing" "$unjudged" ""
 }
 an_adapter_this_host_does_not_have_fails_closed
 
@@ -9888,7 +9898,9 @@ a-reviewer  a stranger can read it
   is  "an adapter rewritten under its pin is refused" "$(code_of floor_at "$tmp/moved" judged)" "40"
   has "and it says the repository authorised another" \
       "$(floor_at_says "$tmp/moved" judged)" "not the adapter this repository committed"
-  lacks "and the rewritten one judged nothing" "$(floor "$tmp/moved" evidence)" "judged"
+  unjudged=$(floor "$tmp/moved" evidence); unjudged_code=$?
+  is "and its record is still read"            "$unjudged_code" "0"
+  is "and the rewritten adapter's record holds nothing" "$unjudged" ""
 
   #
   # **The remedy, in the message.** This is where a consumer lands the first time a plugin upgrade
@@ -10144,7 +10156,9 @@ a_panel_agrees_or_nothing_moves() {
   has "and the silent member is named"      "$(floor "$tmp/jury" complete 2>&1)" "no approval from [two]"
 
   judged "$tmp/jury" 'a stranger can read it' 'two' approve 'so does this' >/dev/null 2>&1
-  lacks "with both heard, the clause is met"         "$(floor "$tmp/jury" complete 2>&1)" "a stranger can read it"
+  completion=$(floor "$tmp/jury" complete 2>&1); completion_code=$?
+  is "with both heard, complete finds nothing unmet" "$completion_code" "0"
+  is "with both heard, complete names nothing unmet" "$completion" ""
 
   # One dissent stops it, whatever the others said.
   judged "$tmp/jury" 'a stranger can read it' 'two' reject 'on reflection, no' >/dev/null 2>&1
@@ -10723,8 +10737,9 @@ authorisation_asks_and_hears() {
   # Allowed to exist is not met. A stage that satisfied what it permitted would let a run write its
   # own bar, allow it, and clear it, in three commands nobody else read. The hearing's own rows name
   # the question, and so the clause, and satisfy nothing.
-  lacks "and satisfies nothing by permitting it" \
-        "$(awk -F'\t' '$2 !~ /^answer[.]/' "$(floor "$tmp/aa" path)/evidence" 2>/dev/null)" "$id"
+  permitted=$(awk -F'\t' '$2 !~ /^answer[.]/' "$(floor "$tmp/aa" path)/evidence" 2>/dev/null); permitted_code=$?
+  is "and its record is read"                  "$permitted_code" "0"
+  is "and satisfies nothing by permitting it"  "$permitted" ""
 
   #
   # Condition 3 refuses and never asks, and **this is the only run that can tell.** Every other run

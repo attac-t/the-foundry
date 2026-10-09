@@ -301,10 +301,22 @@ is "a declaration that did end gains no blank line" \
 #
 # Floor's README said to change into the plugin directory and run it there. Followed word for word,
 # a judge was declared in the plugin and the command exited 0.
+#
+# Adopt writes `.foundry/judged` at the top of the repository holding the plugin. **The file is read
+# before and after, never git's view of it**: a person may leave it changed. #1168.
+ships_top=$(git -C "$root" rev-parse --show-toplevel 2>/dev/null)
+judged_now() { cat "$ships_top/.foundry/judged" 2>/dev/null || printf 'absent'; }
+judged_before=$(judged_now)
 
 is "adopting from inside the shipping repository is refused"    "$(cd "$root" && sh bin/adopt.sh adopt ok:one a-shipped >/dev/null 2>&1; printf '%s' "$?")" "1"
 has "and it names the tree it would have written to"     "$(cd "$root" && sh bin/adopt.sh adopt ok:one a-shipped 2>&1)" "shipping the adapter"
 has "and it gives the command that works"     "$(cd "$root" && sh bin/adopt.sh adopt ok:one a-shipped 2>&1)" "by its full path"
-lacks "and it writes nothing"       "$(cd "$root" && git status --porcelain -- .foundry 2>/dev/null)" "judged"
+
+# An audit's copy of the plugin sits in no work tree, and there the question cannot be asked.
+it_writes_nothing() {
+  [ -n "$ships_top" ] || { cannot "and it writes nothing — the plugin sits in no work tree here"; return; }
+  is "and it writes nothing" "$(judged_now)" "$judged_before"
+}
+it_writes_nothing
 
 summary "adopt"

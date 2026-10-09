@@ -966,7 +966,8 @@ shape stops it, 57, and nothing is pushed. The line names the commit and the sha
 cannot run, or commits that cannot be listed, stop it the same way.
 
 **57 has two fixes.** A person rewords the message in a new commit, made through `commit` and graded
-at its own sha. A host repairs a reader that cannot run. A pass waits on a person at 57.
+at its own sha. A host repairs a reader that cannot run. The pass that began the run stops at 57,
+and any pass after it waits on a person.
 
 | Exit | Means | Remedy |
 |---|---|---|
@@ -3253,6 +3254,16 @@ got. Read `failed` and `skipped`, which mean the same thing everywhere.
 
 Every suite, then a deliberate break for every rule that matters. Each one must turn a suite red, and
 the run says so if a break failed to apply — a mutation that changed nothing proves nothing.
+
+**A break whose `sed` changes nothing stops the audit before any break runs.** `tests/applies.sh`
+replays each declaration with drivers that only apply and compare. It names each whose `sed` fails,
+prints nothing or changes nothing, and each it could not replay. A `wreck` break carries a function,
+not a `sed`, so it is left to the audit. The audit asks the check once it is asked to run, and stops
+there, so a stale break costs seconds rather than the hours before its turn.
+
+```bash
+bash tests/applies.sh
+```
 
 **Each break names the check that killed it.** Every suite runs under fail-fast, so one check answers,
 and `lib.sh` hands over its name rather than the audit cutting one out of a message:
