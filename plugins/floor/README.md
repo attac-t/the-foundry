@@ -2896,7 +2896,7 @@ deadlock or silence lets nothing go.
 **Revise rounds are counted per member and clause**, against that member's `rounds` line, or three
 where the charter has none.
 
-**`deliver`'s code says who can answer it.** 15, 18, 32 and 57 wait on a person, 47, with
+**`deliver`'s code says who can answer it.** 15, 18, 32, 57 and 58 wait on a person, 47, with
 `pass.waiting why=deliver`. 19 is a send that failed, sent again next wake. **20 and 50 are resumed
 there too.** A source nobody could ask, and floor on a hand's account, are each fixed on the host.
 Nothing in the run can answer any other code, so the run is let go with `pass.left why=deliver`, and

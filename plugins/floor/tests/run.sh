@@ -5115,8 +5115,8 @@ wreck_runner "a pass that lets 57 go, never waiting on a person, is caught" \
   credwait 's@^        15|18|32|57|58) wait_on_a_person@        15|18|32|58) wait_on_a_person@'
 
 #
-# **No run delivers a change to a file a pass obeys.** One break per way past it: the refusal never
-# asked, one of the three left out, the limit dropped, a failed read let through, a pass that lets 58 go.
+# **No run delivers a change to a file a pass obeys.** One break per way past it: never asked, one of
+# three left out, no limit, a deletion hidden, a failed read let through, a pass that lets 58 go.
 #
 wreck_runner "a run that changed a rule file delivering anyway is caught" \
   rulesnever 's@^    refuse_a_change_to_the_rules "\$dir" "\$here" "\$carrying"$@    :@'
@@ -5126,6 +5126,9 @@ wreck_runner "a rule file left out of the diff is caught" \
 
 wreck_runner "a diff that reads every file as a rule is caught" \
   rulesall 's@ -- \.foundry/practice \.foundry/gates \.foundry/judged 2>/dev/null$@ 2>/dev/null@'
+
+wreck_runner "a rule diff that hides a file deleted or renamed away is caught" \
+  rulesgone 's@diff --name-only "\$2" "\$3" --@diff --name-only --diff-filter=AM "$2" "$3" --@'
 
 wreck_runner "a rule diff whose failed read is let through is caught" \
   rulesunread 's@ "\$3") || refuse_an_unread_rule_change$@ "$3") || return 0@'
