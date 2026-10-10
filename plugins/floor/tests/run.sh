@@ -5140,6 +5140,22 @@ wreck_runner "a pass that lets 58 go, never waiting on a person, is caught" \
 wreck_runner "a fence of three around a longer backtick run is caught" \
   fencethree 's@n = (longest < 3 ? 3 : longest + 1)@n = 3@'
 
+#
+# **No field floor did not write reaches a request live.** One break per way out of a span: a fence a
+# run inside can close, no space inside it, a carriage return kept, and the worker printed bare.
+#
+wreck_runner "a span whose fence a run inside it can close is caught" \
+  inertfence 's@while (length(fence) <= longest)@while (length(fence) < longest)@'
+
+wreck_runner "a span with no space inside its fences is caught" \
+  inertpad 's@printf "%s %s %s", fence, text, fence@printf "%s%s%s", fence, text, fence@'
+
+wreck_runner "a carriage return kept inside a span is caught" \
+  inertcr 's@^            gsub(/\\r/, " ", text)$@@'
+
+wreck_runner "a worker printed around the renderer is caught" \
+  inertworker 's@printf .; worker %s. "\$(inert "\$began_by")"@printf "; worker %s" "$began_by"@'
+
 wreck_runner "a fence no longer than the run it holds is caught" \
   fenceequal 's@longest < 3 ? 3 : longest + 1@longest < 3 ? 3 : longest@'
 

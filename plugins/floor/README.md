@@ -985,6 +985,11 @@ judge's report.
 longest run the text holds, and never shorter than three. It sits at the left margin, where no list
 item can hold it.
 
+**No word floor did not write is live in the record.** The worker, a clause's text, a judge, a
+member, a proposer, a label and a hand's words each sit in a code span of their own. Its fence is
+one backtick longer than the longest run inside, with a space inside each fence. Every line ending
+becomes a space. GitHub reads neither a mention nor a closing word in a span; #1187 asked it.
+
 **Carried text has two bounds, in bytes: 16,000 for any one message or report, and 48,000 for all of
 them with their fences.** A text over a bound is cut at its last whole line under it. One line names
 its file by the run's id and a path inside the run.
