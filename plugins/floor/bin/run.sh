@@ -5778,11 +5778,16 @@ what_floor_recorded() {
 say_who_shaped_it() {
     [ -f "$(seats_file "$1")" ] || return 0
 
-    printf -- '- shaped by %s%s\n' "$(or_none "$(joined "$(members_who_sat "$1")" ', ')")" "$(who_a_label_left_out "$1")"
+    printf -- '- shaped by %s%s\n' "$(or_none "$(joined "$(members_who_sat "$1" | inert_each)" ', ')")" "$(who_a_label_left_out "$1")"
 }
 
+# A member and a label are not floor's words, so each is printed inert. A bracket made a label a link.
 who_a_label_left_out() {
-    awk '$2 == "left" { printf "%s%s, no label [%s]", (n++ ? "; " : "; left out: "), $1, $3 }' "$(seats_file "$1")"
+    left_sep='; left out: '
+    awk '$2 == "left" { print $1 "\t" $3 }' "$(seats_file "$1")" | while IFS="$TAB" read -r left_member left_label; do
+        printf '%s%s, no label %s' "$left_sep" "$(inert "$left_member")" "$(inert "$left_label")"
+        left_sep='; '
+    done
 }
 
 #
@@ -5802,7 +5807,7 @@ clause_ids_in() { awk '$1 == "clause" { print $2 }' "$1" 2>/dev/null; }
 # One clause of the run `$1`, and what met it.
 clause_and_what_met_it() {
     met_in=$(charter_file "$1")
-    printf '  - %s `%s`: %s\n' "$(clause_kind "$met_in" "$2")" "$(clause_text "$met_in" "$2")" \
+    printf '  - %s %s: %s\n' "$(clause_kind "$met_in" "$2")" "$(inert "$(clause_text "$met_in" "$2")")" \
         "$(what_a_clause_stands_on "$1" "$2")"
 }
 
@@ -5818,13 +5823,23 @@ what_a_clause_stands_on() {
 
 each_strike_of() {
     no_to "$(question_id "$1" authorisation "$(clause_text "$(charter_file "$1")" "$2")")" \
-        | awk -F'\t' '{ printf "%sstruck by %s at %s: `%s`", sep, $1, $2, $3; sep = "; " }'
+        | each_line_a_hand_said 'struck by' '' '; '
+}
+
+# Lines a hand wrote, `who<TAB>when<TAB>words`, as `$1 who at when: words`, `$2` before the first and
+# `$3` before the rest. The hand and its words are not floor's, so both are printed inert.
+each_line_a_hand_said() {
+    hand_sep=$2
+    while IFS="$TAB" read -r hand_who hand_when hand_said; do
+        printf '%s%s %s at %s: %s' "$hand_sep" "$1" "$(inert "$hand_who")" "$hand_when" "$(inert "$hand_said")"
+        hand_sep=$3
+    done
 }
 
 # Who proposed a clause the panel proposed. Nothing for any other: a worker's clause is no panel's.
 who_proposed_a_panel_clause() {
     is_a_panel_clause "$1" "$(clause_text "$(charter_file "$1")" "$2")" || return 0
-    printf '; proposed by %s' "$(joined "$(proposers_of "$(charter_file "$1")" "$2")" ', ')"
+    printf '; proposed by %s' "$(joined "$(proposers_of "$(charter_file "$1")" "$2" | inert_each)" ', ')"
 }
 
 #
@@ -5840,7 +5855,7 @@ each_yes_it_stands_on() {
     yes_to "$(question_id "$1" completion "$stands_on")" | each_yes_said
 }
 
-each_yes_said() { awk -F'\t' '{ printf "; yes from %s at %s: `%s`", $1, $2, $3 }'; }
+each_yes_said() { each_line_a_hand_said 'yes from' '; ' '; '; }
 
 what_met() {
     met_by=$(answerer_of "$(charter_file "$1")" "$2")
@@ -5848,7 +5863,7 @@ what_met() {
     printf '%s' "$met_by"
 }
 
-each_judge_of() { spaced "$(named_judges "$(charter_file "$1")" "$2")" | sed 's/ /, /g'; }
+each_judge_of() { joined "$(named_judges "$(charter_file "$1")" "$2" | inert_each)" ', '; }
 
 #
 # #1076. The worker `run.began` recorded, and never the one the shell reading it names.
@@ -5858,7 +5873,7 @@ each_judge_of() { spaced "$(named_judges "$(charter_file "$1")" "$2")" | sed 's/
 #
 worker_beside_a_judge() {
     began_by=$(recorded_worker "$1")
-    [ -n "$began_by" ] && { printf '; worker %s' "$began_by"; return 0; }
+    [ -n "$began_by" ] && { printf '; worker %s' "$(inert "$began_by")"; return 0; }
 
     printf '; this run records no worker, so nothing checked that its judge did not write the work'
 }
@@ -5908,7 +5923,8 @@ EOF
 }
 
 what_one_judge_found() {
-    printf '\n%s on `%s`%s\n\n' "$3" "$(clause_text "$(charter_file "$1")" "$2")" "$(worker_beside_a_judge "$1")"
+    printf '\n%s on %s%s\n\n' "$(inert "$3")" "$(inert "$(clause_text "$(charter_file "$1")" "$2")")" \
+        "$(worker_beside_a_judge "$1")"
     its_report "$1" "$2" "$3" "$4"
 }
 
@@ -5917,17 +5933,17 @@ what_one_judge_found() {
 # asked about the commit delivered, `$4`, and as its receipt stamped it. The verdict line stays behind.
 #
 its_report() {
-    report_at=$(report_inside "$2" "$3")
-    [ -f "$(receipt_for "$1" "$2" "$3")" ] || { printf 'No receipt stands for %s here, so no report is carried.\n' "$3"; return 0; }
-    [ -f "$1/$report_at" ] || { printf 'No report stands beside %s'\''s receipt.\n' "$3"; return 0; }
+    report_at=$(report_inside "$2" "$3") judge_shown=$(inert "$3")
+    [ -f "$(receipt_for "$1" "$2" "$3")" ] || { printf 'No receipt stands for %s here, so no report is carried.\n' "$judge_shown"; return 0; }
+    [ -f "$1/$report_at" ] || { printf 'No report stands beside %s'\''s receipt.\n' "$judge_shown"; return 0; }
     last_asked=$(said_in "$(receipt_for "$1" "$2" "$3")" candidate)
     [ "$last_asked" = "$4" ] || { say_it_was_last_asked_about_another_commit "$1" "$report_at" "$last_asked" "$4"; return 0; }
     stamped_as_it_stands "$1" "$2" "$3" || { say_it_no_longer_matches "$1" "$report_at"; return 0; }
 
     above_verdict=$(lines_above_its_verdict "$1/$report_at")
     anything_in_the_first "$1/$report_at" "$above_verdict" \
-        || { printf '%s'\''s report holds nothing above its verdict.\n' "$3"; return 0; }
-    carry_the_text "$1" "$report_at" "$3's report" "$above_verdict"
+        || { printf '%s'\''s report holds nothing above its verdict.\n' "$judge_shown"; return 0; }
+    carry_the_text "$1" "$report_at" "$judge_shown's report" "$above_verdict"
 }
 
 # The receipt's `report` is the report's `cksum`, as `digest_of` reads it, so an edit since reads apart.
@@ -6163,6 +6179,31 @@ backtick_fence_for() {
         upto > 0 && NR > upto { exit }
         { rest = $0; while (match(rest, /`+/)) { if (RLENGTH > longest) longest = RLENGTH; rest = substr(rest, RSTART + RLENGTH) } }
         END { n = (longest < 3 ? 3 : longest + 1); while (n-- > 0) printf "`"; print "" }' "$1"
+}
+
+#
+# **Text floor did not write, as one span nothing in it can close.** A fence one backtick longer than
+# its longest run, a space inside each fence, and every line ending a space, so it keeps to its line.
+#
+# GitHub reads neither a mention nor a closing word inside a span: #1127, and its probe, #1187.
+inert() {
+    printf '%s' "$1" | LC_ALL=C awk '
+        { text = text (NR > 1 ? " " : "") $0 }
+        END {
+            gsub(/\r/, " ", text)
+            rest = text
+            while (match(rest, /`+/)) { if (RLENGTH > longest) longest = RLENGTH; rest = substr(rest, RSTART + RLENGTH) }
+            fence = "`"; while (length(fence) <= longest) fence = fence "`"
+            printf "%s %s %s", fence, text, fence
+        }'
+}
+
+# Each line on stdin through `inert`, one a line. Empty lines are dropped, as `joined` drops them.
+inert_each() {
+    while IFS= read -r inert_line; do
+        [ -n "$inert_line" ] || continue
+        inert "$inert_line"; printf '\n'
+    done
 }
 
 say_it_is_withheld() {
