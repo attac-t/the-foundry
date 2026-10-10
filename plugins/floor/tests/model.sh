@@ -3402,12 +3402,16 @@ remote_refs_of() { git -C "$1" for-each-ref --format='%(refname) %(objectname)' 
 # #1151. A message holding a credential stops the delivery before the push, and the remote's refs
 # are as they were. The token sits below the head, so a read of the head alone would miss it.
 #
+# `commit` refuses such a message since #1156, so the plant is a commit a person accepted.
 a_delivery_holding_a_credential_pushes_nothing() {
   a_run_to_deliver cred-push '' || { skip "a credential before the push — git could not make a repo here"; return; }
-  a_commit_in "$tmp/cred-push" "$(printf 'feat: keep the key\n\nkey %s' "$(an_aws_key K)")" \
+  cred_slot=$(only_slot "$(floor "$tmp/cred-push" path)/units/01/workspace")
+  printf 'key\n' >> "$cred_slot/changes.txt" && git -C "$cred_slot" add changes.txt \
+    && git -C "$cred_slot" -c user.email=w@x -c user.name=w commit -qm "$(printf 'feat: keep the key\n\nkey %s' "$(an_aws_key K)")" \
+    && floor_accepted_by "$tmp/cred-push" ada@example.com reconcile accept "$(git -C "$cred_slot" rev-parse HEAD)" 'a person read it' >/dev/null \
     && a_commit_in "$tmp/cred-push" 'feat: nothing more' \
     || { skip "a credential before the push — could not commit"; return; }
-  below=$(git -C "$(only_slot "$(floor "$tmp/cred-push" path)/units/01/workspace")" rev-parse HEAD~1)
+  below=$(git -C "$cred_slot" rev-parse HEAD~1)
   refs_before=$(remote_refs_of "$tmp/cred-push-remote.git")
 
   is  "a delivery whose message below the head holds a credential is refused" \
@@ -3438,6 +3442,42 @@ a_delivery_that_cannot_read_its_messages_pushes_nothing() {
   is  "and the remote's refs are as they were" "$(remote_refs_of "$tmp/cred-unread-remote.git")" "$refs_before"
 }
 a_delivery_that_cannot_read_its_messages_pushes_nothing
+
+# The run `$1` asked to commit the message `$3`, `$2` first on the path when set. It is refused at 57
+# saying `$4`, and the head and `produced` are as they were.
+commit_is_refused() {
+  refused_run=$(floor "$tmp/$1" path) && refused_slot=$(only_slot "$refused_run/units/01/workspace")
+  printf 'x\n' >> "$refused_slot/changes.txt" && git -C "$refused_slot" add changes.txt \
+    || { skip "a refused commit — could not stage a change"; return; }
+  head_before=$(git -C "$refused_slot" rev-parse HEAD)
+  produced_before=$(cat "$refused_run/units/01/produced" 2>/dev/null)
+
+  is  "a commit of [$3] is refused, 57" "$( PATH="${2:+$2:}$PATH"; code_of floor "$tmp/$1" commit "$3" )" "57"
+  has "and says why" "$( PATH="${2:+$2:}$PATH"; floor_says "$tmp/$1" commit "$3" )" "$4"
+  is  "and the head did not move" "$(git -C "$refused_slot" rev-parse HEAD)" "$head_before"
+  is  "and produced gained no line" "$(cat "$refused_run/units/01/produced" 2>/dev/null)" "$produced_before"
+}
+
+#
+# #1156. `commit` reads its message before it commits. A message holding a credential is refused,
+# 57, and names the shape. The head stays where it was, and `produced` gains no line.
+#
+a_commit_holding_a_credential_is_refused() {
+  a_run_to_deliver credcommit '' || { skip "a credential at commit — git could not make a repo here"; return; }
+  commit_is_refused credcommit '' "$(printf 'feat: keep the key\n\nkey %s' "$(an_aws_key K)")" \
+    'this message holds an AWS access key, so nothing was committed.'
+}
+a_commit_holding_a_credential_is_refused
+
+# A reader that cannot run refuses the same way, since a read that failed must never pass.
+a_commit_whose_reader_cannot_run_is_refused() {
+  a_run_to_deliver credblind '' || { skip "an unread commit — git could not make a repo here"; return; }
+  mkdir -p "$tmp/credblindbin" && an_awk_that_cannot_read_credentials input > "$tmp/credblindbin/awk" \
+    && chmod +x "$tmp/credblindbin/awk" || { skip "an unread commit — could not put an awk on the path"; return; }
+  commit_is_refused credblind "$tmp/credblindbin" 'feat: nothing secret' \
+    'the message could not be read for a credential, so nothing was committed.'
+}
+a_commit_whose_reader_cannot_run_is_refused
 
 #
 # #1101. A run whose own work changed a file a pass obeys is refused at 58, before its grade. Each
@@ -8743,20 +8783,23 @@ a_pass_that_reads_no_hand_begins_no_run() {
 a_pass_that_reads_no_hand_begins_no_run
 
 #
-# #1151. A pass whose worker commits a credential stops at `deliver` with 57. The next wake resumes
-# the delivery, meets 57 again, and waits on a person who can reword it. Nothing reaches the remote.
+# #1151. A credential that reaches `deliver` in a pass waits on a person who can reword it, 57, and
+# nothing reaches the remote. Since #1156 `commit` refuses one, so it comes in through an accept.
 #
+# The worker commits outside floor, so the first pass stops at 32. A person accepts that commit, and
+# the next wake resumes the delivery, meets 57, and waits.
 a_pass_waits_on_a_person_when_a_message_holds_a_credential() {
   git init -q --bare "$tmp/remotes/acme/credpass.git" 2>/dev/null \
     || { skip "a pass that meets a credential — git could not make a bare repo here"; return; }
   a_resumable_repo credpass 1708 'https://github.com/acme/credpass.git' 'deliver https://github.com/acme/credpass.git' \
     || { skip "a pass that meets a credential — git could not make a repo here"; return; }
-  keyed_worker="date >> worked && git add worked && sh '$runner' commit 'key $(an_aws_key K)'"
+  raw_worker="date >> worked && git add worked && git -c user.email=w@x -c user.name=w commit -qm 'key $(an_aws_key K)'"
 
-  is  "a pass whose worker commits a credential stops at deliver, 57" \
-      "$(FOUNDRY_PASS_COMMAND=$keyed_worker code_of floor "$tmp/credpass" pass)" "57"
-  has "and writes the stop with its code" "$(last_pass_line_in "$tmp/credpass")" "pass.stopped item=1708 why=deliver code=57"
-  is  "the next wake resumes it, and waits on a person" \
+  is  "a pass whose worker commits outside floor stops at deliver, 32" \
+      "$(FOUNDRY_PASS_COMMAND=$raw_worker code_of floor "$tmp/credpass" pass)" "32"
+  floor_accepted_by "$tmp/credpass" ada@example.com reconcile accept \
+    "$(git -C "$(only_slot "$(floor "$tmp/credpass" path)/units/01/workspace")" rev-parse HEAD)" 'a person read it' >/dev/null
+  is  "once a person accepts it, the next wake meets 57 and waits on a person" \
       "$(FOUNDRY_PASS_COMMAND=true code_of floor "$tmp/credpass" pass)" "47"
   has "and says it waits at deliver, on 57" "$(last_pass_line_in "$tmp/credpass")" "pass.waiting item=1708 why=deliver code=57"
   is  "and nothing reached the remote" "$(remote_refs_of "$tmp/remotes/acme/credpass.git")" ""
@@ -8764,6 +8807,26 @@ a_pass_waits_on_a_person_when_a_message_holds_a_credential() {
   rm -rf "$src/claims/1708" "$src/labels/1708" "$src/items/1708"
 }
 a_pass_waits_on_a_person_when_a_message_holds_a_credential
+
+#
+# #1156. A pass whose worker commits a credential through floor is refused at `commit`, 57. Its
+# command fails, so the pass stops there, 45, and nothing reaches the remote.
+#
+a_pass_whose_worker_commits_a_credential_stops_at_its_command() {
+  git init -q --bare "$tmp/remotes/acme/credcmd.git" 2>/dev/null \
+    || { skip "a pass refused at commit — git could not make a bare repo here"; return; }
+  a_resumable_repo credcmd 1710 'https://github.com/acme/credcmd.git' 'deliver https://github.com/acme/credcmd.git' \
+    || { skip "a pass refused at commit — git could not make a repo here"; return; }
+  keyed_worker="date >> worked && git add worked && sh '$runner' commit 'key $(an_aws_key K)'"
+
+  is  "a pass whose worker commits a credential stops at its command, 45" \
+      "$(FOUNDRY_PASS_COMMAND=$keyed_worker code_of floor "$tmp/credcmd" pass)" "45"
+  has "and writes the stop with its code" "$(last_pass_line_in "$tmp/credcmd")" "pass.stopped item=1710 why=command-failed code=45"
+  is  "and nothing reached the remote" "$(remote_refs_of "$tmp/remotes/acme/credcmd.git")" ""
+
+  rm -rf "$src/claims/1710" "$src/labels/1710" "$src/items/1710"
+}
+a_pass_whose_worker_commits_a_credential_stops_at_its_command
 
 #
 # #1101. A pass whose worker grants itself more in the practice stops at `deliver` with 58. The next

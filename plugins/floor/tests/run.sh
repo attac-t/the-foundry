@@ -5114,6 +5114,14 @@ wreck_runner "a delivery that pushes before it reads is caught" \
 wreck_runner "a pass that lets 57 go, never waiting on a person, is caught" \
   credwait 's@^        15|18|32|57|58) wait_on_a_person@        15|18|32|58) wait_on_a_person@'
 
+# **No message holding a credential is committed**, #1156. One break per way past `commit`'s read:
+# never asked, and a failed read let through.
+wreck_runner "a commit that never reads its message is caught" \
+  commitread 's@^    refuse_a_credential_in_the_message "\$said"$@    :@'
+
+wreck_runner "a commit whose failed read is let through is caught" \
+  commitunread 's@=\$(shape_in_the_text "\$1") || refuse_an_unread_message$@=$(shape_in_the_text "$1") || return 0@'
+
 #
 # **No run delivers a change to a file a pass obeys.** One break per way past it: never asked, one of
 # three left out, no limit, a deletion hidden, a failed read let through, a pass that lets 58 go.

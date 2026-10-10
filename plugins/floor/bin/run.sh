@@ -126,8 +126,8 @@
 #  56  a member's contribution holds a line out of shape, so floor kept it whole and refused it, at
 #      `charter shape` and at `authorise`. Not 21: that is no model answering, and this is one that
 #      answered outside the seven words a contribution is written in
-#  57  a message above the base holds a credential, or none could be read, so `deliver` pushed
-#      nothing. A person rewords it in a new commit, or a host repairs the reader
+#  57  a message holds a credential, or none could be read. At `commit` nothing is committed; at
+#      `deliver`, above the base, nothing is pushed. A person rewords it, or a host repairs the reader
 #  58  the run changed a file a pass reads its rules from, `.foundry/practice`, `.foundry/gates` or
 #      `.foundry/judged`, or its change could not be read. `deliver` pushed nothing; a person lands it
 #
@@ -1285,6 +1285,7 @@ commit_work() {
     tree=$(unit_work_tree "$dir" "$(this_repository)") || exit 16
     git -C "$tree" diff --cached --quiet 2>/dev/null \
         && { note "nothing is staged in [$tree]"; exit 2; }
+    refuse_a_credential_in_the_message "$said"
 
     why=$(git -C "$tree" commit -qm "$said" 2>&1) || {
         note "could not commit in [$tree]: $why"
@@ -1292,6 +1293,23 @@ commit_work() {
     }
 
     record_produced "$dir" "$tree"
+}
+
+#
+# **No message holding a credential is committed.** It is read before the commit, by the reader
+# `deliver` uses, so a run never grades a commit `deliver` must refuse. #1156.
+refuse_a_credential_in_the_message() {
+    committed_shape=$(shape_in_the_text "$1") || refuse_an_unread_message
+    [ -n "$committed_shape" ] || return 0
+
+    note "this message holds $committed_shape, so nothing was committed. Commit again with a message that holds none"
+    exit 57
+}
+
+# A read that failed must never read as a message holding nothing.
+refuse_an_unread_message() {
+    note "the message could not be read for a credential, so nothing was committed. Repair the reader on this host, and commit again"
+    exit 57
 }
 
 # Append-only, written after the commit exists. A sha
@@ -6265,8 +6283,12 @@ refuse_a_credential_in_the_messages() {
 # The shape commit `$2`'s message holds, or nothing. Non-zero when the message or the reader fails.
 shape_in_the_message() {
     pushed_message=$(git -C "$1" log -1 --format=%B "$2" 2>/dev/null) || return 1
-    printf '%s\n' "$pushed_message" | LC_ALL=C awk -f "$PLUGIN_ROOT/lib/credentials.awk"
+    shape_in_the_text "$pushed_message"
 }
+
+# The shape the text `$1` holds, or nothing; non-zero when the reader fails. `commit` and `deliver`
+# both read through this, so a message `commit` let pass is one `deliver` reads the same way. #1156.
+shape_in_the_text() { printf '%s\n' "$1" | LC_ALL=C awk -f "$PLUGIN_ROOT/lib/credentials.awk"; }
 
 refuse_a_shape_in() {
     held_shape=$(shape_in_the_message "$1" "$2") || refuse_an_unread_push
