@@ -994,7 +994,7 @@ plugin_copy_with() {
   ! cmp -s "$tmp/$1/$2" "$root/$2"
 }
 
-# The line two breaks aim at, moved, as #1151 moved it on 9 October. Each names its own break.
+# The line three breaks aim at, moved, as #1151 moved it on 9 October. Each names its own break.
 a_break_aimed_at_a_moved_line_is_named() {
   local said
   plugin_copy_with applies-moved bin/run.sh \
@@ -1003,8 +1003,9 @@ a_break_aimed_at_a_moved_line_is_named() {
 
   said=$(breaks_that_change_nothing "$tmp/applies-moved" "$tmp/applies-moved-work" | LC_ALL=C sort)
   [ "$said" = "credwait — its sed changes nothing in bin/run.sh
-deliverperson — its sed changes nothing in bin/run.sh" ] \
-    && { printf '  ok    a break aimed at a moved line is named, with its twin\n'; return; }
+deliverperson — its sed changes nothing in bin/run.sh
+ruleswait — its sed changes nothing in bin/run.sh" ] \
+    && { printf '  ok    a break aimed at a moved line is named, with the others aimed at it\n'; return; }
   bad "a break aimed at a moved line was not named alone — [$said]"
 }
 
