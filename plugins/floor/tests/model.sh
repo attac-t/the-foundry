@@ -3452,7 +3452,7 @@ commit_is_refused() {
   head_before=$(git -C "$refused_slot" rev-parse HEAD)
   produced_before=$(cat "$refused_run/units/01/produced" 2>/dev/null)
 
-  is  "a commit of [$3] is refused, 57" "$( PATH="${2:+$2:}$PATH"; code_of floor "$tmp/$1" commit "$3" )" "57"
+  is  "the commit asked of [$1] is refused, 57" "$( PATH="${2:+$2:}$PATH"; code_of floor "$tmp/$1" commit "$3" )" "57"
   has "and says why" "$( PATH="${2:+$2:}$PATH"; floor_says "$tmp/$1" commit "$3" )" "$4"
   is  "and the head did not move" "$(git -C "$refused_slot" rev-parse HEAD)" "$head_before"
   is  "and produced gained no line" "$(cat "$refused_run/units/01/produced" 2>/dev/null)" "$produced_before"
