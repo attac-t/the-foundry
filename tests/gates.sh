@@ -39,24 +39,13 @@ suites_on_disk() {
 }
 
 #
-# Each gate line as `name path arguments`, wherever on the line it sits. A plant that guards a gate
-# line keeps it a gate line here, so a copy cannot hide the gate it then skips.
-gate_lines() {
-  awk '{
-    for (i = 1; i + 3 <= NF; i++) {
-      if ($i != "gate") continue
-      if ($(i + 2) != "sh" && $(i + 2) != "bash") continue
-      if ($(i + 3) ~ /\$/) continue
-      line = $(i + 1) " " $(i + 3)
-      for (j = i + 4; j <= NF; j++) line = line " " $j
-      print line
-    }
-  }' "$1"
-}
+# Each gate line as `name interpreter path arguments`, read by the reader `bin/agree.sh` uses, so
+# the lab and the check cannot part on what a gate line is. A guarded line is still read. #1172.
+gate_lines() { awk -f "$root/bin/gate-lines.awk" "$1"; }
 
 # Each gate line as its stand-in records the call: the name, then the arguments.
 calls_on_the_gate_lines() {
-  gate_lines "$1" | awk '{ call = $1; for (i = 3; i <= NF; i++) call = call " " $i; print call }' | sort
+  gate_lines "$1" | awk '{ call = $1; for (i = 4; i <= NF; i++) call = call " " $i; print call }' | sort
 }
 
 # It writes down its gate's name and the arguments it was handed, and fails when `fails` names it.
@@ -74,7 +63,7 @@ EOF
 a_lab() {
   rm -rf "$lab" && mkdir -p "$lab/bin" && cp "$1" "$lab/bin/gates.sh" || return 1
 
-  gate_lines "$lab/bin/gates.sh" | while read -r name path _; do stand_in "$name" "$path"; done
+  gate_lines "$lab/bin/gates.sh" | while read -r name _ path _; do stand_in "$name" "$path"; done
   for suite in $(suites_on_disk); do stand_in "$suite" "plugins/$suite/tests/run.sh"; done
 }
 

@@ -253,8 +253,9 @@ looks exactly like a blind gate — #351 holds why.
 The second is not a convenience. On macOS and under Git Bash `sh` **is** bash and accepts `&>` and
 `[[ =~ ]]` without complaint, so neither can fail a bashism — and every runner here opens `#!/bin/sh`.
 
-`bin/agree.sh` holds this table, that workflow and `bin/gates.sh` to the same list. It grades the
-ten and is not one of them. `panel` was advertised here and absent from CI for days.
+`bin/agree.sh` holds this table, that workflow and `bin/gates.sh` to the same list. It holds each
+gate line to the shape floor pins, and to a command the workflow runs. It grades the gates and is
+not one of them. `panel` was advertised here and absent from CI for days.
 
 It holds one more thing: **every harness file names the same rules.** Claude reads `CLAUDE.md` and
 Codex reads `AGENTS.md`, so `bin/harness.sh` writes the table into both from `.claude/rules` itself.
