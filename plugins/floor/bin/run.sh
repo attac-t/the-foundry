@@ -6203,7 +6203,7 @@ backtick_fence_for() {
 # **Text floor did not write, as one span nothing in it can close.** A fence one backtick longer than
 # its longest run, a space inside each fence, and every line ending a space, so it keeps to its line.
 #
-# GitHub reads neither a mention nor a closing word inside a span: #1127, and its probe, #1187.
+# GitHub's renderer links no mention in a span, and #1187 showed a closing word there closes nothing.
 inert() {
     printf '%s' "$1" | LC_ALL=C awk '
         { text = text (NR > 1 ? " " : "") $0 }

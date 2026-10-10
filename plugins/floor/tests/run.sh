@@ -5150,7 +5150,7 @@ wreck_runner "a fence of three around a longer backtick run is caught" \
 
 #
 # **No field floor did not write reaches a request live.** One break per way out of a span: a fence a
-# run inside can close, no space inside it, a carriage return kept, and the worker printed bare.
+# run inside can close, no space inside it, a line ending kept, and the worker printed bare.
 #
 wreck_runner "a span whose fence a run inside it can close is caught" \
   inertfence 's@while (length(fence) <= longest)@while (length(fence) < longest)@'
@@ -5160,6 +5160,12 @@ wreck_runner "a span with no space inside its fences is caught" \
 
 wreck_runner "a carriage return kept inside a span is caught" \
   inertcr 's@^            gsub(/\\r/, " ", text)$@@'
+
+wreck_runner "a member printed around the renderer is caught" \
+  inertmember 's@"\$(members_who_sat "\$1" | inert_each)"@"$(members_who_sat "$1")"@'
+
+wreck_runner "a newline kept inside a span is caught" \
+  inertnl 's@{ text = text (NR > 1 ? " " : "") \$0 }@{ text = text (NR > 1 ? "\\n" : "") $0 }@'
 
 wreck_runner "a worker printed around the renderer is caught" \
   inertworker 's@printf .; worker %s. "\$(inert "\$began_by")"@printf "; worker %s" "$began_by"@'
