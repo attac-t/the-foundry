@@ -30,7 +30,7 @@ main() {
 
     lines_floor_can_pin > "$shaped" \
         || { printf 'FAIL — the gate lines could not be read. This gate read nothing.\n'; exit 3; }
-    gates_in_shape
+    lines_agree
     commands_agree
 
     counts_agree
@@ -111,7 +111,7 @@ suites_on_disk() {
 # Each gate `list` names has a line floor can pin, and each such line is one `list` names. Floor
 # follows a gate's script only from that shape, so a gate in another shape escapes the pin. #1172.
 #
-gates_in_shape() {
+lines_agree() {
     { cut -d' ' -f1 "$shaped"; suites_on_disk; } | sort -u > "$work/in-shape"
     unpinned=$(comm -23 "$listed" "$work/in-shape" | tr '\n' ' ')
     unlisted=$(comm -13 "$listed" "$work/in-shape" | tr '\n' ' ')
