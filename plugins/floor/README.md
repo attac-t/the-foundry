@@ -970,13 +970,13 @@ cannot run, or commits that cannot be listed, stop it the same way.
 at its own sha. A host repairs a reader that cannot run. The pass that began the run stops at 57,
 and any pass after it waits on a person.
 
-**`commit` reads first too, so a run never grades a commit `deliver` must refuse.** A message
-holding a shape is refused at 57 before the commit is made, and `produced` gains no line. A reader
-that cannot run refuses the same way. A pass whose worker meets 57 there stops at its command, 45.
-#1156.
+**`commit` reads the message it is handed first, the same way.** A message holding a shape is
+refused at 57 before the commit is made, and `produced` gains no line. A reader that cannot run
+refuses the same way. A pass whose worker meets 57 there stops at its command, 45. #1156.
 
-**So a credential reaches `deliver` only another way.** A person accepts a commit, a read fails at
-`deliver` alone, or a hook rewrites a message after `commit` read it. `deliver`'s read stays.
+**A credential can still reach `deliver`, four ways.** A person accepts a commit. A read fails at
+`deliver` alone. A hook rewrites a message after `commit` read it. Or a worker's own PATH defeats
+the read, since its command runs in its own shell. `deliver`'s read stays for all four.
 
 | Exit | Means | Remedy |
 |---|---|---|

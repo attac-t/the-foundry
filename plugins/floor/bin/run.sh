@@ -1296,13 +1296,13 @@ commit_work() {
 }
 
 #
-# **No message holding a credential is committed.** It is read before the commit, by the reader
-# `deliver` uses, so a run never grades a commit `deliver` must refuse. #1156.
+# **No message `commit` is handed holding a credential is committed.** It is read first, by the
+# reader `deliver` uses, so a run does not grade a commit `deliver` must refuse for that text. #1156.
 refuse_a_credential_in_the_message() {
-    committed_shape=$(shape_in_the_text "$1") || refuse_an_unread_message
-    [ -n "$committed_shape" ] || return 0
+    handed_shape=$(shape_in_the_text "$1") || refuse_an_unread_message
+    [ -n "$handed_shape" ] || return 0
 
-    note "this message holds $committed_shape, so nothing was committed. Commit again with a message that holds none"
+    note "this message holds $handed_shape, so nothing was committed. Commit again with a message that holds none"
     exit 57
 }
 
