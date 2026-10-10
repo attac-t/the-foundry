@@ -3,7 +3,7 @@
 # `CONTRIBUTING.md`, the workflow and `bin/gates.sh` name the same gates.
 #
 #   sh bin/agree.sh         check
-#   sh bin/agree.sh audit   break it four ways, require each to go red
+#   sh bin/agree.sh audit   break it each way the cases name, and require each to go red
 #
 # **The README advertised seven gates and CI ran six.** `panel` was the missing one, and it was
 # omission rather than decision: the commit that advertised it touched nine files and none was a
@@ -27,6 +27,11 @@ main() {
 
     disagree CONTRIBUTING "$(named_in_contributing)"
     disagree workflow "$(named_in_workflow)"
+
+    lines_floor_can_pin > "$shaped" \
+        || { printf 'FAIL — the gate lines could not be read. This gate read nothing.\n'; exit 3; }
+    lines_agree
+    commands_agree
 
     counts_agree
     projections_agree
@@ -87,7 +92,58 @@ named_in_workflow() {
     ' .github/workflows/gates.yml
 }
 
+# Each gate line floor can pin, as `name interpreter path arguments`. The path is literal after
+# `awk -f` so floor pins this reader too, and a run cannot weaken it unseen. #1172.
+lines_floor_can_pin() { awk -f bin/gate-lines.awk bin/gates.sh; }
+
+# Each plugin that ships a suite, read off the disk. Their one gate line takes its path from a loop.
+suites_on_disk() {
+    for suite in plugins/*/tests/run.sh; do
+        [ -f "$suite" ] || continue
+        suite=${suite%/tests/run.sh}
+        printf '%s\n' "${suite##*/}"
+    done
+}
+
 # --- grading ---
+
+#
+# Each gate `list` names has a line floor can pin, and each such line is one `list` names. Floor
+# follows a gate's script only from that shape, so a gate in another shape escapes the pin. #1172.
+#
+lines_agree() {
+    { cut -d' ' -f1 "$shaped"; suites_on_disk; } | sort -u > "$work/in-shape"
+    unpinned=$(comm -23 "$listed" "$work/in-shape" | tr '\n' ' ')
+    unlisted=$(comm -13 "$listed" "$work/in-shape" | tr '\n' ' ')
+
+    [ -z "$unpinned$unlisted" ] && { printf '  PASS  %s\n' "the gate lines"; return; }
+
+    [ -z "$unpinned" ] || printf '  FAIL  list names a gate with no line floor can pin: %s\n' "$unpinned"
+    [ -z "$unlisted" ] || printf '  FAIL  a gate line list never names: %s\n' "$unlisted"
+    disagreed=$((disagreed + 1))
+}
+
+#
+# Each gate line's whole command, against the commands the workflow runs. When the two part,
+# `bin/gates.sh` is the one that runs, so the line says so and nobody mends the gate to match.
+#
+commands_agree() {
+    sed -n 's/^ *run: //p' .github/workflows/gates.yml | sed 's/ *$//' | sort -u > "$work/run-by-ci"
+    parted=$(commands_the_workflow_never_runs)
+
+    [ -z "$parted" ] && { printf '  PASS  %s\n' "the gate commands"; return; }
+
+    printf '  FAIL  the workflow does not run what bin/gates.sh runs, and bin/gates.sh is what runs:\n'
+    printf '%s\n' "$parted" | sed 's/^/          /'
+    disagreed=$((disagreed + 1))
+}
+
+commands_the_workflow_never_runs() {
+    while read -r name interpreter path rest; do
+        command="$interpreter $path${rest:+ $rest}"
+        grep -qxF "$command" "$work/run-by-ci" || printf '%s runs [%s]\n' "$name" "$command"
+    done < "$shaped"
+}
 
 # Identities, never counts. A count cannot say which gate is missing, nor see one swapped for another.
 disagree() {
@@ -214,23 +270,40 @@ audit() {
     # this exists to catch.
     caught "a harness file edited by hand"        1 agents 's/Anything written down/something else/'
 
+    # The gate lines, #1172. Each reads the new check's own words, since hiding a gate from `list`
+    # already exits 1 through the checks above, and an exit code alone would pass without this one.
+    caught "a gate line floor cannot pin"         1 gates 's|^gate taper  *sh  *bin/taper.sh$|gate taper bin/taper.sh|' \
+        'list names a gate with no line floor can pin: taper'
+    caught "a gate line list never names"         1 gates '$a gate extra sh bin/extra.sh' \
+        'a gate line list never names: extra'
+    caught "a gate command the workflow never runs" 1 gates 's|bin/bytes.sh audit$|bin/bytes.sh|' \
+        'bytes runs [sh bin/bytes.sh]'
+
     [ "$disagreed" -eq 0 ] || return 1
     printf 'THE CHECK CAN FAIL\n'
 }
 
 # `sed` to a new file: the in-place flag is GNU's, and BSD reads its argument as a backup suffix.
 caught() {
-    name=$1; want=$2; target=$3; mutation=$4
+    name=$1; want=$2; target=$3; mutation=$4; words=${5:-}
 
     fresh_lab || { note_failure "$name — no lab"; return 1; }
 
     [ "$target" = none ] || break_it "$target" "$mutation" \
         || { note_failure "$name — the break did not apply"; return 1; }
 
-    sh "$lab/bin/agree.sh" >/dev/null 2>&1; agreed=$?
+    said=$(sh "$lab/bin/agree.sh" 2>&1); agreed=$?
 
     [ "$agreed" -eq "$want" ] || { note_failure "$name — exited $agreed, not $want"; return 1; }
+    it_said "$said" "$words" || { note_failure "$name — never said [$words]"; return 1; }
     printf '  ok    %s\n' "$name"
+}
+
+# A case that names no words reads the exit code alone, as every case did before #1172.
+it_said() {
+    [ -n "$2" ] || return 0
+    case $1 in *"$2"*) return 0 ;; esac
+    return 1
 }
 
 note_failure() {
@@ -264,6 +337,7 @@ mkdir -p "$work" || exit 3
 trap 'rm -rf "$work"' EXIT
 
 listed="$work/listed"
+shaped="$work/shaped"
 lab="$work/lab"
 disagreed=0
 
