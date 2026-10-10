@@ -3389,8 +3389,10 @@ a_change_to_the_rules_is_refused() {
   rules_refused_for rulegone  delete .foundry/practice
   rules_refused_for ruleaway  rename .foundry/practice
 
+  # The fixture's source answers after the push, so the push is what shows the run went through.
   rules_changed_in_a_run rulenone add .foundry/notes.md || { skip "a change beside the rules — could not make the run"; return; }
-  is "a run that changed only a file beside them delivers" "$(code_of floor "$tmp/rulenone" deliver 'a change')" "0"
+  floor "$tmp/rulenone" deliver 'a change' >/dev/null 2>&1
+  is "a run that changed only a file beside them is pushed" "$(remote_refs_of "$tmp/rulenone-remote.git" | grep -c .)" "1"
 
   # A diff that failed must never read as a run that changed none of them.
   rules_changed_in_a_run ruleblind add .foundry/notes.md && mkdir -p "$tmp/ruleblindbin" \
