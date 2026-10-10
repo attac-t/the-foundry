@@ -126,6 +126,10 @@
 #  56  a member's contribution holds a line out of shape, so floor kept it whole and refused it, at
 #      `charter shape` and at `authorise`. Not 21: that is no model answering, and this is one that
 #      answered outside the seven words a contribution is written in
+#  57  a message above the base holds a credential, or none could be read, so `deliver` pushed
+#      nothing. A person rewords it in a new commit, or a host repairs the reader
+#  58  the run changed a file a pass reads its rules from, `.foundry/practice`, `.foundry/gates` or
+#      `.foundry/judged`, or its change could not be read. `deliver` pushed nothing; a person lands it
 #
 # Eight through twelve are one stage and five remedies: write a requirement down, select a target it
 # governs, or start again. Collapsing them would make the exit code say *authorisation refused* and
@@ -1343,6 +1347,35 @@ refuse_foreign_ancestry() {
     printf '%s\n' "$strangers" >&2
     note "  a person runs \`reconcile accept <sha> <reason>\`, in a shell with no FOUNDRY_WORKER"
     exit 32
+}
+
+#
+# **A run's own work may invalidate authority and never create it.** So a run that changed a file a
+# pass reads its rules from is refused before its grade, and a person lands that change. #1101.
+#
+# `:?` keeps a missing base from reading as a run that changed nothing, which would deliver unread.
+refuse_a_change_to_the_rules() {
+    rules_tree=$(unit_work_tree "$1" "$2") || exit 16
+    rules_base=$(recorded_base "$(unit_workspace "$1")" "$(target_slot "$2")")
+
+    changed_rules=$(rules_changed_between "$rules_tree" "${rules_base:?}" "$3") || refuse_an_unread_rule_change
+    [ -n "$changed_rules" ] || return 0
+
+    rules_named=$(joined "$changed_rules" ', ')
+    note "this run changed [$rules_named], which a pass obeys, so nothing was delivered. A person lands that change in a request of their own, against base [$rules_base]"
+    exit 58
+}
+
+# Two trees, limited to the three paths. A file renamed away is named by the path it left, since its
+# new path is outside the limit and nothing pairs the two.
+rules_changed_between() {
+    git -C "$1" diff --name-only "$2" "$3" -- .foundry/practice .foundry/gates .foundry/judged 2>/dev/null
+}
+
+# A diff that failed must never read as a run that changed none of them.
+refuse_an_unread_rule_change() {
+    note "what this run changed could not be read against the files a pass obeys, so nothing was delivered. Repair the checkout, and deliver again"
+    exit 58
 }
 
 # A sha the production record does not hold, and no human has
@@ -3290,7 +3323,8 @@ say_what_is_missing() {
     printf '\nmissing\n'
     say_each_finding "$(unmet_for_delivery "$1" "$2")"
     printf '  not read here, and `deliver` refuses on each: the grant, 18; an item another host\n'
-    printf '  holds, 30; commits the run did not make, 32; a history it cannot trust, 33\n'
+    printf '  holds, 30; commits the run did not make, 32; a history it cannot trust, 33;\n'
+    printf '  a rule file it changed, 58\n'
 }
 
 say_each_finding() {
@@ -5034,8 +5068,8 @@ carry_on_to_a_request() {
 }
 
 #
-# **`deliver`'s code says who can answer it.** 15, 18, 32 and 57 wait on a person: a clause, a
-# grant, a commit to account for, a message to reword. 19 was a send that failed, sent again next wake.
+# **`deliver`'s code says who can answer it.** 15, 18, 32, 57 and 58 wait on a person: a clause, a
+# grant, a commit to account for, a message to reword, a rule to land. 19, a failed send, retries.
 #
 # Nothing in this run can answer any other code, so the run is let go and the pass selects afresh.
 deliver_and_route() {
@@ -5044,7 +5078,7 @@ deliver_and_route() {
 
     case $delivered in
         0)        say_it_was_delivered "$1"; return 0 ;;
-        15|18|32|57) wait_on_a_person "$1" deliver "$delivered" ;;
+        15|18|32|57|58) wait_on_a_person "$1" deliver "$delivered" ;;
         19)       stop_at "$1" deliver 19 ;;
         20|50)    stop_at_the_delivery "$1" "$delivered" ;;
     esac
@@ -5609,6 +5643,7 @@ deliver() {
     refuse_ungranted_delivery "$dir" "$here"
     carrying=$(unit_head "$dir" "$here")
     refuse_foreign_ancestry "$dir" "$here" "$carrying"
+    refuse_a_change_to_the_rules "$dir" "$here" "$carrying"
     hear_and_record_if_introduced "$dir"
     refuse_incomplete "$dir" "$carrying"
     keep_the_brief "$dir" "${2:-}"

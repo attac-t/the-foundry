@@ -998,7 +998,7 @@ plugin_copy_with() {
 a_break_aimed_at_a_moved_line_is_named() {
   local said
   plugin_copy_with applies-moved bin/run.sh \
-    's/^        15|18|32|57) wait_on_a_person/        15|18|32|57|99) wait_on_a_person/' \
+    's/^        15|18|32|57|58) wait_on_a_person/        15|18|32|57|58|99) wait_on_a_person/' \
     || { moot "a moved line — the plant changed nothing, so this proves nothing"; return; }
 
   said=$(breaks_that_change_nothing "$tmp/applies-moved" "$tmp/applies-moved-work" | LC_ALL=C sort)
@@ -3366,7 +3366,7 @@ wreck_runner "a wait on a person with no line is caught" \
   personwaitline '/^wait_on_a_person() {/,/^}/s#^    emit "\$dir" pass.waiting item="\$1" why="\$2" code="\$3"$#    :#'
 
 wreck_runner "a grant deliver asks for, read as nothing a person can answer, is caught" \
-  deliverperson '/^deliver_and_route() {/,/^}/s#^        15|18|32|57) wait_on_a_person#        15|32|57) wait_on_a_person#'
+  deliverperson '/^deliver_and_route() {/,/^}/s#^        15|18|32|57|58) wait_on_a_person#        15|32|57|58) wait_on_a_person#'
 
 wreck_runner "a failed send let go rather than sent again is caught" \
   deliversend '/^deliver_and_route() {/,/^}/s#^        19)       stop_at "\$1" deliver 19 ;;$#        19) ;;#'
@@ -5111,7 +5111,26 @@ wreck_runner "a delivery that pushes before it reads is caught" \
   credlate 's@^    refuse_a_credential_in_the_messages "\$1" "\$2" "\$4"$@PUSH_GOES_HERE@; s@^    push_workspace "\$1" "\$2" "\$branch" "\$4"$@    refuse_a_credential_in_the_messages "$1" "$2" "$4"@; s@^PUSH_GOES_HERE$@    push_workspace "$1" "$2" "$branch" "$4"@'
 
 wreck_runner "a pass that lets 57 go, never waiting on a person, is caught" \
-  credwait 's@^        15|18|32|57) wait_on_a_person@        15|18|32) wait_on_a_person@'
+  credwait 's@^        15|18|32|57|58) wait_on_a_person@        15|18|32|58) wait_on_a_person@'
+
+#
+# **No run delivers a change to a file a pass obeys.** One break per way past it: the refusal never
+# asked, one of the three left out, the limit dropped, a failed read let through, a pass that lets 58 go.
+#
+wreck_runner "a run that changed a rule file delivering anyway is caught" \
+  rulesnever 's@^    refuse_a_change_to_the_rules "\$dir" "\$here" "\$carrying"$@    :@'
+
+wreck_runner "a rule file left out of the diff is caught" \
+  rulesjudged 's@ \.foundry/practice \.foundry/gates \.foundry/judged 2>/dev/null$@ .foundry/practice .foundry/gates 2>/dev/null@'
+
+wreck_runner "a diff that reads every file as a rule is caught" \
+  rulesall 's@ -- \.foundry/practice \.foundry/gates \.foundry/judged 2>/dev/null$@ 2>/dev/null@'
+
+wreck_runner "a rule diff whose failed read is let through is caught" \
+  rulesunread 's@ "\$3") || refuse_an_unread_rule_change$@ "$3") || return 0@'
+
+wreck_runner "a pass that lets 58 go, never waiting on a person, is caught" \
+  ruleswait 's@^        15|18|32|57|58) wait_on_a_person@        15|18|32|57) wait_on_a_person@'
 
 # No line leaves its fence: three backticks always, or no more than the longest run the text holds.
 wreck_runner "a fence of three around a longer backtick run is caught" \

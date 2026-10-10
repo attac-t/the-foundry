@@ -3379,6 +3379,66 @@ a_delivery_that_cannot_read_its_messages_pushes_nothing() {
 a_delivery_that_cannot_read_its_messages_pushes_nothing
 
 #
+# #1101. A run whose own work changed a file a pass obeys is refused at 58, before its grade. Each
+# case reads the code and the file named, so a guard that drops a path cannot hide behind 7 or 15.
+#
+a_change_to_the_rules_is_refused() {
+  rules_refused_for ruleedit  edit   .foundry/practice
+  rules_refused_for rulegates edit   .foundry/gates
+  rules_refused_for ruleadd   add    .foundry/judged
+  rules_refused_for rulegone  delete .foundry/practice
+  rules_refused_for ruleaway  rename .foundry/practice
+
+  rules_changed_in_a_run rulenone add .foundry/notes.md || { skip "a change beside the rules — could not make the run"; return; }
+  is "a run that changed only a file beside them delivers" "$(code_of floor "$tmp/rulenone" deliver 'a change')" "0"
+
+  # A diff that failed must never read as a run that changed none of them.
+  rules_changed_in_a_run ruleblind add .foundry/notes.md && mkdir -p "$tmp/ruleblindbin" \
+    && a_git_that_cannot_diff_the_rules > "$tmp/ruleblindbin/git" && chmod +x "$tmp/ruleblindbin/git" \
+    || { skip "a rule diff that cannot be read — could not put a git on the path"; return; }
+  is  "a run whose rule diff cannot be read is refused" \
+      "$( PATH="$tmp/ruleblindbin:$PATH"; code_of floor "$tmp/ruleblind" deliver 'a change' )" "58"
+  has "and says it could not read them" "$( PATH="$tmp/ruleblindbin:$PATH"; floor_says "$tmp/ruleblind" deliver 'a change' )" \
+      "what this run changed could not be read against the files a pass obeys"
+}
+
+# A `git` that fails the diff of the three files alone, as one that cannot read a tree would.
+a_git_that_cannot_diff_the_rules() {
+  printf '#!/bin/sh\ncase "$*" in *"diff --name-only"*".foundry/practice"*) exit 128 ;; esac\nexec %s "$@"\n' "$(command -v git)"
+}
+
+# The run `$1`, whose one commit makes `$2` of `$3`, delivered: refused at 58, naming `$3`, pushing nothing.
+rules_refused_for() {
+  rules_changed_in_a_run "$1" "$2" "$3" || { skip "a run that made $2 of $3 — could not make the run"; return; }
+  refs_before=$(remote_refs_of "$tmp/$1-remote.git")
+
+  is  "a run that made $2 of $3 is refused before its grade" "$(code_of floor "$tmp/$1" deliver 'a change')" "58"
+  has "and the line names $3" "$(floor_says "$tmp/$1" deliver 'a change')" "this run changed [$3], which a pass obeys"
+  is  "and the remote's refs are as they were" "$(remote_refs_of "$tmp/$1-remote.git")" "$refs_before"
+}
+
+# A run that can deliver, then one commit through floor making `$2` of `$3`, and its gate run there.
+rules_changed_in_a_run() {
+  a_run_to_deliver "$1" 'body record
+' || return 1
+  rules_slot=$(only_slot "$(floor "$tmp/$1" path)/units/01/workspace") || return 1
+
+  a_rule_change "$rules_slot" "$2" "$3" && floor "$tmp/$1" commit "chore: $2 $3" >/dev/null 2>&1 || return 1
+  floor "$tmp/$1" gates >/dev/null 2>&1
+  return 0
+}
+
+# `$2` of the file `$3` in the checkout `$1`, staged.
+a_rule_change() {
+  case $2 in
+    add|edit) printf '# a line the run wrote\n' >> "$1/$3" && git -C "$1" add "$3" ;;
+    delete)   git -C "$1" rm -q "$3" ;;
+    rename)   git -C "$1" mv "$3" "$3.old" ;;
+  esac
+}
+a_change_to_the_rules_is_refused
+
+#
 # #1153. An `awk` that answers the name read for `$1`, `home` or `address`, with no word and exit 1,
 # as BusyBox's does on its own error. Its program prints a word, and the names it reads come in `names`.
 #
@@ -8643,6 +8703,29 @@ a_pass_waits_on_a_person_when_a_message_holds_a_credential() {
 a_pass_waits_on_a_person_when_a_message_holds_a_credential
 
 #
+# #1101. A pass whose worker grants itself more in the practice stops at `deliver` with 58. The next
+# wake meets 58 again and waits on a person, who lands that change. Nothing reaches the remote.
+#
+a_pass_waits_on_a_person_when_its_run_changed_the_rules() {
+  git init -q --bare "$tmp/remotes/acme/grantpass.git" 2>/dev/null \
+    || { skip "a pass that changed the rules — git could not make a bare repo here"; return; }
+  a_resumable_repo grantpass 1709 'https://github.com/acme/grantpass.git' 'deliver https://github.com/acme/grantpass.git' \
+    || { skip "a pass that changed the rules — git could not make a repo here"; return; }
+  granting_worker="printf 'authorise  someone\\n' >> .foundry/practice && git add .foundry/practice && sh '$runner' commit 'chore: grant someone'"
+
+  is  "a pass whose worker changes the practice stops at deliver, 58" \
+      "$(FOUNDRY_PASS_COMMAND=$granting_worker code_of floor "$tmp/grantpass" pass)" "58"
+  has "and writes the stop with its code" "$(last_pass_line_in "$tmp/grantpass")" "pass.stopped item=1709 why=deliver code=58"
+  is  "the next wake resumes it, and waits on a person" \
+      "$(FOUNDRY_PASS_COMMAND=true code_of floor "$tmp/grantpass" pass)" "47"
+  has "and says it waits at deliver, on 58" "$(last_pass_line_in "$tmp/grantpass")" "pass.waiting item=1709 why=deliver code=58"
+  is  "and nothing reached the remote" "$(remote_refs_of "$tmp/remotes/acme/grantpass.git")" ""
+
+  rm -rf "$src/claims/1709" "$src/labels/1709" "$src/items/1709"
+}
+a_pass_waits_on_a_person_when_its_run_changed_the_rules
+
+#
 # **A change to either setting reaches the next pass's record.** The host names the cadence, the
 # repository the rule. A person pushes the rule after the host started and moves no ref by hand, and
 # the next pass fetches it before it selects. #997's fourth box, and #1060's first.
@@ -13728,6 +13811,7 @@ a_run_is_read_in_one_status() {
   has "and nothing complete would name"              "$after" "nothing \`complete\` would name"
   has "while it names what it never read"            "$after" "the grant, 18"
   has "  and the rest of it"                         "$after" "a history it cannot trust, 33"
+  has "  and a rule file the run changed"            "$after" "a rule file it changed, 58"
   lacks "and it never says the run may deliver"      "$after" "may deliver"
   has   "and with nothing missing it exits 0 too"      "$after" "exit=0"
 
@@ -13744,7 +13828,7 @@ a_run_is_read_in_one_status() {
   # short, so the list is read from `deliver` itself.
   is "status names each refusal deliver makes before its grade" \
      "$(awk '/^deliver\(\) \{/,/^}/' "$runner" | grep -o 'refuse_[a-z_]*' | sed '/^refuse_incomplete$/q' | tr '\n' ' ')" \
-     "refuse_unreadable_run refuse_an_item_another_host_holds refuse_ungranted_delivery refuse_foreign_ancestry refuse_incomplete "
+     "refuse_unreadable_run refuse_an_item_another_host_holds refuse_ungranted_delivery refuse_foreign_ancestry refuse_a_change_to_the_rules refuse_incomplete "
 
   # A run `complete` cannot read, `status` cannot either.
   mv "$d" "$(dirname "$d")/reading-renamed"
