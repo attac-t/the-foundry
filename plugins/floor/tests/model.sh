@@ -2878,8 +2878,8 @@ a_request_names_what_the_grader_accepts() {
 
   body=$(cat "$d/body" 2>/dev/null)
   has   "a judged clause is named by the panel that approved it" "$body" "Judged \` a stranger can read it \`: judged by \` a-reviewer \`"
-  lacks "never by a machine row the grader skips"                "$body" "Judged \`a stranger can read it\`: machine"
-  lacks "nor by the handoff recorded after it"                   "$body" "Judged \`a stranger can read it\`: handed"
+  lacks "never by a machine row the grader skips"                "$body" "Judged \` a stranger can read it \`: machine"
+  lacks "nor by the handoff recorded after it"                   "$body" "Judged \` a stranger can read it \`: handed"
 }
 a_request_names_what_the_grader_accepts
 
@@ -3124,12 +3124,31 @@ below_the_record_each_judge_is_named_with_its_report() {
 below_the_record_each_judge_is_named_with_its_report
 
 #
-# #1127 and #1128. Every field floor did not write, set hostile, sits in a span of its own. A reader
-# keeping CommonMark's own closing rule finds no token live in the whole body; it never asks `inert`.
+# A run judged by one panel member, `$2`, whose name need not be a file's: its judge is `bin/judge.sh`.
+# The clause is `$3`, and `$4` is the worker `new` records.
+a_hostile_panel_run() {
+  git init -q --bare "$tmp/$1-remote.git" 2>/dev/null \
+    && make_repo "$tmp/$1" main && set_origin "$tmp/$1" "https://github.com/acme/$1.git" \
+    && mkdir -p "$tmp/$1/.foundry" "$tmp/$1/bin" \
+    && commit_file "$tmp/$1" .foundry/gates 'tests  true
+' && commit_file "$tmp/$1" bin/judge.sh "$(a_judge_reporting "$tmp/$1-judge.said")" \
+    && commit_file "$tmp/$1" .foundry/judged "$(printf 'reach  %s  sh bin/judge.sh\n%s  %s' "$2" "$2" "$3")
+" || return 1
+
+  ( cd "$tmp/$1" && FOUNDRY_HOME="$home" FOUNDRY_RUN="" FOUNDRY_WHO=ada@example.com \
+      FOUNDRY_WORKER="$4" sh "$runner" new "Judged by a hostile panel" >/dev/null 2>&1 )
+  deliverable_from "$tmp/$1" "$1"
+}
+
 #
+# #1127 and #1128. Every field floor did not write, set hostile, sits in a span of its own. A reader
+# keeping CommonMark's own rules finds no token live in the whole body; it never asks `inert`.
+#
+# The judge's name holds a run of two, so its line opens on three backticks, which CommonMark reads
+# inline. A name cannot hold a space, so it carries a mention and never a closing word.
 a_hostile_record_links_nothing() {
-  printf 'Found it.\nVERDICT: approve\n' > "$tmp/hostile-one.said"
-  panel_clause='a`b @ghost fixes #1128 reads it' a_panel_run hostile 'Model `x` @ghost fixes #1127' one \
+  printf 'Found it.\nVERDICT: approve\n' > "$tmp/hostile-judge.said"
+  a_hostile_panel_run hostile 'j``k@ghost' 'a`b @ghost fixes #1128 reads it' 'Model `x` @ghost fixes #1127' \
     || { skip "a hostile record — git could not make a repo here"; return; }
   floor "$tmp/hostile" judged >/dev/null 2>&1
   floor "$tmp/hostile" deliver 'a change' >/dev/null 2>&1
@@ -3139,16 +3158,18 @@ a_hostile_record_links_nothing() {
   is  "and no hostile token in it sits outside a span" "$(live_outside_spans "$hostile_body")" ""
   has "the worker is one span, its backtick inside it" "$hostile_body" "; worker \`\` Model \`x\` @ghost fixes #1127 \`\`"
   has "the clause is one span, its backtick inside it" "$hostile_body" "\`\` a\`b @ghost fixes #1128 reads it \`\`"
+  has "the judge is one span, its run of two inside it" "$hostile_body" "\`\`\` j\`\`k@ghost \`\`\` on \`\` a\`b"
   is  "and the reader names a token left bare" "$(live_outside_spans 'judged by @ghost fixes #1128' | grep -c .)" "1"
+  is  "and reads a fence whose line holds a backtick as inline" "$(live_outside_spans '``` j``k ``` on x @ghost' | grep -c .)" "1"
 }
 
 #
-# Every line of `$1` holding a mention or a closing word outside a code span or a fenced block. A span
+# Every line of `$1` holding a mention or an issue outside a code span or a fenced block. A span
 # opens on a run of backticks and closes only on the next run of that length, as CommonMark reads it.
 #
 live_outside_spans() {
   printf '%s\n' "$1" | LC_ALL=C awk '
-    !fenced && /^```/ { match($0, /^`+/); opened = RLENGTH; fenced = 1; next }
+    !fenced && /^```/ { match($0, /^`+/); if (substr($0, RLENGTH + 1) !~ /`/) { opened = RLENGTH; fenced = 1; next } }
     fenced { if (match($0, /^`+/) && RLENGTH >= opened && substr($0, RLENGTH + 1) ~ /^[ \t]*$/) fenced = 0; next }
     { line = $0; bare = ""
       while (match(line, /`+/)) {
@@ -3156,7 +3177,7 @@ live_outside_spans() {
         line = past_the_span(line, run)
       }
       bare = bare line
-      if (bare ~ /@ghost|fixes #[0-9]/) print bare }
+      if (bare ~ /@ghost|#[0-9]/) print bare }
     function past_the_span(rest, run,    seen) {
       seen = rest
       while (match(seen, /`+/)) { if (RLENGTH == run) return substr(seen, RSTART + RLENGTH); seen = substr(seen, RSTART + RLENGTH) }
@@ -3170,9 +3191,16 @@ a_hostile_record_links_nothing
 # #1127. The renderer alone, lifted from the runner under test, on each shape GitHub was asked about.
 # Each expected span is one GitHub rendered inert, never one worked out by the renderer's own sums.
 #
-inert_from_the_runner() { awk '/^inert\(\) \{/,/^}/' "$runner"; }
+# Each function named, as the runner under test defines it. One written on one line ends there.
+functions_from_the_runner() {
+  for lifted in "$@"; do
+    awk -v f="$lifted() {" '
+      !on && index($0, f) == 1 { print; on = ($0 !~ /\}[ \t]*$/); next }
+      on { print; if ($0 ~ /^}/) on = 0 }' "$runner"
+  done
+}
 
-a_shape_stays_in_its_span() { is "$1" "$( eval "$(inert_from_the_runner)"; inert "$2" )" "$3"; }
+a_shape_stays_in_its_span() { is "$1" "$( eval "$(functions_from_the_runner inert)"; inert "$2" )" "$3"; }
 
 each_shape_stays_in_its_span() {
   a_shape_stays_in_its_span "a backtick inside widens the fence"   'a`b @ghost'    '`` a`b @ghost ``'
@@ -3183,6 +3211,24 @@ each_shape_stays_in_its_span() {
   a_shape_stays_in_its_span "three in a row take a fence of four"  'a ``` b @ghost' '```` a ``` b @ghost ````'
 }
 each_shape_stays_in_its_span
+
+#
+# #1127. The shaped line, lifted from the runner under test with what it calls, over seats whose
+# sitting member and missing label are hostile. No pass is shaped here; the line is what is read.
+#
+the_shaped_line_links_nothing() {
+  mkdir -p "$tmp/hostileseats/shaped" \
+    && printf '%s sat\n%s left %s\n' 'ann`x`@ghost' 'bob@ghost' 'needs``y``#1128' > "$tmp/hostileseats/shaped/seats" \
+    || { skip "a hostile shaped line — could not write its seats"; return; }
+  shaped=$( eval "$(functions_from_the_runner inert inert_each joined or_none seats_file members_who_sat \
+              who_a_label_left_out say_who_shaped_it)"; TAB=$(printf '\t'); say_who_shaped_it "$tmp/hostileseats" )
+
+  has "the shaped line was printed" "$shaped" "- shaped by"
+  is  "and nothing hostile in it sits outside a span" "$(live_outside_spans "$shaped")" ""
+  has "the sitting member is one span" "$shaped" "\`\` ann\`x\`@ghost \`\`"
+  has "and so is the one a label left out, and the label" "$shaped" "\` bob@ghost \`, no label \`\`\` needs\`\`y\`\`#1128 \`\`\`"
+}
+the_shaped_line_links_nothing
 
 # #1075. A report is carried only as its receipt stamped it. One changed since reads as one line.
 a_report_changed_since_its_receipt_is_not_carried() {
