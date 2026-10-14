@@ -97,7 +97,7 @@ say_what_drives_itself() {
 #
 # Typed, because a `drive` line carries a break name and `shell` has three of them. A derived list
 # would have to guess which gate `shell-taper` belongs to, and guessing is what this refuses.
-ACCOUNTED="frontmatter versions repeats shell taper hosts providers secrets hooks hookfiles judged
+ACCOUNTED="frontmatter versions repeats shell taper hosts providers rulefiles secrets hooks hookfiles judged
 bytes comments codex host judges anthropic stale basing durable unnamed
 kernel signal panel floor
 bumps"
@@ -153,6 +153,11 @@ every_break() {
     drive providers plugins/floor/lib/source-dir.sh \
         'a_vendor >> plugins/floor/lib/source-dir.sh' \
         'sh bin/providers.sh'
+
+    # A fourth file a pass would obey, named where floor reads it and refused nowhere. #1184.
+    drive rulefiles plugins/floor/lib/source.sh \
+        'a_rule_file_read >> plugins/floor/lib/source.sh' \
+        'sh bin/rulefiles.sh'
 
     # A judge's name where core decides. The seam was held on discipline alone until a gate gave
     # it an exit code, and the file that decides about judges is the one it would land in.
@@ -324,6 +329,9 @@ a_host() { printf '\n[ -f /.dockerenv ] && inside_a_container=1\n'; }
 # A vendor named where core decides something, never where a comment explains the seam. The
 # resolver may carry this very line; `source-dir.sh` may not.
 a_vendor() { printf '\ncase $remote in *github.com*) : ;; esac\n'; }
+
+# A read of a file under `.foundry/` that `deliver` does not refuse, in code rather than a comment.
+a_rule_file_read() { printf '\nbench_in() { cat "$1/.foundry/bench"; }\n'; }
 
 a_judge_name() { printf '\ncase $reach in anthropic) : ;; esac\n'; }
 

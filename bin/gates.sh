@@ -242,6 +242,9 @@ gate hosts       sh   bin/hosts.sh
 # the adapter — and a gate grading two rules under one name is what `vocabulary.md` refuses.
 gate providers   sh   bin/providers.sh
 
+# The files a pass obeys, named where floor reads them and where `deliver` refuses them. #1184.
+gate rulefiles   sh   bin/rulefiles.sh audit
+
 #
 # The judge seam, and it is not `providers`. That gate grades one rule with one exception list, and
 # a gate grading two rules under one name is what `vocabulary.md` refuses.
