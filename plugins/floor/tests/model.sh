@@ -2322,6 +2322,7 @@ third  true
 
   is "a gate the host cannot run gets no line, and the gate before it keeps its own" \
      "$(gate_lines "$tmp/say3")" "floor: gate [first] passed|"
+  is "and that gate ends the pass on 21" "$(code_of floor "$tmp/say3" gates)" "21"
 }
 gates_say_what_they_ran
 
