@@ -8393,7 +8393,8 @@ is_a_panel_clause() { panel_clauses "$1" | grep -qxF -e "$2"; }
 # leaves only the subshell.
 #
 hear_the_item() {
-    heard_hands=$(hands_named "$1") || refuse_a_run_with_no_base
+    heard_base=$(bootstrap_base "$1") || refuse_a_run_with_no_base
+    heard_hands=$(hands_named "$heard_base") || refuse_an_unreadable_base "$heard_base"
     refuse_with_no_hand "$heard_hands"
 
     speakers_of "$(item_id "$1")"
@@ -8426,13 +8427,13 @@ holds_a_clause_nothing_derived() { [ -n "$(introduced_clauses "$(charter_file "$
 # The hands a repository names to answer: every `authorise` line in `.foundry/practice`, read at the
 # run's base as grants are, so a worker's own commit names nobody. One a line, each once, folded.
 #
-# **1 for a run that recorded no base**, never nothing: an empty answer read as *the base names no
-# hand*, and there is no base to say so. #1160.
+# **1 when the base cannot be read**, never nothing: an empty answer read as *the base names no
+# hand*, which only a base that was read can say. #1160.
 #
 hands_named() {
-    base=$(bootstrap_base "$1") || return 1
+    heard_practice=$(practice_at_base "$1") || return 1
 
-    practice_at_base "$base" | hands_in
+    printf '%s\n' "$heard_practice" | hands_in
 }
 
 # The hands a practice names: each word after `authorise`, folded, each once.

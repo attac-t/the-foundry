@@ -267,7 +267,7 @@ Edit a rule, then run it — a row typed by hand into one file is the drift noth
 | `versions` | a plugin the manifest lists cannot say what version it is |
 | `bumps` | a merge landed two changes to one plugin under one version. Git catches the loud case, where the sides disagree; this catches the quiet one, where they agree |
 | `repeats` | a sentence appears verbatim in two files. It reads every `.md` bar a debt list, so a new file is graded the day it lands |
-| `shell` | shipped shell takes an `else`, or a function body passes 40 lines |
+| `shell` | shipped shell takes an `else`, a function body passes 40 lines, a pipe hides a tool's failure, or a function a caller captures answers a failure with a bare `return 0` and no `# empty:` says why |
 | `hosts` | floor's `bin`, `lib` or `hooks` names a host in code. A comment may name one; code may not |
 | `providers` | the same three name a vendor in code. The resolver and the adapter may; nothing else |
 | `judges` | floor's core names a judge. An adapter may; core may not |

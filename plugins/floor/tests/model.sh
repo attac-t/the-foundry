@@ -4042,6 +4042,24 @@ a_run_with_no_base_is_refused_for_it() {
 }
 a_run_with_no_base_is_refused_for_it
 
+# #1160's judge: a base the run recorded and git cannot give is refused for that, never for a hand.
+a_base_that_cannot_be_read_is_refused_for_it() {
+  make_repo "$tmp/lostbase" main && set_origin "$tmp/lostbase" 'https://github.com/acme/lostbase.git' \
+    && commit_file "$tmp/lostbase" README 'a base' \
+    || { skip "a base that cannot be read — git could not make a repo here"; return; }
+
+  lost=$(floor "$tmp/lostbase" new "Lost base")
+  floor "$tmp/lostbase" charter introduce Decided "ship on friday" >/dev/null 2>&1
+  awk '{ $3 = "0123456789012345678901234567890123456789" } 1' "$lost/bootstrap" > "$lost/bootstrap.new" \
+    && mv "$lost/bootstrap.new" "$lost/bootstrap"
+  said=$(floor_says "$tmp/lostbase" complete)
+
+  has   "a base git cannot give is refused for the base" "$said" "cannot be read, so nothing can say what it names"
+  lacks "never for a hand it could not read"             "$said" "names no hand"
+  is    "and on 6, where it said 49" "$(code_of floor "$tmp/lostbase" complete)" "6"
+}
+a_base_that_cannot_be_read_is_refused_for_it
+
 #
 # The workspace — one isolated checkout per selected target. Isolated means a clone: a worktree
 # shares `.git` with the checkout it came from, so a worker could move the source's refs.

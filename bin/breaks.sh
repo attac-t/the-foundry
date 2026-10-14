@@ -95,7 +95,7 @@ say_what_drives_itself() {
 # of them is a gate nobody has proved can fail. That state was invisible: the header said five, the
 # file drove nine, and a reader subtracting one from the other got four gates wrong.
 #
-# Typed, because a `drive` line carries a break name and `shell` has two of them. A derived list
+# Typed, because a `drive` line carries a break name and `shell` has three of them. A derived list
 # would have to guess which gate `shell-taper` belongs to, and guessing is what this refuses.
 ACCOUNTED="frontmatter versions repeats shell taper hosts providers secrets hooks hookfiles judged
 bytes comments codex host judges anthropic stale basing durable unnamed
