@@ -101,8 +101,8 @@ a_session_named() {
     || { skip "a session named — git could not make a worktree here"; return; }
   mkdir -p "$tmp/wt/src"
 
-  is "named a worktree from the main checkout, it answers that branch in full" \
-     "$(resolve_for "$tmp/main" "$tmp/wt" .claude/memory)" "$tmp/wt/.claude/memory/feat/wt"
+  is "named a worktree from the main checkout, it answers the repository's store for that branch" \
+     "$(resolve_for "$tmp/main" "$tmp/wt" .claude/memory)" "$tmp/main/.claude/memory/feat/wt"
   is "an active run still outranks a folder named" \
      "$(resolve_for "$tmp/main" "$tmp/wt" .claude/memory "$tmp/run")" "$tmp/run/memory"
   is "an absolute base stays as given" \
@@ -115,16 +115,92 @@ a_session_named() {
      "$(resolve_for "$tmp/main" "$tmp/wt" '\mem')" '\mem/feat/wt'
   is "a folder that is gone answers the base joined to it" \
      "$(resolve_for "$tmp/main" "$tmp/gone" .claude/memory)" "$tmp/gone/.claude/memory"
-  is "a subdirectory named reads the path from there, not from its tree's root" \
-     "$(resolve_for "$tmp/main" "$tmp/wt/src" .claude/memory)" "$tmp/wt/src/.claude/memory/feat/wt"
+  is "a subdirectory named answers the same store, never a folder under itself" \
+     "$(resolve_for "$tmp/main" "$tmp/wt/src" .claude/memory)" "$tmp/main/.claude/memory/feat/wt"
 
-  # Where a hook already runs in the folder the session works in, as the CLI's do, nothing moves.
-  is "named the folder it runs in, a relative base answers today's path, in full" \
-     "$(resolve_for "$tmp/wt" "$tmp/wt" .claude/memory)" "$tmp/wt/$(resolve "$tmp/wt" .claude/memory)"
+  # Where a hook already runs in the folder the session works in, as the CLI's do, it is one store.
+  is "named the folder it runs in, a relative base answers the store too" \
+     "$(resolve_for "$tmp/wt" "$tmp/wt" .claude/memory)" "$tmp/main/.claude/memory/feat/wt"
   is "and an absolute base answers exactly what it does today" \
      "$(resolve_for "$tmp/wt" "$tmp/wt" "$tmp/mem")" "$(resolve "$tmp/wt" "$tmp/mem")"
 }
 a_session_named
+
+# --- one store per repository, #1161 ---
+
+# Memory a worktree already holds is read where it is, until the store has a folder for the branch.
+memory_already_in_a_worktree() {
+  a_checkout_and_its_worktree "$tmp/kept" "$tmp/kept-wt" \
+    || { skip "memory in a worktree — git could not make a worktree here"; return; }
+  mkdir -p "$tmp/kept/src" "$tmp/kept-wt/.claude/memory/feat/wt"
+
+  is "the main checkout and its subdirectory name one store" \
+     "$(resolve_for "$tmp/kept/src" "$tmp/kept/src" .claude/memory)" "$tmp/kept/.claude/memory/main"
+  is "a worktree's own memory is read where it is, while the store has none for its branch" \
+     "$(resolve_for "$tmp/kept-wt" "$tmp/kept-wt" .claude/memory)" "$tmp/kept-wt/.claude/memory/feat/wt"
+
+  mkdir -p "$tmp/kept/.claude/memory/feat/wt"
+  is "and once the store has the branch, the store wins" \
+     "$(resolve_for "$tmp/kept-wt" "$tmp/kept-wt" .claude/memory)" "$tmp/kept/.claude/memory/feat/wt"
+}
+memory_already_in_a_worktree
+
+# The README's command, run as a person runs it, so a removed worktree keeps nothing the store needs.
+a_person_moves_it() {
+  a_checkout_and_its_worktree "$tmp/moved" "$tmp/moved-wt" \
+    && mkdir -p "$tmp/moved-wt/.claude/memory/feat/wt" \
+    && printf 'Ship it\n' > "$tmp/moved-wt/.claude/memory/feat/wt/working.md" \
+    || { skip "a person's move — git could not make a worktree here"; return; }
+
+  ( cd "$tmp/moved-wt" \
+    && b=$(git branch --show-current) && m=$(git rev-parse --path-format=absolute --git-common-dir) && m=${m%/.git} \
+    && mkdir -p "$(dirname "$m/.claude/memory/$b")" && mv ".claude/memory/$b" "$m/.claude/memory/$b" )
+  git -C "$tmp/moved" worktree remove --force "$tmp/moved-wt" >/dev/null 2>&1
+
+  is "a worktree moved by the README's command and removed keeps its memory in the store" \
+     "$(cat "$tmp/moved/.claude/memory/feat/wt/working.md" 2>/dev/null)" "Ship it"
+}
+a_person_moves_it
+
+# Two bare repositories side by side, each with a worktree on `main`.
+two_bare_repositories() {
+  for r in one two; do
+    git init -q --bare "$tmp/bares/$r.git" \
+      && git clone -q "$tmp/bares/$r.git" "$tmp/seed-$r" >/dev/null 2>&1 \
+      && git -C "$tmp/seed-$r" -c user.email=a@b.c -c user.name=a commit -q --allow-empty -m x \
+      && git -C "$tmp/seed-$r" push -q origin HEAD:main >/dev/null 2>&1 \
+      && git -C "$tmp/bares/$r.git" worktree add "$tmp/bare-wt-$r" main >/dev/null 2>&1 || return 1
+  done
+}
+
+# Two submodules of one project, each on a branch.
+two_submodules() {
+  for r in one two; do
+    git init -q "$tmp/sub-src-$r" \
+      && git -C "$tmp/sub-src-$r" -c user.email=a@b.c -c user.name=a commit -q --allow-empty -m x || return 1
+  done
+  git init -q "$tmp/super" || return 1
+  for r in one two; do
+    git -C "$tmp/super" -c protocol.file.allow=always submodule add "$tmp/sub-src-$r" "$r" >/dev/null 2>&1 \
+      && git -C "$tmp/super/$r" checkout -q -B main || return 1
+  done
+}
+
+two_repositories_never_share_one() {
+  if two_bare_repositories; then
+    is "two bare repositories' worktrees each name their own store" \
+       "$(resolve_for "$tmp/bare-wt-one" "$tmp/bare-wt-one" .claude/memory) $(resolve_for "$tmp/bare-wt-two" "$tmp/bare-wt-two" .claude/memory)" \
+       "$tmp/bare-wt-one/.claude/memory/main $tmp/bare-wt-two/.claude/memory/main"
+  else
+    skip "two bare repositories — git could not make them here"
+  fi
+
+  two_submodules || { skip "two submodules — git could not make them here"; return; }
+  is "two submodules of one project each name their own store" \
+     "$(resolve_for "$tmp/super/one" "$tmp/super/one" .claude/memory) $(resolve_for "$tmp/super/two" "$tmp/super/two" .claude/memory)" \
+     "$tmp/super/one/.claude/memory/main $tmp/super/two/.claude/memory/main"
+}
+two_repositories_never_share_one
 
 # --- the objective ---
 

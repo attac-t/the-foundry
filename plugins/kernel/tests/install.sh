@@ -252,6 +252,10 @@ a_worktree_session() {
   is  "and with the worktree named, exactly the same" \
       "$(fire_in "$tmp/wt" remember.sh "$(in_wt '"source":"startup",')")" \
       "$(fire_in "$tmp/wt" remember.sh '{"source":"startup"}')"
+
+  # Preflight names no session, so inside a repository it is answered as before. #1161.
+  is  "preflight is silent inside a repository too" \
+      "$(fire_in "$tmp/main" preflight.sh '{"source":"startup"}')" ""
 }
 a_worktree_session
 

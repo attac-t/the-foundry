@@ -177,9 +177,24 @@ git branch?       → .claude/memory/<branch>
 otherwise         → .claude/memory
 ```
 
-**The hooks ask git in the folder the session works in**, which each payload names as `cwd`. They
-print a full path under that folder, unless a run or a full `CLAUDE_MEMORY_DIR` names the path. The
+**The hooks ask git in the folder the session works in**, which each payload names as `cwd`. The
 desktop app runs every hook in the main checkout, and only `cwd` names the worktree.
+
+**A repository keeps one store**, in the checkout beside its `.git`. Every worktree and every
+subfolder of it names that store for a branch. A bare repository or a submodule keeps its git folder
+elsewhere, so each answers its own top instead, and two repositories never share one. A run, or a
+full `CLAUDE_MEMORY_DIR`, still names the path.
+
+**Memory a worktree already holds is read where it is**, while the store has no folder for that
+branch. No hook moves it. To move it, run this from the worktree's top:
+
+```sh
+b=$(git branch --show-current); m=$(git rev-parse --path-format=absolute --git-common-dir); m=${m%/.git}
+mkdir -p "$(dirname "$m/.claude/memory/$b")" && mv ".claude/memory/$b" "$m/.claude/memory/$b"
+```
+
+It keeps a branch's parent folder: a plain `mv` of `foundry/x` would land at `x`, where nothing
+looks. Run it before removing the worktree.
 
 One variable is the whole handshake with [floor](../floor/README.md). kernel never learns where a
 run is kept and never calls floor, so each still works with the other uninstalled. `FOUNDRY_RUN`
