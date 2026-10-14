@@ -1,13 +1,13 @@
 # Contributing
 
-25 gates. Run them before you open a pull request:
+26 gates. Run them before you open a pull request:
 
 ```bash
-sh bin/gates.sh                 # all 25, here
+sh bin/gates.sh                 # all 26, here
 sh bin/gates.sh fast            # every gate but the plugin suites: before a judge round or a grade
 sh bin/agree.sh                 # this table, the workflow, gates.sh and every harness file
-sh bin/gates.sh linux           # the same 25 where `sh` is dash
-sh bin/host.sh <the recipe>     # the same 25 from a clone — see below
+sh bin/gates.sh linux           # the same 26 where `sh` is dash
+sh bin/host.sh <the recipe>     # the same 26 from a clone — see below
 ```
 
 Leave `agree` out of your run and a PR can still go red on a check this file never mentioned — the
@@ -273,6 +273,7 @@ Edit a rule, then run it — a row typed by hand into one file is the drift noth
 | `judges` | floor's core names a judge. An adapter may; core may not |
 | `secrets` | a build recipe names a secret in `ENV`, `ARG`, `COPY` or `ADD`. It reads the recipe, never the built image |
 | `hooks` | a hook this repository ships stops answering. It drives each one against the calls it has to judge |
+| `hookfiles` | a plugin's `hooks.json` holds a top-level key but `hooks` and `description`, holds no `hooks`, or none can be found. It reads by depth, never by indent |
 | `taper` | a three-line comment paragraph does not narrow by three, and nothing names it |
 | `comments` | a public comment carrying the seam's marker breaks a rule the seam applies |
 | `stale` | the honest page cites an issue that closed, and nothing says it is history |
@@ -315,7 +316,7 @@ no such bit.
 
 **What they do not check:** that `laravel-ddd`, `laravel-playbook`, `pest` or `product` still load,
 or that their skills say anything true. Those four ship no code, so there is nothing to run — but
-nothing here reads them either. Green means 25 gates passed. For those four plugins it does not
+nothing here reads them either. Green means 26 gates passed. For those four plugins it does not
 mean the change works.
 
 **Whether their guidance has aged is answered, not gated.** Each README that teaches a version names
