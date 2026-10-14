@@ -239,6 +239,10 @@ audit_the_lib_scripts() {
   # The folder a hook names, dropped: memory is read where the hook runs again. #1137.
   wreck_lib "a resolver that drops the session's folder is caught" nosess resolve-memory.sh 's|SESSION="${1:-}"|SESSION=|' "named a worktree from the main checkout, it answers the repository's store for that branch"
 
+  # One store per repository, #1161: the anchor read from any common dir, and the worktree's own memory ignored.
+  wreck_lib "a resolver that anchors beside any common dir is caught" anyroot resolve-memory.sh 's|\*/\.git) printf|*) printf|' "two bare repositories' worktrees each name their own store"
+  wreck_lib "a resolver that skips a worktree's own memory is caught" noown resolve-memory.sh 's|\[ ! -d "$store" \] && \[ -d "$own" \] &&|false \&\&|' "a worktree's own memory is read where it is, while the store has none for its branch"
+
   # A base that starts with a backslash, read as relative again, is joined under the folder. #1162.
   wreck_lib "a resolver that joins a rooted base is caught" noarm resolve-memory.sh 's/|\\\\\*)/)/' 'and a rooted one'
 }
