@@ -3209,14 +3209,21 @@ a_hostile_record_links_nothing() {
 }
 
 #
-# Every line of `$1` holding a mention or an issue outside a code span or a fenced block. A span
+# Every line of `$1` holding a mention or an issue outside a code span or a code block. A span
 # opens on a run of backticks and closes only on the next run of that length, as CommonMark reads it.
 #
 live_outside_spans() {
   printf '%s\n' "$1" | LC_ALL=C awk '
-    !fenced && /^```/ { match($0, /^`+/); if (substr($0, RLENGTH + 1) !~ /`/) { opened = RLENGTH; fenced = 1; next } }
+    !fenced && /^```/ { match($0, /^`+/); if (substr($0, RLENGTH + 1) !~ /`/) { opened = RLENGTH; fenced = 1; prose = 0; next } }
     fenced { if (match($0, /^`+/) && RLENGTH >= opened && substr($0, RLENGTH + 1) ~ /^[ \t]*$/) fenced = 0; next }
-    { line = $0; bare = ""
+
+    # Four spaces open a block after a blank line or a block, never inside a paragraph or a list (#1188).
+    /^[ \t]*$/ { prose = 0; next }
+    /^(    |\t)/ && !prose && !listed { next }
+    /^( |  |   )?([-+*]|[0-9]+[.)])( |$)/ { listed = 1 }
+    /^[^ \t]/ && !prose && !/^([-+*]|[0-9]+[.)])( |$)/ { listed = 0 }
+
+    { prose = 1; line = $0; bare = ""
       while (match(line, /`+/)) {
         bare = bare substr(line, 1, RSTART - 1); run = RLENGTH; line = substr(line, RSTART + RLENGTH)
         line = past_the_span(line, run)
@@ -11070,6 +11077,35 @@ authorisation_asks_and_hears() {
 authorisation_asks_and_hears
 
 #
+# #1188. Whoever wrote the item can write a clause, so the question asks about it in one span nothing
+# in it can close, where a mention and a link are text. The yes line stays as it was, byte for byte.
+#
+an_asked_clause_prints_in_a_span() {
+  make_repo "$tmp/asp" main && set_origin "$tmp/asp" 'https://gitlab.com/acme/asp.git' \
+    && commit_file "$tmp/asp" Makefile 'test:
+	echo ok
+' && mkdir -p "$tmp/asp/.foundry" && commit_file "$tmp/asp" .foundry/practice 'authorise pat' \
+    || { skip "a clause asked in a span — git could not make a repo here"; return; }
+
+  mkdir -p "$src/items" && printf 'Ship it safely\n' > "$src/items/1188"
+  floor "$tmp/asp" new "Asked in a span" >/dev/null
+  for step in "source read 1188" "charter derive" "policy authorize https://gitlab.com/acme/asp.git" \
+      "targets add https://gitlab.com/acme/asp.git main"; do
+    floor "$tmp/asp" $step >/dev/null 2>&1
+  done
+  floor "$tmp/asp" charter introduce Decided 'ship `it` to @ghost, see https://example.com/x, fixes #1128' >/dev/null 2>&1
+  floor "$tmp/asp" authorise >/dev/null 2>&1
+
+  q=$(ls "$src/questions/1188" 2>/dev/null | head -1)
+  asked=$(cat "$src/questions/1188/$q" 2>/dev/null)
+  has "the clause is asked in one span, its backtick inside it" "$asked" \
+      "Nothing derives it: \`\` ship \`it\` to @ghost, see https://example.com/x, fixes #1128 \`\`."
+  is  "and nothing hostile in the question sits outside a span" "$(live_outside_spans "$asked")" ""
+  has "and the yes line is fenced as it was" "$asked" "$(printf 'alone:\n\n```\nyes %s\n```\n\nDelete' "$q")"
+}
+an_asked_clause_prints_in_a_span
+
+#
 # The one step a human took that Foundry claimed to own. The item's read shape names `targets[]`, and
 # nothing read them.
 #
@@ -14930,8 +14966,8 @@ propose Decided the owner signs off
   has   "the one that entered is asked, a member's lines indented four spaces" "$question" "
     why readers leave
 "
-  has   "and the others print in its question, with why"    "$question" "Did not enter, from bob:y (a Gate is never introduced"
-  has   "each under its member"                             "$question" "Did not enter, from ann:x (no pass can ask bob:y"
+  has   "and the others print in its question, with why"    "$question" "Did not enter, from \` bob:y \` (\` a Gate is never introduced"
+  has   "each under its member"                             "$question" "Did not enter, from \` ann:x \` (\` no pass can ask bob:y"
 
   a_plugin_shaping shp27b && a_shaped_repo shp27b 1344 "$(shape_line ann:alone shp27b)
 " || { skip "a base naming no bench — git could not make a repo here"; return; }
@@ -15002,7 +15038,7 @@ why bob has timed it
   lacks "and none of the lines another member gave"          "$(cat "$(attempt_file bob:later 2 brief)")" "ann has watched readers leave"
   spf authorise >/dev/null
   is    "the panel's lines are asked in the order the members sat" \
-        "$(sp_question 'the page loads fast' | grep '^Proposed by' | tr '\n' '|')" "Proposed by bob:later:|Proposed by ann:sooner:|"
+        "$(sp_question 'the page loads fast' | grep '^Proposed by' | tr '\n' '|')" "Proposed by \` bob:later \`:|Proposed by \` ann:sooner \`:|"
 }
 a_member_asked_again_reads_the_first_bar
 
@@ -15066,7 +15102,7 @@ unknown whether mobile counts
   spf authorise >/dev/null
 
   is  "nothing beside an unknown is recorded"          "$(sp_row_of ann:quiet)" "recorded"
-  has "and the unknown prints under names no proposal" "$(sp_question 'the page loads fast')" "Names no proposal, from ann:quiet:
+  has "and the unknown prints under names no proposal" "$(sp_question 'the page loads fast')" "Names no proposal, from \` ann:quiet \`:
 
     unknown whether mobile counts"
 }
@@ -15187,14 +15223,57 @@ objection it is hard to measure
   has   "an objection naming a proposal prints in its question" "$(sp_question 'the page loads fast')" "    objection it is hard to measure"
   lacks "and in no other"                                      "$(sp_question 'the log is quiet')" "objection it is hard to measure"
   has   "one naming none prints in each question, under its member" \
-        "$(sp_question 'the page loads fast')" "Names no proposal, from ann:x:
+        "$(sp_question 'the page loads fast')" "Names no proposal, from \` ann:x \`:
 
     objection the item is vague"
-  has   "the other as well"                                    "$(sp_question 'the log is quiet')" "Names no proposal, from ann:x:
+  has   "the other as well"                                    "$(sp_question 'the log is quiet')" "Names no proposal, from \` ann:x \`:
 
     objection the item is vague"
 }
 an_objection_prints_where_it_names
+
+#
+# #1188. The panel's question carries a mention in its clause, in a member under each heading, and in
+# why a proposal did not enter. Each prints in a span; a member's own lines stay in an indented block.
+#
+the_panel_question_links_nothing() {
+  a_plugin_shaping shp44 || { skip "a hostile panel question — the plugin could not be copied"; return; }
+  a_shaped_repo shp44 1346 "$(shape_line ann@ghost shp44)
+$(shape_line bob@ghost shp44)
+$(shape_line cat@ghost shp44)
+bench  ann@ghost bob@ghost cat@ghost
+reach  bob@ghost  sh bin/bench.sh
+reach  cat@ghost  sh bin/bench.sh
+" || { skip "a hostile panel question — git could not make a repo here"; return; }
+  member_says shp44 ann@ghost 'propose Judged the page @ghost loads `fast`
+why @ghost said so
+'
+  member_says shp44 bob@ghost 'nothing
+unknown whether @ghost counts
+'
+  member_says shp44 cat@ghost 'propose Judged the log is quiet
+'
+  spf charter shape >/dev/null
+  spf authorise >/dev/null
+  question=$(sp_question 'the page @ghost loads `fast`')
+
+  has "the clause is asked in a span"      "$question" "Nothing derives it: \`\` the page @ghost loads \`fast\` \`\`."
+  has "a member who proposed it is a span" "$question" "Proposed by \` ann@ghost \`:"
+  has "so is one naming no proposal"       "$question" "Names no proposal, from \` bob@ghost \`:"
+  has "and one whose proposal did not enter, with why" "$question" \
+      "Did not enter, from \` cat@ghost \` (\` no pass can ask ann@ghost: the base gives it no reach \`):"
+  has "a member's own lines stay as read"  "$question" "
+    why @ghost said so
+"
+  is  "and nothing hostile sits outside a span or a block" "$(live_outside_spans "$question")" ""
+
+  # The reader is what says so, and it reads an indented line as CommonMark does.
+  is "the reader reads an indented line joined to a paragraph as live" \
+     "$(live_outside_spans "$(printf 'Proposed by x:\n    @ghost')" | grep -c .)" "1"
+  is "and one after a blank line as a block" "$(live_outside_spans "$(printf 'Proposed by x:\n\n    @ghost')" | grep -c .)" "0"
+  is "but one in a list as the item's own"   "$(live_outside_spans "$(printf '%s\n\n    @ghost' '- x')" | grep -c .)" "1"
+}
+the_panel_question_links_nothing
 
 # A no deleted while the run waits: the clause needs a yes again, so `authorise` waits on it again.
 a_no_deleted_needs_a_yes_again() {

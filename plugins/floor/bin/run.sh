@@ -8629,15 +8629,19 @@ ask_to_authorise() {
 #
 the_authorisation_question() {
     is_a_panel_clause "$3" "$1" && { the_panel_question "$3" "$1" "$2"; return 0; }
-    printf 'May this clause exist? Nothing derives it: %s.\n\nA hand named in `.foundry/practice` authorises it with this line alone:\n\n```\nyes %s\n```\n\nDelete the line before delivery to withdraw it.\n' "$1" "$2"
+    say_nothing_derives_it "$1"
+    printf 'A hand named in `.foundry/practice` authorises it with this line alone:\n\n```\nyes %s\n```\n\nDelete the line before delivery to withdraw it.\n' "$2"
 }
+
+# Both questions open on the clause. A person or a panel member wrote it, so it prints inert. #1188.
+say_nothing_derives_it() { printf 'May this clause exist? Nothing derives it: %s.\n\n' "$(inert "$1")"; }
 
 #
 # **A clause the panel proposed asks in more words**: what the panel said about it, then the yes, then
 # the no that strikes it. The words are fixed once the run is shaped, so a resume asks the same question.
 #
 the_panel_question() {
-    printf 'May this clause exist? Nothing derives it: %s.\n\n' "$2"
+    say_nothing_derives_it "$2"
     what_the_panel_said "$1" "$2"
     printf 'A hand named in `.foundry/practice` authorises it with this line alone:\n\n```\nyes %s\n```\n\n' "$3"
     printf 'Or a hand strikes it from this run with this line alone:\n\n```\nno %s\n```\n\n' "$3"
@@ -8659,7 +8663,8 @@ say_who_proposed_it() {
     members_who_sat "$1" | while IFS= read -r said_member; do
         said_lines=$(the_lines_of "$1" "$said_member" | lines_proposing "$2")
         [ -n "$said_lines" ] || continue
-        printf 'Proposed by %s:\n\n%s\n\n' "$said_member" "$said_lines"
+        say_the_member 'Proposed by' "$said_member"
+        printf ':\n\n%s\n\n' "$said_lines"
     done
 }
 
@@ -8667,22 +8672,28 @@ say_what_names_no_proposal() {
     members_who_sat "$1" | while IFS= read -r said_member; do
         said_lines=$(the_lines_of "$1" "$said_member" | awk -F'\t' '$1 == 0 && $2 != "nothing" { printf "    %s %s\n", $2, $3 }')
         [ -n "$said_lines" ] || continue
-        printf 'Names no proposal, from %s:\n\n%s\n\n' "$said_member" "$said_lines"
+        say_the_member 'Names no proposal, from' "$said_member"
+        printf ':\n\n%s\n\n' "$said_lines"
     done
 }
 
+# The why is floor's sentence, and it names bench members, so it prints inert here, where it is read.
 say_what_did_not_enter() {
     members_who_sat "$1" | while IFS= read -r said_member; do
         member_said=$(the_lines_of "$1" "$said_member")
         printf '%s\n' "$member_said" | awk -F'\t' '$2 == "propose" { print $1 "\t" $3 }' \
             | while IFS="$TAB" read -r left_number left_words; do
                 left_why=$(why_it_did_not_enter "$1" "$left_words") || continue
-                printf 'Did not enter, from %s (%s):\n\n' "$said_member" "$left_why"
+                say_the_member 'Did not enter, from' "$said_member"
+                printf ' (%s):\n\n' "$(inert "$left_why")"
                 printf '%s\n' "$member_said" | lines_of_proposal "$left_number"
                 printf '\n'
             done
     done
 }
+
+# The words that head a member's lines, then the member. The practice names it, so it prints inert.
+say_the_member() { printf '%s %s' "$1" "$(inert "$2")"; }
 
 # A member's contribution, read through the one grammar: `<proposal>\t<word>\t<text>` a line.
 the_lines_of() { awk -f "$PLUGIN_ROOT/lib/contribution.awk" "$(contribution_file "$1" "$2")" 2>/dev/null; }

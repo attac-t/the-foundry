@@ -5174,6 +5174,13 @@ wreck_runner "a newline kept inside a span is caught" \
 wreck_runner "a worker printed around the renderer is caught" \
   inertworker 's@printf .; worker %s. "\$(inert "\$began_by")"@printf "; worker %s" "$began_by"@'
 
+# A question's own two, #1188: the clause it asks about, and the member over that member's lines.
+wreck_runner "a clause a question asks about around the renderer is caught" \
+  inertclause 's@^\(say_nothing_derives_it() .*\) "\$(inert "\$1")"; }$@\1 "$1"; }@'
+
+wreck_runner "a member a question names around the renderer is caught" \
+  inertheading 's@^\(say_the_member() .*\) "\$(inert "\$2")"; }$@\1 "$2"; }@'
+
 wreck_runner "a fence no longer than the run it holds is caught" \
   fenceequal 's@longest < 3 ? 3 : longest + 1@longest < 3 ? 3 : longest@'
 

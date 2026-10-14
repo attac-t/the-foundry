@@ -2342,7 +2342,7 @@ so `Pat` at the base and `pat` on a comment are one hand.
 prints the line fenced, so a copy is exact:
 
 ````
-May this clause exist? Nothing derives it: <text>.
+May this clause exist? Nothing derives it: ` <text> `.
 
 A hand named in `.foundry/practice` authorises it with this line alone:
 
@@ -2352,6 +2352,9 @@ yes <run>.authorisation.<clause>
 
 Delete the line before delivery to withdraw it.
 ````
+
+**The clause prints as one span**, its fence a backtick longer than any run inside it, since whoever
+wrote the item may have written the clause. A mention or a link in it renders as code.
 
 **A completion yes names its commit: `yes <question> <commit>`.** It is the full commit, as
 `git rev-parse` prints it: 40 or 64 hex digits in lower case. Each stage has one shape. An
@@ -2374,7 +2377,8 @@ other is *no whole-line yes*, as it always was.
 each member who proposed it and their lines, each objection and unknown that names no proposal, and
 each proposal that did not enter, with its lines and why. **Each member's line is printed as read,
 indented four spaces**, so it renders as code, and no member can open a line with a marker floor
-reads. After the yes line it ends:
+reads. Each member's name and each why print as a span, as the clause does. After the yes line it
+ends:
 
 ````
 Or a hand strikes it from this run with this line alone:
