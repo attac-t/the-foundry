@@ -2282,7 +2282,7 @@ a_failing_gate_is_recorded_and_answered() {
 a_failing_gate_is_recorded_and_answered
 
 # The lines `gates` says about its gates, in order, one a line, joined so a case reads them whole.
-gate_lines() { floor_says "$1" gates | grep -E '^floor: gate(s that did not pass)? ' | tr '\n' '|'; }
+gate_lines() { floor_says "$1" gates | grep -E '^floor: gate(s that did not pass:)? ' | tr '\n' '|'; }
 
 #
 # A gate says what it ran, pass or fail, in the order the charter pins it. A pass that printed
@@ -2324,7 +2324,6 @@ third  true
      "$(gate_lines "$tmp/say3")" "floor: gate [first] passed|"
 }
 gates_say_what_they_ran
-
 
 
 #
