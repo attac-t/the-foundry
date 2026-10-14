@@ -1986,7 +1986,8 @@ wrong place to demand a name. Delivery is the right one, and `complete` reads th
 sh bin/run.sh gates
 ```
 
-Runs every gate the charter pins, records each, and answers 14 if any did not pass.
+Runs every gate the charter pins, records each, names each on stderr with what it answered, and
+answers 14 if any did not pass.
 
 **The command comes from the charter, never from the caller.** `evidence record tests true` writes a
 `machine` record for a gate named `tests` that ran `true` — a pass nobody earned. `gates` takes no

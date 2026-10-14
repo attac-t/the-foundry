@@ -2291,37 +2291,38 @@ gate_lines() { floor_says "$1" gates | grep -E '^floor: gate(s that did not pass
 gates_say_what_they_ran() {
   make_repo "$tmp/say" main && set_origin "$tmp/say" 'https://github.com/acme/say.git' \
     && mkdir -p "$tmp/say/.foundry" \
-    && commit_file "$tmp/say" .foundry/gates 'first  true
+    && commit_file "$tmp/say" .foundry/gates 'third  true
+first  true
 second  true
-third  true
 ' || { skip "gates say what they ran — git could not make a repo here"; return; }
   ready_run "$tmp/say" 'https://github.com/acme/say.git'
 
+  # Pinned out of sorted order, so a sort anywhere between the pin and the print turns this red.
   is "a pass names each gate it ran, in pin order, and says it passed" "$(gate_lines "$tmp/say")" \
-     "floor: gate [first] passed|floor: gate [second] passed|floor: gate [third] passed|"
+     "floor: gate [third] passed|floor: gate [first] passed|floor: gate [second] passed|"
 
   make_repo "$tmp/say2" main && set_origin "$tmp/say2" 'https://github.com/acme/say2.git' \
     && mkdir -p "$tmp/say2/.foundry" \
-    && commit_file "$tmp/say2" .foundry/gates 'first  true
-second  false
-third  true
+    && commit_file "$tmp/say2" .foundry/gates 'third  true
+first  false
+second  true
 ' || { skip "a failing gate's line — git could not make a repo here"; return; }
   ready_run "$tmp/say2" 'https://github.com/acme/say2.git'
 
   is "a failing gate's line names its exit, every gate keeps a line, and the count comes last" \
      "$(gate_lines "$tmp/say2")" \
-     "floor: gate [first] passed|floor: gate [second] did not pass, exit 1|floor: gate [third] passed|floor: gates that did not pass: 1|"
+     "floor: gate [third] passed|floor: gate [first] did not pass, exit 1|floor: gate [second] passed|floor: gates that did not pass: 1|"
 
   make_repo "$tmp/say3" main && set_origin "$tmp/say3" 'https://github.com/acme/say3.git' \
     && mkdir -p "$tmp/say3/.foundry" \
-    && commit_file "$tmp/say3" .foundry/gates 'first  true
-second  notonanyhost --run
-third  true
+    && commit_file "$tmp/say3" .foundry/gates 'third  true
+first  notonanyhost --run
+second  true
 ' || { skip "a gate the host cannot run — git could not make a repo here"; return; }
   ready_run "$tmp/say3" 'https://github.com/acme/say3.git'
 
   is "a gate the host cannot run gets no line, and the gate before it keeps its own" \
-     "$(gate_lines "$tmp/say3")" "floor: gate [first] passed|"
+     "$(gate_lines "$tmp/say3")" "floor: gate [third] passed|"
   is "and that gate ends the pass on 21" "$(code_of floor "$tmp/say3" gates)" "21"
 }
 gates_say_what_they_ran

@@ -255,7 +255,7 @@ EOF
 # Doing the work, and handing it over.
 usage_work() {
     cat <<'EOF'
-  run.sh gates                    run every pinned gate and record each — exit 14 if one did not pass
+  run.sh gates                    run every pinned gate, record and name each — exit 14 if one did not pass
   run.sh judged                   ask every judge the charter names — exit 39 if one did not approve
   run.sh open                     check out every selected target in isolation, and print where
   run.sh commit <message>         commit what is staged, and record that this run made it
