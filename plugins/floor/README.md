@@ -838,13 +838,14 @@ comes from the reader that already owns it, so it keeps nothing and grants nothi
 `asked, no answer yet`, or `never asked`. A struck clause is never printed under *met*, and a derived
 clause is never under *decided*, so the two never share a part.
 
-**It never says the run may deliver.** `deliver` refuses on four things before its grade, and
+**It never says the run may deliver.** `deliver` refuses on five things before its grade, and
 `status` asks none of them:
 
 - the grant, 18
 - an item another host holds, 30
 - commits the run did not make, 32
 - a history it cannot trust, 33
+- a rule file it changed, 58
 
 Asking the grant opens a worktree, and asking the claim renews it.
 
@@ -969,9 +970,17 @@ cannot run, or commits that cannot be listed, stop it the same way.
 at its own sha. A host repairs a reader that cannot run. The pass that began the run stops at 57,
 and any pass after it waits on a person.
 
+**`commit` reads the message it is handed first, the same way.** A message holding a shape is
+refused at 57 before the commit is made, and `produced` gains no line. A reader that cannot run
+refuses the same way. A pass whose worker meets 57 there stops at its command, 45. #1156.
+
+**A credential can still reach `deliver`, four ways.** A person accepts a commit. A read fails at
+`deliver` alone. A hook rewrites a message after `commit` read it. Or a worker's own PATH defeats
+the read, since its command runs in its own shell. `deliver`'s read stays for all four.
+
 | Exit | Means | Remedy |
 |---|---|---|
-| 57 | a message above the base holds a credential, or none could be read | reword it in a new commit, graded at its own sha; or repair the reader |
+| 57 | a message holds a credential, or none could be read: at `commit` nothing is committed, at `deliver` nothing is pushed | reword it in a new commit, graded at its own sha; or repair the reader |
 
 A commit below a base the remote lacks is pushed unread. Only a run a person opens on an unpushed
 ref has one, since a pass starts from origin's tip.
@@ -983,6 +992,12 @@ judge's report.
 **No line of a carried text renders outside its fence.** The fence is one backtick longer than the
 longest run the text holds, and never shorter than three. It sits at the left margin, where no list
 item can hold it.
+
+**No word floor did not write is live in the record.** The worker, a clause's text, a judge, a
+member, a proposer, a label and a hand's words each sit in a code span of their own. Its fence is
+one backtick longer than the longest run inside, with a space inside each fence. Every line ending
+becomes a space. GitHub's renderer links no mention in a span, and #1187 showed a closing word
+there closes nothing. Whether a mention there still notifies is unmeasured.
 
 **Carried text has two bounds, in bytes: 16,000 for any one message or report, and 48,000 for all of
 them with their fences.** A text over a bound is cut at its last whole line under it. One line names
@@ -2102,6 +2117,20 @@ and names the person from `FOUNDRY_WHO`.
 with a shell can set either. [#156](https://github.com/attac-t/the-foundry/issues/156) owns making
 the actor real, and nothing here claims it already is.
 
+### A run never carries the rules a pass obeys
+
+**A run's own work may invalidate authority and never create it.** A pass reads its rules from
+three files: `.foundry/practice`, `.foundry/gates` and `.foundry/judged`. So `deliver` refuses a run
+whose diff changes any of them. It reads two trees, the base against the head, so a file added,
+deleted or renamed away counts. It refuses before it reads the grade, and nothing is pushed.
+
+| Exit | Means | Remedy |
+|---|---|---|
+| 58 | the run changed a file a pass obeys, or the change could not be read | a person lands that change in a request of their own |
+
+The pass that began the run stops at 58, and any pass after it waits on a person. A request opened
+by hand is not read here: a worker holds the same credentials, and #156 owns making the actor real.
+
 ### What provenance does not see
 
 Provenance comes from the record alone. Never an author, a message, another ref or a patch id —
@@ -2881,7 +2910,7 @@ deadlock or silence lets nothing go.
 **Revise rounds are counted per member and clause**, against that member's `rounds` line, or three
 where the charter has none.
 
-**`deliver`'s code says who can answer it.** 15, 18, 32 and 57 wait on a person, 47, with
+**`deliver`'s code says who can answer it.** 15, 18, 32, 57 and 58 wait on a person, 47, with
 `pass.waiting why=deliver`. 19 is a send that failed, sent again next wake. **20 and 50 are resumed
 there too.** A source nobody could ask, and floor on a hand's account, are each fixed on the host.
 Nothing in the run can answer any other code, so the run is let go with `pass.left why=deliver`, and

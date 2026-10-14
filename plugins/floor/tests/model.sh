@@ -2877,9 +2877,9 @@ a_request_names_what_the_grader_accepts() {
   floor "$tmp/accepted" deliver 'a change' >/dev/null 2>&1
 
   body=$(cat "$d/body" 2>/dev/null)
-  has   "a judged clause is named by the panel that approved it" "$body" "Judged \`a stranger can read it\`: judged by a-reviewer"
-  lacks "never by a machine row the grader skips"                "$body" "Judged \`a stranger can read it\`: machine"
-  lacks "nor by the handoff recorded after it"                   "$body" "Judged \`a stranger can read it\`: handed"
+  has   "a judged clause is named by the panel that approved it" "$body" "Judged \` a stranger can read it \`: judged by \` a-reviewer \`"
+  lacks "never by a machine row the grader skips"                "$body" "Judged \` a stranger can read it \`: machine"
+  lacks "nor by the handoff recorded after it"                   "$body" "Judged \` a stranger can read it \`: handed"
 }
 a_request_names_what_the_grader_accepts
 
@@ -2934,14 +2934,14 @@ a_request_names_the_worker_its_run_began_with() {
   by_none=$(cat "$(floor "$tmp/begun-by-none" path)/body" 2>/dev/null)
 
   has   "a request names the worker its run began with, beside its judge" "$by_one" \
-        "Judged \`a stranger can read it\`: judged by a-reviewer; worker Some Model 9"
+        "Judged \` a stranger can read it \`: judged by \` a-reviewer \`; worker \` Some Model 9 \`"
   has   "and a run that recorded none says so, and that nothing checked" "$by_none" \
-        "Judged \`a stranger can read it\`: judged by a-reviewer; this run records no worker, so nothing checked that its judge did not write the work"
+        "Judged \` a stranger can read it \`: judged by \` a-reviewer \`; this run records no worker, so nothing checked that its judge did not write the work"
   lacks "and neither names the worker of the shell that delivered it" "$by_one$by_none" "another-worker"
 
   # A verdict typed by hand leaves no receipt, so what the judge found is one line saying why.
   has   "a judge with no receipt in the run reads as one line saying so" "$by_one" \
-        "No receipt stands for a-reviewer here, so no report is carried."
+        "No receipt stands for \` a-reviewer \` here, so no report is carried."
 }
 a_request_names_the_worker_its_run_began_with
 
@@ -2969,9 +2969,9 @@ status_names_the_worker_its_run_began_with() {
   read_none=$(FOUNDRY_WORKER=another-worker; floor_says "$tmp/read-begun-by-none" status)
 
   has   "status names the worker its run began with, under met" "$read_one" \
-        "  - Judged \`a stranger can read it\`: judged by a-reviewer; worker Some Model 9"
+        "  - Judged \` a stranger can read it \`: judged by \` a-reviewer \`; worker \` Some Model 9 \`"
   has   "and says a run recorded none, and that nothing checked" "$read_none" \
-        "  - Judged \`a stranger can read it\`: judged by a-reviewer; this run records no worker, so nothing checked that its judge did not write the work"
+        "  - Judged \` a stranger can read it \`: judged by \` a-reviewer \`; this run records no worker, so nothing checked that its judge did not write the work"
   lacks "and no reading names the worker of the shell reading it" "$unmet_one$unmet_none$read_one$read_none" "another-worker"
 }
 status_names_the_worker_its_run_began_with
@@ -3030,7 +3030,7 @@ a_panel_run() {
 # Each member reached by a judge of its own, and all of them on one clause.
 the_panel_declared() {
   for member in "$@"; do printf 'reach  %s  sh bin/judge-%s.sh\n' "$member" "$member"; done
-  printf '%s  a stranger can read it' "$(printf '%s,' "$@" | sed 's/,$//')"
+  printf '%s  %s' "$(printf '%s,' "$@" | sed 's/,$//')" "${panel_clause:-a stranger can read it}"
 }
 
 # A judge that reports the words in the file `$1`, and approves, stamping the report as it wrote it.
@@ -3114,14 +3114,121 @@ below_the_record_each_judge_is_named_with_its_report() {
   is    "what each judge found stands below the record" "$(printf '%s\n' "$found" | awk '
           $0 == "**What floor recorded.**" { r = NR } $0 == "**What each judge found.**" { f = NR }
           END { print (r > 0 && f > r) }')" "1"
-  has   "each judge is named, with the worker beside it" "$found" "one on \`a stranger can read it\`; worker Some Model 9"
-  has   "and so is every other judge of the panel" "$found" "two on \`a stranger can read it\`; worker Some Model 9"
+  has   "each judge is named, with the worker beside it" "$found" "\` one \` on \` a stranger can read it \`; worker \` Some Model 9 \`"
+  has   "and so is every other judge of the panel" "$found" "\` two \` on \` a stranger can read it \`; worker \` Some Model 9 \`"
   has   "its report is fenced at the left margin, as the judge wrote it" "$found" \
         "$(printf '\n```\nOne found this.\n\n  Kept  as  written.\n\n```')"
   has   "and so is each other judge's" "$found" "$(printf '\n```\nTwo found that.\n```')"
   lacks "less its verdict line" "$found" "VERDICT:"
 }
 below_the_record_each_judge_is_named_with_its_report
+
+#
+# A run judged by one panel member, `$2`, whose name need not be a file's: its judge is `bin/judge.sh`.
+# The clause is `$3`, and `$4` is the worker `new` records.
+a_hostile_panel_run() {
+  git init -q --bare "$tmp/$1-remote.git" 2>/dev/null \
+    && make_repo "$tmp/$1" main && set_origin "$tmp/$1" "https://github.com/acme/$1.git" \
+    && mkdir -p "$tmp/$1/.foundry" "$tmp/$1/bin" \
+    && commit_file "$tmp/$1" .foundry/gates 'tests  true
+' && commit_file "$tmp/$1" bin/judge.sh "$(a_judge_reporting "$tmp/$1-judge.said")" \
+    && commit_file "$tmp/$1" .foundry/judged "$(printf 'reach  %s  sh bin/judge.sh\n%s  %s' "$2" "$2" "$3")
+" || return 1
+
+  ( cd "$tmp/$1" && FOUNDRY_HOME="$home" FOUNDRY_RUN="" FOUNDRY_WHO=ada@example.com \
+      FOUNDRY_WORKER="$4" sh "$runner" new "Judged by a hostile panel" >/dev/null 2>&1 )
+  deliverable_from "$tmp/$1" "$1"
+}
+
+#
+# #1127 and #1128. Every field floor did not write, set hostile, sits in a span of its own. A reader
+# keeping CommonMark's own rules finds no token live in the whole body; it never asks `inert`.
+#
+# The judge's name holds a run of two, so its line opens on three backticks, which CommonMark reads
+# inline. A name cannot hold a space, so it carries a mention and never a closing word.
+a_hostile_record_links_nothing() {
+  printf 'Found it.\nVERDICT: approve\n' > "$tmp/hostile-judge.said"
+  a_hostile_panel_run hostile 'j``k@ghost' 'a`b @ghost fixes #1128 reads it' 'Model `x` @ghost fixes #1127' \
+    || { skip "a hostile record — git could not make a repo here"; return; }
+  floor "$tmp/hostile" judged >/dev/null 2>&1
+  floor "$tmp/hostile" deliver 'a change' >/dev/null 2>&1
+  hostile_body=$(cat "$(floor "$tmp/hostile" path)/body" 2>/dev/null)
+
+  has "a hostile record was composed" "$hostile_body" "What floor recorded"
+  is  "and no hostile token in it sits outside a span" "$(live_outside_spans "$hostile_body")" ""
+  has "the worker is one span, its backtick inside it" "$hostile_body" "; worker \`\` Model \`x\` @ghost fixes #1127 \`\`"
+  has "the clause is one span, its backtick inside it" "$hostile_body" "\`\` a\`b @ghost fixes #1128 reads it \`\`"
+  has "the judge is one span, its run of two inside it" "$hostile_body" "\`\`\` j\`\`k@ghost \`\`\` on \`\` a\`b"
+  is  "and the reader names a token left bare" "$(live_outside_spans 'judged by @ghost fixes #1128' | grep -c .)" "1"
+  is  "and reads a fence whose line holds a backtick as inline" "$(live_outside_spans '``` j``k ``` on x @ghost' | grep -c .)" "1"
+}
+
+#
+# Every line of `$1` holding a mention or an issue outside a code span or a fenced block. A span
+# opens on a run of backticks and closes only on the next run of that length, as CommonMark reads it.
+#
+live_outside_spans() {
+  printf '%s\n' "$1" | LC_ALL=C awk '
+    !fenced && /^```/ { match($0, /^`+/); if (substr($0, RLENGTH + 1) !~ /`/) { opened = RLENGTH; fenced = 1; next } }
+    fenced { if (match($0, /^`+/) && RLENGTH >= opened && substr($0, RLENGTH + 1) ~ /^[ \t]*$/) fenced = 0; next }
+    { line = $0; bare = ""
+      while (match(line, /`+/)) {
+        bare = bare substr(line, 1, RSTART - 1); run = RLENGTH; line = substr(line, RSTART + RLENGTH)
+        line = past_the_span(line, run)
+      }
+      bare = bare line
+      if (bare ~ /@ghost|#[0-9]/) print bare }
+    function past_the_span(rest, run,    seen) {
+      seen = rest
+      while (match(seen, /`+/)) { if (RLENGTH == run) return substr(seen, RSTART + RLENGTH); seen = substr(seen, RSTART + RLENGTH) }
+      bare = bare "(unclosed)"
+      return rest
+    }'
+}
+a_hostile_record_links_nothing
+
+#
+# #1127. The renderer alone, lifted from the runner under test, on each shape GitHub was asked about.
+# Each expected span is one GitHub rendered inert, never one worked out by the renderer's own sums.
+#
+# Each function named, as the runner under test defines it. One written on one line ends there.
+functions_from_the_runner() {
+  for lifted in "$@"; do
+    awk -v f="$lifted() {" '
+      !on && index($0, f) == 1 { print; on = ($0 !~ /\}[ \t]*$/); next }
+      on { print; if ($0 ~ /^}/) on = 0 }' "$runner"
+  done
+}
+
+a_shape_stays_in_its_span() { is "$1" "$( eval "$(functions_from_the_runner inert)"; inert "$2" )" "$3"; }
+
+each_shape_stays_in_its_span() {
+  a_shape_stays_in_its_span "a backtick inside widens the fence"   'a`b @ghost'    '`` a`b @ghost ``'
+  a_shape_stays_in_its_span "a backtick first is held by a space"  '`fixes #1128'  '`` `fixes #1128 ``'
+  a_shape_stays_in_its_span "a backtick last is held by a space"   'fixes #1128`'  '`` fixes #1128` ``'
+  a_shape_stays_in_its_span "a newline becomes a space"  "$(printf 'one\nfixes #1128')" '` one fixes #1128 `'
+  a_shape_stays_in_its_span "a carriage return becomes a space" "$(printf 'one\rfixes #1128')" '` one fixes #1128 `'
+  a_shape_stays_in_its_span "three in a row take a fence of four"  'a ``` b @ghost' '```` a ``` b @ghost ````'
+}
+each_shape_stays_in_its_span
+
+#
+# #1127. The shaped line, lifted from the runner under test with what it calls, over seats whose
+# sitting member and missing label are hostile. No pass is shaped here; the line is what is read.
+#
+the_shaped_line_links_nothing() {
+  mkdir -p "$tmp/hostileseats/shaped" \
+    && printf '%s sat\n%s left %s\n' 'ann`x`@ghost' 'bob@ghost' 'needs``y``#1128' > "$tmp/hostileseats/shaped/seats" \
+    || { skip "a hostile shaped line — could not write its seats"; return; }
+  shaped=$( eval "$(functions_from_the_runner inert inert_each joined or_none seats_file members_who_sat \
+              who_a_label_left_out say_who_shaped_it)"; TAB=$(printf '\t'); say_who_shaped_it "$tmp/hostileseats" )
+
+  has "the shaped line was printed" "$shaped" "- shaped by"
+  is  "and nothing hostile in it sits outside a span" "$(live_outside_spans "$shaped")" ""
+  has "the sitting member is one span" "$shaped" "\`\` ann\`x\`@ghost \`\`"
+  has "and so is the one a label left out, and the label" "$shaped" "\` bob@ghost \`, no label \`\`\` needs\`\`y\`\`#1128 \`\`\`"
+}
+the_shaped_line_links_nothing
 
 # #1075. A report is carried only as its receipt stamped it. One changed since reads as one line.
 a_report_changed_since_its_receipt_is_not_carried() {
@@ -3156,9 +3263,9 @@ a_judge_with_nothing_to_carry_reads_as_one_line() {
   bare=$(cat "$bare_run/body" 2>/dev/null)
 
   has   "a report with nothing above its verdict reads as one line saying so" "$bare" \
-        "one's report holds nothing above its verdict."
+        "\` one \`'s report holds nothing above its verdict."
   has   "and a receipt with no report beside it reads as one line saying that" "$bare" \
-        "No report stands beside two's receipt."
+        "No report stands beside \` two \`'s receipt."
   lacks "and neither carries a verdict line" "$bare" "VERDICT:"
   lacks "nor anything of the report that went" "$bare" "Two found this"
 }
@@ -3188,10 +3295,10 @@ a_text_naming_this_host_is_withheld_whole() {
 
   for member in one two three four; do
     has "a report holding the home as [$member] spells it is withheld whole" "$named" \
-        "$member's report is withheld whole: it holds this host's home directory. It is \`$(report_of "$member")\` in run \`$(basename "$named_run")\`."
+        "\` $member \`'s report is withheld whole: it holds this host's home directory. It is \`$(report_of "$member")\` in run \`$(basename "$named_run")\`."
   done
   has   "so is one holding an address its commits carry" "$named" \
-        "five's report is withheld whole: it holds an address its commits carry."
+        "\` five \`'s report is withheld whole: it holds an address its commits carry."
   has   "and a message, by the same rule" "$named" \
         "Its commit's message is withheld whole: it holds an address its commits carry. It is \`message\` in run \`$(basename "$named_run")\`."
   has   "while a report naming nothing of the host is carried" "$named" "$(printf '```\nNothing here names the host.\n```')"
@@ -3283,14 +3390,14 @@ a_text_holding_a_credential_is_withheld_whole() {
 
   while IFS='|' read -r member shape; do
     has "a report planting [$member] is withheld whole, for $shape" "$held" \
-        "$member's report is withheld whole: it holds $shape."
+        "\` $member \`'s report is withheld whole: it holds $shape."
   done <<MEMBERS
 $(the_members_withheld)
 MEMBERS
   has   "a report holding the home and a token is withheld for the home" "$held" \
-        "hometoken's report is withheld whole: it holds this host's home directory."
+        "\` hometoken \`'s report is withheld whole: it holds this host's home directory."
   has   "a report holding two shapes is named by the earlier row" "$held" \
-        "twoshapes's report is withheld whole: it holds a GitHub token."
+        "\` twoshapes \`'s report is withheld whole: it holds a GitHub token."
   has   "a run one short of each least is carried" "$held" "$(printf '```\nI read %s in a file\n```' "$(runs_too_short)")"
   has   "and so is prose naming each prefix" "$held" "I read the ghp_ prefix, github_pat_"
   lacks "no planted token reaches the request" "$held" "$(repeated a 36)"
@@ -3329,7 +3436,7 @@ a_text_floor_cannot_read_for_a_credential_is_withheld() {
   unread=$(cat "$(floor "$tmp/unread-credential" path)/body" 2>/dev/null)
 
   has   "a report floor cannot read for a credential is withheld whole" "$unread" \
-        "one's report is withheld whole: it holds what floor could not read for a credential."
+        "\` one \`'s report is withheld whole: it holds what floor could not read for a credential."
   lacks "and its words never reach the request" "$unread" "Nothing here holds a credential."
 }
 a_text_floor_cannot_read_for_a_credential_is_withheld
@@ -3341,12 +3448,16 @@ remote_refs_of() { git -C "$1" for-each-ref --format='%(refname) %(objectname)' 
 # #1151. A message holding a credential stops the delivery before the push, and the remote's refs
 # are as they were. The token sits below the head, so a read of the head alone would miss it.
 #
+# `commit` refuses such a message since #1156, so the plant is a commit a person accepted.
 a_delivery_holding_a_credential_pushes_nothing() {
   a_run_to_deliver cred-push '' || { skip "a credential before the push — git could not make a repo here"; return; }
-  a_commit_in "$tmp/cred-push" "$(printf 'feat: keep the key\n\nkey %s' "$(an_aws_key K)")" \
+  cred_slot=$(only_slot "$(floor "$tmp/cred-push" path)/units/01/workspace")
+  printf 'key\n' >> "$cred_slot/changes.txt" && git -C "$cred_slot" add changes.txt \
+    && git -C "$cred_slot" -c user.email=w@x -c user.name=w commit -qm "$(printf 'feat: keep the key\n\nkey %s' "$(an_aws_key K)")" \
+    && floor_accepted_by "$tmp/cred-push" ada@example.com reconcile accept "$(git -C "$cred_slot" rev-parse HEAD)" 'a person read it' >/dev/null \
     && a_commit_in "$tmp/cred-push" 'feat: nothing more' \
     || { skip "a credential before the push — could not commit"; return; }
-  below=$(git -C "$(only_slot "$(floor "$tmp/cred-push" path)/units/01/workspace")" rev-parse HEAD~1)
+  below=$(git -C "$cred_slot" rev-parse HEAD~1)
   refs_before=$(remote_refs_of "$tmp/cred-push-remote.git")
 
   is  "a delivery whose message below the head holds a credential is refused" \
@@ -3377,6 +3488,104 @@ a_delivery_that_cannot_read_its_messages_pushes_nothing() {
   is  "and the remote's refs are as they were" "$(remote_refs_of "$tmp/cred-unread-remote.git")" "$refs_before"
 }
 a_delivery_that_cannot_read_its_messages_pushes_nothing
+
+# The run `$1` asked to commit the message `$3`, `$2` first on the path when set. It is refused at 57
+# saying `$4`, and the head and `produced` are as they were.
+commit_is_refused() {
+  refused_run=$(floor "$tmp/$1" path) && refused_slot=$(only_slot "$refused_run/units/01/workspace")
+  printf 'x\n' >> "$refused_slot/changes.txt" && git -C "$refused_slot" add changes.txt \
+    || { skip "a refused commit — could not stage a change"; return; }
+  head_before=$(git -C "$refused_slot" rev-parse HEAD)
+  produced_before=$(cat "$refused_run/units/01/produced" 2>/dev/null)
+
+  is  "the commit asked of [$1] is refused, 57" "$( PATH="${2:+$2:}$PATH"; code_of floor "$tmp/$1" commit "$3" )" "57"
+  has "and says why" "$( PATH="${2:+$2:}$PATH"; floor_says "$tmp/$1" commit "$3" )" "$4"
+  is  "and the head did not move" "$(git -C "$refused_slot" rev-parse HEAD)" "$head_before"
+  is  "and produced gained no line" "$(cat "$refused_run/units/01/produced" 2>/dev/null)" "$produced_before"
+}
+
+#
+# #1156. `commit` reads its message before it commits. A message holding a credential is refused,
+# 57, and names the shape. The head stays where it was, and `produced` gains no line.
+#
+a_commit_holding_a_credential_is_refused() {
+  a_run_to_deliver credcommit '' || { skip "a credential at commit — git could not make a repo here"; return; }
+  commit_is_refused credcommit '' "$(printf 'feat: keep the key\n\nkey %s' "$(an_aws_key K)")" \
+    'this message holds an AWS access key, so nothing was committed.'
+}
+a_commit_holding_a_credential_is_refused
+
+# A reader that cannot run refuses the same way, since a read that failed must never pass.
+a_commit_whose_reader_cannot_run_is_refused() {
+  a_run_to_deliver credblind '' || { skip "an unread commit — git could not make a repo here"; return; }
+  mkdir -p "$tmp/credblindbin" && an_awk_that_cannot_read_credentials input > "$tmp/credblindbin/awk" \
+    && chmod +x "$tmp/credblindbin/awk" || { skip "an unread commit — could not put an awk on the path"; return; }
+  commit_is_refused credblind "$tmp/credblindbin" 'feat: nothing secret' \
+    'the message could not be read for a credential, so nothing was committed.'
+}
+a_commit_whose_reader_cannot_run_is_refused
+
+#
+# #1101. A run whose own work changed a file a pass obeys is refused at 58, before its grade. Each
+# case reads the code and the file named, so a guard that drops a path cannot hide behind 7 or 15.
+#
+a_change_to_the_rules_is_refused() {
+  rules_refused_for ruleedit  edit   .foundry/practice
+  rules_refused_for rulegates edit   .foundry/gates
+  rules_refused_for ruleadd   add    .foundry/judged
+  rules_refused_for rulegone  delete .foundry/practice
+  rules_refused_for ruleaway  rename .foundry/practice
+
+  # The fixture's source answers after the push, so the push is what shows the run went through.
+  rules_changed_in_a_run rulenone add .foundry/notes.md || { skip "a change beside the rules — could not make the run"; return; }
+  floor "$tmp/rulenone" deliver 'a change' >/dev/null 2>&1
+  is "a run that changed only a file beside them is pushed" "$(remote_refs_of "$tmp/rulenone-remote.git" | grep -c .)" "1"
+
+  # A diff that failed must never read as a run that changed none of them.
+  rules_changed_in_a_run ruleblind add .foundry/notes.md && mkdir -p "$tmp/ruleblindbin" \
+    && a_git_that_cannot_diff_the_rules > "$tmp/ruleblindbin/git" && chmod +x "$tmp/ruleblindbin/git" \
+    || { skip "a rule diff that cannot be read — could not put a git on the path"; return; }
+  is  "a run whose rule diff cannot be read is refused" \
+      "$( PATH="$tmp/ruleblindbin:$PATH"; code_of floor "$tmp/ruleblind" deliver 'a change' )" "58"
+  has "and says it could not read them" "$( PATH="$tmp/ruleblindbin:$PATH"; floor_says "$tmp/ruleblind" deliver 'a change' )" \
+      "what this run changed could not be read against the files a pass obeys"
+}
+
+# A `git` that fails the diff of the three files alone, as one that cannot read a tree would.
+a_git_that_cannot_diff_the_rules() {
+  printf '#!/bin/sh\ncase "$*" in *"diff --name-only"*".foundry/practice"*) exit 128 ;; esac\nexec %s "$@"\n' "$(command -v git)"
+}
+
+# The run `$1`, whose one commit makes `$2` of `$3`, delivered: refused at 58, naming `$3`, pushing nothing.
+rules_refused_for() {
+  rules_changed_in_a_run "$1" "$2" "$3" || { skip "a run that made $2 of $3 — could not make the run"; return; }
+  refs_before=$(remote_refs_of "$tmp/$1-remote.git")
+
+  is  "a run that made $2 of $3 is refused before its grade" "$(code_of floor "$tmp/$1" deliver 'a change')" "58"
+  has "and the line names $3" "$(floor_says "$tmp/$1" deliver 'a change')" "this run changed [$3], which a pass obeys"
+  is  "and the remote's refs are as they were" "$(remote_refs_of "$tmp/$1-remote.git")" "$refs_before"
+}
+
+# A run that can deliver, then one commit through floor making `$2` of `$3`, and its gate run there.
+rules_changed_in_a_run() {
+  a_run_to_deliver "$1" 'body record
+' || return 1
+  rules_slot=$(only_slot "$(floor "$tmp/$1" path)/units/01/workspace") || return 1
+
+  a_rule_change "$rules_slot" "$2" "$3" && floor "$tmp/$1" commit "chore: $2 $3" >/dev/null 2>&1 || return 1
+  floor "$tmp/$1" gates >/dev/null 2>&1
+  return 0
+}
+
+# `$2` of the file `$3` in the checkout `$1`, staged.
+a_rule_change() {
+  case $2 in
+    add|edit) printf '# a line the run wrote\n' >> "$1/$3" && git -C "$1" add "$3" ;;
+    delete)   git -C "$1" rm -q "$3" ;;
+    rename)   git -C "$1" mv "$3" "$3.old" ;;
+  esac
+}
+a_change_to_the_rules_is_refused
 
 #
 # #1153. An `awk` that answers the name read for `$1`, `home` or `address`, with no word and exit 1,
@@ -3427,19 +3636,19 @@ a_read_that_did_not_finish_withholds_the_text() {
 
   has "a home read with no word withholds the text, naming that read" \
       "$(a_body_read_through unread-home "$tmp/unread-homebin")" \
-      "one's report is withheld whole: it holds what floor could not read for this host's home directory."
+      "\` one \`'s report is withheld whole: it holds what floor could not read for this host's home directory."
   has "and so does an address read" \
       "$(a_body_read_through unread-address "$tmp/unread-addressbin")" \
-      "one's report is withheld whole: it holds what floor could not read for an address its commits carry."
+      "\` one \`'s report is withheld whole: it holds what floor could not read for an address its commits carry."
   has "a capture of the reasons whose shell ends withholds the text" \
       "$(a_body_read_through dead-reasons "$tmp/dead-reasonsbin")" \
-      "one's report is withheld whole: it holds what floor could not read for this text."
+      "\` one \`'s report is withheld whole: it holds what floor could not read for this text."
   has "a capture of the home's spellings whose shell ends withholds every text" \
       "$(a_body_read_through dead-names "$tmp/dead-namesbin")" \
-      "one's report is withheld whole: it holds what floor could not read for this host's names."
+      "\` one \`'s report is withheld whole: it holds what floor could not read for this host's names."
   has "an address read whose log fails withholds every text" \
       "$(a_body_read_through dead-log "$tmp/dead-logbin")" \
-      "one's report is withheld whole: it holds what floor could not read for this host's names."
+      "\` one \`'s report is withheld whole: it holds what floor could not read for this host's names."
 }
 a_read_that_did_not_finish_withholds_the_text
 
@@ -8620,20 +8829,23 @@ a_pass_that_reads_no_hand_begins_no_run() {
 a_pass_that_reads_no_hand_begins_no_run
 
 #
-# #1151. A pass whose worker commits a credential stops at `deliver` with 57. The next wake resumes
-# the delivery, meets 57 again, and waits on a person who can reword it. Nothing reaches the remote.
+# #1151. A credential that reaches `deliver` in a pass waits on a person who can reword it, 57, and
+# nothing reaches the remote. Since #1156 `commit` refuses one, so it comes in through an accept.
 #
+# The worker commits outside floor, so the first pass stops at 32. A person accepts that commit, and
+# the next wake resumes the delivery, meets 57, and waits.
 a_pass_waits_on_a_person_when_a_message_holds_a_credential() {
   git init -q --bare "$tmp/remotes/acme/credpass.git" 2>/dev/null \
     || { skip "a pass that meets a credential — git could not make a bare repo here"; return; }
   a_resumable_repo credpass 1708 'https://github.com/acme/credpass.git' 'deliver https://github.com/acme/credpass.git' \
     || { skip "a pass that meets a credential — git could not make a repo here"; return; }
-  keyed_worker="date >> worked && git add worked && sh '$runner' commit 'key $(an_aws_key K)'"
+  raw_worker="date >> worked && git add worked && git -c user.email=w@x -c user.name=w commit -qm 'key $(an_aws_key K)'"
 
-  is  "a pass whose worker commits a credential stops at deliver, 57" \
-      "$(FOUNDRY_PASS_COMMAND=$keyed_worker code_of floor "$tmp/credpass" pass)" "57"
-  has "and writes the stop with its code" "$(last_pass_line_in "$tmp/credpass")" "pass.stopped item=1708 why=deliver code=57"
-  is  "the next wake resumes it, and waits on a person" \
+  is  "a pass whose worker commits outside floor stops at deliver, 32" \
+      "$(FOUNDRY_PASS_COMMAND=$raw_worker code_of floor "$tmp/credpass" pass)" "32"
+  floor_accepted_by "$tmp/credpass" ada@example.com reconcile accept \
+    "$(git -C "$(only_slot "$(floor "$tmp/credpass" path)/units/01/workspace")" rev-parse HEAD)" 'a person read it' >/dev/null
+  is  "once a person accepts it, the next wake meets 57 and waits on a person" \
       "$(FOUNDRY_PASS_COMMAND=true code_of floor "$tmp/credpass" pass)" "47"
   has "and says it waits at deliver, on 57" "$(last_pass_line_in "$tmp/credpass")" "pass.waiting item=1708 why=deliver code=57"
   is  "and nothing reached the remote" "$(remote_refs_of "$tmp/remotes/acme/credpass.git")" ""
@@ -8641,6 +8853,49 @@ a_pass_waits_on_a_person_when_a_message_holds_a_credential() {
   rm -rf "$src/claims/1708" "$src/labels/1708" "$src/items/1708"
 }
 a_pass_waits_on_a_person_when_a_message_holds_a_credential
+
+#
+# #1156. A pass whose worker commits a credential through floor is refused at `commit`, 57. Its
+# command fails, so the pass stops there, 45, and nothing reaches the remote.
+#
+a_pass_whose_worker_commits_a_credential_stops_at_its_command() {
+  git init -q --bare "$tmp/remotes/acme/credcmd.git" 2>/dev/null \
+    || { skip "a pass refused at commit — git could not make a bare repo here"; return; }
+  a_resumable_repo credcmd 1710 'https://github.com/acme/credcmd.git' 'deliver https://github.com/acme/credcmd.git' \
+    || { skip "a pass refused at commit — git could not make a repo here"; return; }
+  keyed_worker="date >> worked && git add worked && sh '$runner' commit 'key $(an_aws_key K)'"
+
+  is  "a pass whose worker commits a credential stops at its command, 45" \
+      "$(FOUNDRY_PASS_COMMAND=$keyed_worker code_of floor "$tmp/credcmd" pass)" "45"
+  has "and writes the stop with its code" "$(last_pass_line_in "$tmp/credcmd")" "pass.stopped item=1710 why=command-failed code=45"
+  is  "and nothing reached the remote" "$(remote_refs_of "$tmp/remotes/acme/credcmd.git")" ""
+
+  rm -rf "$src/claims/1710" "$src/labels/1710" "$src/items/1710"
+}
+a_pass_whose_worker_commits_a_credential_stops_at_its_command
+
+#
+# #1101. A pass whose worker grants itself more in the practice stops at `deliver` with 58. The next
+# wake meets 58 again and waits on a person, who lands that change. Nothing reaches the remote.
+#
+a_pass_waits_on_a_person_when_its_run_changed_the_rules() {
+  git init -q --bare "$tmp/remotes/acme/grantpass.git" 2>/dev/null \
+    || { skip "a pass that changed the rules — git could not make a bare repo here"; return; }
+  a_resumable_repo grantpass 1709 'https://github.com/acme/grantpass.git' 'deliver https://github.com/acme/grantpass.git' \
+    || { skip "a pass that changed the rules — git could not make a repo here"; return; }
+  granting_worker="printf 'authorise  someone\\n' >> .foundry/practice && git add .foundry/practice && sh '$runner' commit 'chore: grant someone'"
+
+  is  "a pass whose worker changes the practice stops at deliver, 58" \
+      "$(FOUNDRY_PASS_COMMAND=$granting_worker code_of floor "$tmp/grantpass" pass)" "58"
+  has "and writes the stop with its code" "$(last_pass_line_in "$tmp/grantpass")" "pass.stopped item=1709 why=deliver code=58"
+  is  "the next wake resumes it, and waits on a person" \
+      "$(FOUNDRY_PASS_COMMAND=true code_of floor "$tmp/grantpass" pass)" "47"
+  has "and says it waits at deliver, on 58" "$(last_pass_line_in "$tmp/grantpass")" "pass.waiting item=1709 why=deliver code=58"
+  is  "and nothing reached the remote" "$(remote_refs_of "$tmp/remotes/acme/grantpass.git")" ""
+
+  rm -rf "$src/claims/1709" "$src/labels/1709" "$src/items/1709"
+}
+a_pass_waits_on_a_person_when_its_run_changed_the_rules
 
 #
 # **A change to either setting reaches the next pass's record.** The host names the cadence, the
@@ -11957,7 +12212,7 @@ each_reader_meets_only_the_whole_yes() {
 
   mt_answers met pat 2999-01-01T00:00:01Z "$whole"
   is  "the whole yes meets it at complete" "$(code_of mtf complete)" "0"
-  has "and at status"                      "$(mtf status | sed -n '/^met$/,/^missing$/p')" "Decided \`the page ships\`"
+  has "and at status"                      "$(mtf status | sed -n '/^met$/,/^missing$/p')" "Decided \` the page ships \`"
   is  "and at deliver"                     "$(code_of mtf deliver 'Meet it')" "0"
   is  "and at merge, which lands it"       "$(code_of mtf merge)" "0"
   forget_the_delivery "$mtrun"
@@ -12357,9 +12612,9 @@ a_delivered_run_records_each_yes_once() {
      "$(mtf evidence | awk -F'\t' '$2 == "answer.heard" { print $4 " " $6 " " $7 }')" \
      "$(printf 'pat 2999-01-01T00:00:00Z yes %s\npat 2999-01-01T00:00:01Z yes %s %s' "$may" "$met" "$head")"
   has "the request names the authorisation yes" "$(cat "$mtrun/body" 2>/dev/null)" \
-      "yes from pat at 2999-01-01T00:00:00Z: \`yes $may\`"
+      "yes from \` pat \` at 2999-01-01T00:00:00Z: \` yes $may \`"
   has "and the completion yes" "$(cat "$mtrun/body" 2>/dev/null)" \
-      "yes from pat at 2999-01-01T00:00:01Z: \`yes $met $head\`"
+      "yes from \` pat \` at 2999-01-01T00:00:01Z: \` yes $met $head \`"
   forget_the_delivery "$mtrun"
 }
 a_delivered_run_records_each_yes_once
@@ -12592,9 +12847,9 @@ a_pass_delivers_a_clause_its_bench_approved() {
 
   has "a pass after the yes delivers"     "$(FOUNDRY_PASS_COMMAND=true bench_pass "$tmp/bpdeliver")" "exit=0"
   has "and the run records the delivery"  "$(last_pass_line_in "$tmp/bpdeliver")" "pass.delivered item=1231"
-  has "the request names the bench"       "$(cat "$bprun/body" 2>/dev/null)" "judged by reviewer"
+  has "the request names the bench"       "$(cat "$bprun/body" 2>/dev/null)" "judged by \` reviewer \`"
   has "and the yes"                       "$(cat "$bprun/body" 2>/dev/null)" \
-      "yes from pat at 2999-01-01T00:00:00Z: \`yes $(basename "$bprun").authorisation.$(clause_of 'a stranger can follow it')\`"
+      "yes from \` pat \` at 2999-01-01T00:00:00Z: \` yes $(basename "$bprun").authorisation.$(clause_of 'a stranger can follow it') \`"
   leave_the_bench_pass 1231
 }
 a_pass_delivers_a_clause_its_bench_approved
@@ -13532,7 +13787,7 @@ a_delivery_carrying_a_commit_nobody_recorded() {
   has "the request names the run it came from"    "$sent" "- run \`$(basename "$pvrun")\`"
   has "and the commit it delivers"                "$sent" "- commit \`$mine\`"
   has "and the charter, by the digest a handoff stamps" "$sent" "- charter \`$(cksum < "$pvrun/charter" | awk '{ print $1 }')\`"
-  has "and each clause beside what met it"        "$sent" "Gate \`tests\`: machine"
+  has "and each clause beside what met it"        "$sent" "Gate \` tests \`: machine"
 
   # 3. A commit made outside that operation is foreign, and refuses.
   printf 'two
@@ -13724,10 +13979,11 @@ a_run_is_read_in_one_status() {
       "$(printf '%s\n' "$after" | grep -E '^(run|ran|met|missing)( |$)' | cut -d' ' -f1 | tr '\n' ' ')" \
       "run ran met missing "
   has "what ran is the ledger, as evidence prints it" "$after" "  $(floor "$tmp/reading" evidence | head -1)"
-  has "what met names whom the grader accepted"      "$after" "Gate \`tests\`: machine"
+  has "what met names whom the grader accepted"      "$after" "Gate \` tests \`: machine"
   has "and nothing complete would name"              "$after" "nothing \`complete\` would name"
   has "while it names what it never read"            "$after" "the grant, 18"
   has "  and the rest of it"                         "$after" "a history it cannot trust, 33"
+  has "  and a rule file the run changed"            "$after" "a rule file it changed, 58"
   lacks "and it never says the run may deliver"      "$after" "may deliver"
   has   "and with nothing missing it exits 0 too"      "$after" "exit=0"
 
@@ -13737,14 +13993,14 @@ a_run_is_read_in_one_status() {
     || { skip "a head that moves — could not put a git on the path"; return; }
   moved=$(PATH="$tmp/movinggit:$PATH" floor_says "$tmp/reading" status)
   is  "a head that moved while status read it did move" "$(ls "$tmp/movinggit/moved" 2>/dev/null | grep -c .)" "1"
-  has "and met names the gate at the head status read"   "$moved" "Gate \`tests\`: machine"
+  has "and met names the gate at the head status read"   "$moved" "Gate \` tests \`: machine"
   has "and missing names nothing at that same head"      "$moved" "nothing \`complete\` would name"
 
   # `status` names what `deliver` refuses on before its grade. A fifth refusal there would leave it
   # short, so the list is read from `deliver` itself.
   is "status names each refusal deliver makes before its grade" \
      "$(awk '/^deliver\(\) \{/,/^}/' "$runner" | grep -o 'refuse_[a-z_]*' | sed '/^refuse_incomplete$/q' | tr '\n' ' ')" \
-     "refuse_unreadable_run refuse_an_item_another_host_holds refuse_ungranted_delivery refuse_foreign_ancestry refuse_incomplete "
+     "refuse_unreadable_run refuse_an_item_another_host_holds refuse_ungranted_delivery refuse_foreign_ancestry refuse_a_change_to_the_rules refuse_incomplete "
 
   # A run `complete` cannot read, `status` cannot either.
   mv "$d" "$(dirname "$d")/reading-renamed"
@@ -14953,9 +15209,9 @@ A hand struck this clause from this run. It is no part of the bar"
   has "decided says who struck it, and when" "$said" "Judged \`the page loads fast\`, proposed by ann:x: struck by pat at 2999-01-01T00:00:00Z"
   has "and who said yes to the other"   "$said" "Judged \`the log is quiet\`, proposed by ann:x: yes by pat at 2999-01-01T00:00:01Z"
   is  "the run delivers"                "$(code_of spf deliver 'One struck')" "0"
-  has "the request names who sat"       "$(cat "$sp_run/body" 2>/dev/null)" "- shaped by ann:x"
-  has "and the strike"                  "$(cat "$sp_run/body" 2>/dev/null)" "\`the page loads fast\`: struck by pat at 2999-01-01T00:00:00Z"
-  has "and each panel clause's proposers" "$(cat "$sp_run/body" 2>/dev/null)" "; proposed by ann:x"
+  has "the request names who sat"       "$(cat "$sp_run/body" 2>/dev/null)" "- shaped by \` ann:x \`"
+  has "and the strike"                  "$(cat "$sp_run/body" 2>/dev/null)" "\` the page loads fast \`: struck by \` pat \` at 2999-01-01T00:00:00Z"
+  has "and each panel clause's proposers" "$(cat "$sp_run/body" 2>/dev/null)" "; proposed by \` ann:x \`"
   is  "check holds it to the bench and finds nothing" "$(code_of spf charter check)" "0"
   spf charter derive >/dev/null
   is  "a derivation carries it with its proposer" "$(sp_records proposer 'the page loads fast')" "ann:x "
@@ -15381,7 +15637,7 @@ propose Judged the log is quiet
   has   "the bench was asked the clause that stands"             "$(cat "$tmp/psh08.asked" 2>/dev/null)" "the log is quiet"
   lacks "and never the struck one"                               "$(cat "$tmp/psh08.asked" 2>/dev/null)" "the page loads fast"
   has   "and the pass's request names the strike"                "$(cat "$sp_run/body" 2>/dev/null)" \
-        "\`the page loads fast\`: struck by pat at 2999-01-01T00:00:00Z"
+        "\` the page loads fast \`: struck by \` pat \` at 2999-01-01T00:00:00Z"
   sp_leaves 1408
 }
 a_pass_goes_on_when_a_hand_strikes_one_of_two

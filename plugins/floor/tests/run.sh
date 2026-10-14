@@ -994,17 +994,18 @@ plugin_copy_with() {
   ! cmp -s "$tmp/$1/$2" "$root/$2"
 }
 
-# The line two breaks aim at, moved, as #1151 moved it on 9 October. Each names its own break.
+# The line three breaks aim at, moved, as #1151 moved it on 9 October. Each names its own break.
 a_break_aimed_at_a_moved_line_is_named() {
   local said
   plugin_copy_with applies-moved bin/run.sh \
-    's/^        15|18|32|57) wait_on_a_person/        15|18|32|57|99) wait_on_a_person/' \
+    's/^        15|18|32|57|58) wait_on_a_person/        15|18|32|57|58|99) wait_on_a_person/' \
     || { moot "a moved line — the plant changed nothing, so this proves nothing"; return; }
 
   said=$(breaks_that_change_nothing "$tmp/applies-moved" "$tmp/applies-moved-work" | LC_ALL=C sort)
   [ "$said" = "credwait — its sed changes nothing in bin/run.sh
-deliverperson — its sed changes nothing in bin/run.sh" ] \
-    && { printf '  ok    a break aimed at a moved line is named, with its twin\n'; return; }
+deliverperson — its sed changes nothing in bin/run.sh
+ruleswait — its sed changes nothing in bin/run.sh" ] \
+    && { printf '  ok    a break aimed at a moved line is named, with the others aimed at it\n'; return; }
   bad "a break aimed at a moved line was not named alone — [$said]"
 }
 
@@ -3366,7 +3367,7 @@ wreck_runner "a wait on a person with no line is caught" \
   personwaitline '/^wait_on_a_person() {/,/^}/s#^    emit "\$dir" pass.waiting item="\$1" why="\$2" code="\$3"$#    :#'
 
 wreck_runner "a grant deliver asks for, read as nothing a person can answer, is caught" \
-  deliverperson '/^deliver_and_route() {/,/^}/s#^        15|18|32|57) wait_on_a_person#        15|32|57) wait_on_a_person#'
+  deliverperson '/^deliver_and_route() {/,/^}/s#^        15|18|32|57|58) wait_on_a_person#        15|32|57|58) wait_on_a_person#'
 
 wreck_runner "a failed send let go rather than sent again is caught" \
   deliversend '/^deliver_and_route() {/,/^}/s#^        19)       stop_at "\$1" deliver 19 ;;$#        19) ;;#'
@@ -5111,11 +5112,63 @@ wreck_runner "a delivery that pushes before it reads is caught" \
   credlate 's@^    refuse_a_credential_in_the_messages "\$1" "\$2" "\$4"$@PUSH_GOES_HERE@; s@^    push_workspace "\$1" "\$2" "\$branch" "\$4"$@    refuse_a_credential_in_the_messages "$1" "$2" "$4"@; s@^PUSH_GOES_HERE$@    push_workspace "$1" "$2" "$branch" "$4"@'
 
 wreck_runner "a pass that lets 57 go, never waiting on a person, is caught" \
-  credwait 's@^        15|18|32|57) wait_on_a_person@        15|18|32) wait_on_a_person@'
+  credwait 's@^        15|18|32|57|58) wait_on_a_person@        15|18|32|58) wait_on_a_person@'
+
+# **No message holding a credential is committed**, #1156. One break per way past `commit`'s read:
+# never asked, and a failed read let through.
+wreck_runner "a commit that never reads its message is caught" \
+  commitread 's@^    refuse_a_credential_in_the_message "\$said"$@    :@'
+
+wreck_runner "a commit whose failed read is let through is caught" \
+  commitunread 's@=\$(shape_in_the_text "\$1") || refuse_an_unread_message$@=$(shape_in_the_text "$1") || return 0@'
+
+#
+# **No run delivers a change to a file a pass obeys.** One break per way past it: never asked, one of
+# three left out, no limit, a deletion hidden, a failed read let through, a pass that lets 58 go.
+#
+wreck_runner "a run that changed a rule file delivering anyway is caught" \
+  rulesnever 's@^    refuse_a_change_to_the_rules "\$dir" "\$here" "\$carrying"$@    :@'
+
+wreck_runner "a rule file left out of the diff is caught" \
+  rulesjudged 's@ \.foundry/practice \.foundry/gates \.foundry/judged 2>/dev/null$@ .foundry/practice .foundry/gates 2>/dev/null@'
+
+wreck_runner "a diff that reads every file as a rule is caught" \
+  rulesall 's@ -- \.foundry/practice \.foundry/gates \.foundry/judged 2>/dev/null$@ 2>/dev/null@'
+
+wreck_runner "a rule diff that hides a file deleted or renamed away is caught" \
+  rulesgone 's@diff --name-only "\$2" "\$3" --@diff --name-only --diff-filter=AM "$2" "$3" --@'
+
+wreck_runner "a rule diff whose failed read is let through is caught" \
+  rulesunread 's@ "\$3") || refuse_an_unread_rule_change$@ "$3") || return 0@'
+
+wreck_runner "a pass that lets 58 go, never waiting on a person, is caught" \
+  ruleswait 's@^        15|18|32|57|58) wait_on_a_person@        15|18|32|57) wait_on_a_person@'
 
 # No line leaves its fence: three backticks always, or no more than the longest run the text holds.
 wreck_runner "a fence of three around a longer backtick run is caught" \
   fencethree 's@n = (longest < 3 ? 3 : longest + 1)@n = 3@'
+
+#
+# **No field floor did not write reaches a request live.** One break per way out of a span: a fence a
+# run inside can close, no space inside it, a line ending kept, and the worker printed bare.
+#
+wreck_runner "a span whose fence a run inside it can close is caught" \
+  inertfence 's@while (length(fence) <= longest)@while (length(fence) < longest)@'
+
+wreck_runner "a span with no space inside its fences is caught" \
+  inertpad 's@printf "%s %s %s", fence, text, fence@printf "%s%s%s", fence, text, fence@'
+
+wreck_runner "a carriage return kept inside a span is caught" \
+  inertcr 's@^            gsub(/\\r/, " ", text)$@@'
+
+wreck_runner "a member printed around the renderer is caught" \
+  inertmember 's@"\$(members_who_sat "\$1" | inert_each)"@"$(members_who_sat "$1")"@'
+
+wreck_runner "a newline kept inside a span is caught" \
+  inertnl 's@{ text = text (NR > 1 ? " " : "") \$0 }@{ text = text (NR > 1 ? "\\n" : "") $0 }@'
+
+wreck_runner "a worker printed around the renderer is caught" \
+  inertworker 's@printf .; worker %s. "\$(inert "\$began_by")"@printf "; worker %s" "$began_by"@'
 
 wreck_runner "a fence no longer than the run it holds is caught" \
   fenceequal 's@longest < 3 ? 3 : longest + 1@longest < 3 ? 3 : longest@'
