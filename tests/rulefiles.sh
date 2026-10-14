@@ -35,6 +35,9 @@ expect() { # <name> <exit> [<words the gate must say>]
 # One plant, into a fresh copy, then the gate.
 planted() { a_lab || { bad "no lab could be made"; return 1; }; ( cd "$tmp/lab" && eval "$1" ); gate; }
 
+# A green case proves nothing unless its plant is there to be passed over.
+landed() { grep -qF -- "$2" "$tmp/lab/$1" || { bad "$3 — the plant never landed"; return 1; }; }
+
 lib=plugins/floor/lib/source.sh
 runner=plugins/floor/bin/run.sh
 reads_bench='bench_in() { cat "$1/.foundry/bench"; }'
@@ -59,7 +62,11 @@ planted "printf '%s\n' '{ print \".foundry/bench\" }' >> plugins/floor/lib/contr
 expect "and one in an awk file, whatever the extension" 1 "plugins/floor/lib/contribution.awk"
 
 planted "mkdir -p plugins/floor/adapters/codex/tests && printf '%s\n' '$reads_bench' >> plugins/floor/adapters/codex/tests/probe.sh"
-expect "but never one under tests" 0 "PASS"
+landed plugins/floor/adapters/codex/tests/probe.sh '.foundry/bench' "but never one under tests" \
+  && expect "but never one under tests" 0 "PASS"
+
+planted "rm -rf plugins/floor/hooks"
+expect "a floor part that is not there is no clean read" 3 "floor ships no \`hooks\` here"
 
 # --- the refusal ---
 
@@ -72,13 +79,25 @@ expect "a file only the refusal names fails safe" 0 "that floor names: extra gat
 # --- what a comment is ---
 
 planted "printf '%s\n' '# .foundry/bench is read nowhere' >> $lib"
-expect "a line opening on a hash names nothing" 0 "PASS"
+landed "$lib" '# .foundry/bench is read nowhere' "a line opening on a hash names nothing" \
+  && expect "a line opening on a hash names nothing" 0 "PASS"
 
 planted "printf '%s\n' 'true  # .foundry/bench is read nowhere' >> $lib"
 expect "a comment after code sits on a code line, and names" 1 "\`.foundry/bench\`, which deliver does not refuse"
 
 planted "sed -i '/^rules_changed_between() {/a # .foundry/bench is refused where it is read' $runner && printf '%s\n' '$reads_bench' >> $lib"
 expect "a comment inside the refusal refuses nothing" 1 "\`.foundry/bench\`, which deliver does not refuse"
+
+# --- only the pathspec refuses ---
+
+planted "sed -i '/^rules_changed_between() {/a \    note \"a pass reads .foundry/bench too\"' $runner && printf '%s\n' '$reads_bench' >> $lib"
+expect "a name in the refusal's own note refuses nothing" 1 "\`.foundry/bench\`, which deliver does not refuse"
+
+planted "sed -i 's| \.foundry/judged 2>/dev/null$| .foundry/judged 2>/dev/null  # .foundry/bench|' $runner && printf '%s\n' '$reads_bench' >> $lib"
+expect "a comment after the pathspec refuses nothing" 1 "\`.foundry/bench\`, which deliver does not refuse"
+
+planted "sed -i '/^rules_changed_between() {/,/^}/d' $runner && printf '%s\n' 'rules_changed_between() { git -C \"\$1\" diff --name-only \"\$2\" \"\$3\" -- .foundry/practice .foundry/gates .foundry/judged 2>/dev/null; }' >> $runner"
+expect "a refusal written on one line is read whole" 0 "that floor names: gates judged practice"
 
 # --- a name, whole ---
 

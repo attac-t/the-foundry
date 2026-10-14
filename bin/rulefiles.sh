@@ -12,7 +12,10 @@
 # names fails safe, since deliver then refuses more than anything reads, so it is never named here.
 #
 # **A line whose first non-blank character is `#` names nothing**, on either side, as `providers`
-# reads one. A comment after code sits on a code line, and counts.
+# reads one. On floor's side a comment after code sits on a code line, and counts.
+#
+# **The refusal is its pathspec**: the names after ` -- `, up to a redirect, a comment or a separator.
+# A name anywhere else in that function, in a note or a guard, refuses nothing.
 #
 # **A name is taken whole**, so `.foundry/gates2` is not `gates`. A path whose name is not spelled
 # out fails, since nothing can say whether a name it cannot read is refused.
@@ -31,11 +34,13 @@ root=$(cd "$(dirname "$0")/.." && pwd)
 cd "$root" || exit 3
 
 FLOOR=plugins/floor
+PARTS='bin lib hooks adapters'
 REFUSAL=rules_changed_between
 
 main() {
     [ "${1:-}" = audit ] && prove_it_can_go_red
 
+    ensure_floor_is_here
     refused=$(names_in "$FLOOR/bin/run.sh" "$REFUSAL" | cut -f1 | sort -u)
     ensure_the_refusal_was_read
 
@@ -52,7 +57,18 @@ names_floor_code_holds() {
 }
 
 floor_files() {
-    find "$FLOOR/bin" "$FLOOR/lib" "$FLOOR/hooks" "$FLOOR/adapters" -type f ! -path '*/tests/*' | sort
+    for part in $PARTS; do
+        find "$FLOOR/$part" -type f ! -path '*/tests/*'
+    done | sort
+}
+
+# A part that is not there would be read as clean, since `find` fails inside the pipe that lists them.
+ensure_floor_is_here() {
+    for part in $PARTS; do
+        [ -d "$FLOOR/$part" ] && continue
+        printf 'FAIL — floor ships no `%s` here, so it was not read.\n' "$part"
+        exit 3
+    done
 }
 
 names_in() { awk -v within="$2" -f bin/rulefiles.awk "$1"; }
