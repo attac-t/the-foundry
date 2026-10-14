@@ -258,6 +258,10 @@ gate secrets     sh   bin/secrets.sh
 # forty-three checks. This drives every hook this repository ships.
 gate hooks       sh   bin/hooks.sh
 
+# Those are the hooks this repository runs. This reads the file each plugin ships them in, which
+# Claude Code reads for `hooks` and warns about at every start when it holds more. #1074.
+gate hookfiles   sh   bin/hookfiles.sh audit
+
 gate taper       sh   bin/taper.sh
 
 #

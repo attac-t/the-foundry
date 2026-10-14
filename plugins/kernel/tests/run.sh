@@ -310,7 +310,6 @@ audit_the_install() {
   wreck "a lib that did not ship is caught"             nolib  unship 'preflight is silent when healthy'
   wreck "hooks.json pointing at nothing is caught"      nofile rewire 'hooks.json wires a hook that did not ship'
   wreck "a hook that ships but is never wired is caught" nowire unwire 'a hook ships but nothing wires it'
-  wreck "a key that is not hooks is caught"              style  restyle 'hooks.json carries a key Claude Code drops with a warning at every start'
   wreck "an edit hook naming a standard by the path as handed is caught" stdabs stdabs 'and names craft-sh for a shipped script, by its absolute path'
   wreck "an edit hook skipping by the path as handed is caught" skipabs skipabs 'and nudges code in a work tree under a folder named tests, #1143'
   wreck "an edit hook speaking outside a work tree is caught" outwt anywhere 'consider is quiet outside every work tree'
@@ -432,7 +431,6 @@ unshell()  { grep -v '"shell"' "$1/hooks/hooks.json" | rewrite "$1/hooks/hooks.j
 unship()   { rm -f "$1/hooks/lib/unjson.awk"; }
 rewire()   { sed 's|hooks/ground.sh|hooks/gone.sh|' "$1/hooks/hooks.json" | rewrite "$1/hooks/hooks.json"; }
 unwire()   { grep -v 'consider.sh' "$1/hooks/hooks.json" | rewrite "$1/hooks/hooks.json"; }
-restyle()  { awk '/^  "hooks": \{$/ { print "  \"outputStyle\": \"kernel:craftsman\"," } { print }' "$1/hooks/hooks.json" | rewrite "$1/hooks/hooks.json"; }
 bashism()  { sed 's|dirname "\$0"|dirname "${BASH_SOURCE[0]}"|'  "$1/hooks/prompt.sh" | rewrite_in_place "$1/hooks/prompt.sh"; }
 
 # The edit hook before #1141, #1143 and #1130. `stdabs` and `skipabs` each reach one case. `anywhere`
