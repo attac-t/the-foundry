@@ -4198,6 +4198,7 @@ the_remotes_default() {
 
 # The branch this checkout's `origin/HEAD` names, or nothing when it names none.
 the_checkouts_default() {
+    # empty: with -q, git fails here when origin/HEAD is absent or names no branch, and that is nothing
     origin_head=$(git symbolic-ref -q refs/remotes/origin/HEAD 2>/dev/null) || return 0
     printf '%s' "${origin_head#refs/remotes/origin/}"
 }
@@ -5783,6 +5784,7 @@ say_how_many_it_is_the_last_of() {
 }
 
 commits_above_the_base() {
+    # empty: with no work tree there are no commits to count, and `work_tree` has said why on stderr
     above_in=$(unit_work_tree "$1" "$3") || return 0
     above_from=$(recorded_base "$(unit_workspace "$1")" "$(target_slot "$3")")
     [ -n "$above_from" ] || return 0
@@ -5865,6 +5867,7 @@ each_line_a_hand_said() {
 
 # Who proposed a clause the panel proposed. Nothing for any other: a worker's clause is no panel's.
 who_proposed_a_panel_clause() {
+    # empty: a clause no panel proposed has no proposer, and this predicate is what says which it is
     is_a_panel_clause "$1" "$(clause_text "$(charter_file "$1")" "$2")" || return 0
     printf '; proposed by %s' "$(joined "$(proposers_of "$(charter_file "$1")" "$2" | inert_each)" ', ')"
 }
@@ -7566,6 +7569,7 @@ ungoverning_clauses() {
     selected=$(list_targets "$targets_file" | wc -l | tr -d ' ')
     [ "$selected" -gt 0 ] || { awk '$1 == "clause" { print $2 }' "$file"; return 0; }
 
+    # empty: a run with no bootstrap, or a nameless one, has no bootstrap target for the second case
     boot=$(bootstrap_identity "$dir") || return 0
     only_boot=$(list_targets "$targets_file" | awk -v b="$boot" '$1 != b' | wc -l | tr -d ' ')
     [ "$only_boot" -eq 0 ] || return 0
@@ -8389,7 +8393,7 @@ is_a_panel_clause() { panel_clauses "$1" | grep -qxF -e "$2"; }
 # leaves only the subshell.
 #
 hear_the_item() {
-    heard_hands=$(hands_named "$1")
+    heard_hands=$(hands_named "$1") || refuse_a_run_with_no_base
     refuse_with_no_hand "$heard_hands"
 
     speakers_of "$(item_id "$1")"
@@ -8422,8 +8426,11 @@ holds_a_clause_nothing_derived() { [ -n "$(introduced_clauses "$(charter_file "$
 # The hands a repository names to answer: every `authorise` line in `.foundry/practice`, read at the
 # run's base as grants are, so a worker's own commit names nobody. One a line, each once, folded.
 #
+# **1 for a run that recorded no base**, never nothing: an empty answer read as *the base names no
+# hand*, and there is no base to say so. #1160.
+#
 hands_named() {
-    base=$(bootstrap_base "$1") || return 0
+    base=$(bootstrap_base "$1") || return 1
 
     practice_at_base "$base" | hands_in
 }

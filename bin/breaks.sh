@@ -136,6 +136,12 @@ every_break() {
         'an_else >> plugins/floor/lib/source.sh' \
         'bash bin/shell.sh'
 
+    # A captured answer that hides its failure, under a comment that is not `# empty:`. A gate taking
+    # any comment for a reason goes green here. #1160.
+    drive shell-capture plugins/floor/lib/source.sh \
+        'a_hidden_failure >> plugins/floor/lib/source.sh' \
+        'bash bin/shell.sh'
+
     # The boundary `run.sh` states twice and nothing read. #299 stands a machine up from Docker, and
     # this is the line that would land in core on the way.
     drive hosts plugins/floor/lib/source.sh \
@@ -304,6 +310,11 @@ a_real_sentence() {
 
 an_else() {
     printf '\nnoop_for_a_break() {\n    if true; then\n        :\n    else\n        :\n    fi\n}\n'
+}
+
+# Captured on the line after it, so the plant carries everything the rule asks of one.
+a_hidden_failure() {
+    printf '\nhead_for_a_break() {\n    # the head this checkout holds\n    head=$(git rev-parse HEAD) || return 0\n    printf %%s "$head"\n}\nheld_for_a_break=$(head_for_a_break)\n'
 }
 
 # Code, never a comment. `run.sh` already carries two comments naming a container, so a break that

@@ -4025,6 +4025,24 @@ an_introduced_clause_holds_delivery() {
 an_introduced_clause_holds_delivery
 
 #
+# #1160. A repository with no commit gives a run no base, so no practice can be read for it. Hearing
+# refuses for the base, never for *the base names no hand*, which a run with no base cannot know.
+#
+a_run_with_no_base_is_refused_for_it() {
+  make_repo "$tmp/nobase" main && set_origin "$tmp/nobase" 'https://github.com/acme/nobase.git' \
+    || { skip "a run with no base — git could not make a repo here"; return; }
+
+  floor "$tmp/nobase" new "No base" >/dev/null
+  floor "$tmp/nobase" charter introduce Decided "ship on friday" >/dev/null 2>&1
+  said=$(floor_says "$tmp/nobase" complete)
+
+  has   "a run with no base is refused for its base" "$said" "this run recorded no base commit"
+  lacks "never for a hand its base could not name"   "$said" "names no hand"
+  is    "and on 6, where it said 49" "$(code_of floor "$tmp/nobase" complete)" "6"
+}
+a_run_with_no_base_is_refused_for_it
+
+#
 # The workspace — one isolated checkout per selected target. Isolated means a clone: a worktree
 # shares `.git` with the checkout it came from, so a worker could move the source's refs.
 #

@@ -556,6 +556,7 @@ say_how_to_see_the_account() {
 # **Never the userinfo.** A token rides there, and this line is printed and then run with `--global`.
 # Everything to the last `@` goes, the way `strip_userinfo` in the runner reads a remote.
 https_forge_pushed_to() {
+    # empty: git fails here when origin is no remote, and then nothing went to an https forge through it
     pushed_to=$(git remote get-url --push origin 2>/dev/null) || return 0
     case $pushed_to in https://*) ;; *) return 0 ;; esac
 

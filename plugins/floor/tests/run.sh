@@ -3622,6 +3622,10 @@ wreck_runner "a read that carries on when speaker cannot say is caught" \
 wreck_runner "a run with no hand named that does not refuse is caught" \
   nohand '/^refuse_with_no_hand() {/,/^}/s#^    \[ -n "\$1" \] && return 0$#    return 0#'
 
+# #1160: a run with no base heard as one whose base names no hand.
+wreck_runner "a run with no base refused as naming no hand is caught" \
+  nobaseheard 's#^    heard_hands=\$(hands_named "\$1") || refuse_a_run_with_no_base$#    heard_hands=$(hands_named "$1")#'
+
 wreck_runner "every hand floor's own account, not refused, is caught" \
   ownhand '/^refuse_hands_floor_writes_as() {/,/^}/s#^    exit 50$#    return 0#'
 
