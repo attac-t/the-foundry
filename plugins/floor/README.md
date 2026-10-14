@@ -158,7 +158,7 @@ sh bin/run.sh open                                   # prints the workspace — 
 
 # ... a worker commits in the workspace ...
 
-sh bin/run.sh gates                                  # every gate the charter pins, each recorded
+sh bin/run.sh gates                                  # every gate the charter pins, each recorded and named
 sh bin/run.sh status                                 # the run, what ran, what met its bar, what is missing
 sh bin/run.sh complete                               # may this run deliver? 15 names what is missing
 sh bin/run.sh policy deliver-to https://github.com/acme/api.git

@@ -2550,7 +2550,16 @@ gate_held() {
     [ -n "$command" ] || { note "the charter pins no command for [$name]"; exit 7; }
 
     stamp_command "$dir" "$ref" "$name" sh -c "$command"
-    answered=$?; emit "$dir" gate.finished name="$name" result="$answered" runtime="$(runtime)"; return "$answered"
+    answered=$?; emit "$dir" gate.finished name="$name" result="$answered" runtime="$(runtime)"
+    say_the_gate "$name" "$answered"
+    return "$answered"
+}
+
+# One line a gate, on the stream the count uses, so a pass says what it graded. #1054. Never `held`,
+# which `gates` prints for an item another host claims.
+say_the_gate() {
+    [ "$2" -eq 0 ] && { note "gate [$1] passed"; return 0; }
+    note "gate [$1] did not pass, exit $2"
 }
 
 #
