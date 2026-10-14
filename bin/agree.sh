@@ -32,6 +32,7 @@ main() {
         || { printf 'FAIL — the gate lines could not be read. This gate read nothing.\n'; exit 3; }
     lines_agree
     commands_agree
+    each_command_answers_once
 
     counts_agree
     projections_agree
@@ -128,7 +129,7 @@ lines_agree() {
 # `bin/gates.sh` is the one that runs, so the line says so and nobody mends the gate to match.
 #
 commands_agree() {
-    sed -n 's/^ *run: //p' .github/workflows/gates.yml | sed 's/ *$//' | sort -u > "$work/run-by-ci"
+    commands_the_workflow_runs > "$work/run-by-ci"
     parted=$(commands_the_workflow_never_runs)
 
     [ -z "$parted" ] && { printf '  PASS  %s\n' "the gate commands"; return; }
@@ -142,6 +143,55 @@ commands_the_workflow_never_runs() {
     while read -r name interpreter path rest; do
         command="$interpreter $path${rest:+ $rest}"
         grep -qxF "$command" "$work/run-by-ci" || printf '%s runs [%s]\n' "$name" "$command"
+    done < "$shaped"
+}
+
+# A `run:` that opens a block is skipped: its command is on the lines below, never on this one. So a
+# gate whose command sits only in a block already fails above, and no block can answer for a line.
+commands_the_workflow_runs() {
+    sed -n 's/^ *run: //p' .github/workflows/gates.yml | sed 's/ *$//' | grep -v '^[|>]' | sort -u
+}
+
+#
+# Each command the workflow runs answers for one gate line, or is listed below as answering for none.
+# A gate pointed at another's command, or at its own audit, passed the check above. #1185.
+#
+each_command_answers_once() {
+    wrong=$(commands_answering_wrongly)
+
+    [ -z "$wrong" ] && { printf '  PASS  %s\n' "each workflow command answers for one gate line"; return; }
+
+    printf '  FAIL  a workflow command answers for the wrong gate lines:\n'
+    printf '%s\n' "$wrong" | sed 's/^/          /'
+    disagreed=$((disagreed + 1))
+}
+
+# A list, never a rule worked out from the gate lines: a re-point removes the line a rule would read.
+answering_for_no_gate_line() {
+    printf '%s\t%s\n' \
+        'sh bin/agree.sh'        'agree grades the gate list, so it is not on it' \
+        'sh bin/agree.sh audit'  'and this proves agree can fail' \
+        'sh bin/taper.sh audit'  "taper's gate reads the tree; its audit reads only planted breaks" \
+        'bash plugins/${{ matrix.plugin }}/tests/run.sh' 'the suites line: each plugin suite on disk'
+}
+
+commands_answering_wrongly() {
+    answering_for_no_gate_line | cut -f1 | sort -u > "$work/listed-for-none"
+    commands_claimed | sort > "$work/claimed"
+    sort -u "$work/claimed" > "$work/claimed-once"
+
+    uniq -d "$work/claimed" | comm -12 - "$work/run-by-ci" | sed 's/^/claimed by two gate lines: /'
+    comm -23 "$work/run-by-ci" "$work/claimed-once" | comm -23 - "$work/listed-for-none" \
+        | sed 's/^/answers for no gate line and is not listed: /'
+    comm -12 "$work/listed-for-none" "$work/claimed-once" \
+        | sed 's/^/listed as answering for no gate line, yet a gate line claims it: /'
+    comm -23 "$work/listed-for-none" "$work/run-by-ci" \
+        | sed 's/^/listed as answering for no gate line, yet the workflow never runs it: /'
+}
+
+commands_claimed() {
+    while read -r _ interpreter path rest; do
+        printf '%s\n' "$interpreter $path${rest:+ $rest}"
     done < "$shaped"
 }
 
@@ -278,6 +328,20 @@ audit() {
         'a gate line list never names: extra'
     caught "a gate command the workflow never runs" 1 gates 's|bin/bytes.sh audit$|bin/bytes.sh|' \
         'bytes runs [sh bin/bytes.sh]'
+
+    # Each command answers for one gate line, #1185. A re-point lands on a command the workflow
+    # already runs, so only these words, never the exit code alone, prove this check caught it.
+    caught "a gate pointed at another gate's command" 1 gates \
+        's|^gate hosts  *sh  *bin/hosts.sh$|gate hosts sh bin/host.sh audit|' \
+        'claimed by two gate lines: sh bin/host.sh audit'
+    caught "a gate pointed at a step another gate owns" 1 gates \
+        's|^gate comments  *sh  *bin/comments.sh audit$|gate comments sh bin/stale.sh audit|' \
+        'claimed by two gate lines: sh bin/stale.sh audit'
+    caught "a gate pointed at its own audit" 1 gates \
+        's|^gate taper  *sh  *bin/taper.sh$|gate taper sh bin/taper.sh audit|' \
+        'listed as answering for no gate line, yet a gate line claims it: sh bin/taper.sh audit'
+    caught "a listed step the workflow dropped" 1 workflow '/run: sh bin\/taper.sh audit$/d' \
+        'listed as answering for no gate line, yet the workflow never runs it: sh bin/taper.sh audit'
 
     [ "$disagreed" -eq 0 ] || return 1
     printf 'THE CHECK CAN FAIL\n'
