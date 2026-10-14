@@ -97,7 +97,7 @@ say_what_drives_itself() {
 #
 # Typed, because a `drive` line carries a break name and `shell` has two of them. A derived list
 # would have to guess which gate `shell-taper` belongs to, and guessing is what this refuses.
-ACCOUNTED="frontmatter versions repeats shell taper hosts providers secrets hooks judged
+ACCOUNTED="frontmatter versions repeats shell taper hosts providers secrets hooks hookfiles judged
 bytes comments codex host judges anthropic stale basing durable unnamed
 kernel signal panel floor
 bumps"
@@ -159,6 +159,11 @@ every_break() {
     drive secrets bin/gates.Dockerfile \
         'a_baked_secret >> bin/gates.Dockerfile' \
         'sh bin/secrets.sh'
+
+    # A second top-level key in a plugin's hooks file, which Claude Code drops with a warning. #1074.
+    drive hookfiles plugins/signal/hooks/hooks.json \
+        'a_second_hooks_key plugins/signal/hooks/hooks.json' \
+        'sh bin/hookfiles.sh'
 
     # The pin is this repository's trust decision, and the gate had only ever been green. Editing
     # the adapter moves its digest; the declaration beside it does not move on its own.
@@ -314,6 +319,11 @@ a_judge_name() { printf '\ncase $reach in anthropic) : ;; esac\n'; }
 # A directive, never a comment. The header of `secrets.sh` names a secret four times over, and a
 # break planting prose would go green against a gate working perfectly.
 a_baked_secret() { printf '\nENV GH_TOKEN=abc123\n'; }
+
+# A key beside `hooks` at the top, written where the opening brace is, so the file stays valid JSON.
+a_second_hooks_key() {
+    awk 'NR == 1 { print "{ \"outputStyle\": \"x\","; next } { print }' "$1" > "$1.new" && mv "$1.new" "$1"
+}
 
 # A line added to a shipped adapter, with the digest beside it left where it was. That is one
 # commit away at all times, and it is the whole of what this gate exists to catch.

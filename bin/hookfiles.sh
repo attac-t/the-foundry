@@ -52,8 +52,8 @@ ensure_a_file_was_read() {
 each_fault_in() {
     printf '%s\n' "$1" | while IFS= read -r file; do
         keys=$(awk -f bin/hookfiles.awk "$file")
-        printf '%s\n' "$keys" | grep -qx hooks || printf '%s holds no hooks key\n' "$file"
-        printf '%s\n' "$keys" | grep -vx -e hooks -e description -e '' \
+        printf '%s\n' "$keys" | grep -qx '"hooks"' || printf '%s holds no hooks key\n' "$file"
+        printf '%s\n' "$keys" | grep -vx -e '"hooks"' -e '"description"' -e '' \
             | sed "s|^|$file holds a key Claude Code drops: |"
     done
 }

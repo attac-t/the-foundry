@@ -35,7 +35,7 @@ expect() { # <name> <exit> [<words the gate must say>]
 
 plugins() { for file in "$root"/plugins/*/hooks/hooks.json; do p=${file%/hooks/hooks.json}; printf '%s\n' "${p##*/}"; done; }
 
-minified_with_a_second_key() { tr -d '\r\n' < "$1" | sed 's/}[[:space:]]*$/,"outputStyle":"x"}/'; }
+minified_with_a_second_key() { tr -d ' \t\r\n' < "$1" | sed 's/}$/,"outputStyle":"x"}/'; }
 indented_by_four_with_a_second_key() { sed 's/^/  /' "$1" | sed '$s/}[[:space:]]*$/, "outputStyle": "x" }/'; }
 
 # --- the shipped files ---
@@ -51,21 +51,33 @@ for plugin in $(plugins); do
 
   a_lab && minified_with_a_second_key "$root/plugins/$plugin/hooks/hooks.json" > "$file.new" && mv "$file.new" "$file"
   gate
-  expect "$plugin's file, minified, with a second key" 1 "plugins/$plugin/hooks/hooks.json holds a key Claude Code drops: outputStyle"
+  expect "$plugin's file, minified, with a second key" 1 "plugins/$plugin/hooks/hooks.json holds a key Claude Code drops: \"outputStyle\""
 
   a_lab && indented_by_four_with_a_second_key "$root/plugins/$plugin/hooks/hooks.json" > "$file.new" && mv "$file.new" "$file"
   gate
-  expect "$plugin's file, indented by four, with a second key" 1 "plugins/$plugin/hooks/hooks.json holds a key Claude Code drops: outputStyle"
+  expect "$plugin's file, indented by four, with a second key" 1 "plugins/$plugin/hooks/hooks.json holds a key Claude Code drops: \"outputStyle\""
 done
 
-# --- what must never be read as a top-level key ---
+# --- what must never be read as a top-level key, one case each ---
 
 one=$(plugins | head -1)
-a_lab
-printf '{"description": "says \\"outputStyle\\": here", "hooks": {"Stop": [{"inner": "x"}]}}\n' \
-  > "$tmp/lab/plugins/$one/hooks/hooks.json"
+
+a_lab && printf '{"hooks": {"Stop": [{"inner": "x"}]}}\n' > "$tmp/lab/plugins/$one/hooks/hooks.json"
 gate
-expect "a nested key, key-like text in a string, and a description all pass" 0 "PASS"
+expect "a key nested under hooks is never read as top-level" 0 "PASS"
+
+a_lab && printf '{"hooks": {"Stop": [{"command": "says \\"outputStyle\\": here"}]}}\n' > "$tmp/lab/plugins/$one/hooks/hooks.json"
+gate
+expect "key-like text inside a string is never read as a key" 0 "PASS"
+
+a_lab && printf '{"description": "what these hooks do", "hooks": {}}\n' > "$tmp/lab/plugins/$one/hooks/hooks.json"
+gate
+expect "a description beside hooks passes" 0 "PASS"
+
+# A key with an empty name is still a key. Read bare, it was a blank line, and a blank line passed.
+a_lab && printf '{"": "x", "hooks": {}}\n' > "$tmp/lab/plugins/$one/hooks/hooks.json"
+gate
+expect "a key with an empty name fails" 1 "holds a key Claude Code drops: \"\""
 
 # --- an empty read is never a clean one ---
 

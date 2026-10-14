@@ -1,5 +1,5 @@
 #
-# The top-level keys of one JSON object, a line each, however the file is laid out. #1074.
+# The top-level keys of one JSON object, a line each and quoted, however the file is laid out. #1074.
 #
 # A key is a string at depth one with a colon after it. A string is skipped whole, escapes and all,
 # so key-like text inside one is never read, and depth counts braces outside strings only.
@@ -19,7 +19,7 @@ END {
 # Read the string opening at `at`, print it when it is a top-level key, and say where to read on.
 function a_string_from(at,   end) {
     end = end_of_string(at)
-    if (depth == 1 && colon_follows(end)) print substr(text, at + 1, end - at - 1)
+    if (depth == 1 && colon_follows(end)) print substr(text, at, end - at + 1)
     return end + 1
 }
 
