@@ -145,20 +145,36 @@ memory_already_in_a_worktree() {
 }
 memory_already_in_a_worktree
 
-# The README's command, run as a person runs it, so a removed worktree keeps nothing the store needs.
+# The README's own fence, read out of it, so the command a person runs is the command this runs.
+the_move_command() {
+  awk '/To move it, run this from/ { seen = 1 }
+       seen && /^```sh$/ { inside = 1; next }
+       inside && /^```$/ { exit }
+       inside' "$here/README.md"
+}
+
+# A checkout and a worktree on a branch with a dot in it, which the resolver names with a dash.
+a_worktree_on_a_dotted_branch() {
+  git init -q "$1" >/dev/null 2>&1 \
+    && git -C "$1" -c user.email=a@b.c -c user.name=a commit -q --allow-empty -m x >/dev/null 2>&1 \
+    && git -C "$1" worktree add -b rel/v1.2 "$2" >/dev/null 2>&1
+}
+
+# Moved by the README's command and removed, a worktree's memory is what the next one on that branch reads.
 a_person_moves_it() {
-  a_checkout_and_its_worktree "$tmp/moved" "$tmp/moved-wt" \
-    && mkdir -p "$tmp/moved-wt/.claude/memory/feat/wt" \
-    && printf 'Ship it\n' > "$tmp/moved-wt/.claude/memory/feat/wt/working.md" \
+  a_worktree_on_a_dotted_branch "$tmp/moved" "$tmp/moved-wt" \
+    && mkdir -p "$tmp/moved-wt/.claude/memory/rel/v1-2" \
+    && printf 'Ship it\n' > "$tmp/moved-wt/.claude/memory/rel/v1-2/working.md" \
     || { skip "a person's move — git could not make a worktree here"; return; }
+  move=$(the_move_command)
+  [ -n "$move" ] || { bad "the README holds no move command to run"; return; }
 
-  ( cd "$tmp/moved-wt" \
-    && b=$(git branch --show-current) && m=$(git rev-parse --path-format=absolute --git-common-dir) && m=${m%/.git} \
-    && mkdir -p "$(dirname "$m/.claude/memory/$b")" && mv ".claude/memory/$b" "$m/.claude/memory/$b" )
+  ( cd "$tmp/moved-wt" && sh -c "$move" ) >/dev/null 2>&1
   git -C "$tmp/moved" worktree remove --force "$tmp/moved-wt" >/dev/null 2>&1
+  git -C "$tmp/moved" worktree add "$tmp/moved-again" rel/v1.2 >/dev/null 2>&1
 
-  is "a worktree moved by the README's command and removed keeps its memory in the store" \
-     "$(cat "$tmp/moved/.claude/memory/feat/wt/working.md" 2>/dev/null)" "Ship it"
+  is "a worktree moved by the README's command and removed leaves its memory where the next worktree reads it" \
+     "$(cat "$(resolve_for "$tmp/moved-again" "$tmp/moved-again" .claude/memory)/working.md" 2>/dev/null)" "Ship it"
 }
 a_person_moves_it
 

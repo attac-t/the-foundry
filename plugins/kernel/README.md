@@ -189,12 +189,15 @@ full `CLAUDE_MEMORY_DIR`, still names the path.
 branch. No hook moves it. To move it, run this from the worktree's top:
 
 ```sh
-b=$(git branch --show-current); m=$(git rev-parse --path-format=absolute --git-common-dir); m=${m%/.git}
-mkdir -p "$(dirname "$m/.claude/memory/$b")" && mv ".claude/memory/$b" "$m/.claude/memory/$b"
+b=$(git branch --show-current | sed 's/[^a-zA-Z0-9\/-]/-/g'); m=$(git rev-parse --path-format=absolute --git-common-dir)
+case $m in */.git) m=${m%/.git} ;; *) echo "this worktree is its own store; nothing to move" >&2; m= ;; esac
+[ -z "$m" ] || { mkdir -p "$(dirname "$m/.claude/memory/$b")" && mv ".claude/memory/$b" "$m/.claude/memory/$b"; }
 ```
 
-It keeps a branch's parent folder: a plain `mv` of `foundry/x` would land at `x`, where nothing
-looks. Run it before removing the worktree.
+It names the folder as the resolver does, so `release/1.2` moves `release/1-2`. It keeps a branch's
+parent folder: a plain `mv` of `foundry/x` would land at `x`, where nothing looks. In a bare
+repository or a submodule each worktree is its own store, so there it moves nothing, and a removed
+worktree still takes its memory. Run it before removing the worktree.
 
 One variable is the whole handshake with [floor](../floor/README.md). kernel never learns where a
 run is kept and never calls floor, so each still works with the other uninstalled. `FOUNDRY_RUN`
