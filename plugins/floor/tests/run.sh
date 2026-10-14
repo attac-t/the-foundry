@@ -5114,9 +5114,9 @@ wreck_runner "a delivery that pushes before it reads is caught" \
 wreck_runner "a pass that lets 57 go, never waiting on a person, is caught" \
   credwait 's@^        15|18|32|57|58) wait_on_a_person@        15|18|32|58) wait_on_a_person@'
 
-# **A gate says what it ran**, #1054: its line deleted, a pass is silent again.
-wreck_runner "a gate that says nothing of what it ran is caught" \
-  saygate 's@^    say_the_gate "\$name" "\$answered"$@    :@'
+# **A gate says what it ran**, #1054: the pass line deleted, a pass is silent again.
+wreck_runner "a gate that passes and says nothing is caught" \
+  saygate 's@note "gate \[\$1\] passed"; @@'
 
 # **No message holding a credential is committed**, #1156. One break per way past `commit`'s read:
 # never asked, and a failed read let through.
