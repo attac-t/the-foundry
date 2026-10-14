@@ -5181,6 +5181,9 @@ wreck_runner "a clause a question asks about around the renderer is caught" \
 wreck_runner "a member a question names around the renderer is caught" \
   inertheading 's@^\(say_the_member() .*\) "\$(inert "\$2")"; }$@\1 "$2"; }@'
 
+wreck_runner "why a proposal did not enter, around the renderer, is caught" \
+  inertwhy 's@"\$(inert "\$left_why")"@"$left_why"@'
+
 wreck_runner "a fence no longer than the run it holds is caught" \
   fenceequal 's@longest < 3 ? 3 : longest + 1@longest < 3 ? 3 : longest@'
 

@@ -3220,8 +3220,8 @@ live_outside_spans() {
     # Four spaces open a block after a blank line or a block, never inside a paragraph or a list (#1188).
     /^[ \t]*$/ { prose = 0; next }
     /^(    |\t)/ && !prose && !listed { next }
-    /^( |  |   )?([-+*]|[0-9]+[.)])( |$)/ { listed = 1 }
-    /^[^ \t]/ && !prose && !/^([-+*]|[0-9]+[.)])( |$)/ { listed = 0 }
+    /^( |  |   )?([-+*]|[0-9]+[.)])( |\t|$)/ { listed = 1 }
+    /^[^ \t]/ && !prose && !/^([-+*]|[0-9]+[.)])( |\t|$)/ { listed = 0 }
 
     { prose = 1; line = $0; bare = ""
       while (match(line, /`+/)) {
@@ -15272,6 +15272,7 @@ unknown whether @ghost counts
      "$(live_outside_spans "$(printf 'Proposed by x:\n    @ghost')" | grep -c .)" "1"
   is "and one after a blank line as a block" "$(live_outside_spans "$(printf 'Proposed by x:\n\n    @ghost')" | grep -c .)" "0"
   is "but one in a list as the item's own"   "$(live_outside_spans "$(printf '%s\n\n    @ghost' '- x')" | grep -c .)" "1"
+  is "and a tab after the marker opens a list too" "$(live_outside_spans "$(printf '%s\t%s\n\n    @ghost' - x)" | grep -c .)" "1"
 }
 the_panel_question_links_nothing
 
