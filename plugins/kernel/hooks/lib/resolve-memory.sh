@@ -10,6 +10,7 @@
 # is asked, and the path comes back full. Not named, everything here answers as before. #1137.
 SESSION="${1:-}"
 MEMORY_BASE="${CLAUDE_MEMORY_DIR:-.claude/memory}"
+STORE_BASE=$MEMORY_BASE
 
 # Print one answer whole. Dash's `echo` reads `\\` as one backslash, so a UNC base could not leave
 # through it. #1162.
@@ -49,4 +50,25 @@ BRANCH=$(git branch --show-current 2>/dev/null)
 [ -n "$BRANCH" ] || { answer "$MEMORY_BASE"; exit 0; }
 
 SAFE_BRANCH=$(printf '%s' "$BRANCH" | sed 's/[^a-zA-Z0-9\/-]/-/g')
+
+# The repository's own checkout: beside a common dir named `.git`, else this worktree's top. A bare
+# repository or a submodule keeps its git dir where another repository's can sit beside it. #1161.
+repository_root() {
+    common=$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null) || return 1
+    is_absolute "$common" || return 1
+    case $common in */.git) printf '%s\n' "${common%/.git}"; return 0 ;; esac
+    git rev-parse --show-toplevel 2>/dev/null
+}
+
+# The store, unless it has no folder for the branch and this worktree does. That one is read where it
+# is: no hook moves memory, and a person does, by the command the README names.
+answer_the_store() {
+    store="$(repository_root)/$STORE_BASE/$1" || return 1
+    own="$(git rev-parse --show-toplevel 2>/dev/null)/$STORE_BASE/$1"
+    [ ! -d "$store" ] && [ -d "$own" ] && { answer "$own"; return 0; }
+    answer "$store"
+}
+
+# A session named with a relative base answers its repository's store. Anything else, as before.
+[ -n "$SESSION" ] && ! is_absolute "$STORE_BASE" && answer_the_store "$SAFE_BRANCH" && exit 0
 answer "$MEMORY_BASE/$SAFE_BRANCH"
