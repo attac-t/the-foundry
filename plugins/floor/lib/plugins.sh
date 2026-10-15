@@ -121,12 +121,15 @@ say_where_a_marketplace_reads_from() {
 # **Silent where the tree is no repository**, because a marketplace may be a plain directory git
 # never touched. Saying *on whatever branch* there is a guess wearing a fact's clothes.
 the_ref_it_holds() {
+    # empty: the caller read this file a moment ago; with no location there is no tree to name a ref of
     at=$(marketplace_location "$1") || return 0
     [ -n "$at" ] || return 0
 
     # **One guard, because two for one fault cannot be broken.** Guarding both asks meant either
     # silence covered the other, and the suite stayed green with one of them gone. The commit is
     # what must exist; a tree with one always answers for its branch too.
+    #
+    # empty: a plain directory, or a repository with no commit, holds no ref to name
     head=$(git -C "$at" rev-parse --short HEAD 2>/dev/null) || return 0
     named=$(git -C "$at" rev-parse --abbrev-ref HEAD 2>/dev/null)
 
@@ -163,6 +166,7 @@ say_a_marketplace_with_no_manifest() {
 # The marketplaces this host actually took something from, never every one it knows. A key joins
 # the two names and is the only place they are joined.
 marketplaces_this_host_registered_from() {
+    # empty: a record this user cannot read is one no session of theirs loads, so nothing is installed
     record=$(host_record) || return 0
 
     awk -F'"' '/^    "/ && index($2, "@") { print substr($2, index($2, "@") + 1) }' "$record" \
@@ -289,6 +293,7 @@ version_in() {
 #
 # One line per install, undeduplicated, because the caller needs both the set and the count.
 every_version_registered_for() {
+    # empty: a record this user cannot read is one no session of theirs loads, so nothing is installed
     record=$(host_record) || return 0
 
     awk -F'"' -v want="$1" '
@@ -382,6 +387,7 @@ say_a_plugin_this_session_could_load() {
 # The versions on rows a session can reach. `scope` is read before `version` in every record the
 # harness writes, and `projectPath` sits between them when there is one.
 versions_reachable_from() {
+    # empty: a record this user cannot read is one no session of theirs loads, so nothing is installed
     record=$(host_record) || return 0
     here=$(printf '%s' "$2" | tr 'A-Z\\' 'a-z/')
     awk -F'"' -v want="$1" -v here="$here" '

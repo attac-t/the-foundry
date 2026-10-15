@@ -95,9 +95,9 @@ say_what_drives_itself() {
 # of them is a gate nobody has proved can fail. That state was invisible: the header said five, the
 # file drove nine, and a reader subtracting one from the other got four gates wrong.
 #
-# Typed, because a `drive` line carries a break name and `shell` has two of them. A derived list
+# Typed, because a `drive` line carries a break name and `shell` has three of them. A derived list
 # would have to guess which gate `shell-taper` belongs to, and guessing is what this refuses.
-ACCOUNTED="frontmatter versions repeats shell taper hosts providers secrets hooks hookfiles judged
+ACCOUNTED="frontmatter versions repeats shell taper hosts providers rulefiles secrets hooks hookfiles judged
 bytes comments codex host judges anthropic stale basing durable unnamed
 kernel signal panel floor
 bumps"
@@ -136,6 +136,12 @@ every_break() {
         'an_else >> plugins/floor/lib/source.sh' \
         'bash bin/shell.sh'
 
+    # A captured answer that hides its failure, under a comment that is not `# empty:`. A gate taking
+    # any comment for a reason goes green here. #1160.
+    drive shell-capture plugins/floor/lib/source.sh \
+        'a_hidden_failure >> plugins/floor/lib/source.sh' \
+        'bash bin/shell.sh'
+
     # The boundary `run.sh` states twice and nothing read. #299 stands a machine up from Docker, and
     # this is the line that would land in core on the way.
     drive hosts plugins/floor/lib/source.sh \
@@ -147,6 +153,11 @@ every_break() {
     drive providers plugins/floor/lib/source-dir.sh \
         'a_vendor >> plugins/floor/lib/source-dir.sh' \
         'sh bin/providers.sh'
+
+    # A fourth file a pass would obey, named where floor reads it and refused nowhere. #1184.
+    drive rulefiles plugins/floor/lib/source.sh \
+        'a_rule_file_read >> plugins/floor/lib/source.sh' \
+        'sh bin/rulefiles.sh'
 
     # A judge's name where core decides. The seam was held on discipline alone until a gate gave
     # it an exit code, and the file that decides about judges is the one it would land in.
@@ -306,6 +317,11 @@ an_else() {
     printf '\nnoop_for_a_break() {\n    if true; then\n        :\n    else\n        :\n    fi\n}\n'
 }
 
+# Captured on the line after it, so the plant carries everything the rule asks of one.
+a_hidden_failure() {
+    printf '\nhead_for_a_break() {\n    # the head this checkout holds\n    head=$(git rev-parse HEAD) || return 0\n    printf %%s "$head"\n}\nheld_for_a_break=$(head_for_a_break)\n'
+}
+
 # Code, never a comment. `run.sh` already carries two comments naming a container, so a break that
 # planted prose would go green against a gate working perfectly.
 a_host() { printf '\n[ -f /.dockerenv ] && inside_a_container=1\n'; }
@@ -313,6 +329,9 @@ a_host() { printf '\n[ -f /.dockerenv ] && inside_a_container=1\n'; }
 # A vendor named where core decides something, never where a comment explains the seam. The
 # resolver may carry this very line; `source-dir.sh` may not.
 a_vendor() { printf '\ncase $remote in *github.com*) : ;; esac\n'; }
+
+# A read of a file under `.foundry/` that `deliver` does not refuse, in code rather than a comment.
+a_rule_file_read() { printf '\nbench_in() { cat "$1/.foundry/bench"; }\n'; }
 
 a_judge_name() { printf '\ncase $reach in anthropic) : ;; esac\n'; }
 

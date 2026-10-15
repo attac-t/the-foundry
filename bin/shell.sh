@@ -46,9 +46,13 @@ main() {
     printf '%s\n' "$DEBT" > "$owed"
     measure > "$measured"
 
+    captured > "$names"
+    [ -s "$names" ] || { printf 'FAIL — no shipped line captures a function. A half read nothing.\n'; exit 3; }
+
     report 'an else is a function nobody named' "$(branches)"
     report "a body past $MAX lines"             "$(overlong)"
     report 'a pipe that hides a failure'        "$(piped)"
+    report 'a captured answer that hides a failure' "$(hidden)"
 
     verdict
 }
@@ -101,6 +105,29 @@ piped() {
         awk '
             /^[ \t]*#/ { next }
             /(^|[ \t;&|{(])(gh|git|curl|wget)[ \t][^|]*\|[^|]/ { printf "  %s:%d %s\n", FILENAME, FNR, $0 }
+        ' "$file"
+    done < "$files"
+}
+
+# --- the captured answer ---
+
+# A function a caller captures, failing to an empty answer and a clean exit. The caller reads that as
+# the truth, and #1153 found one deciding whether a text was published. #1160.
+#
+# A bare `|| return 0` after a command or a capture, never after a `[ ]` test, which is a guard.
+# `# empty:` on the line above says why nothing is the truth there, and no check judges the why.
+hidden() {
+    while IFS= read -r file; do
+        awk -f bin/hidden.awk "$names" "$file"
+    done < "$files"
+}
+
+# Every name a shipped line captures as `$(name`, one a line. A whole-line comment captures nothing.
+captured() {
+    while IFS= read -r file; do
+        awk '
+            /^[ \t]*#/ { next }
+            { while (match($0, /\$\([A-Za-z_][A-Za-z0-9_]*/)) { print substr($0, RSTART + 2, RLENGTH - 2); $0 = substr($0, RSTART + RLENGTH) } }
         ' "$file"
     done < "$files"
 }
@@ -168,6 +195,7 @@ trap 'rm -rf "$work"' EXIT
 files="$work/files"
 owed="$work/owed"
 measured="$work/measured"
+names="$work/names"
 broken=0
 
 main "$@"

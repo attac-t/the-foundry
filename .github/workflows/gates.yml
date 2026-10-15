@@ -67,6 +67,10 @@ jobs:
       - name: Floor's core names no provider
         run: sh bin/providers.sh
 
+      # A file a pass reads its rules from, named in floor's code, is one deliver refuses. #1184.
+      - name: Deliver refuses every file a pass obeys
+        run: sh bin/rulefiles.sh audit
+
       # The judge seam, and a separate rule. The harness word is outside it, because core reads the
       # harness's own manifest directories nine times over and every one is legitimate.
       - name: Floor's core names no judge

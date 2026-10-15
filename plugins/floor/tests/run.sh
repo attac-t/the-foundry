@@ -3622,6 +3622,13 @@ wreck_runner "a read that carries on when speaker cannot say is caught" \
 wreck_runner "a run with no hand named that does not refuse is caught" \
   nohand '/^refuse_with_no_hand() {/,/^}/s#^    \[ -n "\$1" \] && return 0$#    return 0#'
 
+# #1160: a run with no base, or a base git cannot give, heard as one whose base names no hand.
+wreck_runner "a run with no base refused as naming no hand is caught" \
+  nobaseheard 's#^    heard_base=\$(bootstrap_base "\$1") || refuse_a_run_with_no_base$#    heard_base=$(bootstrap_base "$1")#'
+
+wreck_runner "a base that cannot be read, heard as naming no hand, is caught" \
+  lostbasehands 's#^    heard_practice=\$(practice_at_base "\$1") || return 1$#    heard_practice=$(practice_at_base "$1")#'
+
 wreck_runner "every hand floor's own account, not refused, is caught" \
   ownhand '/^refuse_hands_floor_writes_as() {/,/^}/s#^    exit 50$#    return 0#'
 
@@ -5114,6 +5121,10 @@ wreck_runner "a delivery that pushes before it reads is caught" \
 wreck_runner "a pass that lets 57 go, never waiting on a person, is caught" \
   credwait 's@^        15|18|32|57|58) wait_on_a_person@        15|18|32|58) wait_on_a_person@'
 
+# **A gate says what it ran**, #1054: the pass line deleted, a pass is silent again.
+wreck_runner "a gate that passes and says nothing is caught" \
+  saygate 's@note "gate \[\$1\] passed"; @@'
+
 # **No message holding a credential is committed**, #1156. One break per way past `commit`'s read:
 # never asked, and a failed read let through.
 wreck_runner "a commit that never reads its message is caught" \
@@ -5169,6 +5180,16 @@ wreck_runner "a newline kept inside a span is caught" \
 
 wreck_runner "a worker printed around the renderer is caught" \
   inertworker 's@printf .; worker %s. "\$(inert "\$began_by")"@printf "; worker %s" "$began_by"@'
+
+# A question's own two, #1188: the clause it asks about, and the member over that member's lines.
+wreck_runner "a clause a question asks about around the renderer is caught" \
+  inertclause 's@^\(say_nothing_derives_it() .*\) "\$(inert "\$1")"; }$@\1 "$1"; }@'
+
+wreck_runner "a member a question names around the renderer is caught" \
+  inertheading 's@^\(say_the_member() .*\) "\$(inert "\$2")"; }$@\1 "$2"; }@'
+
+wreck_runner "why a proposal did not enter, around the renderer, is caught" \
+  inertwhy 's@"\$(inert "\$left_why")"@"$left_why"@'
 
 wreck_runner "a fence no longer than the run it holds is caught" \
   fenceequal 's@longest < 3 ? 3 : longest + 1@longest < 3 ? 3 : longest@'

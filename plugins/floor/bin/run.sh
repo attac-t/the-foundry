@@ -255,7 +255,7 @@ EOF
 # Doing the work, and handing it over.
 usage_work() {
     cat <<'EOF'
-  run.sh gates                    run every pinned gate and record each — exit 14 if one did not pass
+  run.sh gates                    run every pinned gate, record and name each — exit 14 if one did not pass
   run.sh judged                   ask every judge the charter names — exit 39 if one did not approve
   run.sh open                     check out every selected target in isolation, and print where
   run.sh commit <message>         commit what is staged, and record that this run made it
@@ -2550,7 +2550,16 @@ gate_held() {
     [ -n "$command" ] || { note "the charter pins no command for [$name]"; exit 7; }
 
     stamp_command "$dir" "$ref" "$name" sh -c "$command"
-    answered=$?; emit "$dir" gate.finished name="$name" result="$answered" runtime="$(runtime)"; return "$answered"
+    answered=$?; emit "$dir" gate.finished name="$name" result="$answered" runtime="$(runtime)"
+    say_the_gate "$name" "$answered"
+    return "$answered"
+}
+
+# One line a gate, on the stream the count uses, so a pass says what it graded. #1054. Never `held`,
+# which `gates` prints for an item another host claims.
+say_the_gate() {
+    [ "$2" -eq 0 ] && { note "gate [$1] passed"; return 0; }
+    note "gate [$1] did not pass, exit $2"
 }
 
 #
@@ -4189,6 +4198,7 @@ the_remotes_default() {
 
 # The branch this checkout's `origin/HEAD` names, or nothing when it names none.
 the_checkouts_default() {
+    # empty: with -q, git fails here when origin/HEAD is absent or names no branch, and that is nothing
     origin_head=$(git symbolic-ref -q refs/remotes/origin/HEAD 2>/dev/null) || return 0
     printf '%s' "${origin_head#refs/remotes/origin/}"
 }
@@ -5774,6 +5784,7 @@ say_how_many_it_is_the_last_of() {
 }
 
 commits_above_the_base() {
+    # empty: with no work tree there are no commits to count, and `work_tree` has said why on stderr
     above_in=$(unit_work_tree "$1" "$3") || return 0
     above_from=$(recorded_base "$(unit_workspace "$1")" "$(target_slot "$3")")
     [ -n "$above_from" ] || return 0
@@ -5856,6 +5867,7 @@ each_line_a_hand_said() {
 
 # Who proposed a clause the panel proposed. Nothing for any other: a worker's clause is no panel's.
 who_proposed_a_panel_clause() {
+    # empty: a clause no panel proposed has no proposer, and this predicate is what says which it is
     is_a_panel_clause "$1" "$(clause_text "$(charter_file "$1")" "$2")" || return 0
     printf '; proposed by %s' "$(joined "$(proposers_of "$(charter_file "$1")" "$2" | inert_each)" ', ')"
 }
@@ -7557,6 +7569,7 @@ ungoverning_clauses() {
     selected=$(list_targets "$targets_file" | wc -l | tr -d ' ')
     [ "$selected" -gt 0 ] || { awk '$1 == "clause" { print $2 }' "$file"; return 0; }
 
+    # empty: a run with no bootstrap, or a nameless one, has no bootstrap target for the second case
     boot=$(bootstrap_identity "$dir") || return 0
     only_boot=$(list_targets "$targets_file" | awk -v b="$boot" '$1 != b' | wc -l | tr -d ' ')
     [ "$only_boot" -eq 0 ] || return 0
@@ -8380,7 +8393,8 @@ is_a_panel_clause() { panel_clauses "$1" | grep -qxF -e "$2"; }
 # leaves only the subshell.
 #
 hear_the_item() {
-    heard_hands=$(hands_named "$1")
+    heard_base=$(bootstrap_base "$1") || refuse_a_run_with_no_base
+    heard_hands=$(hands_named "$heard_base") || refuse_an_unreadable_base "$heard_base"
     refuse_with_no_hand "$heard_hands"
 
     speakers_of "$(item_id "$1")"
@@ -8413,10 +8427,13 @@ holds_a_clause_nothing_derived() { [ -n "$(introduced_clauses "$(charter_file "$
 # The hands a repository names to answer: every `authorise` line in `.foundry/practice`, read at the
 # run's base as grants are, so a worker's own commit names nobody. One a line, each once, folded.
 #
+# **1 when the base cannot be read**, never nothing: an empty answer read as *the base names no
+# hand*, which only a base that was read can say. #1160.
+#
 hands_named() {
-    base=$(bootstrap_base "$1") || return 0
+    heard_practice=$(practice_at_base "$1") || return 1
 
-    practice_at_base "$base" | hands_in
+    printf '%s\n' "$heard_practice" | hands_in
 }
 
 # The hands a practice names: each word after `authorise`, folded, each once.
@@ -8620,15 +8637,19 @@ ask_to_authorise() {
 #
 the_authorisation_question() {
     is_a_panel_clause "$3" "$1" && { the_panel_question "$3" "$1" "$2"; return 0; }
-    printf 'May this clause exist? Nothing derives it: %s.\n\nA hand named in `.foundry/practice` authorises it with this line alone:\n\n```\nyes %s\n```\n\nDelete the line before delivery to withdraw it.\n' "$1" "$2"
+    say_nothing_derives_it "$1"
+    printf 'A hand named in `.foundry/practice` authorises it with this line alone:\n\n```\nyes %s\n```\n\nDelete the line before delivery to withdraw it.\n' "$2"
 }
+
+# Both questions open on the clause. A person or a panel member wrote it, so it prints inert. #1188.
+say_nothing_derives_it() { printf 'May this clause exist? Nothing derives it: %s.\n\n' "$(inert "$1")"; }
 
 #
 # **A clause the panel proposed asks in more words**: what the panel said about it, then the yes, then
 # the no that strikes it. The words are fixed once the run is shaped, so a resume asks the same question.
 #
 the_panel_question() {
-    printf 'May this clause exist? Nothing derives it: %s.\n\n' "$2"
+    say_nothing_derives_it "$2"
     what_the_panel_said "$1" "$2"
     printf 'A hand named in `.foundry/practice` authorises it with this line alone:\n\n```\nyes %s\n```\n\n' "$3"
     printf 'Or a hand strikes it from this run with this line alone:\n\n```\nno %s\n```\n\n' "$3"
@@ -8650,7 +8671,8 @@ say_who_proposed_it() {
     members_who_sat "$1" | while IFS= read -r said_member; do
         said_lines=$(the_lines_of "$1" "$said_member" | lines_proposing "$2")
         [ -n "$said_lines" ] || continue
-        printf 'Proposed by %s:\n\n%s\n\n' "$said_member" "$said_lines"
+        say_the_member 'Proposed by' "$said_member"
+        printf ':\n\n%s\n\n' "$said_lines"
     done
 }
 
@@ -8658,22 +8680,28 @@ say_what_names_no_proposal() {
     members_who_sat "$1" | while IFS= read -r said_member; do
         said_lines=$(the_lines_of "$1" "$said_member" | awk -F'\t' '$1 == 0 && $2 != "nothing" { printf "    %s %s\n", $2, $3 }')
         [ -n "$said_lines" ] || continue
-        printf 'Names no proposal, from %s:\n\n%s\n\n' "$said_member" "$said_lines"
+        say_the_member 'Names no proposal, from' "$said_member"
+        printf ':\n\n%s\n\n' "$said_lines"
     done
 }
 
+# The why is floor's sentence, and it names bench members, so it prints inert here, where it is read.
 say_what_did_not_enter() {
     members_who_sat "$1" | while IFS= read -r said_member; do
         member_said=$(the_lines_of "$1" "$said_member")
         printf '%s\n' "$member_said" | awk -F'\t' '$2 == "propose" { print $1 "\t" $3 }' \
             | while IFS="$TAB" read -r left_number left_words; do
                 left_why=$(why_it_did_not_enter "$1" "$left_words") || continue
-                printf 'Did not enter, from %s (%s):\n\n' "$said_member" "$left_why"
+                say_the_member 'Did not enter, from' "$said_member"
+                printf ' (%s):\n\n' "$(inert "$left_why")"
                 printf '%s\n' "$member_said" | lines_of_proposal "$left_number"
                 printf '\n'
             done
     done
 }
+
+# The words that head a member's lines, then the member. The practice names it, so it prints inert.
+say_the_member() { printf '%s %s' "$1" "$(inert "$2")"; }
 
 # A member's contribution, read through the one grammar: `<proposal>\t<word>\t<text>` a line.
 the_lines_of() { awk -f "$PLUGIN_ROOT/lib/contribution.awk" "$(contribution_file "$1" "$2")" 2>/dev/null; }
