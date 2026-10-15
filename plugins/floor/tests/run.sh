@@ -967,8 +967,9 @@ say_if_nobody_asked
 # with drivers that only apply and compare, so asking costs seconds. A tag it could not replay stops
 # the audit too, since what that break would break is unknown.
 #
-# **It is stricter than the audit for `wreck_join` and `wreck_adopt`.** Their `sed` runs in a pipe
-# whose status nobody reads, so one that fails or prints nothing still runs a suite. Here it stops.
+# **It is earlier than the audit for `wreck_join` and `wreck_adopt`.** Their `sed` runs in a pipe
+# whose status nobody reads. `rewrite` refuses one that printed nothing, so the copy compares equal
+# and the audit calls it MOOT on its turn. Here it stops before any break runs.
 refuse_a_break_that_changes_nothing() {
   local named
   named=$(breaks_that_change_nothing "$root" "$tmp/applies")
@@ -5333,7 +5334,7 @@ wreck() {
   local checks="$tmp/$tag.check" killer
 
   copy "$tag"             || { bad "$name — could not copy the plugin, so this proves nothing"; return; }
-  "$break_it" "$tmp/$tag" || { bad "$name — the break did not apply, so this proves nothing"; return; }
+  "$break_it" "$tmp/$tag" || { moot "$name — the break did not apply, so this proves nothing"; return; }
 
   # Three answers, read as three. `caught` returns 2 for a mutant that never answered, and
   # `||` read that as *the suite passed against a broken install* — the right red for the
@@ -5358,8 +5359,13 @@ records_exec() {
   [ ! -x "$probe" ]
 }
 
-# Read a file and write it back, so a break can filter a file through itself.
-rewrite() { cat > "$1.new" && mv "$1.new" "$1"; }
+# Write a break's text over its file, or refuse one that changed nothing or wrote nothing. #1176.
+# A refused write leaves the file as it was, so the break reads as never applied, never as a kill.
+rewrite() {
+  cat > "$1.new" && [ -s "$1.new" ] && ! cmp -s "$1.new" "$1" && mv "$1.new" "$1" && return 0
+  rm -f "$1.new"
+  return 1
+}
 
 # The breaks. Every one is a failure kernel or signal actually shipped.
 crlf()    { awk '{ printf "%s\r\n", $0 }' "$1/hooks/announce.sh" | rewrite "$1/hooks/announce.sh"; }
@@ -5371,6 +5377,37 @@ unwire()  { grep -v 'preflight.sh' "$1/hooks/hooks.json" | rewrite "$1/hooks/hoo
 unhook()  { chmod -x "$1/hooks/announce.sh"; }
 mute()    { printf 'exit 0\n' > "$1/hooks/announce.sh"; }
 misfire() { sed 's|"SessionStart"|"Stop"|' "$1/hooks/hooks.json" | rewrite "$1/hooks/hooks.json"; }
+
+# A break run over a copy it already changed has a stale pattern, so it reads MOOT and runs no suite.
+# It runs in a subshell, since its MOOT would fail the whole audit. #1176.
+a_stale_break_reads_moot() {
+  local said
+  copy stale && unquote "$tmp/stale" || { bad "a stale break — unquote did not apply once"; return; }
+
+  said=$( root="$tmp/stale"; failed=0; wreck "a stale unquote" stalequot unquote; echo "failed=$failed" )
+
+  case "$said" in *"MOOT  a stale unquote — the break did not apply"*"failed=3") ;;
+    *) bad "a stale break did not read MOOT — [$said]"; return ;;
+  esac
+  [ ! -e "$tmp/stalequot.check" ] || { bad "a stale break ran the install suite"; return; }
+  printf '  ok    a break whose pattern is stale reads MOOT, and runs no suite
+'
+}
+
+# A break that wrote nothing, as a `sed` over a missing file does, leaves the file as it was.
+an_empty_write_is_refused() {
+  local file="$tmp/rewrite-empty"
+  printf 'kept
+' > "$file"
+
+  : | rewrite "$file" && { bad "an empty write was taken"; return; }
+  [ "$(cat "$file")" = kept ] && [ ! -e "$file.new" ] || { bad "an empty write changed the file"; return; }
+  printf '  ok    an empty write is refused, and the file is kept
+'
+}
+
+a_stale_break_reads_moot
+an_empty_write_is_refused
 
 wreck "a hook checked out with CRLF is caught"         crlf   crlf
 wreck "an unquoted plugin root is caught"              noquot unquote

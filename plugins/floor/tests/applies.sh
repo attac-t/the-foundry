@@ -42,8 +42,8 @@ breaks_that_change_nothing() {
   [ -s "$work/replayed" ] || { printf 'no break could be replayed from %s\n' "$root/tests/run.sh"; return; }
 
   while IFS=$'\037' read -r kind tag mutation file; do
-    # A `wreck` line carries a function, not a `sed`, so nothing here applies it. #1176 owns the ten
-    # of those that cannot tell a copy they changed from one they did not.
+    # A `wreck` line carries a function, not a `sed`, so nothing here applies it. Its `rewrite`
+    # refuses a write that changes nothing, and the audit calls that break MOOT on its turn. #1176.
     [ "$kind" = sed ] || continue
     why_it_proves_nothing "$root" "$tag" "$mutation" "$file" "$work/out"
   done < "$work/replayed"
