@@ -283,6 +283,7 @@ where it is — a key for a one-off buys indirection and saves nothing.
 | `refuse_a_run_with_no_base` | 6 | invariant | start a new run — one made before this rule cannot prove what it derived from | `refusal` |
 | `refuse_a_shape_no_run_may_use` | 6 | invariant | a \`shape\` line no run may use: | `pin` — charter *a panel shapes the charter*, B1: a `shape` line no run could use is wrong on every host, as a reach is |
 | `refuse_an_unreadable_base` | 6 | invariant | the base [$1] cannot be read, so nothing can say what it names | `evidence` — a bench, a gate or a `shape` line read from a base nobody could read is a guess |
+| `refuse_an_unread_practice` | 6 | invariant | make \`.foundry/practice\` a regular file at the base, and start a new run | `evidence` — a practice floor could not read is no list of hands, and reading it as one sends a person to add a line that is already there. #1083 |
 | `refuse_collision` | 6 | invariant | — | `evidence` — two clauses on one id, so a reader looking it up gets whichever was written last |
 | `refuse_moved_resolution` | 6 | default | — | `charter-drifted` |
 | `refuse_wrong_repository` | 6 | default | run this inside [$boot], not [${here:-nowhere}] | `no-workspace` — wrong directory |
