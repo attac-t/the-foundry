@@ -36,8 +36,8 @@ cases_of() {
     heredoc != "" { if (pass == 2 && mode == "only") print; if (closes($0, heredoc)) heredoc = ""; next }
 
     pass == 1 && /^[a-z_][a-z0-9_]*\(\) *\{/ { name = $0; sub(/\(\).*/, "", name); defined[name] = 1 }
+    pass == 1 && /^[a-z_][a-z0-9_]*\(\) *\{/ && !/\}[ \t]*$/ { opens(name) }
     pass == 1 && /^[a-z_][a-z0-9_]*$/        { calls[$0]++ }
-    pass == 1 && /^[a-z_][a-z0-9_]*\(\) *\{ *$/ { if (open != "") note_nested(name, open); open = name }
     pass == 1 && /^\}/                        { open = "" }
 
     pass == 2 && mode == "list" && is_case($0)                   { print; next }
@@ -46,8 +46,9 @@ cases_of() {
 
     { heredoc = opener($0) }
 
-    function note_nested(inner, outer) {
-      nested = nested sprintf("cases: %s opens inside %s, at line %d of %s\n", inner, outer, FNR, FILENAME)
+    function opens(inner) {
+      if (open != "") nested = nested sprintf("cases: %s opens inside %s, at line %d of %s\n", inner, open, FNR, FILENAME)
+      open = inner
     }
 
     function is_case(line)  { return (line in defined) && calls[line] == 1 }

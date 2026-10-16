@@ -5435,7 +5435,7 @@ wreck_runner "a case opened inside another, read as a case, is caught" \
 
 # #1207: a header planted above a case in the suite itself, so the case opens inside it.
 wreck_runner "a case nested in the suite beside the runner is caught" \
-  renested 's#^a_case_opened_inside_another_is_refused() {$#a_planted_outer() {\n&#' tests/model.sh
+  renested 's@^# #1207\. A case opened inside another runs only when that one does.*@a_planted_outer() {@' tests/model.sh
 
 wreck_runner "a case that passes against its break read as a catch is caught" \
   passcaught 's#^  \[ "\$said" -eq 0 \] \&\& return 1$#  :#' tests/alone.sh
