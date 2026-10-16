@@ -2116,6 +2116,22 @@ an_observation_is_not_evidence() {
      "$(floor "$tmp/ob" observe | awk -F'\t' 'NF != 4' | grep -c .)" "0"
 }
 an_observation_is_not_evidence
+
+# #1204. A name holding `=` reads as a field, so it is refused, and nothing is written.
+an_event_named_like_a_field_is_refused() {
+  make_repo "$tmp/obeq" main && set_origin "$tmp/obeq" 'https://github.com/acme/obeq.git' \
+    || { skip "an event named like a field — git could not make a repo here"; return; }
+
+  floor "$tmp/obeq" new "Observed" >/dev/null
+  before=$(floor "$tmp/obeq" observe)
+  said=$(floor_says "$tmp/obeq" observe charter.approved_by=architect round=1)
+
+  is  "an event named like a field is refused" \
+      "$(code_of floor "$tmp/obeq" observe charter.approved_by=architect round=1)" "2"
+  has "and says it reads as a field" "$said" "reads as a field, never an event"
+  is  "and nothing is written" "$(floor "$tmp/obeq" observe)" "$before"
+}
+an_event_named_like_a_field_is_refused
   make_repo "$tmp/ev4" main && set_origin "$tmp/ev4" 'https://github.com/acme/ev4.git' \
     && mkdir -p "$tmp/ev4/.foundry" \
     && commit_file "$tmp/ev4" .foundry/gates 'tests  true

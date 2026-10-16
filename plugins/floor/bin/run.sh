@@ -5400,6 +5400,7 @@ observe() {
 
     is_one_line "$event" || { note "an event name is one line: [$event]"; exit 2; }
     refuse_floors_own_event "$event"
+    refuse_an_event_named_like_a_field "$event"
     refuse_an_unnamed_field "$@"
 
     record_observation "$dir" "$event" "$@" || die_unwritable "$(observations_file "$dir")"
@@ -5417,6 +5418,19 @@ refuse_floors_own_event() {
     esac
 
     note "[$1] is an event floor writes itself, so \`observe\` does not take it"
+    exit 2
+}
+
+# **An `=` in an event's name reads as a field.** A dropped space once recorded an event called
+# `charter.approved_by=architect`, exit 0, and nothing counting events could match it. #1204.
+refuse_an_event_named_like_a_field() {
+    case $1 in
+        *=*) ;;
+        *) return 0 ;;
+    esac
+
+    note "[$1] holds \`=\`, so it reads as a field, never an event"
+    note "name the event, then a space, then its fields: observe <event> key=value"
     exit 2
 }
 

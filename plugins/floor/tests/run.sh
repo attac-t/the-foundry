@@ -3183,6 +3183,10 @@ wreck_runner "a stop line with no exit code is caught" \
 wreck_runner "a worker writing a line floor steers by is caught" \
   observeprefix '/^observe() {/,/^}/s#^    refuse_floors_own_event "\$event"$#    :#'
 
+# #1204: an event named like a field, written as an event.
+wreck_runner "an event named like a field, recorded, is caught" \
+  observefield '/^observe() {/,/^}/s#^    refuse_an_event_named_like_a_field "\$event"$#    :#'
+
 wreck_runner "a pass offered nothing that says something else is caught" \
   passnone '/^what_is_offered() {/,/^}/s#^    \[ -n "\$items" \] || { note .*; exit 42; }$#    :#'
 
