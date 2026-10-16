@@ -2923,7 +2923,10 @@ a_body_never_falls_back_on_a_practice_it_could_not_read() {
 
   said=$(floor_says "$tmp/bodyless" deliver 'a change')
   has    "a body read from a practice that is no file is refused" "$said" "is no file floor can read"
-  absent "and no body is written as record" "$(cat "$tmp/bodyless.run")/body"
+  #
+  # The redirect makes the body file before the refusal runs, so it may hold what came first. It never
+  # carries the record, and the next `deliver` writes it again.
+  lacks  "and the body never carries the record" "$(cat "$(cat "$tmp/bodyless.run")/body" 2>/dev/null)" 'What floor recorded'
 }
 a_body_never_falls_back_on_a_practice_it_could_not_read
 
