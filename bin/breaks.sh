@@ -28,6 +28,8 @@
 # `MUTE` is a gate that answered neither 0 nor 1 — it did not judge, and counting that as a catch
 # is how a mangled break line reported success.
 #
+# `NOT DRIVEN` is none of the four: no break was made, so no gate was asked. It names why.
+#
 # Usage: bash bin/breaks.sh
 #
 # Exit: 0 always. A miss is a report, not a refusal — see #351.
