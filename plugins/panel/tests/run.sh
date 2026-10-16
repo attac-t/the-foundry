@@ -120,6 +120,9 @@ wreck_brief() {
   [ -s "$tmp/$tag/bin/brief.sh" ] || { bad "$name — the mutant is empty"; return; }
   cmp -s "$tmp/$tag/bin/brief.sh" "$root/bin/brief.sh" \
     && { bad "$name — the break did not apply, so this proves nothing"; return; }
+  # A mutant no shell parses dies at the first check, never at its own. #1212's first `skipsilent`.
+  sh -n "$tmp/$tag/bin/brief.sh" 2>/dev/null \
+    || { bad "$name — the mutant does not parse, so this proves nothing"; return; }
   caught_brief "$tag"
   case $? in
     1) bad  "$name — the suite passed against a broken brief"; return ;;
