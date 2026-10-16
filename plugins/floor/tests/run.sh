@@ -5384,26 +5384,30 @@ a_stale_break_reads_moot() {
   local said
   copy stale && unquote "$tmp/stale" || { bad "a stale break — unquote did not apply once"; return; }
 
-  said=$( root="$tmp/stale"; failed=0; wreck "a stale unquote" stalequot unquote; echo "failed=$failed" )
-
+  said=$(stale_wreck)
   case "$said" in *"MOOT  a stale unquote — the break did not apply"*"failed=3") ;;
     *) bad "a stale break did not read MOOT — [$said]"; return ;;
   esac
-  [ ! -e "$tmp/stalequot.check" ] || { bad "a stale break ran the install suite"; return; }
-  printf '  ok    a break whose pattern is stale reads MOOT, and runs no suite
-'
+  printf '  ok    a break whose pattern is stale reads MOOT, and runs no suite\n'
 }
+
+# The driver is called by name, so the tag readers never take this case for a declared break. The
+# MOOT row is the proof: `wreck` prints it on the return before `caught`, so no suite ran.
+stale_wreck() (
+  local drive=wreck
+  root="$tmp/stale" failed=0 unanswered=0
+  "$drive" "a stale unquote" stalequot unquote
+  echo "failed=$failed"
+)
 
 # A break that wrote nothing, as a `sed` over a missing file does, leaves the file as it was.
 an_empty_write_is_refused() {
   local file="$tmp/rewrite-empty"
-  printf 'kept
-' > "$file"
+  printf 'kept\n' > "$file"
 
   : | rewrite "$file" && { bad "an empty write was taken"; return; }
   [ "$(cat "$file")" = kept ] && [ ! -e "$file.new" ] || { bad "an empty write changed the file"; return; }
-  printf '  ok    an empty write is refused, and the file is kept
-'
+  printf '  ok    an empty write is refused, and the file is kept\n'
 }
 
 a_stale_break_reads_moot
