@@ -170,6 +170,20 @@ wreck_brief "a brief naming a worktree and no commit is caught" \
 #
 # The grade typed rather than read. The line a convener wrote was *the 25 gates at `<head>` — ALL
 # GREEN*, and a judge could weigh that only as a claim. With the refusal gone the claim goes over.
+# #1208: the check before judging, each refusal dropped or read from the wrong tree.
+wreck_brief "a red check before judging let through is caught" \
+  checkred '/the check the repository runs before judging is red/d'
+wreck_brief "a declaration read from the tree under review is caught" \
+  checkhead 's/read_the_declaration_at "\$base"/read_the_declaration_at "$commit"/'
+wreck_brief "a declaration in the tree with no base let through is caught" \
+  checknobase '/name the commit to read it at with --base/d'
+wreck_brief "a dirty tree let through to the check is caught" \
+  checkdirty '/the declared check would grade files the judge never reads/d'
+wreck_brief "only the last line of a red check named is caught" \
+  checklast 's#/FAIL/ { print; failed = 1 }#/FAIL/ { failed = 1 }#'
+wreck_brief "a missing base passed in silence is caught" \
+  checksilent "/check_said='No --base was named/d"
+
 wreck_brief "a grade typed into the work file is caught" \
   typedgrade 's#^    said=$(grade_word_in "$work")$#    said=#'
 

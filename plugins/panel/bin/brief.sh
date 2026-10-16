@@ -8,7 +8,7 @@
 # verdict.
 #
 #   sh bin/brief.sh adversary "a clause" --charter FILE --work FILE --verdicts DIR --review ID \
-#       --worktree DIR --evidence FILE
+#       --worktree DIR --base COMMIT --evidence FILE
 #
 # **A path is not a handoff.** Every part is read here and printed, so what the judge was given is
 # what this command emitted. An audit reads one stream, never a directory it hopes was reachable.
@@ -21,6 +21,8 @@
 #       7 what it was handed as a grade cannot be read as one — the work claims a grade with no
 #         log behind it, or the log names no gate.
 #       8 the log grades a commit that is not the one in the tree the judge reads.
+#       9 the check the base declares before judging is red, or cannot honestly run: the worktree is
+#         dirty, or it declares a check and no base was named.
 
 set -u
 
@@ -30,17 +32,23 @@ root=$(cd "$(dirname "$0")/.." && pwd)
 # last, and a brief carrying every line would be the gate's log rather than a brief.
 KEPT_LINES=40
 
+# One line, a command: the cheap check a repository runs before a judge reads its work. Never the
+# bar a change is graded on — that is the repository's gates.
+DECLARATION=.panel/before-judging
+
 main() {
     read_arguments "$@"
     locate_role
     locate_the_commit
     locate_the_prior
     locate_the_grade
+    run_the_declared_check
 
     say_the_role
     say_the_skills
     say_the_bar
     say_the_tree
+    say_the_check
     say_the_work
     say_the_grade
     say_the_prior
@@ -59,6 +67,7 @@ read_arguments() {
     round=
     review=
     worktree=
+    base=
     evidence=
 
     [ -n "$role" ] && [ -n "$clause" ] || fail 2 'name a role and the clause it answers'
@@ -71,6 +80,7 @@ read_arguments() {
             --verdicts) verdicts=${2:-}; [ -n "$verdicts" ] || fail 2 "verdicts names a directory" ;;
             --review)  review=${2:-}; [ -n "$review" ] || fail 2 "review names the chain" ;;
             --worktree) worktree=${2:-}; [ -n "$worktree" ] || fail 2 "worktree names a checkout" ;;
+            --base)    base=${2:-}; [ -n "$base" ] || fail 2 "base names a commit" ;;
             --evidence) evidence=${2:-}; refuse_unreadable evidence "$evidence" ;;
             *)         fail 2 "unknown argument [$1]" ;;
         esac
@@ -175,6 +185,96 @@ say_the_tree() {
     printf 'and a verdict spanning two trees judges neither.\n\n'
     printf 'Your recorder is told the same commit, and refuses your verdict if that branch has\n'
     printf 'since moved to another tree.\n'
+}
+
+#
+# The check the repository declares before judging, run before a word is printed. #1208.
+#
+# **Read at the base, never from the tree under review.** A branch can change the line, and the
+# change binds the next branch, never itself. What the line runs is still the branch's own code, so
+# this stops an honest builder handing over red work. Tampering is the grade's to hold.
+#
+run_the_declared_check() {
+    check_said=
+    [ -n "$worktree" ] || { check_said='No worktree was named, so no declared check could run.'; return 0; }
+    [ -n "$base" ] || { refuse_a_declaration_with_no_base; return 0; }
+
+    refuse_a_base_that_is_no_commit
+    read_the_declaration_at "$base"
+    [ -n "$declared" ] || return 0
+
+    refuse_a_dirty_worktree
+    run_it_in_the_worktree
+}
+
+#
+# A worktree whose own commit declares a check, convened with no base to read it at.
+#
+# A committed declaration is the repository claiming a check, and nothing backs it, as a claimed
+# grade with no log is refused below. A branch that deleted the file is told so, never silent.
+refuse_a_declaration_with_no_base() {
+    check_said='No --base was named, so no declared check could run.'
+    read_the_declaration_at "$commit"
+    [ -n "$declared" ] || return 0
+
+    note "the tree at [$commit] declares a check in $DECLARATION"
+    fail 9 "name the commit to read it at with --base — on the branch it reviews, --base HEAD"
+}
+
+refuse_a_base_that_is_no_commit() {
+    git -C "$worktree" rev-parse --verify --quiet "$base^{commit}" >/dev/null 2>&1 && return 0
+
+    fail 2 "no commit [$base] in [$worktree] to read $DECLARATION at"
+}
+
+#
+# The first line holding anything, into `declared`, or nothing. One line, a command, no format.
+#
+# **No file is an answer; a file git cannot read is not.** Folded together, a broken read would pass
+# as a repository declaring nothing, and the check would be skipped by the fault it exists to catch.
+# Set, never captured, so the refusal ends the brief rather than one subshell.
+read_the_declaration_at() {
+    declared=
+    holds_a_declaration "$1" || return 0
+
+    declaration=$(git -C "$worktree" show "$1:$DECLARATION")         || fail 9 "$DECLARATION is at [$1] and git could not read it"
+    declared=$(printf '%s
+' "$declaration" | awk 'NF { print; exit }')
+}
+
+holds_a_declaration() { git -C "$worktree" cat-file -e "$1:$DECLARATION" 2>/dev/null; }
+
+# The check grades files, and the judge reads a commit. On a dirty tree the two are not the same.
+refuse_a_dirty_worktree() {
+    [ -z "$(git -C "$worktree" status --porcelain 2>/dev/null)" ] && return 0
+
+    note "the worktree at [$worktree] holds changes its commit does not"
+    fail 9 "the declared check would grade files the judge never reads — commit them, or clean the tree"
+}
+
+run_it_in_the_worktree() {
+    said_by_the_check=$(cd "$worktree" && sh -c "$declared" 2>&1)
+    answered=$?
+    [ "$answered" -eq 0 ] && { check_said="\`$declared\`, declared at $base, ran in the tree you read and exited 0."; return 0; }
+
+    note "\`$declared\`, declared in $DECLARATION at [$base], exited $answered"
+    what_it_failed_on | while IFS= read -r line; do note "  $line"; done
+    fail 9 "the check the repository runs before judging is red, so no judge is convened"
+}
+
+# Every line the check printed that says FAIL, or its last line when none does.
+what_it_failed_on() {
+    printf '%s\n' "$said_by_the_check" | awk '
+        /FAIL/ { print; failed = 1 }
+        NF     { last = $0 }
+        END    { if (!failed) print last }'
+}
+
+# Said only when it ran, or when it could not. A repository declaring nothing sees nothing new.
+say_the_check() {
+    [ -n "$check_said" ] || return 0
+
+    printf '\n---\n\n# The check before judging\n\n%s\n' "$check_said"
 }
 
 say_the_work() {

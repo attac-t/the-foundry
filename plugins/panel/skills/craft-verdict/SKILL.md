@@ -60,6 +60,9 @@ toolset is `Read`, `Glob`, `Grep`. So everything mechanical runs here, in the pa
 a judge is spawned. The gates, and the chain:
 
 ```sh
+# the check the repository declares before judging, read at the base — stop while it is red
+git -C <worktree> show <base>:.panel/before-judging
+
 # which round this review is on
 sh "${CLAUDE_PLUGIN_ROOT}/bin/verdicts.sh" round <dir> <review>
 

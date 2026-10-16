@@ -201,6 +201,59 @@ a_brief_names_the_commit_it_was_built_from() {
 a_brief_names_the_commit_it_was_built_from
 
 #
+# The check a repository declares before judging runs first, and a red one convenes nobody. #1208.
+#
+# A stand-in check, since Panel ships alone: two FAIL lines and a last one, exit 1. The declaration
+# is read at the base, so the tree under review deleting it still meets the base's check.
+#
+commit_the_judged() {
+  git -C "$judged" add -A >/dev/null 2>&1
+  git -C "$judged" -c user.email=a@b.c -c user.name=a commit -qm "$1" >/dev/null 2>&1
+}
+convene_at() { brief_says adversary 'a clause' --verdicts "$tmp/empty" --review R1 --worktree "$judged" "$@"; }
+code_at()    { code_of brief adversary 'a clause' --verdicts "$tmp/empty" --review R1 --worktree "$judged" "$@"; }
+
+a_declared_check_runs_before_a_judge_reads() {
+  judged=$tmp/judged
+  mkdir -p "$judged/.panel" && git -C "$judged" init -q >/dev/null 2>&1
+  printf 'echo "  FAIL  one"; echo "  FAIL  two"; echo done; exit 1\n' > "$judged/check.sh"
+  printf 'sh check.sh\n' > "$judged/.panel/before-judging"
+  commit_the_judged declared
+  base=$(git -C "$judged" rev-parse HEAD 2>/dev/null)
+
+  is  "a red declared check convenes nobody"  "$(code_at --base "$base")" "9"
+  said=$(convene_at --base "$base")
+  has "and it names the first failing gate"   "$said" "FAIL  one"
+  has "and every one after it"                "$said" "FAIL  two"
+
+  is  "a declaration in the tree and no base is refused" "$(code_at)" "9"
+  has "and it says to name the base"                     "$(convene_at)" "--base HEAD"
+
+  printf 'exit 0\n' > "$judged/check.sh"
+  is  "a dirty tree is refused, since the check would grade files the judge never reads" \
+      "$(code_at --base "$base")" "9"
+
+  commit_the_judged green
+  is  "a green declared check convenes the judge" "$(code_at --base "$base")" "0"
+  has "and the brief says it ran"                 "$(convene_at --base "$base")" "exited 0"
+
+  rm "$judged/.panel/before-judging"
+  printf 'exit 1\n' > "$judged/check.sh"
+  commit_the_judged dropped
+  is  "a tree that deletes its declaration still meets the base's check" "$(code_at --base "$base")" "9"
+  has "a tree with no declaration and no base says no check could run"   "$(convene_at)" "No --base was named"
+
+  has "a brief naming no tree says no check could run" \
+      "$(brief adversary 'a clause' --verdicts "$tmp/empty" --review R1)" "No worktree was named"
+
+  # A repository declaring nothing sees nothing new. `$tree` holds no `.panel`.
+  lacks "a base declaring nothing adds no section" \
+        "$(brief adversary 'a clause' --verdicts "$tmp/empty" --review R1 --worktree "$tree" --base HEAD)" \
+        "The check before judging"
+}
+a_declared_check_runs_before_a_judge_reads
+
+#
 # The grade, and the one line a convener used to type in its place.
 #
 # **The judge was handed *the 25 gates at `<head>` — ALL GREEN*** and could weigh it only as a claim.
