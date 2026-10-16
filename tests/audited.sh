@@ -116,6 +116,10 @@ has "and it says which file said so" "$(asked)" "README.md"
 changed .gitattributes 'changed'
 is "line endings are audited, though they are not under plugins" "$(code)" "0"
 
+# Floor's suite asks this list before it declines, so this answer is the gate's. #1171.
+changed bin/gates.sh 'changed'
+is "the gate that runs the suite is audited" "$(code)" "0"
+
 # --- a branch that changed nothing ---
 
 from_base

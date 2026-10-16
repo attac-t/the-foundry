@@ -252,6 +252,64 @@ a_tag_used_twice_is_refused
 refuse_a_tag_used_twice "$root/tests/run.sh"
 
 #
+# **Every driver call is a break somebody reads.** #1120. A call `break_tags` cannot read has a tag
+# nobody checks and a `sed` nobody replays, so it fails here as a broken rule, before any break runs.
+refuse_an_unread_call() {
+  local lines
+  lines=$(unread_calls "$1" | tr '\n' ' ')
+
+  [ -n "$lines" ] || { printf '  ok    every driver call is a break the tag check reads\n'; return; }
+  bad "a driver call no tag reader reads, so its break never runs, at line ${lines% }"
+}
+
+#
+# Each plant prints its driver word, so this file holds no call of its own. Four shapes go unread:
+# after `then`, in single quotes, second on a read line, and on the line a tag is taken from.
+unread_plants() {
+  local word=wreck
+  printf 'if true; then %s "a plant after then" plantthen; fi\n' "$word"
+  printf "  %s 'a plant in single quotes' plantsingle\n" "$word"
+  printf '  %s "a plant read" plantread; %s "a plant beside it" plantbeside\n' "$word" "$word"
+  printf '  %s "a plant held" \\\n    plantheld; %s "a plant on its tag line" planttagline\n' "$word" "$word"
+}
+
+# Two comments: one `break_tags` reads a tag from, which balances an unread call in the totals, and
+# one only a loose reader would count. A line whose first mark is `#` holds no call, so neither is named.
+balancing_plant() {
+  printf '  # a note; %s "a plant in a note" plantnote\n' wreck
+  printf '  # was: %s "a plant in a comment" plantcomment\n' wreck
+}
+
+# The plants take the five lines after the suite. The fourth is a read, whose tag hangs on the fifth.
+an_unread_call_is_refused_by_line() {
+  local said left last
+  last=$(wc -l < "$root/tests/run.sh" | tr -d ' ')
+  { cat "$root/tests/run.sh"; unread_plants; } > "$tmp/unread.sh"
+  said=$( failed=0; refuse_an_unread_call "$tmp/unread.sh"; exit "$failed" )
+  left=$?
+
+  [ "$left" -eq 1 ] && [ "${said##*at line }" = "$((last + 1)) $((last + 2)) $((last + 3)) $((last + 5))" ] \
+    && { printf '  ok    an unread call is refused, and each is named by its line\n'; return; }
+  bad "four unread calls were not each named by their lines — it left $left and said [$said]"
+}
+
+# The totals balance here, one read with no call and one call unread, and the check still fails.
+an_unread_call_is_refused_when_the_totals_balance() {
+  local said left
+  { cat "$root/tests/run.sh"; balancing_plant; unread_plants | head -1; } > "$tmp/balanced.sh"
+  said=$( failed=0; refuse_an_unread_call "$tmp/balanced.sh"; exit "$failed" )
+  left=$?
+
+  [ "$left" -eq 1 ] && [ "${said##*at line }" = "$(wc -l < "$tmp/balanced.sh" | tr -d ' ')" ] \
+    && { printf '  ok    an unread call is refused though the totals balance\n'; return; }
+  bad "an unread call beside a read comment passed — it left $left and said [$said]"
+}
+
+an_unread_call_is_refused_by_line
+an_unread_call_is_refused_when_the_totals_balance
+refuse_an_unread_call "$root/tests/run.sh"
+
+#
 # Floor core names no vendor, and the adapters directory is where every vendor is — #512.
 #
 # **The set is closed by what the plugin ships.** Each adapter directory yields two words: its own
@@ -848,16 +906,33 @@ the_trunk_of() {
 # Whether the audit was asked for, about one directory. **Takes the tree**, so a case can drive it
 # against a real repository instead of asserting the reasoning.
 #
-# **Three ways to answer no, and each is the safe answer.** No trunk to compare with, the tree is the
-# trunk, or something under the directory changed. Only the last is the interesting one; the first
-# two are how a waiver fires when the question could not honestly be asked.
+# **Four ways to answer no, and each is the safe answer.** No trunk to compare with, the tree is the
+# trunk, something under the directory changed, or the repository's own list says a file it names
+# changed. The first two are how a waiver fires when the question could not honestly be asked.
 nobody_asked_about() {
     trunk=$(the_trunk_of "$1") || return 1
 
     [ "$(git -C "$1" rev-parse HEAD 2>/dev/null)" \
       = "$(git -C "$1" rev-parse "$trunk" 2>/dev/null)" ] && return 1
 
-    git -C "$1" diff --quiet "$trunk" HEAD -- . 2>/dev/null
+    git -C "$1" diff --quiet "$trunk" HEAD -- . 2>/dev/null || return 1
+    nothing_the_list_names "$1" "$trunk"
+}
+
+#
+# Whether the repository's list of files outside this plugin that force the audit says no. #1171.
+#
+# **Only its no waives.** A yes, a comparison that failed and a crash all run the audit. A repository
+# with no list, or one where this plugin is not its own `plugins/floor`, answers as it did before.
+#
+# **A list unlike the trunk's is never asked**, committed or not. Its no would waive its own bar.
+nothing_the_list_names() {
+    top=$(git -C "$1" rev-parse --show-toplevel 2>/dev/null) || return 0
+    [ "$top/plugins/floor" -ef "$1" ] && [ -f "$top/bin/audited.sh" ] || return 0
+    git -C "$top" diff --quiet "$2" -- bin/audited.sh 2>/dev/null || return 1
+
+    ( cd "$top" && sh bin/audited.sh "$2" ) >/dev/null 2>&1
+    [ $? -eq 1 ]
 }
 
 #
@@ -916,6 +991,7 @@ nobody_asked_reads_the_diff() {
     git -C "$prose" checkout -q -b side
     printf 'more\n' >> "$prose/docs/page.md"
     git -C "$prose" commit -qam prose
+    # A tree with no `bin/audited.sh` declines exactly as before #1171. This case holds that.
     asks_for_the_audit 'a branch touching no plugin file asked for nothing' "$prose/plugins/floor" yes
 
     inside=$(a_tree_like_ours inside)
@@ -948,6 +1024,73 @@ nobody_asked_reads_the_diff() {
 }
 nobody_asked_reads_the_diff
 
+#
+# A tree like ours that keeps a list, whose answer is the line it is given. Committed on the trunk.
+a_tree_with_a_list() {
+    made=$(a_tree_like_ours "$1")
+    mkdir -p "$made/bin"
+    printf '%s\n' "$2" > "$made/bin/audited.sh"
+    git -C "$made" add -A
+    git -C "$made" commit -qm list
+    git -C "$made" checkout -q -b side
+    printf '%s' "$made"
+}
+
+# A branch that changes only prose, so nothing under the plugin moved and the list decides.
+prose_on() { printf 'more\n' >> "$1/docs/page.md"; git -C "$1" commit -qam prose; }
+
+#
+# **The suite asks the repository's list before it declines.** #1171. Only the list's no waives.
+the_list_is_asked() {
+    listed=$(a_tree_with_a_list listyes 'exit 0'); prose_on "$listed"
+    asks_for_the_audit 'a list that says yes runs the audit' "$listed/plugins/floor" no
+
+    listed=$(a_tree_with_a_list listno 'exit 1'); prose_on "$listed"
+    asks_for_the_audit 'a list that says no lets it decline' "$listed/plugins/floor" yes
+
+    listed=$(a_tree_with_a_list listcannot 'exit 3'); prose_on "$listed"
+    asks_for_the_audit 'a list that could not compare runs the audit' "$listed/plugins/floor" no
+
+    listed=$(a_tree_with_a_list listcrash 'a_command_no_host_has_1171'); prose_on "$listed"
+    asks_for_the_audit 'a list that crashes runs the audit' "$listed/plugins/floor" no
+
+    #
+    # Its no would read like any other, so it is never asked once the branch has changed it.
+    listed=$(a_tree_with_a_list listnoself 'exit 0')
+    printf 'exit 1\n' > "$listed/bin/audited.sh"
+    git -C "$listed" commit -qam waive
+    asks_for_the_audit 'a list the branch changed to say no runs the audit' "$listed/plugins/floor" no
+
+    listed=$(a_tree_with_a_list listdirty 'exit 0'); prose_on "$listed"
+    printf 'exit 1\n' > "$listed/bin/audited.sh"
+    asks_for_the_audit 'a list changed and not committed runs the audit' "$listed/plugins/floor" no
+}
+the_list_is_asked
+
+#
+# **A list in a tree this plugin only sits in is never run.** Floor vendored elsewhere answers alone.
+a_list_outside_our_tree_is_not_run() {
+    made=$tmp/asked/vendored
+    mkdir -p "$made/vendor/floor" "$made/bin"
+    git -C "$made" init -q
+    git -C "$made" config user.email fixture@example.invalid
+    git -C "$made" config user.name fixture
+    git -C "$made" checkout -q -b main
+    printf 'seed\n' > "$made/vendor/floor/run.sh"
+    printf 'seed\n' > "$made/page.md"
+    printf ': > "%s/ran"\nexit 0\n' "$made" > "$made/bin/audited.sh"
+    git -C "$made" add -A
+    git -C "$made" commit -qm seed
+    git -C "$made" checkout -q -b side
+    printf 'more\n' >> "$made/page.md"
+    git -C "$made" commit -qam prose
+
+    asks_for_the_audit 'a list in a tree floor only sits in is not asked' "$made/vendor/floor" yes
+    [ ! -e "$made/ran" ] || { bad 'a list in a tree floor only sits in was run'; return; }
+    printf '  ok    and that list never ran\n'
+}
+a_list_outside_our_tree_is_not_run
+
 say_if_nobody_asked() {
     nobody_asked_about "$root" || return 0
 
@@ -967,8 +1110,9 @@ say_if_nobody_asked
 # with drivers that only apply and compare, so asking costs seconds. A tag it could not replay stops
 # the audit too, since what that break would break is unknown.
 #
-# **It is stricter than the audit for `wreck_join` and `wreck_adopt`.** Their `sed` runs in a pipe
-# whose status nobody reads, so one that fails or prints nothing still runs a suite. Here it stops.
+# **It is earlier than the audit for `wreck_join` and `wreck_adopt`.** Their `sed` runs in a pipe
+# whose status nobody reads. `rewrite` refuses one that printed nothing, so the copy compares equal
+# and the audit calls it MOOT on its turn. Here it stops before any break runs.
 refuse_a_break_that_changes_nothing() {
   local named
   named=$(breaks_that_change_nothing "$root" "$tmp/applies")
@@ -5333,7 +5477,7 @@ wreck() {
   local checks="$tmp/$tag.check" killer
 
   copy "$tag"             || { bad "$name — could not copy the plugin, so this proves nothing"; return; }
-  "$break_it" "$tmp/$tag" || { bad "$name — the break did not apply, so this proves nothing"; return; }
+  "$break_it" "$tmp/$tag" || { moot "$name — the break did not apply, so this proves nothing"; return; }
 
   # Three answers, read as three. `caught` returns 2 for a mutant that never answered, and
   # `||` read that as *the suite passed against a broken install* — the right red for the
@@ -5358,8 +5502,13 @@ records_exec() {
   [ ! -x "$probe" ]
 }
 
-# Read a file and write it back, so a break can filter a file through itself.
-rewrite() { cat > "$1.new" && mv "$1.new" "$1"; }
+# Write a break's text over its file, or refuse one that changed nothing or wrote nothing. #1176.
+# A refused write leaves the file as it was, so the break reads as never applied, never as a kill.
+rewrite() {
+  cat > "$1.new" && [ -s "$1.new" ] && ! cmp -s "$1.new" "$1" && mv "$1.new" "$1" && return 0
+  rm -f "$1.new"
+  return 1
+}
 
 # The breaks. Every one is a failure kernel or signal actually shipped.
 crlf()    { awk '{ printf "%s\r\n", $0 }' "$1/hooks/announce.sh" | rewrite "$1/hooks/announce.sh"; }
@@ -5371,6 +5520,41 @@ unwire()  { grep -v 'preflight.sh' "$1/hooks/hooks.json" | rewrite "$1/hooks/hoo
 unhook()  { chmod -x "$1/hooks/announce.sh"; }
 mute()    { printf 'exit 0\n' > "$1/hooks/announce.sh"; }
 misfire() { sed 's|"SessionStart"|"Stop"|' "$1/hooks/hooks.json" | rewrite "$1/hooks/hooks.json"; }
+
+# A break run over a copy it already changed has a stale pattern, so it reads MOOT and runs no suite.
+# It runs in a subshell, since its MOOT would fail the whole audit. #1176.
+a_stale_break_reads_moot() {
+  local said
+  copy stale && unquote "$tmp/stale" || { bad "a stale break — unquote did not apply once"; return; }
+
+  said=$(stale_wreck)
+  case "$said" in *"MOOT  a stale unquote — the break did not apply"*"failed=3") ;;
+    *) bad "a stale break did not read MOOT — [$said]"; return ;;
+  esac
+  printf '  ok    a break whose pattern is stale reads MOOT, and runs no suite\n'
+}
+
+# The driver is called by name, so the tag readers never take this case for a declared break. The
+# MOOT row is the proof: `wreck` prints it on the return before `caught`, so no suite ran.
+stale_wreck() (
+  local drive=wreck
+  root="$tmp/stale" failed=0 unanswered=0
+  "$drive" "a stale unquote" stalequot unquote
+  echo "failed=$failed"
+)
+
+# A break that wrote nothing, as a `sed` over a missing file does, leaves the file as it was.
+an_empty_write_is_refused() {
+  local file="$tmp/rewrite-empty"
+  printf 'kept\n' > "$file"
+
+  : | rewrite "$file" && { bad "an empty write was taken"; return; }
+  [ "$(cat "$file")" = kept ] && [ ! -e "$file.new" ] || { bad "an empty write changed the file"; return; }
+  printf '  ok    an empty write is refused, and the file is kept\n'
+}
+
+a_stale_break_reads_moot
+an_empty_write_is_refused
 
 wreck "a hook checked out with CRLF is caught"         crlf   crlf
 wreck "an unquoted plugin root is caught"              noquot unquote

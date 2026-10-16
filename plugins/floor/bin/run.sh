@@ -5096,10 +5096,11 @@ carry_on_to_a_request() {
 }
 
 #
-# **`deliver`'s code says who can answer it.** 15, 18, 32, 57 and 58 wait on a person: a clause, a
-# grant, a commit to account for, a message to reword, a rule to land. 19, a failed send, retries.
+# **`deliver`'s code says who can answer it.** A person answers the wait arm: a clause, a grant, a
+# commit to account for, a message to reword, a rule to land. 19, a failed send, retries.
 #
 # Nothing in this run can answer any other code, so the run is let go and the pass selects afresh.
+# Floor's README names each code in two marked lines, and `bin/routed.sh` holds them to these arms.
 deliver_and_route() {
     still_holding_the_host
     ( deliver "$(the_run_heading "$1")" ) >/dev/null; delivered=$?
@@ -5117,7 +5118,7 @@ deliver_and_route() {
 #
 # **The host fixes 20 and 50, as it fixes 19**: a source no one could ask, and floor on a hand's
 # account. Each is a stop the next pass resumes, and the bound counts every resume, so a host never
-# fixed ends at 46. 49 and 51 want a line at the base, and are let go as at the workspace.
+# fixed ends at 46. Floor's README names the codes let go, on the line `bin/routed.sh` reads.
 #
 stop_at_the_delivery() {
     [ "$2" -eq 20 ] && { record_the_stop "$1" deliver 20; exit 20; }

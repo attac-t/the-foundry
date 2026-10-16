@@ -66,7 +66,7 @@ main() {
     # that correctly skipped reported twenty-four of twenty-five.
     #
     # **The runner prints it now**, because the plugin says *nobody asked* in its own exit code and
-    # `bin/gates.sh` reads that. This tells a worker before they spend the time. It decides nothing.
+    # `bin/gates.sh` reads that. Floor's suite asks this before it declines, so its no is the gate's.
     [ -n "$reached" ] || {
         say 'audited — no. Every gate still runs, and one will grade a smaller claim.'
         say 'audited — the runner prints that line itself. Nothing here is yours to copy.'

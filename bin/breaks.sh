@@ -98,7 +98,7 @@ say_what_drives_itself() {
 # Typed, because a `drive` line carries a break name and `shell` has three of them. A derived list
 # would have to guess which gate `shell-taper` belongs to, and guessing is what this refuses.
 ACCOUNTED="frontmatter versions repeats shell taper hosts providers rulefiles secrets hooks hookfiles judged
-bytes comments codex host judges anthropic stale basing durable unnamed
+bytes comments codex host judges anthropic stale basing durable unnamed routed
 kernel signal panel floor
 bumps"
 
@@ -187,6 +187,11 @@ every_break() {
     drive unnamed plugins/floor/bin/run.sh \
         'a_new_refusal >> plugins/floor/bin/run.sh' \
         'sh bin/unnamed.sh'
+
+    # A code deliver leaves with, struck from the line that names it as let go. #1159.
+    drive routed plugins/floor/README.md \
+        'a_code_left_unnamed plugins/floor/README.md' \
+        'sh bin/routed.sh'
 
     # A hook that judges nothing. Every suite under `tests/` writes its calls to disk, so this
     # break reaches the hook rather than the harness reading it.
@@ -334,6 +339,9 @@ a_vendor() { printf '\ncase $remote in *github.com*) : ;; esac\n'; }
 a_rule_file_read() { printf '\nbench_in() { cat "$1/.foundry/bench"; }\n'; }
 
 a_judge_name() { printf '\ncase $reach in anthropic) : ;; esac\n'; }
+
+# Six, which #1160 made `deliver` able to leave with, struck from the let-go line that names it.
+a_code_left_unnamed() { sed '/<!-- routed: let go -->/s/ 6, / /' "$1" > "$1.new" && mv "$1.new" "$1"; }
 
 # A directive, never a comment. The header of `secrets.sh` names a secret four times over, and a
 # break planting prose would go green against a gate working perfectly.
