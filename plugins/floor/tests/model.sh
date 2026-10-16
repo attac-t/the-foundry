@@ -2897,6 +2897,28 @@ a_body_set_to_brief_carries_the_brief_alone() {
 }
 a_body_set_to_brief_carries_the_brief_alone
 
+# #1083. A body form read from a practice that is no file is refused, never sent as `record`.
+a_body_never_falls_back_on_a_practice_it_could_not_read() {
+  git init -q --bare "$tmp/bodyless-remote.git" 2>/dev/null \
+    && a_repo_whose_practice_is_no_file "$tmp/bodyless" \
+    && commit_file "$tmp/bodyless" .foundry/gates 'tests  true
+' || { skip "a body from a practice that is no file — git could not make a repo here"; return; }
+
+  floor_new_as "$tmp/bodyless" ada@example.com "Bodyless" > "$tmp/bodyless.run"
+  for step in "charter derive" "policy authorize https://github.com/acme/bodyless.git" \
+      "policy deliver-to https://github.com/acme/bodyless.git" \
+      "targets add https://github.com/acme/bodyless.git main" open gates; do
+    floor "$tmp/bodyless" $step >/dev/null 2>&1
+  done
+  git -C "$(only_slot "$(floor "$tmp/bodyless" path)/units/01/workspace")" \
+    config "url.$tmp/bodyless-remote.git.pushInsteadOf" "https://github.com/acme/bodyless.git"
+
+  said=$(floor_says "$tmp/bodyless" deliver 'a change')
+  has    "a body read from a practice that is no file is refused" "$said" "is no file floor can read"
+  absent "and no body is written as record" "$(cat "$tmp/bodyless.run")/body"
+}
+a_body_never_falls_back_on_a_practice_it_could_not_read
+
 #
 # The body named the last row it found for a clause. A machine pass under a judged clause's words,
 # or a later handoff, then stood where the panel's approval belonged, and the grader reads neither.
@@ -4059,6 +4081,68 @@ a_base_that_cannot_be_read_is_refused_for_it() {
   is    "and on 6, where it said 49" "$(code_of floor "$tmp/lostbase" complete)" "6"
 }
 a_base_that_cannot_be_read_is_refused_for_it
+
+# #1083. A practice that is no file: a directory at the base stands in for a tree, a submodule or a
+# symlink. Git says so from its mode, and the hearing refuses for it, never for a hand it could not read.
+a_repo_whose_practice_is_no_file() {
+  make_repo "$1" main && set_origin "$1" "https://github.com/acme/${1##*/}.git" \
+    && mkdir -p "$1/.foundry/practice" && commit_file "$1" .foundry/practice/inside 'authorise ada
+'
+}
+
+a_practice_that_is_no_file_is_refused_for_it() {
+  a_repo_whose_practice_is_no_file "$tmp/nofile" \
+    || { skip "a practice that is no file — git could not make a repo here"; return; }
+
+  floor "$tmp/nofile" new "No file" >/dev/null
+  floor "$tmp/nofile" charter introduce Decided "ship on friday" >/dev/null 2>&1
+  said=$(floor_says "$tmp/nofile" complete)
+
+  has   "a practice that is no file is refused for it" "$said" "is no file floor can read"
+  lacks "never for a hand it could not read"           "$said" "names no hand"
+  is    "and on 6, where it said 49" "$(code_of floor "$tmp/nofile" complete)" "6"
+
+  #
+  # Standing falls through to the grants file, so the grant that is the remedy can still be given.
+  said=$(floor_says "$tmp/nofile" policy deliver-to 'https://github.com/acme/nofile.git')
+  has "and standing says it read nothing" "$said" "could not read the practice at"
+  is  "while a grant can still be given" \
+      "$(code_of floor "$tmp/nofile" policy deliver-to 'https://github.com/acme/nofile.git')" "0"
+}
+a_practice_that_is_no_file_is_refused_for_it
+
+# #1083's approver: `ls-tree` reads its path from where it stands. From a subdirectory, a practice
+# that names a hand is heard as it is from the root, never as one naming none.
+a_practice_is_read_from_the_root() {
+  make_repo "$tmp/rooted" main && set_origin "$tmp/rooted" 'https://github.com/acme/rooted.git' \
+    && mkdir -p "$tmp/rooted/.foundry" "$tmp/rooted/docs" \
+    && commit_file "$tmp/rooted" .foundry/practice 'authorise ada
+' && commit_file "$tmp/rooted" docs/page 'a page' \
+    || { skip "a practice read from the root — git could not make a repo here"; return; }
+
+  floor "$tmp/rooted" new "Rooted" >/dev/null
+  floor "$tmp/rooted" charter introduce Decided "ship on friday" >/dev/null 2>&1
+
+  lacks "a practice read from a subdirectory still names its hand" \
+        "$(floor_says "$tmp/rooted/docs" complete)" "names no hand"
+  is    "and answers as it does at the root" \
+        "$(code_of floor "$tmp/rooted/docs" complete)" "$(code_of floor "$tmp/rooted" complete)"
+}
+a_practice_is_read_from_the_root
+
+# A base with no practice at all reads as it did before #1083: the hearing says no hand is named.
+a_base_with_no_practice_names_no_hand() {
+  make_repo "$tmp/noprac" main && set_origin "$tmp/noprac" 'https://github.com/acme/noprac.git' \
+    && commit_file "$tmp/noprac" README 'a base' \
+    || { skip "a base with no practice — git could not make a repo here"; return; }
+
+  floor "$tmp/noprac" new "No practice" >/dev/null
+  floor "$tmp/noprac" charter introduce Decided "ship on friday" >/dev/null 2>&1
+
+  has "a base with no practice names no hand, as before" "$(floor_says "$tmp/noprac" complete)" "authorise <hand>"
+  is  "and holds at 49" "$(code_of floor "$tmp/noprac" complete)" "49"
+}
+a_base_with_no_practice_names_no_hand
 
 #
 # The workspace — one isolated checkout per selected target. Isolated means a clone: a worktree

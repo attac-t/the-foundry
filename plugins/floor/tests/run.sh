@@ -3771,7 +3771,17 @@ wreck_runner "a run with no base refused as naming no hand is caught" \
   nobaseheard 's#^    heard_base=\$(bootstrap_base "\$1") || refuse_a_run_with_no_base$#    heard_base=$(bootstrap_base "$1")#'
 
 wreck_runner "a base that cannot be read, heard as naming no hand, is caught" \
-  lostbasehands 's#^    heard_practice=\$(practice_at_base "\$1") || return 1$#    heard_practice=$(practice_at_base "$1")#'
+  lostbasehands 's#^    heard_practice=\$(practice_at_base "\$1") || return$#    heard_practice=$(practice_at_base "$1")#'
+
+# #1083: a practice that is no file, or read from a subdirectory, heard as one naming no hand.
+wreck_runner "a practice that is no file, heard as naming no hand, is caught" \
+  nofilehands 's#^    heard_hands=\$(hands_named "\$heard_base") || refuse_an_unread_practice \$? "\$heard_base"$#    heard_hands=$(hands_named "$heard_base")#'
+
+wreck_runner "a practice read from where floor stands, not the root, is caught" \
+  practiceroot 's#git ls-tree --full-tree "\$1" -- .foundry/practice#git ls-tree "$1" -- .foundry/practice#'
+
+wreck_runner "a body that falls back to its default on a practice it could not read is caught" \
+  nofilebody 's#^    form=\$(body_form_at_base "\$1") || refuse_an_unread_practice \$? "\$(bootstrap_base "\$1")"$#    form=$(body_form_at_base "$1")#'
 
 wreck_runner "every hand floor's own account, not refused, is caught" \
   ownhand '/^refuse_hands_floor_writes_as() {/,/^}/s#^    exit 50$#    return 0#'
@@ -4291,7 +4301,7 @@ wreck_runner "a practice read from the worker's tree is caught" \
 # A practice nobody could read, reported as one granting nothing. The human grants what they already
 # granted, it works, and the base stays broken.
 wreck_runner "a practice that could not be read passing for an empty one is caught" \
-  mutepractice 's#        note "could not read the practice at \[$1\]: $why"#        :#'
+  mutepractice 's#    note "could not read the practice at \[$1\], so it grants no standing here"#    :#'
 
 # One repository twice. `ungradable_targets` counts selected targets, so a duplicate is one
 # repository reported twice and every clause graded against it twice.
@@ -5059,7 +5069,7 @@ wreck_runner "a judged clause named without its panel is caught" \
   bodypanel 's@^    \[ "\$met_by" = panel \] && .*@    :@'
 
 wreck_runner "a body that ignores its setting is caught" \
-  bodysetting 's@^    \[ "\$(body_form_at_base "\$1")" = brief \] && .*@    :@'
+  bodysetting 's@^    \[ "\$form" = brief \] && .*@    :@'
 
 wreck_runner "a setting nobody can read that is kept silent is caught" \
   bodytypo 's@^    note "the practice says \[body \$form\].*@    :@'
