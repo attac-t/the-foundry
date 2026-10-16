@@ -1912,6 +1912,24 @@ evidence_is_what_happened
 # flattened.
 #
 a_name_cannot_forge_a_second_record() {
+  make_repo "$tmp/ev4" main && set_origin "$tmp/ev4" 'https://github.com/acme/ev4.git' \
+    && mkdir -p "$tmp/ev4/.foundry" \
+    && commit_file "$tmp/ev4" .foundry/gates 'tests  true
+' || { skip "forged record — git could not make a repo here"; return; }
+
+  floor "$tmp/ev4" new "Forge" >/dev/null
+  floor "$tmp/ev4" charter derive >/dev/null 2>&1
+  floor "$tmp/ev4" policy authorize 'https://github.com/acme/ev4.git' >/dev/null 2>&1
+  floor "$tmp/ev4" targets add 'https://github.com/acme/ev4.git' main >/dev/null 2>&1
+  floor "$tmp/ev4" open >/dev/null 2>&1
+
+  forged='tests	0	deadbeef
+types'
+  is "a name holding a newline is refused" \
+     "$(code_of floor "$tmp/ev4" evidence record "$forged" true)" "2"
+  is "and nothing was written" "$(floor "$tmp/ev4" evidence)" ""
+}
+a_name_cannot_forge_a_second_record
 
 #
 # A clause pinned to a command is that command's to answer.
@@ -1921,7 +1939,9 @@ a_name_cannot_forge_a_second_record() {
 # failing row to contradict it, one honest record stood for a different command.
 #
 a_pinned_name_is_not_recordable() {
-  make_repo "$tmp/ev7" main && set_origin "$tmp/ev7" 'https://github.com/acme/ev7.git' \n    && mkdir -p "$tmp/ev7/.foundry" \n    && commit_file "$tmp/ev7" .foundry/gates 'tests  false
+  make_repo "$tmp/ev7" main && set_origin "$tmp/ev7" 'https://github.com/acme/ev7.git' \
+    && mkdir -p "$tmp/ev7/.foundry" \
+    && commit_file "$tmp/ev7" .foundry/gates 'tests  false
 ' || { skip "a pinned name — git could not make a repo here"; return; }
 
   floor "$tmp/ev7" new "Pinned" >/dev/null
@@ -2116,27 +2136,8 @@ an_observation_is_not_evidence() {
      "$(floor "$tmp/ob" observe | awk -F'\t' 'NF != 4' | grep -c .)" "0"
 }
 an_observation_is_not_evidence
-  make_repo "$tmp/ev4" main && set_origin "$tmp/ev4" 'https://github.com/acme/ev4.git' \
-    && mkdir -p "$tmp/ev4/.foundry" \
-    && commit_file "$tmp/ev4" .foundry/gates 'tests  true
-' || { skip "forged record — git could not make a repo here"; return; }
 
-  floor "$tmp/ev4" new "Forge" >/dev/null
-  floor "$tmp/ev4" charter derive >/dev/null 2>&1
-  floor "$tmp/ev4" policy authorize 'https://github.com/acme/ev4.git' >/dev/null 2>&1
-  floor "$tmp/ev4" targets add 'https://github.com/acme/ev4.git' main >/dev/null 2>&1
-  floor "$tmp/ev4" open >/dev/null 2>&1
-
-  forged='tests	0	deadbeef
-types'
-  is "a name holding a newline is refused" \
-     "$(code_of floor "$tmp/ev4" evidence record "$forged" true)" "2"
-  is "and nothing was written" "$(floor "$tmp/ev4" evidence)" ""
-}
-a_name_cannot_forge_a_second_record
-
-# #1204. A name holding `=` reads as a field, so it is refused, and nothing is written. Written below
-# `a_name_cannot_forge_a_second_record`'s body, never above it, where a case runs only nested: #1207.
+# #1204. A name holding `=` reads as a field, so it is refused, and nothing is written.
 an_event_named_like_a_field_is_refused() {
   make_repo "$tmp/obeq" main && set_origin "$tmp/obeq" 'https://github.com/acme/obeq.git' \
     || { skip "an event named like a field — git could not make a repo here"; return; }
@@ -16210,6 +16211,23 @@ a_suite_run_with_only_runs_the_cases_it_names() {
 
 refused_by_only() { ( . "$alone_beside_the_runner" && only_these "$@" ) >/dev/null 2>&1; printf '%s' "$?"; }
 a_suite_run_with_only_runs_the_cases_it_names
+
+# #1207. A case opened inside another runs only when that one does, so `--only` would read it clean.
+a_case_opened_inside_another_is_refused() {
+  printf 'outer() {\n\ninner() {\n  :\n}\ninner\n}\nouter\n' > "$tmp/only-nested.sh"
+
+  is  "--only refuses a case opened inside another" "$(refused_by_only "$tmp/only-nested.sh" inner)" "3"
+  is  "and so does the list the audit reads"        "$(refused_by_list "$tmp/only-nested.sh")" "3"
+  has "and names both, and the line"                "$(said_by_list "$tmp/only-nested.sh")" \
+      "inner opens inside outer, at line 3"
+
+  # The shipped suite on a clean pass, since `RUNNER` is unset there, so a nest added later is red.
+  is  "and the suite beside the runner lists clean"  "$(refused_by_list "$suite_beside_the_runner")" "0"
+}
+
+refused_by_list() { ( . "$alone_beside_the_runner" && cases_in "$1" ) >/dev/null 2>&1; printf '%s' "$?"; }
+said_by_list()    { ( . "$alone_beside_the_runner" && cases_in "$1" ) 2>&1 >/dev/null; }
+a_case_opened_inside_another_is_refused
 
 #
 # How the audit decides a runner break, one rule a check. The order is the point: each rule's break

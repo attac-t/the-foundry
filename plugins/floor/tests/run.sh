@@ -5429,6 +5429,14 @@ wreck_runner "a reading that writes into the run is caught" \
 wreck_runner "an --only that runs a case it was not given is caught" \
   onlyall 's#{ print ":"; next }#{ print; next }#' tests/alone.sh
 
+# #1207: a case opened inside another, read as a case.
+wreck_runner "a case opened inside another, read as a case, is caught" \
+  nestedcase '/nested != "" { printf/d' tests/alone.sh
+
+# #1207: a header planted above a case in the suite itself, so the case opens inside it.
+wreck_runner "a case nested in the suite beside the runner is caught" \
+  renested 's@^# #1207\. A case opened inside another runs only when that one does.*@a_planted_outer() {@' tests/model.sh
+
 wreck_runner "a case that passes against its break read as a catch is caught" \
   passcaught 's#^  \[ "\$said" -eq 0 \] \&\& return 1$#  :#' tests/alone.sh
 
