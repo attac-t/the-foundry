@@ -358,8 +358,9 @@ code carrying both facts is how a skipped grade lands as a clean pass — which 
 **On the trunk it always runs.** A diff with itself is empty and would read as a waiver, and a full
 audit there is what catches a mutant whose guarding change merged waived.
 
-**`sh bin/audited.sh` decides nothing.** It tells a worker, before they spend the time, whether the
-audit can answer at all.
+**Floor's suite asks `bin/audited.sh` before it declines**, so a branch changing only one of the four
+runs the audit too. Only the list's no lets it decline; a yes, a failed comparison or a crash runs
+it. A branch that changes the list itself is never asked, since its no would waive its own bar.
 
 **`tests/audited.sh` grades this** — sixteen cases against real trees. A fixture of file names would
 have graded the `case` arm and not the comparison, and the real-tree fixture caught a live bug: a

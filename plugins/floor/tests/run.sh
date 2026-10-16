@@ -848,16 +848,33 @@ the_trunk_of() {
 # Whether the audit was asked for, about one directory. **Takes the tree**, so a case can drive it
 # against a real repository instead of asserting the reasoning.
 #
-# **Three ways to answer no, and each is the safe answer.** No trunk to compare with, the tree is the
-# trunk, or something under the directory changed. Only the last is the interesting one; the first
-# two are how a waiver fires when the question could not honestly be asked.
+# **Four ways to answer no, and each is the safe answer.** No trunk to compare with, the tree is the
+# trunk, something under the directory changed, or the repository's own list says a file it names
+# changed. The first two are how a waiver fires when the question could not honestly be asked.
 nobody_asked_about() {
     trunk=$(the_trunk_of "$1") || return 1
 
     [ "$(git -C "$1" rev-parse HEAD 2>/dev/null)" \
       = "$(git -C "$1" rev-parse "$trunk" 2>/dev/null)" ] && return 1
 
-    git -C "$1" diff --quiet "$trunk" HEAD -- . 2>/dev/null
+    git -C "$1" diff --quiet "$trunk" HEAD -- . 2>/dev/null || return 1
+    nothing_the_list_names "$1" "$trunk"
+}
+
+#
+# Whether the repository's list of files outside this plugin that force the audit says no. #1171.
+#
+# **Only its no waives.** A yes, a comparison that failed and a crash all run the audit. A repository
+# with no list, or one where this plugin is not its own `plugins/floor`, answers as it did before.
+#
+# **A list the branch changed is never asked.** Its no would be the branch waiving its own bar.
+nothing_the_list_names() {
+    top=$(git -C "$1" rev-parse --show-toplevel 2>/dev/null) || return 0
+    [ "$top/plugins/floor" -ef "$1" ] && [ -f "$top/bin/audited.sh" ] || return 0
+    git -C "$top" diff --quiet "$2" HEAD -- bin/audited.sh 2>/dev/null || return 1
+
+    ( cd "$top" && sh bin/audited.sh "$2" ) >/dev/null 2>&1
+    [ $? -eq 1 ]
 }
 
 #
@@ -916,6 +933,7 @@ nobody_asked_reads_the_diff() {
     git -C "$prose" checkout -q -b side
     printf 'more\n' >> "$prose/docs/page.md"
     git -C "$prose" commit -qam prose
+    # A tree with no `bin/audited.sh` declines exactly as before #1171. This case holds that.
     asks_for_the_audit 'a branch touching no plugin file asked for nothing' "$prose/plugins/floor" yes
 
     inside=$(a_tree_like_ours inside)
@@ -947,6 +965,71 @@ nobody_asked_reads_the_diff() {
     asks_for_the_audit 'a repository with no trunk asks, rather than waiving' "$lost/plugins/floor" no
 }
 nobody_asked_reads_the_diff
+
+#
+# A tree like ours that keeps a list, whose answer is the line it is given. Committed on the trunk.
+a_tree_with_a_list() {
+    made=$(a_tree_like_ours "$1")
+    mkdir -p "$made/bin"
+    printf '%s\n' "$2" > "$made/bin/audited.sh"
+    git -C "$made" add -A
+    git -C "$made" commit -qm list
+    git -C "$made" checkout -q -b side
+    printf '%s' "$made"
+}
+
+# A branch that changes only prose, so nothing under the plugin moved and the list decides.
+prose_on() { printf 'more\n' >> "$1/docs/page.md"; git -C "$1" commit -qam prose; }
+
+#
+# **The suite asks the repository's list before it declines.** #1171. Only the list's no waives.
+the_list_is_asked() {
+    said=$(a_tree_with_a_list listyes 'exit 0'); prose_on "$said"
+    asks_for_the_audit 'a list that says yes runs the audit' "$said/plugins/floor" no
+
+    said=$(a_tree_with_a_list listno 'exit 1'); prose_on "$said"
+    asks_for_the_audit 'a list that says no lets it decline' "$said/plugins/floor" yes
+
+    said=$(a_tree_with_a_list listcannot 'exit 3'); prose_on "$said"
+    asks_for_the_audit 'a list that could not compare runs the audit' "$said/plugins/floor" no
+
+    #
+    # A crash that exits 1 reads exactly like a no. It runs anyway, because the branch changed the list.
+    said=$(a_tree_with_a_list listcrash 'exit 0')
+    printf 'set -e\nfalse\n' > "$said/bin/audited.sh"
+    git -C "$said" commit -qam crash
+    asks_for_the_audit 'a list the branch changed to crash with 1 runs the audit' "$said/plugins/floor" no
+
+    said=$(a_tree_with_a_list listnoself 'exit 0')
+    printf 'exit 1\n' > "$said/bin/audited.sh"
+    git -C "$said" commit -qam waive
+    asks_for_the_audit 'a list the branch changed to say no runs the audit' "$said/plugins/floor" no
+}
+the_list_is_asked
+
+#
+# **A list in a tree this plugin only sits in is never run.** Floor vendored elsewhere answers alone.
+a_list_outside_our_tree_is_not_run() {
+    made=$tmp/asked/vendored
+    mkdir -p "$made/vendor/floor" "$made/bin"
+    git -C "$made" init -q
+    git -C "$made" config user.email fixture@example.invalid
+    git -C "$made" config user.name fixture
+    git -C "$made" checkout -q -b main
+    printf 'seed\n' > "$made/vendor/floor/run.sh"
+    printf 'seed\n' > "$made/page.md"
+    printf ': > "%s/ran"\nexit 0\n' "$made" > "$made/bin/audited.sh"
+    git -C "$made" add -A
+    git -C "$made" commit -qm seed
+    git -C "$made" checkout -q -b side
+    printf 'more\n' >> "$made/page.md"
+    git -C "$made" commit -qam prose
+
+    asks_for_the_audit 'a list in a tree floor only sits in is not asked' "$made/vendor/floor" yes
+    [ ! -e "$made/ran" ] || { bad 'a list in a tree floor only sits in was run'; return; }
+    printf '  ok    and that list never ran\n'
+}
+a_list_outside_our_tree_is_not_run
 
 say_if_nobody_asked() {
     nobody_asked_about "$root" || return 0
