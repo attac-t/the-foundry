@@ -13651,6 +13651,17 @@ a_source_verb_outside_the_runs_repository_refuses() {
   for asked in 'read 1133' kind 'ask authorisation tests May-it' 'receive authorisation tests'; do
     is "source $asked from outside is refused too, 6" "$(code_of from_outside "$srcin_run" source $asked)" "6"
   done
+
+  #
+  # #1083: `receive` says where to run it, and so does one asked from no repository at all.
+  has "source receive from outside names the run's repository" \
+      "$(from_outside "$srcin_run" source receive authorisation tests)" "inside [https://github.com/acme/srcin.git]"
+
+  mkdir -p "$tmp/no-repository"
+  said=$( cd "$tmp/no-repository" && GIT_CEILING_DIRECTORIES="$tmp" FOUNDRY_HOME="$home" FOUNDRY_RUN="$srcin_run" \
+      FOUNDRY_WHO="" FOUNDRY_SOURCE= sh "$runner" source receive authorisation tests 2>&1; printf 'exit=%s' "$?" )
+  has "source receive from no repository is refused, 6" "$said" "exit=6"
+  has "and says floor stands in none"                   "$said" "not [nowhere]"
 }
 a_source_verb_outside_the_runs_repository_refuses
 
@@ -13773,7 +13784,7 @@ grade    https://gitlab.com/acme/nope.git
   said=$(floor_says "$tmp/st" targets add 'https://gitlab.com/acme/second.git' main)
   is  "a practice that cannot be read still refuses" \
       "$(code_of floor "$tmp/st" targets add 'https://gitlab.com/acme/second.git' main)" "5"
-  has "and says what git said about it" "$said" "could not read the practice"
+  has "and says it could not read the practice" "$said" "could not read the practice"
 }
 practice_grants_without_asking_again
 

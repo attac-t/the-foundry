@@ -3781,7 +3781,11 @@ wreck_runner "a practice read from where floor stands, not the root, is caught" 
   practiceroot 's#git ls-tree --full-tree "\$1" -- .foundry/practice#git ls-tree "$1" -- .foundry/practice#'
 
 wreck_runner "a body that falls back to its default on a practice it could not read is caught" \
-  nofilebody 's#^    form=\$(body_form_at_base "\$1") || refuse_an_unread_practice \$? "\$(bootstrap_base "\$1")"$#    form=$(body_form_at_base "$1")#'
+  nofilebody 's#^    body_form=\$(body_form_at_base "\$1") || refuse_an_unread_practice \$? "\$(bootstrap_base "\$1")"$#    body_form=$(body_form_at_base "$1")#'
+
+# Round one of #1083 refused here, and the refusal blocked the grant that is the remedy.
+wreck_runner "a practice it could not read, refused where standing should fall through, is caught" \
+  standingrefuses 's#^    practice=\$(practice_at_base "\$base") || { say_a_practice_went_unread "\$base"; return 1; }$#    practice=$(practice_at_base "$base") || exit 6#'
 
 wreck_runner "every hand floor's own account, not refused, is caught" \
   ownhand '/^refuse_hands_floor_writes_as() {/,/^}/s#^    exit 50$#    return 0#'
@@ -5069,7 +5073,7 @@ wreck_runner "a judged clause named without its panel is caught" \
   bodypanel 's@^    \[ "\$met_by" = panel \] && .*@    :@'
 
 wreck_runner "a body that ignores its setting is caught" \
-  bodysetting 's@^    \[ "\$form" = brief \] && .*@    :@'
+  bodysetting 's@^    \[ "\$body_form" = brief \] && .*@    :@'
 
 wreck_runner "a setting nobody can read that is kept silent is caught" \
   bodytypo 's@^    note "the practice says \[body \$form\].*@    :@'

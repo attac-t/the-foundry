@@ -5740,6 +5740,10 @@ compose_the_body() {
     # A request is never rewritten, so a second `deliver` keeps the body it carries.
     delivered_already "$1" >/dev/null && return 0
     keep_the_message "$1" "$2" "$3"
+
+    # Read once, here, before anything is measured or written: the cap measures the body in a
+    # subshell, where a refusal would leave only that subshell. #1083.
+    body_form=$(body_form_at_base "$1") || refuse_an_unread_practice $? "$(bootstrap_base "$1")"
     ready_to_carry "$1" "$2" "$3"
 
     the_parts_of_the_body "$1" "$2" "$3" > "$body" || die_unwritable "$body"
@@ -5749,8 +5753,7 @@ compose_the_body() {
 # and what each judge found.
 the_parts_of_the_body() {
     what_stands_first "$1" "$2" "$3"
-    form=$(body_form_at_base "$1") || refuse_an_unread_practice $? "$(bootstrap_base "$1")"
-    [ "$form" = brief ] && return 0
+    [ "$body_form" = brief ] && return 0
 
     what_floor_recorded "$1" "$2"
     what_each_judge_found "$1" "$2"
