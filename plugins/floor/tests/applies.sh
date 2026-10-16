@@ -74,19 +74,29 @@ tags_never_replayed() {
 }
 
 #
+# Where a declaration starts, and the driver word and description before its tag. Written once, so
+# every reader here finds a declaration where `break_tags` does. Each holds a tab, never a `\t`.
+DECLARED_AT=$(printf '(^|&&|\\|\\||;)[ \t]*wreck[a-z_]*[ \t]+"')
+DESCRIBED=$(printf '^.*wreck[a-z_]*[ \t]+"[^"]*"[ \t]*')
+
+#
 # The line of each driver call `break_tags` does not read, once per call. #1120.
 #
 # **A call is a driver word, then a quoted description, wherever it sits.** Two on one line are two,
 # and `break_tags` reads one a line at most. A line whose first mark is `#` holds no call.
 #
-# So a call after `then`, in single quotes or second on a line is named. A comment `break_tags` reads
-# a tag from is a read with no call, and its line is never named.
+# So a call after `then`, in single quotes, second on a line, or on the line `break_tags` takes a tag
+# from is named. A comment it reads a tag from is a read with no call, and is never named.
 unread_calls() {
-  awk '
+  DECLARED_AT="$DECLARED_AT" DESCRIBED="$DESCRIBED" awk '
+    function continues(line) { sub(ENVIRON["DESCRIBED"], "", line); return line == "\\" }
+
+    { read = !held && $0 ~ ENVIRON["DECLARED_AT"]; held = read && continues($0) }
+
     /^[ \t]*#/ { next }
+
     {
       calls = gsub(/wreck[a-z_]*[ \t]+["\047]/, "&")
-      read = ($0 ~ /(^|&&|\|\||;)[ \t]*wreck[a-z_]*[ \t]+"/)
       for (i = read; i < calls; i++) print NR
     }' "$1"
 }
@@ -97,11 +107,11 @@ unread_calls() {
 # A tag is the first word after a break's description, on that line or the next. A break declared
 # behind a guard is read too, and its guard's own quotes are never taken for the description.
 break_tags() {
-  awk '
+  DECLARED_AT="$DECLARED_AT" DESCRIBED="$DESCRIBED" awk '
     held { print $1; held = 0; next }
 
-    /(^|&&|\|\||;)[ \t]*wreck[a-z_]*[ \t]+"/ {
-      sub(/^.*wreck[a-z_]*[ \t]+"[^"]*"[ \t]*/, "")
+    $0 ~ ENVIRON["DECLARED_AT"] {
+      sub(ENVIRON["DESCRIBED"], "")
       if ($0 == "\\") { held = 1; next }
       print $1
     }' "$1"
@@ -111,10 +121,10 @@ break_tags() {
 # Each declaration, from its driver word to the end of its continuation lines, then a line holding
 # only a record separator. A declaration is found where `break_tags` finds one.
 declarations_in() {
-  awk '
+  DECLARED_AT="$DECLARED_AT" awk '
     held { statement = statement "\n" $0; if ($0 !~ /\\$/) { print statement; print "\036"; held = 0 }; next }
 
-    match($0, /(^|&&|\|\||;)[ \t]*wreck[a-z_]*[ \t]+"/) {
+    match($0, ENVIRON["DECLARED_AT"]) {
       statement = substr($0, RSTART)
       sub(/^(&&|\|\||;)?[ \t]*/, "", statement)
       if (statement ~ /\\$/) { held = 1; next }

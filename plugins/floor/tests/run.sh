@@ -263,13 +263,14 @@ refuse_an_unread_call() {
 }
 
 #
-# Each plant prints its driver word, so this file holds no call of its own. Three shapes go unread:
-# after `then`, a description in single quotes, and a second call on a line already read.
+# Each plant prints its driver word, so this file holds no call of its own. Four shapes go unread:
+# after `then`, in single quotes, second on a read line, and on the line a tag is taken from.
 unread_plants() {
   local word=wreck
   printf 'if true; then %s "a plant after then" plantthen; fi\n' "$word"
   printf "  %s 'a plant in single quotes' plantsingle\n" "$word"
   printf '  %s "a plant read" plantread; %s "a plant beside it" plantbeside\n' "$word" "$word"
+  printf '  %s "a plant held" \\\n    plantheld; %s "a plant on its tag line" planttagline\n' "$word" "$word"
 }
 
 # Two comments: one `break_tags` reads a tag from, which balances an unread call in the totals, and
@@ -279,15 +280,17 @@ balancing_plant() {
   printf '  # was: %s "a plant in a comment" plantcomment\n' wreck
 }
 
+# The plants take the five lines after the suite. The fourth is a read, whose tag hangs on the fifth.
 an_unread_call_is_refused_by_line() {
-  local said left
+  local said left last
+  last=$(wc -l < "$root/tests/run.sh" | tr -d ' ')
   { cat "$root/tests/run.sh"; unread_plants; } > "$tmp/unread.sh"
   said=$( failed=0; refuse_an_unread_call "$tmp/unread.sh"; exit "$failed" )
   left=$?
 
-  [ "$left" -eq 1 ] && [ "$(printf '%s' "${said##*at line }" | wc -w)" -eq 3 ] \
+  [ "$left" -eq 1 ] && [ "${said##*at line }" = "$((last + 1)) $((last + 2)) $((last + 3)) $((last + 5))" ] \
     && { printf '  ok    an unread call is refused, and each is named by its line\n'; return; }
-  bad "three unread calls were not each named — it left $left and said [$said]"
+  bad "four unread calls were not each named by their lines — it left $left and said [$said]"
 }
 
 # The totals balance here, one read with no call and one call unread, and the check still fails.
