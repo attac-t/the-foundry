@@ -2148,6 +2148,8 @@ an_event_named_like_a_field_is_refused() {
   is  "an event named like a field is refused" \
       "$(code_of floor "$tmp/obeq" observe charter.approved_by=architect round=1)" "2"
   has "and says it reads as a field" "$said" "reads as a field, never an event"
+  has "and names the event it refused" "$said" "[charter.approved_by=architect]"
+  has "and says a space goes before the fields" "$said" "then a space, then its fields"
   is  "and nothing is written" "$(floor "$tmp/obeq" observe)" "$before"
 }
 an_event_named_like_a_field_is_refused
