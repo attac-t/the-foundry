@@ -342,6 +342,10 @@ gate unnamed     sh   bin/unnamed.sh audit
 # nothing names is a run let go unseen, and 57 and 6 each fell there before anyone looked. #1159.
 gate routed      sh   bin/routed.sh audit
 
+# Floor's break replay, which its audit asks before any break runs. Here `fast` asks it too, so a
+# suite change that leaves a break changing nothing is found in seconds, not at the grade. #1205.
+gate applies     bash plugins/floor/tests/applies.sh
+
 #
 # **`fast` stops before the plugin suites, and nowhere else.** No gate line above names a mode, so
 # one added there joins `fast` with no second edit. Picking gates by hand is what this replaced.

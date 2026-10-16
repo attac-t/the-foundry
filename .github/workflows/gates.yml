@@ -151,6 +151,10 @@ jobs:
       - name: Every code deliver leaves with is routed or let go by name
         run: sh bin/routed.sh audit
 
+      # A floor break whose sed changes nothing, or one the replay cannot read, proves nothing.
+      - name: Every floor break changes the file it names
+        run: bash plugins/floor/tests/applies.sh
+
   # The gates above read files. This one runs the plugins that ship code, on each operating system a
   # user installs them on, because that is where both of them broke last: signal's hook was not
   # executable, so it died before reading a word, and kernel's nine hooks named a bare path with no
