@@ -3,13 +3,13 @@
 # Drives every gate against a tree that breaks it, and reports what was caught.
 #
 # A gate reaches this file three ways: broken here, broken by its own `audit`, or broken by a plugin
-# suite. `bumps` grades a merge commit, so no file break reaches it and it is driven by hand.
+# suite. `bumps` has two halves: a change with no bump is broken here, and a merge is driven by hand.
 #
 # **Nothing may sit outside those places, and the report counts them rather than this sentence.**
 # Five gates did until #684, and one had no driver at all — `judged` had only ever been green.
 #
-# `bumps` is the one gate no break here can reach. It grades a merge, and every break below edits a
-# file. The reason and the hand-driven proof sit beside `say_what_drives_itself`.
+# `bumps`'s merge half is the one no break here can reach. It grades two parents, and every break
+# below edits a file. The reason and the hand-driven proof sit beside `say_what_drives_itself`.
 #
 # **The checks that are not gates are out of reach, and the report says so.** A break here works by
 # editing a file and running the gate line that grades it, and `unread`, `unticked`, `ships` and
@@ -73,9 +73,9 @@ every_gate_is_green() {
 }
 
 # Named, never run here. Each is minutes, and a tool people skip because it is slow proves nothing.
-# `bumps` cannot be driven here. Every break above edits a file in the working tree, and this gate
-# only has an answer on a merge commit — it needs two parents that each moved one version to the
-# same place. That is a repository shape, not a file.
+# `bumps`'s merge half cannot be driven here. Every break above edits a file in the working tree,
+# and that half only has an answer on a merge commit — two parents that each moved one version to
+# the same place. That is a repository shape, not a file. Its other half, a change with no bump, is.
 #
 # Driven by hand instead, 9 September 2026, in a throwaway repository:
 #
@@ -88,7 +88,7 @@ say_what_drives_itself() {
     say "  self     bytes comments host stale basing durable   their own audit, which the gate line passes"
     say "  self     codex anthropic              the same, one per shipped adapter"
     say "  self     kernel signal panel floor      bash plugins/<name>/tests/run.sh"
-    say "  by hand  bumps      needs a merge commit, so no file break reaches it — see the comment above"
+    say "  by hand  bumps      its merge half needs a merge commit, so no file break reaches it — see the comment above"
     say "  not a gate  harness  the board script. Driven here because nothing else drives it"
     say "  out of reach  unread unticked ships unlisted   each has breaks in its own suite under tests/, and a person runs them"
 }
@@ -226,9 +226,7 @@ every_break() {
     #
     # The break is the fault itself, not a neutered guard. Editing a shipped plugin file is exactly
     # what the gate exists to notice, so the plant and the fault are one act.
-    drive bumps plugins/floor/README.md \
-        "echo 'a line no bump covers' >> plugins/floor/README.md" \
-        'sh bin/bumps.sh'
+    drive_an_unbumped_plugin
 
     # Prose naming a tool list its agent does not declare. A judge caught this on a live branch —
     # the frontmatter granted two new tools and three sentences still named the old three, one of
@@ -341,6 +339,37 @@ is_an_adapter_name() { case $1 in ''|*[!a-z0-9-]*) return 1 ;; esac; }
 
 # No break was made, so the summary counts it apart from the four answers.
 not_driven() { note 'NOT DRIVEN' "$1 — $2"; undriven=$((undriven + 1)); }
+
+#
+# **A plugin this branch has not touched since its fork, never one named here.** The drive planted in
+# floor's README by hand, and on a branch that bumped floor the bump covered it: `MISSED`. #1201.
+#
+# Untouched is `bumps.sh`'s own test, and a plugin untouched has an unmoved version, since its
+# `plugin.json` sits inside it. No fork, or no plugin untouched, and the gate would pass blind.
+drive_an_unbumped_plugin() {
+    fork=$(the_fork) || { not_driven bumps 'no fork from origin/main to read'; return; }
+    untouched=$(a_plugin_untouched_since "$fork") || { not_driven bumps 'every plugin moved since the fork'; return; }
+
+    untouched_readme="plugins/$untouched/README.md"
+    drive bumps "$untouched_readme" "echo 'a line no bump covers' >> \"\$untouched_readme\"" 'sh bin/bumps.sh'
+}
+
+# Where this branch forked from `origin/main`, read as `bin/bumps.sh` reads it. Nothing is an answer.
+the_fork() {
+    git rev-parse --verify -q origin/main >/dev/null 2>&1 || return 1
+
+    merge_base=$(git merge-base HEAD origin/main 2>/dev/null) || return 1
+    [ -n "$merge_base" ] && printf '%s\n' "$merge_base"
+}
+
+# The first plugin `git diff` calls unchanged since the fork, the test `bin/bumps.sh` asks of each.
+a_plugin_untouched_since() {
+    for plugin in $(git ls-tree --name-only HEAD plugins/ | sed 's#plugins/##; s#/$##'); do
+        git diff --quiet "$1" -- "plugins/$plugin/" && { printf '%s\n' "$plugin"; return 0; }
+    done
+
+    return 1
+}
 
 # --- what a break writes ---
 
