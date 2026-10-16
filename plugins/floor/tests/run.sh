@@ -867,11 +867,11 @@ nobody_asked_about() {
 # **Only its no waives.** A yes, a comparison that failed and a crash all run the audit. A repository
 # with no list, or one where this plugin is not its own `plugins/floor`, answers as it did before.
 #
-# **A list the branch changed is never asked.** Its no would be the branch waiving its own bar.
+# **A list unlike the trunk's is never asked**, committed or not. Its no would waive its own bar.
 nothing_the_list_names() {
     top=$(git -C "$1" rev-parse --show-toplevel 2>/dev/null) || return 0
     [ "$top/plugins/floor" -ef "$1" ] && [ -f "$top/bin/audited.sh" ] || return 0
-    git -C "$top" diff --quiet "$2" HEAD -- bin/audited.sh 2>/dev/null || return 1
+    git -C "$top" diff --quiet "$2" -- bin/audited.sh 2>/dev/null || return 1
 
     ( cd "$top" && sh bin/audited.sh "$2" ) >/dev/null 2>&1
     [ $? -eq 1 ]
@@ -984,26 +984,28 @@ prose_on() { printf 'more\n' >> "$1/docs/page.md"; git -C "$1" commit -qam prose
 #
 # **The suite asks the repository's list before it declines.** #1171. Only the list's no waives.
 the_list_is_asked() {
-    said=$(a_tree_with_a_list listyes 'exit 0'); prose_on "$said"
-    asks_for_the_audit 'a list that says yes runs the audit' "$said/plugins/floor" no
+    listed=$(a_tree_with_a_list listyes 'exit 0'); prose_on "$listed"
+    asks_for_the_audit 'a list that says yes runs the audit' "$listed/plugins/floor" no
 
-    said=$(a_tree_with_a_list listno 'exit 1'); prose_on "$said"
-    asks_for_the_audit 'a list that says no lets it decline' "$said/plugins/floor" yes
+    listed=$(a_tree_with_a_list listno 'exit 1'); prose_on "$listed"
+    asks_for_the_audit 'a list that says no lets it decline' "$listed/plugins/floor" yes
 
-    said=$(a_tree_with_a_list listcannot 'exit 3'); prose_on "$said"
-    asks_for_the_audit 'a list that could not compare runs the audit' "$said/plugins/floor" no
+    listed=$(a_tree_with_a_list listcannot 'exit 3'); prose_on "$listed"
+    asks_for_the_audit 'a list that could not compare runs the audit' "$listed/plugins/floor" no
+
+    listed=$(a_tree_with_a_list listcrash 'a_command_no_host_has_1171'); prose_on "$listed"
+    asks_for_the_audit 'a list that crashes runs the audit' "$listed/plugins/floor" no
 
     #
-    # A crash that exits 1 reads exactly like a no. It runs anyway, because the branch changed the list.
-    said=$(a_tree_with_a_list listcrash 'exit 0')
-    printf 'set -e\nfalse\n' > "$said/bin/audited.sh"
-    git -C "$said" commit -qam crash
-    asks_for_the_audit 'a list the branch changed to crash with 1 runs the audit' "$said/plugins/floor" no
+    # Its no would read like any other, so it is never asked once the branch has changed it.
+    listed=$(a_tree_with_a_list listnoself 'exit 0')
+    printf 'exit 1\n' > "$listed/bin/audited.sh"
+    git -C "$listed" commit -qam waive
+    asks_for_the_audit 'a list the branch changed to say no runs the audit' "$listed/plugins/floor" no
 
-    said=$(a_tree_with_a_list listnoself 'exit 0')
-    printf 'exit 1\n' > "$said/bin/audited.sh"
-    git -C "$said" commit -qam waive
-    asks_for_the_audit 'a list the branch changed to say no runs the audit' "$said/plugins/floor" no
+    listed=$(a_tree_with_a_list listdirty 'exit 0'); prose_on "$listed"
+    printf 'exit 1\n' > "$listed/bin/audited.sh"
+    asks_for_the_audit 'a list changed and not committed runs the audit' "$listed/plugins/floor" no
 }
 the_list_is_asked
 

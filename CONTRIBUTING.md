@@ -349,7 +349,8 @@ ALL GREEN. 24 graded. 1 declined: floor, no file it reads changed.
 ```
 
 **The plugin decides, not the worker.** Floor's suite reads the diff against the trunk the
-repository records, and says `NOBODY ASKED` at exit 4 when nothing under its own directory changed.
+repository records, and says `NOBODY ASKED` at exit 4 when nothing under its own directory changed
+and the repository's list says no.
 `bin/gates.sh` reads that code as a pass that graded less.
 
 **Exit 4 is not exit 3.** Three says the audit could not run and should have, and it still fails. One
@@ -362,7 +363,7 @@ audit there is what catches a mutant whose guarding change merged waived.
 runs the audit too. Only the list's no lets it decline; a yes, a failed comparison or a crash runs
 it. A branch that changes the list itself is never asked, since its no would waive its own bar.
 
-**`tests/audited.sh` grades this** — sixteen cases against real trees. A fixture of file names would
+**`tests/audited.sh` grades this**, against real trees. A fixture of file names would
 have graded the `case` arm and not the comparison, and the real-tree fixture caught a live bug: a
 `while read` on the right of a pipe runs in a subshell, so every clone-shaping file fell through.
 
