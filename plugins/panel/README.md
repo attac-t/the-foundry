@@ -118,6 +118,21 @@ Mechanical     bin/verdicts.sh refuses a round claiming a prior verdict
                tree is not on, exit 8. An abbreviation of the same commit
                is not a disagreement.
 
+               It runs the check a repository declares before judging,
+               and refuses while it is red, exit 9, naming every line that
+               says FAIL. The declaration is .panel/before-judging, one
+               line, a command, read with git at --base and never from the
+               tree under review. It refuses a dirty tree, and a tree that
+               declares a check with no --base named. A brief naming no
+               tree, or no base, says no check could run. A base declaring
+               nothing adds nothing. #1208.
+
+               That line runs a command a commit chose, in the tree under
+               review: convening a stranger's branch runs its code. What
+               the line runs is the branch's own, so this stops an honest
+               builder handing over red work and holds no tampering. A red
+               check may leave logs where its command writes them.
+
 Architectural  /verdict runs oracles in the parent session.
                Exit codes are harness-observed, never model-reported.
 
@@ -271,8 +286,8 @@ Needs: Claude Code CLI, `sh`, `awk`, `sed`, `find`, `sort` and `git`. No Python,
 no `jq`.
 
 **`git` is read by two commands and only when asked.** `brief.sh --worktree` takes the commit a
-judge is handed, and `record --worktree --commit` compares that commit's tree against the branch.
-Every other command answers without it.
+judge is handed and, with `--base`, reads `.panel/before-judging` at that commit. `record --worktree
+--commit` compares that commit's tree against the branch. Every other command answers without it.
 
 ## License
 

@@ -36,6 +36,7 @@ main() {
 
     counts_agree
     projections_agree
+    judging_waits_for_fast
 
     verdict
 }
@@ -293,6 +294,18 @@ projections_agree() {
     disagreed=$((disagreed + 1))
 }
 
+#
+# The check Panel's `brief.sh` runs before a judge reads the work, #1208. `CONTRIBUTING` asks for
+# `fast` before a judge round, and this is where that ask became a command. A line naming anything
+# else, or no line, is the ask quietly gone.
+judging_waits_for_fast() {
+    [ "$(cat .panel/before-judging 2>/dev/null)" = 'sh bin/gates.sh fast' ] \
+        && { printf '  PASS  %s\n' "the check before judging"; return; }
+
+    printf '  FAIL  .panel/before-judging does not read: sh bin/gates.sh fast\n'
+    disagreed=$((disagreed + 1))
+}
+
 verdict() {
     [ "$disagreed" -eq 0 ] || exit 1
     printf 'AGREED — %s gates\n' "$(wc -l < "$listed" | tr -d ' ')"
@@ -355,6 +368,10 @@ audit() {
     caught "a plugin test's step the workflow dropped" 1 workflow '/run: bash plugins\/floor\/tests\/applies.sh$/d' \
         'workflow does not name: applies'
 
+    # The check a judge round runs first, #1208.
+    caught "a check before judging that is not fast" 1 panel 's/ fast$//' \
+        '.panel/before-judging does not read'
+
     [ "$disagreed" -eq 0 ] || return 1
     printf 'THE CHECK CAN FAIL\n'
 }
@@ -398,6 +415,7 @@ broken_file() {
         workflow) printf '%s' "$lab/.github/workflows/gates.yml" ;;
         gates)    printf '%s' "$lab/bin/gates.sh" ;;
         agents)   printf '%s' "$lab/AGENTS.md" ;;
+        panel)    printf '%s' "$lab/.panel/before-judging" ;;
         *)        printf '%s' "$lab/CONTRIBUTING.md" ;;
     esac
 }

@@ -64,8 +64,10 @@ and no runtime** — a gate reaching for one stops working on Alpine.
 
 A plugin that ships no code has no gate. Green says nothing about whether its skills are still true.
 
-Panel ships code now, and only this: the review chain refusing a prior verdict that is not there. That
-enforces a contract Panel already had. It does not make Panel a planner or a coordinator.
+Panel ships code now, and only to refuse a judge round that its own contract says cannot stand: a
+prior verdict that is not there, a grade with no log or of another commit, and a red check the
+repository declares before judging. Each enforces a contract Panel already had. None makes Panel a
+planner or a coordinator.
 
 ## Stack plugins
 
