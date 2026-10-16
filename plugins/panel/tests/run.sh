@@ -182,7 +182,11 @@ wreck_brief "a dirty tree let through to the check is caught" \
 wreck_brief "only the last line of a red check named is caught" \
   checklast 's#{ print; failed = 1 }#{ failed = 1 }#'
 wreck_brief "a missing base passed in silence is caught" \
-  checksilent "/check_said='No --base was named/d"
+  checksilent "/check_said='NOT SUPPLIED. No --base was named/d"
+wreck_brief "a skipped check said nowhere is caught" \
+  skipsilent '/did not run: the convener skipped it/d'
+wreck_brief "a closing ask that never names the check is caught" \
+  skipask 's/the grade or the check before judging says/the grade says/'
 
 wreck_brief "a grade typed into the work file is caught" \
   typedgrade 's#^    said=$(grade_word_in "$work")$#    said=#'
