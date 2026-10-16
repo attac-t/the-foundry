@@ -2897,6 +2897,14 @@ a_body_set_to_brief_carries_the_brief_alone() {
 }
 a_body_set_to_brief_carries_the_brief_alone
 
+# #1083. A practice that is no file: a directory at the base stands in for a tree, a submodule or a
+# symlink. Written above every case that plants one, since a case runs where it is written.
+a_repo_whose_practice_is_no_file() {
+  make_repo "$1" main && set_origin "$1" "https://github.com/acme/${1##*/}.git" \
+    && mkdir -p "$1/.foundry/practice" && commit_file "$1" .foundry/practice/inside 'authorise ada
+'
+}
+
 # #1083. A body form read from a practice that is no file is refused, never sent as `record`.
 a_body_never_falls_back_on_a_practice_it_could_not_read() {
   git init -q --bare "$tmp/bodyless-remote.git" 2>/dev/null \
@@ -4082,14 +4090,8 @@ a_base_that_cannot_be_read_is_refused_for_it() {
 }
 a_base_that_cannot_be_read_is_refused_for_it
 
-# #1083. A practice that is no file: a directory at the base stands in for a tree, a submodule or a
-# symlink. Git says so from its mode, and the hearing refuses for it, never for a hand it could not read.
-a_repo_whose_practice_is_no_file() {
-  make_repo "$1" main && set_origin "$1" "https://github.com/acme/${1##*/}.git" \
-    && mkdir -p "$1/.foundry/practice" && commit_file "$1" .foundry/practice/inside 'authorise ada
-'
-}
-
+# #1083. Git says a directory at the base's practice is no file, and the hearing refuses for it,
+# never for a hand it could not read.
 a_practice_that_is_no_file_is_refused_for_it() {
   a_repo_whose_practice_is_no_file "$tmp/nofile" \
     || { skip "a practice that is no file — git could not make a repo here"; return; }
