@@ -221,10 +221,16 @@ refuse_a_declaration_with_no_base() {
     fail 9 "name the commit to read it at with --base — on the branch it reviews, --base HEAD"
 }
 
+#
+# The base, as the commit it names. **A `rev:path` whose rev holds a slash is rewritten by Git Bash**
+# into a path list, so `origin/main:.panel/before-judging` read nothing there and the check was
+# skipped in silence, on the host that convenes. A commit id holds no slash.
+#
 refuse_a_base_that_is_no_commit() {
-    git -C "$worktree" rev-parse --verify --quiet "$base^{commit}" >/dev/null 2>&1 && return 0
+    resolved=$(git -C "$worktree" rev-parse --verify --quiet "$base^{commit}" 2>/dev/null)
+    [ -n "$resolved" ] || fail 2 "no commit [$base] in [$worktree] to read $DECLARATION at"
 
-    fail 2 "no commit [$base] in [$worktree] to read $DECLARATION at"
+    base=$resolved
 }
 
 #
@@ -253,7 +259,7 @@ refuse_a_dirty_worktree() {
 }
 
 run_it_in_the_worktree() {
-    said_by_the_check=$(cd "$worktree" && sh -c "$declared" 2>&1)
+    said_by_the_check=$(cd "$worktree" && sh -c "$declared" 2>&1 </dev/null)
     answered=$?
     [ "$answered" -eq 0 ] && { check_said="\`$declared\`, declared at $base, ran in the tree you read and exited 0."; return 0; }
 
@@ -262,15 +268,17 @@ run_it_in_the_worktree() {
     fail 9 "the check the repository runs before judging is red, so no judge is convened"
 }
 
-# Every line the check printed that says FAIL, or its last line when none does.
+# Every line the check printed that says FAIL as a word, or its last line when none does. A word, as
+# `grade_word_in` learned: `FAILING` in prose is not a gate that failed.
 what_it_failed_on() {
     printf '%s\n' "$said_by_the_check" | awk '
-        /FAIL/ { print; failed = 1 }
-        NF     { last = $0 }
-        END    { if (!failed) print last }'
+        { padded = " " $0 " " }
+        padded ~ /[^A-Za-z]FAIL[^A-Za-z]/ { print; failed = 1 }
+        NF  { last = $0 }
+        END { if (!failed) print last }'
 }
 
-# Said only when it ran, or when it could not. A repository declaring nothing sees nothing new.
+# Said when the check ran, or when no tree or no base was named. A base declaring nothing says nothing.
 say_the_check() {
     [ -n "$check_said" ] || return 0
 

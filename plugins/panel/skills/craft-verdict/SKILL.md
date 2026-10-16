@@ -60,8 +60,10 @@ toolset is `Read`, `Glob`, `Grep`. So everything mechanical runs here, in the pa
 a judge is spawned. The gates, and the chain:
 
 ```sh
-# the check the repository declares before judging, read at the base — stop while it is red
-git -C <worktree> show <base>:.panel/before-judging
+# the check the repository declares before judging, read at the base, then run in the tree — stop
+# while it exits non-zero. Name the base by its commit id: Git Bash rewrites a ref holding a slash
+git -C <worktree> show "$(git -C <worktree> rev-parse <base>)":.panel/before-judging
+(cd <worktree> && sh -c "<the line it printed>")
 
 # which round this review is on
 sh "${CLAUDE_PLUGIN_ROOT}/bin/verdicts.sh" round <dir> <review>

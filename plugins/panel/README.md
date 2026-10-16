@@ -123,8 +123,9 @@ Mechanical     bin/verdicts.sh refuses a round claiming a prior verdict
                says FAIL. The declaration is .panel/before-judging, one
                line, a command, read with git at --base and never from the
                tree under review. It refuses a dirty tree, and a tree that
-               declares a check with no --base named. With no declaration
-               at the base, nothing changes. #1208.
+               declares a check with no --base named. A brief naming no
+               tree, or no base, says no check could run. A base declaring
+               nothing adds nothing. #1208.
 
                That line runs a command a commit chose, in the tree under
                review: convening a stranger's branch runs its code. What

@@ -226,6 +226,11 @@ a_declared_check_runs_before_a_judge_reads() {
   has "and it names the first failing gate"   "$said" "FAIL  one"
   has "and every one after it"                "$said" "FAIL  two"
 
+  # A base named by a ref holding a slash. Git Bash rewrote `judged/base:.panel/...` into a path list,
+  # and the check was skipped in silence. Only a host that rewrites can turn this red.
+  git -C "$judged" branch -q judged/base >/dev/null 2>&1
+  is  "a base named by a ref holding a slash still meets its check" "$(code_at --base judged/base)" "9"
+
   is  "a declaration in the tree and no base is refused" "$(code_at)" "9"
   has "and it says to name the base"                     "$(convene_at)" "--base HEAD"
 
