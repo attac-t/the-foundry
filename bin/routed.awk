@@ -24,6 +24,8 @@ part == 1 { if (match($0, /^[a-z_][a-z0-9_]*\(\) *[{(]/)) { f = $0; sub(/\(\).*/
 
 #
 # A heredoc's body is text, not code: usage pages name `exit 14` in prose. Skipped to its end word.
+# A heredoc no end word closed before the next function was a `<<` in text, so reading resumes there.
+ending != "" && /^[a-z_][a-z0-9_]*\(\) *[{(]/ { ending = "" }
 ending != "" { if ($0 ~ "^[ \t]*" ending "$") ending = ""; next }
 
 match($0, /^[a-z_][a-z0-9_]*\(\) *[{(]/) {

@@ -121,6 +121,19 @@ planted a_page_naming_an_exit
 landed "$runner" 'a page; exit 72' "a heredoc's page is text" \
   && expect "a heredoc's page is text" 0 "PASS"
 
+a_sentence_naming_an_exit() { defined 'plant_said() { note "it did not pass, exit $2"; }'; reached plant_said; }
+planted a_sentence_naming_an_exit
+landed "$runner" 'did not pass, exit $2' "a sentence naming an exit is prose" \
+  && expect "a sentence naming an exit is prose" 0 "PASS"
+
+# A `<<` in a sentence starts no heredoc that outlives its function, so the next is still read.
+a_heredoc_word_in_a_sentence() {
+  defined 'plant_told() { note "write it as cat <<EOF"; }' 'plant_after() { note "a plant"; exit 73; }'
+  reached plant_told; reached plant_after
+}
+planted a_heredoc_word_in_a_sentence
+expect "a heredoc word in a sentence hides nothing after it" 1 "73, from \`plant_after\`"
+
 an_exit_nobody_reaches() { defined 'plant_far() { note "a plant"; exit 66; }'; }
 planted an_exit_nobody_reaches
 landed "$runner" 'plant_far()' "a code no call reaches is not deliver's" \
