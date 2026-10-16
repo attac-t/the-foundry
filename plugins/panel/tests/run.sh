@@ -184,7 +184,7 @@ wreck_brief "only the last line of a red check named is caught" \
 wreck_brief "a missing base passed in silence is caught" \
   checksilent "/check_said='NOT SUPPLIED. No --base was named/d"
 wreck_brief "a skipped check said nowhere is caught" \
-  skipsilent '/did not run: the convener skipped it/d'
+  skipsilent 's#^    check_said="NOT SUPPLIED\. .*the convener skipped it.*$#    check_said=#'
 wreck_brief "a closing ask that never names the check is caught" \
   skipask 's/the grade or the check before judging says/the grade says/'
 
