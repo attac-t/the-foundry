@@ -16220,6 +16220,9 @@ a_case_opened_inside_another_is_refused() {
   is  "and so does the list the audit reads"        "$(refused_by_list "$tmp/only-nested.sh")" "3"
   has "and names both, and the line"                "$(said_by_list "$tmp/only-nested.sh")" \
       "inner opens inside outer, at line 3"
+
+  # The shipped suite on a clean pass, since `RUNNER` is unset there, so a nest added later is red.
+  is  "and the suite beside the runner lists clean"  "$(refused_by_list "$suite_beside_the_runner")" "0"
 }
 
 refused_by_list() { ( . "$alone_beside_the_runner" && cases_in "$1" ) >/dev/null 2>&1; printf '%s' "$?"; }
