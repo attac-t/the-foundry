@@ -8,7 +8,7 @@
 # verdict.
 #
 #   sh bin/brief.sh adversary "a clause" --charter FILE --work FILE --verdicts DIR --review ID \
-#       --worktree DIR --base COMMIT --evidence FILE
+#       --worktree DIR --base COMMIT --skip-check REASON --evidence FILE
 #
 # **A path is not a handoff.** Every part is read here and printed, so what the judge was given is
 # what this command emitted. An audit reads one stream, never a directory it hopes was reachable.
@@ -68,6 +68,7 @@ read_arguments() {
     review=
     worktree=
     base=
+    skip_reason=
     evidence=
 
     [ -n "$role" ] && [ -n "$clause" ] || fail 2 'name a role and the clause it answers'
@@ -81,6 +82,7 @@ read_arguments() {
             --review)  review=${2:-}; [ -n "$review" ] || fail 2 "review names the chain" ;;
             --worktree) worktree=${2:-}; [ -n "$worktree" ] || fail 2 "worktree names a checkout" ;;
             --base)    base=${2:-}; [ -n "$base" ] || fail 2 "base names a commit" ;;
+            --skip-check) skip_reason=${2:-}; [ -n "$skip_reason" ] || fail 2 "skip-check names its reason" ;;
             --evidence) evidence=${2:-}; refuse_unreadable evidence "$evidence" ;;
             *)         fail 2 "unknown argument [$1]" ;;
         esac
@@ -196,7 +198,7 @@ say_the_tree() {
 #
 run_the_declared_check() {
     check_said=
-    [ -n "$worktree" ] || { check_said='No worktree was named, so no declared check could run.'; return 0; }
+    [ -n "$worktree" ] || { check_said='NOT SUPPLIED. No worktree was named, so no declared check could run.'; return 0; }
     [ -n "$base" ] || { refuse_a_declaration_with_no_base; return 0; }
 
     refuse_a_base_that_is_no_commit
@@ -204,7 +206,17 @@ run_the_declared_check() {
     [ -n "$declared" ] || return 0
 
     refuse_a_dirty_worktree
+    [ -z "$skip_reason" ] || { say_it_was_skipped; return 0; }
     run_it_in_the_worktree
+}
+
+#
+# A host where the check costs minutes may skip it, and only out loud. #1212.
+#
+# The base and the declaration are read first, so the judge is told exactly what did not run, and
+# a dirty tree is still refused: the judge reads a commit whether or not anything graded it.
+say_it_was_skipped() {
+    check_said="NOT SUPPLIED. \`$declared\`, declared at $base, did not run: the convener skipped it — $skip_reason."
 }
 
 #
@@ -213,7 +225,7 @@ run_the_declared_check() {
 # A committed declaration is the repository claiming a check, and nothing backs it, as a claimed
 # grade with no log is refused below. A branch that deleted the file is told so, never silent.
 refuse_a_declaration_with_no_base() {
-    check_said='No --base was named, so no declared check could run.'
+    check_said='NOT SUPPLIED. No --base was named, so no declared check could run.'
     read_the_declaration_at "$commit"
     [ -n "$declared" ] || return 0
 
@@ -576,7 +588,8 @@ A SPLIT or a DEADLOCK is a `revise`, and the paragraph says which it was.
 
 First, one paragraph saying why. Name the severity, and what would have to change.
 
-If the charter, the work or the grade says NOT SUPPLIED above, say so in that paragraph first.
+If the charter, the work, the grade or the check before judging says NOT SUPPLIED above, say so
+in that paragraph first.
 A verdict given without the bar is worth what it was given.
 
 Then end with exactly one line, on its own, and nothing after it:

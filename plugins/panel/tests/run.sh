@@ -120,6 +120,9 @@ wreck_brief() {
   [ -s "$tmp/$tag/bin/brief.sh" ] || { bad "$name — the mutant is empty"; return; }
   cmp -s "$tmp/$tag/bin/brief.sh" "$root/bin/brief.sh" \
     && { bad "$name — the break did not apply, so this proves nothing"; return; }
+  # A mutant no shell parses dies at the first check, never at its own. #1212's first `skipsilent`.
+  sh -n "$tmp/$tag/bin/brief.sh" 2>/dev/null \
+    || { bad "$name — the mutant does not parse, so this proves nothing"; return; }
   caught_brief "$tag"
   case $? in
     1) bad  "$name — the suite passed against a broken brief"; return ;;
@@ -182,7 +185,11 @@ wreck_brief "a dirty tree let through to the check is caught" \
 wreck_brief "only the last line of a red check named is caught" \
   checklast 's#{ print; failed = 1 }#{ failed = 1 }#'
 wreck_brief "a missing base passed in silence is caught" \
-  checksilent "/check_said='No --base was named/d"
+  checksilent "/check_said='NOT SUPPLIED. No --base was named/d"
+wreck_brief "a skipped check said nowhere is caught" \
+  skipsilent 's#^    check_said="NOT SUPPLIED\. .*the convener skipped it.*$#    check_said=#'
+wreck_brief "a closing ask that never names the check is caught" \
+  skipask 's/the grade or the check before judging says/the grade says/'
 
 wreck_brief "a grade typed into the work file is caught" \
   typedgrade 's#^    said=$(grade_word_in "$work")$#    said=#'
@@ -378,6 +385,13 @@ wreck "a chain comparing commits instead of trees is caught" \
   && bad "a suite that ran nothing passed" \
   || printf '  ok    a suite that ran nothing does not pass\n'
 echo
+# The parse refusal, driven, because its first commit claimed it before it existed. #1212.
+said=$(wreck_brief "a mutant no shell parses" unparsed 's/^say_it_was_skipped() {$/say_it_was_skipped() { {/')
+case $said in
+  *"the mutant does not parse"*) printf '  ok    a mutant no shell parses is refused, never counted\n' ;;
+  *) bad "a mutant no shell parses was not refused" ;;
+esac
+
 # End to end, and not just the bound. A runner that never returns must reach the verdict rather
 # than the answer the suite would have given without it.
 mkdir -p "$tmp/hang/bin" && printf '#!/bin/sh\nsleep 30\n' > "$tmp/hang/bin/verdicts.sh"

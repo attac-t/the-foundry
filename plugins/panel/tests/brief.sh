@@ -246,10 +246,22 @@ a_declared_check_runs_before_a_judge_reads() {
   printf 'exit 1\n' > "$judged/check.sh"
   commit_the_judged dropped
   is  "a tree that deletes its declaration still meets the base's check" "$(code_at --base "$base")" "9"
-  has "a tree with no declaration and no base says no check could run"   "$(convene_at)" "No --base was named"
+
+  # #1212. A skipped red check convenes, and says so in words the judge is asked to name.
+  is  "a skipped red check convenes the judge"   "$(code_at --base "$base" --skip-check 'nine minutes here')" "0"
+  skipped=$(convene_at --base "$base" --skip-check 'nine minutes here')
+  has "and says NOT SUPPLIED"                     "$skipped" "NOT SUPPLIED. \`sh check.sh\`"
+  has "and names the base it was declared at"     "$skipped" "declared at $base"
+  has "and gives the reason"                      "$skipped" "the convener skipped it — nine minutes here"
+  has "and the closing ask names the check"       "$skipped" "the grade or the check before judging says NOT SUPPLIED"
+  is  "a skip with no reason is refused"          "$(code_at --base "$base" --skip-check '')" "2"
+  printf 'x\n' >> "$judged/check.sh"
+  is  "a skip on a dirty tree is still refused"   "$(code_at --base "$base" --skip-check 'nine minutes here')" "9"
+  git -C "$judged" checkout -q -- check.sh >/dev/null 2>&1
+  has "a tree with no declaration and no base says no check could run"   "$(convene_at)" "NOT SUPPLIED. No --base was named"
 
   has "a brief naming no tree says no check could run" \
-      "$(brief adversary 'a clause' --verdicts "$tmp/empty" --review R1)" "No worktree was named"
+      "$(brief adversary 'a clause' --verdicts "$tmp/empty" --review R1)" "NOT SUPPLIED. No worktree was named"
 
   # A repository declaring nothing sees nothing new. `$tree` holds no `.panel`.
   lacks "a base declaring nothing adds no section" \

@@ -127,6 +127,11 @@ Mechanical     bin/verdicts.sh refuses a round claiming a prior verdict
                tree, or no base, says no check could run. A base declaring
                nothing adds nothing. #1208.
 
+               --skip-check REASON skips it on a host where it costs
+               minutes, and only out loud: the brief says NOT SUPPLIED,
+               names the check, its base and the reason, and the judge is
+               asked to name it. A dirty tree is still refused. #1212.
+
                That line runs a command a commit chose, in the tree under
                review: convening a stranger's branch runs its code. What
                the line runs is the branch's own, so this stops an honest
