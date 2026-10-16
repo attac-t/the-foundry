@@ -178,9 +178,7 @@ every_break() {
 
     # The pin is this repository's trust decision, and the gate had only ever been green. Editing
     # the adapter moves its digest; the declaration beside it does not move on its own.
-    drive judged plugins/floor/adapters/codex/run.sh \
-        'a_drifted_adapter >> plugins/floor/adapters/codex/run.sh' \
-        'sh bin/judged.sh'
+    drive_the_pinned_adapter
 
     # A refusal the page has no row for, on a code twenty-one rows already use. #890 asked for this
     # break by name: a new code is the easy half, and it would pass a page keyed the wrong way.
@@ -313,6 +311,28 @@ restore() {
 
     rm -f "$1"
 }
+
+#
+# **The adapter `.foundry/judged` pins, never one named here.** This drive edited `codex` after the
+# pin moved to `anthropic`, so it moved no digest the gate reads and read `MISSED`. #1200.
+#
+# The path reaches the break as a variable, never as text `drive` evaluates, and a name outside
+# `[a-z0-9-]` is not driven at all: `judged.sh` never checks the name's characters.
+drive_the_pinned_adapter() {
+    pinned=$(pinned_adapter)
+    [ -n "$pinned" ] || { note 'NOT DRIVEN' "judged — .foundry/judged pins no @adapter reach"; return; }
+    is_an_adapter_name "$pinned" || { note 'NOT DRIVEN' "judged — [$pinned] is no adapter name"; return; }
+
+    pinned_file="plugins/floor/adapters/$pinned/run.sh"
+    drive judged "$pinned_file" 'a_drifted_adapter >> "$pinned_file"' 'sh bin/judged.sh'
+}
+
+# The first `@adapter` reach, read with the test `bin/judged.sh` uses for every one.
+pinned_adapter() {
+    awk '!/^[ \t]*#/ && $1 == "reach" && $3 == "@adapter" { print $4; exit }' .foundry/judged 2>/dev/null
+}
+
+is_an_adapter_name() { case $1 in ''|*[!a-z0-9-]*) return 1 ;; esac; }
 
 # --- what a break writes ---
 
