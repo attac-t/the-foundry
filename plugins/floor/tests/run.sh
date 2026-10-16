@@ -252,6 +252,61 @@ a_tag_used_twice_is_refused
 refuse_a_tag_used_twice "$root/tests/run.sh"
 
 #
+# **Every driver call is a break somebody reads.** #1120. A call `break_tags` cannot read has a tag
+# nobody checks and a `sed` nobody replays, so it fails here as a broken rule, before any break runs.
+refuse_an_unread_call() {
+  local lines
+  lines=$(unread_calls "$1" | tr '\n' ' ')
+
+  [ -n "$lines" ] || { printf '  ok    every driver call is a break the tag check reads\n'; return; }
+  bad "a driver call no tag reader reads, so its break never runs, at line ${lines% }"
+}
+
+#
+# Each plant prints its driver word, so this file holds no call of its own. Three shapes go unread:
+# after `then`, a description in single quotes, and a second call on a line already read.
+unread_plants() {
+  local word=wreck
+  printf 'if true; then %s "a plant after then" plantthen; fi\n' "$word"
+  printf "  %s 'a plant in single quotes' plantsingle\n" "$word"
+  printf '  %s "a plant read" plantread; %s "a plant beside it" plantbeside\n' "$word" "$word"
+}
+
+# Two comments: one `break_tags` reads a tag from, which balances an unread call in the totals, and
+# one only a loose reader would count. A line whose first mark is `#` holds no call, so neither is named.
+balancing_plant() {
+  printf '  # a note; %s "a plant in a note" plantnote\n' wreck
+  printf '  # was: %s "a plant in a comment" plantcomment\n' wreck
+}
+
+an_unread_call_is_refused_by_line() {
+  local said left
+  { cat "$root/tests/run.sh"; unread_plants; } > "$tmp/unread.sh"
+  said=$( failed=0; refuse_an_unread_call "$tmp/unread.sh"; exit "$failed" )
+  left=$?
+
+  [ "$left" -eq 1 ] && [ "$(printf '%s' "${said##*at line }" | wc -w)" -eq 3 ] \
+    && { printf '  ok    an unread call is refused, and each is named by its line\n'; return; }
+  bad "three unread calls were not each named — it left $left and said [$said]"
+}
+
+# The totals balance here, one read with no call and one call unread, and the check still fails.
+an_unread_call_is_refused_when_the_totals_balance() {
+  local said left
+  { cat "$root/tests/run.sh"; balancing_plant; unread_plants | head -1; } > "$tmp/balanced.sh"
+  said=$( failed=0; refuse_an_unread_call "$tmp/balanced.sh"; exit "$failed" )
+  left=$?
+
+  [ "$left" -eq 1 ] && [ "${said##*at line }" = "$(wc -l < "$tmp/balanced.sh" | tr -d ' ')" ] \
+    && { printf '  ok    an unread call is refused though the totals balance\n'; return; }
+  bad "an unread call beside a read comment passed — it left $left and said [$said]"
+}
+
+an_unread_call_is_refused_by_line
+an_unread_call_is_refused_when_the_totals_balance
+refuse_an_unread_call "$root/tests/run.sh"
+
+#
 # Floor core names no vendor, and the adapters directory is where every vendor is — #512.
 #
 # **The set is closed by what the plugin ships.** Each adapter directory yields two words: its own

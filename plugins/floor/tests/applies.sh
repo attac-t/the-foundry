@@ -73,6 +73,24 @@ tags_never_replayed() {
   while IFS= read -r tag; do printf '%s — its declaration could not be replayed\n' "$tag"; done < "$2/never"
 }
 
+#
+# The line of each driver call `break_tags` does not read, once per call. #1120.
+#
+# **A call is a driver word, then a quoted description, wherever it sits.** Two on one line are two,
+# and `break_tags` reads one a line at most. A line whose first mark is `#` holds no call.
+#
+# So a call after `then`, in single quotes or second on a line is named. A comment `break_tags` reads
+# a tag from is a read with no call, and its line is never named.
+unread_calls() {
+  awk '
+    /^[ \t]*#/ { next }
+    {
+      calls = gsub(/wreck[a-z_]*[ \t]+["\047]/, "&")
+      read = ($0 ~ /(^|&&|\|\||;)[ \t]*wreck[a-z_]*[ \t]+"/)
+      for (i = read; i < calls; i++) print NR
+    }' "$1"
+}
+
 # A tool finds a break by its tag and drives the first it meets, so a shared tag hides a break.
 # Five were shared until #1106, and on 29 September a break reported as lived had never run.
 #
