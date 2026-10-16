@@ -385,6 +385,13 @@ wreck "a chain comparing commits instead of trees is caught" \
   && bad "a suite that ran nothing passed" \
   || printf '  ok    a suite that ran nothing does not pass\n'
 echo
+# The parse refusal, driven, because its first commit claimed it before it existed. #1212.
+said=$(wreck_brief "a mutant no shell parses" unparsed 's/^say_it_was_skipped() {$/say_it_was_skipped() { {/')
+case $said in
+  *"the mutant does not parse"*) printf '  ok    a mutant no shell parses is refused, never counted\n' ;;
+  *) bad "a mutant no shell parses was not refused" ;;
+esac
+
 # End to end, and not just the bound. A runner that never returns must reach the verdict rather
 # than the answer the suite would have given without it.
 mkdir -p "$tmp/hang/bin" && printf '#!/bin/sh\nsleep 30\n' > "$tmp/hang/bin/verdicts.sh"
