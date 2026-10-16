@@ -21,24 +21,34 @@
 # `list` prints each case in call order. `only` prints the suite with every call of a case not named
 # made `:`, and refuses a name that is no case before it prints a line.
 #
+# **Both refuse a function opened inside another's body, exit 3.** Its call runs only when the outer
+# one does, so `only` would make the outer call `:` and the named case would never run. #1207.
+#
 cases_of() {
   local mode=$1 suite=$2
   shift 2
 
   awk -v mode="$mode" -v named=" $* " '
     FNR == 1 { pass++; heredoc = "" }
+    FNR == 1 && pass == 2 && nested != "" { printf "%s", nested > "/dev/stderr"; exit 3 }
     FNR == 1 && pass == 2 && mode == "only" && !every_name_is_a_case() { exit 2 }
 
     heredoc != "" { if (pass == 2 && mode == "only") print; if (closes($0, heredoc)) heredoc = ""; next }
 
     pass == 1 && /^[a-z_][a-z0-9_]*\(\) *\{/ { name = $0; sub(/\(\).*/, "", name); defined[name] = 1 }
     pass == 1 && /^[a-z_][a-z0-9_]*$/        { calls[$0]++ }
+    pass == 1 && /^[a-z_][a-z0-9_]*\(\) *\{ *$/ { if (open != "") note_nested(name, open); open = name }
+    pass == 1 && /^\}/                        { open = "" }
 
     pass == 2 && mode == "list" && is_case($0)                   { print; next }
     pass == 2 && mode == "only" && is_case($0) && !is_named($0) { print ":"; next }
     pass == 2 && mode == "only"                                   { print }
 
     { heredoc = opener($0) }
+
+    function note_nested(inner, outer) {
+      nested = nested sprintf("cases: %s opens inside %s, at line %d of %s\n", inner, outer, FNR, FILENAME)
+    }
 
     function is_case(line)  { return (line in defined) && calls[line] == 1 }
     function is_named(line) { return index(named, " " line " ") > 0 }
