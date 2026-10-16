@@ -226,7 +226,7 @@ every_break() {
     #
     # The break is the fault itself, not a neutered guard. Editing a shipped plugin file is exactly
     # what the gate exists to notice, so the plant and the fault are one act.
-    drive_an_unbumped_plugin
+    drive_an_untouched_plugin
 
     # Prose naming a tool list its agent does not declare. A judge caught this on a live branch —
     # the frontmatter granted two new tools and three sentences still named the old three, one of
@@ -346,12 +346,13 @@ not_driven() { note 'NOT DRIVEN' "$1 — $2"; undriven=$((undriven + 1)); }
 #
 # Untouched is `bumps.sh`'s own test, and a plugin untouched has an unmoved version, since its
 # `plugin.json` sits inside it. No fork, or no plugin untouched, and the gate would pass blind.
-drive_an_unbumped_plugin() {
+drive_an_untouched_plugin() {
     fork=$(the_fork) || { not_driven bumps 'no fork from origin/main to read'; return; }
     untouched=$(a_plugin_untouched_since "$fork") || { not_driven bumps 'every plugin moved since the fork'; return; }
 
     untouched_readme="plugins/$untouched/README.md"
-    drive bumps "$untouched_readme" "echo 'a line no bump covers' >> \"\$untouched_readme\"" 'sh bin/bumps.sh'
+    note plants "$untouched_readme, untouched since $(git rev-parse --short "$fork")"
+    drive bumps "$untouched_readme" 'echo "a line no bump covers" >> "$untouched_readme"' 'sh bin/bumps.sh'
 }
 
 # Where this branch forked from `origin/main`, read as `bin/bumps.sh` reads it. Nothing is an answer.
