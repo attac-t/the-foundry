@@ -345,13 +345,13 @@ a_rule_file_read() { printf '\nbench_in() { cat "$1/.foundry/bench"; }\n'; }
 
 a_judge_name() { printf '\ncase $reach in anthropic) : ;; esac\n'; }
 
-# Six, which #1160 made `deliver` able to leave with, struck from the let-go line that names it.
 # The driver word is printed, never written beside a quote, so this file declares no break of its own.
 a_break_that_changes_nothing() {
     printf '\n%s "%s" \\\n  %s %s\n' wreck_runner 'a planted break that changes nothing is caught' \
         plantednothing "'s#a line no runner holds#nothing#'"
 }
 
+# Six, which #1160 made `deliver` able to leave with, struck from the let-go line that names it.
 a_code_left_unnamed() { sed '/<!-- routed: let go -->/s/ 6, / /' "$1" > "$1.new" && mv "$1.new" "$1"; }
 
 # A directive, never a comment. The header of `secrets.sh` names a secret four times over, and a

@@ -85,6 +85,14 @@ named_in_workflow() {
             print substr($0, RSTART + 9, RLENGTH - 10)
         }
 
+        # A plugin test that runs as a gate of its own, named for its file, as `applies` is. The suites
+        # are `run.sh`, which the matrix below answers for. #1205.
+        /plugins\/[a-z-]+\/tests\/[a-z-]+\.sh/ {
+            match($0, /tests\/[a-z-]+\.sh/)
+            name = substr($0, RSTART + 6, RLENGTH - 9)
+            if (name != "run") print name
+        }
+
         # The step that runs the suites, not the matrix that declares them. Delete the step and keep
         # the matrix and CI runs none of them, which reading the declaration alone calls agreement.
         /plugins\/\$\{\{ matrix\.plugin \}\}\/tests\/run\.sh/ { step = 1 }
@@ -342,6 +350,10 @@ audit() {
         'listed as answering for no gate line, yet a gate line claims it: sh bin/taper.sh audit'
     caught "a listed step the workflow dropped" 1 workflow '/run: sh bin\/taper.sh audit$/d' \
         'listed as answering for no gate line, yet the workflow never runs it: sh bin/taper.sh audit'
+
+    # A gate that runs a plugin's own test, not a script under `bin/`. #1205.
+    caught "a plugin test's step the workflow dropped" 1 workflow '/run: bash plugins\/floor\/tests\/applies.sh$/d' \
+        'workflow does not name: applies'
 
     [ "$disagreed" -eq 0 ] || return 1
     printf 'THE CHECK CAN FAIL\n'
