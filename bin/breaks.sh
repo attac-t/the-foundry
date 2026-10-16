@@ -43,6 +43,7 @@ main() {
     missed=0
     moot=0
     mute=0
+    undriven=0
 
     say "clean first"
     every_gate_is_green
@@ -54,7 +55,7 @@ main() {
     # All four, always. A zero beside `mute` says the harness looked, and looking is the whole of
     # what was missing — the state was invisible rather than absent.
     say ""
-    say "$caught caught, $missed missed, $moot moot, $mute mute"
+    say "$caught caught, $missed missed, $moot moot, $mute mute, $undriven not driven"
 
     say ""
     say "these drive themselves, and are not run here"
@@ -315,15 +316,17 @@ restore() {
 }
 
 #
-# **The adapter `.foundry/judged` pins, never one named here.** This drive edited `codex` after the
-# pin moved to `anthropic`, so it moved no digest the gate reads and read `MISSED`. #1200.
+# **The adapter `.foundry/judged` pins, never one named here.** This drive named the old pin by
+# hand after the pin moved, so it moved no digest the gate reads and read `MISSED`. #1200.
 #
 # The path reaches the break as a variable, never as text `drive` evaluates, and a name outside
 # `[a-z0-9-]` is not driven at all: `judged.sh` never checks the name's characters.
 drive_the_pinned_adapter() {
+    [ -r .foundry/judged ] || { not_driven judged '.foundry/judged cannot be read'; return; }
+
     pinned=$(pinned_adapter)
-    [ -n "$pinned" ] || { note 'NOT DRIVEN' "judged — .foundry/judged pins no @adapter reach"; return; }
-    is_an_adapter_name "$pinned" || { note 'NOT DRIVEN' "judged — [$pinned] is no adapter name"; return; }
+    [ -n "$pinned" ] || { not_driven judged '.foundry/judged pins no @adapter reach'; return; }
+    is_an_adapter_name "$pinned" || { not_driven judged "[$pinned] is no adapter name"; return; }
 
     pinned_file="plugins/floor/adapters/$pinned/run.sh"
     drive judged "$pinned_file" 'a_drifted_adapter >> "$pinned_file"' 'sh bin/judged.sh'
@@ -335,6 +338,9 @@ pinned_adapter() {
 }
 
 is_an_adapter_name() { case $1 in ''|*[!a-z0-9-]*) return 1 ;; esac; }
+
+# No break was made, so the summary counts it apart from the four answers.
+not_driven() { note 'NOT DRIVEN' "$1 — $2"; undriven=$((undriven + 1)); }
 
 # --- what a break writes ---
 
