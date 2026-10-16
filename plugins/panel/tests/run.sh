@@ -180,7 +180,7 @@ wreck_brief "a declaration in the tree with no base let through is caught" \
 wreck_brief "a dirty tree let through to the check is caught" \
   checkdirty '/the declared check would grade files the judge never reads/d'
 wreck_brief "only the last line of a red check named is caught" \
-  checklast 's#/FAIL/ { print; failed = 1 }#/FAIL/ { failed = 1 }#'
+  checklast 's#{ print; failed = 1 }#{ failed = 1 }#'
 wreck_brief "a missing base passed in silence is caught" \
   checksilent "/check_said='No --base was named/d"
 
