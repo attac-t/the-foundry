@@ -45,6 +45,7 @@ main() {
     named=$(codes_on_the_line "$LET_GO")
 
     unsent=$(each_code_unsent)
+    twice=$(each_code_routed_and_named)
     unresolved=$(printf '%s\n' "$left" | awk -F'\t' '$1 == "?" { print "  `" $2 "` exits through a value nothing could read" }')
     waiting=$(waits_that_differ)
     verdict
@@ -80,28 +81,38 @@ codes_on_the_line() {
 
 # One line a code `deliver` can leave with that no arm routes and the let-go line does not name.
 each_code_unsent() {
-    printf '%s\n' "$left" | awk -F'\t' -v routed=" $(echo $routed) " -v named=" $(echo $named) " '
+    printf '%s\n' "$left" | awk -F'\t' -v routed=" $(spaced "$routed") " -v named=" $(spaced "$named") " '
         $1 == "?" || $1 == "" { next }
         index(routed, " " $1 " ") || index(named, " " $1 " ") { next }
         !said[$1]++ { printf "  %s, from `%s`\n", $1, $2 }'
 }
 
+# A code an arm routes is not let go, so the line naming it as let go says what is false.
+each_code_routed_and_named() {
+    for code in $named; do
+        printf '%s\n' "$routed" | grep -qx "$code" || continue
+        printf '  %s is routed by an arm, and the let-go line names it too\n' "$code"
+    done
+}
+
+spaced() { printf '%s' "$1" | tr '\n' ' '; }
+
 # The wait line must name what the wait arm routes, no more and no fewer.
 waits_that_differ() {
-    arm=$(codes_the_arms_route wait | tr '\n' ' ')
-    line=$(codes_on_the_line "$WAITS" | tr '\n' ' ')
+    arm=$(spaced "$(codes_the_arms_route wait)")
+    line=$(spaced "$(codes_on_the_line "$WAITS")")
     [ "$arm" = "$line" ] && return 0
     printf '  the wait arm routes [%s] and the wait line names [%s]\n' "${arm% }" "${line% }"
 }
 
 verdict() {
-    [ -z "$unsent$unresolved$waiting" ] && {
-        printf 'PASS — every code deliver can leave with is routed or let go by name: %s\n' "$(echo $named)"
+    [ -z "$unsent$twice$unresolved$waiting" ] && {
+        printf 'PASS — every code deliver can leave with is routed or let go by name: %s\n' "$(spaced "$named")"
         exit 0
     }
 
     printf 'FAIL — deliver can leave with a code nothing routes and the README does not name:\n'
-    printf '%s\n' "$unsent" "$unresolved" "$waiting" | grep .
+    printf '%s\n' "$unsent" "$twice" "$unresolved" "$waiting" | grep .
     exit 1
 }
 

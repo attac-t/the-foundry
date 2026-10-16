@@ -84,6 +84,43 @@ an_exit_through_a_capture() {
 planted an_exit_through_a_capture
 expect "an exit through a capture takes what it captured" 1 "67, from \`plant_caught through plant_inner\`"
 
+#
+# One case for each shape an exit takes that no number or argument resolves. Each must be named.
+an_exit_with_a_default() { defined 'plant_default() { exit "${2:-1}"; }'; reached plant_default; }
+planted an_exit_with_a_default
+expect "an exit through a default is named" 1 "\`plant_default\` exits through a value"
+
+an_exit_by_arithmetic() { defined 'plant_sum() { exit $((2 + 2)); }'; reached plant_sum; }
+planted an_exit_by_arithmetic
+expect "an exit by arithmetic is named" 1 "\`plant_sum\` exits through a value"
+
+a_bare_exit() { defined 'plant_bare() { false || exit; }'; reached plant_bare; }
+planted a_bare_exit
+expect "a bare exit is named" 1 "\`plant_bare\` exits through a value"
+
+#
+# A call after a case arm's `)` is a call, and an exit there is an exit.
+a_call_in_a_case_arm() {
+  defined 'plant_armed() { note "a plant"; exit 69; }'
+  reached 'case "$1" in x) plant_armed ;; esac'
+}
+planted a_call_in_a_case_arm
+expect "a function reached only from a case arm is followed" 1 "69, from \`plant_armed\`"
+
+an_exit_in_a_case_arm() { defined 'plant_arm() { case "$1" in x) exit 70 ;; esac; }'; reached plant_arm; }
+planted an_exit_in_a_case_arm
+expect "an exit after a case arm is read" 1 "70, from \`plant_arm\`"
+
+an_awk_exit() { defined "plant_awk() { awk '{ exit 71 }' /dev/null; }"; reached plant_awk; }
+planted an_awk_exit
+landed "$runner" 'exit 71' "an awk program's exit is awk's" \
+  && expect "an awk program's exit is awk's" 0 "PASS"
+
+a_page_naming_an_exit() { defined 'plant_page() {' '    cat <<EOF' 'a page; exit 72' 'EOF' '}'; reached plant_page; }
+planted a_page_naming_an_exit
+landed "$runner" 'a page; exit 72' "a heredoc's page is text" \
+  && expect "a heredoc's page is text" 0 "PASS"
+
 an_exit_nobody_reaches() { defined 'plant_far() { note "a plant"; exit 66; }'; }
 planted an_exit_nobody_reaches
 landed "$runner" 'plant_far()' "a code no call reaches is not deliver's" \
@@ -94,6 +131,9 @@ landed "$runner" 'plant_far()' "a code no call reaches is not deliver's" \
 planted edited "$page" '/<!-- routed: let go -->/s/ 6, / /'
 landed "$page" '1, 2, 3, 5, 10,' "a code the let-go line stops naming" \
   && expect "a code the let-go line stops naming is named" 1 "  6, from"
+
+planted edited "$page" '/<!-- routed: let go -->/s/ 1, / 1, 19, /'
+expect "a code an arm routes, named as let go too, is named" 1 "19 is routed by an arm, and the let-go line names it too"
 
 planted edited "$page" '/<!-- routed: wait -->/s/ and 58//'
 expect "a wait line short of the wait arm is named" 1 "the wait arm routes"

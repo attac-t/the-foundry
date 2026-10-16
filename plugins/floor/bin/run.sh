@@ -5118,7 +5118,7 @@ deliver_and_route() {
 #
 # **The host fixes 20 and 50, as it fixes 19**: a source no one could ask, and floor on a hand's
 # account. Each is a stop the next pass resumes, and the bound counts every resume, so a host never
-# fixed ends at 46. 49 and 51 want a line at the base, and are let go as at the workspace.
+# fixed ends at 46. Floor's README names the codes let go, on the line `bin/routed.sh` reads.
 #
 stop_at_the_delivery() {
     [ "$2" -eq 20 ] && { record_the_stop "$1" deliver 20; exit 20; }

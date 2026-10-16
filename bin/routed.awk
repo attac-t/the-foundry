@@ -4,7 +4,8 @@
 # Reads the runner twice: once for the functions it defines, once for what each body calls, returns
 # and exits with.
 #
-# **Wide, never narrow.** A word in command position that names a function is a call, so a function
+# **Wide, never narrow.** A word in command position, a case arm's `)` among them, that names a
+# function is a call, so a function
 # the graph cannot rule out is reached. A code it adds wrongly is noise. One it drops is a run let go
 # unseen, which is the fault #1159 names.
 #
@@ -21,22 +22,27 @@ FNR == 1 { part++ }
 
 part == 1 { if (match($0, /^[a-z_][a-z0-9_]*\(\) *[{(]/)) { f = $0; sub(/\(\).*/, "", f); defined[f] = 1 }; next }
 
+#
+# A heredoc's body is text, not code: usage pages name `exit 14` in prose. Skipped to its end word.
+ending != "" { if ($0 ~ "^[ \t]*" ending "$") ending = ""; next }
+
 match($0, /^[a-z_][a-z0-9_]*\(\) *[{(]/) {
+    in_single = 0
     fn = $0; sub(/\(\).*/, "", fn)
     read_the_line(substr($0, RLENGTH + 1))
     if ($0 ~ /[})][ \t]*$/) fn = ""
     next
 }
 
-/^[})]/ { fn = ""; next }
+/^[})]/ { fn = ""; in_single = 0; next }
 
 fn != "" { read_the_line($0) }
 
 function read_the_line(line,    words, w, rest, held) {
     sub(/^[ \t]*#.*/, "", line)
-    gsub(/\047[^\047]*\047/, "", line)
-    exits_through_a_variable(line)
-    exits_by_number(line)
+    a_heredoc_starts(line)
+    line = unquoted(line)
+    exits_in(line)
 
     held = line
     while (match(held, /return[ \t]+[0-9]+/)) {
@@ -45,7 +51,7 @@ function read_the_line(line,    words, w, rest, held) {
     }
 
     words = " " line
-    while (match(words, /(^|[;&|({!]|\$\(|then |do |else )[ \t]*[a-z_][a-z0-9_]*/)) {
+    while (match(words, /(^|[;&|({!)]|\$\(|then |do |else )[ \t]*[a-z_][a-z0-9_]*/)) {
         w = substr(words, RSTART, RLENGTH); sub(/^.*[^a-z0-9_]/, "", w)
         rest = substr(words, RSTART + RLENGTH)
         words = rest
@@ -59,26 +65,51 @@ function read_the_line(line,    words, w, rest, held) {
     }
 }
 
-function exits_by_number(line,    code) {
-    while (match(line, /(^[ 	]*|[;{}&|][ 	]*)exit [0-9]+[ 	]*($|[;}])/)) {
-        code = substr(line, RSTART, RLENGTH)
-        sub(/^.*exit /, "", code); sub(/[^0-9].*/, "", code)
-        site[fn] = site[fn] " " code
+#
+# Every exit in statement position, read once: after a line's start, a separator, a case arm's `)`,
+# or `then`, `do` and `else`. Prose names no code, since a word there is never in that position.
+function exits_in(line,    arg) {
+    while (match(line, /(^[ \t]*|[;{}&|)][ \t]*|(then|do|else)[ \t]+)exit([ \t]+[^;}&|]*)?($|[;}&|])/)) {
+        arg = substr(line, RSTART, RLENGTH)
         line = substr(line, RSTART + RLENGTH)
+        sub(/^.*exit/, "", arg); sub(/[;}&|]$/, "", arg); gsub(/^[ \t]+|[ \t]+$/, "", arg)
+        an_exit(arg)
     }
 }
 
-function exits_through_a_variable(line,    held, captured) {
-    while (match(line, /exit[ \t]+"?\$[a-zA-Z_0-9?]+"?/)) {
-        held = substr(line, RSTART, RLENGTH)
-        line = substr(line, RSTART + RLENGTH)
-        sub(/^exit[ \t]+"?\$/, "", held); sub(/"$/, "", held)
+# A number is a site. `$N` waits for its calls, and `$?` takes what it captured. Anything else,
+# bare `exit` among them, is a value nothing here can read, and it is named rather than dropped.
+function an_exit(arg,    held, captured) {
+    if (arg ~ /^[0-9]+$/) { site[fn] = site[fn] " " arg; return }
 
-        if (held ~ /^[1-9]$/) { by_argument[fn] = by_argument[fn] " " held; continue }
-        if (held == "?" && (captured = the_capture($0)) in defined) { inherits[fn] = inherits[fn] " " captured; continue }
+    held = arg; gsub(/"/, "", held)
+    if (held ~ /^\$[1-9]$/) { by_argument[fn] = by_argument[fn] " " substr(held, 2); return }
+    if (held == "$?" && (captured = the_capture($0)) in defined) { inherits[fn] = inherits[fn] " " captured; return }
 
-        unresolved[fn] = 1
+    unresolved[fn] = 1
+}
+
+#
+# The line with single-quoted text gone, across lines too: an `awk` program spans many, and its
+# `exit` is awk's. A quote inside double quotes is not one. The state resets at each function's edge.
+function unquoted(line,    kept, i, c, double, depth, outer) {
+    for (i = 1; i <= length(line); i++) {
+        c = substr(line, i, 1)
+        if (in_single) { if (c == "\047") in_single = 0; continue }
+        if (c == "\\") { kept = kept c substr(line, ++i, 1); continue }
+        if (c == "$" && substr(line, i + 1, 1) == "(") { outer[++depth] = double; double = 0 }
+        if (c == ")" && depth && !double) double = outer[depth--]
+        if (c == "\"") double = !double
+        if (c == "\047" && !double) { in_single = 1; continue }
+        kept = kept c
     }
+    return kept
+}
+
+function a_heredoc_starts(line,    word) {
+    if (!match(line, /<<-?[ \t]*["\047\\]?[A-Za-z_]+/)) return
+    word = substr(line, RSTART, RLENGTH); sub(/^<<-?[ \t]*["\047\\]?/, "", word)
+    ending = word
 }
 
 function the_capture(line,    name) {
