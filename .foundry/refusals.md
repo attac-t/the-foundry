@@ -248,6 +248,7 @@ where it is — a key for a one-off buys indirection and saves nothing.
 | `refuse_a_torn_row` | 2 | invariant | an observation must fit one atomic write, and that one is ${#1} long | `record` — the length is the runner's, and a setting could move it. **Whole-or-not-at-all is not a choice any backend has**, or *in the order it happened* is lost |
 | `refuse_an_unnamed_field` | 2 | default | an observation's fields are key=value, and [$pair] is not one | `our-format` |
 | `refuse_floors_own_event` | 2 | default | [$1] is an event floor writes itself, so \`observe\` does not take it | `our-format` — a `pass.` line steers the next pass, so a worker may not write one through this verb |
+| `refuse_an_event_named_like_a_field` | 2 | default | name the event, then a space, then its fields: observe <event> key=value | `our-format` |
 | `refuse_to_introduce_a_gate` | 2 | invariant | the base names the gate [$2], so \`charter derive\` pins it — a gate is never introduced | `refusal` — charter A, decision 8: a gate is added by committing it, and derivation pins it |
 | `refuse_unrecordable` | 2 | invariant | record needs a command to run — a result is not something you pass | `evidence` — a worker writing the result of a command nothing ran |
 | `refuse_unrecordable` | 2 | default | record needs a name and a command | `no-field` |
@@ -283,6 +284,7 @@ where it is — a key for a one-off buys indirection and saves nothing.
 | `refuse_a_run_with_no_base` | 6 | invariant | start a new run — one made before this rule cannot prove what it derived from | `refusal` |
 | `refuse_a_shape_no_run_may_use` | 6 | invariant | a \`shape\` line no run may use: | `pin` — charter *a panel shapes the charter*, B1: a `shape` line no run could use is wrong on every host, as a reach is |
 | `refuse_an_unreadable_base` | 6 | invariant | the base [$1] cannot be read, so nothing can say what it names | `evidence` — a bench, a gate or a `shape` line read from a base nobody could read is a guess |
+| `refuse_an_unread_practice` | 6 | invariant | make \`.foundry/practice\` a regular file at the base, and start a new run | `evidence` — a practice floor could not read is no list of hands, and reading it as one sends a person to add a line that is already there. #1083 |
 | `refuse_collision` | 6 | invariant | — | `evidence` — two clauses on one id, so a reader looking it up gets whichever was written last |
 | `refuse_moved_resolution` | 6 | default | — | `charter-drifted` |
 | `refuse_wrong_repository` | 6 | default | run this inside [$boot], not [${here:-nowhere}] | `no-workspace` — wrong directory |

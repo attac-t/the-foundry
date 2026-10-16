@@ -1699,23 +1699,41 @@ is_authorised() {
 # editing it must grant itself nothing: invariant 1's rule, that a run's own work may invalidate
 # authority and never create it. A human commits it; a later run reads it.
 #
+# **A practice it could not read grants no standing, and says so.** It never refuses: the grants
+# file answers next, and a grant is the one remedy that needs no new commit. #1083.
 standing() {
     base=$(bootstrap_base "$2") || return 1
+    practice=$(practice_at_base "$base") || { say_a_practice_went_unread "$base"; return 1; }
 
-    practice_at_base "$base" | awk -v verb="$1" -v id="$3" '$1 == verb && $2 "" == id ""' | grep -q .
+    printf '%s\n' "$practice" | awk -v verb="$1" -v id="$3" '$1 == verb && $2 "" == id ""' | grep -q .
 }
 
+say_a_practice_went_unread() {
+    note "could not read the practice at [$1], so it grants no standing here"
+    note "a grant for this run still answers: \`policy authorize\`, \`deliver-to\` or \`merge-to\`"
+}
+
+#
+# The practice at a commit, less its comments and blank lines, asked of git for the one file. #1083.
+#
+# **Four answers.** 0 and its text. 0 and nothing, when the commit holds none. 2, when git cannot
+# give the commit. 3, when the entry is a tree, a submodule or a symlink, which is no practice.
+#
+# **The path is the repository's root, whatever directory floor runs in**, so `--full-tree`. Without
+# it `ls-tree` reads the path from the current directory, and a real practice reads as none.
 practice_at_base() {
-    scratch="${TMPDIR:-/tmp}/floor-practice-$$"
+    entry=$(git ls-tree --full-tree "$1" -- .foundry/practice 2>/dev/null) || return 2
+    [ -n "$entry" ] || return 0
 
-    why=$(git worktree add --detach --quiet "$scratch" "$1" 2>&1) || {
-        note "could not read the practice at [$1]: $why"
-        return 1
-    }
+    set -f; set -- $entry; set +f
+    a_regular_file "$1" "$2" || return 3
+    text=$(git cat-file blob "$3" 2>/dev/null) || return 3
 
-    practice_in "$scratch"
-    git worktree remove --force "$scratch" >/dev/null 2>&1
+    printf '%s\n' "$text" | awk '!/^[ \t]*#/ && NF'
 }
+
+# Git's mode for a file, executable or not. A symlink is a blob too, and is no file.
+a_regular_file() { [ "$2" = blob ] && { [ "$1" = 100644 ] || [ "$1" = 100755 ]; }; }
 
 # The practice a checkout holds, less its comments and blank lines.
 practice_in() { [ -f "$1/.foundry/practice" ] && awk '!/^[ \t]*#/ && NF' "$1/.foundry/practice"; }
@@ -5382,6 +5400,7 @@ observe() {
 
     is_one_line "$event" || { note "an event name is one line: [$event]"; exit 2; }
     refuse_floors_own_event "$event"
+    refuse_an_event_named_like_a_field "$event"
     refuse_an_unnamed_field "$@"
 
     record_observation "$dir" "$event" "$@" || die_unwritable "$(observations_file "$dir")"
@@ -5399,6 +5418,19 @@ refuse_floors_own_event() {
     esac
 
     note "[$1] is an event floor writes itself, so \`observe\` does not take it"
+    exit 2
+}
+
+# **An `=` in an event's name reads as a field.** A dropped space once recorded an event called
+# `charter.approved_by=architect`, exit 0, and nothing counting events could match it. #1204.
+refuse_an_event_named_like_a_field() {
+    case $1 in
+        *=*) ;;
+        *) return 0 ;;
+    esac
+
+    note "[$1] holds \`=\`, so it reads as a field, never an event"
+    note "name the event, then a space, then its fields: observe <event> key=value"
     exit 2
 }
 
@@ -5722,6 +5754,10 @@ compose_the_body() {
     # A request is never rewritten, so a second `deliver` keeps the body it carries.
     delivered_already "$1" >/dev/null && return 0
     keep_the_message "$1" "$2" "$3"
+
+    # Read once, here, before anything is measured or written: the cap measures the body in a
+    # subshell, where a refusal would leave only that subshell. #1083.
+    body_form=$(body_form_at_base "$1") || refuse_an_unread_practice $? "$(bootstrap_base "$1")"
     ready_to_carry "$1" "$2" "$3"
 
     the_parts_of_the_body "$1" "$2" "$3" > "$body" || die_unwritable "$body"
@@ -5731,7 +5767,7 @@ compose_the_body() {
 # and what each judge found.
 the_parts_of_the_body() {
     what_stands_first "$1" "$2" "$3"
-    [ "$(body_form_at_base "$1")" = brief ] && return 0
+    [ "$body_form" = brief ] && return 0
 
     what_floor_recorded "$1" "$2"
     what_each_judge_found "$1" "$2"
@@ -5743,7 +5779,8 @@ the_parts_of_the_body() {
 #
 body_form_at_base() {
     base=$(bootstrap_base "$1") || { printf 'record\n'; return 0; }
-    form=$(practice_at_base "$base" | awk '$1 == "body" { print $2; exit }')
+    practice=$(practice_at_base "$base") || return
+    form=$(printf '%s\n' "$practice" | awk '$1 == "body" { print $2; exit }')
 
     case ${form:-record} in
         record|brief) printf '%s\n' "${form:-record}"; return 0 ;;
@@ -8395,7 +8432,7 @@ is_a_panel_clause() { panel_clauses "$1" | grep -qxF -e "$2"; }
 #
 hear_the_item() {
     heard_base=$(bootstrap_base "$1") || refuse_a_run_with_no_base
-    heard_hands=$(hands_named "$heard_base") || refuse_an_unreadable_base "$heard_base"
+    heard_hands=$(hands_named "$heard_base") || refuse_an_unread_practice $? "$heard_base"
     refuse_with_no_hand "$heard_hands"
 
     speakers_of "$(item_id "$1")"
@@ -8428,11 +8465,11 @@ holds_a_clause_nothing_derived() { [ -n "$(introduced_clauses "$(charter_file "$
 # The hands a repository names to answer: every `authorise` line in `.foundry/practice`, read at the
 # run's base as grants are, so a worker's own commit names nobody. One a line, each once, folded.
 #
-# **1 when the base cannot be read**, never nothing: an empty answer read as *the base names no
-# hand*, which only a base that was read can say. #1160.
+# **`practice_at_base`'s own 2 or 3 when it could not read**, never nothing: an empty answer reads as
+# *the base names no hand*, which only a base that was read can say. #1160, #1083.
 #
 hands_named() {
-    heard_practice=$(practice_at_base "$1") || return 1
+    heard_practice=$(practice_at_base "$1") || return
 
     printf '%s\n' "$heard_practice" | hands_in
 }
@@ -9164,6 +9201,16 @@ refuse_a_run_with_no_base() {
 
 refuse_an_unreadable_base() {
     note "the base [$1] cannot be read, so nothing can say what it names"
+    exit 6
+}
+
+# The status first, so it is read before the base is asked for. 2 is a base git cannot give, and
+# anything else a practice git gave that is no file to read.
+refuse_an_unread_practice() {
+    [ "$1" -eq 2 ] && refuse_an_unreadable_base "$2"
+
+    note "the practice at [$2] is no file floor can read, so nothing can say whose answer counts"
+    note "make \`.foundry/practice\` a regular file at the base, and start a new run"
     exit 6
 }
 

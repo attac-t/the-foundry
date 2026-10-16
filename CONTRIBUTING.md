@@ -1,13 +1,13 @@
 # Contributing
 
-28 gates. Run them before you open a pull request:
+29 gates. Run them before you open a pull request:
 
 ```bash
-sh bin/gates.sh                 # all 28, here
+sh bin/gates.sh                 # all 29, here
 sh bin/gates.sh fast            # every gate but the plugin suites: before a judge round or a grade
 sh bin/agree.sh                 # this table, the workflow, gates.sh and every harness file
-sh bin/gates.sh linux           # the same 28 where `sh` is dash
-sh bin/host.sh <the recipe>     # the same 28 from a clone — see below
+sh bin/gates.sh linux           # the same 29 where `sh` is dash
+sh bin/host.sh <the recipe>     # the same 29 from a clone — see below
 ```
 
 Leave `agree` out of your run and a PR can still go red on a check this file never mentioned — the
@@ -285,6 +285,7 @@ Edit a rule, then run it — a row typed by hand into one file is the drift noth
 | `durable` | the doctrine's durable kinds and `.foundry/durable.txt` have parted — a kind missing, a kind in the other half, or a writer the runner no longer holds |
 | `unnamed` | a refusal floor's runner makes has no row on `.foundry/refusals.md`, or a row names one it no longer makes |
 | `routed` | `deliver` can leave with a code no arm of `deliver_and_route` routes and floor's README does not name as let go |
+| `applies` | a floor break's `sed` changes nothing in the file it names, or the replay cannot read a declaration, or reads none |
 | `codex` | the adapter reaching a judge takes a verdict that was not the reply's last word, or claims a thread the harness never opened |
 | `anthropic` | the second adapter takes a verdict that was not the reply's last word, or claims a handle this harness never opened |
 | `kernel` | the plugin does not run — checked on Linux, macOS and Windows |
@@ -318,7 +319,7 @@ no such bit.
 
 **What they do not check:** that `laravel-ddd`, `laravel-playbook`, `pest` or `product` still load,
 or that their skills say anything true. Those four ship no code, so there is nothing to run — but
-nothing here reads them either. Green means 28 gates passed. For those four plugins it does not
+nothing here reads them either. Green means 29 gates passed. For those four plugins it does not
 mean the change works.
 
 **Whether their guidance has aged is answered, not gated.** Each README that teaches a version names

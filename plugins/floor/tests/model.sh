@@ -2135,6 +2135,25 @@ types'
 }
 a_name_cannot_forge_a_second_record
 
+# #1204. A name holding `=` reads as a field, so it is refused, and nothing is written. Written below
+# `a_name_cannot_forge_a_second_record`'s body, never above it, where a case runs only nested: #1207.
+an_event_named_like_a_field_is_refused() {
+  make_repo "$tmp/obeq" main && set_origin "$tmp/obeq" 'https://github.com/acme/obeq.git' \
+    || { skip "an event named like a field — git could not make a repo here"; return; }
+
+  floor "$tmp/obeq" new "Observed" >/dev/null
+  before=$(floor "$tmp/obeq" observe)
+  said=$(floor_says "$tmp/obeq" observe charter.approved_by=architect round=1)
+
+  is  "an event named like a field is refused" \
+      "$(code_of floor "$tmp/obeq" observe charter.approved_by=architect round=1)" "2"
+  has "and says it reads as a field" "$said" "reads as a field, never an event"
+  has "and names the event it refused" "$said" "[charter.approved_by=architect]"
+  has "and says a space goes before the fields" "$said" "then a space, then its fields"
+  is  "and nothing is written" "$(floor "$tmp/obeq" observe)" "$before"
+}
+an_event_named_like_a_field_is_refused
+
 #
 # The ref is taken before the command runs. A gate that commits would otherwise be recorded against a
 # tree that did not exist when it was graded.
@@ -2896,6 +2915,36 @@ a_body_set_to_brief_carries_the_brief_alone() {
   has   "and the record is kept"                  "$(cat "$(cat "$tmp/bf-brevity.run")/body" 2>/dev/null)" 'What floor recorded'
 }
 a_body_set_to_brief_carries_the_brief_alone
+
+# #1083. A practice that is no file: a directory at the base stands in for a tree, a submodule or a
+# symlink. Written above every case that plants one, since a case runs where it is written.
+a_repo_whose_practice_is_no_file() {
+  make_repo "$1" main && set_origin "$1" "https://github.com/acme/${1##*/}.git" \
+    && mkdir -p "$1/.foundry/practice" && commit_file "$1" .foundry/practice/inside 'authorise ada
+'
+}
+
+# #1083. A body form read from a practice that is no file is refused, never sent as `record`.
+a_body_never_falls_back_on_a_practice_it_could_not_read() {
+  git init -q --bare "$tmp/bodyless-remote.git" 2>/dev/null \
+    && a_repo_whose_practice_is_no_file "$tmp/bodyless" \
+    && commit_file "$tmp/bodyless" .foundry/gates 'tests  true
+' || { skip "a body from a practice that is no file — git could not make a repo here"; return; }
+
+  floor_new_as "$tmp/bodyless" ada@example.com "Bodyless" > "$tmp/bodyless.run"
+  for step in "charter derive" "policy authorize https://github.com/acme/bodyless.git" \
+      "policy deliver-to https://github.com/acme/bodyless.git" \
+      "targets add https://github.com/acme/bodyless.git main" open gates; do
+    floor "$tmp/bodyless" $step >/dev/null 2>&1
+  done
+  git -C "$(only_slot "$(floor "$tmp/bodyless" path)/units/01/workspace")" \
+    config "url.$tmp/bodyless-remote.git.pushInsteadOf" "https://github.com/acme/bodyless.git"
+
+  said=$(floor_says "$tmp/bodyless" deliver 'a change')
+  has    "a body read from a practice that is no file is refused" "$said" "is no file floor can read"
+  absent "and no body is written" "$(cat "$tmp/bodyless.run")/body"
+}
+a_body_never_falls_back_on_a_practice_it_could_not_read
 
 #
 # The body named the last row it found for a clause. A machine pass under a judged clause's words,
@@ -4059,6 +4108,62 @@ a_base_that_cannot_be_read_is_refused_for_it() {
   is    "and on 6, where it said 49" "$(code_of floor "$tmp/lostbase" complete)" "6"
 }
 a_base_that_cannot_be_read_is_refused_for_it
+
+# #1083. Git says a directory at the base's practice is no file, and the hearing refuses for it,
+# never for a hand it could not read.
+a_practice_that_is_no_file_is_refused_for_it() {
+  a_repo_whose_practice_is_no_file "$tmp/nofile" \
+    || { skip "a practice that is no file — git could not make a repo here"; return; }
+
+  floor "$tmp/nofile" new "No file" >/dev/null
+  floor "$tmp/nofile" charter introduce Decided "ship on friday" >/dev/null 2>&1
+  said=$(floor_says "$tmp/nofile" complete)
+
+  has   "a practice that is no file is refused for it" "$said" "is no file floor can read"
+  lacks "never for a hand it could not read"           "$said" "names no hand"
+  is    "and on 6, where it said 49" "$(code_of floor "$tmp/nofile" complete)" "6"
+
+  #
+  # Standing falls through to the grants file, so the grant that is the remedy can still be given.
+  said=$(floor_says "$tmp/nofile" policy deliver-to 'https://github.com/acme/nofile.git')
+  has "and standing says it read nothing" "$said" "could not read the practice at"
+  is  "while a grant can still be given" \
+      "$(code_of floor "$tmp/nofile" policy deliver-to 'https://github.com/acme/nofile.git')" "0"
+}
+a_practice_that_is_no_file_is_refused_for_it
+
+# #1083's approver: `ls-tree` reads its path from where it stands. From a subdirectory, a practice
+# that names a hand is heard as it is from the root, never as one naming none.
+a_practice_is_read_from_the_root() {
+  make_repo "$tmp/rooted" main && set_origin "$tmp/rooted" 'https://github.com/acme/rooted.git' \
+    && mkdir -p "$tmp/rooted/.foundry" "$tmp/rooted/docs" \
+    && commit_file "$tmp/rooted" .foundry/practice 'authorise ada
+' && commit_file "$tmp/rooted" docs/page 'a page' \
+    || { skip "a practice read from the root — git could not make a repo here"; return; }
+
+  floor "$tmp/rooted" new "Rooted" >/dev/null
+  floor "$tmp/rooted" charter introduce Decided "ship on friday" >/dev/null 2>&1
+
+  lacks "a practice read from a subdirectory still names its hand" \
+        "$(floor_says "$tmp/rooted/docs" complete)" "names no hand"
+  is    "and answers as it does at the root" \
+        "$(code_of floor "$tmp/rooted/docs" complete)" "$(code_of floor "$tmp/rooted" complete)"
+}
+a_practice_is_read_from_the_root
+
+# A base with no practice at all reads as it did before #1083: the hearing says no hand is named.
+a_base_with_no_practice_names_no_hand() {
+  make_repo "$tmp/noprac" main && set_origin "$tmp/noprac" 'https://github.com/acme/noprac.git' \
+    && commit_file "$tmp/noprac" README 'a base' \
+    || { skip "a base with no practice — git could not make a repo here"; return; }
+
+  floor "$tmp/noprac" new "No practice" >/dev/null
+  floor "$tmp/noprac" charter introduce Decided "ship on friday" >/dev/null 2>&1
+
+  has "a base with no practice names no hand, as before" "$(floor_says "$tmp/noprac" complete)" "authorise <hand>"
+  is  "and holds at 49" "$(code_of floor "$tmp/noprac" complete)" "49"
+}
+a_base_with_no_practice_names_no_hand
 
 #
 # The workspace — one isolated checkout per selected target. Isolated means a clone: a worktree
@@ -13562,6 +13667,17 @@ a_source_verb_outside_the_runs_repository_refuses() {
   for asked in 'read 1133' kind 'ask authorisation tests May-it' 'receive authorisation tests'; do
     is "source $asked from outside is refused too, 6" "$(code_of from_outside "$srcin_run" source $asked)" "6"
   done
+
+  #
+  # #1083: `receive` says where to run it, and so does one asked from no repository at all.
+  has "source receive from outside names the run's repository" \
+      "$(from_outside "$srcin_run" source receive authorisation tests)" "inside [https://github.com/acme/srcin.git]"
+
+  mkdir -p "$tmp/no-repository"
+  said=$( cd "$tmp/no-repository" && GIT_CEILING_DIRECTORIES="$tmp" FOUNDRY_HOME="$home" FOUNDRY_RUN="$srcin_run" \
+      FOUNDRY_WHO="" FOUNDRY_SOURCE= sh "$runner" source receive authorisation tests 2>&1; printf 'exit=%s' "$?" )
+  has "source receive from no repository is refused, 6" "$said" "exit=6"
+  has "and says floor stands in none"                   "$said" "not [nowhere]"
 }
 a_source_verb_outside_the_runs_repository_refuses
 
@@ -13684,7 +13800,7 @@ grade    https://gitlab.com/acme/nope.git
   said=$(floor_says "$tmp/st" targets add 'https://gitlab.com/acme/second.git' main)
   is  "a practice that cannot be read still refuses" \
       "$(code_of floor "$tmp/st" targets add 'https://gitlab.com/acme/second.git' main)" "5"
-  has "and says what git said about it" "$said" "could not read the practice"
+  has "and says it could not read the practice" "$said" "could not read the practice"
 }
 practice_grants_without_asking_again
 
