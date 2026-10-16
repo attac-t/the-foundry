@@ -2915,12 +2915,14 @@ deadlock or silence lets nothing go.
 **Revise rounds are counted per member and clause**, against that member's `rounds` line, or three
 where the charter has none.
 
-**`deliver`'s code says who can answer it.** 15, 18, 32, 57 and 58 wait on a person, 47, with
-`pass.waiting why=deliver`. 19 is a send that failed, sent again next wake. **20 and 50 are resumed
-there too.** A source nobody could ask, and floor on a hand's account, are each fixed on the host.
-Nothing in the run can answer any other code, so the run is let go with `pass.left why=deliver`, and
-the pass takes what is offered. 49 and 51 are let go that way, as at the workspace. A host with no
-command leaves a run waiting too, 44.
+**`deliver`'s code says who can answer it.** These wait on a person: 15, 18, 32, 57 and 58. <!-- routed: wait -->
+The pass then waits with `pass.waiting why=deliver`, and exits 47. 19 is a send that failed, sent
+again next wake. **20 and 50 are resumed there too.** A source nobody could ask, and floor on a
+hand's account, are each fixed on the host. Nothing in the run can answer the rest, so the run is
+let go with `pass.left why=deliver`, and the pass takes what is offered.
+**These are let go:** 1, 2, 3, 5, 6, 10, 13, 16, 17, 27, 30, 33, 49 and 51, and a code no `exit` names. <!-- routed: let go -->
+`bin/routed.sh` reads both lines and holds them to the runner: a code it finds in neither, or in no
+arm, fails it. A host with no command leaves a run waiting too, 44.
 
 **The pass shapes before it opens the work.** It runs `charter shape` between `charter derive` and
 `open`, on every wake that starts the run over. On a run already shaped, that asks nobody and writes

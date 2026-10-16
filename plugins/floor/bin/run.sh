@@ -5096,10 +5096,11 @@ carry_on_to_a_request() {
 }
 
 #
-# **`deliver`'s code says who can answer it.** 15, 18, 32, 57 and 58 wait on a person: a clause, a
-# grant, a commit to account for, a message to reword, a rule to land. 19, a failed send, retries.
+# **`deliver`'s code says who can answer it.** A person answers the wait arm: a clause, a grant, a
+# commit to account for, a message to reword, a rule to land. 19, a failed send, retries.
 #
 # Nothing in this run can answer any other code, so the run is let go and the pass selects afresh.
+# Floor's README names each code in two marked lines, and `bin/routed.sh` holds them to these arms.
 deliver_and_route() {
     still_holding_the_host
     ( deliver "$(the_run_heading "$1")" ) >/dev/null; delivered=$?

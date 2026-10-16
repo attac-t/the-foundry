@@ -147,6 +147,10 @@ jobs:
       - name: Every refusal floor makes has a row, and every row is a refusal
         run: sh bin/unnamed.sh audit
 
+      # A code deliver can leave with that no arm routes and no line names is a run let go unseen.
+      - name: Every code deliver leaves with is routed or let go by name
+        run: sh bin/routed.sh audit
+
   # The gates above read files. This one runs the plugins that ship code, on each operating system a
   # user installs them on, because that is where both of them broke last: signal's hook was not
   # executable, so it died before reading a word, and kernel's nine hooks named a bare path with no

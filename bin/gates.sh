@@ -338,6 +338,10 @@ gate durable     sh   bin/durable.sh audit
 # It could not be a gate until today. It refuses while any row is blank, and fifty-one were.
 gate unnamed     sh   bin/unnamed.sh audit
 
+# Every code `deliver` can leave with, routed by an arm or let go by name on floor's README. A code
+# nothing names is a run let go unseen, and 57 and 6 each fell there before anyone looked. #1159.
+gate routed      sh   bin/routed.sh audit
+
 #
 # **`fast` stops before the plugin suites, and nowhere else.** No gate line above names a mode, so
 # one added there joins `fast` with no second edit. Picking gates by hand is what this replaced.
