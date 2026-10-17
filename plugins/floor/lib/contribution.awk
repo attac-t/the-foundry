@@ -15,8 +15,9 @@
 # may copy it from a rendered question. A member prints its lines, and each must open with one of the
 # seven words, so a line wrapped in backticks is out of shape, and it is refused, never unwrapped.
 #
-# A blank line is no line. A proposal's text holds no tab or carriage return, as `is_one_line` reads a
-# clause, so what this takes `introduce` takes too.
+# A blank line is no line. **No line's text holds a carriage return**: floor prints a member's lines
+# as code, and one would end the line there and carry the rest out live, #1199. A proposal's text
+# holds no tab either, as `is_one_line` reads a clause, so what this takes `introduce` takes too.
 #
 # Prints `<proposal>\t<word>\t<text>` for each line: the proposal it names, 0 for none, the word
 # folded, and the rest of the line. The first line out of shape prints alone, as `<number>\t<line>`,
@@ -51,14 +52,15 @@ function in_shape(word, rest) {
     if (!(word in seven)) return 0
     if (word == "nothing") return nothing_alone(rest)
     if (rest == "") return 0
+    if (rest ~ /\r/) return 0
 
     if (word == "propose") return a_proposal(rest)
     if (word == "objection" || word == "unknown") return 1
     return named > 0
 }
 
-# A clause: its kind exactly, one space, then text holding no tab or carriage return. A text opening
-# with a space would read two ways, since `read` drops that space and `substr` keeps it.
+# A clause: its kind exactly, one space, then text holding no tab, nor any carriage return. A text
+# opening with a space would read two ways, since `read` drops that space and `substr` keeps it.
 function a_proposal(rest) {
     if (said_nothing) return 0
     if (rest !~ /^(Gate|Judged|Decided) [^ ]/) return 0

@@ -4109,6 +4109,9 @@ wreck_runner "a proposal with no text, taken, is caught" \
 wreck_runner "a carriage return no longer trimmed is caught" \
   keepcr 's#sub(/^\[ \\r\]+/, "", said)#sub(/^ +/, "", said)#; s#sub(/\[ \\r\]+\$/, "", said)#sub(/ +$/, "", said)#' lib/contribution.awk
 
+wreck_runner "a carriage return inside a line, kept, is caught" \
+  midcr '/^    if (rest ~ \/[\\]r\/) return 0$/d' lib/contribution.awk
+
 wreck_runner "a line out of shape dropped, and the rest kept, is caught" \
   droplines 's#if (!in_shape(word, rest)) { refuse(); return }#if (!in_shape(word, rest)) return#' lib/contribution.awk
 

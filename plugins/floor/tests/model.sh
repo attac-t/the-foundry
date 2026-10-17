@@ -14949,6 +14949,26 @@ lines_as_people_write_them_are_recorded() {
 }
 lines_as_people_write_them_are_recorded
 
+# #1199. A carriage return inside a `why` line would end it where floor prints it as code, and carry
+# the rest out live. Its contribution is refused, and `authorise` composes no question from it. The
+# only member here, so `authorise` can refuse for no other reason.
+a_carriage_return_inside_a_line_refuses_its_contribution() {
+  a_plugin_shaping shp45 || { skip "a mid-line return — the plugin could not be copied"; return; }
+  a_shaped_repo shp45 1399 "$(shape_line ann:midcr shp45)
+" || { skip "a mid-line return — git could not make a repo here"; return; }
+  member_says shp45 ann:midcr "$(printf 'propose Judged the page is readable\nwhy it matters\r@someone')
+"
+  spf charter shape >/dev/null 2>&1
+
+  has "a carriage return inside a why line is refused" "$(sp_row_of ann:midcr)" "refused: line 2"
+  said=$(spf_says authorise; printf '\nexit=%s' "$?")
+  has "and authorise refuses it, 56"                   "$said" "exit=56"
+  has "naming that member"                             "$said" "[ann:midcr]'s contribution"
+  has "and its line"                                   "$said" "refused whole: line 2"
+  is  "and no question is composed"                    "$(questions_in 1399)" "0"
+}
+a_carriage_return_inside_a_line_refuses_its_contribution
+
 # A member that would give new words on a second call is never asked again: its first words are its
 # contribution, and the clause.
 a_member_that_would_change_its_words_is_asked_once() {
