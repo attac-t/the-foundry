@@ -155,6 +155,9 @@ every_break() {
     drive shell-next-line plugins/floor/lib/source.sh \
         'a_tail_on_the_next_line >> plugins/floor/lib/source.sh' \
         'bash bin/shell.sh'
+    drive shell-mid-line plugins/floor/lib/source.sh \
+        'a_pipe_mid_line_in_a_capture >> plugins/floor/lib/source.sh' \
+        'bash bin/shell.sh'
     drive shell-nested plugins/floor/lib/source.sh \
         'a_nested_capture_in_a_group >> plugins/floor/lib/source.sh' \
         'bash bin/shell.sh'
@@ -419,6 +422,10 @@ a_capture_with_a_tail() {
 a_tail_on_the_next_line() {
     a_hider next_for_a_break
     printf 'held_next_for_a_break=$(printf x \\\n    | next_for_a_break)\n'
+}
+a_pipe_mid_line_in_a_capture() {
+    a_hider mid_for_a_break
+    printf 'held_mid_for_a_break=$(\n    printf x | mid_for_a_break\n)\n'
 }
 a_nested_capture_in_a_group() {
     a_hider nested_for_a_break

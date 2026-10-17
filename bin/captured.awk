@@ -7,6 +7,9 @@
 #
 # **Never less than that.** Every `$(` on every line is read whatever the depth, so a bracket counted
 # wrong can only stop a capture reading on, never lose a name the one-line reading found.
+#
+# **And sometimes more than inside it.** A line is read to its end, past the capture's own `)`, so a
+# name after `) ||` on that line is read too. Loud if wrong: `shell` goes red, never green.
 
 FNR == 1 { depth = 0 }
 
@@ -27,10 +30,11 @@ function brackets_counted_from(was_open, line) {
     return balance_of(substr(line, RSTART))
 }
 
-# The first name on a line inside a capture, past any leading pipe or list operator.
+# Every name in command position on a line inside a capture: its head, past any leading pipe or list
+# operator, and each name after a pipe or operator further along it.
 function name_the_head(line) {
     sub(/^[ \t]*(\|\||&&|\||;)?[ \t]*/, "", line)
-    name_at_start(line)
+    name_each_command(line)
 }
 
 function name_every_capture(rest) {
@@ -53,7 +57,8 @@ function name_at_start(text) {
     if (match(text, /^[A-Za-z_][A-Za-z0-9_]*/)) print substr(text, 1, RLENGTH)
 }
 
-# Opens less closes. A quoted bracket, a `case` arm or a heredoc's `)` miscounts.
+# Opens less closes. A quoted bracket, a `case` arm, a heredoc's `)` or one in a trailing comment
+# miscounts.
 function balance_of(text,    opens) {
     opens = gsub(/\(/, "(", text)
     return opens - gsub(/\)/, ")", text)
