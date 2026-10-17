@@ -14955,6 +14955,8 @@ lines_as_people_write_them_are_recorded
 a_carriage_return_inside_a_line_refuses_its_contribution() {
   a_plugin_shaping shp45 || { skip "a mid-line return — the plugin could not be copied"; return; }
   a_shaped_repo shp45 1399 "$(shape_line ann:midcr shp45)
+bench  cat:judge
+reach  cat:judge  sh bin/bench.sh
 " || { skip "a mid-line return — git could not make a repo here"; return; }
   member_says shp45 ann:midcr "$(printf 'propose Judged the page is readable\nwhy it matters\r@someone')
 "
