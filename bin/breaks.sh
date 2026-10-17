@@ -145,6 +145,20 @@ every_break() {
         'a_hidden_failure >> plugins/floor/lib/source.sh' \
         'bash bin/shell.sh'
 
+    # The same failure, reached only through a shape the one-line reading never named. #1202.
+    drive shell-line-end plugins/floor/lib/source.sh \
+        'a_capture_at_a_line_end >> plugins/floor/lib/source.sh' \
+        'bash bin/shell.sh'
+    drive shell-tail plugins/floor/lib/source.sh \
+        'a_capture_with_a_tail >> plugins/floor/lib/source.sh' \
+        'bash bin/shell.sh'
+    drive shell-next-line plugins/floor/lib/source.sh \
+        'a_tail_on_the_next_line >> plugins/floor/lib/source.sh' \
+        'bash bin/shell.sh'
+    drive shell-nested plugins/floor/lib/source.sh \
+        'a_nested_capture_in_a_group >> plugins/floor/lib/source.sh' \
+        'bash bin/shell.sh'
+
     # The boundary `run.sh` states twice and nothing read. #299 stands a machine up from Docker, and
     # this is the line that would land in core on the way.
     drive hosts plugins/floor/lib/source.sh \
@@ -388,6 +402,27 @@ an_else() {
 # Captured on the line after it, so the plant carries everything the rule asks of one.
 a_hidden_failure() {
     printf '\nhead_for_a_break() {\n    # the head this checkout holds\n    head=$(git rev-parse HEAD) || return 0\n    printf %%s "$head"\n}\nheld_for_a_break=$(head_for_a_break)\n'
+}
+
+# A function hiding a failure, and a capture reaching it only through one shape. `$1` names the
+# function; the caller is the rest. Each plant reads green against a reader of `$(name` alone.
+a_hider() { printf '\n%s() {\n    git rev-parse HEAD || return 0\n}\n' "$1"; }
+
+a_capture_at_a_line_end() {
+    a_hider end_for_a_break
+    printf 'held_end_for_a_break=$(\n    end_for_a_break\n)\n'
+}
+a_capture_with_a_tail() {
+    a_hider tail_for_a_break
+    printf 'held_tail_for_a_break=$(printf x | tail_for_a_break)\n'
+}
+a_tail_on_the_next_line() {
+    a_hider next_for_a_break
+    printf 'held_next_for_a_break=$(printf x \\\n    | next_for_a_break)\n'
+}
+a_nested_capture_in_a_group() {
+    a_hider nested_for_a_break
+    printf 'held_nested_for_a_break=$( (cd /tmp; "$(pwd)")\n    nested_for_a_break\n)\n'
 }
 
 # Code, never a comment. `run.sh` already carries two comments naming a container, so a break that
