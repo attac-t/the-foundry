@@ -122,13 +122,10 @@ hidden() {
     done < "$files"
 }
 
-# Every name a shipped line captures as `$(name`, one a line. A whole-line comment captures nothing.
+# Every name a shipped line captures, one a line, across every line a capture spans. #1202.
 captured() {
     while IFS= read -r file; do
-        awk '
-            /^[ \t]*#/ { next }
-            { while (match($0, /\$\([A-Za-z_][A-Za-z0-9_]*/)) { print substr($0, RSTART + 2, RLENGTH - 2); $0 = substr($0, RSTART + RLENGTH) } }
-        ' "$file"
+        awk -f bin/captured.awk "$file"
     done < "$files"
 }
 
